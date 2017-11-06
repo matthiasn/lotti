@@ -1,6 +1,6 @@
 # meo
 
-**meo** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**.
+**meo** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**. Please get in touch when you require services around this tool, like customization or integration of additional data sources.
 
 
 ## Motivation
