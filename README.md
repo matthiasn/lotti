@@ -1,6 +1,6 @@
-# iWasWhere
+# meo
 
-**iWasWhere** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**.
+**meo** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**.
 
 
 ## Motivation
@@ -10,7 +10,7 @@ See [here](./doc/motivation.md)
 
 ## Components
 
-**iWasWhere** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning the **browser** and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. This project lives in the **[iwaswhere-web](https://github.com/matthiasn/iWasWhere/tree/master/iwaswhere-web)** directory, which is also where you can find installation instructions and more information about the system's architecture.
+**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning the **browser** and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. This project lives in the **[iwaswhere-web](https://github.com/matthiasn/iWasWhere/tree/master/iwaswhere-web)** directory, which is also where you can find installation instructions and more information about the system's architecture.
 
 There's also an **iOS app** that keeps track of visits and lets me quickly capture thoughts on the go. Currently, it's a very basic application written in **[Swift](https://swift.org/)**. It is not open sourced yet, but that will happen in due course. Ideally, by then it should also have been rewritten in **ClojureScript** and **[React Native](https://facebook.github.io/react-native/)**. Stay tuned.
 
