@@ -16,6 +16,7 @@
                  [markdown-clj "1.0.1"]
                  [clj-pdf "2.2.29"]
                  [cheshire "5.8.0"]
+                 [me.raynes/conch "0.8.0"]
                  [com.taoensso/nippy "2.13.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [cljsjs/moment "2.17.1-1"]
