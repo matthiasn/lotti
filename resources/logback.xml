@@ -14,7 +14,7 @@
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>/tmp/iwaswhere.error.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>/tmp/meo.error.log.%d{yyyy-MM-dd}</fileNamePattern>
             <!-- keep 30 days' worth of history -->
             <maxHistory>30</maxHistory>
         </rollingPolicy>
@@ -27,7 +27,7 @@
     <!-- The rest (messages without markers or with markers other than MESSAGE) -->
     <appender name="UNCATEGORIZED_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/tmp/iwaswhere.misc.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>/tmp/meo.misc.log.%d{yyyy-MM-dd}</fileNamePattern>
             <maxHistory>60</maxHistory>
         </rollingPolicy>
         <immediateFlush>true</immediateFlush>
@@ -39,7 +39,7 @@
     <logger name="io.undertow" level="warn"/>
     <logger name="org.xnio.nio" level="warn"/>
     <logger name="matthiasn.systems-toolbox" level="info"/>
-    <logger name="iww.jvm.store" level="debug"/>
+    <logger name="meo.jvm.store" level="debug"/>
     <logger name="matthiasn.systems-toolbox-sente" level="info"/>
 
     <root level="INFO">

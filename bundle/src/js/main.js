@@ -4,12 +4,10 @@ window.deps = {
     'react-addons-perf' : require('react-addons-perf'),
     'draft-js' : require('draft-js'),
     'react-responsive-carousel' : require('react-responsive-carousel').Carousel,
-    'editor' : require ('./editor'),
     'SearchFieldEditor' : require ('./SearchFieldEditor'),
     'EntryTextEditor' : require ('./EntryTextEditor'),
     'Calendar' : require ('./calendar'),
-    'BigCalendar' : require ('./bigCalendar'),
-    'emojiFlags' : require('emoji-flags')
+    'BigCalendar' : require ('./bigCalendar')
 };
 
 window.React = window.deps['react'];

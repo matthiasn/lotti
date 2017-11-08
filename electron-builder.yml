@@ -1,10 +1,10 @@
-appId: "matthiasn.iWasWhere"
+appId: "matthiasn.meo"
 asar: false
 files:
     - "!**/*"
     - "bin/blink1-${os}*"
-#    - "bin/zulu8.23.0.3-jdk8.0.144-${os}_x64/**"
-    - "bin/iwaswhere.jar"
+    - "bin/zulu8.23.0.3-jdk8.0.144-${os}_x64/**"
+    - "bin/meo.jar"
     - "node_modules/**"
     - "prod/**"
     - "electron/**"
@@ -12,6 +12,6 @@ files:
     - "resources/**"
 publish:
     provider: "s3"
-    bucket: "iwaswhere-electron"
+    bucket: "matthiasn-meo"
     channel: "release"
     acl: "public-read"

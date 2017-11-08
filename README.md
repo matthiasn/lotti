@@ -2,7 +2,6 @@
 
 **meo** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**. Please get in touch when you require services around this tool, like customization or integration of additional data sources.
 
-
 ## Motivation
 
 See [here](./doc/motivation.md)
@@ -10,11 +9,11 @@ See [here](./doc/motivation.md)
 
 ## Components
 
-**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning the **browser** and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. This project lives in the **[iwaswhere-web](https://github.com/matthiasn/iWasWhere/tree/master/iwaswhere-web)** directory, which is also where you can find installation instructions and more information about the system's architecture.
+**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning the **browser** and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**.
 
 There's also an **iOS app** that keeps track of visits and lets me quickly capture thoughts on the go. Currently, it's a very basic application written in **[Swift](https://swift.org/)**. It is not open sourced yet, but that will happen in due course. Ideally, by then it should also have been rewritten in **ClojureScript** and **[React Native](https://facebook.github.io/react-native/)**. Stay tuned.
 
-This repository contains the **web application** part of **iWasWhere**. This system is written in **Clojure** and **ClojureScript**, making use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
+This repository contains the **web application** part of **meo**. This system is written in **Clojure** and **ClojureScript**, making use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
 
 
 ## Installation
@@ -35,7 +34,7 @@ These need to be converted to CSS:
 
 You can also have the CSS automatically recompiled when there are changes:
 
-    $ sass --watch src/scss/iwaswhere.scss:resources/public/css/iwaswhere.css
+    $ sass --watch src/scss/meo.scss:resources/public/css/meo.css
     
 
 There is no **CSS** framework involved here. Rather, the styling is self-contained, which is possible thanks to **[CSS Flexible Box Layout](https://www.w3.org/TR/css-flexbox-1/)**. It's great for layout. You should learn it.
@@ -98,8 +97,8 @@ Building the JS bundle:
     $ lein with-profile +test-reagent cljsbuild test
 
 
-[![CircleCI Build Status](https://circleci.com/gh/matthiasn/iWasWhere.svg?&style=shield)](https://circleci.com/gh/matthiasn/iWasWhere)
-[![TravisCI Build Status](https://travis-ci.org/matthiasn/iWasWhere.svg?branch=master)](https://travis-ci.org/matthiasn/iWasWhere)
+[![CircleCI Build Status](https://circleci.com/gh/matthiasn/meo.svg?&style=shield)](https://circleci.com/gh/matthiasn/meo)
+[![TravisCI Build Status](https://travis-ci.org/matthiasn/meo.svg?branch=master)](https://travis-ci.org/matthiasn/meo)
 
 
 ## REPL
@@ -107,8 +106,8 @@ Building the JS bundle:
 Inspecting the store component:
 
 ````
-(use 'iww.jvm.core)
-(require '[iww.jvm.file-utils :as fu])
+(use 'meo.jvm.core)
+(require '[meo.jvm.file-utils :as fu])
 (with-redefs [fu/data-path "data"] (restart! switchboard))
 (def store (:cmp-state (:server/store-cmp (:components @(:cmp-state switchboard)))))
 (def g (:graph @store))

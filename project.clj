@@ -1,5 +1,5 @@
-(defproject matthiasn/iwaswhere-web "0.0-SNAPSHOT"
-  :description "iWasWhere - a personal information manager"
+(defproject matthiasn/meo "0.0-SNAPSHOT"
+  :description "meo - a personal information manager"
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
@@ -48,9 +48,9 @@
   :clean-targets ^{:protect false} ["resources/public/js/build" "prod" "target"
                                     "out" "dev"]
   :auto-clean false
-  :uberjar-name "iwaswhere.jar"
+  :uberjar-name "meo.jar"
 
-  :main iww.jvm.core
+  :main meo.jvm.core
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow" "-XX:+AggressiveOpts"]
 
   :profiles {:uberjar      {:aot :all}
@@ -84,12 +84,12 @@
                     ["cljsbuild" "once" "updater"]
                     ["sass4clj" "once"]
                     ["uberjar"]
-                    ["shell" "cp" "target/iwaswhere.jar" "bin/"]]}
+                    ["shell" "cp" "target/meo.jar" "bin/"]]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           iww.electron.main.core
+                               :compiler     {:main           meo.electron.main.core
                                               :target         :nodejs
                                               :output-to      "prod/main/main.js"
                                               :output-dir     "out/main"
@@ -97,7 +97,7 @@
                                               :parallel-build true}}
                               {:id           "geocoder"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           iww.electron.geocoder.core
+                               :compiler     {:main           meo.electron.geocoder.core
                                               :target         :nodejs
                                               :output-to      "prod/geocoder/geocoder.js"
                                               :output-dir     "out/geocoder"
@@ -106,7 +106,7 @@
                                               :parallel-build true}}
                               {:id           "renderer"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           iww.electron.renderer.core
+                               :compiler     {:main           meo.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
                                               ;:source-map     "prod/renderer/renderer.js.map"
                                               :target         :nodejs
@@ -115,7 +115,7 @@
                                               :parallel-build true}}
                               {:id           "renderer-dev"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           iww.electron.renderer.core
+                               :compiler     {:main           meo.electron.renderer.core
                                               :output-to      "dev/renderer/renderer.js"
                                               ;:source-map     "prod/renderer/renderer.js.map"
                                               :source-map     true
@@ -125,7 +125,7 @@
                                               :parallel-build true}}
                               {:id           "updater"
                                :source-paths ["src/cljs"]
-                               :compiler     {:main           iww.electron.update.core
+                               :compiler     {:main           meo.electron.update.core
                                               :output-to      "prod/updater/update.js"
                                               :target         :nodejs
                                               :output-dir     "out/updater"
@@ -136,6 +136,6 @@
                                :source-paths ["src/cljs" "src/cljc" "test"]
                                :compiler     {:output-to     "out/testable.js"
                                               :output-dir    "out/"
-                                              :main          iww.jvm.runner
+                                              :main          meo.jvm.runner
                                               :process-shim  false
                                               :optimizations :whitespace}}]})

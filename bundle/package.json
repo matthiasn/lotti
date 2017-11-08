@@ -1,6 +1,6 @@
 {
-  "name": "iWasWhere",
-  "version": "0.2.206",
+  "name": "meo",
+  "version": "0.4.1",
   "author": "matthias.nehlsen@gmail.com",
   "scripts": {
     "watch": "webpack -d --watch",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/matthiasn/iWasWhere.git"
+    "url": "https://github.com/matthiasn/meo.git"
   },
   "license": "AGPL-1.0",
   "dependencies": {
@@ -21,7 +21,6 @@
     "draft-js-mention-plugin": "2.0.0-rc2",
     "draft-js-plugins-editor": "2.0.0-rc2",
     "draftjs-md-converter": "0.1.5",
-    "emoji-flags": "1.2.0",
     "lodash": "4.17.4",
     "lodash.throttle": "4.1.1",
     "moment": "2.18.1",
@@ -31,7 +30,7 @@
     "react-big-calendar": "0.15.0",
     "react-dates": "12.6.0",
     "react-dom": "15.6.1",
-    "react-responsive-carousel": "3.1.25",
+    "react-responsive-carousel": "3.1.28",
     "s": "0.1.1"
   },
   "devDependencies": {
