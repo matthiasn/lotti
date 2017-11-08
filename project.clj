@@ -26,7 +26,7 @@
                  [matthiasn/systems-toolbox "0.6.24"]
                  [matthiasn/systems-toolbox-kafka "0.6.13"]
                  [matthiasn/systems-toolbox-sente "0.6.19"]
-                 [matthiasn/systems-toolbox-electron "0.6.17"]
+                 [matthiasn/systems-toolbox-electron "0.6.18"]
                  [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [re-frame "0.10.2"]
                  [secretary "1.2.3"]
