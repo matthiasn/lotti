@@ -14,7 +14,7 @@
         download-path (.getPath app "downloads")
         data-path (str user-data "/data")
         jdk (case platform
-              "darwin" "/zulu8.23.0.3-jdk8.0.144-macosx_x64/bin/java"
+              "darwin" "/zulu8.23.0.3-jdk8.0.144-mac_x64/bin/java"
               "win32" "/zulu8.23.0.3-jdk8.0.144-win_x64/bin/java"
               "/zulu8.23.0.3-jdk8.0.144-linux_x64/bin/java")
         info {:platform       (.-platform process)
