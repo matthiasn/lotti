@@ -3,6 +3,7 @@
             [clojure.string :as s]
             [meo.electron.renderer.helpers :as h]
             [clojure.pprint :as pp]
+            [emoji-flags]
             [reagent.core :as r]))
 
 (defn location-details
@@ -35,7 +36,6 @@
 (defn geonames
   [entry put-fn edit-mode?]
   (let [detail (r/atom false)
-        emoji-flags (aget js/window "deps" "emojiFlags")
         toggle-detail (fn [_] (swap! detail not))
         remove #(put-fn [:entry/update (assoc-in @entry [:geoname] :removed)])]
     (fn location-details-render [entry put-fn edit-mode?]
