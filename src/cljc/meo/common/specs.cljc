@@ -276,8 +276,8 @@
 (s/def :meo.query-cfg/tab-groups (s/map-of keyword? :meo.query-cfg/tab-group))
 
 (s/def :meo.client-state/query-cfg
-  (s/keys :req-un [:meo.query-cfg/queries
-                   :meo.query-cfg/tab-groups]))
+  (s/keys :req-un [:meo.query-cfg/queries]
+          :opt-un [:meo.query-cfg/tab-groups]))
 
 (s/def :meo.client-state.cfg/show-maps-for set?)
 (s/def :meo.client-state.cfg/show-comments-for map?)
@@ -307,7 +307,7 @@
                    :meo.client-state/query-cfg
                    :meo.client-state/cfg]))
 
-;(s/def :state/search :meo.client-state/query-cfg)
+(s/def :state/search :meo.client-state/query-cfg)
 
 (s/def :meo.widget-cfg/x int?)
 (s/def :meo.widget-cfg/y int?)

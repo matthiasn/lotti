@@ -214,7 +214,7 @@
    Warns when node not in graph. (debugging, should never happen)"
   [state query]
   (let [g (:graph state)
-        n (:n query)
+        n (:n query 20)
         mapper-fn (fn [n]
                     (if (uc/has-node? g n)
                       (-> (uc/attrs g n)
@@ -286,14 +286,7 @@
    Warns when node not in graph. (debugging, should never happen)"
   [state query]
   (let [g (:graph state)
-        n (:n query)
-        mapper-fn (fn [n]
-                    (if (uc/has-node? g n)
-                      (-> (uc/attrs g n)
-                          (get-comments g n)
-                          (get-linked-entries g n false))
-                      (log/warn "extract-sorted-entries can't find node: " n)))
-        sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
+        n (:n query 20)
         matched-ids (cond
                       ; full-text search
                       (:ft-search query)
@@ -339,18 +332,6 @@
                       ; set with all timestamps
                       :else (:sorted-entries state))]
     matched-ids))
-
-(defn extract-entries-by-ts
-  "Find all entries for given timestamps set."
-  [current-state entry-timestamps]
-  (map (fn [n]
-         (let [g (:graph current-state)]
-           (if (uc/has-node? g n)
-             (let [entry (uc/attrs g n)]
-               (when (empty? entry) (log/warn "empty node:" entry))
-               entry)
-             (log/warn "extract-entries-by-ts can't find node: " n))))
-       entry-timestamps))
 
 (defn find-all-hashtags
   "Finds all hashtags used in entries by finding the edges that originate from
@@ -441,17 +422,16 @@
             (get-comments graph ts)
             (get-linked-entries graph ts sort-by-upvotes?))))))
 
-(defn get-filtered
-  "Retrieve entries."
-  [current-state query]
-  (let [n (or (:n query) Integer/MAX_VALUE)
+(defn get-filtered [current-state query]
+  (let [n (:n query 20)
         g (:graph current-state)
         entry-mapper (fn [entry] [(:timestamp entry) entry])
         entries (take n (filter (entries-filter-fn query g)
                                 (extract-sorted-entries current-state query)))
         comment-timestamps (set (apply concat (map :comments entries)))
         comments (map #(uc/attrs g %) comment-timestamps)]
-    {:entries     (vec (into (sorted-set-by >) (mapv :timestamp entries)))
+    {:entries     (vec (into (sorted-set-by >)
+                             (filter identity (mapv :timestamp entries))))
      :entries-map (into {} (concat (map entry-mapper entries)
                                    (map entry-mapper comments)))}))
 
