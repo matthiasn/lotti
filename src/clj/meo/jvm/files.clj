@@ -14,7 +14,6 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [taoensso.nippy :as nippy]
-            [clojure.tools.logging :as l]
             [clojure.pprint :as pp]
             [meo.jvm.file-utils :as fu]
             [meo.jvm.location :as loc]
@@ -86,7 +85,7 @@
   [{:keys [current-state msg-payload msg-meta]}]
   (let [ts (:timestamp msg-payload)
         last-vclock (:latest-vclock current-state)
-        mac-address (net/mac-address)
+        mac-address (or (net/mac-address) (:host-id current-state))
         new-vclock (update-in last-vclock [mac-address] #(inc (or % 0)))
         new-vclock (merge (:vclock msg-payload) new-vclock)
         id (or (:id msg-payload) (uuid/v1))
@@ -116,7 +115,7 @@
     (let [{:keys [data-path trash-path]} (fu/paths)]
       (fs/rename (str data-path "/" dir "/" filename)
                  (str trash-path filename))
-      (l/info "Moved file to trash:" filename))))
+      (log/info "Moved file to trash:" filename))))
 
 (defn trash-entry-fn
   "Handler function for deleting journal entry."

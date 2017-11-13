@@ -1,5 +1,6 @@
 (ns meo.jvm.net
-  (:require [clojure.string :as s])
+  (:require [clojure.string :as s]
+            [clojure.tools.logging :as log])
   (:import (java.net NetworkInterface Inet4Address)))
 
 ; ip-filter, ip-extract, and ips functions borrowed from:
@@ -21,6 +22,8 @@
     (mapcat ip-extract (filter ip-filter (enumeration-seq ifc)))))
 
 (defn mac-address []
-  (let [ifc (NetworkInterface/getByName (second (first (ips))))
-        address (.getHardwareAddress ifc)]
-    (s/join "-" (map #(format "%02X" %) address))))
+  (try
+    (let [ifc (NetworkInterface/getByName (second (first (ips))))
+          address (.getHardwareAddress ifc)]
+      (s/join "-" (map #(format "%02X" %) address)))
+    (catch Exception ex (log/error ex))))

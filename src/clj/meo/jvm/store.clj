@@ -8,13 +8,15 @@
             [meo.jvm.graph.add :as ga]
             [meo.common.specs]
             [ubergraph.core :as uber]
+            [matthiasn.systems-toolbox.component.helpers :as sth]
             [clojure.tools.logging :as log]
             [me.raynes.fs :as fs]
             [meo.jvm.fulltext-search :as ft]
             [clojure.pprint :as pp]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [meo.jvm.file-utils :as fu]))
+            [meo.jvm.file-utils :as fu]
+            [meo.jvm.net :as net]))
 
 (defn read-dir [state entries-to-index cfg]
   (let [path (:daily-logs-path (fu/paths))
@@ -63,6 +65,7 @@
         entries-to-index (atom {})
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
+                     :host-id        (or (net/mac-address) (sth/make-uuid))
                      :cfg            conf})
         t (with-out-str (time (read-dir state entries-to-index conf)))]
     (log/info "Read" (count @entries-to-index) "entries." t)
