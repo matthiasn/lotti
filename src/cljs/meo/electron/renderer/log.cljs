@@ -1,8 +1,7 @@
 (ns meo.electron.renderer.log
   (:require [taoensso.encore :as enc]
+            [electron-log :as l]
             [taoensso.timbre :as timbre]))
-
-(enable-console-print!)
 
 (defn ns-filter
   "From: https://github.com/yonatane/timbre-ns-pattern-level"
@@ -25,19 +24,19 @@
                  (taoensso.timbre/level>= level log-level))
         opts))))
 
+(defn appender-fn [data]
+  (let [{:keys [output_ level]} data
+        formatted (force output_)]
+    (case level
+      :warn (l/warn formatted)
+      :error (l/error formatted)
+      (l/info formatted))))
+
 ; See https://github.com/ptaoussanis/timbre
 (def timbre-config
-  {:ns-whitelist [] #_["my-app.foo-ns"]
-   :ns-blacklist [] #_["taoensso.*"]
-
-   :middleware   [(middleware {"observer.view.ipc"   :info
-                               "observer.view.store" :info
-                               :all                  :info})]
-
-   :appenders    {:console {:enabled? true
-                            :fn       (fn [data]
-                                        (let [{:keys [output_]} data
-                                              formatted-output-str (force output_)]
-                                          (println formatted-output-str)))}}})
+  {:middleware [(middleware {"meo.electron.main.core" :info
+                             :all                     :info})]
+   :appenders  {:console {:enabled? true
+                          :fn       appender-fn}}})
 
 (timbre/merge-config! timbre-config)

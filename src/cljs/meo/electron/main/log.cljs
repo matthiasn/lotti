@@ -37,15 +37,20 @@
                  (taoensso.timbre/level>= level log-level))
         opts))))
 
+(defn appender-fn [data]
+  (let [{:keys [output_ level]} data
+        formatted (force output_)]
+    (case level
+      :warn (l/warn formatted)
+      :error (l/error formatted)
+      (l/info formatted))))
+
 ; See https://github.com/ptaoussanis/timbre
 (def timbre-config
   {:ns-whitelist [] #_["my-app.foo-ns"]
    :ns-blacklist [] #_["taoensso.*"]
    :middleware   [(middleware namespace-log-levels)]
    :appenders    {:console {:enabled? true
-                            :fn       (fn [data]
-                                        (let [{:keys [output_]} data
-                                              formatted-output-str (force output_)]
-                                          (l/info formatted-output-str)))}}})
+                            :fn       appender-fn}}})
 
 (timbre/merge-config! timbre-config)
