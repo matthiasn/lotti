@@ -86,7 +86,7 @@
                          (stc/make-uuid) "/qrcode.png")}]))))
 
 (defn calendar-view [put-fn]
-  (let [calendar (r/adapt-react-class rd/SingleDatePicker)
+  (let [picker (r/adapt-react-class rd/SingleDatePicker)
         briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
@@ -112,13 +112,13 @@
     (fn stats-view-render [put-fn]
       (when @planning-mode
         [:div.calendar
-         [calendar {:placeholder        "briefing"
-                    :date               (:date @local)
-                    :on-date-change     select-date
-                    :is-day-highlighted highlighted?
-                    :focused            (:focused @local)
-                    :on-focus-change    focus-fn
-                    :is-outside-range   (constantly false)}]]))))
+         [picker {:placeholder        "briefing"
+                  :date               (:date @local)
+                  :on-date-change     select-date
+                  :is-day-highlighted highlighted?
+                  :focused            (:focused @local)
+                  :on-focus-change    focus-fn
+                  :is-outside-range   (constantly false)}]]))))
 
 (defn busy-status []
   (let [busy-color (subscribe [:busy-color])

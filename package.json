@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -40,7 +40,7 @@
     "randomcolor": "^0.5.3",
     "react": "15.6.1",
     "react-dates": "12.6.0",
-    "react-big-calendar": "^0.17.0",
+    "react-big-calendar": "0.15.0",
     "react-dom": "15.6.1",
     "react-responsive-carousel": "3.1.28",
     "react-addons-shallow-compare": "15.6.0",
