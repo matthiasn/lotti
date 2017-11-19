@@ -1,6 +1,7 @@
 (ns meo.electron.renderer.ui.entry.thumbnails
   (:require [meo.electron.renderer.ui.media :as m]
             [re-frame.core :refer [subscribe]]
+            [react-responsive-carousel :as rrc]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
@@ -27,13 +28,12 @@
          [:span.fa.fa-expand]]]])))
 
 (defn carousel [ts linked local-cfg put-fn]
-  (let [responsive-carousel (aget js/window "deps" "react-responsive-carousel")]
-    (fn [ts linked local-cfg put-fn]
-      (when (seq linked)
-        (into
-          [:> responsive-carousel]
-          (mapv (fn [entry] (image-view entry "?width=600" local-cfg put-fn))
-                linked))))))
+  (fn [ts linked local-cfg put-fn]
+    (when (seq linked)
+      (into
+        [:> rrc/Carousel]
+        (mapv (fn [entry] (image-view entry "?width=600" local-cfg put-fn))
+              linked)))))
 
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."

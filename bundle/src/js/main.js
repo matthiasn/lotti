@@ -2,7 +2,6 @@ window.deps = {
     'react' : require('react'),
     'react-dom' : require('react-dom'),
     'draft-js' : require('draft-js'),
-    'react-responsive-carousel' : require('react-responsive-carousel').Carousel,
     'SearchFieldEditor' : require ('./SearchFieldEditor'),
     'EntryTextEditor' : require ('./EntryTextEditor'),
     'BigCalendar' : require ('./bigCalendar')
