@@ -3,6 +3,8 @@
             [electron-log :as l]
             [taoensso.timbre :as timbre]))
 
+(enable-console-print!)
+
 (defn ns-filter
   "From: https://github.com/yonatane/timbre-ns-pattern-level"
   [fltr]

@@ -2,8 +2,10 @@
   (:require [meo.electron.renderer.helpers :as h]
             [moment]
             [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
             [matthiasn.systems-toolbox.component :as stc]
             [reagent.core :as r]
+            [react-dates :as rd]
             [cljs.reader :refer [read-string]]
             [meo.common.utils.parse :as up]
             [meo.common.utils.parse :as p]
@@ -84,13 +86,15 @@
                          (stc/make-uuid) "/qrcode.png")}]))))
 
 (defn calendar-view [put-fn]
-  (let [calendar (r/adapt-react-class (aget js/window "deps" "Calendar" "default"))
+  (let [calendar (r/adapt-react-class rd/SingleDatePicker)
         briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
+        local (r/atom {:focused false})
         select-date (fn [dt]
                       (let [fmt (.format dt "YYYY-MM-DD")
                             q (up/parse-search (str "b:" fmt))]
+                        (swap! local assoc-in [:date] dt)
                         (when-not (get @briefings fmt)
                           (let [weekday (.format dt "dddd")
                                 md (str "## " weekday "'s #briefing")
@@ -101,13 +105,20 @@
                                 new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
                             (new-entry-fn)))
                         (put-fn [:search/add {:tab-group :briefing :query q}])
-                        (put-fn [:search/refresh])))]
+                        (put-fn [:search/refresh])))
+        focus-fn #(swap! local update-in [:focused] not)
+        briefing-days (reaction (set (keys @briefings)))
+        highlighted? (fn [day] (contains? @briefing-days (h/ymd day)))]
     (fn stats-view-render [put-fn]
-      (let [briefings (mapv #(moment %) (keys @briefings))]
-        (when @planning-mode
-          [:div.calendar
-           [calendar {:select-date select-date
-                      :briefings   briefings}]])))))
+      (when @planning-mode
+        [:div.calendar
+         [calendar {:placeholder        "briefing"
+                    :date               (:date @local)
+                    :on-date-change     select-date
+                    :is-day-highlighted highlighted?
+                    :focused            (:focused @local)
+                    :on-focus-change    focus-fn
+                    :is-outside-range   (constantly false)}]]))))
 
 (defn busy-status []
   (let [busy-color (subscribe [:busy-color])
