@@ -3,13 +3,12 @@ import {mdToDraftjs, draftjsToMd} from 'draftjs-md-converter';
 import {stateToMarkdown} from 'draft-js-export-markdown';
 import {stateToHTML} from 'draft-js-export-html';
 
-import {RichUtils, EditorState, ContentState, convertToRaw, convertFromRaw} from 'draft-js';
+import {RichUtils, EditorState, convertToRaw, convertFromRaw} from 'draft-js';
 import {getDefaultKeyBinding, KeyBindingUtil} from 'draft-js';
-import Editor, {createEditorStateWithText} from 'draft-js-plugins-editor'; // eslint-disable-line import/no-unresolved
+import Editor from 'draft-js-plugins-editor'; // eslint-disable-line import/no-unresolved
 import createMentionPlugin, {defaultSuggestionsFilter} from 'draft-js-mention-plugin'; // eslint-disable-line import/no-unresolved
 import createLinkifyPlugin from 'draft-js-linkify-plugin'; // eslint-disable-line import/no-unresolved
 import 'draft-js-linkify-plugin/lib/plugin.css'; // eslint-disable-line import/no-unresolved
-import {fromJS} from 'immutable';
 import editorStyles from './editorStyles.css';
 import StyleControls from './style-controls';
 import throttle from 'lodash.throttle';
@@ -28,17 +27,6 @@ function myKeyBindingFn(e) {
     }
     return getDefaultKeyBinding(e);
 }
-
-const suggestionsFilter = (searchValue, suggestions) => {
-    const value = searchValue.toLowerCase();
-    const filteredSuggestions = suggestions.filter((suggestion) => {
-        const name = suggestion.get("name").toLowerCase();
-        const match = name.indexOf(value);
-        return match > -1;
-    });
-    const size = filteredSuggestions.size < 15 ? filteredSuggestions.size : 15;
-    return filteredSuggestions.setSize(size);
-};
 
 const myMdDict = {
     BOLD: '**',
@@ -110,7 +98,7 @@ export default class EntryTextEditor extends Component {
     onSearchChangeStories = ({value}) => {
         let stories = this.state.stories;
         this.setState({
-            storySuggestions: suggestionsFilter(value, stories),
+            storySuggestions: defaultSuggestionsFilter(value, stories),
         });
     };
 

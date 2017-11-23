@@ -1,42 +1,30 @@
 import React, {Component} from 'react';
 import Editor, {createEditorStateWithText} from 'draft-js-plugins-editor'; // eslint-disable-line import/no-unresolved
 import createMentionPlugin, {defaultSuggestionsFilter} from 'draft-js-mention-plugin'; // eslint-disable-line import/no-unresolved
-import {fromJS} from 'immutable';
 import editorStyles from './editorStyles.css';
-
-const suggestionsFilter = (searchValue, suggestions) => {
-    const value = searchValue.toLowerCase();
-    const filteredSuggestions = suggestions.filter((suggestion) => {
-        const name = suggestion.get("name").toLowerCase();
-        const match = name.indexOf(value);
-        return match > -1;
-    });
-    const size = filteredSuggestions.size < 15 ? filteredSuggestions.size : 15;
-    return filteredSuggestions.setSize(size);
-};
 
 export default class SearchFieldEditor extends Component {
 
     state = {};
 
     onSearchChange = ({value}) => {
-        let mentions = fromJS(this.props.mentions);
+        let mentions = this.props.mentions;
         this.setState({
             mentionSuggestions: defaultSuggestionsFilter(value, mentions),
         });
     };
 
     onSearchChange2 = ({value}) => {
-        let hashtags = fromJS(this.props.hashtags);
+        let hashtags = this.props.hashtags;
         this.setState({
             hashtagSuggestions: defaultSuggestionsFilter(value, hashtags),
         });
     };
 
     onSearchChangeStories = ({value}) => {
-        let stories = fromJS(this.props.stories);
+        let stories = this.props.stories;
         this.setState({
-            storySuggestions: suggestionsFilter(value, stories),
+            storySuggestions: defaultSuggestionsFilter(value, stories),
         });
     };
 
