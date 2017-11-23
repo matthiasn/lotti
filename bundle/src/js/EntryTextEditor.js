@@ -94,21 +94,21 @@ export default class EntryTextEditor extends Component {
     }
 
     onSearchChange = ({value}) => {
-        let mentions = fromJS(this.state.mentions);
+        let mentions = this.state.mentions;
         this.setState({
             mentionSuggestions: defaultSuggestionsFilter(value, mentions),
         });
     };
 
     onSearchChange2 = ({value}) => {
-        let hashtags = fromJS(this.state.hashtags);
+        let hashtags = this.state.hashtags;
         this.setState({
             hashtagSuggestions: defaultSuggestionsFilter(value, hashtags),
         });
     };
 
     onSearchChangeStories = ({value}) => {
-        let stories = fromJS(this.state.stories);
+        let stories = this.state.stories;
         this.setState({
             storySuggestions: suggestionsFilter(value, stories),
         });
@@ -128,9 +128,9 @@ export default class EntryTextEditor extends Component {
         const currentEditorState = this.state.editorState;
         const sinceUpdate = Date.now() - this.state.lastUpdated;
 
-        this.state.mentions = fromJS(nextProps.mentions);
-        this.state.hashtags = fromJS(nextProps.hashtags);
-        this.state.stories = fromJS(nextProps.stories);
+        this.state.mentions = nextProps.mentions;
+        this.state.hashtags = nextProps.hashtags;
+        this.state.stories = nextProps.stories;
 
         if (nextEditorState && currentEditorState && (sinceUpdate > 1000)) {
             const nextPropsContent = nextEditorState.getCurrentContent();
@@ -171,13 +171,13 @@ export default class EntryTextEditor extends Component {
         this.MentionSuggestions = mentionPlugin.MentionSuggestions;
         this.StorySuggestions = storyPlugin.MentionSuggestions;
 
-        this.state.mentions = fromJS(props.mentions);
-        this.state.hashtags = fromJS(props.hashtags);
-        this.state.stories = fromJS(props.stories);
+        this.state.mentions = props.mentions;
+        this.state.hashtags = props.hashtags;
+        this.state.stories = props.stories;
 
-        this.state.mentionSuggestions = fromJS(props.mentions);
-        this.state.hashtagSuggestions = fromJS(props.hashtags);
-        this.state.storySuggestions = fromJS(props.stories);
+        this.state.mentionSuggestions = props.mentions;
+        this.state.hashtagSuggestions = props.hashtags;
+        this.state.storySuggestions = props.stories;
 
         this.saveExternal = (newState) => {
             const content = newState.getCurrentContent();

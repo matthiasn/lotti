@@ -72,9 +72,9 @@ export default class SearchFieldEditor extends Component {
         this.MentionSuggestions = mentionPlugin.MentionSuggestions;
         this.StorySuggestions = storyPlugin.MentionSuggestions;
 
-        this.state.mentionSuggestions = fromJS(props.mentions);
-        this.state.hashtagSuggestions = fromJS(props.hashtags);
-        this.state.storySuggestions = fromJS(props.stories);
+        this.state.mentionSuggestions = props.mentions;
+        this.state.hashtagSuggestions = props.hashtags;
+        this.state.storySuggestions = props.stories;
 
         this.onChange = (editorState) => {
             props.onChange(editorState);
