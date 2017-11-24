@@ -8,7 +8,7 @@ lein dist
 
 cd bundle
 yarn install
-webpack -p
+webpack -d
 cd ..
 
 PLATFORMS=$1
