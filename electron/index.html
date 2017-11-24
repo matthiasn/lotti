@@ -29,7 +29,12 @@
 <script>
     window.OBSERVER = false;
     window.iwwHOST = "localhost:7788";
-    require('../prod/bundle/bundle.js');
+    window.deps = {};
+    window.React = require ('../node_modules/react/dist/react');
+    window.Draft = require ('../node_modules/draft-js/dist/Draft');
+    window.deps.SearchFieldEditor = require ('../src/js/SearchFieldEditor.js');
+    window.deps.EntryTextEditor = require ('../src/js/EntryTextEditor.js');
+    window.deps.BigCalendar = require ('../src/js/BigCalendar.js');
     require('../prod/renderer/renderer.js');
 </script>
 

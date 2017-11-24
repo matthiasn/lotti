@@ -6,11 +6,6 @@ mkdir bin
 rm -rf ./dist
 lein dist
 
-cd bundle
-yarn install
-webpack -d
-cd ..
-
 PLATFORMS=$1
 ELECTRON_BUILDER_COMPRESSION_LEVEL=3
 
