@@ -4,10 +4,10 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-        var source = arguments[i];
-        for (var key in source) {
+let _extends = Object.assign || function (target) {
+    for (let i = 1; i < arguments.length; i++) {
+        let source = arguments[i];
+        for (let key in source) {
             if (Object.prototype.hasOwnProperty.call(source, key)) {
                 target[key] = source[key];
             }
@@ -16,10 +16,10 @@ var _extends = Object.assign || function (target) {
     return target;
 };
 
-var _createClass = function () {
+let _createClass = function () {
     function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
+        for (let i = 0; i < props.length; i++) {
+            let descriptor = props[i];
             descriptor.enumerable = descriptor.enumerable || false;
             descriptor.configurable = true;
             if ("value" in descriptor) descriptor.writable = true;
@@ -34,15 +34,13 @@ var _createClass = function () {
     };
 }();
 
-var _react = require('react');
+let _react = require('react');
 
-var _reactBigCalendar = require('react-big-calendar');
+let _reactBigCalendar = require('react-big-calendar');
+let _reactBigCalendar2 = _interopRequireDefault(_reactBigCalendar);
 
-var _reactBigCalendar2 = _interopRequireDefault(_reactBigCalendar);
-
-var _moment = require('moment');
-
-var _moment2 = _interopRequireDefault(_moment);
+let _moment = require('moment');
+let _moment2 = _interopRequireDefault(_moment);
 
 function _interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {default: obj};
@@ -78,9 +76,9 @@ function _inherits(subClass, superClass) {
 
 _reactBigCalendar2.default.momentLocalizer(_moment2.default);
 
-var allViews = ['day', 'week'];
+let allViews = ['day', 'week'];
 
-var MyEvent = function (_Component) {
+let MyEvent = function (_Component) {
     _inherits(MyEvent, _Component);
 
     function MyEvent() {
@@ -103,21 +101,21 @@ var MyEvent = function (_Component) {
     return MyEvent;
 }(_react.Component);
 
-var eventPropGetter = function eventPropGetter(event, start, end, isSelected) {
+let eventPropGetter = function eventPropGetter(event, start, end, isSelected) {
     return {
         style: {backgroundColor: event.color}
     };
 };
 
-var components = {
+let components = {
     event: MyEvent
 };
 
-var messages = {
+let messages = {
     allDay: ''
 };
 
-var Calendar = function (_Component2) {
+let Calendar = function (_Component2) {
     _inherits(Calendar, _Component2);
 
     function Calendar() {

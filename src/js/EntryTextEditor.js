@@ -4,10 +4,10 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-        var source = arguments[i];
-        for (var key in source) {
+let _extends = Object.assign || function (target) {
+    for (let i = 1; i < arguments.length; i++) {
+        let source = arguments[i];
+        for (let key in source) {
             if (Object.prototype.hasOwnProperty.call(source, key)) {
                 target[key] = source[key];
             }
@@ -16,10 +16,10 @@ var _extends = Object.assign || function (target) {
     return target;
 };
 
-var _createClass = function () {
+let _createClass = function () {
     function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
+        for (let i = 0; i < props.length; i++) {
+            let descriptor = props[i];
             descriptor.enumerable = descriptor.enumerable || false;
             descriptor.configurable = true;
             if ("value" in descriptor) descriptor.writable = true;
@@ -34,37 +34,27 @@ var _createClass = function () {
     };
 }();
 
-var _react = require('react');
+let _react = require('react');
+let _react2 = _interopRequireDefault(_react);
 
-var _react2 = _interopRequireDefault(_react);
+let _draftJs = require('draft-js');
+let _draftjsMdConverter = require('draftjs-md-converter');
+let _draftJsExportHtml = require('draft-js-export-html');
 
-var _draftjsMdConverter = require('draftjs-md-converter');
+let _draftJsPluginsEditor = require('draft-js-plugins-editor');
+let _draftJsPluginsEditor2 = _interopRequireDefault(_draftJsPluginsEditor);
 
-var _draftJsExportMarkdown = require('draft-js-export-markdown');
+let _draftJsMentionPlugin = require('draft-js-mention-plugin');
+let _draftJsMentionPlugin2 = _interopRequireDefault(_draftJsMentionPlugin);
 
-var _draftJsExportHtml = require('draft-js-export-html');
+let _draftJsLinkifyPlugin = require('draft-js-linkify-plugin');
+let _draftJsLinkifyPlugin2 = _interopRequireDefault(_draftJsLinkifyPlugin);
 
-var _draftJs = require('draft-js');
+let _styleControls = require('./StyleControls');
+let _styleControls2 = _interopRequireDefault(_styleControls);
 
-var _draftJsPluginsEditor = require('draft-js-plugins-editor');
-
-var _draftJsPluginsEditor2 = _interopRequireDefault(_draftJsPluginsEditor);
-
-var _draftJsMentionPlugin = require('draft-js-mention-plugin');
-
-var _draftJsMentionPlugin2 = _interopRequireDefault(_draftJsMentionPlugin);
-
-var _draftJsLinkifyPlugin = require('draft-js-linkify-plugin');
-
-var _draftJsLinkifyPlugin2 = _interopRequireDefault(_draftJsLinkifyPlugin);
-
-var _styleControls = require('./StyleControls');
-
-var _styleControls2 = _interopRequireDefault(_styleControls);
-
-var _lodash = require('lodash.throttle');
-
-var _lodash2 = _interopRequireDefault(_lodash);
+let _lodash = require('lodash.throttle');
+let _lodash2 = _interopRequireDefault(_lodash);
 
 function _interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {default: obj};
@@ -102,7 +92,7 @@ function _inherits(subClass, superClass) {
 // eslint-disable-line import/no-unresolved
 
 
-var hasCommandModifier = _draftJs.KeyBindingUtil.hasCommandModifier;
+let hasCommandModifier = _draftJs.KeyBindingUtil.hasCommandModifier;
 
 
 function myKeyBindingFn(e) {
@@ -118,14 +108,14 @@ function myKeyBindingFn(e) {
     return (0, _draftJs.getDefaultKeyBinding)(e);
 }
 
-var myMdDict = {
+let myMdDict = {
     BOLD: '**',
     STRIKETHROUGH: '~~',
     CODE: '`',
     UNDERLINE: "__"
 };
 
-var EntryTextEditor = function (_Component) {
+let EntryTextEditor = function (_Component) {
     _inherits(EntryTextEditor, _Component);
 
     _createClass(EntryTextEditor, [{
@@ -143,12 +133,12 @@ var EntryTextEditor = function (_Component) {
     function EntryTextEditor(props) {
         _classCallCheck(this, EntryTextEditor);
 
-        var _this = _possibleConstructorReturn(this, (EntryTextEditor.__proto__ || Object.getPrototypeOf(EntryTextEditor)).call(this, props));
+        let _this = _possibleConstructorReturn(this, (EntryTextEditor.__proto__ || Object.getPrototypeOf(EntryTextEditor)).call(this, props));
 
         _this.state = {};
 
         _this.handleKeyCommand = function (command) {
-            var editorState = _this.state.editorState;
+            let editorState = _this.state.editorState;
 
 
             if (command === 'editor-save') {
@@ -165,7 +155,7 @@ var EntryTextEditor = function (_Component) {
                 return 'handled';
             }
 
-            var newState = _draftJs.RichUtils.handleKeyCommand(editorState, command);
+            let newState = _draftJs.RichUtils.handleKeyCommand(editorState, command);
             if (newState) {
                 _this.onChange(newState);
                 return true;
@@ -174,27 +164,27 @@ var EntryTextEditor = function (_Component) {
         };
 
         _this.onSearchChange = function (_ref) {
-            var value = _ref.value;
+            let value = _ref.value;
 
-            var mentions = _this.state.mentions;
+            let mentions = _this.state.mentions;
             _this.setState({
                 mentionSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, mentions)
             });
         };
 
         _this.onSearchChange2 = function (_ref2) {
-            var value = _ref2.value;
+            let value = _ref2.value;
 
-            var hashtags = _this.state.hashtags;
+            let hashtags = _this.state.hashtags;
             _this.setState({
                 hashtagSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, hashtags)
             });
         };
 
         _this.onSearchChangeStories = function (_ref3) {
-            var value = _ref3.value;
+            let value = _ref3.value;
 
-            var stories = _this.state.stories;
+            let stories = _this.state.stories;
             _this.setState({
                 storySuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, stories)
             });
@@ -211,20 +201,20 @@ var EntryTextEditor = function (_Component) {
         };
 
         _this.componentWillReceiveProps = function (nextProps) {
-            var nextEditorState = nextProps.editorState;
-            var currentEditorState = _this.state.editorState;
-            var sinceUpdate = Date.now() - _this.state.lastUpdated;
+            let nextEditorState = nextProps.editorState;
+            let currentEditorState = _this.state.editorState;
+            let sinceUpdate = Date.now() - _this.state.lastUpdated;
 
             _this.state.mentions = nextProps.mentions;
             _this.state.hashtags = nextProps.hashtags;
             _this.state.stories = nextProps.stories;
 
             if (nextEditorState && currentEditorState && sinceUpdate > 1000) {
-                var nextPropsContent = nextEditorState.getCurrentContent();
-                var currentContent = currentEditorState.getCurrentContent();
-                var nextPropsPlain = nextPropsContent.getPlainText();
-                var statePlain = currentContent.getPlainText();
-                var changedOutside = nextPropsPlain !== statePlain;
+                let nextPropsContent = nextEditorState.getCurrentContent();
+                let currentContent = currentEditorState.getCurrentContent();
+                let nextPropsPlain = nextPropsContent.getPlainText();
+                let statePlain = currentContent.getPlainText();
+                let changedOutside = nextPropsPlain !== statePlain;
                 if (changedOutside) {
                     _this.setState({editorState: nextProps.editorState});
                 }
@@ -232,8 +222,8 @@ var EntryTextEditor = function (_Component) {
         };
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
-        var stateFromMd = (0, _draftJs.convertFromRaw)((0, _draftjsMdConverter.mdToDraftjs)(props.md));
-        var stateFromMd2 = _draftJs.EditorState.createWithContent(stateFromMd);
+        let stateFromMd = (0, _draftJs.convertFromRaw)((0, _draftjsMdConverter.mdToDraftjs)(props.md));
+        let stateFromMd2 = _draftJs.EditorState.createWithContent(stateFromMd);
         _this.state.editorState = props.editorState ? props.editorState : stateFromMd2;
         _this.toggleInlineStyle = function (style) {
             return _this._toggleInlineStyle(style);
@@ -242,10 +232,10 @@ var EntryTextEditor = function (_Component) {
             return _this._toggleBlockType(type);
         };
 
-        var hashtagPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "#"});
-        var mentionPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "@"});
-        var storyPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "$"});
-        var linkifyPlugin = (0, _draftJsLinkifyPlugin2.default)({
+        let hashtagPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "#"});
+        let mentionPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "@"});
+        let storyPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "$"});
+        let linkifyPlugin = (0, _draftJsLinkifyPlugin2.default)({
             target: "_blank",
             component: function component(props) {
                 return (
@@ -273,23 +263,18 @@ var EntryTextEditor = function (_Component) {
         _this.state.storySuggestions = props.stories;
 
         _this.saveExternal = function (newState) {
-            var content = newState.getCurrentContent();
-            var plain = content.getPlainText();
-            var rawContent = (0, _draftJs.convertToRaw)(content);
-            var rawContent2 = JSON.parse(JSON.stringify(rawContent));
-            var md = (0, _draftjsMdConverter.draftjsToMd)(rawContent, myMdDict);
-            //const md2 = stateToMarkdown(content);
-            //const html = stateToHTML(content);
-            //console.log(md);
-            //console.log(html);
-            //console.log(md2);
+            let content = newState.getCurrentContent();
+            let plain = content.getPlainText();
+            let rawContent = (0, _draftJs.convertToRaw)(content);
+            let rawContent2 = JSON.parse(JSON.stringify(rawContent));
+            let md = (0, _draftjsMdConverter.draftjsToMd)(rawContent, myMdDict);
             props.onChange(md, plain, rawContent2);
         };
 
         _this.throttledSave = (0, _lodash2.default)(_this.saveExternal, 500);
 
         _this.onChange = function (newState) {
-            var now = Date.now();
+            let now = Date.now();
             _this.setState({
                 editorState: newState,
                 lastUpdated: now
@@ -302,12 +287,12 @@ var EntryTextEditor = function (_Component) {
     _createClass(EntryTextEditor, [{
         key: 'render',
         value: function render() {
-            var _this2 = this;
+            let _this2 = this;
 
-            var HashtagSuggestions = this.HashtagSuggestions;
-            var MentionSuggestions = this.MentionSuggestions;
-            var StorySuggestions = this.StorySuggestions;
-            var editorState = this.state.editorState;
+            let HashtagSuggestions = this.HashtagSuggestions;
+            let MentionSuggestions = this.MentionSuggestions;
+            let StorySuggestions = this.StorySuggestions;
+            let editorState = this.state.editorState;
 
 
             return _react2.default.createElement(

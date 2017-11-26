@@ -4,10 +4,10 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () {
+let _createClass = function () {
     function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
+        for (let i = 0; i < props.length; i++) {
+            let descriptor = props[i];
             descriptor.enumerable = descriptor.enumerable || false;
             descriptor.configurable = true;
             if ("value" in descriptor) descriptor.writable = true;
@@ -22,17 +22,14 @@ var _createClass = function () {
     };
 }();
 
-var _react = require('react');
+let _react = require('react');
+let _react2 = _interopRequireDefault(_react);
 
-var _react2 = _interopRequireDefault(_react);
+let _draftJsPluginsEditor = require('draft-js-plugins-editor');
+let _draftJsPluginsEditor2 = _interopRequireDefault(_draftJsPluginsEditor);
 
-var _draftJsPluginsEditor = require('draft-js-plugins-editor');
-
-var _draftJsPluginsEditor2 = _interopRequireDefault(_draftJsPluginsEditor);
-
-var _draftJsMentionPlugin = require('draft-js-mention-plugin');
-
-var _draftJsMentionPlugin2 = _interopRequireDefault(_draftJsMentionPlugin);
+let _draftJsMentionPlugin = require('draft-js-mention-plugin');
+let _draftJsMentionPlugin2 = _interopRequireDefault(_draftJsMentionPlugin);
 
 function _interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {default: obj};
@@ -68,38 +65,38 @@ function _inherits(subClass, superClass) {
 // eslint-disable-line import/no-unresolved
 
 
-var SearchFieldEditor = function (_Component) {
+let SearchFieldEditor = function (_Component) {
     _inherits(SearchFieldEditor, _Component);
 
     function SearchFieldEditor(props) {
         _classCallCheck(this, SearchFieldEditor);
 
-        var _this = _possibleConstructorReturn(this, (SearchFieldEditor.__proto__ || Object.getPrototypeOf(SearchFieldEditor)).call(this, props));
+        let _this = _possibleConstructorReturn(this, (SearchFieldEditor.__proto__ || Object.getPrototypeOf(SearchFieldEditor)).call(this, props));
 
         _this.state = {};
 
         _this.onSearchChange = function (_ref) {
-            var value = _ref.value;
+            let value = _ref.value;
 
-            var mentions = _this.props.mentions;
+            let mentions = _this.props.mentions;
             _this.setState({
                 mentionSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, mentions)
             });
         };
 
         _this.onSearchChange2 = function (_ref2) {
-            var value = _ref2.value;
+            let value = _ref2.value;
 
-            var hashtags = _this.props.hashtags;
+            let hashtags = _this.props.hashtags;
             _this.setState({
                 hashtagSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, hashtags)
             });
         };
 
         _this.onSearchChangeStories = function (_ref3) {
-            var value = _ref3.value;
+            let value = _ref3.value;
 
-            var stories = _this.props.stories;
+            let stories = _this.props.stories;
             _this.setState({
                 storySuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, stories)
             });
@@ -118,15 +115,15 @@ var SearchFieldEditor = function (_Component) {
 
         _this.state.editorState = props.editorState;
 
-        var hashtagPlugin = (0, _draftJsMentionPlugin2.default)({
+        let hashtagPlugin = (0, _draftJsMentionPlugin2.default)({
             mentionTrigger: "#"
         });
 
-        var mentionPlugin = (0, _draftJsMentionPlugin2.default)({
+        let mentionPlugin = (0, _draftJsMentionPlugin2.default)({
             mentionTrigger: "@"
         });
 
-        var storyPlugin = (0, _draftJsMentionPlugin2.default)({
+        let storyPlugin = (0, _draftJsMentionPlugin2.default)({
             mentionTrigger: "$"
         });
 
@@ -149,11 +146,12 @@ var SearchFieldEditor = function (_Component) {
     _createClass(SearchFieldEditor, [{
         key: 'render',
         value: function render() {
-            var _this2 = this;
+            let _this2 = this;
 
-            var HashtagSuggestions = this.HashtagSuggestions;
-            var MentionSuggestions = this.MentionSuggestions;
-            var StorySuggestions = this.StorySuggestions;
+            let HashtagSuggestions = this.HashtagSuggestions;
+            let MentionSuggestions = this.MentionSuggestions;
+            let StorySuggestions = this.StorySuggestions;
+
             return _react2.default.createElement(
                 'div',
                 {
