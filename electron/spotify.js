@@ -63,7 +63,7 @@ const generateRandomString = function (length) {
 const stateKey = 'spotify_auth_state';
 const expressApp = express();
 
-const htmlPath = appPath + "/resources/public/spotify";
+const htmlPath = appPath + "/electron/spotify";
 log.info("SPOTIFY: static path", htmlPath);
 expressApp.use(express.static(htmlPath)).use(cookieParser());
 
