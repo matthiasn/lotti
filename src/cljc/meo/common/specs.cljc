@@ -1,6 +1,7 @@
 (ns meo.common.specs
-  (:require  [meo.common.utils.parse :as p]
-    #?(:clj  [clojure.spec.alpha :as s]
+  (:require [meo.common.utils.parse :as p]
+    #?(:clj
+            [clojure.spec.alpha :as s]
        :cljs [cljs.spec.alpha :as s])))
 
 (defn number-in-range?
@@ -192,7 +193,7 @@
 
 (s/def :meo.search-result/entries-seq (s/* possible-timestamp?))
 (s/def :meo.search-result/entries
-  (s/map-of (s/nilable keyword?) :meo.search-result/entries-seq) )
+  (s/map-of (s/nilable keyword?) :meo.search-result/entries-seq))
 (s/def :meo.search-result/entries-map (s/map-of possible-timestamp? entry-spec))
 (s/def :meo.search-result/hashtags (s/* string?))
 (s/def :meo.search-result/mentions (s/* string?))
@@ -328,3 +329,10 @@
 
 (s/def :geonames/lookup map?)
 (s/def :geonames/res map?)
+
+(s/def :import/spotify nil?)
+(s/def :import/listen nil?)
+(s/def :import/stop-server nil?)
+(s/def :state/stats-tags-get nil?)
+(s/def :stats/get2 nil?)
+(s/def :cfg/refresh nil?)

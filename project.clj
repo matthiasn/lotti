@@ -3,7 +3,7 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-RC1"]
+  :dependencies [[org.clojure/clojure "1.9.0-RC2"]
                  [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/tools.logging "0.4.0"]
                  [ch.qos.logback/logback-classic "1.2.3"]
@@ -24,7 +24,7 @@
                  [ubergraph "0.4.0"]
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
-                 [matthiasn/systems-toolbox "0.6.26"]
+                 [matthiasn/systems-toolbox "0.6.27"]
                  [matthiasn/systems-toolbox-kafka "0.6.13"]
                  [matthiasn/systems-toolbox-sente "0.6.19"]
                  [matthiasn/systems-toolbox-electron "0.6.18"]
@@ -93,44 +93,36 @@
                                :compiler     {:main           meo.electron.main.core
                                               :target         :nodejs
                                               :output-to      "prod/main/main.js"
-                                              :output-dir     "out/main"
-                                              :optimizations  :simple
+                                              :output-dir     "prod/main"
+                                              :source-map     true
+                                              :optimizations  :none
                                               :parallel-build true}}
                               {:id           "geocoder"
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meo.electron.geocoder.core
                                               :target         :nodejs
                                               :output-to      "prod/geocoder/geocoder.js"
-                                              :output-dir     "out/geocoder"
-                                              ;:source-map     "prod/geonames/geonames.js.map"
-                                              :optimizations  :simple
+                                              :output-dir     "prod/geocoder"
+                                              :source-map     true
+                                              :optimizations  :none
                                               :parallel-build true}}
                               {:id           "renderer"
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meo.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
-                                              ;:source-map     "prod/renderer/renderer.js.map"
-                                              :target         :nodejs
-                                              :output-dir     "out/renderer"
-                                              :optimizations  :simple
-                                              :parallel-build true}}
-                              {:id           "renderer-dev"
-                               :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           meo.electron.renderer.core
-                                              :output-to      "dev/renderer/renderer.js"
-                                              ;:source-map     "prod/renderer/renderer.js.map"
+                                              :output-dir     "prod/renderer"
                                               :source-map     true
                                               :target         :nodejs
-                                              :output-dir     "dev/renderer"
                                               :optimizations  :none
                                               :parallel-build true}}
                               {:id           "updater"
                                :source-paths ["src/cljs"]
                                :compiler     {:main           meo.electron.update.core
-                                              :output-to      "prod/updater/update.js"
+                                              :output-to      "prod/updater/updater.js"
+                                              :output-dir     "prod/updater"
+                                              :source-map     true
                                               :target         :nodejs
-                                              :output-dir     "out/updater"
-                                              :optimizations  :simple
+                                              :optimizations  :none
                                               :parallel-build true}}
 
                               {:id           "cljs-test"

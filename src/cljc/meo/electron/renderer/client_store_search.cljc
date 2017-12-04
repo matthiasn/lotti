@@ -20,7 +20,7 @@
   "Update query in client state, with resetting the active entry in the linked
    entries view."
   [{:keys [current-state msg-payload]}]
-  (let [query-id (or (:query-id msg-payload) (keyword (st/make-uuid)))
+  (let [query-id (or (:query-id msg-payload) (keyword (str (st/make-uuid))))
         query-path [:query-cfg :queries query-id]
         query-msg (merge msg-payload
                          {:sort-asc (:sort-asc (:cfg current-state))})
@@ -66,7 +66,7 @@
    same search-text. Otherwise opens the existing one."
   [{:keys [current-state msg-payload]}]
   (let [{:keys [tab-group query]} msg-payload
-        query-id (keyword (st/make-uuid))
+        query-id (keyword (str (st/make-uuid)))
         active-path [:query-cfg :tab-groups tab-group :active]
         all-path [:query-cfg :tab-groups tab-group :all]]
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
@@ -90,7 +90,7 @@
    same search-text. Otherwise opens the existing one."
   [{:keys [current-state msg-payload]}]
   (let [{:keys [tab-group query]} msg-payload
-        query-id (keyword (st/make-uuid))
+        query-id (keyword (str (st/make-uuid)))
         active-path [:query-cfg :tab-groups tab-group :active]
         all-path [:query-cfg :tab-groups tab-group :all]]
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
@@ -191,7 +191,6 @@
                       (assoc-in [:query-cfg :last-update] {:last-update (st/now)
                                                            :meta        msg-meta})
                       (assoc-in [:query-cfg :last-update-meta] msg-meta))]
-    (prn :search-refresh-fn)
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:stats/get2]

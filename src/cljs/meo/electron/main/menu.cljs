@@ -114,6 +114,8 @@
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
+               {:label "Enable Planning Mode"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}
