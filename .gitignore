@@ -1,11 +1,4 @@
-data/*.edn
 data/.gitignore
-data/images
-data/audio
-data/videos
-data/daily-logs
-data/trash
-data/tiles
 data/import
 data/geo-import/
 data/
@@ -47,3 +40,5 @@ package-lock.json
 prod/
 dist/
 dev/
+
+SPOTIFY_SECRET

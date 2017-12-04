@@ -93,36 +93,44 @@
                                :compiler     {:main           meo.electron.main.core
                                               :target         :nodejs
                                               :output-to      "prod/main/main.js"
-                                              :output-dir     "prod/main"
-                                              :source-map     true
-                                              :optimizations  :none
+                                              :output-dir     "out/main"
+                                              :optimizations  :simple
                                               :parallel-build true}}
+
                               {:id           "geocoder"
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meo.electron.geocoder.core
                                               :target         :nodejs
                                               :output-to      "prod/geocoder/geocoder.js"
-                                              :output-dir     "prod/geocoder"
-                                              :source-map     true
-                                              :optimizations  :none
+                                              :output-dir     "out/geocoder"
+                                              :optimizations  :simple
                                               :parallel-build true}}
+
                               {:id           "renderer"
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meo.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
-                                              :output-dir     "prod/renderer"
+                                              :target         :nodejs
+                                              :output-dir     "out/renderer"
+                                              :optimizations  :simple
+                                              :parallel-build true}}
+                              {:id           "renderer-dev"
+                               :source-paths ["src/cljc" "src/cljs"]
+                               :compiler     {:main           meo.electron.renderer.core
+                                              :output-to      "dev/renderer/renderer.js"
+                                              :output-dir     "dev/renderer"
                                               :source-map     true
                                               :target         :nodejs
                                               :optimizations  :none
                                               :parallel-build true}}
+
                               {:id           "updater"
                                :source-paths ["src/cljs"]
                                :compiler     {:main           meo.electron.update.core
                                               :output-to      "prod/updater/updater.js"
-                                              :output-dir     "prod/updater"
-                                              :source-map     true
+                                              :output-dir     "out/updater"
                                               :target         :nodejs
-                                              :optimizations  :none
+                                              :optimizations  :simple
                                               :parallel-build true}}
 
                               {:id           "cljs-test"
