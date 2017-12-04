@@ -40,7 +40,10 @@
                {:label "New Saga" :click new-saga}
                {:label       "Upload"
                 :accelerator "CmdOrCtrl+U"
-                :click       #(put-fn [:import/listen])}]}))
+                :click       #(put-fn [:import/listen])}
+               {:label       "Import"
+                :accelerator "CmdOrCtrl+I"
+                :click       #(put-fn [:import/photos])}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 
@@ -81,13 +84,8 @@
 (defn view-menu [put-fn]
   (let [index-page (:index-page rt/runtime-info)
         new-window #(put-fn [:window/new {:url index-page}])
-        open (fn [loc]
-               #(let [js (str "window.location.hash = '" loc "'")
-                      window-id {:window-id (stc/make-uuid)}]
-                  #_(put-fn [:window/new
-                             (merge window-id {:url index-page :cached false})])
-                  ;(put-fn (with-meta [:exec/js {:js js}] window-id))
-                  (put-fn [:exec/js {:js js}])))]
+        open (fn [loc] #(let [js (str "window.location.hash = '" loc "'")]
+                          (put-fn [:exec/js {:js js}])))]
     {:label   "View"
      :submenu [{:label       "Close Window"
                 :accelerator "CmdOrCtrl+W"

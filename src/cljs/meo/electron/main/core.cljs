@@ -41,6 +41,7 @@
                 :spellcheck/lang
                 :spellcheck/off
                 :import/screenshot
+                :import/photos
                 :import/listen})
 
 (def app-path (:app-path rt/runtime-info))
