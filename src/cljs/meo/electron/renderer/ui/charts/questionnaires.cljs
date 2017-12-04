@@ -70,7 +70,7 @@
 
 (defn line [y s w]
   [:line {:x1           195
-          :x2           1100
+          :x2           2000
           :y1           y
           :y2           y
           :stroke-width w
@@ -84,7 +84,7 @@
        [:rect {:on-click click
                :x        x
                :y        (- y h)
-               :width    23
+               :width    6
                :height   h
                :class    (cc/weekend-class cls ymd)}]
        (when (:show-label @local)
@@ -144,9 +144,9 @@
      (for [[n {:keys [ymd v weekday]}] indexed]
        (let [d (* 24 60 60 1000)
              offset (* n d)
-             scaled (* 900 (/ offset span))
-             scaled (* n 29)
-             x (+ 203 scaled)
+             span (if (zero? span) 1 span)
+             scaled (* 1800 (/ offset span))
+             x (+ 202 scaled)
              h (* v scale)
              weekend? (get #{"Sat" "Sun"} weekday)
              display-v (if (= :duration k)
@@ -167,8 +167,8 @@
      (for [[n {:keys [ymd v weekday]}] indexed]
        (let [d (* 24 60 60 1000)
              offset (* n d)
-             scaled (* 900 (/ offset span))
-             scaled (* n 29)
+             span (if (zero? span) 1 span)
+             scaled (* 1800 (/ offset span))
              x (+ 203 scaled)
              h (* v scale)
              weekend? (get #{"Sat" "Sun"} weekday)
@@ -179,7 +179,7 @@
          [rect display-v x btm-y h cls n]))
      [line (+ y h) "#000" 2]]))
 
-(defn points-by-day-chart [{:keys [y h label]}]
+(defn points-by-day-chart [{:keys [y h label span]}]
   (let [stats (subscribe [:stats])
         btm-y (+ y h)]
     (fn points-by-day-render [{:keys [y h label]}]
@@ -188,7 +188,7 @@
             daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)
             max-val (apply max daily-totals)
             indexed (map-indexed (fn [idx [day v]] [idx [day v]])
-                                 (take-last 31 by-day))]
+                                 (take-last 180 by-day))]
         [:g
          (for [[idx [day v]] indexed]
            (let [v (h/add (:task v) (:habit v))
@@ -196,10 +196,10 @@
                  h (if (pos? v) (* y-scale v) 0)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 203 (* 29 idx))
+               [:rect {:x      (+ 202 (* 10 idx))
                        :y      (- btm-y h)
                        :fill   "#7FE283"
-                       :width  23
+                       :width  6
                        :height h}])))
          (for [[idx [day v]] indexed]
            (let [v (:task v)
@@ -207,10 +207,10 @@
                  h (if (pos? v) (* y-scale v) 0)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 203 (* 29 idx))
+               [:rect {:x      (+ 202 (* 10 idx))
                        :y      (- btm-y h)
                        :fill   "#42b8dd"
-                       :width  23
+                       :width  6
                        :height h}])))
          [line (+ y h) "#000" 2]
          [row-label label y h]]))))
@@ -224,7 +224,7 @@
             daily-totals (map (fn [[d v]] (:habit v)) by-day)
             max-val (apply max daily-totals)
             indexed (map-indexed (fn [idx [day v]] [idx [day v]])
-                                 (take-last 31 by-day))]
+                                 (take-last 180 by-day))]
         [:g
          (for [[idx [day v]] indexed]
            (let [v (:habit v)
@@ -232,10 +232,10 @@
                  h (if (pos? v) (* y-scale v) 0)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 203 (* 29 idx))
+               [:rect {:x      (+ 202 (* 10 idx))
                        :y      (- btm-y h)
                        :fill   "#f3b3b3"
-                       :width  23
+                       :width  6
                        :height h}])))
          [line (+ y h) "#000" 2]
          [row-label label y h]]))))
@@ -299,10 +299,12 @@
         last-update (subscribe [:last-update])
         options (subscribe [:options])
         questionnaires (reaction (:questionnaires @options))
-        local (r/atom {:n 30})]
+        local (r/atom {:n 180})]
+    (h/keep-updated :stats/custom-fields 180 local 0 put-fn)
+    (h/keep-updated :stats/wordcount 180 local 0 put-fn)
     (fn dashboard-render [put-fn]
-      (h/keep-updated :stats/custom-fields 31 local @last-update put-fn)
-      (h/keep-updated :stats/wordcount 31 local @last-update put-fn)
+      (h/keep-updated :stats/custom-fields 180 local @last-update put-fn)
+      (h/keep-updated :stats/wordcount 180 local @last-update put-fn)
       (let [days (:n @local)
             dashboard-id (keyword (:id @current-page))
             now (st/now)
@@ -312,21 +314,21 @@
             end (+ (- now within-day) d tz-offset)
             span (- end start)
             custom-field-stats @custom-field-stats
-            common {:start      start :end end :w 900 :x-offset 200
+            common {:start      start :end end :w 1800 :x-offset 200
                     :span       span :days days :stats custom-field-stats
                     :chart-data @chart-data}
             charts-cfg (get-in @questionnaires [:dashboards dashboard-id])
             positioned-charts (charts-y-pos charts-cfg)
             end-y (+ (:last-y positioned-charts) (:last-h positioned-charts))]
         [:div.questionnaires
-         [:svg {:viewBox "0 0 1200 1600"
+         [:svg {:viewBox "0 0 2100 1600"
                 :style   {:background :white}}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
           [:g
            (for [n (range (+ 2 days))]
              (let [offset (+ (* n d) tz-offset)
-                   scaled (* 900 (/ offset span))
+                   scaled (* 1800 (/ offset span))
                    x (+ 200 scaled)]
                ^{:key n}
                [tick x "#CCC" 1 30 end-y]))]
@@ -341,16 +343,17 @@
               [chart-fn (merge common chart-cfg)]))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) tz-offset)
-                  scaled (* 900 (/ offset span))
+                  scaled (* 1800 (/ offset span))
                   x (+ 200 scaled)
                   ts (+ start offset)
                   weekday (df ts weekday)
                   weekend? (get #{"Sat" "Sun"} weekday)]
               ^{:key n}
-              [:text {:x           x
-                      :y           40
-                      :font-size   6
-                      :fill        (if weekend? :red :black)
-                      :font-weight :bold
-                      :text-anchor "middle"}
-               (df ts month-day)]))]]))))
+              [:g {:writing-mode "tb-rl"}
+               [:text {:x           x
+                       :y           40
+                       :font-size   6
+                       :fill        (if weekend? :red :black)
+                       :font-weight :bold
+                       :text-anchor "middle"}
+                (df ts month-day)]]))]]))))
