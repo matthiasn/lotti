@@ -84,8 +84,7 @@
                     ["cljsbuild" "once" "geocoder"]
                     ["cljsbuild" "once" "updater"]
                     ["sass4clj" "once"]
-                    ["uberjar"]
-                    ["shell" "cp" "target/meo.jar" "bin/"]]}
+                    ["uberjar"]]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"
