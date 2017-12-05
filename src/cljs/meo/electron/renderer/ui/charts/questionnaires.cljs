@@ -292,7 +292,7 @@
      :last-h 0}
     cfg))
 
-(defn dashboard [put-fn]
+(defn dashboard [put-fn dashboard-id]
   (let [custom-field-stats (subscribe [:custom-field-stats])
         chart-data (subscribe [:chart-data])
         current-page (subscribe [:current-page])
@@ -302,11 +302,11 @@
         local (r/atom {:n 180})]
     (h/keep-updated :stats/custom-fields 180 local 0 put-fn)
     (h/keep-updated :stats/wordcount 180 local 0 put-fn)
-    (fn dashboard-render [put-fn]
+    (fn dashboard-render [put-fn dashboard-id]
       (h/keep-updated :stats/custom-fields 180 local @last-update put-fn)
       (h/keep-updated :stats/wordcount 180 local @last-update put-fn)
       (let [days (:n @local)
-            dashboard-id (keyword (:id @current-page))
+            dashboard-id (or dashboard-id (keyword (:id @current-page)))
             now (st/now)
             d (* 24 60 60 1000)
             within-day (mod now d)

@@ -46,6 +46,7 @@
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
+        chart-banner (reaction (:chart-banner @cfg))
         single-column (reaction (:single-column @cfg))]
     (fn [put-fn]
       [:div.flex-container
@@ -61,7 +62,9 @@
            [:div.right
             [g/tabs-view :right put-fn]])
          [:div.footer
-          [stats/stats-text]]]]
+          (if @chart-banner
+            [cq/dashboard put-fn :dashboard-2]
+            [stats/stats-text])]]]
        [n/new-entries-view put-fn]])))
 
 (defn charts-page [put-fn]
