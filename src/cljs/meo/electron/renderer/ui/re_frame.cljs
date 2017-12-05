@@ -13,7 +13,8 @@
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
+            [reagent.core :as r]))
 
 ;; Subscription Handlers
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
@@ -43,10 +44,26 @@
                                         :wordcount-stats
                                         :media-stats])))
 
+(defn footer [put-fn]
+  (let [cfg (subscribe [:cfg])
+        dashboard-banner (reaction (:dashboard-banner @cfg))
+        local (r/atom {:height 200})
+        increase-height #(swap! local update-in [:height] + 5)
+        decrease-height #(swap! local update-in [:height] - 5)]
+    (fn [put-fn]
+      [:div.footer
+       (if @dashboard-banner
+         [:div {:style {:max-height (str (:height @local) "px")}}
+          [cq/dashboard put-fn :dashboard-2]
+          [:div
+           [:span.fa.fa-plus-square {:on-click increase-height}]
+           [:span.fa.fa-minus-square {:on-click decrease-height}]]]
+         [stats/stats-text])])))
+
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
-        chart-banner (reaction (:chart-banner @cfg))
+        dashboard-banner (reaction (:dashboard-banner @cfg))
         single-column (reaction (:single-column @cfg))]
     (fn [put-fn]
       [:div.flex-container
@@ -61,10 +78,7 @@
          (when-not @single-column
            [:div.right
             [g/tabs-view :right put-fn]])
-         [:div.footer
-          (if @chart-banner
-            [cq/dashboard put-fn :dashboard-2]
-            [stats/stats-text])]]]
+         [footer put-fn]]]
        [n/new-entries-view put-fn]])))
 
 (defn charts-page [put-fn]

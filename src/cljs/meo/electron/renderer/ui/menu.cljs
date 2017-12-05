@@ -33,7 +33,7 @@
    {:option :ticking-clock :cls "fa-clock-o"}
    {:option :hide-hashtags :cls "fa-hashtag"}
    {:option :single-column :cls "fa-columns"}
-   {:option :chart-banner :cls "fa-line-chart"}
+   {:option :dashboard-banner :cls "fa-line-chart"}
    {:option :sort-asc :cls " fa-sort-asc"}
    {:option :app-screenshot :cls "fa-window-minimize"}])
 
