@@ -47,17 +47,26 @@
 (defn footer [put-fn]
   (let [cfg (subscribe [:cfg])
         dashboard-banner (reaction (:dashboard-banner @cfg))
-        local (r/atom {:height 200})
+        local (r/atom {:height       200
+                       :dashboard-id :general})
         increase-height #(swap! local update-in [:height] + 5)
-        decrease-height #(swap! local update-in [:height] - 5)]
+        decrease-height #(swap! local update-in [:height] - 5)
+        select (fn [ev]
+                 (let [sel (keyword (-> ev .-nativeEvent .-target .-value))]
+                   (swap! local assoc-in [:dashboard-id] sel)))]
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
          [:div {:style {:max-height (str (:height @local) "px")}}
-          [cq/dashboard put-fn :dashboard-2]
+          [cq/dashboard put-fn (:dashboard-id @local)]
           [:div
            [:span.fa.fa-plus-square {:on-click increase-height}]
-           [:span.fa.fa-minus-square {:on-click decrease-height}]]]
+           [:span.fa.fa-minus-square {:on-click decrease-height}]
+           [:select {:value     (get-in @local [:dashboard-id])
+                     :on-change select}
+            [:option {:value :general} "general"]
+            [:option {:value :private} "private"]]
+           [stats/stats-text]]]
          [stats/stats-text])])))
 
 (defn main-page [put-fn]

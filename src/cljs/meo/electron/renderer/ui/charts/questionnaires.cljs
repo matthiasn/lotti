@@ -321,7 +321,7 @@
             positioned-charts (charts-y-pos charts-cfg)
             end-y (+ (:last-y positioned-charts) (:last-h positioned-charts))]
         [:div.questionnaires
-         [:svg {:viewBox "0 0 2100 1600"
+         [:svg {:viewBox "0 0 2100 1000"
                 :style   {:background :white}}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]

@@ -37,13 +37,13 @@
                       "text-entries.json" (ie/import-text-entries-fn
                                             rdr put-fn {} filename)
                       "visits.json" (ie/import-visits-fn rdr put-fn {} filename)
-                      (prn req))
+                      (log/info :server/upload-cmp :text req))
                     "OK"))
         binary-post-fn (fn [dir filename req]
                          (let [filename (str fu/data-path "/" dir "/" filename)
                                file (java.io.File. filename)]
                            (io/make-parents file)
-                           (log/info :server/upload-cmp req)
+                           (log/info :server/upload-cmp :binary req)
                            (io/copy (:body req) file))
                          "OK")
         app (routes
