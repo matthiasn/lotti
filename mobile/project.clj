@@ -3,10 +3,10 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.9.0-RC2"]
                  [org.clojure/clojurescript "1.9.946"]
-                 [matthiasn/systems-toolbox "0.6.21"]
-                 [matthiasn/systems-toolbox-sente "0.6.17"]
+                 [matthiasn/systems-toolbox "0.6.27"]
+                 [matthiasn/systems-toolbox-sente "0.6.19"]
                  [core-async-storage "0.3.1"]
                  [reagent "0.7.0" :exclusions [cljsjs/react cljsjs/react-dom
                                                cljsjs/react-dom-server

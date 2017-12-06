@@ -174,8 +174,7 @@
                              ^{:key (str "q" ts k path v)}
                              [:span.opt.tooltip
                               {:on-click click
-                               :class    (when (= value v) "sel")} item-label
-                              #_[:span.tooltiptext (:desc item)]]))]]))])
+                               :class    (when (= value v) "sel")} item-label]))]]))])
                 [:div.agg
                  (for [[k res] scores]
                    ^{:key k}

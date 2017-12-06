@@ -23,7 +23,7 @@
                        (let [path [:questionnaires k]
                              scores (->> (q/scores entry path cfg)
                                          (map (fn [[k v]] [k (:score v)]))
-                                         (into {}))]
+                                         (into {:starred (:starred entry)}))]
                          [ts scores]))
         scores (into {} (mapv score-mapper entries-map))]
     {k scores}))

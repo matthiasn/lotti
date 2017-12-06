@@ -8,7 +8,8 @@
             [clojure.pprint :as pp]
             [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
-            [meo.electron.renderer.ui.charts.common :as cc]))
+            [meo.electron.renderer.ui.charts.common :as cc]
+            [meo.common.utils.parse :as up]))
 
 (def month-day "DD.MM.")
 (def ymd "YYYY-MM-DD")
@@ -30,7 +31,7 @@
           :stroke       color
           :stroke-width w}])
 
-(defn chart-line [scores point-mapper color]
+(defn chart-line [scores point-mapper color put-fn]
   (let [points (map-indexed point-mapper scores)
         line-points (s/join " " (map :s points))]
     [:g
@@ -50,11 +51,12 @@
                            :fill         :none}}]
       (for [p points]
         ^{:key (str p)}
-        [:circle {:cx    (:x p)
-                  :cy    (:y p)
-                  :r     1.6
-                  :fill  :none
-                  :style {:stroke color}}])]]))
+        [:circle {:cx       (:x p)
+                  :cy       (:y p)
+                  :on-click (up/add-search (:ts p) :right put-fn)
+                  :r        (if (:starred p) 5 2.5)
+                  :fill     (if (:starred p) :white :none)
+                  :style    {:stroke color}}])]]))
 
 (defn scatter-chart [scores point-mapper color]
   (let [points (map-indexed point-mapper scores)]
@@ -249,7 +251,7 @@
        (map (fn [[ts m]] (assoc-in m [:timestamp] ts)))))
 
 (defn scores-chart
-  [{:keys [y k w h score-k start end mn mx color x-offset label scatter]}]
+  [{:keys [y k w h score-k start end mn mx color x-offset label scatter]} put-fn]
   (let [stats (subscribe [:stats])
         scores (reaction (filter score-k (scores-fn @stats k)))
         span (- end start)
@@ -262,19 +264,21 @@
                        x (+ x-offset (* w (/ from-beginning span)))
                        y (- btm-y (* (- (score-k itm) mn) scale))
                        s (str x "," y)]
-                   {:x x
-                    :y y
-                    :s s}))
+                   {:x       x
+                    :y       y
+                    :ts      ts
+                    :starred (:starred itm)
+                    :s       s}))
         line-inc (if (> mx 100) 50 10)
         lines (filter #(zero? (mod % line-inc)) (range 1 rng))]
-    (fn scores-chart-render [{:keys [y k score-k start end mn mx color]}]
+    (fn scores-chart-render [{:keys [y k score-k start end mn mx color]} put-fn]
       [:g
        (for [n lines]
          ^{:key (str k score-k n)}
          [line (- btm-y (* n scale)) "#888" 1])
        (if scatter
          [scatter-chart @scores mapper color]
-         [chart-line @scores mapper color])
+         [chart-line @scores mapper color put-fn])
        [line y "#000" 2]
        [line (+ y h) "#000" 2]
        [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
@@ -321,7 +325,7 @@
             positioned-charts (charts-y-pos charts-cfg)
             end-y (+ (:last-y positioned-charts) (:last-h positioned-charts))]
         [:div.questionnaires
-         [:svg {:viewBox "0 0 2100 1000"
+         [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
@@ -340,7 +344,7 @@
                              :points-by-day points-by-day-chart
                              :points-lost-by-day points-lost-by-day-chart)]
               ^{:key (str (:label chart-cfg) (:tag chart-cfg))}
-              [chart-fn (merge common chart-cfg)]))
+              [chart-fn (merge common chart-cfg) put-fn]))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) tz-offset)
                   scaled (* 1800 (/ offset span))
