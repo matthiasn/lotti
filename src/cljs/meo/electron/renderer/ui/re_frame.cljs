@@ -27,6 +27,9 @@
 (reg-sub :busy-color (fn [db _] (:busy-color db)))
 (reg-sub :query-cfg (fn [db _] (:query-cfg db)))
 (reg-sub :widgets (fn [db _] (:widgets (:cfg db))))
+(reg-sub :questionnaires (fn [db _] (:questionnaires (:options db))))
+(reg-sub :dashboards (fn [db _] (:dashboards (:questionnaires (:options db)))))
+(reg-sub :active-dashboard (fn [db _] (:active (:dashboard (:cfg db)))))
 (reg-sub :entries-map (fn [db _] (:entries-map db)))
 (reg-sub :results (fn [db _] (:results db)))
 (reg-sub :new-entries (fn [db _] (:new-entries db)))
@@ -47,25 +50,29 @@
 (defn footer [put-fn]
   (let [cfg (subscribe [:cfg])
         dashboard-banner (reaction (:dashboard-banner @cfg))
-        local (r/atom {:height       200
-                       :dashboard-id :general})
+        local (r/atom {:height 200})
+        dashboards (subscribe [:dashboards])
+        active-dashboard (subscribe [:active-dashboard])
         increase-height #(swap! local update-in [:height] + 5)
         decrease-height #(swap! local update-in [:height] - 5)
         select (fn [ev]
                  (let [sel (keyword (-> ev .-nativeEvent .-target .-value))]
-                   (swap! local assoc-in [:dashboard-id] sel)))]
+                   (put-fn [:cmd/assoc-in
+                            {:path  [:cfg :dashboard :active]
+                             :value sel}])))]
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
          [:div {:style {:max-height (str (:height @local) "px")}}
-          [cq/dashboard put-fn (:dashboard-id @local)]
+          [cq/dashboard put-fn]
           [:div
            [:span.fa.fa-plus-square {:on-click increase-height}]
            [:span.fa.fa-minus-square {:on-click decrease-height}]
-           [:select {:value     (get-in @local [:dashboard-id])
+           [:select {:value     @active-dashboard
                      :on-change select}
-            [:option {:value :general} "general"]
-            [:option {:value :private} "private"]]
+            (for [dashboard-id (keys @dashboards)]
+              ^{:key dashboard-id}
+              [:option {:value dashboard-id} (name dashboard-id)])]
            [stats/stats-text]]]
          [stats/stats-text])])))
 

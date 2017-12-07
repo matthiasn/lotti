@@ -32,31 +32,34 @@
           :stroke-width w}])
 
 (defn chart-line [scores point-mapper color put-fn]
-  (let [points (map-indexed point-mapper scores)
-        line-points (s/join " " (map :s points))]
-    [:g
-     [:g {:filter "url(#blur1)"}
-      [:rect {:width  "100%"
-              :height "100%"
-              :style  {:fill   :none
-                       :stroke :none}}]
-      [:polyline {:points line-points
-                  :style  {:stroke       color
-                           :stroke-width 2
-                           :fill         :none}}]]
-     [:g
-      [:polyline {:points line-points
-                  :style  {:stroke       color
-                           :stroke-width 1
-                           :fill         :none}}]
-      (for [p points]
-        ^{:key (str p)}
-        [:circle {:cx       (:x p)
-                  :cy       (:y p)
-                  :on-click (up/add-search (:ts p) :right put-fn)
-                  :r        (if (:starred p) 5 2.5)
-                  :fill     (if (:starred p) :white :none)
-                  :style    {:stroke color}}])]]))
+  (let [active-dashboard (subscribe [:active-dashboard])]
+    (fn chart-line-render [scores point-mapper color put-fn]
+      (let [points (map-indexed point-mapper scores)
+            line-points (s/join " " (map :s points))
+            active-dashboard @active-dashboard]
+        [:g
+         [:g {:filter "url(#blur1)"}
+          [:rect {:width  "100%"
+                  :height "100%"
+                  :style  {:fill   :none
+                           :stroke :none}}]
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width 2
+                               :fill         :none}}]]
+         [:g
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width 1
+                               :fill         :none}}]
+          (for [p points]
+            ^{:key (str active-dashboard p)}
+            [:circle {:cx       (:x p)
+                      :cy       (:y p)
+                      :on-click (up/add-search (:ts p) :right put-fn)
+                      :r        (if (:starred p) 5 2.5)
+                      :fill     (if (:starred p) :white :none)
+                      :style    {:stroke color}}])]]))))
 
 (defn scatter-chart [scores point-mapper color]
   (let [points (map-indexed point-mapper scores)]
@@ -296,21 +299,21 @@
      :last-h 0}
     cfg))
 
-(defn dashboard [put-fn dashboard-id]
+(defn dashboard [put-fn]
   (let [custom-field-stats (subscribe [:custom-field-stats])
         chart-data (subscribe [:chart-data])
         current-page (subscribe [:current-page])
         last-update (subscribe [:last-update])
+        active-dashboard (subscribe [:active-dashboard])
         options (subscribe [:options])
-        questionnaires (reaction (:questionnaires @options))
+        questionnaires (subscribe [:questionnaires])
         local (r/atom {:n 180})]
     (h/keep-updated :stats/custom-fields 180 local 0 put-fn)
     (h/keep-updated :stats/wordcount 180 local 0 put-fn)
-    (fn dashboard-render [put-fn dashboard-id]
+    (fn dashboard-render [put-fn]
       (h/keep-updated :stats/custom-fields 180 local @last-update put-fn)
       (h/keep-updated :stats/wordcount 180 local @last-update put-fn)
       (let [days (:n @local)
-            dashboard-id (or dashboard-id (keyword (:id @current-page)))
             now (st/now)
             d (* 24 60 60 1000)
             within-day (mod now d)
@@ -321,7 +324,7 @@
             common {:start      start :end end :w 1800 :x-offset 200
                     :span       span :days days :stats custom-field-stats
                     :chart-data @chart-data}
-            charts-cfg (get-in @questionnaires [:dashboards dashboard-id])
+            charts-cfg (get-in @questionnaires [:dashboards @active-dashboard])
             positioned-charts (charts-y-pos charts-cfg)
             end-y (+ (:last-y positioned-charts) (:last-h positioned-charts))]
         [:div.questionnaires

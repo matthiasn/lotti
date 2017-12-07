@@ -12,6 +12,7 @@
    :show-pvt          true
    :mute              true
    :thumbnails        true
+   :dashboard         {:active :general}
    :app-screenshot    false
    :planning-mode     false
    :lines-shortened   10})
