@@ -118,11 +118,8 @@
                            (editor-state-from-raw (clj->js editor-state)))
             save-fn (fn [_ev]
                       (let [cleaned (u/clean-entry latest-entry)
-                            updated (if (and (:new-entry entry)
-                                             (not (:comment-for entry)))
-                                      (-> cleaned
-                                          (update-in [:tags] conj "#new")
-                                          (assoc-in [:pomodoro-running] false))
+                            updated (if (= (:entry-type entry) :pomodoro)
+                                      (assoc-in cleaned [:pomodoro-running] false)
                                       cleaned)]
                         (when (:pomodoro-running @entry)
                           (put-fn [:blink/busy {:color :green}]))
