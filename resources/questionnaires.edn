@@ -2,6 +2,7 @@
               "#PSS"           :pomo1
               "#FSS"           :fss
               "#JSS"           :jss
+              "#BPMC"          :bpmc
               "#fatigue-scale" :fs
               "#GSE"           :gse
               "#GPS"           :gps
@@ -21,6 +22,11 @@
                                           {:value 1 :desc "No worse than usual"}
                                           {:value 2 :desc "Worse than usual"}
                                           {:value 3 :desc "Much worse than usual"}]}
+              :bpmc              {:type  :range
+                                  :items [{:value 0 :desc "none"}
+                                          {:value 1 :desc "mild"}
+                                          {:value 2 :desc "moderate"}
+                                          {:value 3 :desc "severe"}]}
               :likert4-less      {:type  :range
                                   :items [{:value 0 :desc "Less than usual"}
                                           {:value 1 :desc "No more than usual"}
@@ -184,6 +190,51 @@
                                          :relatedness {:type  :avg
                                                        :label "Relatedness:"
                                                        :items #{2 6 7 9 15 16 18 21}}}}
+              :bpmc      {:header       "Mood Chart"
+                          :desc         [:div
+                                         [:p "Rate the following on a scale:"]
+                                         [:ul
+                                          [:li "0-none"]
+                                          [:li "1-mild"]
+                                          [:li "2-moderate"]
+                                          [:li "3-severe"]]
+                                         [:p "For the depressed and elevated moods, indicate the high and low points of the day. Here, the scale is as follows:"]
+                                         [:ul
+                                          [:li "0-no symptoms"]
+                                          [:li "1-without significant impairment"]
+                                          [:li "2-Significant Impairment; ABLE TO WORK"]
+                                          [:li "3-Significant Impairment; NOT ABLE TO WORK"]]]
+                          :reference    "from \"The Bipolar Disorder Survival Guide, Second Edition\" by David Miklowitz "
+                          :fields       [{:type  :bpmc
+                                          :path  [1]
+                                          :label "Irritability"}
+                                         {:type  :bpmc
+                                          :path  [2]
+                                          :label "Anxiety"}
+                                         {:type  :bpmc
+                                          :path  [3]
+                                          :label "Mood: Depressed"}
+                                         {:type  :bpmc
+                                          :path  [4]
+                                          :label "Mood: Elevated"}
+                                         {:type  :bpmc
+                                          :path  [5]
+                                          :label "Psychotic Symptoms, e.g. strange ideas or hallucinations"}]
+                          :aggregations {:irritable {:type  :avg
+                                                     :label "Irritability:"
+                                                     :items #{1}}
+                                         :anxiety   {:type  :avg
+                                                     :label "Anxiety:"
+                                                     :items #{1}}
+                                         :depressed {:type  :avg
+                                                     :label "Depressed Mood:"
+                                                     :items #{3}}
+                                         :elevated  {:type  :avg
+                                                     :label "Elevated Mood:"
+                                                     :items #{4}}
+                                         :psychotic {:type  :avg
+                                                     :label "Psychotic Symptoms:"
+                                                     :items #{5}}}}
               :jss       {:header       "JOB SATISFACTION SURVEY"
                           :desc         [:div
                                          [:p "Please select the one number for each question that comes closest to reflecting your opinion about it."]
