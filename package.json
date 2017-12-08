@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.35",
+  "version": "0.4.36",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -34,7 +34,7 @@
     "electron-log": "2.2.11",
     "electron-packager": "10.1.0",
     "electron-spellchecker": "1.1.2",
-    "electron-updater": "2.16.1",
+    "electron-updater": "2.16.3",
     "emoji-flags": "^1.2.0",
     "font-awesome": "^4.7.0",
     "immutable": "^3.8.2",
@@ -62,8 +62,8 @@
   "devDependencies": {
     "browser-resolve": "1.11.2",
     "electron": "1.7.9",
-    "electron-builder": "19.46.4",
-    "electron-publisher-s3": "19.46.4",
+    "electron-builder": "19.48.2",
+    "electron-publisher-s3": "19.47.0",
     "module-deps": "4.1.1",
     "resolve": "^1.4.0"
   }
