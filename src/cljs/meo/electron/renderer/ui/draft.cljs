@@ -122,6 +122,7 @@
                                       (assoc-in cleaned [:pomodoro-running] false)
                                       cleaned)]
                         (when (:pomodoro-running @entry)
+                          (put-fn [:window/progress {:v 0}])
                           (put-fn [:blink/busy {:color :green}]))
                         (put-fn [:entry/update updated])))
             small-img (fn [smaller]
