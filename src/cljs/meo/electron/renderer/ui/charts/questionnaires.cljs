@@ -261,6 +261,7 @@
         rng (- mx mn)
         scale (/ h rng)
         btm-y (+ y h)
+        active-dashboard (subscribe [:active-dashboard])
         mapper (fn [idx itm]
                  (let [ts (:timestamp itm)
                        from-beginning (- ts start)
@@ -275,17 +276,18 @@
         line-inc (if (> mx 100) 50 10)
         lines (filter #(zero? (mod % line-inc)) (range 1 rng))]
     (fn scores-chart-render [{:keys [y k score-k start end mn mx color]} put-fn]
-      [:g
-       (for [n lines]
-         ^{:key (str k score-k n)}
-         [line (- btm-y (* n scale)) "#888" 1])
-       (if scatter
-         [scatter-chart @scores mapper color]
-         [chart-line @scores mapper color put-fn])
-       [line y "#000" 2]
-       [line (+ y h) "#000" 2]
-       [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
-       [row-label label y h]])))
+      (let [active-dashboard @active-dashboard]
+        [:g
+         (for [n lines]
+           ^{:key (str k score-k n active-dashboard)}
+           [line (- btm-y (* n scale)) "#888" 1])
+         (if scatter
+           [scatter-chart @scores mapper color]
+           [chart-line @scores mapper color put-fn])
+         [line y "#000" 2]
+         [line (+ y h) "#000" 2]
+         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
+         [row-label label y h]]))))
 
 (defn charts-y-pos [cfg]
   (reduce
@@ -346,7 +348,7 @@
                              :chart-data-row chart-data-row
                              :points-by-day points-by-day-chart
                              :points-lost-by-day points-lost-by-day-chart)]
-              ^{:key (str (:label chart-cfg) @active-dashboard (:tag chart-cfg))}
+              ^{:key (str (:label chart-cfg) (:tag chart-cfg))}
               [chart-fn (merge common chart-cfg) put-fn]))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) tz-offset)
