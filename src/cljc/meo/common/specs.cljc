@@ -336,3 +336,6 @@
 (s/def :state/stats-tags-get nil?)
 (s/def :stats/get2 nil?)
 (s/def :cfg/refresh nil?)
+
+(s/def :wm.progress/v number?)
+(s/def :window/progress (s/keys :req-un [:wm.progress/v]))
