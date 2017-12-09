@@ -185,10 +185,10 @@
      [line (+ y h) "#000" 2]]))
 
 (defn points-by-day-chart [{:keys [y h label span]}]
-  (let [stats (subscribe [:stats])
-        btm-y (+ y h)]
+  (let [stats (subscribe [:stats])]
     (fn points-by-day-render [{:keys [y h label]}]
-      (let [award-points (:award-points @stats)
+      (let [btm-y (+ y h)
+            award-points (:award-points @stats)
             by-day (sort-by first (:by-day award-points))
             daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)
             max-val (apply max daily-totals)
@@ -221,10 +221,10 @@
          [row-label label y h]]))))
 
 (defn points-lost-by-day-chart [{:keys [y h label]}]
-  (let [stats (subscribe [:stats])
-        btm-y (+ y h)]
+  (let [stats (subscribe [:stats])]
     (fn points-by-day-render [{:keys [y h label]}]
-      (let [award-points (:award-points @stats)
+      (let [btm-y (+ y h)
+            award-points (:award-points @stats)
             by-day (sort-by first (:by-day-skipped award-points))
             daily-totals (map (fn [[d v]] (:habit v)) by-day)
             max-val (apply max daily-totals)
@@ -256,30 +256,28 @@
 (defn scores-chart
   [{:keys [y k w h score-k start end mn mx color x-offset label scatter]} put-fn]
   (let [stats (subscribe [:stats])
-        scores (reaction (filter score-k (scores-fn @stats k)))
-        span (- end start)
-        rng (- mx mn)
-        scale (/ h rng)
-        btm-y (+ y h)
-        active-dashboard (subscribe [:active-dashboard])
-        mapper (fn [idx itm]
-                 (let [ts (:timestamp itm)
-                       from-beginning (- ts start)
-                       x (+ x-offset (* w (/ from-beginning span)))
-                       y (- btm-y (* (- (score-k itm) mn) scale))
-                       s (str x "," y)]
-                   {:x       x
-                    :y       y
-                    :ts      ts
-                    :starred (:starred itm)
-                    :s       s}))
-        line-inc (if (> mx 100) 50 10)
-        lines (filter #(zero? (mod % line-inc)) (range 1 rng))]
+        scores (reaction (filter score-k (scores-fn @stats k)))]
     (fn scores-chart-render [{:keys [y k score-k start end mn mx color]} put-fn]
-      (let [active-dashboard @active-dashboard]
+      (let [span (- end start)
+            rng (- mx mn)
+            scale (/ h rng)
+            btm-y (+ y h)
+            line-inc (if (> mx 100) 50 10)
+            lines (filter #(zero? (mod % line-inc)) (range 1 rng))
+            mapper (fn [idx itm]
+                     (let [ts (:timestamp itm)
+                           from-beginning (- ts start)
+                           x (+ x-offset (* w (/ from-beginning span)))
+                           y (- btm-y (* (- (score-k itm) mn) scale))
+                           s (str x "," y)]
+                       {:x       x
+                        :y       y
+                        :ts      ts
+                        :starred (:starred itm)
+                        :s       s}))]
         [:g
          (for [n lines]
-           ^{:key (str k score-k n active-dashboard)}
+           ^{:key (str k score-k n)}
            [line (- btm-y (* n scale)) "#888" 1])
          (if scatter
            [scatter-chart @scores mapper color]
