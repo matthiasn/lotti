@@ -289,18 +289,6 @@
          [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          [row-label label y h]]))))
 
-(defn charts-y-pos [cfg]
-  (reduce
-    (fn [acc m]
-      (let [{:keys [last-y last-h]} acc
-            cfg (assoc-in m [:y] (+ last-y last-h))]
-        {:last-y (:y cfg)
-         :last-h (:h cfg)
-         :charts (conj (:charts acc) cfg)}))
-    {:last-y 50
-     :last-h 0}
-    cfg))
-
 (defn dashboard [put-fn]
   (let [custom-field-stats (subscribe [:custom-field-stats])
         chart-data (subscribe [:chart-data])
@@ -309,7 +297,18 @@
         active-dashboard (subscribe [:active-dashboard])
         options (subscribe [:options])
         questionnaires (subscribe [:questionnaires])
-        local (r/atom {:n 180})]
+        local (r/atom {:n 180})
+        charts-pos (reaction
+                     (reduce
+                       (fn [acc m]
+                         (let [{:keys [last-y last-h]} acc
+                               cfg (assoc-in m [:y] (+ last-y last-h))]
+                           {:last-y (:y cfg)
+                            :last-h (:h cfg)
+                            :charts (conj (:charts acc) cfg)}))
+                       {:last-y 50
+                        :last-h 0}
+                       (get-in @questionnaires [:dashboards @active-dashboard])))]
     (h/keep-updated :stats/custom-fields 180 local 0 put-fn)
     (h/keep-updated :stats/wordcount 180 local 0 put-fn)
     (fn dashboard-render [put-fn]
@@ -327,8 +326,7 @@
                     :span       span :days days :stats custom-field-stats
                     :chart-data @chart-data}
             charts-cfg (get-in @questionnaires [:dashboards @active-dashboard])
-            positioned-charts (charts-y-pos charts-cfg)
-            end-y (+ (:last-y positioned-charts) (:last-h positioned-charts))]
+            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
@@ -341,7 +339,7 @@
                    x (+ 200 scaled)]
                ^{:key n}
                [tick x "#CCC" 1 30 end-y]))]
-          (for [chart-cfg (:charts positioned-charts)]
+          (for [chart-cfg (:charts @charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
                              :scores-chart scores-chart
                              :barchart-row barchart-row
