@@ -99,14 +99,15 @@
         broadcast-meta (merge msg-meta {:sente-uid :broadcast})]
     (when (System/getenv "CACHED_APPSTATE")
       (future (persist-state! new-state)))
-    (when (not= (dissoc prev :last-saved)
-                (dissoc entry :last-saved))
-      (append-daily-log (:cfg current-state) entry))
-    {:new-state    new-state
-     :send-to-self (when-let [comment-for (:comment-for msg-payload)]
-                     (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
-     :emit-msg     [(with-meta [:entry/saved entry] broadcast-meta)
-                    [:ft/add entry]]}))
+    (when (not= (dissoc prev :last-saved :vclock)
+                (dissoc entry :last-saved :vclock))
+      (append-daily-log (:cfg current-state) entry)
+      (log/info "saving" entry)
+      {:new-state    new-state
+       :send-to-self (when-let [comment-for (:comment-for msg-payload)]
+                       (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
+       :emit-msg     [(with-meta [:entry/saved entry] broadcast-meta)
+                      [:ft/add entry]]})))
 
 (defn move-attachment-to-trash
   "Moves attached media file to trash folder."
