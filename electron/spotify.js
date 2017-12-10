@@ -51,10 +51,10 @@ try {
  * @return {string} The generated string
  */
 const generateRandomString = function (length) {
-    var text = '';
+    let text = '';
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-    for (var i = 0; i < length; i++) {
+    for (let i = 0; i < length; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
@@ -184,7 +184,7 @@ tcpPortUsed.check(PORT)
     .then(function (inUse) {
         log.info("SPOTIFY: in use", inUse);
         if (inUse) {
-            log.error("SPOTIFY: Port already in use:", PORT)
+            log.error("SPOTIFY: Port already in use:", PORT);
             process.exit(1);
         } else {
             setTimeout(listen, 1000);

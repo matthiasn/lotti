@@ -89,7 +89,7 @@
          [:cmd/attach-to-firehose :server/kafka-firehose])
 
        [:cmd/send {:to  :server/scheduler-cmp
-                   :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
+                   :msg [:cmd/schedule-new {:timeout (* 2 60 1000)
                                             :message [:import/spotify]
                                             :repeat  true
                                             :initial true}]}]])))
