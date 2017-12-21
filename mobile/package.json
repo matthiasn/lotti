@@ -1,5 +1,5 @@
 {
-	"name": "iWasWhereApp",
+	"name": "meo",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -8,13 +8,17 @@
 	},
 	"dependencies": {
 		"babel-plugin-transform-es2015-block-scoping": "6.15.0",
+		"global": "^4.3.2",
 		"moment": "^2.19.1",
-		"react": "16.0.0-alpha.12",
-		"react-native": "0.48.4",
+		"re-natal": "^0.8.0",
+		"react": "16.0.0",
+		"react-native": "0.50.3",
+		"react-native-camera": "^0.12.0",
 		"react-native-device-info": "^0.12.1",
 		"rn-apple-healthkit": "^0.6.1"
 	},
 	"devDependencies": {
+		"babel-core": "6.26.0",
 		"babel-jest": "21.2.0",
 		"babel-preset-react-native": "4.0.0",
 		"jest": "21.2.1",
