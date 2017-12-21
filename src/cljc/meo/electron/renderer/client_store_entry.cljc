@@ -101,7 +101,8 @@
                 new-state (assoc-in new-state [:busy-color] color)]
             (when (and (= :orange color)
                        (not= :orange (:busy-color current-state)))
-              (put-fn [:blink/busy {:color :orange}]))
+              (put-fn [:blink/busy {:color :orange}])
+              (put-fn [:spotify/pause]))
             (when-not (:mute cfg)
                 (if done? (play-audio "ringer")
                           (when (:ticking-clock cfg)

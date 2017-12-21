@@ -56,7 +56,7 @@
 
 (defn spotify-view [entry put-fn]
   (when-let [spotify (get-in entry [:spotify])]
-    [:div.spotify
+    [:div.spotify {:on-click #(put-fn [:spotify/play {:uri (:uri spotify)}])}
      [:div.title (:name spotify)]
      [:div.artist (:name (first (:artists spotify)))]
      [:img {:src (:image spotify)}]]))

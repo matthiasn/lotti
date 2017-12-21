@@ -14,7 +14,7 @@
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>/tmp/meo.error.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>/tmp/meo.error.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 30 days' worth of history -->
             <maxHistory>30</maxHistory>
         </rollingPolicy>
@@ -27,7 +27,7 @@
     <!-- The rest (messages without markers or with markers other than MESSAGE) -->
     <appender name="UNCATEGORIZED_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/tmp/meo.misc.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <fileNamePattern>/tmp/meo.misc.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>60</maxHistory>
         </rollingPolicy>
         <immediateFlush>true</immediateFlush>

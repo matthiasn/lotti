@@ -4,7 +4,8 @@
             [clj-http.client :as hc]
             [clj-time.coerce :as c]
             [camel-snake-kebab.core :refer :all]
-            [meo.jvm.file-utils :as fu]))
+            [meo.jvm.file-utils :as fu]
+            [clojure.pprint :as pp]))
 
 (defn body-parser [res]
   (cc/parse-string (:body res) #(keyword (->kebab-case %))))
@@ -28,10 +29,12 @@
                       (let [track (:track item)
                             album (:album track)
                             images (:images album)
-                            artists (map (fn [a] (select-keys a [:id :name]))
+                            artists (map (fn [a] (select-keys a [:id :uri :name]))
                                          (:artists track))]
                         {:name      (:name track)
                          :id        (:id track)
+                         :uri       (:uri track)
+                         :album-uri (:uri album)
                          :artists   artists
                          :image     (:url (first images))
                          :played-at (:played-at item)}))
@@ -40,6 +43,7 @@
                          {:timestamp ts
                           :md        "listened on #spotify"
                           :id        ts
+                          :uri       (:uri item)
                           :tags      #{"#spotify"}
                           :spotify   item}))
         ex-handler (fn [ex] (log/error (.getMessage ex)))
@@ -57,3 +61,21 @@
       (get url rp-handler)
       (log/warn "incomplete spotify credentials")))
   {})
+
+(defn spotify-play [{:keys [msg-payload]}]
+  (let [play-url "https://api.spotify.com/v1/me/player/play?access_token="
+        token (:access-token (get-access-token))
+        body (hc/json-encode {:uris [(:uri msg-payload)]})
+        res (hc/put (str play-url token)
+                    {:body         body
+                     :content-type :json
+                     :accept       :json})]
+    (log/info :spotify-play msg-payload body res)
+    {}))
+
+(defn spotify-pause [{:keys [msg-payload]}]
+  (let [pause-url "https://api.spotify.com/v1/me/player/pause?access_token="
+        token (:access-token (get-access-token))
+        res (hc/put (str pause-url token))]
+    (log/info :spotify-pause msg-payload res)
+    {}))
