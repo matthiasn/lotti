@@ -88,6 +88,7 @@
         day (-> entry :briefing :day)
         today (.format (moment.) "YYYY-MM-DD")
         filter-btn (if (= day today) :active :open)
+        show-calendar (reaction (:show-calendar @cfg))
         local (r/atom {:filter                  filter-btn
                        :outstanding-time-filter true
                        :on-hold                 false})
@@ -146,4 +147,5 @@
             [tasks/started-tasks local local-cfg put-fn]
             [tasks/open-linked-tasks ts local local-cfg put-fn]
             [habits/waiting-habits entry local local-cfg put-fn]
-            [cal/calendar-view day put-fn]]]]]))))
+            (when @show-calendar
+              [cal/calendar-view day put-fn])]]]]))))

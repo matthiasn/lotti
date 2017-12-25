@@ -31,6 +31,7 @@
    {:option :comments-standalone :cls "fa-comments"}
    {:option :mute :cls "fa-volume-off"}
    {:option :ticking-clock :cls "fa-clock-o"}
+   {:option :show-calendar :cls "fa-calendar"}
    {:option :hide-hashtags :cls "fa-hashtag"}
    {:option :single-column :cls "fa-columns"}
    {:option :dashboard-banner :cls "fa-line-chart"}
