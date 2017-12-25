@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "iWasWhereApp.app"
-               BlueprintName = "iWasWhereApp"
-               ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+               BuildableName = "meo.app"
+               BlueprintName = "meo"
+               ReferencedContainer = "container:meo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -43,9 +43,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "iWasWhereAppTests.xctest"
-               BlueprintName = "iWasWhereAppTests"
-               ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+               BuildableName = "meoTests.xctest"
+               BlueprintName = "meoTests"
+               ReferencedContainer = "container:meo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -62,9 +62,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "iWasWhereAppTests.xctest"
-               BlueprintName = "iWasWhereAppTests"
-               ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+               BuildableName = "meoTests.xctest"
+               BlueprintName = "meoTests"
+               ReferencedContainer = "container:meo.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "iWasWhereApp.app"
-            BlueprintName = "iWasWhereApp"
-            ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+            BuildableName = "meo.app"
+            BlueprintName = "meo"
+            ReferencedContainer = "container:meo.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -82,8 +82,8 @@
    </TestAction>
    <LaunchAction
       buildConfiguration = "Release"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       language = ""
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
@@ -96,9 +96,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "iWasWhereApp.app"
-            BlueprintName = "iWasWhereApp"
-            ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+            BuildableName = "meo.app"
+            BlueprintName = "meo"
+            ReferencedContainer = "container:meo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -115,9 +115,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "iWasWhereApp.app"
-            BlueprintName = "iWasWhereApp"
-            ReferencedContainer = "container:iWasWhereApp.xcodeproj">
+            BuildableName = "meo.app"
+            BlueprintName = "meo"
+            ReferencedContainer = "container:meo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

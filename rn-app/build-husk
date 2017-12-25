@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo This is just a demo. For actual code see husk-react-native-xcode.sh.
+echo
+
+BUNDLE_FILE=release.jsbundle
+INTERMEDIATE_FILE=release.jsbundle.tmp
+
+react-native bundle --reset-cache --dev false --entry-file index.ios.js.husk.js --bundle-output "$INTERMEDIATE_FILE"
+
+perl -pe 's|RE_NATAL_PLACEHOLDER|"(function(require){\n\n".`cat index.ios.js`."\n\n})"|ge' < "$INTERMEDIATE_FILE" > "$BUNDLE_FILE"
