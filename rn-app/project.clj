@@ -23,7 +23,7 @@
   :clean-targets ["target/" "index.ios.js" "index.android.js" #_($PLATFORM_CLEAN$)]
   :aliases {"prod-build"     ^{:doc "Recompile code with prod profile."}
                              ["do" "clean"
-                              ["with-profile" "prod" "cljsbuild" "once"]]
+                              ["with-profile" "prod" "cljsbuild" "once" "ios"]]
             "advanced-build" ^{:doc "Recompile code for production using :advanced compilation."}
                              ["do" "clean"
                               ["with-profile" "advanced" "cljsbuild" "once"]]}

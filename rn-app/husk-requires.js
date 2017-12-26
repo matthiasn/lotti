@@ -3,6 +3,7 @@ var modules = {
     'react': require('react'),
     'moment': require('moment'),
     'rn-apple-healthkit': require('rn-apple-healthkit'),
+    'react-native-camera': require('react-native-camera'),
     'react-native-device-info': require('react-native-device-info')
 };
 

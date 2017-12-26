@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>record audio notes</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>select images</string>
+	<key>NSCameraUsageDescription</key>
+	<string>scan barcode</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>upload health data to meo</string>
 	<key>CFBundleDevelopmentRegion</key>
