@@ -157,7 +157,7 @@
              display-v (if (= :duration k)
                          (h/m-to-hh-mm v)
                          v)]
-         ^{:key (str tag n)}
+         ^{:key (str tag k n)}
          [rect display-v x btm-y h cls n]))
      [line (+ y h) "#000" 2]]))
 
