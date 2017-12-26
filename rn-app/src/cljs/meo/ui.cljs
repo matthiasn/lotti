@@ -1,6 +1,6 @@
 (ns meo.ui
   (:require [reagent.core :as r]
-            [re-frame.core :refer [subscribe dispatch dispatch-sync]]
+            [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
             [cljs.pprint :as pp]
             [meo.helpers :as h]
@@ -20,6 +20,8 @@
 
 (defn alert [title]
   (.alert (.-Alert ReactNative) title))
+
+(reg-sub :entries (fn [db _] (:entries db)))
 
 (defn app-root [put-fn]
   (let [entries (subscribe [:entries])
@@ -106,12 +108,12 @@
                      :padding-right    20
                      :padding-top      12
                      :padding-bottom   12}
-          :on-press #(let [put-fn @put-fn-atom])}
+          :on-press #(let [put-fn @put-fn-atom]
+                       (put-fn [:healthkit/bp]))}
          [text {:style {:color       "white"
                         :text-align  "center"
                         :font-weight "bold"}}
-          "cam"]]]
-
+          "bp"]]]
        [text {:style {:font-size     10
                       :font-weight   "500"
                       :color         "#CCC"

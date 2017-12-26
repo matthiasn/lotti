@@ -1,5 +1,7 @@
 (ns meo.ios.healthkit)
 
+(enable-console-print!)
+
 (def health-kit (js/require "rn-apple-healthkit"))
 (def moment (js/require "moment"))
 
@@ -40,26 +42,52 @@
   (let [weight-opts (clj->js {:unit      "gram"
                               :startDate (.toISOString (js/Date. 2016 9 1))})
         weight-cb (fn [err res]
-                    (let [samples (js->clj res)]
-                      (doseq [sample (js->clj res)]
-                        (let [v (get-in sample ["value"])
-                              end-date (get-in sample ["endDate"])
-                              end-ts (.valueOf (moment end-date))
-                              grams (js/parseInt v)
-                              kg (/ grams 1000)]
-                          (put-fn [:entry/update
-                                   {:timestamp      end-ts
-                                    :md             (str kg " #weight")
-                                    :tags           #{"#weight"}
-                                    :custom-fields  {"#weight" {:weight kg}}
-                                    :linked-stories #{1475314976880}
-                                    :primary-story  1475314976880}])))))
+                    (doseq [sample (js->clj res)]
+                      (let [v (get-in sample ["value"])
+                            end-date (get-in sample ["endDate"])
+                            end-ts (.valueOf (moment end-date))
+                            grams (js/parseInt v)
+                            kg (/ grams 1000)
+                            entry {:timestamp      end-ts
+                                   :md             (str kg " #weight")
+                                   :tags           #{"#weight"}
+                                   :custom-fields  {"#weight" {:weight kg}}
+                                   :linked-stories #{1475314976880}
+                                   :primary-story  1475314976880}]
+                        (put-fn [:entry/update entry]))))
         init-cb (fn [err res]
                   (.getWeightSamples health-kit weight-opts weight-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))
   {})
 
+(defn blood-pressure [{:keys [put-fn]}]
+  (let [bp-opts (clj->js {:unit      "mmHg"
+                          :startDate (.toISOString (js/Date. 2016 9 1))})
+        bp-cb (fn [err res]
+                (doseq [sample (js->clj res)]
+                  (let [bp-systolic (get-in sample ["bloodPressureSystolicValue"])
+                        bp-diastolic (get-in sample ["bloodPressureDiastolicValue"])
+                        end-date (get-in sample ["endDate"])
+                        end-ts (.valueOf (moment end-date))
+                        bp-systolic (js/parseInt bp-systolic)
+                        bp-diastolic (js/parseInt bp-diastolic)
+                        entry {:timestamp      end-ts
+                               :md             (str bp-systolic "/" bp-diastolic
+                                                    " mmHG #BP")
+                               :tags           #{"#BP"}
+                               :custom-fields  {"#BP" {:bp-systolic  bp-systolic
+                                                       :bp-diastolic bp-diastolic}}
+                               :linked-stories #{1475314976880}
+                               :primary-story  1475314976880}]
+                    (put-fn [:entry/update entry]))))
+        init-cb (fn [err res]
+                  (.getBloodPressureSamples health-kit bp-opts bp-cb))]
+    (.initHealthKit health-kit health-kit-opts init-cb))
+  {})
+
 (defn cmp-map [cmp-id]
+  (.warn js/console cmp-id)
   {:cmp-id      cmp-id
    :handler-map {:healthkit/weight get-weight
-                 :healthkit/steps  get-steps}})
+                 :healthkit/steps  get-steps
+                 :healthkit/bp     blood-pressure}})

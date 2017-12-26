@@ -35,13 +35,13 @@
                                :state/stats-tags-get :import/weight :import/listen
                                :state/search :cfg/refresh :firehose/cmp-recv
                                :firehose/cmp-put}
-                :sente-opts  {:host "192.168.2.106:8765"}})
+                :sente-opts  {:host "192.168.178.21:8765"}})
 
 (defn init []
   (dispatch-sync [:initialize-db])
   (let [components #{(sente/cmp-map :app/ws-cmp sente-cfg)
-                     (store/cmp-map :app/store)
                      (hk/cmp-map :app/healthkit)
+                     (store/cmp-map :app/store)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
         components (make-observable components)]
@@ -49,21 +49,22 @@
       switchboard
       [[:cmd/init-comp components]
 
-       [:cmd/route {:from #{:app/store
-                            :app/healthkit
-                            :app/ui-cmp}
+       [:cmd/route {:from :app/store
+                    :to   :app/ws-cmp}]
+
+       [:cmd/route {:from :app/ui-cmp
                     :to   :app/ws-cmp}]
 
        [:cmd/route {:from :app/healthkit
                     :to   :app/ws-cmp}]
 
-       [:cmd/route {:from #{:app/ws-cmp
-                            :app/healthkit
-                            :app/ui-cmp}
+       [:cmd/route {:from :app/healthkit
                     :to   :app/store}]
 
-       [:cmd/route {:from #{:app/ws-cmp
-                            :app/ui-cmp}
+       [:cmd/route {:from :app/ws-cmp
+                    :to   :app/store}]
+
+       [:cmd/route {:from :app/ui-cmp
                     :to   :app/store}]
 
        [:cmd/route {:from :app/ui-cmp

@@ -29,8 +29,7 @@
       {:new-state new-state})))
 
 (defn state-fn [put-fn]
-  (let [state (atom {})
-        device-id (.getUniqueID device-info)]
+  (let [state (atom {})]
     (go
       (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
         (swap! state assoc-in [:latest-vclock] latest-vclock)))
