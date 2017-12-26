@@ -67,6 +67,9 @@
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
         toggle-qr-code #(put-fn [:import/listen])
+        ws-address (fn [_]
+                     (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
+                     (put-fn [:import/ws]))
         screenshot #(put-fn [:screenshot/take])]
     (fn [put-fn]
       [:div
@@ -77,14 +80,20 @@
         {:on-click screenshot}]
        [:span.fa.fa-qrcode.toggle
         {:on-click toggle-qr-code
-         :class    (when-not (:qr-code @cfg) "inactive")}]])))
+         :class    (when-not (:qr-code @cfg) "inactive")}]
+       [:span.fa.fa-qrcode.toggle
+        {:on-click ws-address
+         :class    (when-not (:ws-qr-code @cfg) "inactive")}]])))
 
 (defn upload-view []
   (let [cfg (subscribe [:cfg])
         iww-host (.-iwwHOST js/window)]
-    (fn upload-view2-render []
+    (fn upload-view-render []
       (when (:qr-code @cfg)
         [:img {:src (str "http://" iww-host "/upload-address/"
+                         (stc/make-uuid) "/qrcode.png")}])
+      (when (:ws-qr-code @cfg)
+        [:img {:src (str "http://" iww-host "/ws-address/"
                          (stc/make-uuid) "/qrcode.png")}]))))
 
 (defn calendar-view [put-fn]

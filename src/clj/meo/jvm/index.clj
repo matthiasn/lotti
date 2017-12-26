@@ -16,11 +16,14 @@
     [:body
      [:div [:h1 "hello world"]]]))
 
+(def port 8765)
+
 (defn routes-fn [_put-fn]
   [(r/files "/photos" {:root fu/img-path})
    (r/files "/audio" {:root (str fu/data-path "/audio/")})
    (r/files "/videos" {:root (str fu/data-path "/videos/")})
    qr/address-qr-route
+   (qr/ws-address-qr-route 8765)
    ir/img-resized-route
    mt/map-tile-route])
 
@@ -28,7 +31,7 @@
   {:index-page-fn index-page
    :routes-fn     routes-fn
    :host          "0.0.0.0"
-   :port          8765
+   :port          port
    :relay-types   #{:entry/saved :entry/found :state/new
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
                     :state/stats-tags2 :search/refresh :cfg/show-qr}})
