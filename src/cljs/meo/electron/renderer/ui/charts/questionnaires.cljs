@@ -139,13 +139,13 @@
           :text-anchor "end"}
    label])
 
-(defn barchart-row [{:keys [days span start stats tag k h y cls]}]
+(defn barchart-row [{:keys [days span label start stats tag k h y cls]} put-fn]
   (let [btm-y (+ y h)
         indexed (indexed-days stats tag k start days)
         mx (apply max (map #(:v (second %)) indexed))
         scale (if (pos? mx) (/ (- h 3) mx) 1)]
     [:g
-     [row-label tag y h]
+     [row-label (or label tag) y h]
      (for [[n {:keys [ymd v weekday]}] indexed]
        (let [d (* 24 60 60 1000)
              offset (* n d)
@@ -344,7 +344,7 @@
                              :chart-data-row chart-data-row
                              :points-by-day points-by-day-chart
                              :points-lost-by-day points-lost-by-day-chart)]
-              ^{:key (str (:label chart-cfg) (:tag chart-cfg))}
+              ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
               [chart-fn (merge common chart-cfg) put-fn]))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) tz-offset)
