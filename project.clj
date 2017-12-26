@@ -17,7 +17,7 @@
                  [clj-pdf "2.2.30"]
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
-                 [com.taoensso/nippy "2.13.0" :exclusions [com.taoensso/encore]]
+                 [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [cljsjs/moment "2.17.1-1"]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
@@ -26,8 +26,8 @@
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.27"]
                  [matthiasn/systems-toolbox-kafka "0.6.13"]
-                 [matthiasn/systems-toolbox-sente "0.6.19"]
-                 [matthiasn/systems-toolbox-electron "0.6.19"]
+                 [matthiasn/systems-toolbox-sente "0.6.20"]
+                 [matthiasn/systems-toolbox-electron "0.6.20"]
                  [reagent "0.8.0-alpha2" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [re-frame "0.10.2"]
                  [secretary "1.2.3"]
@@ -67,7 +67,7 @@
             [test2junit "1.3.3"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
-            [lein-ancient "0.6.14"]]
+            [lein-ancient "0.6.15"]]
 
   ;:global-vars {*assert* false}
 

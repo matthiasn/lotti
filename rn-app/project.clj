@@ -15,10 +15,10 @@
                                                       cljsjs/react-dom-server
                                                       cljsjs/create-react-class]]
                  [matthiasn/systems-toolbox "0.6.27"]
-                 [matthiasn/systems-toolbox-sente "0.6.19"]
+                 [matthiasn/systems-toolbox-sente "0.6.20"]
                  [core-async-storage "0.3.1"]
-                 [re-frame "0.9.2"]]
-  :plugins [[lein-cljsbuild "1.1.4"]
+                 [re-frame "0.10.2"]]
+  :plugins [[lein-cljsbuild "1.1.7"]
             [lein-figwheel "0.5.14"]]
   :clean-targets ["target/" "index.ios.js" "index.android.js" #_($PLATFORM_CLEAN$)]
   :aliases {"prod-build"     ^{:doc "Recompile code with prod profile."}

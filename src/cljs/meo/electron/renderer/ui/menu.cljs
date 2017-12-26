@@ -89,12 +89,13 @@
   (let [cfg (subscribe [:cfg])
         iww-host (.-iwwHOST js/window)]
     (fn upload-view-render []
-      (when (:qr-code @cfg)
-        [:img {:src (str "http://" iww-host "/upload-address/"
-                         (stc/make-uuid) "/qrcode.png")}])
-      (when (:ws-qr-code @cfg)
-        [:img {:src (str "http://" iww-host "/ws-address/"
-                         (stc/make-uuid) "/qrcode.png")}]))))
+      [:div
+       (when (:qr-code @cfg)
+         [:img {:src (str "http://" iww-host "/upload-address/"
+                          (stc/make-uuid) "/qrcode.png")}])
+       (when (:ws-qr-code @cfg)
+         [:img {:src (str "http://" iww-host "/ws-address/"
+                          (stc/make-uuid) "/qrcode.png")}])])))
 
 (defn calendar-view [put-fn]
   (let [picker (r/adapt-react-class rd/SingleDatePicker)
