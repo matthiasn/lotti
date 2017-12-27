@@ -1,0 +1,86 @@
+(ns meo.electron.renderer.ui.dashboard
+  (:require [moment]
+            [re-frame.core :refer [subscribe]]
+            [meo.electron.renderer.helpers :as h]
+            [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.dashboard.common :as dc]
+            [meo.electron.renderer.ui.dashboard.bp :as bp]
+            [meo.electron.renderer.ui.dashboard.scores :as ds]
+            [reagent.core :as r]
+            [matthiasn.systems-toolbox.component :as st]))
+
+(defn dashboard [put-fn]
+  (let [custom-field-stats (subscribe [:custom-field-stats])
+        chart-data (subscribe [:chart-data])
+        current-page (subscribe [:current-page])
+        last-update (subscribe [:last-update])
+        active-dashboard (subscribe [:active-dashboard])
+        options (subscribe [:options])
+        questionnaires (subscribe [:questionnaires])
+        local (r/atom {:n 90})
+        charts-pos (reaction
+                     (reduce
+                       (fn [acc m]
+                         (let [{:keys [last-y last-h]} acc
+                               cfg (assoc-in m [:y] (+ last-y last-h))]
+                           {:last-y (:y cfg)
+                            :last-h (:h cfg)
+                            :charts (conj (:charts acc) cfg)}))
+                       {:last-y 50
+                        :last-h 0}
+                       (get-in @questionnaires [:dashboards @active-dashboard])))]
+    (h/keep-updated :stats/custom-fields 90 local 0 put-fn)
+    (h/keep-updated :stats/wordcount 90 local 0 put-fn)
+    (fn dashboard-render [put-fn]
+      (h/keep-updated :stats/custom-fields 90 local @last-update put-fn)
+      (h/keep-updated :stats/wordcount 90 local @last-update put-fn)
+      (let [days (:n @local)
+            now (st/now)
+            d (* 24 60 60 1000)
+            within-day (mod now d)
+            start (+ dc/tz-offset (- now within-day (* days d)))
+            end (+ (- now within-day) d dc/tz-offset)
+            span (- end start)
+            custom-field-stats @custom-field-stats
+            common {:start      start :end end :w 1800 :x-offset 200
+                    :span       span :days days :stats custom-field-stats
+                    :chart-data @chart-data}
+            charts-cfg (get-in @questionnaires [:dashboards @active-dashboard])
+            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
+        [:div.questionnaires
+         [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
+                :style   {:background :white}}
+          [:filter#blur1
+           [:feGaussianBlur {:stdDeviation 3}]]
+          [:g
+           (for [n (range (+ 2 days))]
+             (let [offset (+ (* n d) dc/tz-offset)
+                   scaled (* 1800 (/ offset span))
+                   x (+ 200 scaled)]
+               ^{:key n}
+               [dc/tick x "#CCC" 1 30 end-y]))]
+          (for [chart-cfg (:charts @charts-pos)]
+            (let [chart-fn (case (:type chart-cfg)
+                             :scores-chart ds/scores-chart
+                             :bp-chart bp/bp-chart
+                             :barchart-row dc/barchart-row
+                             :points-by-day dc/points-by-day-chart
+                             :points-lost-by-day dc/points-lost-by-day-chart)]
+              ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
+              [chart-fn (merge common chart-cfg) put-fn]))
+          (for [n (range (inc days))]
+            (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
+                  scaled (* 1800 (/ offset span))
+                  x (+ 200 scaled)
+                  ts (+ start offset)
+                  weekday (dc/df ts dc/weekday)
+                  weekend? (get #{"Sat" "Sun"} weekday)]
+              ^{:key n}
+              [:g {:writing-mode "tb-rl"}
+               [:text {:x           x
+                       :y           40
+                       :font-size   8
+                       :fill        (if weekend? :red :black)
+                       :font-weight :bold
+                       :text-anchor "middle"}
+                (dc/df ts dc/month-day)]]))]]))))

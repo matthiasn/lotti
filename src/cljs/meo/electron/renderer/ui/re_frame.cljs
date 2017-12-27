@@ -8,7 +8,7 @@
             [meo.electron.renderer.ui.stats :as stats]
             [re-frame.db :as rdb]
             [meo.electron.renderer.ui.charts.award :as aw]
-            [meo.electron.renderer.ui.charts.questionnaires :as cq]
+            [meo.electron.renderer.ui.dashboard :as db]
             [meo.electron.renderer.ui.charts.custom-fields :as cf2]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
@@ -64,7 +64,7 @@
       [:div.footer
        (if @dashboard-banner
          [:div {:style {:max-height (str (:height @local) "px")}}
-          [cq/dashboard put-fn]
+          [db/dashboard put-fn]
           [:div
            [:span.fa.fa-plus-square {:on-click increase-height}]
            [:span.fa.fa-minus-square {:on-click decrease-height}]
@@ -112,7 +112,7 @@
 
 (defn dashboards [put-fn]
   [:div.flex-container
-   [cq/dashboard put-fn]])
+   [db/dashboard put-fn]])
 
 (defn cal [put-fn]
   [:div.flex-container

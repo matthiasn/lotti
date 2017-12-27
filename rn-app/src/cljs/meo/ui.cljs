@@ -20,7 +20,7 @@
 (def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView ReactNative)))
 (def image (r/adapt-react-class (.-Image ReactNative)))
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-;(def logo-img (js/require "./images/icon.png"))
+(def logo-img (js/require "./images/cljs.png"))
 (def text-input (r/adapt-react-class (.-TextInput ReactNative)))
 
 (.log js/console cam)
@@ -124,18 +124,25 @@
                         :text-align    "center"}}
           (str barcode)])
 
+       [image {:source logo-img
+               :style  {:width         80
+                        :height        80
+                        :margin-bottom 5}}]
 
        [tab-bar {:style {:tintColor        :black
-                         :height           10
+                         :height           5
                          :background-color "#BBB"}}
-        [tab-bar-item {:title "Steps"}
+        [tab-bar-item {:title "Steps"
+                       :selected true
+                       :icon  logo-img}
          [text {:style {:font-size     10
                         :color         :white
                         :font-weight   "100"
                         :margin-bottom 5
                         :text-align    "center"}}
           "Steps"]]
-        [tab-bar-item {:title "BP"}
+        [tab-bar-item {:title "BP"
+                       :icon  logo-img}
          [text {:style {:font-size     10
                         :color         :white
                         :font-weight   "100"

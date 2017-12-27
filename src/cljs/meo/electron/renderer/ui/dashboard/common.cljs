@@ -1,13 +1,11 @@
-(ns meo.electron.renderer.ui.charts.questionnaires
+(ns meo.electron.renderer.ui.dashboard.common
   (:require [moment]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.helpers :as h]
             [reagent.ratom :refer-macros [reaction]]
-            [goog.string :as gstring]
             [reagent.core :as r]
             [clojure.pprint :as pp]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
             [meo.electron.renderer.ui.charts.common :as cc]
             [meo.common.utils.parse :as up]))
 
@@ -34,9 +32,13 @@
 (defn chart-line [scores point-mapper color put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper color put-fn]
-      (let [points (map-indexed point-mapper scores)
+      (let [
+            ;scores (filter #(pos? (:y %)) scores)
+            points (map-indexed point-mapper scores)
+            points (filter #(pos? (:v %)) points)
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard]
+        (pp/pprint points)
         [:g
          [:g {:filter "url(#blur1)"}
           [:rect {:width  "100%"
@@ -109,24 +111,10 @@
                                      ymd (df ts ymd)
                                      v (get-in stats [ymd tag k] 0)
                                      weekday (df ts weekday)]
-                                 [n {:ymd     ymd
-                                     :v       v
-                                     :weekday weekday}]))
-                             rng)]
-    indexed))
-
-(defn indexed-days2 [stats k start days]
-  (let [d (* 24 60 60 1000)
-        rng (range (inc days))
-        indexed (map-indexed (fn [n v]
-                               (let [offset (* n d)
-                                     ts (+ start offset)
-                                     ymd (df ts ymd)
-                                     v (get-in stats [ymd k] 0)
-                                     weekday (df ts weekday)]
-                                 [n {:ymd     ymd
-                                     :v       v
-                                     :weekday weekday}]))
+                                 [n {:ymd       ymd
+                                     :v         v
+                                     :timestamp ts
+                                     :weekday   weekday}]))
                              rng)]
     indexed))
 
@@ -158,29 +146,6 @@
                          (h/m-to-hh-mm v)
                          v)]
          ^{:key (str tag k n)}
-         [rect display-v x btm-y h cls n]))
-     [line (+ y h) "#000" 2]]))
-
-(defn chart-data-row [{:keys [days span start chart-data data-k label k h y cls]}]
-  (let [btm-y (+ y h)
-        stats (data-k chart-data)
-        indexed (indexed-days2 stats k start days)
-        mx (apply max (map #(:v (second %)) indexed))
-        scale (if (pos? mx) (/ (- h 3) mx) 1)]
-    [:g
-     [row-label label y h]
-     (for [[n {:keys [ymd v weekday]}] indexed]
-       (let [d (* 24 60 60 1000)
-             offset (* n d)
-             span (if (zero? span) 1 span)
-             scaled (* 1800 (/ offset span))
-             x (+ 203 scaled)
-             h (* v scale)
-             weekend? (get #{"Sat" "Sun"} weekday)
-             display-v (if (= :duration k)
-                         (h/m-to-hh-mm v)
-                         v)]
-         ^{:key (str label n)}
          [rect display-v x btm-y h cls n]))
      [line (+ y h) "#000" 2]]))
 
@@ -244,121 +209,3 @@
                        :height h}])))
          [line (+ y h) "#000" 2]
          [row-label label y h]]))))
-
-(defn scores-fn [stats k]
-  (->> stats
-       :questionnaires
-       k
-       (sort-by first)
-       (filter #(seq (second %)))
-       (map (fn [[ts m]] (assoc-in m [:timestamp] ts)))))
-
-(defn scores-chart
-  [{:keys [y k w h score-k start end mn mx color x-offset label scatter]} put-fn]
-  (let [stats (subscribe [:stats])
-        scores (reaction (filter score-k (scores-fn @stats k)))]
-    (fn scores-chart-render [{:keys [y k score-k start end mn mx color]} put-fn]
-      (let [span (- end start)
-            rng (- mx mn)
-            scale (/ h rng)
-            btm-y (+ y h)
-            line-inc (if (> mx 100) 50 10)
-            lines (filter #(zero? (mod % line-inc)) (range 1 rng))
-            mapper (fn [idx itm]
-                     (let [ts (:timestamp itm)
-                           from-beginning (- ts start)
-                           x (+ x-offset (* w (/ from-beginning span)))
-                           y (- btm-y (* (- (score-k itm) mn) scale))
-                           s (str x "," y)]
-                       {:x       x
-                        :y       y
-                        :ts      ts
-                        :starred (:starred itm)
-                        :s       s}))]
-        [:g
-         (for [n lines]
-           ^{:key (str k score-k n)}
-           [line (- btm-y (* n scale)) "#888" 1])
-         (if scatter
-           [scatter-chart @scores mapper color]
-           [chart-line @scores mapper color put-fn])
-         [line y "#000" 2]
-         [line (+ y h) "#000" 2]
-         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
-         [row-label label y h]]))))
-
-(defn dashboard [put-fn]
-  (let [custom-field-stats (subscribe [:custom-field-stats])
-        chart-data (subscribe [:chart-data])
-        current-page (subscribe [:current-page])
-        last-update (subscribe [:last-update])
-        active-dashboard (subscribe [:active-dashboard])
-        options (subscribe [:options])
-        questionnaires (subscribe [:questionnaires])
-        local (r/atom {:n 180})
-        charts-pos (reaction
-                     (reduce
-                       (fn [acc m]
-                         (let [{:keys [last-y last-h]} acc
-                               cfg (assoc-in m [:y] (+ last-y last-h))]
-                           {:last-y (:y cfg)
-                            :last-h (:h cfg)
-                            :charts (conj (:charts acc) cfg)}))
-                       {:last-y 50
-                        :last-h 0}
-                       (get-in @questionnaires [:dashboards @active-dashboard])))]
-    (h/keep-updated :stats/custom-fields 180 local 0 put-fn)
-    (h/keep-updated :stats/wordcount 180 local 0 put-fn)
-    (fn dashboard-render [put-fn]
-      (h/keep-updated :stats/custom-fields 180 local @last-update put-fn)
-      (h/keep-updated :stats/wordcount 180 local @last-update put-fn)
-      (let [days (:n @local)
-            now (st/now)
-            d (* 24 60 60 1000)
-            within-day (mod now d)
-            start (+ tz-offset (- now within-day (* days d)))
-            end (+ (- now within-day) d tz-offset)
-            span (- end start)
-            custom-field-stats @custom-field-stats
-            common {:start      start :end end :w 1800 :x-offset 200
-                    :span       span :days days :stats custom-field-stats
-                    :chart-data @chart-data}
-            charts-cfg (get-in @questionnaires [:dashboards @active-dashboard])
-            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
-        [:div.questionnaires
-         [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
-                :style   {:background :white}}
-          [:filter#blur1
-           [:feGaussianBlur {:stdDeviation 3}]]
-          [:g
-           (for [n (range (+ 2 days))]
-             (let [offset (+ (* n d) tz-offset)
-                   scaled (* 1800 (/ offset span))
-                   x (+ 200 scaled)]
-               ^{:key n}
-               [tick x "#CCC" 1 30 end-y]))]
-          (for [chart-cfg (:charts @charts-pos)]
-            (let [chart-fn (case (:type chart-cfg)
-                             :scores-chart scores-chart
-                             :barchart-row barchart-row
-                             :chart-data-row chart-data-row
-                             :points-by-day points-by-day-chart
-                             :points-lost-by-day points-lost-by-day-chart)]
-              ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
-              [chart-fn (merge common chart-cfg) put-fn]))
-          (for [n (range (inc days))]
-            (let [offset (+ (* (+ n 0.5) d) tz-offset)
-                  scaled (* 1800 (/ offset span))
-                  x (+ 200 scaled)
-                  ts (+ start offset)
-                  weekday (df ts weekday)
-                  weekend? (get #{"Sat" "Sun"} weekday)]
-              ^{:key n}
-              [:g {:writing-mode "tb-rl"}
-               [:text {:x           x
-                       :y           40
-                       :font-size   6
-                       :fill        (if weekend? :red :black)
-                       :font-weight :bold
-                       :text-anchor "middle"}
-                (df ts month-day)]]))]]))))
