@@ -29,12 +29,14 @@
 
 (defn app-root [put-fn]
   (let [entries (subscribe [:entries])
-        stats (subscribe [:stats])
         local (r/atom {:cam false
                        :md "hello world"})
         on-barcode-read (fn [e]
-                          (swap! local assoc-in [:barcode] (js->clj e))
-                          (swap! local assoc-in [:cam] false))]
+                          (let [qr-code (js->clj e)
+                                data (get qr-code "data")]
+                            (swap! local assoc-in [:barcode] data)
+                            (put-fn [:ws/connect {:host data}])
+                            (swap! local assoc-in [:cam] false)))]
     (fn []
       [view {:style {:flex-direction   "column"
                      :padding-top      30
@@ -62,7 +64,7 @@
         [text {:style {:color       "white"
                        :text-align  "center"
                        :font-weight "bold"}}
-         "cam"]]
+         (if (:cam @local) "hide cam" "show cam")]]
 
        (when-let [barcode (:barcode @local)]
          [text {:style {:font-size     10

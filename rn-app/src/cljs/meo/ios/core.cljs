@@ -3,6 +3,7 @@
             [re-frame.core :refer [subscribe dispatch dispatch-sync]]
             [meo.events]
             [meo.ios.healthkit :as hk]
+            [meo.ios.ws :as ws]
             [meo.ios.store :as store]
             [meo.ui :as ui]
             [meo.helpers :as h]
@@ -27,19 +28,19 @@
       (set (mapv mapper components)))
     components))
 
-(def sente-cfg {:relay-types #{:entry/update :entry/find :entry/trash
-                               :import/geo :import/photos :import/phone
-                               :import/spotify :import/flight :export/pdf
-                               :stats/pomo-day-get :import/screenshot :healthkit/steps
-                               :stats/get :stats/get2 :import/movie :blink/busy
-                               :state/stats-tags-get :import/weight :import/listen
-                               :state/search :cfg/refresh :firehose/cmp-recv
-                               :firehose/cmp-put}
-                :sente-opts  {:host "192.168.178.21:8765"}})
+(def sente-cfg
+  {:relay-types #{:entry/update :entry/find :entry/trash
+                  :import/geo :import/photos :import/phone
+                  :import/spotify :import/flight :export/pdf
+                  :stats/pomo-day-get :import/screenshot :healthkit/steps
+                  :stats/get :stats/get2 :import/movie :blink/busy
+                  :state/stats-tags-get :import/weight :import/listen
+                  :state/search :cfg/refresh :firehose/cmp-recv
+                  :firehose/cmp-put}})
 
 (defn init []
   (dispatch-sync [:initialize-db])
-  (let [components #{(sente/cmp-map :app/ws-cmp sente-cfg)
+  (let [components #{(ws/cmp-map :app/ws-cmp sente-cfg)
                      (hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
                      (sched/cmp-map :app/scheduler)

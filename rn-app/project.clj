@@ -5,17 +5,12 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.9.946"]
-
-                 #_[reagent "0.7.0" :exclusions [cljsjs/react
-                                                 cljsjs/react-dom
-                                                 cljsjs/react-dom-server
-                                                 cljsjs/create-react-class]]
                  [reagent "0.8.0-alpha2" :exclusions [cljsjs/react
                                                       cljsjs/react-dom
                                                       cljsjs/react-dom-server
                                                       cljsjs/create-react-class]]
                  [matthiasn/systems-toolbox "0.6.27"]
-                 [matthiasn/systems-toolbox-sente "0.6.20"]
+                 [matthiasn/systems-toolbox-sente "0.6.21"]
                  [core-async-storage "0.3.1"]
                  [re-frame "0.10.2"]]
   :plugins [[lein-cljsbuild "1.1.7"]
