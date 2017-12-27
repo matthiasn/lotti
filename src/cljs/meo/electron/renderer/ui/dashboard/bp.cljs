@@ -40,7 +40,7 @@
            ^{:key (str k score-k n)}
            [:text {:x           2008
                    :y           (- (+ btm-y 5) (* n scale))
-                   :font-size   10
+                   :font-size   8
                    :fill        "black"
                    :font-weight (when (contains? #{80 120} (+ n mn)) :bold)
                    :text-anchor "start"}

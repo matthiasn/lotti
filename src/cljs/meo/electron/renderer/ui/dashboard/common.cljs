@@ -32,13 +32,10 @@
 (defn chart-line [scores point-mapper color put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper color put-fn]
-      (let [
-            ;scores (filter #(pos? (:y %)) scores)
-            points (map-indexed point-mapper scores)
+      (let [points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) points)
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard]
-        (pp/pprint points)
         [:g
          [:g {:filter "url(#blur1)"}
           [:rect {:width  "100%"
