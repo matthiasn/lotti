@@ -62,19 +62,20 @@
                              :value sel}])))]
     (fn [put-fn]
       [:div.footer
-       (if @dashboard-banner
-         [:div {:style {:max-height (str (:height @local) "px")}}
-          [db/dashboard put-fn]
-          [:div
-           [:span.fa.fa-plus-square {:on-click increase-height}]
-           [:span.fa.fa-minus-square {:on-click decrease-height}]
-           [:select {:value     @active-dashboard
-                     :on-change select}
-            (for [dashboard-id (keys @dashboards)]
-              ^{:key dashboard-id}
-              [:option {:value dashboard-id} (name dashboard-id)])]
-           [stats/stats-text]]]
-         [stats/stats-text])])))
+       [:div {:style {:max-height (when @dashboard-banner
+                                    (str (:height @local) "px"))}}
+        [db/dashboard put-fn]
+        [:div
+         [:select {:value     @active-dashboard
+                   :on-change select}
+          (for [dashboard-id (keys @dashboards)]
+            ^{:key dashboard-id}
+            [:option {:value dashboard-id} (name dashboard-id)])]
+         (when @dashboard-banner
+           [:span.fa.fa-plus-square {:on-click increase-height}])
+         (when @dashboard-banner
+           [:span.fa.fa-minus-square {:on-click decrease-height}])
+         [stats/stats-text]]]])))
 
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])

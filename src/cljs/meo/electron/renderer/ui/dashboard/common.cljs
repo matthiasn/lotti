@@ -80,15 +80,15 @@
           :stroke-width w
           :stroke       s}])
 
-(defn rect [v x y h cls n]
+(defn rect [{:keys [v x w y h cls n]}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [v x y h cls n]
+    (fn [{:keys [v x w y h cls n]}]
       [:g
        [:rect {:on-click click
                :x        x
                :y        (- y h)
-               :width    6
+               :width    w
                :height   h
                :class    (cc/weekend-class cls ymd)}]
        (when (:show-label @local)
@@ -143,7 +143,13 @@
                          (h/m-to-hh-mm v)
                          v)]
          ^{:key (str tag k n)}
-         [rect display-v x btm-y h cls n]))
+         [rect {:v   display-v
+                :x   x
+                :w   14
+                :y   btm-y
+                :h   h
+                :cls cls
+                :n   n}]))
      [line (+ y h) "#000" 2]]))
 
 (defn points-by-day-chart [{:keys [y h label span]}]
@@ -163,10 +169,10 @@
                  h (if (pos? v) (* y-scale v) 0)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 202 (* 10 idx))
+               [:rect {:x      (+ 202 (* 20 idx))
                        :y      (- btm-y h)
                        :fill   "#7FE283"
-                       :width  6
+                       :width  14
                        :height h}])))
          (for [[idx [day v]] indexed]
            (let [v (:task v)
@@ -174,10 +180,10 @@
                  h (if (pos? v) (* y-scale v) 0)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 202 (* 10 idx))
+               [:rect {:x      (+ 202 (* 20 idx))
                        :y      (- btm-y h)
                        :fill   "#42b8dd"
-                       :width  6
+                       :width  14
                        :height h}])))
          [line (+ y h) "#000" 2]
          [row-label label y h]]))))
