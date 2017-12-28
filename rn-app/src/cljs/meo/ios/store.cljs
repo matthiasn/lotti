@@ -28,18 +28,32 @@
       (go (<! (as/set-item :timestamps (set (keys (:entries new-state))))))
       {:new-state new-state})))
 
+(defn geo-enrich [{:keys [current-state msg-payload]}]
+  (let [ts (:timestamp msg-payload)
+        geo-info (select-keys msg-payload [:latitude :longitude])
+        prev (get-in current-state [:entries ts])
+        new-state (assoc-in current-state [:entries ts] (merge prev geo-info ))]
+    {:new-state new-state}))
+
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
   (let [entries (:entries current-state)
-        newer-than (:newer-than msg-payload 0)
-        entry (second (avl/nearest entries > newer-than))]
+        latest-synced (:latest-synced current-state)
+        newer-than (:newer-than msg-payload latest-synced)
+        entry (second (avl/nearest entries > newer-than))
+        new-state (assoc-in current-state [:latest-synced] newer-than)]
+    (go (<! (as/set-item :latest-synced newer-than)))
     (when entry (put-fn [:sync/entry entry]))
-    {}))
+    {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {:entries (avl/sorted-map)})]
+  (let [state (atom {:entries       (avl/sorted-map)
+                     :latest-synced 0})]
     (go
       (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
         (swap! state assoc-in [:latest-vclock] latest-vclock)))
+    (go
+      (let [latest-synced (second (<! (as/get-item :latest-synced)))]
+        (swap! state assoc-in [:latest-vclock] latest-synced)))
     (go
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
                                  (st/make-uuid)))]
@@ -56,5 +70,6 @@
    :state-fn    state-fn
    :handler-map {:entry/persist persist
                  :entry/new     persist
+                 :entry/geo-enrich     geo-enrich
                  :sync/initiate sync-start
                  :sync/next     sync-start}})
