@@ -32,6 +32,6 @@
    :routes-fn     routes-fn
    :host          "0.0.0.0"
    :port          port
-   :relay-types   #{:entry/saved :entry/found :state/new
+   :relay-types   #{:entry/saved :entry/found :state/new :sync/next
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
                     :state/stats-tags2 :search/refresh :cfg/show-qr}})

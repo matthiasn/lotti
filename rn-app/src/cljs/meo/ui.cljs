@@ -52,7 +52,7 @@
       [text {:style {:color       "white"
                      :text-align  "center"
                      :font-weight "bold"}}
-       "new"]]
+       "save"]]
      [touchable-highlight
       {:style    defaults
        :on-press #(swap! local update-in [:cam] not)}
@@ -63,28 +63,22 @@
      [touchable-highlight
       {:style    defaults
        :on-press #(let [put-fn @put-fn-atom]
-                    (dotimes [n 75]
+                    (put-fn [:healthkit/weight])
+                    (put-fn [:healthkit/bp])
+                    (dotimes [n 1000]
                       (put-fn [:healthkit/steps n])))}
       [text {:style {:color       "white"
                      :text-align  "center"
                      :font-weight "bold"}}
-       "steps"]]
+       "health"]]
      [touchable-highlight
       {:style    defaults
        :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:healthkit/weight]))}
+                    (put-fn [:sync/initiate]))}
       [text {:style {:color       "white"
                      :text-align  "center"
                      :font-weight "bold"}}
-       "weight"]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:healthkit/bp]))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "bp"]]]))
+       "sync"]]]))
 
 (defn app-root [put-fn]
   (let [entries (subscribe [:entries])
@@ -124,31 +118,31 @@
                         :text-align    "center"}}
           (str barcode)])
 
-       [image {:source logo-img
-               :style  {:width         80
-                        :height        80
-                        :margin-bottom 5}}]
+       #_[image {:source logo-img
+                 :style  {:width         80
+                          :height        80
+                          :margin-bottom 5}}]
 
-       [tab-bar {:style {:tintColor        :black
-                         :height           5
-                         :background-color "#BBB"}}
-        [tab-bar-item {:title "Steps"
-                       :selected true
-                       :icon  logo-img}
-         [text {:style {:font-size     10
-                        :color         :white
-                        :font-weight   "100"
-                        :margin-bottom 5
-                        :text-align    "center"}}
-          "Steps"]]
-        [tab-bar-item {:title "BP"
-                       :icon  logo-img}
-         [text {:style {:font-size     10
-                        :color         :white
-                        :font-weight   "100"
-                        :margin-bottom 5
-                        :text-align    "center"}}
-          "BP"]]]
+       #_[tab-bar {:style {:tintColor        :black
+                           :height           5
+                           :background-color "#BBB"}}
+          [tab-bar-item {:title    "Steps"
+                         :selected true
+                         :icon     logo-img}
+           [text {:style {:font-size     10
+                          :color         :white
+                          :font-weight   "100"
+                          :margin-bottom 5
+                          :text-align    "center"}}
+            "Steps"]]
+          [tab-bar-item {:title "BP"
+                         :icon  logo-img}
+           [text {:style {:font-size     10
+                          :color         :white
+                          :font-weight   "100"
+                          :margin-bottom 5
+                          :text-align    "center"}}
+            "BP"]]]
 
        [view {:style {:flex  2
                       :width "100%"}}

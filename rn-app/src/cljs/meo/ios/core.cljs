@@ -29,7 +29,7 @@
     components))
 
 (def sente-cfg
-  {:relay-types #{:entry/update :entry/find :entry/trash
+  {:relay-types #{:entry/update :entry/find :entry/trash :sync/entry
                   :import/geo :import/photos :import/phone
                   :import/spotify :import/flight :export/pdf
                   :stats/pomo-day-get :import/screenshot :healthkit/steps

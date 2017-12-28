@@ -25,7 +25,7 @@
                  (when v
                    (let [end-ts (.valueOf (moment end-date))
                          cnt (js/parseInt v)]
-                     (put-fn [:entry/update
+                     (put-fn [:entry/persist
                               {:timestamp      end-ts
                                :md             (str cnt " " tag)
                                :tags           #{tag}
@@ -40,7 +40,7 @@
 
 (defn get-weight [{:keys [put-fn]}]
   (let [weight-opts (clj->js {:unit      "gram"
-                              :startDate (.toISOString (js/Date. 2016 9 1))})
+                              :startDate (.toISOString (js/Date. 0))})
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
@@ -54,7 +54,7 @@
                                    :custom-fields  {"#weight" {:weight kg}}
                                    :linked-stories #{1475314976880}
                                    :primary-story  1475314976880}]
-                        (put-fn [:entry/update entry]))))
+                        (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
                   (.getWeightSamples health-kit weight-opts weight-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))
@@ -79,7 +79,7 @@
                                                        :bp-diastolic bp-diastolic}}
                                :linked-stories #{1475314976880}
                                :primary-story  1475314976880}]
-                    (put-fn [:entry/update entry]))))
+                    (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
                   (.getBloodPressureSamples health-kit bp-opts bp-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))

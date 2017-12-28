@@ -109,6 +109,24 @@
        :emit-msg     [(with-meta [:entry/saved entry] broadcast-meta)
                       [:ft/add entry]]})))
 
+(defn sync-entry
+  "Handler function for syncing journal entry."
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  (let [ts (:timestamp msg-payload)
+        entry msg-payload
+        g (:graph current-state)
+        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        new-state (ga/add-node current-state entry)]
+    (when (System/getenv "CACHED_APPSTATE")
+      (future (persist-state! new-state)))
+    (put-fn [:sync/next {:newer-than ts} ])
+    (when (not= (dissoc prev :last-saved :vclock)
+                (dissoc entry :last-saved :vclock))
+      (append-daily-log (:cfg current-state) entry)
+      (log/info "saving" entry)
+      {:new-state new-state
+       :emit-msg  [:ft/add entry]})))
+
 (defn move-attachment-to-trash
   "Moves attached media file to trash folder."
   [cfg entry dir k]

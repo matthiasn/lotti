@@ -100,6 +100,7 @@
                    :entry/find     gq/find-entry
                    :entry/unlink   ga/unlink
                    :entry/update   f/geo-entry-persist-fn
+                   :sync/entry     f/sync-entry
                    :entry/trash    f/trash-entry-fn
                    :state/search   gq/query-fn
                    :cfg/refresh    refresh-cfg})})

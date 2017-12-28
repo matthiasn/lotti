@@ -11,6 +11,7 @@
                                                       cljsjs/create-react-class]]
                  [matthiasn/systems-toolbox "0.6.27"]
                  [matthiasn/systems-toolbox-sente "0.6.21"]
+                 [org.clojure/data.avl "0.0.17"]
                  [core-async-storage "0.3.1"]
                  [re-frame "0.10.2"]]
   :plugins [[lein-cljsbuild "1.1.7"]
@@ -23,7 +24,7 @@
                              ["do" "clean"
                               ["with-profile" "advanced" "cljsbuild" "once"]]}
   :profiles {:dev      {:dependencies [[figwheel-sidecar "0.5.14"]
-                                       [com.cemerick/piggieback "0.2.1"]]
+                                       [com.cemerick/piggieback "0.2.2"]]
                         :source-paths ["src" "env/dev"]
                         :cljsbuild    {:builds [
                                                 {:id           "ios"
