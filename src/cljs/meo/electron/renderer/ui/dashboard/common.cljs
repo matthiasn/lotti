@@ -124,10 +124,10 @@
           :text-anchor "end"}
    label])
 
-(defn barchart-row [{:keys [days span label start stats tag k h y cls]} put-fn]
+(defn barchart-row [{:keys [days span mx label start stats tag k h y cls]} put-fn]
   (let [btm-y (+ y h)
         indexed (indexed-days stats tag k start days)
-        mx (apply max (map #(:v (second %)) indexed))
+        mx (or mx (apply max (map #(:v (second %)) indexed)))
         scale (if (pos? mx) (/ (- h 3) mx) 1)]
     [:g
      [row-label (or label tag) y h]
@@ -137,6 +137,7 @@
              span (if (zero? span) 1 span)
              scaled (* 1800 (/ offset span))
              x (+ 202 scaled)
+             v (min mx v)
              h (* v scale)
              weekend? (get #{"Sat" "Sun"} weekday)
              display-v (if (= :duration k)

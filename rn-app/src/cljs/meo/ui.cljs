@@ -78,7 +78,15 @@
       [text {:style {:color       "white"
                      :text-align  "center"
                      :font-weight "bold"}}
-       "sync"]]]))
+       "sync"]]
+     [touchable-highlight
+      {:style    defaults
+       :on-press #(let [put-fn @put-fn-atom]
+                    (put-fn [:sync/reset]))}
+      [text {:style {:color       "white"
+                     :text-align  "center"
+                     :font-weight "bold"}}
+       "reset"]]]))
 
 (defn app-root [put-fn]
   (let [entries (subscribe [:entries])
