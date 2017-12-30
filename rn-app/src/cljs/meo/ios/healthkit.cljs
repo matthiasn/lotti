@@ -1,4 +1,6 @@
-(ns meo.ios.healthkit)
+(ns meo.ios.healthkit
+  (:require [clojure.pprint :as pp]
+            [meo.utils.misc :as um]))
 
 (enable-console-print!)
 
@@ -10,7 +12,7 @@
     {:permissions
      {:read ["Height" "Weight" "StepCount" "BodyMassIndex" "FlightsClimbed"
              "BloodPressureDiastolic" "BloodPressureSystolic" "HeartRate"
-             "DistanceWalkingRunning"]}}))
+             "DistanceWalkingRunning" "SleepAnalysis" "RespiratoryRate"]}}))
 
 (defn get-steps [{:keys [msg-payload put-fn]}]
   (let [days-ago msg-payload
@@ -40,7 +42,7 @@
 
 (defn get-weight [{:keys [put-fn]}]
   (let [weight-opts (clj->js {:unit      "gram"
-                              :startDate (.toISOString (js/Date. 0))})
+                              :startDate (.toISOString (js/Date. 2017 9 1))})
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
@@ -62,7 +64,7 @@
 
 (defn blood-pressure [{:keys [put-fn]}]
   (let [bp-opts (clj->js {:unit      "mmHg"
-                          :startDate (.toISOString (js/Date. 2016 9 1))})
+                          :startDate (.toISOString (js/Date. 2017 9 1))})
         bp-cb (fn [err res]
                 (doseq [sample (js->clj res)]
                   (let [bp-systolic (get-in sample ["bloodPressureSystolicValue"])
@@ -85,9 +87,34 @@
     (.initHealthKit health-kit health-kit-opts init-cb))
   {})
 
+(defn get-sleep-samples [{:keys [put-fn]}]
+  (let [sleep-opts (clj->js {:startDate (.toISOString (js/Date. 2017 9 1))})
+        sleep-cb (fn [err res]
+                   (doseq [sample (js->clj res)]
+                     (let [value (get-in sample ["value"])
+                           tag (if (= value "ASLEEP") "#sleep" "#bed")
+                           start-date (get-in sample ["startDate"])
+                           start-ts (.valueOf (moment start-date))
+                           end-date (get-in sample ["endDate"])
+                           end-ts (.valueOf (moment end-date))
+                           seconds (/ (- end-ts start-ts) 1000)
+                           minutes (js/parseInt (/ seconds 60))
+                           text (str (um/duration-string seconds) " " tag)
+                           entry {:timestamp      end-ts
+                                  :md             text
+                                  :tags           #{tag}
+                                  :custom-fields  {tag {:duration minutes}}
+                                  :linked-stories #{1479889430353}
+                                  :primary-story  1479889430353}]
+                       (put-fn [:entry/persist entry]))))
+        init-cb (fn [err res] (.getSleepSamples health-kit sleep-opts sleep-cb))]
+    (.initHealthKit health-kit health-kit-opts init-cb))
+  {})
+
 (defn cmp-map [cmp-id]
   (.warn js/console cmp-id)
   {:cmp-id      cmp-id
    :handler-map {:healthkit/weight get-weight
                  :healthkit/steps  get-steps
+                 :healthkit/sleep  get-sleep-samples
                  :healthkit/bp     blood-pressure}})

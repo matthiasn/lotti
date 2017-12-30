@@ -65,12 +65,20 @@
        :on-press #(let [put-fn @put-fn-atom]
                     (put-fn [:healthkit/weight])
                     (put-fn [:healthkit/bp])
-                    (dotimes [n 1000]
+                    (dotimes [n 100]
                       (put-fn [:healthkit/steps n])))}
       [text {:style {:color       "white"
                      :text-align  "center"
                      :font-weight "bold"}}
        "health"]]
+     [touchable-highlight
+      {:style    defaults
+       :on-press #(let [put-fn @put-fn-atom]
+                    (put-fn [:healthkit/sleep]))}
+      [text {:style {:color       "white"
+                     :text-align  "center"
+                     :font-weight "bold"}}
+       "sleep"]]
      [touchable-highlight
       {:style    defaults
        :on-press #(let [put-fn @put-fn-atom]
