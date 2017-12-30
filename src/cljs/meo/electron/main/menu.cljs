@@ -15,6 +15,7 @@
                {:label   "Clear Caches"
                 :submenu [{:label "Clear Electron Cache"
                            :click #(put-fn [:app/clear-cache])}
+                          #_
                           {:label "Clear meo Snapshot"
                            :click #(put-fn [:app/clear-iww-cache])}]}
                {:label "Start Spotify Service"
