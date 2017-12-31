@@ -37,64 +37,89 @@
                   :padding-top      10
                   :padding-bottom   10
                   :margin-right     10}]
-    [view {:style {:flex-direction "row"
+    [view {:style {:flex-direction "column"
                    :padding-top    10
                    :padding-bottom 10
                    :padding-left   10
                    :padding-right  10}}
-     [touchable-highlight
-      {:style    (merge defaults {:background-color "green"})
-       :on-press #(let [put-fn @put-fn-atom
-                        new-entry (p/parse-entry (:md @local))
-                        new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
-                    (new-entry-fn)
-                    (swap! local assoc-in [:md] ""))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "save"]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(swap! local update-in [:cam] not)}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       (if (:cam @local) "hide cam" "ws")]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:healthkit/weight])
-                    (put-fn [:healthkit/bp])
-                    (dotimes [n 100]
-                      (put-fn [:healthkit/steps n])))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "health"]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:healthkit/sleep]))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "sleep"]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:sync/initiate]))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "sync"]]
-     [touchable-highlight
-      {:style    defaults
-       :on-press #(let [put-fn @put-fn-atom]
-                    (put-fn [:sync/reset]))}
-      [text {:style {:color       "white"
-                     :text-align  "center"
-                     :font-weight "bold"}}
-       "reset"]]]))
+
+     [view {:style {:flex-direction "row"
+                    :padding-top    10
+                    :padding-bottom 10
+                    :padding-left   10
+                    :padding-right  10}}
+      [touchable-highlight
+       {:style    (merge defaults {:background-color "green"})
+        :on-press #(let [put-fn @put-fn-atom
+                         new-entry (p/parse-entry (:md @local))
+                         new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
+                     (new-entry-fn)
+                     (swap! local assoc-in [:md] ""))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "save"]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(swap! local update-in [:cam] not)}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        (if (:cam @local) "hide cam" "ws")]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (put-fn [:sync/initiate]))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "sync"]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (put-fn [:sync/reset]))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "reset"]]]
+     [view {:style {:flex-direction "row"
+                    :padding-top    10
+                    :padding-bottom 10
+                    :padding-left   10
+                    :padding-right  10}}
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (put-fn [:healthkit/weight]))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "weight"]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (put-fn [:healthkit/bp]))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "bp"]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (dotimes [n 100]
+                       (put-fn [:healthkit/steps n])))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "steps"]]
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [put-fn @put-fn-atom]
+                     (put-fn [:healthkit/sleep]))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "sleep"]]]]))
 
 (defn app-root [put-fn]
   (let [entries (subscribe [:entries])
@@ -187,7 +212,8 @@
        #_[image {:source logo-img
                  :style  {:width         80
                           :height        80
-                          :margin-bottom 5}}]])))
+                          :margin-bottom 5}}]
+       ])))
 
 (defn state-fn [put-fn]
   (let [app-root (app-root put-fn)
