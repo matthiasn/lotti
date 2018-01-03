@@ -25,7 +25,7 @@
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.27"]
-                 [matthiasn/systems-toolbox-kafka "0.6.13"]
+                 [matthiasn/systems-toolbox-kafka "0.6.16"]
                  [matthiasn/systems-toolbox-sente "0.6.20"]
                  [matthiasn/systems-toolbox-electron "0.6.20"]
                  [reagent "0.8.0-alpha2" :exclusions [cljsjs/react cljsjs/react-dom]]
