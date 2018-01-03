@@ -54,7 +54,7 @@
     (fs/mkdirs test-daily-logs-path)
     (with-redefs [fu/data-path test-path
                   fu/daily-logs-path test-daily-logs-path]
-      {:current-state @(:state (s/state-fn (fn [_])))
+      {:current-state @(:state ((s/state-fn false) (fn [_])))
        :logs-path     test-daily-logs-path
        :test-path     test-path})))
 

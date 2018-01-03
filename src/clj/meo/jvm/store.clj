@@ -60,14 +60,18 @@
    Entries are stored as attributes of graph nodes, where the node itself is
    timestamp of an entry. A sort order by descending timestamp is maintained
    in a sorted set of the nodes timestamps."
-  [put-fn]
+  [put-fn bg]
   (let [conf (fu/load-cfg)
         entries-to-index (atom {})
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
                      :host-id        (or (net/mac-address) (sth/make-uuid))
                      :cfg            conf})]
-    (future
+    (if bg
+      (future
+        (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
+          (log/info "Read" (count @entries-to-index) "entries." t)
+          (ft-index entries-to-index put-fn)))
       (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
         (log/info "Read" (count @entries-to-index) "entries." t)
         (ft-index entries-to-index put-fn)))
@@ -77,14 +81,15 @@
   "Initial state function. If persisted state exists, read that (much faster),
    otherwise recreate it from then append log. Should be deleted or renamed
    whenever there is an application update to avoid inconsistencies."
-  [put-fn]
-  (try
-    (if (and (System/getenv "CACHED_APPSTATE")
-             (fs/exists? (:app-cache (fu/paths))))
-      (f/state-from-file)
-      (recreate-state put-fn))
-    (catch Exception ex (do (log/error "Error reading cache" ex)
-                            (recreate-state put-fn)))))
+  [bg]
+  (fn [put-fn]
+    (try
+      (if (and (System/getenv "CACHED_APPSTATE")
+               (fs/exists? (:app-cache (fu/paths))))
+        (f/state-from-file)
+        (recreate-state put-fn bg))
+      (catch Exception ex (do (log/error "Error reading cache" ex)
+                              (recreate-state put-fn bg))))))
 
 (defn refresh-cfg
   "Refresh configuration by reloading the config file."
@@ -93,7 +98,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    state-fn
+   :state-fn    (state-fn true)
    :opts        {:msgs-on-firehose true}
    :handler-map (merge
                   gs/stats-handler-map
