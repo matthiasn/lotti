@@ -330,6 +330,7 @@
 (s/def :geonames/lookup map?)
 (s/def :geonames/res map?)
 
+(s/def :search/refresh nil?)
 (s/def :import/spotify nil?)
 (s/def :import/listen nil?)
 (s/def :import/stop-server nil?)

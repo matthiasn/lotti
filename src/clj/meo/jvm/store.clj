@@ -11,14 +11,10 @@
             [matthiasn.systems-toolbox.component.helpers :as sth]
             [clojure.tools.logging :as log]
             [me.raynes.fs :as fs]
-            [meo.jvm.fulltext-search :as ft]
-            [clojure.pprint :as pp]
-            [clojure.edn :as edn]
-            [clojure.java.io :as io]
             [meo.jvm.file-utils :as fu]
             [meo.jvm.net :as net]))
 
-(defn read-dir [state entries-to-index cfg]
+(defn read-dir [state entries-to-index put-fn]
   (let [path (:daily-logs-path (fu/paths))
         files (file-seq (clojure.java.io/file path))
         filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")]
@@ -36,9 +32,13 @@
                   (do (swap! entries-to-index assoc-in [ts] parsed)
                       (swap! state ga/add-node parsed)))
                 (swap! state assoc-in [:latest-vclock] (:vclock parsed))
-                (when (zero? (mod cnt 5000)) (log/info "Entries read:" cnt)))
+                (when (zero? (mod cnt 1000))
+                  (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast})))
+                (when (zero? (mod cnt 5000))
+                  (log/info "Entries read:" cnt)))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))))
+                (log/error "Exception" ex "when parsing line:\n" line)))))))
+    (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
 
 (defn ft-index [entries-to-index put-fn]
   (let [path (:clucy-path (fu/paths))
@@ -66,10 +66,11 @@
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
                      :host-id        (or (net/mac-address) (sth/make-uuid))
-                     :cfg            conf})
-        t (with-out-str (time (read-dir state entries-to-index conf)))]
-    (log/info "Read" (count @entries-to-index) "entries." t)
-    (ft-index entries-to-index put-fn)
+                     :cfg            conf})]
+    (future
+      (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
+        (log/info "Read" (count @entries-to-index) "entries." t)
+        (ft-index entries-to-index put-fn)))
     {:state state}))
 
 (defn state-fn
@@ -96,11 +97,11 @@
    :opts        {:msgs-on-firehose true}
    :handler-map (merge
                   gs/stats-handler-map
-                  {:entry/import   f/entry-import-fn
-                   :entry/find     gq/find-entry
-                   :entry/unlink   ga/unlink
-                   :entry/update   f/geo-entry-persist-fn
-                   :sync/entry     f/sync-entry
-                   :entry/trash    f/trash-entry-fn
-                   :state/search   gq/query-fn
-                   :cfg/refresh    refresh-cfg})})
+                  {:entry/import f/entry-import-fn
+                   :entry/find   gq/find-entry
+                   :entry/unlink ga/unlink
+                   :entry/update f/geo-entry-persist-fn
+                   :sync/entry   f/sync-entry
+                   :entry/trash  f/trash-entry-fn
+                   :state/search gq/query-fn
+                   :cfg/refresh  refresh-cfg})})
