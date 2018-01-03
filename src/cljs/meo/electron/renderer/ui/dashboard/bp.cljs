@@ -21,17 +21,21 @@
                        (let [offset (* idx d)
                              ts (+ start offset)
                              ymd (dc/df ts dc/ymd)
-                             from-beginning (- ts start)
-                             x (+ x-offset (* w (/ from-beginning span)))
-                             v (get-in stats [ymd tag k] 0)
-                             y (- btm-y (* (- v mn) scale))
-                             s (str x "," y)]
-                         {:ymd ymd
-                          :v   v
-                          :x   x
-                          :y   y
-                          :ts  ts
-                          :s   s})))]
+                             measurements (get-in stats [ymd tag k])
+                             points (map (fn [{:keys [v ts]}]
+                                           (let [from-beginning (- ts start)
+                                                 x (+ x-offset (* w (/ from-beginning span)))
+                                                 y (- btm-y (* (- v mn) scale))
+                                                 s (str x "," y)]
+                                             {:ymd ymd
+                                              :v   v
+                                              :x   x
+                                              :y   y
+                                              :ts  ts
+                                              :s   s}))
+                                         measurements)
+                             points (filter :v points)]
+                         points)))]
         [:g
          (for [n lines]
            ^{:key (str k score-k n)}
@@ -49,8 +53,8 @@
          [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 1.6]
          [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 1.6]
 
-         [dc/chart-line stats (mapper :bp-systolic) "red" put-fn]
-         [dc/chart-line stats (mapper :bp-diastolic) "blue" put-fn]
+         [dc/chart-line2 stats (mapper :bp-systolic) "red" put-fn]
+         [dc/chart-line2 stats (mapper :bp-diastolic) "blue" put-fn]
 
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]

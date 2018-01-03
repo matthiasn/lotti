@@ -2,14 +2,7 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [clj-time.core :as t]
-            [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.stats.time :as t-s]
-            [meo.common.utils.misc :as u]
-            [clj-time.format :as ctf]
-            [matthiasn.systems-toolbox.log :as l]
-            [clojure.tools.logging :as log]
-            [ubergraph.core :as uc]))
+            [clojure.tools.logging :as log]))
 
 (defn custom-fields-mapper
   "Creates mapper function for custom field stats. Takes current state. Returns
@@ -34,23 +27,25 @@
 
           stats-mapper
           (fn [[k fields]]
-            (let [sum-mapper
+            (let [field-mapper
                   (fn [[field v]]
                     (let [path [:custom-fields k field]
-                          val-mapper #(get-in % path)
-                          op (if (contains? #{:number :time} (:type (:cfg v)))
+                          val-mapper (fn [entry]
+                                       {:v  (get-in entry path)
+                                        :ts (:timestamp entry)})
+                          op (when (contains? #{:number :time} (:type (:cfg v)))
                                (case (:agg v)
-                                 :min #(when (seq %) (apply min %))
-                                 :max #(when (seq %) (apply max %))
-                                 :mean #(when (seq %) (double (/ (apply + %) (count %))))
+                                 :min #(when (seq %) (apply min (map :v %)))
+                                 :max #(when (seq %) (apply max (map :v %)))
+                                 :mean #(when (seq %) (double (/ (apply + (map :v %)) (count %))))
                                  :none nil
-                                 #(apply + %))
-                               nil)
-                          res (mapv val-mapper nodes)]
-                      [field (when op
-                               (try (op (filter identity res))
-                                    (catch Exception e (log/error e res))))]))]
-              [k (into {} (mapv sum-mapper fields))]))
+                                 #(apply + (map :v %))))
+                          res (vec (filter #(:v %) (mapv val-mapper nodes)))]
+                      [field (if op
+                               (try (op res)
+                                    (catch Exception e (log/error e res)))
+                               res)]))]
+              [k (into {} (mapv field-mapper fields))]))
           day-stats (into {:date-string date-string}
                           (mapv stats-mapper custom-field-stats-def))]
       [date-string day-stats])))

@@ -33,7 +33,6 @@
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper color put-fn]
       (let [points (map-indexed point-mapper scores)
-            points (filter #(pos? (:v %)) points)
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard]
         [:g
@@ -57,6 +56,38 @@
                       :cy       (:y p)
                       :on-click (up/add-search (:ts p) :right put-fn)
                       :r        (if (:starred p) 5 2.5)
+                      :fill     (if (:starred p) :white :none)
+                      :style    {:stroke color}}])]]))))
+
+(defn chart-line2 [scores point-mapper color put-fn]
+  (let [active-dashboard (subscribe [:active-dashboard])]
+    (fn chart-line-render [scores point-mapper color put-fn]
+      (let [points (map-indexed point-mapper scores)
+            points (filter #(pos? (:v %)) (apply concat points))
+            points (sort-by :ts points)
+            line-points (s/join " " (map :s points))
+            active-dashboard @active-dashboard]
+        [:g
+         [:g {:filter "url(#blur1)"}
+          [:rect {:width  "100%"
+                  :height "100%"
+                  :style  {:fill   :none
+                           :stroke :none}}]
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width 2
+                               :fill         :none}}]]
+         [:g
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width 1
+                               :fill         :none}}]
+          (for [p points]
+            ^{:key (str active-dashboard p)}
+            [:circle {:cx       (:x p)
+                      :cy       (:y p)
+                      :on-click (up/add-search (:ts p) :right put-fn)
+                      :r        (if (:starred p) 3 1)
                       :fill     (if (:starred p) :white :none)
                       :style    {:stroke color}}])]]))))
 

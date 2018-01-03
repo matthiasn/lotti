@@ -21,16 +21,18 @@
         opts (clj->js {:date (.toISOString d)})
         cb (fn [tag]
              (fn [err res]
-               (let [res (js->clj res)
-                     v (get-in res ["value"])
-                     end-date (get-in res ["endDate"])]
+               (let [sample (js->clj res)
+                     v (get-in sample ["value"])
+                     end-date (get-in sample ["endDate"])]
                  (when v
-                   (let [end-ts (.valueOf (moment end-date))
+                   (let [end-ts (- (.valueOf (moment end-date))
+                                   (* 30 60 1000))
                          cnt (js/parseInt v)]
                      (put-fn [:entry/persist
                               {:timestamp      end-ts
                                :md             (str cnt " " tag)
                                :tags           #{tag}
+                               :sample         sample
                                :linked-stories #{1475314976880}
                                :primary-story  1475314976880
                                :custom-fields  {tag {:cnt cnt}}}]))))))
@@ -53,6 +55,7 @@
                             entry {:timestamp      end-ts
                                    :md             (str kg " #weight")
                                    :tags           #{"#weight"}
+                                   :sample         sample
                                    :custom-fields  {"#weight" {:weight kg}}
                                    :linked-stories #{1475314976880}
                                    :primary-story  1475314976880}]
@@ -77,6 +80,7 @@
                                :md             (str bp-systolic "/" bp-diastolic
                                                     " mmHG #BP")
                                :tags           #{"#BP"}
+                               :sample         sample
                                :custom-fields  {"#BP" {:bp-systolic  bp-systolic
                                                        :bp-diastolic bp-diastolic}}
                                :linked-stories #{1475314976880}
@@ -101,6 +105,7 @@
                            minutes (js/parseInt (/ seconds 60))
                            text (str (um/duration-string seconds) " " tag)
                            entry {:timestamp      end-ts
+                                  :sample         sample
                                   :md             text
                                   :tags           #{tag}
                                   :custom-fields  {tag {:duration minutes}}
