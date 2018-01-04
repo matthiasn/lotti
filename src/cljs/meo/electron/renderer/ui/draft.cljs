@@ -111,7 +111,8 @@
                                       {:linked-stories stories
                                        :editor-state   new-state
                                        :text           plain})]
-                        (put-fn [:entry/update-local updated]))))]
+                        (when (:timestamp updated)
+                          (put-fn [:entry/update-local updated])))))]
     (fn [entry put-fn]
       (let [latest-entry (dissoc @entry :comments)
             editor-state (when-let [editor-state (:editor-state latest-entry)]
@@ -129,7 +130,9 @@
                         (let [img-size (:img-size @entry 50)
                               img-size (if smaller (- img-size 10) (+ img-size 10))
                               updated (assoc-in @entry [:img-size] img-size)]
-                          (when (and (pos? img-size) (< img-size 101))
+                          (when (and (pos? img-size)
+                                     (< img-size 101)
+                                     (:timestamp updated))
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
         [:div

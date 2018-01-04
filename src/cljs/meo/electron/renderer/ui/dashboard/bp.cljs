@@ -24,7 +24,8 @@
                              measurements (get-in stats [ymd tag k])
                              points (map (fn [{:keys [v ts]}]
                                            (let [from-beginning (- ts start)
-                                                 x (+ x-offset (* w (/ from-beginning span)))
+                                                 x (+ x-offset
+                                                      (* w (/ from-beginning span)))
                                                  y (- btm-y (* (- v mn) scale))
                                                  s (str x "," y)]
                                              {:ymd ymd

@@ -75,19 +75,19 @@
                            :stroke :none}}]
           [:polyline {:points line-points
                       :style  {:stroke       color
-                               :stroke-width 2
+                               :stroke-width 1.5
                                :fill         :none}}]]
          [:g
           [:polyline {:points line-points
                       :style  {:stroke       color
-                               :stroke-width 1
+                               :stroke-width 2
                                :fill         :none}}]
           (for [p points]
             ^{:key (str active-dashboard p)}
             [:circle {:cx       (:x p)
                       :cy       (:y p)
                       :on-click (up/add-search (:ts p) :right put-fn)
-                      :r        (if (:starred p) 3 1)
+                      :r        (if (:starred p) 8 2)
                       :fill     (if (:starred p) :white :none)
                       :style    {:stroke color}}])]]))))
 
