@@ -66,7 +66,7 @@
                                     (str (:height @local) "px"))}}
         [db/dashboard put-fn]
         [:div
-         [:select {:value     @active-dashboard
+         [:select {:value     (or @active-dashboard "")
                    :on-change select}
           (for [dashboard-id (keys @dashboards)]
             ^{:key dashboard-id}

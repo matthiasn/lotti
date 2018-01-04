@@ -132,9 +132,9 @@
                                           (:planned-dur entry))
                                       (= (:entry-type entry) :pomodoro)
                                       (> ts 1505770346000))
-              entry-questionnaires (if completed-pomodoro
-                                     (conj entry-questionnaires pomo-q)
-                                     entry-questionnaires)
+              entry-questionnaires (into {} (if completed-pomodoro
+                                              (conj entry-questionnaires pomo-q)
+                                              entry-questionnaires))
               expanded (or edit-mode? (:expanded @local))
               expand-toggle #(swap! local update-in [:expanded] not)]
           [:div
