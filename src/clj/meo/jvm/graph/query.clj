@@ -4,16 +4,14 @@
   (:require [ubergraph.core :as uc]
             [meo.jvm.fulltext-search :as ft]
             [clj-time.coerce :as ctc]
-            [clj-time.core :as ct]
             [clj-time.format :as ctf]
-            [clj-time.local :as ctl]
             [clojure.string :as s]
             [clojure.set :as set]
             [clojure.tools.logging :as log]
             [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
-            [clj-time.core :as t]
-            [clj-uuid :as uuid])
+            [clj-uuid :as uuid]
+            [clj-time.core :as ct])
   (:import (org.joda.time DateTimeZone)))
 
 ;; TODO: migrate existing audio entries to use a different keyword
@@ -28,6 +26,10 @@
                                                   (* 60 (or dur 0)))))
                                             custom-fields))]
     (apply + duration-secs)))
+
+(def dtz (ct/default-time-zone))
+(def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))
+(defn parse [dt] (ctf/parse fmt dt))
 
 (defn entries-filter-fn
   "Creates a filter function which ensures that all tags and mentions in the
@@ -83,19 +85,16 @@
             (contains? opts ":waiting")
             (when (contains? tags "#habit")
               (when-let [active-from (get-in entry [:habit :active-from])]
-                (let [active-from (get-in entry [:habit :active-from])
-                      dtz (ct/default-time-zone)
-                      fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz)
-                      from (ctf/parse fmt active-from)
+                (let [from (parse active-from)
                       now (ct/now)
-                      today-at (t/from-time-zone
+                      today-at (ct/from-time-zone
                                  (ct/today-at (ct/hour from) (ct/minute from))
                                  dtz)
                       habit (:habit entry)]
                   (and (not (:done habit))
                        (not (:skipped habit))
-                       (t/after? now from)
-                       (t/after? now today-at)))))
+                       (ct/after? now from)
+                       (ct/after? now today-at)))))
 
             (contains? opts ":due")
             (let [due-ts (:due (:task entry))]

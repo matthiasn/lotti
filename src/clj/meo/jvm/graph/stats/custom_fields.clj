@@ -2,7 +2,14 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [clj-time.coerce :as c]
+            [clj-time.format :as ctf]
+            [clj-time.core :as ct]))
+
+(def dtz (ct/default-time-zone))
+(def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))
+(defn parse [dt] (ctf/parse fmt dt))
 
 (defn custom-fields-mapper
   "Creates mapper function for custom field stats. Takes current state. Returns
@@ -31,8 +38,11 @@
                   (fn [[field v]]
                     (let [path [:custom-fields k field]
                           val-mapper (fn [entry]
-                                       {:v  (get-in entry path)
-                                        :ts (:timestamp entry)})
+                                       (let [ts (or (when-let [fd (:for-day entry)]
+                                                      (c/to-long (parse fd)))
+                                                    (:timestamp entry))]
+                                         {:v  (get-in entry path)
+                                          :ts ts}))
                           op (when (contains? #{:number :time} (:type (:cfg v)))
                                (case (:agg v)
                                  :min #(when (seq %) (apply min (map :v %)))
