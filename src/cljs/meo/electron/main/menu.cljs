@@ -12,16 +12,8 @@
                 :selector "orderFrontStandardAboutPanel:"}
                {:label "Check for Updates..."
                 :click check-updates}
-               {:label   "Clear Caches"
-                :submenu [{:label "Clear Electron Cache"
-                           :click #(put-fn [:app/clear-cache])}
-                          #_
-                          {:label "Clear meo Snapshot"
-                           :click #(put-fn [:app/clear-iww-cache])}]}
                {:label "Start Spotify Service"
                 :click #(put-fn [:spotify/start])}
-               {:label "Start Geocoder Service"
-                :click #(put-fn [:geocoder/start])}
                {:label "Quit Background Service"
                 :click #(do (put-fn [:app/shutdown-jvm])
                             (put-fn [:app/shutdown]))}
@@ -91,12 +83,6 @@
      :submenu [{:label       "Close Window"
                 :accelerator "CmdOrCtrl+W"
                 :click       #(put-fn [:window/close])}
-               {:label       "Minimize Window"
-                :accelerator "CmdOrCtrl+H"
-                :click       #(put-fn [:window/minimize])}
-               {:label       "Restore Window"
-                :accelerator "CmdOrCtrl+H"
-                :click       #(put-fn [:window/restore])}
                {:label       "New Window"
                 :accelerator "CmdOrCtrl+Alt+N"
                 :click       new-window}

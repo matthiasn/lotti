@@ -109,7 +109,7 @@
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:message [:geocoder/start]
-                                            :timeout 5000}]}]
+                                            :timeout 2000}]}]
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
