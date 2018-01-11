@@ -8,7 +8,7 @@ $completed-weekend: rgb(249, 166, 53);
 $total-weekend: lighten($completed-weekend, 30);
 
 $done: rgb(50, 159, 50);
-$done-weekend: lighten($done, 30);
+$done-weekend: rgb(65, 189, 70);
 
 $tasks: rgb(188, 30, 30);
 $tasks-weekend: lighten($tasks, 30);
@@ -27,14 +27,14 @@ $backlog-weekend: lighten($backlog, 30);
     fill: $done;
   }
   .done-weekend {
-    fill: $done-weekend;
+    fill: lighten($done, 25);
   }
 
   .failed {
-    fill: lighten($tasks, 30)
+    fill: $tasks;
   }
   .failed-weekend {
-    fill: lighten($tasks-weekend, 10)
+    fill: lighten($tasks, 25);
   }
 }
 
@@ -55,7 +55,7 @@ $backlog-weekend: lighten($backlog, 30);
   svg {
     margin: 2px 0;
     background-color: $chart-bg;
-    width: 100%;
+    //width: 100%;
 
     text {
       -webkit-user-select: none;

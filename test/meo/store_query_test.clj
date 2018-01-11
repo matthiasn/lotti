@@ -2,15 +2,11 @@
   "Here, we test the handler functions of the server side store component."
   (:require [clojure.test :refer [deftest testing is]]
             [matthiasn.systems-toolbox.component :as comp]
-            [meo.jvm.files :as f]
             [meo.store-test :as st]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
             [meo.store-test-common :as stc]
-            [meo.jvm.files :as f]
-            [clojure.pprint :as pp]
-            [meo.jvm.file-utils :as fu]
-            [meo.jvm.location :as loc]))
+            [meo.jvm.file-utils :as fu]))
 
 (deftest query-test
   "Test that different queries return the expected results."

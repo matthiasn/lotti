@@ -9,16 +9,12 @@
             [clojure.tools.logging :as log]
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
-            [meo.common.specs :as specs]
             [meo.jvm.datetime :as dt]
-            [clj-time.coerce :as c]
-            [clj-time.core :as t]
-            [meo.jvm.graph.stats :as gs]))
+            [clj-time.coerce :as c]))
 
 (defn add-entry [graph entry]
-  (let [ts (:timestamp entry)
-        id (:id entry)]
-    (uc/add-nodes-with-attrs graph [ts entry] [id entry])))
+  (let [ts (:timestamp entry)]
+    (uc/add-nodes-with-attrs graph [ts entry])))
 
 (defn add-hashtags
   "Add hashtag edges to graph for a new entry. When a hashtag exists already,
@@ -107,8 +103,8 @@
             geoname {:type :geoname/geoname :geoname geoname}
             day-node {:type :timeline/day :year year :month month :day (ct/day dt)}]
         (assoc-in state [:graph] (-> g
-                                     (uc/add-nodes :countries country day-node)
-                                     (uc/add-nodes :geonames geoname day-node)
+                                     (uc/add-nodes :countries country)
+                                     (uc/add-nodes :geonames geoname)
                                      (uc/add-edges
                                        [:countries country]
                                        [:geonames geoname]
@@ -127,8 +123,7 @@
             month (ct/month dt)
             year-node {:type :timeline/year :year year}
             month-node {:type :timeline/month :year year :month month}
-            day-node {:type :timeline/day :year year :month month :day (ct/day dt)}
-            day-node-exists? (uc/has-node? g day-node)]
+            day-node {:type :timeline/day :year year :month month :day (ct/day dt)}]
         (assoc-in state [:graph] (-> g
                                      (uc/add-nodes year-node month-node day-node)
                                      (uc/add-edges
@@ -209,8 +204,7 @@
             (update-in [:graph] remove-unused-tags (:mentions entry) :mention)
             (update-in [:graph] remove-unused-tags (:tags entry) :tag)
             (update-in [:graph] remove-unused-tags (:tags entry) :ptag)))
-      (do (log/warn "remove-node cannot find node: " ts)
-          current-state))))
+      current-state)))
 
 (defn add-location [graph entry]
   (if (:location entry)
@@ -293,21 +287,39 @@
         media-tags (set (filter identity [(when (:img-file entry) "#photo")
                                           (when (:audio-file entry) "#audio")
                                           (when (:video entry) "#video")]))
-        new-entry (update-in merged [:tags] #(set/union (set %) media-tags))]
-    (-> current-state
-        (update-in [:graph] remove-tag-edges old-tags :tag)
-        (update-in [:graph] remove-tag-edges old-tags :ptag)
-        (update-in [:graph] remove-tag-edges old-mentions :mention)
-        (update-in [:graph] remove-unused-tags old-tags :tag)
-        (update-in [:graph] remove-unused-tags old-mentions :mention)
-        (update-in [:graph] add-entry new-entry)
-        (add-hashtags new-entry)
-        (update-in [:graph] add-mentions new-entry)
-        (update-in [:graph] add-linked new-entry)
-        (add-timeline-tree new-entry)
+        new-entry (update-in merged [:tags] #(set/union (set %) media-tags))
+        new-state (update-in current-state [:graph] add-entry new-entry)
+        new-state (if (not= (:tags entry) old-tags)
+                    (-> new-state
+                        (update-in [:graph] remove-tag-edges old-tags :tag)
+                        (update-in [:graph] remove-tag-edges old-tags :ptag)
+                        (update-in [:graph] remove-unused-tags old-tags :tag)
+                        (add-hashtags new-entry))
+                    new-state)
+        new-state (if (not= (:mention entry) (:mention old-entry))
+                    (-> new-state
+                        (update-in [:graph] remove-tag-edges old-mentions :mention)
+                        (update-in [:graph] remove-unused-tags old-mentions :mention)
+                        (update-in [:graph] add-mentions new-entry))
+                    new-state)
+        new-state (if (not= (:linked-entries entry) (:linked-entries old-entry))
+                    (update-in new-state [:graph] add-linked new-entry)
+                    new-state)
+        new-state (if (not= (u/visit-timestamps entry) (u/visit-timestamps old-entry))
+                    (update-in new-state [:graph] add-linked-visit new-entry)
+                    new-state)
+        new-state (if (not= (:primary-story entry) (:primary-story old-entry))
+                    (add-story-set new-state new-entry)
+                    new-state)
+        new-state (if (not= (:task entry) (:task old-entry))
+                    (add-tasks-set new-state new-entry)
+                    new-state)
+        new-state (if (not old-entry)
+                    (add-timeline-tree new-state new-entry)
+                    new-state)]
+    (-> new-state
         (add-geoname new-entry)
         (add-for-day new-entry)
-        (update-in [:graph] add-linked-visit new-entry)
         (update-in [:graph] add-parent-ref new-entry)
         (update-in [:graph] add-story new-entry)
         (update-in [:graph] add-saga new-entry)
@@ -315,6 +327,4 @@
         (update-in [:graph] add-done new-entry)
         (update-in [:graph] add-location new-entry)
         (update-in [:graph] add-briefing new-entry)
-        (add-story-set new-entry)
-        (add-tasks-set new-entry)
         (update-in [:sorted-entries] conj ts))))

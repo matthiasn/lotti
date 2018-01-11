@@ -46,8 +46,9 @@
     (when entry (put-fn [:sync/entry (merge entry {:timestamp ts})]))
     {:new-state new-state}))
 
-(defn sync-reset [{:keys [current-state msg-payload put-fn]}]
-  (let [new-state (assoc-in current-state [:latest-synced] 0)]
+(defn state-reset [{:keys []}]
+  (let [new-state {:entries       (avl/sorted-map)
+                   :latest-synced 0}]
     (go (<! (as/set-item :latest-synced 0)))
     {:new-state new-state}))
 
@@ -78,5 +79,5 @@
                  :entry/new        persist
                  :entry/geo-enrich geo-enrich
                  :sync/initiate    sync-start
-                 :sync/reset       sync-reset
+                 :state/reset       state-reset
                  :sync/next        sync-start}})

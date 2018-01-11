@@ -77,7 +77,7 @@
       [touchable-highlight
        {:style    defaults
         :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:sync/reset]))}
+                     (put-fn [:state/reset]))}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
@@ -106,7 +106,7 @@
       [touchable-highlight
        {:style    defaults
         :on-press #(let [put-fn @put-fn-atom]
-                     (dotimes [n 100]
+                     (dotimes [n 2]
                        (put-fn [:healthkit/steps n])))}
        [text {:style {:color       "white"
                       :text-align  "center"

@@ -12,10 +12,8 @@
 (defn dashboard [put-fn]
   (let [custom-field-stats (subscribe [:custom-field-stats])
         chart-data (subscribe [:chart-data])
-        current-page (subscribe [:current-page])
         last-update (subscribe [:last-update])
         active-dashboard (subscribe [:active-dashboard])
-        options (subscribe [:options])
         questionnaires (subscribe [:questionnaires])
         local (r/atom {:n 90})
         charts-pos (reaction
@@ -45,7 +43,6 @@
             common {:start      start :end end :w 1800 :x-offset 200
                     :span       span :days days :stats custom-field-stats
                     :chart-data @chart-data}
-            charts-cfg (get-in @questionnaires [:dashboards @active-dashboard])
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
@@ -78,9 +75,8 @@
               ^{:key n}
               [:g {:writing-mode "tb-rl"}
                [:text {:x           x
-                       :y           40
-                       :font-size   8
+                       :y           36
+                       :font-size   10
                        :fill        (if weekend? :red :black)
-                       :font-weight :bold
                        :text-anchor "middle"}
                 (dc/df ts dc/month-day)]]))]]))))

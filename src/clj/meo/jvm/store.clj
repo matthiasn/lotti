@@ -17,24 +17,24 @@
 (defn read-dir [state entries-to-index put-fn]
   (let [path (:daily-logs-path (fu/paths))
         files (file-seq (clojure.java.io/file path))
-        filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")]
+        filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")
+        cnt (atom 0)]
     (doseq [f (sort-by #(.getName %) filtered)]
       (with-open [reader (clojure.java.io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]
             (try
               (let [parsed (clojure.edn/read-string line)
-                    ts (:timestamp parsed)
-                    cnt (count @entries-to-index)]
+                    ts (:timestamp parsed)]
+                (swap! cnt inc)
                 (if (:deleted parsed)
                   (do (swap! state ga/remove-node ts)
                       (swap! entries-to-index dissoc ts))
                   (do (swap! entries-to-index assoc-in [ts] parsed)
                       (swap! state ga/add-node parsed)))
                 (swap! state assoc-in [:latest-vclock] (:vclock parsed))
-                (when (zero? (mod cnt 5000))
-                  (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))
-                  (log/info "Entries read:" cnt)))
+                (when (zero? (mod @cnt 5000))
+                  (log/info "Entries read:" @cnt)))
               (catch Exception ex
                 (log/error "Exception" ex "when parsing line:\n" line)))))))
     (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
@@ -59,36 +59,31 @@
    Entries are stored as attributes of graph nodes, where the node itself is
    timestamp of an entry. A sort order by descending timestamp is maintained
    in a sorted set of the nodes timestamps."
-  [put-fn bg]
+  [put-fn]
   (let [conf (fu/load-cfg)
         entries-to-index (atom {})
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
                      :host-id        (or (net/mac-address) (sth/make-uuid))
                      :cfg            conf})]
-    (if bg
-      (future
-        (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
-          (log/info "Read" (count @entries-to-index) "entries." t)
-          (ft-index entries-to-index put-fn)))
-      (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
-        (log/info "Read" (count @entries-to-index) "entries." t)
-        (ft-index entries-to-index put-fn)))
+    (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
+      (log/info "Read" (count @entries-to-index) "entries." t)
+      (ft-index entries-to-index put-fn))
     {:state state}))
 
 (defn state-fn
   "Initial state function. If persisted state exists, read that (much faster),
    otherwise recreate it from then append log. Should be deleted or renamed
    whenever there is an application update to avoid inconsistencies."
-  [bg]
-  (fn [put-fn]
-    (try
-      (if (and (System/getenv "CACHED_APPSTATE")
-               (fs/exists? (:app-cache (fu/paths))))
-        (f/state-from-file)
-        (recreate-state put-fn bg))
-      (catch Exception ex (do (log/error "Error reading cache" ex)
-                              (recreate-state put-fn bg))))))
+
+  [put-fn]
+  (try
+    (if (and (System/getenv "CACHED_APPSTATE")
+             (fs/exists? (:app-cache (fu/paths))))
+      (f/state-from-file)
+      (recreate-state put-fn))
+    (catch Exception ex (do (log/error "Error reading cache" ex)
+                            (recreate-state put-fn)))))
 
 (defn refresh-cfg
   "Refresh configuration by reloading the config file."
@@ -97,7 +92,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    (state-fn true)
+   :state-fn    state-fn
    :opts        {:msgs-on-firehose true}
    :handler-map (merge
                   gs/stats-handler-map

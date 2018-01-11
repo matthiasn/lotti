@@ -6,12 +6,8 @@
             [meo.jvm.graph.query :as gq]
             [me.raynes.fs :as fs]
             [meo.jvm.files :as f]
-            [meo.common.utils.misc :as u]
             [clojure.set :as set]
-            [meo.jvm.graph.stats :as gs]
-            [meo.jvm.file-utils :as fu]
-            [meo.jvm.location :as loc]
-            [meo.store-test-common :as stc]))
+            [meo.jvm.file-utils :as fu]))
 
 (def some-test-entry
   {:mentions   #{"@SantaClaus"}
@@ -54,7 +50,7 @@
     (fs/mkdirs test-daily-logs-path)
     (with-redefs [fu/data-path test-path
                   fu/daily-logs-path test-daily-logs-path]
-      {:current-state @(:state ((s/state-fn false) (fn [_])))
+      {:current-state @(:state (s/state-fn (fn [_])))
        :logs-path     test-daily-logs-path
        :test-path     test-path})))
 

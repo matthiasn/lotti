@@ -68,6 +68,7 @@
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard]
         [:g
+         #_
          [:g {:filter "url(#blur1)"}
           [:rect {:width  "100%"
                   :height "100%"
@@ -80,7 +81,7 @@
          [:g
           [:polyline {:points line-points
                       :style  {:stroke       color
-                               :stroke-width 2
+                               :stroke-width 1.5
                                :fill         :none}}]
           (for [p points]
             ^{:key (str active-dashboard p)}
@@ -88,7 +89,7 @@
                       :cy       (:y p)
                       :on-click (up/add-search (:ts p) :right put-fn)
                       :r        (if (:starred p) 8 2)
-                      :fill     (if (:starred p) :white :none)
+                      :fill     (if (:starred p) :white color)
                       :style    {:stroke color}}])]]))))
 
 (defn scatter-chart [scores point-mapper color]
@@ -111,17 +112,17 @@
           :stroke-width w
           :stroke       s}])
 
-(defn rect [{:keys [v x w y h cls n]}]
+(defn rect [{:keys []}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h cls n]}]
+    (fn [{:keys [v x w y h cls ymd ]}]
       [:g
        [:rect {:on-click click
                :x        x
                :y        (- y h)
                :width    w
                :height   h
-               :class    (cc/weekend-class cls ymd)}]
+               :class    (cc/weekend-class cls {:date-string ymd})}]
        (when (:show-label @local)
          [:text {:x           (+ x 11)
                  :y           (- y 5)
@@ -149,13 +150,13 @@
 (defn row-label [label y h]
   [:text {:x           180
           :y           (+ y (+ 5 (/ h 2)))
-          :font-size   12
+          :font-size   14
           :fill        "#777"
-          :font-weight :bold
           :text-anchor "end"}
    label])
 
-(defn barchart-row [{:keys [days span mx label start stats tag k h y cls]} put-fn]
+(defn barchart-row [{:keys [days span mx label start stats tag k h y
+                            cls threshold success-cls]} put-fn]
   (let [btm-y (+ y h)
         indexed (indexed-days stats tag k start days)
         mx (or mx (apply max (map #(:v (second %)) indexed)))
@@ -170,7 +171,9 @@
              x (+ 202 scaled)
              v (min mx v)
              h (* v scale)
-             weekend? (get #{"Sat" "Sun"} weekday)
+             cls (if (and threshold (> v threshold))
+                   success-cls
+                   cls)
              display-v (if (= :duration k)
                          (h/m-to-hh-mm v)
                          v)]
@@ -178,6 +181,7 @@
          [rect {:v   display-v
                 :x   x
                 :w   14
+                :ymd ymd
                 :y   btm-y
                 :h   h
                 :cls cls
