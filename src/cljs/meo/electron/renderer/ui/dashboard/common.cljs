@@ -99,10 +99,10 @@
        ^{:key (str p)}
        [:circle {:cx    (:x p)
                  :cy    (:y p)
-                 :r     1.6
+                 :r     3.2
                  :style {:stroke  color
                          :fill    color
-                         :opacity 0.6}}])]))
+                         :opacity 0.5}}])]))
 
 (defn line [y s w]
   [:line {:x1           195
@@ -140,17 +140,16 @@
                                      ymd (df ts ymd)
                                      v (get-in stats [ymd tag k] 0)
                                      weekday (df ts weekday)]
-                                 [n {:ymd       ymd
-                                     :v         v
-                                     :timestamp ts
-                                     :weekday   weekday}]))
+                                 [n {:ymd     ymd
+                                     :v       v
+                                     :weekday weekday}]))
                              rng)]
     indexed))
 
 (defn row-label [label y h]
   [:text {:x           180
           :y           (+ y (+ 5 (/ h 2)))
-          :font-size   14
+          :font-size   12
           :fill        "#777"
           :text-anchor "end"}
    label])
@@ -168,7 +167,7 @@
              offset (* n d)
              span (if (zero? span) 1 span)
              scaled (* 1800 (/ offset span))
-             x (+ 202 scaled)
+             x (+ 201 scaled)
              v (min mx v)
              h (* v scale)
              cls (if (and threshold (> v threshold))
@@ -180,7 +179,7 @@
          ^{:key (str tag k n)}
          [rect {:v   display-v
                 :x   x
-                :w   14
+                :w   9
                 :ymd ymd
                 :y   btm-y
                 :h   h

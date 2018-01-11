@@ -80,7 +80,6 @@
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
-        dashboard-banner (reaction (:dashboard-banner @cfg))
         single-column (reaction (:single-column @cfg))]
     (fn [put-fn]
       [:div.flex-container

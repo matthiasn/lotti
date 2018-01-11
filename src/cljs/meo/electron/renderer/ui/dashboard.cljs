@@ -15,7 +15,7 @@
         last-update (subscribe [:last-update])
         active-dashboard (subscribe [:active-dashboard])
         questionnaires (subscribe [:questionnaires])
-        local (r/atom {:n 90})
+        local (r/atom {:n 150})
         charts-pos (reaction
                      (reduce
                        (fn [acc m]
@@ -27,11 +27,11 @@
                        {:last-y 50
                         :last-h 0}
                        (get-in @questionnaires [:dashboards @active-dashboard])))]
-    (h/keep-updated :stats/custom-fields 90 local 0 put-fn)
-    (h/keep-updated :stats/wordcount 90 local 0 put-fn)
+    (h/keep-updated :stats/custom-fields 150 local 0 put-fn)
+    (h/keep-updated :stats/wordcount 150 local 0 put-fn)
     (fn dashboard-render [put-fn]
-      (h/keep-updated :stats/custom-fields 90 local @last-update put-fn)
-      (h/keep-updated :stats/wordcount 90 local @last-update put-fn)
+      (h/keep-updated :stats/custom-fields 150 local @last-update put-fn)
+      (h/keep-updated :stats/wordcount 150 local @last-update put-fn)
       (let [days (:n @local)
             now (st/now)
             d (* 24 60 60 1000)
@@ -61,6 +61,8 @@
                              :scores-chart ds/scores-chart
                              :bp-chart bp/bp-chart
                              :barchart-row dc/barchart-row
+                             :linechart-row dc/linechart-row
+                             :chart-data-row dc/chart-data-row
                              :points-by-day dc/points-by-day-chart
                              :points-lost-by-day dc/points-lost-by-day-chart)]
               ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
@@ -76,7 +78,7 @@
               [:g {:writing-mode "tb-rl"}
                [:text {:x           x
                        :y           36
-                       :font-size   10
+                       :font-size   9
                        :fill        (if weekend? :red :black)
                        :text-anchor "middle"}
                 (dc/df ts dc/month-day)]]))]]))))

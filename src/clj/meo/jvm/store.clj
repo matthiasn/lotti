@@ -75,7 +75,6 @@
   "Initial state function. If persisted state exists, read that (much faster),
    otherwise recreate it from then append log. Should be deleted or renamed
    whenever there is an application update to avoid inconsistencies."
-
   [put-fn]
   (try
     (if (and (System/getenv "CACHED_APPSTATE")

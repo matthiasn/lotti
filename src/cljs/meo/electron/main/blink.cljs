@@ -41,7 +41,6 @@
   "Set light to red when busy and save last busy timestamp."
   [{:keys [current-state msg-payload]}]
   (let [ts (st/now)
-        pomodoro-completed (:pomodoro-completed msg-payload)
         k (day-night?)
         color (:color msg-payload)
         arg (get-in colors [color k])]
