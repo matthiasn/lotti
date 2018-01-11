@@ -61,8 +61,6 @@
                              :scores-chart ds/scores-chart
                              :bp-chart bp/bp-chart
                              :barchart-row dc/barchart-row
-                             :linechart-row dc/linechart-row
-                             :chart-data-row dc/chart-data-row
                              :points-by-day dc/points-by-day-chart
                              :points-lost-by-day dc/points-lost-by-day-chart)]
               ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
