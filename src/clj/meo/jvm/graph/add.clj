@@ -296,7 +296,7 @@
                         (update-in [:graph] remove-unused-tags old-tags :tag)
                         (add-hashtags new-entry))
                     new-state)
-        new-state (if (not= (:mention entry) (:mention old-entry))
+        new-state (if (not= (:mentions entry) (:mentions old-entry))
                     (-> new-state
                         (update-in [:graph] remove-tag-edges old-mentions :mention)
                         (update-in [:graph] remove-unused-tags old-mentions :mention)

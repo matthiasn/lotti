@@ -34,7 +34,7 @@
                       (swap! state ga/add-node parsed)))
                 (swap! state assoc-in [:latest-vclock] (:vclock parsed))
                 (when (zero? (mod @cnt 5000))
-                  (log/info "Entries read:" @cnt)))
+                  (log/info "Lines read:" @cnt)))
               (catch Exception ex
                 (log/error "Exception" ex "when parsing line:\n" line)))))))
     (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
