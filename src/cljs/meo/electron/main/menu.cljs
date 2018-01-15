@@ -90,6 +90,8 @@
                 :click (open "")}
                {:label "Charts"
                 :click (open "charts1")}
+               {:label "Config"
+                :click (open "config")}
                {:label "Countries"
                 :click (open "countries")}
                {:label "Dashboards"

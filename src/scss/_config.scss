@@ -1,0 +1,59 @@
+.config {
+  display: flex;
+  background-color: #EEE;
+  padding-left: 1em;
+
+  .col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cfg-items {
+    overflow-y: scroll;
+    flex: 1;
+  }
+
+  .custom-field {
+    background-color: #fafafa;
+    padding: 5px;
+    margin: 0 5px 5px 0;
+    width: 300px;
+    cursor: pointer;
+    user-select: none;
+
+    h3 {
+      margin: 5px 0;
+    }
+
+    ul {
+      padding: 0 0 0 15px;
+      margin: 5px 0;
+    }
+
+    &.active {
+      background-color: #caffdf;
+    }
+  }
+  input {
+    width: 300px;
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    border: 0;
+  }
+
+  .detail {
+    background-color: #fafafa;
+    padding: 5px;
+    margin-right: 5px;
+  }
+
+  .save {
+    height: 2em;
+    line-height: 2em;
+    font-size: 1.5em;
+
+    .cancel {
+      margin-left: 1em;
+    }
+  }
+}

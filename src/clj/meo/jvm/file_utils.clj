@@ -12,6 +12,7 @@
 
 (def data-path (or (System/getenv "DATA_PATH") "data"))
 (def daily-logs-path (str data-path "/daily-logs/"))
+(def bak-path (str data-path "/backup/"))
 (def app-cache-file (str data-path "/cache.dat"))
 (def clucy-path (str data-path "/clucy/"))
 (def export-path (str data-path "/export/"))
@@ -20,12 +21,14 @@
 (defn paths []
   (let [trash-path (str data-path "/trash/")]
     (fs/mkdirs daily-logs-path)
+    (fs/mkdirs bak-path)
     (fs/mkdirs clucy-path)
     (fs/mkdirs export-path)
     (fs/mkdirs trash-path)
     (fs/mkdirs img-path)
     {:data-path       data-path
      :app-cache       app-cache-file
+     :backup-path     bak-path
      :daily-logs-path daily-logs-path
      :clucy-path      clucy-path
      :img-path        img-path
@@ -47,3 +50,12 @@
                         (spit conf-path (with-out-str (pp/pprint default)))
                         default)))]
     (update-in conf [:questionnaires] #(merge-with merge questionnaires %))))
+
+(defn write-cfg [{:keys [msg-payload]}]
+  (let [conf-path (str data-path "/conf.edn")
+        bak-path (str bak-path "/conf-" (st/now) ".edn")
+        pretty (with-out-str (pp/pprint msg-payload))]
+    (fs/rename conf-path bak-path)
+    (log/info "writing new config")
+    (spit conf-path pretty)
+    {:emit-msg [:backend-cfg/new msg-payload]}))

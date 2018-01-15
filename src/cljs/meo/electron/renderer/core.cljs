@@ -22,7 +22,7 @@
 
 (def sente-cfg
   (merge sente-base-cfg
-         {:relay-types #{:entry/update :entry/find :entry/trash
+         {:relay-types #{:entry/update :entry/find :entry/trash :backend-cfg/save
                          :import/photos :import/spotify :import/flight :import/ws
                          :export/pdf :stats/pomo-day-get :import/screenshot
                          :stats/get :stats/get2 :import/movie :entry/unlink

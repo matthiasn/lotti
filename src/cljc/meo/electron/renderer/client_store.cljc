@@ -37,6 +37,7 @@
             (assoc-in [:options :questionnaires] (:questionnaires (:cfg msg-payload)))
             (assoc-in [:options :custom-field-charts] (:custom-field-charts (:cfg msg-payload)))
             (assoc-in [:options :stories] stories)
+            (assoc-in [:backend-cfg] (:cfg msg-payload))
             (assoc-in [:options :locations] (:locations msg-payload))
             (assoc-in [:options :sorted-stories] sorted-stories)
             (assoc-in [:options :sagas] sagas)
@@ -92,23 +93,29 @@
   (let [new-state (assoc-in current-state [:busy-color] (:color msg-payload))]
     {:new-state new-state}))
 
+
+(defn save-backend-cfg [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:backend-cfg] msg-payload)]
+    {:new-state new-state}))
+
 (defn cmp-map [cmp-id]
-  {:cmp-id            cmp-id
-   :state-fn          initial-state-fn
-   :state-spec        :state/client-store-spec
-   :handler-map       (merge cse/entry-handler-map
-                             s/search-handler-map
-                             {:state/new         new-state-fn
-                              :stats/result      save-stats-fn
-                              :stats/result2     save-stats-fn2
-                              :state/stats-tags  stats-tags-fn
-                              :state/stats-tags2 stats-tags-fn2
-                              :cfg/save          c/save-cfg
-                              :nav/to            nav-handler
-                              :blink/busy        blink-busy
-                              :cfg/show-qr       c/show-qr-code
-                              :cmd/toggle        c/toggle-set-fn
-                              :cmd/set-opt       c/set-conj-fn
-                              :cmd/set-dragged   c/set-currently-dragged
-                              :cmd/toggle-key    c/toggle-key-fn
-                              :cmd/assoc-in      c/assoc-in-state})})
+  {:cmp-id      cmp-id
+   :state-fn    initial-state-fn
+   :state-spec  :state/client-store-spec
+   :handler-map (merge cse/entry-handler-map
+                       s/search-handler-map
+                       {:state/new         new-state-fn
+                        :stats/result      save-stats-fn
+                        :stats/result2     save-stats-fn2
+                        :state/stats-tags  stats-tags-fn
+                        :state/stats-tags2 stats-tags-fn2
+                        :cfg/save          c/save-cfg
+                        :backend-cfg/new   save-backend-cfg
+                        :nav/to            nav-handler
+                        :blink/busy        blink-busy
+                        :cfg/show-qr       c/show-qr-code
+                        :cmd/toggle        c/toggle-set-fn
+                        :cmd/set-opt       c/set-conj-fn
+                        :cmd/set-dragged   c/set-currently-dragged
+                        :cmd/toggle-key    c/toggle-key-fn
+                        :cmd/assoc-in      c/assoc-in-state})})

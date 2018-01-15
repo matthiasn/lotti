@@ -9,6 +9,7 @@
             [re-frame.db :as rdb]
             [meo.electron.renderer.ui.charts.award :as aw]
             [meo.electron.renderer.ui.dashboard :as db]
+            [meo.electron.renderer.ui.config :as cfg]
             [meo.electron.renderer.ui.charts.custom-fields :as cf2]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
@@ -35,6 +36,7 @@
 (reg-sub :new-entries (fn [db _] (:new-entries db)))
 (reg-sub :combined-entries (fn [db _] (merge (:entries-map db) (:new-entries db))))
 (reg-sub :cfg (fn [db _] (:cfg db)))
+(reg-sub :backend-cfg (fn [db _] (:backend-cfg db)))
 (reg-sub :planning-mode (fn [db _] (:planning-mode (:cfg db))))
 (reg-sub :stats (fn [db _] (:stats db)))
 (reg-sub :briefings (fn [db _] (:briefings db)))
@@ -124,6 +126,7 @@
       (let [current-page @current-page]
         (case (:page current-page)
           :dashboards [dashboards put-fn]
+          :config [cfg/config put-fn]
           :charts-1 [charts-page put-fn]
           :countries [countries-page put-fn]
           :calendar [cal put-fn]

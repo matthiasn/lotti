@@ -86,8 +86,10 @@
 
 (defn refresh-cfg
   "Refresh configuration by reloading the config file."
-  [{:keys [current-state]}]
-  {:new-state (assoc-in current-state [:cfg] (fu/load-cfg))})
+  [{:keys [current-state put-fn]}]
+  (let [cfg (fu/load-cfg)]
+    (put-fn [:backend-cfg/new cfg])
+    {:new-state (assoc-in current-state [:cfg] cfg)}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
@@ -95,11 +97,12 @@
    :opts        {:msgs-on-firehose true}
    :handler-map (merge
                   gs/stats-handler-map
-                  {:entry/import f/entry-import-fn
-                   :entry/find   gq/find-entry
-                   :entry/unlink ga/unlink
-                   :entry/update f/geo-entry-persist-fn
-                   :sync/entry   f/sync-entry
-                   :entry/trash  f/trash-entry-fn
-                   :state/search gq/query-fn
-                   :cfg/refresh  refresh-cfg})})
+                  {:entry/import     f/entry-import-fn
+                   :entry/find       gq/find-entry
+                   :entry/unlink     ga/unlink
+                   :entry/update     f/geo-entry-persist-fn
+                   :sync/entry       f/sync-entry
+                   :entry/trash      f/trash-entry-fn
+                   :state/search     gq/query-fn
+                   :cfg/refresh      refresh-cfg
+                   :backend-cfg/save fu/write-cfg})})

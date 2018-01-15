@@ -16,12 +16,16 @@
   height: 15px;
 }
 
-.not-saved {
+.not-saved, .cancel {
   padding: 1px 5px;
   color: white;
   font-size: 0.8em;
   background-color: $red;
   cursor: pointer;
+}
+
+.cancel {
+  background-color: #BBB;
 }
 
 .link-btn {
