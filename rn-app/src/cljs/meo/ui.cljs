@@ -6,8 +6,6 @@
             [meo.helpers :as h]
             [meo.utils.parse :as p]))
 
-(defonce put-fn-atom (r/atom nil))
-
 (def ReactNative (js/require "react-native"))
 (def react-native-camera (js/require "react-native-camera"))
 (def cam (r/adapt-react-class (aget react-native-camera "default")))
@@ -30,7 +28,7 @@
 
 (reg-sub :entries (fn [db _] (:entries db)))
 
-(defn menu-bar [local]
+(defn menu-bar [local put-fn]
   (let [defaults {:background-color "blue"
                   :padding-left     15
                   :padding-right    15
@@ -50,8 +48,7 @@
                     :padding-right  10}}
       [touchable-highlight
        {:style    (merge defaults {:background-color "green"})
-        :on-press #(let [put-fn @put-fn-atom
-                         new-entry (p/parse-entry (:md @local))
+        :on-press #(let [new-entry (p/parse-entry (:md @local))
                          new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
                      (new-entry-fn)
                      (swap! local assoc-in [:md] ""))}
@@ -68,16 +65,14 @@
         (if (:cam @local) "hide cam" "ws")]]
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:sync/initiate]))}
+        :on-press #(put-fn [:sync/initiate])}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
         "sync"]]
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:state/reset]))}
+        :on-press #(put-fn [:state/reset])}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
@@ -89,33 +84,29 @@
                     :padding-right  10}}
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:healthkit/weight]))}
+        :on-press #(put-fn [:healthkit/weight])}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
         "weight"]]
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:healthkit/bp]))}
+        :on-press #(put-fn [:healthkit/bp])}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
         "bp"]]
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (dotimes [n 2]
-                       (put-fn [:healthkit/steps n])))}
+        :on-press #(dotimes [n 2]
+                     (put-fn [:healthkit/steps n]))}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
         "steps"]]
       [touchable-highlight
        {:style    defaults
-        :on-press #(let [put-fn @put-fn-atom]
-                     (put-fn [:healthkit/sleep]))}
+        :on-press #(put-fn [:healthkit/sleep])}
        [text {:style {:color       "white"
                       :text-align  "center"
                       :font-weight "bold"}}
@@ -149,7 +140,7 @@
                       :text-align    "center"}}
         (str (count @entries) " entries")]
 
-       [menu-bar local]
+       [menu-bar local put-fn]
 
        (when-let [barcode (:barcode @local)]
          [text {:style {:font-size     10
@@ -201,25 +192,12 @@
                        :default-value  (:md @local)
                        :keyboard-type  "twitter"
                        :on-change-text (fn [text]
-                                         (swap! local assoc-in [:md] text))}])]
-
-       #_[text {:style {:font-size     10
-                        :font-weight   "500"
-                        :color         "#CCC"
-                        :margin-bottom 20
-                        :text-align    "center"}}
-          (with-out-str (pp/pprint (second (last (sort-by first @entries)))))]
-       #_[image {:source logo-img
-                 :style  {:width         80
-                          :height        80
-                          :margin-bottom 5}}]
-       ])))
+                                         (swap! local assoc-in [:md] text))}])]])))
 
 (defn state-fn [put-fn]
   (let [app-root (app-root put-fn)
         register #(r/reactify-component app-root)]
-    (.registerComponent app-registry "meo" register)
-    (reset! put-fn-atom put-fn))
+    (.registerComponent app-registry "meo" register))
   {:observed rdb/app-db})
 
 (defn cmp-map [cmp-id]
