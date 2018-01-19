@@ -1,12 +1,11 @@
 (ns meo.electron.renderer.ui.draft
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
-            [taoensso.timbre :as timbre :refer-macros [info debug]]
-            [draft-js :as Draft]
+            [taoensso.timbre :refer-macros [info debug]]
             [meo.common.utils.parse :as p]
             [meo.common.utils.misc :as u]
+            [draft-js :as Draft]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.set :as set]))
 
@@ -42,7 +41,7 @@
        (map #(-> % :data :mention :id))
        (map #(when % (js/parseInt %)))))
 
-(defn draft-search-field [editor-state update-cb]
+(defn draft-search-field [_editor-state update-cb]
   (let [editor (adapt-react-class "SearchFieldEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
@@ -58,7 +57,7 @@
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))
         on-change (on-editor-change update-cb)]
-    (fn [editor-state send-fn]
+    (fn [editor-state _send-fn]
       [editor {:editorState editor-state
                :mentions    @mentions
                :hashtags    @hashtags
@@ -93,8 +92,7 @@
 
 (defn entry-editor [entry put-fn]
   (let [ts (:timestamp @entry)
-        {:keys [entry edit-mode entries-map new-entries unsaved]} (eu/entry-reaction ts)
-        local (r/atom {:editor-state (:editor-state @entry)})
+        {:keys [entry unsaved]} (eu/entry-reaction ts)
         editor-cb (fn [md plain editor-state]
                     (when-not (= md (:md @entry))
                       (let [new-state (js->clj editor-state :keywordize-keys true)

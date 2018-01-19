@@ -42,7 +42,6 @@
                ^{:key ts}
                [:option {:value ts} (:story-name story)])]]
            (for [[field cfg] (:fields item)]
-             ^{:key field}
              (let [label-path (concat fields-path [field :label])
                    type-path (concat fields-path [field :cfg :type])
                    input-fn (fn [ev]
@@ -53,6 +52,7 @@
                                    (swap! local assoc-in type-path t)))
                    label (:label cfg)
                    delete-field #(swap! local update-in fields-path dissoc field)]
+               ^{:key field}
                [:div.field
                 [:span.fa.fa-trash-o {:on-click delete-field}]
                 [:div
@@ -126,12 +126,15 @@
     (fn config-render [put-fn]
       (let [text (:search @local)
             item-filter #(s/includes? (s/lower-case (first %)) text)
-            items (filter item-filter @custom-fields)]
+            items (filter item-filter @custom-fields)
+            save-key-fn (fn [ev]
+                          (when (and (= (.-keyCode ev) 83) (.-metaKey ev))
+                            (save-fn ev)))]
         [:div.flex-container
          [:div.grid
           [:div.wrapper
            [menu/menu-view put-fn]
-           [:div.single.config
+           [:div.single.config {:on-key-down save-key-fn}
             [:div.col
              [:h2 "Custom Fields Editor"]
              (when (and (:changes @local) (not= @backend-cfg (:changes @local)))
