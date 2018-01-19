@@ -58,24 +58,46 @@
     }
   }
 
+  .fa-trash-o {
+    float: right;
+    cursor: pointer;
+    padding: 10px;
+
+    &.tag-delete {
+      padding: 20px;
+    }
+
+    &:hover {
+      color: red;
+    }
+  }
+
   .detail {
     background-color: #fafafa;
     padding: 5px;
     margin-right: 5px;
 
-    .label {
+    label {
       display: inline-block;
       width: 70px;
     }
 
+    .warn {
+      color: red;
+
+      .fa {
+        padding: 0 3px 0 6px;
+      }
+    }
+
     .field {
       margin-top: 5px;
-      padding: 5px;
-      background-color: #eee;
+      padding: 5px 10px;
+      background-color: #f1f1f1;
       line-height: 2em;
     }
     .story-line {
-      padding: 5px;
+      padding: 5px 10px;
     }
   }
 

@@ -107,7 +107,7 @@
                             (put-fn [:entry/update-local updated]))))))
                   ^{:key (str "cf" ts tag k)}
                   [:div
-                   [:label (:label field)]
+                   [:label (:label field) ":"]
                    [:input (merge
                              input-cfg
                              {:read-only (not edit-mode?)

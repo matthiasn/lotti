@@ -11,6 +11,7 @@
 
 (defn custom-field-cfg [local]
   (let [stories (subscribe [:stories])
+        backend-cfg (subscribe [:backend-cfg])
         story-sel (fn [ev]
                     (let [story (js/parseInt (-> ev .-nativeEvent .-target .-value))
                           sel (:selected @local)
@@ -25,12 +26,15 @@
       (let [sel (:selected @local)
             changes (:changes @local)
             cfg (get-in changes [:custom-fields sel])
-            item (get-in changes [:custom-fields sel])]
+            item (get-in changes [:custom-fields sel])
+            fields-path [:changes :custom-fields sel :fields]
+            backend-cfg @backend-cfg]
         (when sel
           [:div.detail
+           [:span.fa.fa-trash-o.tag-delete {:on-click delete}]
            [:h2 sel]
            [:div.story-line
-            [:span.label "Story"]
+            [:label "Story"]
             [:select {:value     (:default-story cfg "")
                       :on-change story-sel}
              [:option ""]
@@ -39,23 +43,35 @@
                [:option {:value ts} (:story-name story)])]]
            (for [[field cfg] (:fields item)]
              ^{:key field}
-             [:div.field
-              [:div
-               [:span.label "Name:"]
-               [:span.name field]]
-              [:div
-               [:span.label "Label:"]
-               [:input {:value (:label cfg)}]]
-              [:div
-               [:span.label "Type:"]
-               [:select {:value (-> cfg :cfg :type)}
-                [:option {:value :number} "Number"]
-                [:option {:value :text} "Text"]
-                [:option {:value :time} "Time"]]]])
-           [:pre [:code (with-out-str (pp/pprint item))]]
-           [:div.save
-            [:span.delete-warn {:on-click delete}
-             [:span.fa.fa-ban] "  delete custom field"]]])))))
+             (let [label-path (concat fields-path [field :label])
+                   type-path (concat fields-path [field :cfg :type])
+                   input-fn (fn [ev]
+                              (let [text (-> ev .-nativeEvent .-target .-value)]
+                                (swap! local assoc-in label-path text)))
+                   type-select (fn [ev]
+                                 (let [t (-> ev .-nativeEvent .-target .-value)]
+                                   (swap! local assoc-in type-path t)))
+                   label (:label cfg)
+                   delete-field #(swap! local update-in fields-path dissoc field)]
+               [:div.field
+                [:span.fa.fa-trash-o {:on-click delete-field}]
+                [:div
+                 [:label "Name:"]
+                 [:span.name field]]
+                [:div
+                 [:label "Label:"]
+                 [:input {:value    label
+                          :on-input input-fn}]
+                 (when-not (= (get-in backend-cfg (drop 1 label-path)) label)
+                   [:span.warn [:span.fa.fa-exclamation] "not saved yet"])]
+                [:div
+                 [:label "Type:"]
+                 [:select {:value     (-> cfg :cfg :type)
+                           :on-change type-select}
+                  [:option {:value :number} "Number"]
+                  [:option {:value :text} "Text"]
+                  [:option {:value :time} "Time"]]]]))
+           [:pre [:code (with-out-str (pp/pprint item))]]])))))
 
 (defn custom-fields-list [local]
   (let [stories (subscribe [:stories])
@@ -77,16 +93,18 @@
             sel (:selected @local)]
         [:div.cfg-items
          (for [[tag cfg] items]
-           ^{:key tag}
-           [:div.custom-field
-            {:on-click #(select-item tag)
-             :class    (when (= sel tag) "active")}
-            [:h3 tag (when-let [ds (:default-story cfg)]
-                       (str "   (" (get-in stories [ds :story-name]) ")"))]
-            [:ul
-             (for [[k v] (:fields cfg)]
-               ^{:key (str tag k)}
-               [:li (:label v)])]])]))))
+           (let [del #(swap! local update-in [:changes :custom-fields] dissoc sel)]
+             ^{:key tag}
+             [:div.custom-field
+              {:on-click #(select-item tag)
+               :class    (when (= sel tag) "active")}
+              [:span.fa.fa-trash-o {:on-click del}]
+              [:h3 tag (when-let [ds (:default-story cfg)]
+                         (str "   (" (get-in stories [ds :story-name]) ")"))]
+              [:ul
+               (for [[k v] (:fields cfg)]
+                 ^{:key (str tag k)}
+                 [:li (:label v)])]]))]))))
 
 (defn config [put-fn]
   (let [local (r/atom {:search ""})
