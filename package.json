@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.71",
+  "version": "0.4.72",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -28,20 +28,20 @@
     "draft-js-hashtag-plugin": "2.0.1",
     "draft-js-linkify-plugin": "2.0.1",
     "draft-js-mention-plugin": "2.0.1",
-    "draft-js-plugins-editor": "2.0.3",
+    "draft-js-plugins-editor": "2.0.4",
     "draftjs-md-converter": "0.1.6",
     "electron-fetch": "1.1.0",
     "electron-log": "2.2.11",
-    "electron-packager": "10.1.0",
+    "electron-packager": "10.1.1",
     "electron-spellchecker": "1.1.2",
-    "electron-updater": "2.16.3",
+    "electron-updater": "2.18.2",
     "emoji-flags": "^1.2.0",
     "font-awesome": "^4.7.0",
     "immutable": "^3.8.2",
     "install": "^0.10.1",
     "lato-font": "^3.0.0",
     "leaflet": "0.7.7",
-    "local-reverse-geocoder": "0.4.0",
+    "local-reverse-geocoder": "0.4.1",
     "lodash": "4.17.4",
     "lodash.throttle": "4.1.1",
     "moment": "2.19.2",
@@ -53,7 +53,7 @@
     "react-big-calendar": "0.17.0",
     "react-dates": "12.6.0",
     "react-dom": "15.6.2",
-    "react-responsive-carousel": "3.1.28",
+    "react-responsive-carousel": "3.1.30",
     "react-with-direction": "^1.1.0",
     "s": "0.1.1",
     "shell-escape": "0.2.0",
@@ -64,7 +64,7 @@
     "electron": "1.7.10",
     "electron-builder": "19.53.4",
     "electron-publisher-s3": "19.53.4",
-    "module-deps": "4.1.1",
-    "resolve": "^1.4.0"
+    "module-deps": "5.0.1",
+    "resolve": "^1.5.0"
   }
 }

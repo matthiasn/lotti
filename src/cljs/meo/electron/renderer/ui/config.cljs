@@ -24,20 +24,35 @@
     (fn custom-field-cfg-render [local]
       (let [sel (:selected @local)
             changes (:changes @local)
-            cfg (get-in changes [:custom-fields sel])]
+            cfg (get-in changes [:custom-fields sel])
+            item (get-in changes [:custom-fields sel])]
         (when sel
           [:div.detail
            [:h2 sel]
-           [:select {:value     (:default-story cfg "")
-                     :on-change story-sel}
-            [:option ""]
-            (for [[ts story] (sort-by story-sort-fn @stories)]
-              ^{:key ts}
-              [:option {:value ts} (:story-name story)])]
-           [:pre
-            [:code
-             (with-out-str
-               (pp/pprint (get-in changes [:custom-fields sel])))]]
+           [:div.story-line
+            [:span.label "Story"]
+            [:select {:value     (:default-story cfg "")
+                      :on-change story-sel}
+             [:option ""]
+             (for [[ts story] (sort-by story-sort-fn @stories)]
+               ^{:key ts}
+               [:option {:value ts} (:story-name story)])]]
+           (for [[field cfg] (:fields item)]
+             ^{:key field}
+             [:div.field
+              [:div
+               [:span.label "Name:"]
+               [:span.name field]]
+              [:div
+               [:span.label "Label:"]
+               [:input {:value (:label cfg)}]]
+              [:div
+               [:span.label "Type:"]
+               [:select {:value (-> cfg :cfg :type)}
+                [:option {:value :number} "Number"]
+                [:option {:value :text} "Text"]
+                [:option {:value :time} "Time"]]]])
+           [:pre [:code (with-out-str (pp/pprint item))]]
            [:div.save
             [:span.delete-warn {:on-click delete}
              [:span.fa.fa-ban] "  delete custom field"]]])))))
@@ -85,9 +100,15 @@
                   (swap! local dissoc :changes :selected))
         cancel-fn (fn [_]
                     (info "canceling config changes")
-                    (swap! local dissoc :changes :selected))]
+                    (swap! local dissoc :changes :selected))
+        cfg (reaction (if-let [changes (:changes @local)]
+                        (:custom-fields changes)
+                        (:custom-fields @backend-cfg)))
+        custom-fields (reaction (sort-by #(s/lower-case (first %)) @cfg))]
     (fn config-render [put-fn]
-      (let []
+      (let [text (:search @local)
+            item-filter #(s/includes? (s/lower-case (first %)) text)
+            items (filter item-filter @custom-fields)]
         [:div.flex-container
          [:div.grid
           [:div.wrapper
@@ -101,7 +122,11 @@
                  [:span.fa.fa-floppy-o] " save"]
                 [:span.cancel {:on-click cancel-fn}
                  [:span.fa.fa-ban] "  cancel"]])
-             [:input {:on-input input-fn}]
+             [:div.input-line
+              [:input {:on-input input-fn}]
+              (when (and (empty? items)
+                         (= "#" (subs text 0 1)))
+                [:span.add [:span.fa.fa-plus] "add"])]
              [custom-fields-list local]]
             [custom-field-cfg local]]
            [:div.footer [stats/stats-text]]]]]))))
