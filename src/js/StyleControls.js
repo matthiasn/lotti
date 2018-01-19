@@ -83,7 +83,7 @@ let StyleButton = function (_Component) {
         value: function render() {
             let className = 'fa ' + this.props.icon;
             if (this.props.active) {
-                className += ' RichEditor-activeButton';
+                className += ' active-button';
             }
             return _react2.default.createElement(
                 'span',

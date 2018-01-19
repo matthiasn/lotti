@@ -577,9 +577,11 @@ u {
   background-color: $edit-menu-bg;
   padding: 0 4px;
   margin: 0 -10px 3px -10px;
+  color: #666;
 
-  .fa-inactive {
-    color: #BBB;
+  .active-button {
+    background-color: #BBB;
+    color: #333;
   }
 
   .header-2 {

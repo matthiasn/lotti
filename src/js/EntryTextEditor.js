@@ -288,12 +288,10 @@ let EntryTextEditor = function (_Component) {
         key: 'render',
         value: function render() {
             let _this2 = this;
-
             let HashtagSuggestions = this.HashtagSuggestions;
             let MentionSuggestions = this.MentionSuggestions;
             let StorySuggestions = this.StorySuggestions;
             let editorState = this.state.editorState;
-
 
             return _react2.default.createElement(
                 'div',
