@@ -21,7 +21,7 @@ or
     
     $ lein with-profile prod cljsbuild auto ios
     
-    $ react-native link react-native-camera
+    $ react-native link
     
 
 ## License
