@@ -1,13 +1,7 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
-            [re-frame.core :refer [reg-sub subscribe]]))
-
-(def ReactNative (js/require "react-native"))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-(def react-native-camera (js/require "react-native-camera"))
-(def cam (r/adapt-react-class (aget react-native-camera "default")))
+            [meo.ui.shared :refer [view text touchable-highlight cam]]
+            [re-frame.core :refer [subscribe]]))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15
@@ -80,12 +74,11 @@
                                  :height 300}
                  :onBarCodeRead on-barcode-read}])
 
-         #_
-         (when (:cam @local)
-           [view {:style {:flex  2
-                          :height 300
-                          :width "100%"}}
-            [cam {:style         {:width  300
-                                  :height 300}
-                  :onBarCodeRead on-barcode-read}]])
+         #_(when (:cam @local)
+             [view {:style {:flex   2
+                            :height 300
+                            :width  "100%"}}
+              [cam {:style         {:width  300
+                                    :height 300}
+                    :onBarCodeRead on-barcode-read}]])
          ]))))

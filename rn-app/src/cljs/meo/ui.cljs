@@ -3,35 +3,13 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
             [meo.ui.editor :as edit]
+            [meo.ui.shared :refer [view text text-input touchable-highlight btn
+                                   tab-bar keyboard-avoiding-view vibration
+                                   tab-bar-item app-registry]]
             [meo.ui.journal :as jrn]
             [meo.ui.settings :as ts]
             [meo.ui.health :as uh]
             [cljs.pprint :as pp]))
-
-(def ReactNative (js/require "react-native"))
-
-(def app-registry (.-AppRegistry ReactNative))
-(def vibration (.-Vibration ReactNative))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView ReactNative)))
-(def react-native-camera (js/require "react-native-camera"))
-(def cam (r/adapt-react-class (aget react-native-camera "default")))
-(def tab-bar (r/adapt-react-class (.-TabBarIOS ReactNative)))
-(def navigator-ios (r/adapt-react-class (.-NavigatorIOS ReactNative)))
-(def react-native-vector-icons (js/require "react-native-vector-icons/FontAwesome"))
-(def icon (r/adapt-react-class (aget react-native-vector-icons "default")))
-(def tab-bar-item (r/adapt-react-class (aget react-native-vector-icons "TabBarItemIOS")))
-
-(def kb-aware-scroll-view
-  (aget (js/require "react-native-keyboard-aware-scroll-view")
-        "KeyboardAwareScrollView"))
-(def kb-avoiding-view (r/adapt-react-class kb-aware-scroll-view))
-(def image (r/adapt-react-class (.-Image ReactNative)))
-(def logo-img (js/require "./images/cljs.png"))
-
-(defn alert [title]
-  (.alert (.-Alert ReactNative) title))
 
 (reg-sub :entries (fn [db _] (:entries db)))
 

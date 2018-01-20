@@ -1,15 +1,8 @@
 (ns meo.ui.journal
   (:require [reagent.core :as r]
             [re-frame.core :refer [reg-sub subscribe]]
+            [meo.ui.shared :refer [view text touchable-highlight]]
             [meo.utils.parse :as p]))
-
-(def ReactNative (js/require "react-native"))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-(def text-input (r/adapt-react-class (.-TextInput ReactNative)))
-(def flat-list (r/adapt-react-class (.-FlatList ReactNative)))
-(def flat-list2 (.-FlatList ReactNative))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15
@@ -26,7 +19,8 @@
    [text {:style {:color       "white"
                   :text-align  "center"
                   :font-weight "bold"}}
-    (:title item)]])
+    ;(:title item)
+    "Fooooooo"]])
 
 (defn journal [local put-fn]
   (let [entries (subscribe [:entries])]
@@ -50,10 +44,11 @@
              :renderItem render-item
              }]
 
-         #_[flat-list
-            {
-             :data       []
-             ;:data       (clj->js [{:title "Title Text" :key "item1"} {:title "Title Text 2" :key "item2"}])
-
-             :renderItem render-item}]]))))
+         #_
+         [flat-list
+          {
+           ;:data       []
+           :data       (clj->js [(clj->js {:title "Title Text" :key "item1"})
+                                 (clj->js {:title "Title Text 2" :key "item2"})])
+           :renderItem render-item}]]))))
 

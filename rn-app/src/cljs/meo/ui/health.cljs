@@ -1,11 +1,7 @@
 (ns meo.ui.health
   (:require [reagent.core :as r]
+            [meo.ui.shared :refer [view text touchable-highlight]]
             [re-frame.core :refer [reg-sub subscribe]]))
-
-(def ReactNative (js/require "react-native"))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15

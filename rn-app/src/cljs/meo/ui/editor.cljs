@@ -1,16 +1,9 @@
 (ns meo.ui.editor
   (:require [reagent.core :as r]
             [re-frame.core :refer [reg-sub subscribe]]
+            [meo.ui.shared :refer [view text text-input touchable-highlight btn]]
             [meo.helpers :as h]
             [meo.utils.parse :as p]))
-
-(def ReactNative (js/require "react-native"))
-(def text (r/adapt-react-class (.-Text ReactNative)))
-(def view (r/adapt-react-class (.-View ReactNative)))
-(def touchable-highlight (r/adapt-react-class (.-TouchableHighlight ReactNative)))
-(def text-input (r/adapt-react-class (.-TextInput ReactNative)))
-(def react-native-vector-icons (js/require "react-native-vector-icons/FontAwesome"))
-(def btn (r/adapt-react-class (aget react-native-vector-icons "default" "Button")))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15
