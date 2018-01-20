@@ -4,6 +4,7 @@
             [re-frame.db :as rdb]
             [meo.ui.tab-bar :as tb]
             [meo.ui.editor :as edit]
+            [meo.ui.journal :as jrn]
             [meo.ui.settings :as ts]
             [meo.ui.health :as uh]
             [cljs.pprint :as pp]))
@@ -46,13 +47,14 @@
         :style    {:display          "flex"
                    :flex-direction   "column"
                    :justify-content  "space-between"
-                   :background-color "#EEE"
-                   :padding-top      30
+                   :background-color :lightpink
+                   :padding-top      35
                    :flex             1
                    :align-items      "center"}}
        [uh/health-page local put-fn]
        [ts/settings-page local put-fn]
        [edit/editor local put-fn]
+       [jrn/journal local put-fn]
        [tb/meo-tab-bar local put-fn]])))
 
 (defn state-fn [put-fn]
