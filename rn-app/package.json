@@ -10,9 +10,12 @@
 		"babel-plugin-transform-es2015-block-scoping": "6.15.0",
 		"create-react-class": "^15.6.2",
 		"moment": "^2.20.1",
+		"native-base": "^2.3.7",
 		"react": "16.0.0",
 		"react-native": "0.50.3",
 		"react-native-camera": "^0.12.0",
+		"react-native-keyboard-aware-scroll-view": "^0.4.3",
+		"react-native-tabbar-bottom": "^1.0.4",
 		"react-native-vector-icons": "^4.5.0",
 		"rn-apple-healthkit": "^0.6.1",
 		"s": "^0.1.1"
