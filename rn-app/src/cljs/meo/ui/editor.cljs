@@ -21,31 +21,35 @@
 
 (defn editor [local put-fn]
   (when (= (:active-tab @local) :main)
-    [view {:style {:flex  2
-                   :width "100%"
-                   :background-color :purple}}
+    [view {:style {:flex 2}}
      [text-input {:style          {:flex             2
                                    :font-weight      "100"
-                                   :padding          10
+                                   :padding          16
                                    :font-size        24
                                    :background-color "#FFF"
+                                   :margin-bottom    20
                                    :width            "100%"}
                   :multiline      true
                   :default-value  (:md @local)
                   :keyboard-type  "twitter"
                   :on-change-text (fn [text]
                                     (swap! local assoc-in [:md] text))}]
-     [view {:style {:width            150
-                    :height           80
-                    :background-color :red}}
+     [view {:style {:padding-top    0
+                    :padding-right  15
+                    :padding-left   15
+                    :padding-bottom 0
+                    :width          120
+                    :flex-grow      0
+                    :height         150
+                    :max-height     150}}
       [btn {:name     "floppy-o"
-            :style    {:width            100
-                       :background-color "green"}
+            :style    {:background-color "green"}
             :on-press #(let [new-entry (p/parse-entry (:md @local))
                              new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
                          (new-entry-fn)
                          (swap! local assoc-in [:md] ""))}
        [text {:style {:color       :white
                       :text-align  "center"
+                      :font-size   12
                       :font-weight "bold"}}
         "save"]]]]))

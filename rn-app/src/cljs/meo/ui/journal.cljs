@@ -35,7 +35,6 @@
         [view {:style {:flex             1
                        :max-height       500
                        :background-color "orange"
-                       :margin           10
                        :width            "100%"}}
          [text {:style {:color       "#777"
                         :text-align  "center"
