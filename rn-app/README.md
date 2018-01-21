@@ -21,8 +21,10 @@ or
     
     $ lein with-profile prod cljsbuild auto ios
     
-    $ react-native link
-    
+    $ react-native link react-native-contacts
+    $ react-native link react-native-vector-icons
+    $ react-native link rn-apple-healthkit    
+
 
 ## License
 

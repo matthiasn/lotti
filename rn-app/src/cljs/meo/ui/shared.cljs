@@ -39,3 +39,7 @@
 (def search-bar (r/adapt-react-class (aget react-native-elements "SearchBar")))
 
 (def contacts (js/require "react-native-contacts"))
+
+(def mapbox (aget (js/require "@mapbox/react-native-mapbox-gl") "default"))
+(def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
+(def map-view (r/adapt-react-class (aget mapbox "MapView")))

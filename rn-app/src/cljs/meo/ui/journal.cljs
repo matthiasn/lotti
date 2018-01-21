@@ -3,8 +3,8 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.helpers :as h]
             [reagent.ratom :refer-macros [reaction]]
-            [meo.ui.shared :refer [view text touchable-highlight scroll
-                                   search-bar flat-list]]
+            [meo.ui.shared :refer [view text scroll search-bar flat-list
+                                   map-view mapbox-style-url]]
             [meo.utils.parse :as p]
             [clojure.string :as s]))
 
@@ -20,13 +20,13 @@
         entry (:item item)
         local (r/atom {:detail false})]
     (r/as-element
-      [view {:style {:flex             1
-                     :background-color :white
-                     :margin-top       10
-                     :padding          10
-                     :width            "100%"}
+      [view {:style    {:flex             1
+                        :background-color :white
+                        :margin-top       10
+                        :padding          10
+                        :width            "100%"}
              :on-press #(swap! local update-in [:detail] not)
-             :key   (:timestamp entry)}
+             :key      (:timestamp entry)}
        [text {:style {:color      "#777"
                       :text-align "center"
                       :font-size  8
@@ -36,6 +36,16 @@
                       :text-align  "center"
                       :font-weight "bold"}}
         (:md entry)]
+       (when (:latitude entry)
+         [map-view {:showUserLocation true
+                    :centerCoordinate [(:longitude entry) (:latitude entry)]
+                    :scrollEnabled    false
+                    :rotateEnabled    false
+                    :styleURL         (get mapbox-style-url (:map-style @local))
+                    :style            {:width  "100%"
+                                       :height 200}
+                    :zoomLevel        15}])
+
        (when (:detail @local)
          [text {:style {:color      "#555"
                         :text-align "center"

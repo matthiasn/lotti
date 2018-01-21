@@ -9,7 +9,8 @@ var modules = {
     'react-native-elements': require('react-native-elements'),
     'react-native-vector-icons/FontAwesome': require('react-native-vector-icons/FontAwesome'),
     'react-native-keyboard-aware-scroll-view': require('react-native-keyboard-aware-scroll-view'),
-    'react-native-contacts': require('react-native-contacts')
+    'react-native-contacts': require('react-native-contacts'),
+    '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
 };
 
 module.exports=modules;

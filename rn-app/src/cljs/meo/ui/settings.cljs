@@ -1,8 +1,10 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
             [meo.ui.shared :refer [view text touchable-highlight cam contacts
-                                   scroll btn flat-list]]
-            [re-frame.core :refer [subscribe]]))
+                                   scroll btn flat-list map-view mapbox
+                                   mapbox-style-url]]
+            [re-frame.core :refer [subscribe]]
+            [clojure.pprint :as pp]))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15
@@ -49,9 +51,7 @@
       (when (= (:active-tab @local) :settings)
         [view {:style {:flex-direction "column"
                        :padding-top    10
-                       :padding-bottom 10
-                       :padding-left   10
-                       :padding-right  10}}
+                       :padding-bottom 10}}
          [text {:style {:font-size     10
                         :color         "#888"
                         :font-weight   "100"
@@ -68,7 +68,8 @@
                         :padding-left   10
                         :padding-right  10}}
           [btn {:name     "bolt"
-                :style    {:background-color :red}
+                :style    {:background-color :red
+                           :margin-right     10}
                 :on-press #(put-fn [:state/reset])}
            [text {:style {:color       :white
                           :text-align  "center"
@@ -77,7 +78,8 @@
             "reset"]]
 
           [btn {:name     "address-card-o"
-                :style    {:background-color "#999"}
+                :style    {:background-color "#999"
+                           :margin-right     10}
                 :on-press read-contacts}
            [text {:style {:color       :white
                           :text-align  "center"
@@ -86,7 +88,7 @@
             "import"]]
 
           [btn {:name     "camera-retro"
-                :style    {:background-color "#99E"}
+                :style    {:margin-right 10}
                 :on-press #(swap! local update-in [:cam] not)}
            [text {:style {:color       :white
                           :text-align  "center"
@@ -102,6 +104,44 @@
                           :font-size   12
                           :font-weight "bold"}}
             "sync"]]]
+
+         [scroll {}
+          [view {:style {:flex-direction "row"
+                         :width "100%"}}
+           [map-view {:showUserLocation true
+                      :centerCoordinate [9.95 53.55]
+                      ;:scrollEnabled    false
+                      ;:rotateEnabled    false
+                      ;:zoomEnabled      false
+                      :styleURL         (get mapbox-style-url (:map-style @local))
+                      :style            {:width         "auto"
+                                         :flex 2
+                                         :height        500
+                                         :margin-bottom 10}
+                      :zoomLevel        10}]
+           [view {:style {:display        :flex
+                          :flex-direction "column"}}
+            (for [[k style] mapbox-style-url]
+              [touchable-highlight
+               {:style    {:background-color "lightgreen"
+                           :flex             1
+                           :padding-left     10
+                           :padding-right    10
+                           :padding-top      10
+                           :width            80
+                           :padding-bottom   10
+                           :margin-bottom    10}
+                :on-press #(swap! local assoc-in [:map-style] k)}
+               [text {:style {:color       "white"
+                              :text-align  "center"
+                              :font-size   8
+                              :font-weight "bold"}}
+                (name k)]])]]
+
+          [text {:style {:color      :black
+                         :text-align "center"
+                         :font-size  8}}
+           (str (with-out-str (pp/pprint (js->clj mapbox))))]]
 
          (when (:cam @local)
            [cam {:style         {:width  300

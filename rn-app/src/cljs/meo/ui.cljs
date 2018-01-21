@@ -17,6 +17,7 @@
   (let [local (r/atom {:cam        false
                        :active-tab :main
                        :contacts   (clj->js [])
+                       :map-style  :Street
                        :md         (str "hello world")})
         click-fn (fn [k]
                    (fn [_]

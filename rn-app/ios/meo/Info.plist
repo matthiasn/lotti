@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>MGLMapboxAccessToken</key>
+	<string>pk.eyJ1IjoibWF0dGhpYXNuIiwiYSI6ImNqY295azVueDFyajMycW14eXk0eDg5NWgifQ.fVPCdpdMMB2l4YR1rtz_8Q</string>
 	<key>NSContactsUsageDescription</key>
 	<string>sync contacts</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
@@ -64,6 +66,9 @@
 		<string>Octicons.ttf</string>
 		<string>SimpleLineIcons.ttf</string>
 		<string>Zocial.ttf</string>
+		<string>Roboto_medium.ttf</string>
+		<string>Roboto.ttf</string>
+		<string>rubicon-icon-font.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
