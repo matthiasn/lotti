@@ -16,6 +16,7 @@
 (defn app-root [put-fn]
   (let [local (r/atom {:cam        false
                        :active-tab :main
+                       :contacts   (clj->js [])
                        :md         (str "hello world")})
         click-fn (fn [k]
                    (fn [_]

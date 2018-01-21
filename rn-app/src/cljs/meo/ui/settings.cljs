@@ -1,7 +1,7 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
             [meo.ui.shared :refer [view text touchable-highlight cam contacts
-                                   scroll btn]]
+                                   scroll btn flat-list]]
             [re-frame.core :refer [subscribe]]))
 
 (def defaults {:background-color "lightgreen"
@@ -10,6 +10,28 @@
                :padding-top      10
                :padding-bottom   10
                :margin-right     10})
+
+(defn render-item [item]
+  (let [item (js->clj item :keywordize-keys true)
+        contact (:item item)]
+    (r/as-element
+      [view {:style {:flex             1
+                     :background-color :white
+                     :margin-top       10
+                     :padding          10
+                     :width            "100%"}
+             :key   (:recordID contact)}
+       [text {:style {:color       "#777"
+                      :text-align  "center"
+                      :font-weight "bold"
+                      :margin-top  5}}
+        (:givenName contact) " "
+        [text {:style {:font-weight "bold"}}
+         (:familyName contact)]]
+       [text {:style {:color      "#555"
+                      :text-align "center"
+                      :font-size  5}}
+        (str contact)]])))
 
 (defn settings-page [local put-fn]
   (let [entries (subscribe [:entries])
@@ -35,9 +57,10 @@
                         :font-weight   "100"
                         :margin-bottom 5
                         :text-align    "center"}}
-          (str (count @entries) " entries"
+          (str (count @entries) " entries "
+               (.-length (:contacts @local)) " contacts"
                (when-let [barcode (:barcode @local)]
-                 (str " - " barcode) ))]
+                 (str " - " barcode)))]
 
          [view {:style {:flex-direction "row"
                         :padding-top    10
@@ -85,24 +108,5 @@
                                  :height 300}
                  :onBarCodeRead on-barcode-read}])
 
-         [scroll {}
-          (for [contact (:contacts @local)]
-            (let [contact (js->clj contact :keywordize-keys true)]
-              ^{:key (:recordID contact)}
-              [view {:style {:flex             1
-                             :background-color :white
-                             :margin-top       10
-                             :padding          10
-                             :width            "100%"}}
-               [text {:style {:color       "#777"
-                              :text-align  "center"
-                              :font-weight "bold"
-                              :margin-top  5}}
-                (:givenName contact) " "
-                [text {:style {:font-weight "bold"}}
-                 (:familyName contact)]]
-               #_
-               [text {:style {:color      "#777"
-                              :text-align "center"
-                              :font-size  8}}
-                (str contact)]]))]]))))
+         [flat-list {:data        (:contacts @local)
+                     :render-item render-item}]]))))
