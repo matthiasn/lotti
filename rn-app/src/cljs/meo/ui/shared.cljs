@@ -37,3 +37,5 @@
 
 (def react-native-elements (js/require "react-native-elements"))
 (def search-bar (r/adapt-react-class (aget react-native-elements "SearchBar")))
+
+(def contacts (js/require "react-native-contacts"))

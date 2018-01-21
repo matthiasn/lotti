@@ -3,6 +3,7 @@ package com.meo;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.rt2zz.reactnativecontacts.ReactNativeContacts;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
 import com.facebook.react.ReactNativeHost;
@@ -25,6 +26,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new ReactNativeContacts(),
             new VectorIconsPackage(),
             new RCTCameraPackage()
       );

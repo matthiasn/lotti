@@ -1,6 +1,7 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
-            [meo.ui.shared :refer [view text touchable-highlight cam]]
+            [meo.ui.shared :refer [view text touchable-highlight cam contacts
+                                   scroll btn]]
             [re-frame.core :refer [subscribe]]))
 
 (def defaults {:background-color "lightgreen"
@@ -17,7 +18,11 @@
                                 data (get qr-code "data")]
                             (swap! local assoc-in [:barcode] data)
                             (put-fn [:ws/connect {:host data}])
-                            (swap! local assoc-in [:cam] false)))]
+                            (swap! local assoc-in [:cam] false)))
+        read-contacts (fn [_]
+                        (let [cb (fn [err contacts]
+                                   (swap! local assoc-in [:contacts] contacts))]
+                          (.getAll contacts cb)))]
     (fn [local put-fn]
       (when (= (:active-tab @local) :settings)
         [view {:style {:flex-direction "column"
@@ -30,55 +35,74 @@
                         :font-weight   "100"
                         :margin-bottom 5
                         :text-align    "center"}}
-          (str (count @entries) " entries")]
+          (str (count @entries) " entries"
+               (when-let [barcode (:barcode @local)]
+                 (str " - " barcode) ))]
 
          [view {:style {:flex-direction "row"
                         :padding-top    10
                         :padding-bottom 10
                         :padding-left   10
                         :padding-right  10}}
-          [touchable-highlight
-           {:style    defaults
-            :on-press #(put-fn [:state/reset])}
-           [text {:style {:color       "white"
+          [btn {:name     "bolt"
+                :style    {:background-color :red}
+                :on-press #(put-fn [:state/reset])}
+           [text {:style {:color       :white
                           :text-align  "center"
+                          :font-size   12
                           :font-weight "bold"}}
             "reset"]]
 
-          [touchable-highlight
-           {:style    defaults
-            :on-press #(swap! local update-in [:cam] not)}
-           [text {:style {:color       "white"
+          [btn {:name     "address-card-o"
+                :style    {:background-color "#999"}
+                :on-press read-contacts}
+           [text {:style {:color       :white
                           :text-align  "center"
+                          :font-size   12
+                          :font-weight "bold"}}
+            "import"]]
+
+          [btn {:name     "camera-retro"
+                :style    {:background-color "#99E"}
+                :on-press #(swap! local update-in [:cam] not)}
+           [text {:style {:color       :white
+                          :text-align  "center"
+                          :font-size   12
                           :font-weight "bold"}}
             (if (:cam @local) "hide cam" "ws")]]
 
-          [touchable-highlight
-           {:style    defaults
-            :on-press #(put-fn [:sync/initiate])}
-           [text {:style {:color       "white"
+          [btn {:name     "refresh"
+                :style    {:background-color "#99E"}
+                :on-press #(put-fn [:sync/initiate])}
+           [text {:style {:color       :white
                           :text-align  "center"
+                          :font-size   12
                           :font-weight "bold"}}
             "sync"]]]
-
-         (when-let [barcode (:barcode @local)]
-           [text {:style {:font-size     12
-                          :color         "#999"
-                          :font-weight   "100"
-                          :margin-bottom 5
-                          :text-align    "center"}}
-            (str barcode)])
 
          (when (:cam @local)
            [cam {:style         {:width  300
                                  :height 300}
                  :onBarCodeRead on-barcode-read}])
 
-         #_(when (:cam @local)
-             [view {:style {:flex   2
-                            :height 300
-                            :width  "100%"}}
-              [cam {:style         {:width  300
-                                    :height 300}
-                    :onBarCodeRead on-barcode-read}]])
-         ]))))
+         [scroll {}
+          (for [contact (:contacts @local)]
+            (let [contact (js->clj contact :keywordize-keys true)]
+              ^{:key (:recordID contact)}
+              [view {:style {:flex             1
+                             :background-color :white
+                             :margin-top       10
+                             :padding          10
+                             :width            "100%"}}
+               [text {:style {:color       "#777"
+                              :text-align  "center"
+                              :font-weight "bold"
+                              :margin-top  5}}
+                (:givenName contact) " "
+                [text {:style {:font-weight "bold"}}
+                 (:familyName contact)]]
+               #_
+               [text {:style {:color      "#777"
+                              :text-align "center"
+                              :font-size  8}}
+                (str contact)]]))]]))))
