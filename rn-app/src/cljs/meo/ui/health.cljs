@@ -11,44 +11,43 @@
                :margin-right     10})
 
 (defn health-page [local put-fn]
-  (when (= (:active-tab @local) :health)
-    [view {:style {:flex-direction "column"
-                   :padding-top    10
-                   :padding-bottom 10
-                   :padding-left   10
-                   :padding-right  10}}
+  [view {:style {:flex-direction "column"
+                 :padding-top    10
+                 :padding-bottom 10
+                 :padding-left   10
+                 :padding-right  10}}
 
-     [view {:style {:flex-direction "row"
-                    :padding-top    10
-                    :padding-bottom 10
-                    :padding-left   10
-                    :padding-right  10}}
-      [touchable-highlight
-       {:style    defaults
-        :on-press #(put-fn [:healthkit/weight])}
-       [text {:style {:color       "white"
-                      :text-align  "center"
-                      :font-weight "bold"}}
-        "weight"]]
-      [touchable-highlight
-       {:style    defaults
-        :on-press #(put-fn [:healthkit/bp])}
-       [text {:style {:color       "white"
-                      :text-align  "center"
-                      :font-weight "bold"}}
-        "bp"]]
-      [touchable-highlight
-       {:style    defaults
-        :on-press #(dotimes [n 2]
-                     (put-fn [:healthkit/steps n]))}
-       [text {:style {:color       "white"
-                      :text-align  "center"
-                      :font-weight "bold"}}
-        "steps"]]
-      [touchable-highlight
-       {:style    defaults
-        :on-press #(put-fn [:healthkit/sleep])}
-       [text {:style {:color       "white"
-                      :text-align  "center"
-                      :font-weight "bold"}}
-        "sleep"]]]]))
+   [view {:style {:flex-direction "row"
+                  :padding-top    10
+                  :padding-bottom 10
+                  :padding-left   10
+                  :padding-right  10}}
+    [touchable-highlight
+     {:style    defaults
+      :on-press #(put-fn [:healthkit/weight])}
+     [text {:style {:color       "white"
+                    :text-align  "center"
+                    :font-weight "bold"}}
+      "weight"]]
+    [touchable-highlight
+     {:style    defaults
+      :on-press #(put-fn [:healthkit/bp])}
+     [text {:style {:color       "white"
+                    :text-align  "center"
+                    :font-weight "bold"}}
+      "bp"]]
+    [touchable-highlight
+     {:style    defaults
+      :on-press #(dotimes [n 2]
+                   (put-fn [:healthkit/steps n]))}
+     [text {:style {:color       "white"
+                    :text-align  "center"
+                    :font-weight "bold"}}
+      "steps"]]
+    [touchable-highlight
+     {:style    defaults
+      :on-press #(put-fn [:healthkit/sleep])}
+     [text {:style {:color       "white"
+                    :text-align  "center"
+                    :font-weight "bold"}}
+      "sleep"]]]])

@@ -44,6 +44,7 @@
 		AD0590F22014F42200130A7B /* Mapbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD0590CA2014F42200130A7B /* Mapbox.framework */; };
 		AD0590F32014F42200130A7B /* Mapbox.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AD0590CA2014F42200130A7B /* Mapbox.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AD0590FB2014F50B00130A7B /* libRCTMGL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD0590FA2014F4CC00130A7B /* libRCTMGL.a */; };
+		AD05910320153AF200130A7B /* libRCTCameraRoll.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD05910220153AB700130A7B /* libRCTCameraRoll.a */; };
 		AD28E86C1FEC776F007812C2 /* libRCTAnimation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E9157331DD0AC6500FF2AA8 /* libRCTAnimation.a */; };
 		AD4F819B1FED7A0600F736B5 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD4F819A1FED7A0600F736B5 /* HealthKit.framework */; };
 		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
@@ -255,6 +256,13 @@
 			remoteGlobalIDString = C4D1443D1F4E16F600396F26;
 			remoteInfo = RCTMGL;
 		};
+		AD05910120153AB700130A7B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 58B5115D1A9E6B3D00147676;
+			remoteInfo = RCTCameraRoll;
+		};
 		AD28E8561FEC7750007812C2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = ADBDB91F1DFEBF0600ED6528 /* RCTBlob.xcodeproj */;
@@ -414,6 +422,7 @@
 		A352D66E30A64DD5B1A2FD1D /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
 		AD0590CA2014F42200130A7B /* Mapbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mapbox.framework; path = "../node_modules/@mapbox/react-native-mapbox-gl/ios/Mapbox.framework"; sourceTree = "<group>"; };
 		AD0590F52014F4CC00130A7B /* RCTMGL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTMGL.xcodeproj; path = "../node_modules/@mapbox/react-native-mapbox-gl/ios/RCTMGL.xcodeproj"; sourceTree = "<group>"; };
+		AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTCameraRoll.xcodeproj; path = "../node_modules/react-native/Libraries/CameraRoll/RCTCameraRoll.xcodeproj"; sourceTree = "<group>"; };
 		AD4F81981FED7A0600F736B5 /* meo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = meo.entitlements; path = meo/meo.entitlements; sourceTree = "<group>"; };
 		AD4F819A1FED7A0600F736B5 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		ADBDB91F1DFEBF0600ED6528 /* RCTBlob.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTBlob.xcodeproj; path = "../node_modules/react-native/Libraries/Blob/RCTBlob.xcodeproj"; sourceTree = "<group>"; };
@@ -437,6 +446,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD05910320153AF200130A7B /* libRCTCameraRoll.a in Frameworks */,
 				AD0590FB2014F50B00130A7B /* libRCTMGL.a in Frameworks */,
 				ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */,
 				AD28E86C1FEC776F007812C2 /* libRCTAnimation.a in Frameworks */,
@@ -628,6 +638,7 @@
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
+				AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */,
 				AD0590F52014F4CC00130A7B /* RCTMGL.xcodeproj */,
 				5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */,
 				146833FF1AC3E56700842450 /* React.xcodeproj */,
@@ -704,6 +715,14 @@
 			isa = PBXGroup;
 			children = (
 				AD0590FA2014F4CC00130A7B /* libRCTMGL.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD0590FE20153AB700130A7B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD05910220153AB700130A7B /* libRCTCameraRoll.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -855,6 +874,10 @@
 				{
 					ProductGroup = ADE7CD3C1FF2D72500643674 /* Products */;
 					ProjectRef = D999D3DB39464D2FA749562F /* RCTCamera.xcodeproj */;
+				},
+				{
+					ProductGroup = AD0590FE20153AB700130A7B /* Products */;
+					ProjectRef = AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */;
 				},
 				{
 					ProductGroup = AD0590B520142B0700130A7B /* Products */;
@@ -1101,6 +1124,13 @@
 			fileType = archive.ar;
 			path = libRCTMGL.a;
 			remoteRef = AD0590F92014F4CC00130A7B /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD05910220153AB700130A7B /* libRCTCameraRoll.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRCTCameraRoll.a;
+			remoteRef = AD05910120153AB700130A7B /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		AD28E8571FEC7750007812C2 /* libRCTBlob-tvOS.a */ = {

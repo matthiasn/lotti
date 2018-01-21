@@ -3,6 +3,7 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
             [meo.ui.editor :as edit]
+            [meo.ui.photos :as photos]
             [meo.ui.shared :refer [view text text-input touchable-highlight btn
                                    tab-bar keyboard-avoiding-view vibration
                                    tab-bar-item app-registry]]
@@ -63,19 +64,7 @@
                        :selected  (= (:active-tab @local) :film)
                        :iconSize  20
                        :iconColor "#987"}
-         [view {:style {:flex             1
-                        :max-height       500
-                        :background-color "orange"
-                        :margin           10
-                        :width            "100%"}}
-          [text {:style {:font-size        16
-                         :height           30
-                         :color            :cyan
-                         :background-color "#FFC8A2"
-                         :font-weight      :bold
-                         :margin-bottom    5
-                         :text-align       "center"}}
-           "Photos"]]]
+         [photos/photos-page local put-fn]]
         [tab-bar-item {:title     "Settings"
                        :iconName  "cogs"
                        :badge     5
