@@ -6,6 +6,7 @@ var modules = {
     'rn-apple-healthkit': require('rn-apple-healthkit'),
     'react-native-camera': require('react-native-camera'),
     'react-native-vector-icons': require('react-native-vector-icons'),
+    'react-native-elements': require('react-native-elements'),
     'react-native-vector-icons/FontAwesome': require('react-native-vector-icons/FontAwesome'),
     'react-native-keyboard-aware-scroll-view': require('react-native-keyboard-aware-scroll-view')
 };

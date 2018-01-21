@@ -31,7 +31,7 @@
                     :padding-right  15
                     :padding-left   15
                     :padding-bottom 0
-                    :width          120
+                    :width          110
                     :flex-grow      0
                     :height         150
                     :max-height     150}}

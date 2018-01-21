@@ -26,7 +26,7 @@
                                :style    {:display          "flex"
                                           :flex-direction   "column"
                                           :justify-content  "space-between"
-                                          :background-color "#F6F6F6"
+                                          :background-color "#F8F8F8"
                                           :padding-top      40
                                           :flex             1
                                           :align-items      "center"}}

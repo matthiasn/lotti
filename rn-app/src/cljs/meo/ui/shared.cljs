@@ -34,3 +34,6 @@
   (aget (js/require "react-native-keyboard-aware-scroll-view")
         "KeyboardAwareScrollView"))
 (def kb-avoiding-view (r/adapt-react-class kb-aware-scroll-view))
+
+(def react-native-elements (js/require "react-native-elements"))
+(def search-bar (r/adapt-react-class (aget react-native-elements "SearchBar")))

@@ -1,10 +1,9 @@
 (ns meo.helpers
   (:require [matthiasn.systems-toolbox.component :as st]
             [goog.dom.Range]
-            [clojure.string :as s]
-            [meo.utils.parse :as p]
-            [matthiasn.systems-toolbox.component.helpers :as h]
-            [matthiasn.systems-toolbox.log :as l]))
+            [meo.utils.parse :as p]))
+
+(set! js/moment (js/require "moment"))
 
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the
