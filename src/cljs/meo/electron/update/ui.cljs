@@ -1,9 +1,9 @@
 (ns meo.electron.update.ui
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as rc]
+            [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
-            [taoensso.timbre :as timbre :refer-macros [info debug]]))
+            [taoensso.timbre :refer-macros [info debug]]))
 
 ;; Subscription Handlers
 (reg-sub :current-page (fn [db _] (:current-page db)))

@@ -1,6 +1,6 @@
 (ns meo.electron.renderer.ui.charts.correlation
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.helpers :as h]
             [matthiasn.systems-toolbox.switchboard.helpers :as sh]
             [re-frame.core :refer [subscribe]]))

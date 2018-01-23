@@ -5,23 +5,34 @@
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.menu :as menu]
+            [meo.electron.renderer.helpers :as h]
             [cljs.pprint :as pp]
             [reagent.core :as r]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.common.specs :as specs]
+            [meo.common.utils.parse :as p]))
 
 (defn custom-field-cfg [local]
   (let [stories (subscribe [:stories])
         backend-cfg (subscribe [:backend-cfg])
         story-sel (fn [ev]
-                    (let [story (js/parseInt (-> ev .-nativeEvent .-target .-value))
+                    (let [story (js/parseInt (h/target-val ev))
                           sel (:selected @local)
                           path [:changes :custom-fields sel :default-story]]
                       (swap! local assoc-in path story)))
         story-sort-fn #(s/lower-case (:story-name (second %)))
-        delete (fn [_]
-                 (let [sel (:selected @local)]
-                   (swap! local update-in [:changes :custom-fields] dissoc sel)
-                   (swap! local dissoc :selected)))]
+        valid-field-name #(re-find (re-pattern (str "^" p/tag-char-cls "+$")) %)
+        new-field-input (fn [ev]
+                          (let [text (h/target-val ev)]
+                            (swap! local assoc-in [:new-field-input] text)))
+        add-field (fn [_]
+                    (let [field (keyword (:new-field-input @local))
+                          sel (:selected @local)
+                          path [:changes :custom-fields sel :fields field]
+                          default {:label "change this"
+                                   :cfg   {:type :text}}]
+                      (swap! local assoc-in path default)
+                      (swap! local assoc-in [:new-field-input] "")))]
     (fn custom-field-cfg-render [local]
       (let [sel (:selected @local)
             changes (:changes @local)
@@ -31,7 +42,6 @@
             backend-cfg @backend-cfg]
         (when sel
           [:div.detail
-           [:span.fa.fa-trash-o.tag-delete {:on-click delete}]
            [:h2 sel]
            [:div.story-line
             [:label "Story"]
@@ -44,13 +54,26 @@
            (for [[field cfg] (:fields item)]
              (let [label-path (concat fields-path [field :label])
                    type-path (concat fields-path [field :cfg :type])
+                   step-path (concat fields-path [field :cfg :step])
+                   agg-path (concat fields-path [field :agg])
                    input-fn (fn [ev]
-                              (let [text (-> ev .-nativeEvent .-target .-value)]
+                              (let [text (h/target-val ev)]
                                 (swap! local assoc-in label-path text)))
                    type-select (fn [ev]
-                                 (let [t (-> ev .-nativeEvent .-target .-value)]
+                                 (let [t (keyword (h/target-val ev))]
                                    (swap! local assoc-in type-path t)))
+                   step-select (fn [ev]
+                                 (let [v (h/target-val ev)
+                                       s (when (seq v) (js/parseFloat v))]
+                                   (swap! local assoc-in step-path s)))
+                   agg-select (fn [ev]
+                                (let [v (h/target-val ev)
+                                      agg (when (seq v) (keyword v))]
+                                  (swap! local assoc-in agg-path agg)))
                    label (:label cfg)
+                   field-type (-> cfg :cfg :type)
+                   step (get-in cfg [:cfg :step] "")
+                   agg (:agg cfg "")
                    delete-field #(swap! local update-in fields-path dissoc field)]
                ^{:key field}
                [:div.field
@@ -63,14 +86,47 @@
                  [:input {:value    label
                           :on-input input-fn}]
                  (when-not (= (get-in backend-cfg (drop 1 label-path)) label)
-                   [:span.warn [:span.fa.fa-exclamation] "not saved yet"])]
+                   [:span.warn [:span.fa.fa-exclamation] "unsaved"])]
                 [:div
                  [:label "Type:"]
-                 [:select {:value     (-> cfg :cfg :type)
+                 [:select {:value     field-type
                            :on-change type-select}
                   [:option {:value :number} "Number"]
                   [:option {:value :text} "Text"]
-                  [:option {:value :time} "Time"]]]]))
+                  [:option {:value :time} "Time"]]
+                 (when-not (= (get-in backend-cfg (drop 1 type-path)) field-type)
+                   [:span.warn [:span.fa.fa-exclamation] "unsaved"])]
+                (when (contains? #{:number :time} field-type)
+                  [:div
+                   [:label "Aggregation:"]
+                   [:select {:value     agg
+                             :on-change agg-select}
+                    [:option ""]
+                    [:option {:value :min} "min"]
+                    [:option {:value :max} "max"]
+                    [:option {:value :mean} "mean"]
+                    [:option {:value :sum} "sum"]
+                    [:option {:value :none} "none"]]
+                   (when-not (= (get-in backend-cfg (drop 1 agg-path)) agg)
+                     [:span.warn [:span.fa.fa-exclamation] "unsaved"])])
+                (when (contains? #{:number} field-type)
+                  [:div
+                   [:label "Step:"]
+                   [:select {:value     step
+                             :on-change step-select}
+                    [:option ""]
+                    [:option {:value 0.01} "0.01"]
+                    [:option {:value 0.1} "0.1"]
+                    [:option {:value 0.5} "0.5"]
+                    [:option {:value 1} "1"]]
+                   (when-not (= (get-in backend-cfg (drop 1 step-path)) step)
+                     [:span.warn [:span.fa.fa-exclamation] "unsaved"])])]))
+           [:div.field
+            [:label "New Field:"]
+            [:input {:on-input new-field-input}]
+            (when (valid-field-name (:new-field-input @local ""))
+              [:span.add {:on-click add-field}
+               [:span.fa.fa-plus] "add"])]
            [:pre [:code (with-out-str (pp/pprint item))]]])))))
 
 (defn custom-fields-list [local]
@@ -80,6 +136,7 @@
                       (let [select-toggle #(when-not (= % tag) tag)]
                         (when-not (:changes @local)
                           (swap! local assoc-in [:changes] @backend-cfg))
+                        (swap! local assoc-in [:new-field-input] "")
                         (swap! local update-in [:selected] select-toggle)))
         cfg (reaction (if-let [changes (:changes @local)]
                         (:custom-fields changes)
@@ -107,10 +164,11 @@
                  [:li (:label v)])]]))]))))
 
 (defn config [put-fn]
-  (let [local (r/atom {:search ""})
+  (let [local (r/atom {:search          ""
+                       :new-field-input ""})
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
-                   (let [text (-> ev .-nativeEvent .-target .-value)]
+                   (let [text (h/target-val ev)]
                      (swap! local assoc-in [:search] text)))
         save-fn (fn [_]
                   (info "saving config")
@@ -122,7 +180,12 @@
         cfg (reaction (if-let [changes (:changes @local)]
                         (:custom-fields changes)
                         (:custom-fields @backend-cfg)))
-        custom-fields (reaction (sort-by #(s/lower-case (first %)) @cfg))]
+        custom-fields (reaction (sort-by #(s/lower-case (first %)) @cfg))
+        add-tag (fn [tag]
+                  (fn [_ev]
+                    (let [updated (assoc-in @cfg [tag] {:default-story nil
+                                                        :fields        {}})]
+                      (swap! local assoc-in [:changes :custom-fields] updated))))]
     (fn config-render [put-fn]
       (let [text (:search @local)
             item-filter #(s/includes? (s/lower-case (first %)) text)
@@ -146,8 +209,10 @@
              [:div.input-line
               [:input {:on-input input-fn}]
               (when (and (empty? items)
-                         (= "#" (subs text 0 1)))
-                [:span.add [:span.fa.fa-plus] "add"])]
+                         ((specs/is-tag? "#") text))
+                [:span.add {:on-click (add-tag text)}
+                 [:span.fa.fa-plus] "add"])]
              [custom-fields-list local]]
-            [custom-field-cfg local]]
+            [custom-field-cfg local]
+            [:div.third-col]]
            [:div.footer [stats/stats-text]]]]]))))

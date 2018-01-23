@@ -1,12 +1,13 @@
 (ns meo.electron.renderer.ui.re-frame
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as rc]
-            [meo.electron.renderer.ui.menu :as menu]
             [re-frame.core :refer [reg-sub subscribe]]
+            [re-frame.db :as rdb]
+            [meo.electron.renderer.ui.menu :as menu]
             [meo.electron.renderer.ui.grid :as g]
             [meo.electron.renderer.ui.new-entries :as n]
             [meo.electron.renderer.ui.stats :as stats]
-            [re-frame.db :as rdb]
+            [meo.electron.renderer.ui.footer :as f]
             [meo.electron.renderer.ui.charts.award :as aw]
             [meo.electron.renderer.ui.dashboard :as db]
             [meo.electron.renderer.ui.config :as cfg]
@@ -14,8 +15,7 @@
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [reagent.core :as r]))
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
 
 ;; Subscription Handlers
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
@@ -49,36 +49,6 @@
                                         :wordcount-stats
                                         :media-stats])))
 
-(defn footer [put-fn]
-  (let [cfg (subscribe [:cfg])
-        dashboard-banner (reaction (:dashboard-banner @cfg))
-        local (r/atom {:height 200})
-        dashboards (subscribe [:dashboards])
-        active-dashboard (subscribe [:active-dashboard])
-        increase-height #(swap! local update-in [:height] + 5)
-        decrease-height #(swap! local update-in [:height] - 5)
-        select (fn [ev]
-                 (let [sel (keyword (-> ev .-nativeEvent .-target .-value))]
-                   (put-fn [:cmd/assoc-in
-                            {:path  [:cfg :dashboard :active]
-                             :value sel}])))]
-    (fn [put-fn]
-      [:div.footer
-       [:div {:style {:max-height (when @dashboard-banner
-                                    (str (:height @local) "px"))}}
-        [db/dashboard put-fn]
-        [:div
-         [:select {:value     (or @active-dashboard "")
-                   :on-change select}
-          (for [dashboard-id (keys @dashboards)]
-            ^{:key dashboard-id}
-            [:option {:value dashboard-id} (name dashboard-id)])]
-         (when @dashboard-banner
-           [:span.fa.fa-plus-square {:on-click increase-height}])
-         (when @dashboard-banner
-           [:span.fa.fa-minus-square {:on-click decrease-height}])
-         [stats/stats-text]]]])))
-
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
@@ -96,7 +66,7 @@
          (when-not @single-column
            [:div.right
             [g/tabs-view :right put-fn]])
-         [footer put-fn]]]
+         [f/footer put-fn]]]
        [n/new-entries-view put-fn]])))
 
 (defn charts-page [put-fn]

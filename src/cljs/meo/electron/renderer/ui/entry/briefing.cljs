@@ -1,6 +1,5 @@
 (ns meo.electron.renderer.ui.entry.briefing
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.charts.data :as cd]
             [meo.electron.renderer.ui.charts.common :as cc]
@@ -9,8 +8,6 @@
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]
             [meo.electron.renderer.ui.entry.briefing.time :as time]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [meo.common.utils.parse :as up]
-            [clojure.string :as s]
             [reagent.core :as r]
             [moment]
             [meo.electron.renderer.helpers :as h]))
@@ -18,8 +15,7 @@
 (defn planned-actual
   "Draws vertical stacked barchart."
   [entry]
-  (let [stats (subscribe [:stats])
-        chart-data (subscribe [:chart-data])
+  (let [chart-data (subscribe [:chart-data])
         sagas (subscribe [:sagas])
         y-scale 0.0045]
     (fn [entry]
@@ -95,13 +91,13 @@
         input-fn
         (fn [entry]
           (fn [ev]
-            (let [day (-> ev .-nativeEvent .-target .-value)
+            (let [day (h/target-val ev)
                   updated (assoc-in entry [:briefing :day] day)]
               (put-fn [:entry/update-local updated]))))
         time-alloc-input-fn
         (fn [entry saga]
           (fn [ev]
-            (let [m (js/parseInt (-> ev .-nativeEvent .-target .-value))
+            (let [m (js/parseInt (h/target-val ev))
                   s (* m 60)
                   updated (assoc-in entry [:briefing :time-allocation saga] s)]
               (put-fn [:entry/update-local updated]))))]

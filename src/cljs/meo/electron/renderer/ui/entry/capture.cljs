@@ -15,7 +15,7 @@
   [entry options path numeric? put-fn]
   (let [ts (:timestamp entry)
         select-handler (fn [ev]
-                         (let [selected (-> ev .-nativeEvent .-target .-value)
+                         (let [selected (h/target-val ev)
                                coerced (if numeric?
                                          (js/parseInt selected)
                                          selected)]
@@ -34,7 +34,7 @@
              (not (= (:entry-type entry) :pomodoro)))
     (let [input-fn (fn [entry]
                      (fn [ev]
-                       (let [day (-> ev .-nativeEvent .-target .-value)
+                       (let [day (h/target-val ev)
                              updated (assoc-in entry [:for-day] day)]
                          (put-fn [:entry/update-local updated]))))
           for-day (:for-day entry)]

@@ -33,13 +33,12 @@
   (let [planning-mode (subscribe [:planning-mode])
         active-from (fn [entry]
                       (fn [ev]
-                        (let [dt (-> ev .-nativeEvent .-target .-value)
+                        (let [dt (h/target-val ev)
                               updated (assoc-in entry [:habit :active-from] dt)]
                           (put-fn [:entry/update-local updated]))))
         day-select (fn [entry day]
-                     (fn [ev]
-                       (let [v (-> ev .-nativeEvent .-target .-value)
-                             updated (update-in entry [:habit :days day] not)]
+                     (fn [_ev]
+                       (let [updated (update-in entry [:habit :days day] not)]
                          (put-fn [:entry/update-local updated]))))
         day-checkbox (fn [entry day]
                        [:input {:type      :checkbox
@@ -94,7 +93,7 @@
         priority-select
         (fn [entry]
           (fn [ev]
-            (let [sel (keyword (-> ev .-nativeEvent .-target .-value))
+            (let [sel (keyword (h/target-val ev))
                   updated (assoc-in entry [:habit :priority] sel)]
               (put-fn [:entry/update-local updated]))))]
     (fn [entry local-cfg put-fn edit-mode?]

@@ -12,7 +12,6 @@
             [meo.electron.renderer.ui.entry.habit :as habit]
             [meo.electron.renderer.ui.entry.reward :as reward]
             [meo.electron.renderer.ui.entry.briefing :as b]
-            [meo.electron.renderer.ui.entry.flight :as f]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.thumbnails :as t]
@@ -25,7 +24,6 @@
 
 (defn all-comments-set [ts]
   (let [{:keys [entry combined-entries new-entries]} (eu/entry-reaction ts)
-        comments-set (reaction (set (:comments @entry)))
         comments-filter (fn [[_ts c]] (= (:comment-for c) ts))
         local-comments (reaction (into {} (filter comments-filter @new-entries)))]
     (reaction (sort (set/union (set (:comments @entry))
@@ -67,7 +65,6 @@
   [ts put-fn local-cfg]
   (let [cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map new-entries]} (eu/entry-reaction ts)
-        linked-desc (reaction (get @entries-map (:linked-timestamp @entry)))
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         q-date-string (.format (moment ts) "YYYY-MM-DD")
@@ -79,8 +76,7 @@
         toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
                                     (put-fn [:entry/update-local @entry]))]
     (fn journal-entry-render [ts put-fn local-cfg]
-      (let [edit-mode? @edit-mode
-            linked-desc @linked-desc]
+      (let [edit-mode? @edit-mode]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
@@ -122,7 +118,6 @@
          [reward/reward-details @entry put-fn edit-mode?]
          (when (contains? (:tags @entry) "#briefing")
            [b/briefing-view @entry put-fn edit-mode? local-cfg])
-         [f/flight-view @entry put-fn edit-mode? local-cfg]
          [:div.footer
           [hashtags-mentions-list ts tab-group put-fn]
           [:div.word-count (u/count-words-formatted @entry)]]]))))
@@ -137,7 +132,6 @@
   [ts put-fn local-cfg]
   (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
         all-comments-set (all-comments-set ts)
-        new-entry (reaction (get @new-entries ts))
         cfg (subscribe [:cfg])
         options (subscribe [:options])
         show-pvt? (reaction (:show-pvt @cfg))

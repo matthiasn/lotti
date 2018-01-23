@@ -1,11 +1,10 @@
 (ns meo.electron.renderer.helpers
   (:require [matthiasn.systems-toolbox.component :as st]
-            [goog.dom.Range]
-            [moment]
-            [clojure.string :as s]
             [meo.common.utils.parse :as p]
-            [matthiasn.systems-toolbox.component.helpers :as h]
-            [matthiasn.systems-toolbox.log :as l]))
+            [goog.dom.Range]
+            [moment]))
+
+(defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the

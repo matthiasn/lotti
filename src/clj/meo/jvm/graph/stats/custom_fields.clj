@@ -48,6 +48,7 @@
                                  :min #(when (seq %) (apply min (map :v %)))
                                  :max #(when (seq %) (apply max (map :v %)))
                                  :mean #(when (seq %) (double (/ (apply + (map :v %)) (count %))))
+                                 :sum #(apply + (map :v %))
                                  :none nil
                                  #(apply + (map :v %))))
                           res (vec (filter #(:v %) (mapv val-mapper nodes)))]

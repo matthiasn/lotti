@@ -10,7 +10,7 @@
   [entry put-fn edit-mode?]
   (let [input-fn (fn [entry f k]
                    (fn [ev]
-                     (let [n (f (-> ev .-nativeEvent .-target .-value))
+                     (let [n (f (h/target-val ev))
                            updated (assoc-in entry [:location k] n)]
                        (put-fn [:entry/update-local updated]))))]
     (fn location-details-render [entry put-fn edit-mode?]
