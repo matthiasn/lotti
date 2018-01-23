@@ -7,14 +7,11 @@
             [meo.electron.renderer.ui.entry.briefing.tasks :as tasks]
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]
             [meo.electron.renderer.ui.entry.briefing.time :as time]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [reagent.core :as r]
             [moment]
             [meo.electron.renderer.helpers :as h]))
 
-(defn planned-actual
-  "Draws vertical stacked barchart."
-  [entry]
+(defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
         sagas (subscribe [:sagas])
         y-scale 0.0045]
@@ -75,32 +72,16 @@
             [legend "actual" 3 21]
             [legend "remaining" 3 32]]])))))
 
-(defn briefing-view
-  [entry put-fn edit-mode? local-cfg]
+(defn briefing-view [entry put-fn edit-mode? local-cfg]
   (let [chart-data (subscribe [:chart-data])
-        query-cfg (subscribe [:query-cfg])
         cfg (subscribe [:cfg])
         last-update (subscribe [:last-update])
         day (-> entry :briefing :day)
         today (.format (moment.) "YYYY-MM-DD")
         filter-btn (if (= day today) :active :open)
-        show-calendar (reaction (:show-calendar @cfg))
         local (r/atom {:filter                  filter-btn
                        :outstanding-time-filter true
-                       :on-hold                 false})
-        input-fn
-        (fn [entry]
-          (fn [ev]
-            (let [day (h/target-val ev)
-                  updated (assoc-in entry [:briefing :day] day)]
-              (put-fn [:entry/update-local updated]))))
-        time-alloc-input-fn
-        (fn [entry saga]
-          (fn [ev]
-            (let [m (js/parseInt (h/target-val ev))
-                  s (* m 60)
-                  updated (assoc-in entry [:briefing :time-allocation saga] s)]
-              (put-fn [:entry/update-local updated]))))]
+                       :on-hold                 false})]
     (fn briefing-render [entry put-fn edit-mode? local-cfg]
       (h/keep-updated2 :stats/wordcount day local @last-update put-fn)
       (h/keep-updated2 :stats/pomodoro day local @last-update put-fn)
@@ -117,9 +98,7 @@
                           (apply +))
             dur (u/duration-string logged-s)
             word-stats (get wordcount-stats day)
-            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)
-            tab-group (:tab-group local-cfg)
-            query (reaction (get-in @query-cfg [:queries (:query-id local-cfg)]))]
+            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)]
         [:div.briefing
          [:form.briefing-details
           [:fieldset
@@ -142,6 +121,4 @@
            [:div
             [tasks/started-tasks local local-cfg put-fn]
             [tasks/open-linked-tasks ts local local-cfg put-fn]
-            [habits/waiting-habits entry local local-cfg put-fn]
-            (when @show-calendar
-              [cal/calendar-view day put-fn])]]]]))))
+            [habits/waiting-habits entry local local-cfg put-fn]]]]]))))

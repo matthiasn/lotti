@@ -24,6 +24,7 @@
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :stories (fn [db _] (:stories (:options db))))
 (reg-sub :sagas (fn [db _] (:sagas (:options db))))
+(reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))
 (reg-sub :busy (fn [db _] (:busy db)))
 (reg-sub :busy-color (fn [db _] (:busy-color db)))
 (reg-sub :query-cfg (fn [db _] (:query-cfg db)))
@@ -58,6 +59,8 @@
        [:div.grid
         [:div.wrapper {:class (when @planning-mode "col-3")}
          [menu/menu-view put-fn]
+         [:div.cal
+          [cal/calendar-view put-fn]]
          (when @planning-mode
            [:div.briefing
             [g/tabs-view :briefing put-fn]])

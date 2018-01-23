@@ -21,20 +21,17 @@
                             (let [s (or (:story-name (get @stories k)) "none")]
                               [k s v]))]
     (fn [day-stats local put-fn]
-      (let [dur (u/duration-string (:total-time day-stats))
-            date (:date-string day-stats)
-            time-by-story (:time-by-story day-stats)
-            time-by-story2 (->> day-stats
-                                :time-by-story
-                                (filter saga-filter)
-                                (map story-name-mapper)
-                                (sort-by second))
-            y-scale 0.0045]
+      (let [date (:date-string day-stats)
+            time-by-story (->> day-stats
+                               :time-by-story
+                               (filter saga-filter)
+                               (map story-name-mapper)
+                               (sort-by second))]
         (when date
           [:table
            [:tbody
             [:tr [:th ""] [:th "story"] [:th "actual"]]
-            (for [[id story v] time-by-story2]
+            (for [[id story v] time-by-story]
               (let [color (cc/item-color story)
                     q (merge
                         (up/parse-search date)
@@ -48,8 +45,7 @@
                  [:td [:strong story]]
                  [:td.time (u/duration-string v)]]))]])))))
 
-(defn time-by-sagas
-  [entry day-stats local edit-mode? put-fn]
+(defn time-by-sagas [entry day-stats local edit-mode? put-fn]
   (let [sagas (subscribe [:sagas])
         time-alloc (fn [entry saga]
                      (fn [ev]

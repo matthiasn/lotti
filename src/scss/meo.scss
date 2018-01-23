@@ -41,8 +41,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .big-calendar {
   background-color: white;
-  padding: 0.5em 0;
-  height: 400px;
+  padding: 2px;
+  height: 100%;
+  font-size: 0.7em;
 }
 
 @import "buttons.scss";

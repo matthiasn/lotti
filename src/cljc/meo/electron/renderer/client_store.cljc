@@ -114,6 +114,7 @@
                         :nav/to            nav-handler
                         :blink/busy        blink-busy
                         :cfg/show-qr       c/show-qr-code
+                        :cal/to-day        c/cal-to-day
                         :cmd/toggle        c/toggle-set-fn
                         :cmd/set-opt       c/set-conj-fn
                         :cmd/set-dragged   c/set-currently-dragged

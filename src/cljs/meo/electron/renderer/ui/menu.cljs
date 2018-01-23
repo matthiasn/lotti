@@ -8,8 +8,7 @@
             [react-dates :as rd]
             [cljs.reader :refer [read-string]]
             [meo.common.utils.parse :as up]
-            [meo.common.utils.parse :as p]
-            [matthiasn.systems-toolbox.component :as st]))
+            [meo.common.utils.parse :as p]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -116,6 +115,7 @@
                                              :primary-story (-> @cfg :briefing :story)})
                                 new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
                             (new-entry-fn)))
+                        (put-fn [:cal/to-day {:day fmt}])
                         (put-fn [:search/add {:tab-group :briefing :query q}])
                         (put-fn [:search/refresh])))
         focus-fn #(swap! local update-in [:focused] not)

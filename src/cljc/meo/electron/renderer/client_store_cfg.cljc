@@ -57,6 +57,12 @@
     {:new-state    new-state
      :send-to-self [:cfg/save]}))
 
+(defn cal-to-day [{:keys [current-state msg-payload]}]
+  (let [day (:day msg-payload)
+        new-state (assoc-in current-state [:cfg :cal-day] day)]
+    {:new-state    new-state
+     :send-to-self [:cfg/save]}))
+
 (defn set-conj-fn
   "Like toggle-set-fn but only adds timestamp to set specified in path.
    Noop if already in there."

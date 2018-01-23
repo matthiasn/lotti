@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.78",
+  "version": "0.4.79",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "@cljs-oss/module-deps": "^1.1.1",
     "asar": "0.14.0",
     "cookie-parser": "1.4.3",
-    "draft-js": "0.10.5",
+    "draft-js": "0.10.4",
     "draft-js-export-html": "1.2.0",
     "draft-js-export-markdown": "1.2.0",
     "draft-js-hashtag-plugin": "2.0.1",
