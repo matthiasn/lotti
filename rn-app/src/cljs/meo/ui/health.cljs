@@ -38,7 +38,7 @@
       "bp"]]
     [touchable-highlight
      {:style    defaults
-      :on-press #(dotimes [n 2]
+      :on-press #(dotimes [n 5]
                    (put-fn [:healthkit/steps n]))}
      [text {:style {:color       "white"
                     :text-align  "center"

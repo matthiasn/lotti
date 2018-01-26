@@ -15,6 +15,8 @@
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight react-native)))
 (def text-input (r/adapt-react-class (.-TextInput react-native)))
 (def tab-bar (r/adapt-react-class (.-TabBarIOS react-native)))
+(def picker (r/adapt-react-class (.-Picker react-native)))
+(def picker-item (r/adapt-react-class (aget react-native "Picker" "Item")))
 (def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView react-native)))
 (def vibration (.-Vibration react-native))
 (def cam-roll (.-CameraRoll react-native))
@@ -38,6 +40,7 @@
 
 (def react-native-elements (js/require "react-native-elements"))
 (def search-bar (r/adapt-react-class (aget react-native-elements "SearchBar")))
+(def divider (r/adapt-react-class (aget react-native-elements "Divider")))
 
 (def contacts (js/require "react-native-contacts"))
 

@@ -53,14 +53,16 @@
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
+        show-calendar (reaction (:show-calendar @cfg))
         single-column (reaction (:single-column @cfg))]
     (fn [put-fn]
       [:div.flex-container
        [:div.grid
         [:div.wrapper {:class (when @planning-mode "col-3")}
          [menu/menu-view put-fn]
-         [:div.cal
-          [cal/calendar-view put-fn]]
+         (when @show-calendar
+           [:div.cal
+            [cal/calendar-view put-fn]])
          (when @planning-mode
            [:div.briefing
             [g/tabs-view :briefing put-fn]])

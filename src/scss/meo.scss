@@ -35,8 +35,8 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background-color: rgba(0,0,0,.5);
-  -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+  background-color: rgba(0, 0, 0, .5);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 
 .big-calendar {
@@ -44,6 +44,10 @@ h1, h2, h3, h4, h5, h6 {
   padding: 2px;
   height: 100%;
   font-size: 0.7em;
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.5);
 }
 
 @import "buttons.scss";
