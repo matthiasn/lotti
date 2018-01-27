@@ -32,5 +32,4 @@
          (when @dashboard-banner
            [:span.fa.fa-plus-square {:on-click increase-height}])
          (when @dashboard-banner
-           [:span.fa.fa-minus-square {:on-click decrease-height}])
-         [stats/stats-text]]]])))
+           [:span.fa.fa-minus-square {:on-click decrease-height}])]]])))
