@@ -40,7 +40,7 @@
             item (get-in changes [:custom-fields sel])
             fields-path [:changes :custom-fields sel :fields]
             backend-cfg @backend-cfg]
-        (when sel
+        (when (and sel item)
           [:div.detail
            [:h2 sel]
            [:div.story-line
@@ -150,12 +150,18 @@
             sel (:selected @local)]
         [:div.cfg-items
          (for [[tag cfg] items]
-           (let [del #(swap! local update-in [:changes :custom-fields] dissoc sel)]
+           (let [del (fn [ev]
+                       (let [cf-cfg (or (:custom-fields @local)
+                                        (:custom-fields @backend-cfg))
+                             updated (dissoc cf-cfg sel)]
+                         (swap! local assoc-in [:changes :custom-fields] updated)
+                         (swap! local assoc-in [:selected] nil)))]
              ^{:key tag}
              [:div.custom-field
               {:on-click #(select-item tag)
                :class    (when (= sel tag) "active")}
-              [:span.fa.fa-trash-o {:on-click del}]
+              (when (= sel tag)
+                [:span.fa.fa-trash-o {:on-click del}])
               [:h3 tag (when-let [ds (:default-story cfg)]
                          (str "   (" (get-in stories [ds :story-name]) ")"))]
               [:ul
@@ -171,9 +177,11 @@
                    (let [text (h/target-val ev)]
                      (swap! local assoc-in [:search] text)))
         save-fn (fn [_]
-                  (info "saving config")
-                  (put-fn [:backend-cfg/save (:changes @local)])
-                  (swap! local dissoc :changes :selected))
+                  (let [custom-fields (-> @local :changes :custom-fields)
+                        cfg (assoc-in @backend-cfg [:custom-fields] custom-fields)]
+                    (info "saving config")
+                    (put-fn [:backend-cfg/save cfg])
+                    (swap! local dissoc :changes :selected)))
         cancel-fn (fn [_]
                     (info "canceling config changes")
                     (swap! local dissoc :changes :selected))
