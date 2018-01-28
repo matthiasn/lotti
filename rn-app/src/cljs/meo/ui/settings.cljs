@@ -33,7 +33,8 @@
 
 (defn settings-wrapper [local put-fn]
   (let [entries (subscribe [:entries])
-        reset-state #(put-fn [:state/reset])]
+        reset-state #(put-fn [:state/reset])
+        load-state #(put-fn [:state/load])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
         [view {:style {:flex-direction "column"
@@ -56,6 +57,9 @@
           [settings-list-item {:title         "Reset"
                                :has-nav-arrow false
                                :on-press      reset-state}]
+          [settings-list-item {:title         "Load from database"
+                               :has-nav-arrow false
+                               :on-press      load-state}]
           [settings-list-item {:has-nav-arrow true
                                :on-press      #(navigate "sync")
                                :title         "Sync"}]]]))))

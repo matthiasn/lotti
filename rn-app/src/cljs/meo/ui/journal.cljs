@@ -54,7 +54,7 @@
                                 (s/lower-case (:md v))
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
-            as-array (clj->js (map second entries))]
+            as-array (clj->js (reverse (map second entries)))]
         [view {:style {:flex 1}}
          [search-bar {:placeholder    "search..."
                       :lightTheme     true

@@ -1,9 +1,9 @@
 (ns meo.ios.store
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [matthiasn.systems-toolbox.component :as st]
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
-            [cljs.core.async :refer [<!]])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+            [cljs.core.async :refer [<!]]))
 
 (defn persist [{:keys [current-state put-fn msg-payload]}]
   (let [{:keys [timestamp vclock id]} msg-payload
@@ -32,8 +32,10 @@
   (let [ts (:timestamp msg-payload)
         geo-info (select-keys msg-payload [:latitude :timestamp :longitude])
         prev (get-in current-state [:entries ts])
-        new-state (assoc-in current-state [:entries ts] (merge prev geo-info))]
+        merged (merge prev geo-info)
+        new-state (assoc-in current-state [:entries ts] merged)]
     (when prev
+      (go (<! (as/set-item ts merged)))
       {:new-state new-state})))
 
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
@@ -52,24 +54,45 @@
     (go (<! (as/set-item :latest-synced 0)))
     {:new-state new-state}))
 
+(defn load-state [{:keys [cmp-state put-fn]}]
+  (go
+    (try
+      (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
+        (put-fn [:debug/latest-vclock latest-vclock])
+        (swap! cmp-state assoc-in [:latest-vclock] latest-vclock))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
+      (let [latest-synced (second (<! (as/get-item :latest-synced)))]
+        (put-fn [:debug/latest-synced latest-synced])
+        (swap! cmp-state assoc-in [:latest-synced] latest-synced))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
+      (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
+                                 (st/make-uuid)))]
+        (swap! cmp-state assoc-in [:instance-id] instance-id)
+        (put-fn [:debug/instance-id instance-id])
+        (<! (as/set-item :instance-id instance-id)))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
+      (let [timestamps (second (<! (as/get-item :timestamps)))]
+        (doseq [ts timestamps]
+          (let [entry (second (<! (as/get-item ts)))]
+            (put-fn [:debug/entry entry])
+            (swap! cmp-state assoc-in [:entries ts] entry))))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (put-fn [:debug/state-fn-complete])
+  {})
+
 (defn state-fn [put-fn]
   (let [state (atom {:entries       (avl/sorted-map)
                      :latest-synced 0})]
-    (go
-      (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
-        (swap! state assoc-in [:latest-vclock] latest-vclock)))
-    (go
-      (let [latest-synced (second (<! (as/get-item :latest-synced)))]
-        (swap! state assoc-in [:latest-vclock] latest-synced)))
-    (go
-      (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
-                                 (st/make-uuid)))]
-        (swap! state assoc-in [:instance-id] instance-id)
-        (<! (as/set-item :instance-id instance-id))))
-    (go
-      (let [timestamps (second (<! (as/get-item :timestamps)))]
-        (doseq [ts timestamps]
-          (swap! state assoc-in [:entries ts] (second (<! (as/get-item ts)))))))
     {:state state}))
 
 (defn cmp-map [cmp-id]
@@ -79,5 +102,6 @@
                  :entry/new        persist
                  :entry/geo-enrich geo-enrich
                  :sync/initiate    sync-start
-                 :state/reset       state-reset
+                 :state/load       load-state
+                 :state/reset      state-reset
                  :sync/next        sync-start}})
