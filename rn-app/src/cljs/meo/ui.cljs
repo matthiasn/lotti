@@ -6,73 +6,45 @@
             [meo.ui.photos :as photos]
             [meo.ui.shared :refer [view text text-input touchable-highlight btn
                                    tab-bar keyboard-avoiding-view vibration
-                                   tab-bar-item app-registry]]
+                                   tab-bar-item app-registry view icon]]
             [meo.ui.journal :as jrn]
-            [meo.ui.settings :as ts]
-            [meo.ui.health :as uh]
-            [cljs.pprint :as pp]))
+            [cljs-react-navigation.reagent :refer [tab-navigator]]
+            [meo.ui.settings :as ts]))
 
 (reg-sub :entries (fn [db _] (:entries db)))
 
 (defn app-root [put-fn]
-  (let [local (r/atom {:cam        false
-                       :active-tab :main
-                       :contacts   (clj->js [])
-                       :map-style  :Street
-                       :md         (str "hello world")})
-        click-fn (fn [k]
-                   (fn [_]
-                     (.vibrate vibration 2000)
-                     (swap! local assoc-in [:active-tab] k)))]
+  (let [local (r/atom {:cam       false
+                       :contacts  (clj->js [])
+                       :map-style :Street
+                       :md        (str "hello world")})]
     (fn [_put-fn]
-      [keyboard-avoiding-view {:behavior "padding"
-                               :style    {:display          "flex"
-                                          :flex-direction   "column"
-                                          :justify-content  "space-between"
-                                          :background-color "#F8F8F8"
-                                          :padding-top      40
-                                          :flex             1
-                                          :align-items      "center"}}
-       [tab-bar {:style {:bar-tint-color "black"
-                         :flex           1
-                         :bar-style      "black"
-                         :width          "100%"}}
-        [tab-bar-item {:title     "Write"
-                       :iconName  "pencil"
-                       :on-press  (click-fn :main)
-                       :selected  (= (:active-tab @local) :main)
-                       :iconSize  20
-                       :iconColor "#987"}
-         [edit/editor local put-fn]]
-        [tab-bar-item {:title     "Journal"
-                       :iconName  "list"
-                       :on-press  (click-fn :journal)
-                       :selected  (= (:active-tab @local) :journal)
-                       :iconSize  20
-                       :iconColor "#987"}
-         [jrn/journal local put-fn]]
-        [tab-bar-item {:title     "Health"
-                       :iconName  "heartbeat"
-                       :on-press  (click-fn :health)
-                       :selected  (= (:active-tab @local) :health)
-                       :iconSize  20
-                       :iconColor "#987"}
-         [uh/health-page local put-fn]]
-        [tab-bar-item {:title     "Photos"
-                       :iconName  "film"
-                       :on-press  (click-fn :film)
-                       :selected  (= (:active-tab @local) :film)
-                       :iconSize  20
-                       :iconColor "#987"}
-         [photos/photos-page local put-fn]]
-        [tab-bar-item {:title     "Settings"
-                       :iconName  "cogs"
-                       :badge     5
-                       :on-press  (click-fn :settings)
-                       :selected  (= (:active-tab @local) :settings)
-                       :iconSize  20
-                       :iconColor "#987"}
-         [ts/settings-page local put-fn]]]])))
+      [:> (tab-navigator
+            {:journal  {:screen            (jrn/journal-tab local put-fn)
+                        :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
+                                                          [icon {:name  "list"
+                                                                 :size  20
+                                                                 :color tintColor}])}}
+             :add      {:screen            (edit/editor-tab local put-fn)
+                        :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
+                                                          [icon {:name  "plus-square-o"
+                                                                 :size  20
+                                                                 :color tintColor}])}}
+             :photos   {:screen            (photos/photos-tab local put-fn)
+                        :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
+                                                          [icon {:name  "film"
+                                                                 :size  20
+                                                                 :color tintColor}])}}
+             :settings {:screen            (ts/settings-tab local put-fn)
+                        :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
+                                                          [icon {:name  "cogs"
+                                                                 :size  20
+                                                                 :color tintColor}])}}}
+            {:swipeEnabled     true
+             :animationEnabled true
+             :tabBarOptions    {:activeTintColor   "#0078e7"
+                                :inactiveTintColor "#AAA"
+                                :showLabel         false}})])))
 
 (defn state-fn [put-fn]
   (let [app-root (app-root put-fn)

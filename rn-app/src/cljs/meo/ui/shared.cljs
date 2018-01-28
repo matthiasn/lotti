@@ -47,3 +47,8 @@
 (def mapbox (aget (js/require "@mapbox/react-native-mapbox-gl") "default"))
 (def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
 (def map-view (r/adapt-react-class (aget mapbox "MapView")))
+
+(def rn-settings-list (js/require "react-native-settings-list"))
+(def settings-list (r/adapt-react-class rn-settings-list))
+(def settings-list-header (r/adapt-react-class (aget rn-settings-list "Header")))
+(def settings-list-item (r/adapt-react-class (aget rn-settings-list "Item")))

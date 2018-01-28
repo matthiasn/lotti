@@ -1,48 +1,52 @@
 (ns meo.ui.editor
-  (:require [reagent.core :as r]
-            [re-frame.core :refer [reg-sub subscribe]]
-            [meo.ui.shared :refer [view text text-input touchable-highlight btn]]
+  (:require [re-frame.core :refer [subscribe]]
+            [meo.ui.shared :refer [view text text-input touchable-highlight btn
+                                   keyboard-avoiding-view icon]]
+            [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [meo.helpers :as h]
-            [meo.utils.parse :as p]))
+            [meo.utils.parse :as p]
+            [reagent.core :as r]))
 
-(def defaults {:background-color "lightgreen"
-               :padding-left     15
-               :padding-right    15
-               :padding-top      10
-               :padding-bottom   10
-               :margin-right     10})
+(defn editor [local local2 put-fn]
+  (fn [{:keys [screenProps navigation] :as props}]
+    (let [{:keys [navigate goBack]} navigation]
+      (swap! local2 assoc :navigate navigate)
+      [keyboard-avoiding-view {:behavior "padding"
+                               :style    {:display          "flex"
+                                          :flex-direction   "column"
+                                          :justify-content  "space-between"
+                                          :background-color "#F8F8F8"
+                                          :flex             1
+                                          :align-items      "center"}}
+       [text-input {:style          {:flex             2
+                                     :font-weight      "100"
+                                     :padding          16
+                                     :font-size        24
+                                     :background-color "#FFF"
+                                     :margin-bottom    20
+                                     :width            "100%"}
+                    :multiline      true
+                    :default-value  (:md @local)
+                    :keyboard-type  "twitter"
+                    :on-change-text (fn [text]
+                                      (swap! local assoc-in [:md] text))}]])))
 
-(defn editor [local put-fn]
-  (when (= (:active-tab @local) :main)
-    [view {:style {:flex 2}}
-     [text-input {:style          {:flex             2
-                                   :font-weight      "100"
-                                   :padding          16
-                                   :font-size        24
-                                   :background-color "#FFF"
-                                   :margin-bottom    20
-                                   :width            "100%"}
-                  :multiline      true
-                  :default-value  (:md @local)
-                  :keyboard-type  "twitter"
-                  :on-change-text (fn [text]
-                                    (swap! local assoc-in [:md] text))}]
-     [view {:style {:padding-top    0
-                    :padding-right  15
-                    :padding-left   15
-                    :padding-bottom 0
-                    :width          110
-                    :flex-grow      0
-                    :height         150
-                    :max-height     150}}
-      [btn {:name     "floppy-o"
-            :style    {:background-color "green"}
-            :on-press #(let [new-entry (p/parse-entry (:md @local))
-                             new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
-                         (new-entry-fn)
-                         (swap! local assoc-in [:md] ""))}
-       [text {:style {:color       :white
-                      :text-align  "center"
-                      :font-size   12
-                      :font-weight "bold"}}
-        "save"]]]]))
+(defn editor-tab [local put-fn]
+  (let [local2 (r/atom {})
+        save-fn #(let [new-entry (p/parse-entry (:md @local))
+                       new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
+                   (new-entry-fn)
+                   (swap! local assoc-in [:md] "")
+                   (when-let [navigate (:navigate @local2)]
+                     (navigate "journal")))]
+    (stack-navigator
+      {:editor {:screen (stack-screen
+                          (editor local local2 put-fn)
+                          {:title       "Add Entry"
+                           :headerRight (fn [_]
+                                          [touchable-highlight {:on-press save-fn
+                                                                :style    {:padding 10}}
+                                           [text {:style {:color      "#0078e7"
+                                                          :text-align "center"
+                                                          :font-size  20}}
+                                            "save"]])})}})))

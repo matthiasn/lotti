@@ -1,7 +1,7 @@
 (ns meo.ui.photos
-  (:require [reagent.core :as r]
-            [meo.ui.shared :refer [view text touchable-highlight cam-roll
+  (:require [meo.ui.shared :refer [view text touchable-highlight cam-roll
                                    scroll map-view mapbox-style-url image]]
+            [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]))
 
 (def defaults {:background-color "lightgreen"
@@ -23,7 +23,7 @@
                   :padding-right  10}}
     [touchable-highlight
      {:style    defaults
-      :on-press #(let [params (clj->js {:first     20
+      :on-press #(let [params (clj->js {:first     50
                                         :assetType "All"})
                        photos-promise (.getPhotos cam-roll params)]
                    (.then photos-promise
@@ -45,9 +45,9 @@
                       :width          "100%"
                       :display        :flex
                       :flex-direction :row}}
-        [image {:style  {:width     160
-                         :height    160
-                         :max-width 160
+        [image {:style  {:width      160
+                         :height     160
+                         :max-width  160
                          :max-height 160}
                 :source {:uri (:uri img)}}]
         (when (:latitude loc)
@@ -59,16 +59,20 @@
                      :style            {:width  200
                                         :flex   2
                                         :height 160}
-                     :zoomLevel        15}])
-        #_[text {:style {:color       "#777"
-                         :text-align  "center"
-                         :width       150
-                         :font-size   10
-                         :font-weight "bold"}}
-           (str (:uri img))]]))
+                     :zoomLevel        15}])]))
 
    [text {:style {:color       "#777"
                   :text-align  "center"
                   :font-size   10
                   :font-weight "bold"}}
     (str (dissoc (:photos @local) :edges))]])
+
+(defn photos-wrapper [local put-fn]
+  (fn [{:keys [screenProps navigation] :as props}]
+    (let [{:keys [navigate goBack]} navigation]
+      [photos-page local put-fn])))
+
+(defn photos-tab [local put-fn]
+  (stack-navigator
+    {:photos {:screen (stack-screen (photos-wrapper local put-fn)
+                                    {:title "Photos"})}}))
