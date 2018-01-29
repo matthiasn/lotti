@@ -32,4 +32,4 @@
    :port          port
    :relay-types   #{:entry/saved :entry/found :state/new :sync/next :backend-cfg/new
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
-                    :state/stats-tags2 :search/refresh :cfg/show-qr}})
+                    :state/stats-tags2 :search/refresh :cfg/show-qr :ws/ping}})

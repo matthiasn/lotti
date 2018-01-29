@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.client-store
   (:require #?(:cljs [reagent.core :refer [atom]])
+    #?(:cljs [taoensso.timbre :refer-macros [info debug]])
     [matthiasn.systems-toolbox.component :as st]
     [meo.electron.renderer.client-store-entry :as cse]
     [meo.electron.renderer.client-store-search :as s]
@@ -98,6 +99,10 @@
   (let [new-state (assoc-in current-state [:backend-cfg] msg-payload)]
     {:new-state new-state}))
 
+(defn ping [_]
+  #?(:cljs (info :ping))
+  {})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    initial-state-fn
@@ -110,6 +115,7 @@
                         :state/stats-tags  stats-tags-fn
                         :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
+                        :ws/ping           ping
                         :backend-cfg/new   save-backend-cfg
                         :nav/to            nav-handler
                         :blink/busy        blink-busy

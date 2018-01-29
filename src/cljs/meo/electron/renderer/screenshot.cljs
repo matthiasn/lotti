@@ -1,5 +1,5 @@
 (ns meo.electron.renderer.screenshot
-  (:require [taoensso.timbre :as timbre :refer-macros [info debug]]
+  (:require [taoensso.timbre :refer-macros [info debug]]
             [meo.electron.renderer.helpers :as h]
             [matthiasn.systems-toolbox.component :as st]))
 

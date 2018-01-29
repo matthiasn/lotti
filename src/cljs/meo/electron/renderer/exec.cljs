@@ -1,5 +1,5 @@
 (ns meo.electron.renderer.exec
-  (:require [taoensso.timbre :as timbre :refer-macros [info]]
+  (:require [taoensso.timbre :refer-macros [info]]
             [electron :refer [ipcRenderer]]
             [cljs.spec.alpha :as s]))
 
