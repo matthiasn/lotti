@@ -2,7 +2,6 @@
   (:require [hiccup.page :refer [html5 include-css include-js]]
             [compojure.route :as r]
             [meo.jvm.routes.upload-qr :as qr]
-            [meo.jvm.files :as f]
             [meo.jvm.routes.images :as ir]
             [meo.jvm.routes.map-tile :as mt]
             [meo.jvm.file-utils :as fu]))
@@ -30,7 +29,6 @@
 (def sente-map
   {:index-page-fn index-page
    :routes-fn     routes-fn
-   :host          "0.0.0.0"
    :port          port
    :relay-types   #{:entry/saved :entry/found :state/new :sync/next :backend-cfg/new
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
