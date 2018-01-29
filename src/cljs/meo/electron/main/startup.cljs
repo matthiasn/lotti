@@ -120,7 +120,7 @@
                  :jvm/loaded?         jvm-up?
                  :spotify/start       start-spotify
                  :app/shutdown        shutdown
-                 :app/open-external   open-external
+                 :wm/open-external    open-external
                  :app/shutdown-jvm    shutdown-jvm
                  :app/clear-iww-cache clear-iww-cache
                  :app/clear-cache     clear-cache}})

@@ -95,7 +95,7 @@
                                             :initial true}]}]
 
        [:cmd/send {:to  :server/scheduler-cmp
-                   :msg [:cmd/schedule-new {:timeout 5000
+                   :msg [:cmd/schedule-new {:timeout 10000
                                             :message (with-meta
                                                        [:ws/ping]
                                                        {:sente-uid :broadcast})

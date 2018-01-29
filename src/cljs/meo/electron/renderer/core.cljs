@@ -41,7 +41,7 @@
 
 (defn start []
   (info "Starting SYSTEM")
-  (let [components #{(ipc/cmp-map :renderer/ipc-cmp #{:app/open-external
+  (let [components #{(ipc/cmp-map :renderer/ipc-cmp #{:wm/open-external
                                                       :geonames/lookup
                                                       :window/hide
                                                       :window/show
