@@ -33,18 +33,16 @@
 (def icon (r/adapt-react-class (aget react-native-vector-icons "default")))
 (def tab-bar-item (r/adapt-react-class (aget react-native-vector-icons "TabBarItemIOS")))
 
-(def kb-aware-scroll-view
-  (aget (js/require "react-native-keyboard-aware-scroll-view")
-        "KeyboardAwareScrollView"))
-(def kb-avoiding-view (r/adapt-react-class kb-aware-scroll-view))
-
 (def react-native-elements (js/require "react-native-elements"))
 (def search-bar (r/adapt-react-class (aget react-native-elements "SearchBar")))
 (def divider (r/adapt-react-class (aget react-native-elements "Divider")))
 
 (def contacts (js/require "react-native-contacts"))
 
-(def mapbox (aget (js/require "@mapbox/react-native-mapbox-gl") "default"))
+(def react-navigation (js/require "react-navigation"))
+
+(def mapbox-gl (js/require "@mapbox/react-native-mapbox-gl"))
+(def mapbox (aget mapbox-gl "default"))
 (def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
 (def map-view (r/adapt-react-class (aget mapbox "MapView")))
 

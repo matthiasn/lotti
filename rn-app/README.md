@@ -5,8 +5,10 @@ A Clojure library designed to ... well, that part is up to you.
 ## Usage
 
     $ react-native link react-native-device-info
- 
-
+    $ react-native link react-native-contacts
+    $ react-native link react-native-vector-icons
+    $ react-native link rn-apple-healthkit    
+    
     $ re-natal use-ios-device simulator
 
 or
@@ -21,9 +23,6 @@ or
     
     $ lein with-profile prod cljsbuild auto ios
     
-    $ react-native link react-native-contacts
-    $ react-native link react-native-vector-icons
-    $ react-native link rn-apple-healthkit    
 
 
 ## License
