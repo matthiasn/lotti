@@ -6,19 +6,21 @@
             [meo.ui.photos :as photos]
             [meo.ui.shared :refer [view text text-input touchable-highlight btn
                                    tab-bar keyboard-avoiding-view vibration
-                                   tab-bar-item app-registry view icon]]
+                                   tab-bar-item app-registry icon]]
             [meo.ui.journal :as jrn]
             [cljs-react-navigation.reagent :refer [tab-navigator]]
             [meo.ui.settings :as ts]))
 
-(reg-sub :entries (fn [db _] (:entries db)))
+(def put-fn-atom (r/atom nil))
 
-(defn app-root [put-fn]
-  (let [local (r/atom {:cam       false
-                       :contacts  (clj->js [])
-                       :map-style :Street
-                       :md        (str "hello world")})]
-    (fn [_put-fn]
+(def local (r/atom {:cam       false
+                    :contacts  (clj->js [])
+                    :map-style :Street
+                    :md        (str "hello world")}))
+
+(defn app-root []
+  (fn []
+    (let [put-fn @put-fn-atom]
       [:> (tab-navigator
             {:journal  {:screen            (jrn/journal-tab local put-fn)
                         :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
@@ -47,9 +49,7 @@
                                 :showLabel         false}})])))
 
 (defn state-fn [put-fn]
-  (let [app-root (app-root put-fn)
-        register #(r/reactify-component app-root)]
-    (.registerComponent app-registry "meo" register))
+  (reset! put-fn-atom put-fn)
   {:observed rdb/app-db})
 
 (defn cmp-map [cmp-id]

@@ -14,6 +14,7 @@
 (defn photos-page [local put-fn]
   [scroll {:style {:flex-direction "column"
                    :padding-top    10
+                   :background-color "#EEE"
                    :padding-bottom 10}}
 
    [view {:style {:flex-direction "row"

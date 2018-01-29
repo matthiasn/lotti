@@ -1,14 +1,15 @@
 (ns meo.ios.core
-  (:require [reagent.core :as r :refer [atom]]
-            [re-frame.core :refer [subscribe dispatch dispatch-sync]]
+  (:require [re-frame.core :refer [subscribe dispatch dispatch-sync]]
             [meo.events]
             [meo.ios.healthkit :as hk]
             [meo.ios.ws :as ws]
             [meo.ios.store :as store]
             [meo.ui :as ui]
+            [meo.ui.shared :refer [view text app-registry]]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
-            [meo.subs]))
+            [meo.subs]
+            [reagent.core :as r]))
 
 (enable-console-print!)
 
@@ -74,4 +75,6 @@
 
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store
-                            :app/ws-cmp}}]])))
+                            :app/ws-cmp}}]])
+    (.registerComponent
+      app-registry "meo" #(r/reactify-component ui/app-root))))

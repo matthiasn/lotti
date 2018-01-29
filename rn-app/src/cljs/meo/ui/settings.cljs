@@ -37,8 +37,10 @@
         load-state #(put-fn [:state/load])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
-        [view {:style {:flex-direction "column"
-                       :padding-top    10}}
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :height           "100%"
+                       :background-color "#EEE"}}
          [settings-list {:border-color :lightgrey
                          :flex         1}
           [settings-list-item {:hasNavArrow false
@@ -67,9 +69,10 @@
 (defn map-settings-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
     (let [{:keys [navigate goBack]} navigation]
-      [view {:style {:flex-direction "column"
-                     :padding-top    10
-                     :padding-bottom 10}}
+      [view {:style {:flex-direction   "column"
+                     :padding-top      10
+                     :padding-bottom   10
+                     :background-color "#EEE"}}
        [scroll {}
         [view {:style {:flex-direction "column"
                        :width          "100%"}}
@@ -96,9 +99,11 @@
                           (.getAll contacts cb)))]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
-        [view {:style {:flex-direction "column"
-                       :padding-top    10
-                       :padding-bottom 10}}
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :padding-bottom   10
+                       :height           "100%"
+                       :background-color "#EEE"}}
          [scroll {}
           [view {:style {:flex-direction "column"
                          :width          "100%"}}
@@ -118,9 +123,11 @@
         sleep-fn #(put-fn [:healthkit/sleep])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
-        [view {:style {:flex-direction "column"
-                       :padding-top    10
-                       :padding-bottom 10}}
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :padding-bottom   10
+                       :height           "100%"
+                       :background-color "#EEE"}}
          [settings-list {:border-color :lightgrey
                          :width        "100%"
                          :flex         1}
@@ -146,11 +153,12 @@
                             (swap! local assoc-in [:cam] false)))]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
-        [view {:style {:flex-direction "column"
-                       :padding-top    10}}
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color "#EEE"
+                       :height           "100%"}}
          [settings-list {:border-color :lightgrey
-                         :width        "100%"
-                         :flex         1}
+                         :width        "100%"}
           [settings-list-item {:title       "Scan barcode"
                                :has-switch  true
                                :hasNavArrow false

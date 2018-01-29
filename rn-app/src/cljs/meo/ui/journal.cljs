@@ -55,11 +55,14 @@
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
             as-array (clj->js (reverse (map second entries)))]
-        [view {:style {:flex 1}}
+        [view {:style {:flex 1
+                       :background-color "#EEE"}}
          [search-bar {:placeholder    "search..."
                       :lightTheme     true
                       :on-change-text on-change-text
-                      :on-clear-text  on-clear-text}]
+                      :on-clear-text  on-clear-text
+                      :inputStyle     {:backgroundColor "white"}
+                      :containerStyle {:backgroundColor "#DDD"}}]
 
          [flat-list {:style       {:flex           1
                                    :padding-bottom 50
