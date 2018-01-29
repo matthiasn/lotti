@@ -2,7 +2,8 @@
   (:require [meo.ui.shared :refer [view text touchable-highlight cam-roll
                                    scroll map-view mapbox-style-url image]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
-            [re-frame.core :refer [reg-sub subscribe]]))
+            [re-frame.core :refer [reg-sub subscribe]]
+            [meo.ui.colors :as c]))
 
 (def defaults {:background-color "lightgreen"
                :padding-left     15
@@ -12,10 +13,10 @@
                :margin-right     10})
 
 (defn photos-page [local put-fn]
-  [scroll {:style {:flex-direction "column"
-                   :padding-top    10
-                   :background-color "#EEE"
-                   :padding-bottom 10}}
+  [scroll {:style {:flex-direction   "column"
+                   :padding-top      10
+                   :background-color c/light-gray
+                   :padding-bottom   10}}
 
    [view {:style {:flex-direction "row"
                   :padding-top    10

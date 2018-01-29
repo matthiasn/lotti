@@ -4,9 +4,10 @@
                                    scroll btn flat-list map-view mapbox
                                    mapbox-style-url picker picker-item divider
                                    settings-list settings-list-header
-                                   settings-list-item]]
+                                   settings-list-item icon]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
-            [re-frame.core :refer [subscribe]]))
+            [re-frame.core :refer [subscribe]]
+            [meo.ui.colors :as c]))
 
 (defn render-item [item]
   (let [item (js->clj item :keywordize-keys true)
@@ -31,40 +32,58 @@
         (str (select-keys contact [:middleName :phoneNumbers :emailAddresses
                                    :postalAddresses :companyName]))]])))
 
+(defn settings-icon [icon-name]
+  (r/as-element
+    [view {:style {:padding-top  14
+                   :padding-left 14
+                   :width        44}}
+     [icon {:name  icon-name
+            :size  22
+            :style {:color      c/darker-gray
+                    :text-align :center}}]]))
+
 (defn settings-wrapper [local put-fn]
   (let [entries (subscribe [:entries])
         reset-state #(put-fn [:state/reset])
-        load-state #(put-fn [:state/load])]
+        load-state #(put-fn [:state/load])
+        ]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :height           "100%"
-                       :background-color "#EEE"}}
+                       :background-color c/light-gray}}
          [settings-list {:border-color :lightgrey
                          :flex         1}
           [settings-list-item {:hasNavArrow false
                                :title       "Entries"
+                               :icon        (settings-icon "heartbeat")
                                :title-info  (count @entries)}]
           [settings-list-item {:hasNavArrow true
                                :title       "Contacts"
+                               :icon        (settings-icon "address-book")
                                :on-press    #(navigate "contacts")
                                :title-info  (.-length (:contacts @local))}]
           [settings-list-item {:hasNavArrow true
                                :title       "Health"
+                               :icon        (settings-icon "heartbeat")
                                :on-press    #(navigate "health")}]
           [settings-list-item {:hasNavArrow true
                                :title       "Maps Style"
+                               :icon        (settings-icon "map")
                                :on-press    #(navigate "map")}]
-          [settings-list-item {:title         "Reset"
-                               :has-nav-arrow false
-                               :on-press      reset-state}]
-          [settings-list-item {:title         "Load from database"
-                               :has-nav-arrow false
-                               :on-press      load-state}]
-          [settings-list-item {:has-nav-arrow true
-                               :on-press      #(navigate "sync")
-                               :title         "Sync"}]]]))))
+          [settings-list-item {:title       "Reset"
+                               :hasNavArrow false
+                               :icon        (settings-icon "bolt")
+                               :on-press    reset-state}]
+          [settings-list-item {:title       "Load from database"
+                               :hasNavArrow false
+                               :icon        (settings-icon "spinner")
+                               :on-press    load-state}]
+          [settings-list-item {:hasNavArrow true
+                               :icon        (settings-icon "refresh")
+                               :on-press    #(navigate "sync")
+                               :title       "Sync"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
@@ -72,7 +91,8 @@
       [view {:style {:flex-direction   "column"
                      :padding-top      10
                      :padding-bottom   10
-                     :background-color "#EEE"}}
+                     :height           "100%"
+                     :background-color c/light-gray}}
        [scroll {}
         [view {:style {:flex-direction "column"
                        :width          "100%"}}
@@ -103,7 +123,7 @@
                        :padding-top      10
                        :padding-bottom   10
                        :height           "100%"
-                       :background-color "#EEE"}}
+                       :background-color c/light-gray}}
          [scroll {}
           [view {:style {:flex-direction "column"
                          :width          "100%"}}
@@ -127,7 +147,7 @@
                        :padding-top      10
                        :padding-bottom   10
                        :height           "100%"
-                       :background-color "#EEE"}}
+                       :background-color c/light-gray}}
          [settings-list {:border-color :lightgrey
                          :width        "100%"
                          :flex         1}
@@ -155,7 +175,7 @@
       (let [{:keys [navigate goBack]} navigation]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
-                       :background-color "#EEE"
+                       :background-color c/light-gray
                        :height           "100%"}}
          [settings-list {:border-color :lightgrey
                          :width        "100%"}

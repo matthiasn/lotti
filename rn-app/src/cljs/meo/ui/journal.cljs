@@ -2,6 +2,7 @@
   (:require [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
             [meo.helpers :as h]
+            [meo.ui.colors :as c]
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text scroll search-bar flat-list
                                    map-view mapbox-style-url]]
@@ -56,13 +57,13 @@
                             @entries)
             as-array (clj->js (reverse (map second entries)))]
         [view {:style {:flex 1
-                       :background-color "#EEE"}}
+                       :background-color c/light-gray}}
          [search-bar {:placeholder    "search..."
                       :lightTheme     true
                       :on-change-text on-change-text
                       :on-clear-text  on-clear-text
                       :inputStyle     {:backgroundColor "white"}
-                      :containerStyle {:backgroundColor "#DDD"}}]
+                      :containerStyle {:backgroundColor c/medium-gray}}]
 
          [flat-list {:style       {:flex           1
                                    :padding-bottom 50

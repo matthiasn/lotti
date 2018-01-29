@@ -5,7 +5,8 @@
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [meo.helpers :as h]
             [meo.utils.parse :as p]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [meo.ui.colors :as c]))
 
 (defn editor [local local2 put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
@@ -15,7 +16,7 @@
                                :style    {:display          "flex"
                                           :flex-direction   "column"
                                           :justify-content  "space-between"
-                                          :background-color "#F8F8F8"
+                                          :background-color c/light-gray
                                           :flex             1
                                           :align-items      "center"}}
        [text-input {:style          {:flex             2
