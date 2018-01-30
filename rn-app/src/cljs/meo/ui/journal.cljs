@@ -12,42 +12,47 @@
             [clojure.pprint :as pp]))
 
 (defn render-item [local put-fn navigate]
-  (fn [item]
-    (let [item (js->clj item :keywordize-keys true)
-          entry (:item item)
-          ts (:timestamp entry)
-          to-detail #(do (put-fn [:entry/detail entry])
-                         (navigate "entry"))]
-      (r/as-element
-        [view {:style    {:flex             1
-                          :background-color :white
-                          :margin-top       10
-                          :padding          10
-                          :width            "100%"}
-               :on-press #(do (put-fn [:entry/detail entry])
-                              (navigate "entry"))}
-         [touchable-highlight {:on-press to-detail
-                               :style    {:padding-top    8
-                                          :padding-left   12
-                                          :padding-right  12
-                                          :padding-bottom 8}}
-          [text {:style {:color      "#777"
-                         :text-align "center"
-                         :font-size  8
-                         :margin-top 5}}
-           (h/format-time ts)]]
-         [touchable-highlight {:on-press to-detail
-                               :style    {:padding-top    8
-                                          :padding-left   12
-                                          :padding-right  12
-                                          :padding-bottom 8}}
-          [text {:style {:color       "#777"
-                         :text-align  "center"
-                         :font-weight "bold"}}
-           (:md entry)]]]))))
+  (let [theme (subscribe [:active-theme])]
+    (fn [item]
+      (let [text-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])
+            item (js->clj item :keywordize-keys true)
+            entry (:item item)
+            ts (:timestamp entry)
+            to-detail #(do (put-fn [:entry/detail entry])
+                           (navigate "entry"))]
+        (r/as-element
+          [view {:style    {:flex             1
+                            :background-color text-bg
+                            :margin-top       10
+                            :padding          10
+                            :width            "100%"}
+                 :on-press #(do (put-fn [:entry/detail entry])
+                                (navigate "entry"))}
+           [touchable-highlight {:on-press to-detail
+                                 :style    {:padding-top    8
+                                            :padding-left   12
+                                            :padding-right  12
+                                            :padding-bottom 2}}
+            [text {:style {:color      text-color
+                           :text-align "center"
+                           :font-size  10
+                           :font-weight "100"
+                           :margin-top 5}}
+             (h/format-time ts)]]
+           [touchable-highlight {:on-press to-detail
+                                 :style    {:padding-top    4
+                                            :padding-left   12
+                                            :padding-right  12
+                                            :padding-bottom 8}}
+            [text {:style {:color       text-color
+                           :text-align  "center"
+                           :font-weight "bold"}}
+             (:md entry)]]])))))
 
 (defn journal [local put-fn navigate]
   (let [entries (subscribe [:entries])
+        theme (subscribe [:active-theme])
         on-change-text #(swap! local assoc-in [:jrn-search] %)
         on-clear-text #(swap! local assoc-in [:jrn-search] "")]
     (fn [local put-fn navigate]
@@ -56,15 +61,18 @@
                                 (s/lower-case (:md v))
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
-            as-array (clj->js (reverse (map second entries)))]
+            as-array (clj->js (reverse (map second entries)))
+            bg (get-in c/colors [:list-bg @theme])
+            search-container-bg (get-in c/colors [:search-bg @theme])
+            light-theme (= :light @theme)]
         [view {:style {:flex             1
-                       :background-color c/light-gray}}
+                       :background-color bg}}
          [search-bar {:placeholder    "search..."
-                      :lightTheme     true
+                      :lightTheme     light-theme
                       :on-change-text on-change-text
                       :on-clear-text  on-clear-text
-                      :inputStyle     {:backgroundColor "white"}
-                      :containerStyle {:backgroundColor c/medium-gray}}]
+                      ;:inputStyle     {:backgroundColor "white"}
+                      :containerStyle {:backgroundColor search-container-bg}}]
 
          [flat-list {:style        {:flex           1
                                     :padding-bottom 50
@@ -74,25 +82,27 @@
                      :render-item  (render-item local put-fn navigate)}]]))))
 
 (defn entry-detail [local put-fn]
-  (let [entry-detail (subscribe [:entry-detail])]
+  (let [entry-detail (subscribe [:entry-detail])
+        theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
-            reset-state #(do (put-fn [:state/reset]) (goBack))
-            load-state #(do (put-fn [:state/load]) (goBack))
-            entry @entry-detail]
+            entry @entry-detail
+            bg (get-in c/colors [:list-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [scroll {:style {:flex-direction   "column"
-                         :padding-top      10
-                         :background-color c/light-gray
+                         :padding-top      15
+                         :background-color bg
                          :padding-bottom   10}}
-
-         [text {:style {:color      "#777"
-                        :text-align "center"
-                        :font-size  8
-                        :margin-top 5}}
+         [text {:style {:color          text-color
+                        :text-align     "center"
+                        :font-size      8
+                        :padding-bottom 5
+                        :margin-top     5}}
           (h/format-time (:timestamp entry))]
-         [text {:style {:color       "#777"
-                        :text-align  "center"
-                        :font-weight "bold"}}
+         [text {:style {:color          text-color
+                        :text-align     "center"
+                        :font-weight    "bold"
+                        :padding-bottom 20}}
           (:md entry)]
          (when (:latitude entry)
            [map-view {:showUserLocation true
@@ -103,31 +113,36 @@
                       :style            {:width  "100%"
                                          :height 200}
                       :zoomLevel        15}])
-         (when true
-           [text {:style {:margin-top  40
-                          :margin-left 10
-                          :color       "#555"
-                          :text-align  "left"
-                          :font-size   9}}
-            (with-out-str (pp/pprint entry))])]))))
+         [text {:style {:margin-top  40
+                        :margin-left 10
+                        :color       text-color
+                        :text-align  "left"
+                        :font-size   9}}
+          (with-out-str (pp/pprint entry))]]))))
 
-(defn journal-tab [local put-fn]
-  (stack-navigator
-    {:journal {:screen (stack-screen
-                         (fn [{:keys [screenProps navigation] :as props}]
-                           (let [{:keys [navigate goBack]} navigation]
-                             [journal local put-fn navigate]))
-                         {:headerTitle (fn [{:keys [tintColor]}]
-                                         [view {:style {:flex           1
-                                                        :flex-direction :row}}
-                                          [image {:style  {:width  40
-                                                           :height 40}
-                                                  :source logo-img}]
-                                          [text {:style {:color       "#555"
-                                                         :text-align  "left"
-                                                         :margin-left 4
-                                                         :margin-top  6
-                                                         :font-size   20}}
-                                           "meo"]])})}
-     :entry   {:screen (stack-screen (entry-detail local put-fn)
-                                     {:title "Detail"})}}))
+(defn journal-tab [local put-fn theme]
+  (let [header-bg (get-in c/colors [:header-tab @theme])
+        text-color (get-in c/colors [:text @theme])]
+    (stack-navigator
+      {:journal {:screen (stack-screen
+                           (fn [{:keys [screenProps navigation] :as props}]
+                             (let [{:keys [navigate goBack]} navigation]
+                               [journal local put-fn navigate]))
+                           {:headerTitleStyle {:color text-color}
+                            :headerStyle      {:backgroundColor header-bg}
+                            :headerTitle      (fn [{:keys [tintColor]}]
+                                                [view {:style {:flex           1
+                                                               :flex-direction :row}}
+                                                 [image {:style  {:width  40
+                                                                  :height 40}
+                                                         :source logo-img}]
+                                                 [text {:style {:color       text-color
+                                                                :text-align  "left"
+                                                                :margin-left 4
+                                                                :margin-top  6
+                                                                :font-size   20}}
+                                                  "meo"]])})}
+       :entry   {:screen (stack-screen (entry-detail local put-fn)
+                                       {:title            "Detail"
+                                        :headerTitleStyle {:color text-color}
+                                        :headerStyle      {:backgroundColor header-bg}})}})))

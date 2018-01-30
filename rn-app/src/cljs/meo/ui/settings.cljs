@@ -31,78 +31,130 @@
         (str (select-keys contact [:middleName :phoneNumbers :emailAddresses
                                    :postalAddresses :companyName]))]])))
 
-(defn settings-icon [icon-name]
+(defn settings-icon [icon-name color]
   (r/as-element
     [view {:style {:padding-top  14
                    :padding-left 14
                    :width        44}}
      [icon {:name  icon-name
             :size  20
-            :style {:color      c/darker-gray
+            :style {:color      color
                     :text-align :center}}]]))
 
 (defn settings-wrapper [local put-fn]
-  (let [entries (subscribe [:entries])]
+  (let [entries (subscribe [:entries])
+        theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :height           "100%"
-                       :background-color c/light-gray}}
+                       :background-color bg}}
          [settings-list {:border-color :lightgrey
                          :flex         1}
-          [settings-list-item {:hasNavArrow false
-                               :title       "Entries"
-                               :icon        (settings-icon "list")
-                               :title-info  (str (count @entries))}]
-          [settings-list-item {:hasNavArrow true
-                               :title       "Contacts"
-                               :icon        (settings-icon "address-book")
-                               :on-press    #(navigate "contacts")
-                               :title-info  (.-length (:contacts @local))}]
-          [settings-list-item {:hasNavArrow true
-                               :title       "Health"
-                               :icon        (settings-icon "heartbeat")
-                               :on-press    #(navigate "health")}]
-          [settings-list-item {:hasNavArrow true
-                               :title       "Maps Style"
-                               :icon        (settings-icon "map")
-                               :on-press    #(navigate "map")}]
-          [settings-list-item {:title       "Database"
-                               :hasNavArrow true
-                               :icon        (settings-icon "database")
-                               :on-press    #(navigate "db")}]
-          [settings-list-item {:hasNavArrow true
-                               :icon        (settings-icon "refresh")
-                               :on-press    #(navigate "sync")
-                               :title       "Sync"}]]]))))
+          [settings-list-item
+           {:hasNavArrow      false
+            :background-color item-bg
+            :title            "Entries"
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "list" text-color)
+            :title-info       (str (count @entries))}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :title            "Contacts"
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "address-book" text-color)
+            :on-press         #(navigate "contacts")
+            :title-info       (.-length (:contacts @local))}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :title            "Health"
+            :icon             (settings-icon "heartbeat" text-color)
+            :on-press         #(navigate "health")}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :title            "Maps Style"
+            :icon             (settings-icon "map" text-color)
+            :on-press         #(navigate "map")}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :title            "Theme"
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "font" text-color)
+            :on-press         #(navigate "theme")}]
+          [settings-list-item
+           {:title            "Database"
+            :background-color item-bg
+            :hasNavArrow      true
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "database" text-color)
+            :on-press         #(navigate "db")}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "refresh" text-color)
+            :on-press         #(navigate "sync")
+            :title            "Sync"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
-  (fn [{:keys [screenProps navigation] :as props}]
-    (let [{:keys [navigate goBack]} navigation]
-      [view {:style {:flex-direction   "column"
-                     :padding-top      10
-                     :padding-bottom   10
-                     :height           "100%"
-                     :background-color c/light-gray}}
-       [scroll {}
-        [view {:style {:flex-direction "column"
-                       :width          "100%"}}
-         [map-view {:showUserLocation true
-                    :centerCoordinate [9.95 53.55]
-                    :styleURL         (get mapbox-style-url (:map-style @local))
-                    :style            {:width         "100%"
-                                       :flex          2
-                                       :height        300
-                                       :margin-bottom 10}
-                    :zoomLevel        10}]]
-        [picker {:selected-value  (:map-style @local)
-                 :on-value-change (fn [v idx]
-                                    (let [style (keyword v)]
-                                      (swap! local assoc-in [:map-style] style)))}
-         (for [[k style] mapbox-style-url]
-           ^{:key k}
-           [picker-item {:label (name k) :value k}])]]])))
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [screenProps navigation] :as props}]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-bottom   10
+                       :height           "100%"
+                       :background-color bg}}
+         [scroll {}
+          [view {:style {:flex-direction "column"
+                         :width          "100%"}}
+           [map-view {:showUserLocation true
+                      :centerCoordinate [9.95 53.55]
+                      :styleURL         (get mapbox-style-url (:map-style @local))
+                      :style            {:width         "100%"
+                                         :flex          2
+                                         :height        300
+                                         :margin-bottom 10}
+                      :zoomLevel        10}]]
+          [picker {:selected-value  (:map-style @local)
+                   :style {:color "red"}
+                   :on-value-change (fn [v idx]
+                                      (let [style (keyword v)]
+                                        (swap! local assoc-in [:map-style] style)))}
+           (for [[k style] mapbox-style-url]
+             ^{:key k}
+             [picker-item {:style {:color :red}
+                           :label (name k) :value k}])]]]))))
+
+(defn theme-settings-wrapper [local put-fn]
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [screenProps navigation] :as props}]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :padding-bottom   10
+                       :height           "100%"
+                       :background-color bg}}
+         [scroll {}
+          [picker {:selected-value  @theme
+                   :on-value-change (fn [v idx]
+                                      (let [style (keyword v)]
+                                        (put-fn [:theme/active style])))}
+           [picker-item {:label "light theme"
+                         :value :light}]
+           [picker-item {:label "dark theme"
+                         :value :dark}]]]]))))
 
 (defn contact-settings [local put-fn]
   (let [read-contacts (fn [_]
@@ -205,24 +257,32 @@
                        :width        "100%"}
         [settings-list-item {:title       "Reset"
                              :hasNavArrow false
-                             :icon        (settings-icon "bolt")
+                             :icon        (settings-icon "bolt" "#999")
                              :on-press    reset-state}]
         [settings-list-item {:title       "Load from database"
                              :hasNavArrow false
-                             :icon        (settings-icon "spinner")
+                             :icon        (settings-icon "spinner" "#999")
                              :on-press    load-state}]]])))
 
-(defn settings-tab [local put-fn]
-  (stack-navigator
-    {:settings {:screen (stack-screen (settings-wrapper local put-fn)
-                                      {:title "Settings"})}
-     :map      {:screen (stack-screen (map-settings-wrapper local put-fn)
-                                      {:title "Map Style"})}
-     :contacts {:screen (stack-screen (contact-settings local put-fn)
-                                      {:title "Contacts"})}
-     :health   {:screen (stack-screen (health-settings local put-fn)
-                                      {:title "Health"})}
-     :db       {:screen (stack-screen (db-settings local put-fn)
-                                      {:title "Sync"})}
-     :sync     {:screen (stack-screen (sync-settings local put-fn)
-                                      {:title "Sync"})}}))
+(defn settings-tab [local put-fn theme]
+  (let [header-bg (get-in c/colors [:header-tab @theme])
+        text-color (get-in c/colors [:text @theme])
+        opts (fn [title]
+               {:title            title
+                :headerTitleStyle {:color text-color}
+                :headerStyle      {:backgroundColor header-bg}})]
+    (stack-navigator
+      {:settings {:screen (stack-screen (settings-wrapper local put-fn)
+                                        (opts "Settings"))}
+       :map      {:screen (stack-screen (map-settings-wrapper local put-fn)
+                                        (opts "Map Style"))}
+       :theme    {:screen (stack-screen (theme-settings-wrapper local put-fn)
+                                        (opts "UI Theme"))}
+       :contacts {:screen (stack-screen (contact-settings local put-fn)
+                                        (opts "Contacts"))}
+       :health   {:screen (stack-screen (health-settings local put-fn)
+                                        (opts "Health"))}
+       :db       {:screen (stack-screen (db-settings local put-fn)
+                                        (opts "Database"))}
+       :sync     {:screen (stack-screen (sync-settings local put-fn)
+                                        (opts "Sync"))}})))

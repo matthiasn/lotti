@@ -42,6 +42,10 @@
   (let [new-state (assoc-in current-state [:entry-detail] msg-payload)]
     {:new-state new-state}))
 
+(defn theme [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:active-theme] msg-payload)]
+    {:new-state new-state}))
+
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
   (let [entries (:entries current-state)
         latest-synced (:latest-synced current-state)
@@ -96,6 +100,7 @@
 
 (defn state-fn [put-fn]
   (let [state (atom {:entries       (avl/sorted-map)
+                     :active-theme  :light
                      :latest-synced 0})]
     {:state state}))
 
@@ -109,4 +114,5 @@
                  :state/load       load-state
                  :state/reset      state-reset
                  :entry/detail     detail
+                 :theme/active     theme
                  :sync/next        sync-start}})

@@ -5,59 +5,55 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.ui.colors :as c]))
 
-(def defaults {:background-color "lightgreen"
-               :padding-left     15
-               :padding-right    15
-               :padding-top      10
-               :padding-bottom   10
-               :margin-right     10})
-
 (defn photos-page [local put-fn]
-  (let [current-map-style (:map-style @local)]
-    [scroll {:style {:flex-direction   "column"
-                     :padding-top      10
-                     :background-color c/light-gray
-                     :padding-bottom   10}}
+  (let [theme (subscribe [:active-theme])]
+    (fn [local put-fn]
+      (let [current-map-style (:map-style @local)
+            bg (get-in c/colors [:list-bg @theme])]
+        [scroll {:style {:flex-direction   "column"
+                         :padding-top      10
+                         :background-color bg
+                         :padding-bottom   10}}
 
-     (for [photo (:edges (:photos @local))]
-       (let [node (:node photo)
-             loc (:location node)
-             img (:image node)]
-         ^{:key (:uri img)}
-         [view {:style {:padding-top    10
-                        :padding-bottom 10
-                        :margin-bottom  10
-                        :width          "100%"
-                        :display        :flex
-                        :flex-direction :row}}
-          [image {:style  {:width      240
-                           :height     160
-                           :max-height 160}
-                  :source {:uri (:uri img)}}]
-          (when (:latitude loc)
-            [map-view {:showUserLocation true
-                       :centerCoordinate [(:longitude loc) (:latitude loc)]
-                       :scrollEnabled    false
-                       :rotateEnabled    false
-                       :styleURL         (get mapbox-style-url current-map-style)
-                       :style            {:width  160
-                                          :max-width 160
-                                          :flex   2
-                                          :height 160}
-                       :zoomLevel        15}])]))
+         (for [photo (:edges (:photos @local))]
+           (let [node (:node photo)
+                 loc (:location node)
+                 img (:image node)]
+             ^{:key (:uri img)}
+             [view {:style {:padding-top    10
+                            :padding-bottom 10
+                            :margin-bottom  10
+                            :width          "100%"
+                            :display        :flex
+                            :flex-direction :row}}
+              [image {:style  {:width      240
+                               :height     160
+                               :max-height 160}
+                      :source {:uri (:uri img)}}]
+              (when (:latitude loc)
+                [map-view {:showUserLocation true
+                           :centerCoordinate [(:longitude loc) (:latitude loc)]
+                           :scrollEnabled    false
+                           :rotateEnabled    false
+                           :styleURL         (get mapbox-style-url current-map-style)
+                           :style            {:width     160
+                                              :max-width 160
+                                              :flex      2
+                                              :height    160}
+                           :zoomLevel        15}])]))
 
-     [text {:style {:color       "#777"
-                    :text-align  "center"
-                    :font-size   10
-                    :font-weight "bold"}}
-      (str (dissoc (:photos @local) :edges))]]))
+         [text {:style {:color       "#777"
+                        :text-align  "center"
+                        :font-size   10
+                        :font-weight "bold"}}
+          (str (dissoc (:photos @local) :edges))]]))))
 
 (defn photos-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
     (let [{:keys [navigate goBack]} navigation]
       [photos-page local put-fn])))
 
-(defn photos-tab [local put-fn]
+(defn photos-tab [local put-fn theme]
   (let [get-fn #(let [params (clj->js {:first     50
                                        :assetType "All"})
                       photos-promise (.getPhotos cam-roll params)]
@@ -65,6 +61,8 @@
                          (fn [r]
                            (let [parsed (js->clj r :keywordize-keys true)]
                              (swap! local assoc-in [:photos] parsed)))))
+        header-bg (get-in c/colors [:header-tab @theme])
+        text-color (get-in c/colors [:text @theme])
         header-right (fn [_]
                        [touchable-highlight {:on-press get-fn
                                              :style    {:padding-top    8
@@ -75,6 +73,9 @@
                                        :text-align "center"
                                        :font-size  18}}
                          "show"]])
-        opts {:title "Photos" :headerRight header-right}]
+        opts {:title            "Photos"
+              :headerRight      header-right
+              :headerTitleStyle {:color text-color}
+              :headerStyle      {:backgroundColor header-bg}}]
     (stack-navigator
       {:photos {:screen (stack-screen (photos-wrapper local put-fn) opts)}})))
