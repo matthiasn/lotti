@@ -38,6 +38,10 @@
       (go (<! (as/set-item ts merged)))
       {:new-state new-state})))
 
+(defn detail [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:entry-detail] msg-payload)]
+    {:new-state new-state}))
+
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
   (let [entries (:entries current-state)
         latest-synced (:latest-synced current-state)
@@ -104,4 +108,5 @@
                  :sync/initiate    sync-start
                  :state/load       load-state
                  :state/reset      state-reset
+                 :entry/detail     detail
                  :sync/next        sync-start}})

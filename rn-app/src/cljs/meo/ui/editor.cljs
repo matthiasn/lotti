@@ -39,15 +39,17 @@
                    (new-entry-fn)
                    (swap! local assoc-in [:md] "")
                    (when-let [navigate (:navigate @local2)]
-                     (navigate "journal")))]
+                     (navigate "journal")))
+        header-right (fn [_]
+                       [touchable-highlight {:on-press save-fn
+                                             :style    {:padding-top 8
+                                                        :padding-left 12
+                                                        :padding-right 12
+                                                        :padding-bottom 8}}
+                        [text {:style {:color      "#0078e7"
+                                       :text-align "center"
+                                       :font-size  18}}
+                         "save"]])
+        opts {:title "Add Entry" :headerRight header-right}]
     (stack-navigator
-      {:editor {:screen (stack-screen
-                          (editor local local2 put-fn)
-                          {:title       "Add Entry"
-                           :headerRight (fn [_]
-                                          [touchable-highlight {:on-press save-fn
-                                                                :style    {:padding 10}}
-                                           [text {:style {:color      "#0078e7"
-                                                          :text-align "center"
-                                                          :font-size  20}}
-                                            "save"]])})}})))
+      {:editor {:screen (stack-screen (editor local local2 put-fn) opts)}})))

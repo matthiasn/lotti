@@ -19,25 +19,6 @@
                      :background-color c/light-gray
                      :padding-bottom   10}}
 
-     [view {:style {:flex-direction "row"
-                    :padding-top    10
-                    :padding-bottom 10
-                    :padding-left   10
-                    :padding-right  10}}
-      [touchable-highlight
-       {:style    defaults
-        :on-press #(let [params (clj->js {:first     50
-                                          :assetType "All"})
-                         photos-promise (.getPhotos cam-roll params)]
-                     (.then photos-promise
-                            (fn [r]
-                              (let [parsed (js->clj r :keywordize-keys true)]
-                                (swap! local assoc-in [:photos] parsed)))))}
-       [text {:style {:color       "white"
-                      :text-align  "center"
-                      :font-weight "bold"}}
-        "get photos"]]]
-
      (for [photo (:edges (:photos @local))]
        (let [node (:node photo)
              loc (:location node)
@@ -49,9 +30,8 @@
                         :width          "100%"
                         :display        :flex
                         :flex-direction :row}}
-          [image {:style  {:width      160
+          [image {:style  {:width      240
                            :height     160
-                           :max-width  160
                            :max-height 160}
                   :source {:uri (:uri img)}}]
           (when (:latitude loc)
@@ -60,7 +40,8 @@
                        :scrollEnabled    false
                        :rotateEnabled    false
                        :styleURL         (get mapbox-style-url current-map-style)
-                       :style            {:width  200
+                       :style            {:width  160
+                                          :max-width 160
                                           :flex   2
                                           :height 160}
                        :zoomLevel        15}])]))
@@ -77,6 +58,23 @@
       [photos-page local put-fn])))
 
 (defn photos-tab [local put-fn]
-  (stack-navigator
-    {:photos {:screen (stack-screen (photos-wrapper local put-fn)
-                                    {:title "Photos"})}}))
+  (let [get-fn #(let [params (clj->js {:first     50
+                                       :assetType "All"})
+                      photos-promise (.getPhotos cam-roll params)]
+                  (.then photos-promise
+                         (fn [r]
+                           (let [parsed (js->clj r :keywordize-keys true)]
+                             (swap! local assoc-in [:photos] parsed)))))
+        header-right (fn [_]
+                       [touchable-highlight {:on-press get-fn
+                                             :style    {:padding-top    8
+                                                        :padding-left   12
+                                                        :padding-right  12
+                                                        :padding-bottom 8}}
+                        [text {:style {:color      "#0078e7"
+                                       :text-align "center"
+                                       :font-size  18}}
+                         "show"]])
+        opts {:title "Photos" :headerRight header-right}]
+    (stack-navigator
+      {:photos {:screen (stack-screen (photos-wrapper local put-fn) opts)}})))

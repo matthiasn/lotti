@@ -3,3 +3,4 @@
 
 (reg-sub :stats (fn [db _] (:stats db)))
 (reg-sub :entries (fn [db _] (:entries db)))
+(reg-sub :entry-detail (fn [db _] (:entry-detail db)))
