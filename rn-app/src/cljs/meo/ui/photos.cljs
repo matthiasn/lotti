@@ -13,61 +13,63 @@
                :margin-right     10})
 
 (defn photos-page [local put-fn]
-  [scroll {:style {:flex-direction   "column"
-                   :padding-top      10
-                   :background-color c/light-gray
-                   :padding-bottom   10}}
+  (let [current-map-style (:map-style @local)]
+    [scroll {:style {:flex-direction   "column"
+                     :padding-top      10
+                     :background-color c/light-gray
+                     :padding-bottom   10}}
 
-   [view {:style {:flex-direction "row"
-                  :padding-top    10
-                  :padding-bottom 10
-                  :padding-left   10
-                  :padding-right  10}}
-    [touchable-highlight
-     {:style    defaults
-      :on-press #(let [params (clj->js {:first     50
-                                        :assetType "All"})
-                       photos-promise (.getPhotos cam-roll params)]
-                   (.then photos-promise
-                          (fn [r]
-                            (let [parsed (js->clj r :keywordize-keys true)]
-                              (swap! local assoc-in [:photos] parsed)))))}
-     [text {:style {:color       "white"
+     [view {:style {:flex-direction "row"
+                    :padding-top    10
+                    :padding-bottom 10
+                    :padding-left   10
+                    :padding-right  10}}
+      [touchable-highlight
+       {:style    defaults
+        :on-press #(let [params (clj->js {:first     50
+                                          :assetType "All"})
+                         photos-promise (.getPhotos cam-roll params)]
+                     (.then photos-promise
+                            (fn [r]
+                              (let [parsed (js->clj r :keywordize-keys true)]
+                                (swap! local assoc-in [:photos] parsed)))))}
+       [text {:style {:color       "white"
+                      :text-align  "center"
+                      :font-weight "bold"}}
+        "get photos"]]]
+
+     (for [photo (:edges (:photos @local))]
+       (let [node (:node photo)
+             loc (:location node)
+             img (:image node)]
+         ^{:key (:uri img)}
+         [view {:style {:padding-top    10
+                        :padding-bottom 10
+                        :margin-bottom  10
+                        :width          "100%"
+                        :display        :flex
+                        :flex-direction :row}}
+          [image {:style  {:width      160
+                           :height     160
+                           :max-width  160
+                           :max-height 160}
+                  :source {:uri (:uri img)}}]
+          (when (:latitude loc)
+            [map-view {:showUserLocation true
+                       :centerCoordinate [(:longitude loc) (:latitude loc)]
+                       :scrollEnabled    false
+                       :rotateEnabled    false
+                       :styleURL         (get mapbox-style-url current-map-style)
+                       :style            {:width  200
+                                          :flex   2
+                                          :height 160}
+                       :zoomLevel        15}])]))
+
+     [text {:style {:color       "#777"
                     :text-align  "center"
+                    :font-size   10
                     :font-weight "bold"}}
-      "get photos"]]]
-
-   (for [photo (:edges (:photos @local))]
-     (let [node (:node photo)
-           loc (:location node)
-           img (:image node)]
-       [view {:style {:padding-top    10
-                      :padding-bottom 10
-                      :margin-bottom  10
-                      :width          "100%"
-                      :display        :flex
-                      :flex-direction :row}}
-        [image {:style  {:width      160
-                         :height     160
-                         :max-width  160
-                         :max-height 160}
-                :source {:uri (:uri img)}}]
-        (when (:latitude loc)
-          [map-view {:showUserLocation true
-                     :centerCoordinate [(:longitude loc) (:latitude loc)]
-                     :scrollEnabled    false
-                     :rotateEnabled    false
-                     :styleURL         (get mapbox-style-url (:map-style @local))
-                     :style            {:width  200
-                                        :flex   2
-                                        :height 160}
-                     :zoomLevel        15}])]))
-
-   [text {:style {:color       "#777"
-                  :text-align  "center"
-                  :font-size   10
-                  :font-weight "bold"}}
-    (str (dissoc (:photos @local) :edges))]])
+      (str (dissoc (:photos @local) :edges))]]))
 
 (defn photos-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]

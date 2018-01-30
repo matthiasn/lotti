@@ -23,7 +23,7 @@
 
 (defn alert [title] (.alert (.-Alert react-native) title))
 
-(def logo-img (js/require "./images/cljs.png"))
+(def logo-img (js/require "./images/meo.png"))
 
 (def react-native-camera (js/require "react-native-camera"))
 (def cam (r/adapt-react-class (aget react-native-camera "default")))

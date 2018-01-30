@@ -5,9 +5,10 @@
             [meo.ui.colors :as c]
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text scroll search-bar flat-list
-                                   map-view mapbox-style-url]]
+                                   map-view mapbox-style-url icon image logo-img]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [clojure.pprint :as pp]))
 
 (defn render-item [local put-fn]
   (fn [item]
@@ -18,8 +19,7 @@
                        :background-color :white
                        :margin-top       10
                        :padding          10
-                       :width            "100%"}
-               :key   (:timestamp entry)}
+                       :width            "100%"}}
          [text {:style {:color      "#777"
                         :text-align "center"
                         :font-size  8
@@ -39,11 +39,11 @@
                                          :height 200}
                       :zoomLevel        15}])
 
-         (when (:detail @local)
+         (when true
            [text {:style {:color      "#555"
-                          :text-align "center"
-                          :font-size  7}}
-            (str entry)])]))))
+                          :text-align "left"
+                          :font-size  9}}
+            (with-out-str (pp/pprint entry))])]))))
 
 (defn journal [local put-fn]
   (let [entries (subscribe [:entries])
@@ -56,7 +56,7 @@
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
             as-array (clj->js (reverse (map second entries)))]
-        [view {:style {:flex 1
+        [view {:style {:flex             1
                        :background-color c/light-gray}}
          [search-bar {:placeholder    "search..."
                       :lightTheme     true
@@ -65,18 +65,28 @@
                       :inputStyle     {:backgroundColor "white"}
                       :containerStyle {:backgroundColor c/medium-gray}}]
 
-         [flat-list {:style       {:flex           1
-                                   :padding-bottom 50
-                                   :width          "100%"}
-                     :data        as-array
-                     :render-item (render-item local put-fn)}]]))))
-
-(defn journal-wrapper [local put-fn]
-  (fn [{:keys [screenProps navigation] :as props}]
-    (let [{:keys [navigate goBack]} navigation]
-      [journal local put-fn])))
+         [flat-list {:style        {:flex           1
+                                    :padding-bottom 50
+                                    :width          "100%"}
+                     :keyExtractor (fn [item] (aget item "timestamp"))
+                     :data         as-array
+                     :render-item  (render-item local put-fn)}]]))))
 
 (defn journal-tab [local put-fn]
   (stack-navigator
-    {:journal {:screen (stack-screen (journal-wrapper local put-fn)
-                                     {:title "Journal"})}}))
+    {:journal {:screen (stack-screen
+                         (fn [{:keys [screenProps navigation] :as props}]
+                           (let [{:keys [navigate goBack]} navigation]
+                             [journal local put-fn]))
+                         {:headerTitle (fn [{:keys [tintColor]}]
+                                         [view {:style {:flex           1
+                                                        :flex-direction :row}}
+                                          [image {:style  {:width  40
+                                                           :height 40}
+                                                  :source logo-img}]
+                                          [text {:style {:color       "#555"
+                                                         :text-align  "left"
+                                                         :margin-left 4
+                                                         :margin-top  6
+                                                         :font-size   20}}
+                                           "meo"]])})}}))
