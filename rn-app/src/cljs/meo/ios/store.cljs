@@ -44,6 +44,7 @@
 
 (defn theme [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:active-theme] msg-payload)]
+    (go (<! (as/set-item :active-theme msg-payload)))
     {:new-state new-state}))
 
 (defn current-activity [{:keys [current-state msg-payload]}]
@@ -72,6 +73,12 @@
       (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
         (put-fn [:debug/latest-vclock latest-vclock])
         (swap! cmp-state assoc-in [:latest-vclock] latest-vclock))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
+      (let [active-theme (second (<! (as/get-item :active-theme)))]
+        (swap! cmp-state assoc-in [:active-theme] active-theme))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (go

@@ -10,27 +10,28 @@
             [meo.ui.colors :as c]
             [cljs.pprint :as pp]))
 
-(defn render-item [item]
-  (let [item (js->clj item :keywordize-keys true)
-        contact (:item item)]
-    (r/as-element
-      [view {:style {:flex             1
-                     :background-color :white
-                     :margin-top       10
-                     :padding          10
-                     :width            "100%"}}
-       [text {:style {:color       "#777"
-                      :text-align  "center"
-                      :font-weight "bold"
-                      :margin-top  5}}
-        (:givenName contact) " "
-        [text {:style {:font-weight "bold"}}
-         (:familyName contact)]]
-       [text {:style {:color      "#555"
-                      :text-align "center"
-                      :font-size  5}}
-        (str (select-keys contact [:middleName :phoneNumbers :emailAddresses
-                                   :postalAddresses :companyName]))]])))
+(defn render-item [text-color item-bg]
+  (fn [item]
+    (let [item (js->clj item :keywordize-keys true)
+          contact (:item item)]
+      (r/as-element
+        [view {:style {:flex             1
+                       :background-color item-bg
+                       :margin-top       10
+                       :padding          10
+                       :width            "100%"}}
+         [text {:style {:color       "#777"
+                        :text-align  "center"
+                        :font-weight "bold"
+                        :margin-top  5}}
+          (:givenName contact) " "
+          [text {:style {:font-weight "bold"}}
+           (:familyName contact)]]
+         [text {:style {:color      text-color
+                        :text-align "center"
+                        :font-size  5}}
+          (str (select-keys contact [:middleName :phoneNumbers :emailAddresses
+                                     :postalAddresses :companyName]))]]))))
 
 (defn settings-icon [icon-name color]
   (r/as-element
@@ -54,7 +55,7 @@
                        :padding-top      10
                        :height           "100%"
                        :background-color bg}}
-         [settings-list {:border-color :lightgrey
+         [settings-list {:border-color bg
                          :flex         1}
           [settings-list-item
            {:hasNavArrow      false
@@ -129,7 +130,7 @@
                                          :margin-bottom 10}
                       :zoomLevel        10}]]
           [picker {:selected-value  (:map-style @local)
-                   :itemStyle {:color text-color}
+                   :itemStyle       {:color text-color}
                    :on-value-change (fn [v idx]
                                       (let [style (keyword v)]
                                         (swap! local assoc-in [:map-style] style)))}
@@ -150,7 +151,7 @@
                        :background-color bg}}
          [scroll {}
           [picker {:selected-value  @theme
-                   :itemStyle {:color text-color}
+                   :itemStyle       {:color text-color}
                    :on-value-change (fn [v idx]
                                       (let [style (keyword v)]
                                         (put-fn [:theme/active style])))}
@@ -160,62 +161,82 @@
                          :value :dark}]]]]))))
 
 (defn contact-settings [local put-fn]
-  (let [read-contacts (fn [_]
+  (let [theme (subscribe [:active-theme])
+        read-contacts (fn [_]
                         (let [cb (fn [err contacts]
                                    (swap! local assoc-in [:contacts] contacts))]
                           (.getAll contacts cb)))]
     (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :padding-bottom   10
                        :height           "100%"
-                       :background-color c/light-gray}}
+                       :background-color bg}}
          [scroll {}
           [view {:style {:flex-direction "column"
                          :width          "100%"}}
-           [settings-list {:border-color :lightgrey
+           [settings-list {:border-color bg
                            :width        "100%"
                            :flex         1}
-            [settings-list-item {:title       "Import contacts"
-                                 :hasNavArrow false
-                                 :on-press    read-contacts}]]
+            [settings-list-item {:title            "Import contacts"
+                                 :hasNavArrow      false
+                                 :background-color item-bg
+                                 :titleStyle       {:color text-color}
+                                 :on-press         read-contacts}]]
            [flat-list {:data         (:contacts @local)
-                       :render-item  render-item
+                       :render-item  (render-item text-color item-bg)
                        :keyExtractor (fn [item] (.-recordID item))}]]]]))))
 
 (defn health-settings [local put-fn]
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
+        theme (subscribe [:active-theme])
         steps-fn #(dotimes [n 5] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
         activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]
     (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :padding-bottom   10
                        :height           "100%"
-                       :background-color c/light-gray}}
-         [settings-list {:border-color :lightgrey
+                       :background-color bg}}
+         [settings-list {:border-color bg
                          :width        "100%"
                          :flex         1}
-          [settings-list-item {:title       "Weight"
-                               :hasNavArrow false
-                               :on-press    weight-fn}]
-          [settings-list-item {:title       "Blood Pressure"
-                               :hasNavArrow false
-                               :on-press    bp-fn}]
-          [settings-list-item {:title       "Steps"
-                               :hasNavArrow false
-                               :on-press    steps-fn}]
-          [settings-list-item {:title       "Sleep"
-                               :hasNavArrow false
-                               :on-press    sleep-fn}]
-          [settings-list-item {:title       "Monitor Activities"
-                               :hasNavArrow false
-                               :on-press    activity-fn}]]
+          [settings-list-item {:title            "Weight"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         weight-fn}]
+          [settings-list-item {:title            "Blood Pressure"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         bp-fn}]
+          [settings-list-item {:title            "Steps"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         steps-fn}]
+          [settings-list-item {:title            "Sleep"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         sleep-fn}]
+          [settings-list-item {:title            "Monitor Activities"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         activity-fn}]]
          [text {:style {:margin-top    5
                         :margin-left   10
                         :margin-bottom 20
@@ -225,27 +246,35 @@
           (with-out-str (pp/pprint @current-activity))]]))))
 
 (defn sync-settings [local put-fn]
-  (let [on-barcode-read (fn [e]
+  (let [theme (subscribe [:active-theme])
+        on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
                                 data (get qr-code "data")]
                             (swap! local assoc-in [:barcode] data)
                             (put-fn [:ws/connect {:host data}])
                             (swap! local assoc-in [:cam] false)))]
     (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
-                       :background-color c/light-gray
+                       :background-color bg
                        :height           "100%"}}
-         [settings-list {:border-color :lightgrey
+         [settings-list {:border-color bg
                          :width        "100%"}
-          [settings-list-item {:title       "Scan barcode"
-                               :has-switch  true
-                               :hasNavArrow false
-                               :on-press    #(swap! local update-in [:cam] not)}]
-          [settings-list-item {:title       "Sync"
-                               :hasNavArrow false
-                               :on-press    #(put-fn [:sync/initiate])}]]
+          [settings-list-item {:title            "Scan barcode"
+                               :has-switch       true
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(swap! local update-in [:cam] not)}]
+          [settings-list-item {:title            "Sync"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(put-fn [:sync/initiate])}]]
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :height 300}
@@ -260,24 +289,32 @@
             (str barcode)])]))))
 
 (defn db-settings [local put-fn]
-  (fn [{:keys [screenProps navigation] :as props}]
-    (let [{:keys [navigate goBack]} navigation
-          reset-state #(do (put-fn [:state/reset]) (goBack))
-          load-state #(do (put-fn [:state/load]) (goBack))]
-      [view {:style {:flex-direction   "column"
-                     :padding-top      10
-                     :background-color c/light-gray
-                     :height           "100%"}}
-       [settings-list {:border-color :lightgrey
-                       :width        "100%"}
-        [settings-list-item {:title       "Reset"
-                             :hasNavArrow false
-                             :icon        (settings-icon "bolt" "#999")
-                             :on-press    reset-state}]
-        [settings-list-item {:title       "Load from database"
-                             :hasNavArrow false
-                             :icon        (settings-icon "spinner" "#999")
-                             :on-press    load-state}]]])))
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [screenProps navigation] :as props}]
+      (let [{:keys [navigate goBack]} navigation
+            reset-state #(do (put-fn [:state/reset]) (goBack))
+            load-state #(do (put-fn [:state/load]) (goBack))
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [settings-list {:border-color bg
+                         :width        "100%"}
+          [settings-list-item {:title            "Reset"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :icon             (settings-icon "bolt" "#999")
+                               :on-press         reset-state}]
+          [settings-list-item {:title            "Load from database"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :icon             (settings-icon "spinner" "#999")
+                               :on-press         load-state}]]]))))
 
 (defn settings-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
