@@ -323,3 +323,5 @@
 (s/def :blink/busy (s/keys :req-un [:iww.blink/pomodoro-completed]))
 
 (s/def :layout/save (s/coll-of :iww.cfg/widget-cfg))
+
+(s/def :theme/active keyword?)

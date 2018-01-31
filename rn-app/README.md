@@ -1,6 +1,6 @@
 # meo
 
-A Clojure library designed to ... well, that part is up to you.
+Cross-platform mobile app for meo. Uses react native.
 
 ## Usage
 
@@ -20,9 +20,9 @@ or
     $ lein figwheel ios
 
     $ react-native run-ios
-    
-    $ lein with-profile prod cljsbuild auto ios
-    
+    $ react-native run-ios --simulator="iPhone X"
+
+    $ lein prod-build
 
 
 ## License
