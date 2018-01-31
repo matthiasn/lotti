@@ -8,7 +8,8 @@
 
 (defn monitor-activity [{:keys [current-state put-fn]}]
   (let [detection-interval-ms 10000
-        cb (fn [detected] (put-fn [:activity/current (js->clj detected)]))
+        cb (fn [detected] (put-fn [:activity/current
+                                   (js->clj detected :keywordize-keys true)]))
         unsubscribe (.subscribe activity-recognition cb)
         new-state (assoc-in current-state [:unsubscribe] unsubscribe)]
     (.start activity-recognition detection-interval-ms)

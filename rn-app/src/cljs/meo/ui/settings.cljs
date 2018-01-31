@@ -239,11 +239,14 @@
                                :on-press         activity-fn}]]
          [text {:style {:margin-top    5
                         :margin-left   10
-                        :margin-bottom 20
-                        :color         :black
+                        :margin-bottom 40
+                        :color         "green"
                         :text-align    "left"
-                        :font-size     9}}
-          (with-out-str (pp/pprint @current-activity))]]))))
+                        :font-size     30}}
+          (-> @current-activity
+              :sorted
+              first
+              :type)]]))))
 
 (defn sync-settings [local put-fn]
   (let [theme (subscribe [:active-theme])

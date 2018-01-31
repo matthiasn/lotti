@@ -113,7 +113,7 @@
                       :style            {:width  "100%"
                                          :height 200}
                       :zoomLevel        15}])
-         [text {:style {:margin-top  40
+         [text {:style {:margin-top  500
                         :margin-left 10
                         :color       text-color
                         :text-align  "left"
