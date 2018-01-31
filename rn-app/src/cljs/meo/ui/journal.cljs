@@ -62,7 +62,7 @@
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
             as-array (clj->js (reverse (map second entries)))
-            text-bg (get-in c/colors [:text-bg @theme])
+            search-field-bg (get-in c/colors [:search-field-bg @theme])
             bg (get-in c/colors [:list-bg @theme])
             search-container-bg (get-in c/colors [:search-bg @theme])
             light-theme (= :light @theme)]
@@ -72,7 +72,7 @@
                       :lightTheme     light-theme
                       :on-change-text on-change-text
                       :on-clear-text  on-clear-text
-                      :inputStyle     {:backgroundColor text-bg}
+                      :inputStyle     {:backgroundColor search-field-bg}
                       :containerStyle {:backgroundColor search-container-bg}}]
          [flat-list {:style        {:flex           1
                                     :padding-bottom 50

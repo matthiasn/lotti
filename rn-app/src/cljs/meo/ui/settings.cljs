@@ -214,26 +214,31 @@
                          :flex         1}
           [settings-list-item {:title            "Weight"
                                :hasNavArrow      false
+                               :icon             (settings-icon "balance-scale" text-color)
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         weight-fn}]
           [settings-list-item {:title            "Blood Pressure"
                                :hasNavArrow      false
                                :background-color item-bg
+                               :icon             (settings-icon "heartbeat" text-color)
                                :titleStyle       {:color text-color}
                                :on-press         bp-fn}]
           [settings-list-item {:title            "Steps"
                                :hasNavArrow      false
                                :background-color item-bg
+                               :icon             (settings-icon "forward" text-color)
                                :titleStyle       {:color text-color}
                                :on-press         steps-fn}]
           [settings-list-item {:title            "Sleep"
                                :hasNavArrow      false
+                               :icon             (settings-icon "bed" text-color)
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         sleep-fn}]
           [settings-list-item {:title            "Monitor Activities"
                                :hasNavArrow      false
+                               :icon             (settings-icon "camera" text-color)
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         activity-fn}]]
@@ -325,6 +330,7 @@
         opts (fn [title]
                {:title            title
                 :headerTitleStyle {:color text-color}
+                :animationEnabled false
                 :headerStyle      {:backgroundColor header-bg}})]
     (stack-navigator
       {:settings {:screen (stack-screen (settings-wrapper local put-fn)
