@@ -124,7 +124,6 @@
   {})
 
 (defn cmp-map [cmp-id]
-  (.warn js/console cmp-id)
   {:cmp-id      cmp-id
    :handler-map {:healthkit/weight get-weight
                  :healthkit/steps  get-steps

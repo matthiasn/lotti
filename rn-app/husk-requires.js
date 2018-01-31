@@ -12,6 +12,7 @@ var modules = {
     'react-native-contacts': require('react-native-contacts'),
     'react-navigation': require('react-navigation'),
     'react-native-settings-list': require('react-native-settings-list'),
+    'react-native-activity-recognition': require('react-native-activity-recognition'),
     '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
 };
 

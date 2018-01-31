@@ -46,6 +46,10 @@
   (let [new-state (assoc-in current-state [:active-theme] msg-payload)]
     {:new-state new-state}))
 
+(defn current-activity [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:current-activity] msg-payload)]
+    {:new-state new-state}))
+
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
   (let [entries (:entries current-state)
         latest-synced (:latest-synced current-state)
@@ -115,4 +119,5 @@
                  :state/reset      state-reset
                  :entry/detail     detail
                  :theme/active     theme
+                 :activity/current current-activity
                  :sync/next        sync-start}})

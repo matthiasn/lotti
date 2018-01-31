@@ -34,11 +34,11 @@
                                             :padding-left   12
                                             :padding-right  12
                                             :padding-bottom 2}}
-            [text {:style {:color      text-color
-                           :text-align "center"
-                           :font-size  10
+            [text {:style {:color       text-color
+                           :text-align  "center"
+                           :font-size   10
                            :font-weight "100"
-                           :margin-top 5}}
+                           :margin-top  5}}
              (h/format-time ts)]]
            [touchable-highlight {:on-press to-detail
                                  :style    {:padding-top    4
@@ -62,6 +62,7 @@
                                 (s/lower-case (str (:jrn-search @local)))))
                             @entries)
             as-array (clj->js (reverse (map second entries)))
+            text-bg (get-in c/colors [:text-bg @theme])
             bg (get-in c/colors [:list-bg @theme])
             search-container-bg (get-in c/colors [:search-bg @theme])
             light-theme (= :light @theme)]
@@ -71,9 +72,8 @@
                       :lightTheme     light-theme
                       :on-change-text on-change-text
                       :on-clear-text  on-clear-text
-                      ;:inputStyle     {:backgroundColor "white"}
+                      :inputStyle     {:backgroundColor text-bg}
                       :containerStyle {:backgroundColor search-container-bg}}]
-
          [flat-list {:style        {:flex           1
                                     :padding-bottom 50
                                     :width          "100%"}

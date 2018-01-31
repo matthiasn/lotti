@@ -1,19 +1,18 @@
 (ns meo.ui.colors)
 
 (def light-gray "#F5F5FA")
-(def medium-gray "#EBEBEF")
-(def darker-gray "#999")
-(def text-bg "#EEF")
 (def text "#EEF")
 
 (def colors
-  {:header-tab {:light "#F5F5FA"
-                :dark  "#222"}
-   :text-bg    {:light "#EEF"
-                :dark  "#666"}
-   :search-bg {:light "#F4F4F9"
-               :dark  "#222"}
-   :text       {:light "#444"
-                :dark  "#CCC"}
-   :list-bg    {:light "#F5F5FA"
-                :dark  "#333"}})
+  {:header-tab  {:light "#F5F5FA"
+                 :dark  "black"}
+   :text-bg     {:light "#EEF"
+                 :dark  "#262626"}
+   :search-bg   {:light "#F4F4F9"
+                 :dark  "black"}
+   :text        {:light "#333"
+                 :dark  "#D9D9D9"}
+   :search-text {:light "#666"
+                 :dark  "#7F7F7F"}
+   :list-bg     {:light "#F5F5FA"
+                 :dark  "#131313"}})

@@ -7,7 +7,8 @@
                                    settings-list-item icon]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [subscribe]]
-            [meo.ui.colors :as c]))
+            [meo.ui.colors :as c]
+            [cljs.pprint :as pp]))
 
 (defn render-item [item]
   (let [item (js->clj item :keywordize-keys true)
@@ -110,7 +111,8 @@
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
-            bg (get-in c/colors [:list-bg @theme])]
+            bg (get-in c/colors [:list-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-bottom   10
                        :height           "100%"
@@ -127,20 +129,20 @@
                                          :margin-bottom 10}
                       :zoomLevel        10}]]
           [picker {:selected-value  (:map-style @local)
-                   :style {:color "red"}
+                   :itemStyle {:color text-color}
                    :on-value-change (fn [v idx]
                                       (let [style (keyword v)]
                                         (swap! local assoc-in [:map-style] style)))}
            (for [[k style] mapbox-style-url]
              ^{:key k}
-             [picker-item {:style {:color :red}
-                           :label (name k) :value k}])]]]))))
+             [picker-item {:label (name k) :value k}])]]]))))
 
 (defn theme-settings-wrapper [local put-fn]
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
-            bg (get-in c/colors [:list-bg @theme])]
+            bg (get-in c/colors [:list-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :padding-bottom   10
@@ -148,6 +150,7 @@
                        :background-color bg}}
          [scroll {}
           [picker {:selected-value  @theme
+                   :itemStyle {:color text-color}
                    :on-value-change (fn [v idx]
                                       (let [style (keyword v)]
                                         (put-fn [:theme/active style])))}
@@ -185,7 +188,9 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         steps-fn #(dotimes [n 5] (put-fn [:healthkit/steps n]))
-        sleep-fn #(put-fn [:healthkit/sleep])]
+        sleep-fn #(put-fn [:healthkit/sleep])
+        activity-fn #(put-fn [:activity/monitor])
+        current-activity (subscribe [:current-activity])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation]
         [view {:style {:flex-direction   "column"
@@ -207,7 +212,17 @@
                                :on-press    steps-fn}]
           [settings-list-item {:title       "Sleep"
                                :hasNavArrow false
-                               :on-press    sleep-fn}]]]))))
+                               :on-press    sleep-fn}]
+          [settings-list-item {:title       "Monitor Activities"
+                               :hasNavArrow false
+                               :on-press    activity-fn}]]
+         [text {:style {:margin-top    5
+                        :margin-left   10
+                        :margin-bottom 20
+                        :color         :black
+                        :text-align    "left"
+                        :font-size     9}}
+          (with-out-str (pp/pprint @current-activity))]]))))
 
 (defn sync-settings [local put-fn]
   (let [on-barcode-read (fn [e]

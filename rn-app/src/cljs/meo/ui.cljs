@@ -30,22 +30,22 @@
                {:journal  {:screen            (jrn/journal-tab local put-fn theme)
                            :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
                                                              [icon {:name  "list"
-                                                                    :size  20
+                                                                    :size  22
                                                                     :color tintColor}])}}
                 :add      {:screen            (edit/editor-tab local put-fn theme)
                            :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
                                                              [icon {:name  "plus-square-o"
-                                                                    :size  20
+                                                                    :size  26
                                                                     :color tintColor}])}}
                 :photos   {:screen            (photos/photos-tab local put-fn theme)
                            :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
                                                              [icon {:name  "film"
-                                                                    :size  20
+                                                                    :size  22
                                                                     :color tintColor}])}}
                 :settings {:screen            (ts/settings-tab local put-fn theme)
                            :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
                                                              [icon {:name  "cogs"
-                                                                    :size  20
+                                                                    :size  22
                                                                     :color tintColor}])}}}
                {:swipeEnabled     false
                 :animationEnabled true

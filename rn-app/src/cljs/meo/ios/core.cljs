@@ -2,6 +2,7 @@
   (:require [re-frame.core :refer [subscribe dispatch dispatch-sync]]
             [meo.events]
             [meo.ios.healthkit :as hk]
+            [meo.ios.activity :as ac]
             [meo.ios.ws :as ws]
             [meo.ios.store :as store]
             [meo.ui :as ui]
@@ -38,6 +39,7 @@
   (dispatch-sync [:initialize-db])
   (let [components #{(ws/cmp-map :app/ws-cmp sente-cfg)
                      (hk/cmp-map :app/healthkit)
+                     (ac/cmp-map :app/activity)
                      (store/cmp-map :app/store)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
@@ -58,6 +60,9 @@
        [:cmd/route {:from :app/healthkit
                     :to   :app/store}]
 
+       [:cmd/route {:from :app/activity
+                    :to   :app/store}]
+
        [:cmd/route {:from :app/ws-cmp
                     :to   :app/store}]
 
@@ -66,6 +71,9 @@
 
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/healthkit}]
+
+       [:cmd/route {:from :app/ui-cmp
+                    :to   :app/activity}]
 
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
