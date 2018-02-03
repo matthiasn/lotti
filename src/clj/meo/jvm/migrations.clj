@@ -208,7 +208,6 @@
       (with-open [reader (clojure.java.io/reader f)]
         (let [filename (.getName f)
               lines (line-seq reader)]
-          (log/info filename)
           (doseq [line lines]
             (try
               (swap! line-count inc)
@@ -220,5 +219,6 @@
                 (swap! ts-uuids conj id)
                 (spit (str out-path "/" filename) serialized :append true))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line))))))
-      (log/info (count @ts-uuids) "entries in" @line-count "lines migrated."))))
+                (log/error "Exception" ex "when parsing line:\n" line))))
+          (log/info
+            filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))

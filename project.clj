@@ -65,6 +65,7 @@
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.14"]
             [test2junit "1.3.3"]
+            [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
             [lein-ancient "0.6.15"]]

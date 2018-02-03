@@ -196,9 +196,7 @@
    "BOT"   "-04:00"
    "HMT"   "+05:00"})
 
-(defn import-flight
-  "Import recently played songs from spotify."
-  [{:keys [put-fn msg-payload]}]
+(defn import-flight [{:keys [put-fn msg-payload]}]
   (log/info "Importing from FlightAware.")
   (let [url (str "http://service.prerender.io/" (-> msg-payload :flight :url))
         ex-handler (fn [ex] (log/error (.getMessage ex)))

@@ -10,9 +10,10 @@
         combined-entries (subscribe [:combined-entries])
         entry (reaction (get-in @combined-entries [ts]))
         edit-mode (reaction (contains? @new-entries ts))
-        unsaved (reaction (and @edit-mode
-                               (not= (u/clean-entry (get-in @new-entries [ts]))
-                                     (u/clean-entry (get-in @entries-map [ts])))))]
+        unsaved (reaction
+                  (and @edit-mode
+                       (not= (u/clean-text (get-in @new-entries [ts :md]))
+                             (u/clean-text (get-in @entries-map [ts :md])))))]
     {:entry            entry
      :entries-map      entries-map
      :combined-entries combined-entries

@@ -87,7 +87,7 @@
 
        (when (System/getenv "OBSERVER")
          [:cmd/attach-to-firehose :server/kafka-firehose])
-#_
+
        [:cmd/send {:to  :server/scheduler-cmp
                    :msg [:cmd/schedule-new {:timeout (* 60 1000)
                                             :message [:import/spotify]

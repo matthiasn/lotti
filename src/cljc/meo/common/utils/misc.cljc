@@ -111,13 +111,21 @@
                  (apply (fn [_ b] b) maps)))
              maps))))
 
-(defn clean-entry [entry]
+(defn clean-entry
+  "Removes keys from entry that are not meant to be persisted."
+  [entry]
   (-> entry
       (dissoc :comments)
       (dissoc :new-entry)
       (dissoc :editor-state)
       (dissoc :pomodoro-running)
       (dissoc :linked-entries-list)))
+
+(defn clean-text
+  "Replaces all occurrences of multiple whitespaces with a single blank space."
+  [s]
+  (when (string? s)
+    (s/replace s #"\s+" " ")))
 
 (defn linked-filter-fn
   "Filter linked entries by search."
