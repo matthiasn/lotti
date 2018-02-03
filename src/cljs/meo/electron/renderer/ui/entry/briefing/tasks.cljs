@@ -98,21 +98,13 @@
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
-  [ts local local-cfg put-fn]
+  [ts local put-fn]
   (let [entry (:entry (eu/entry-reaction ts))
         cfg (subscribe [:cfg])
-        query-cfg (subscribe [:query-cfg])
-        results (subscribe [:results])
         options (subscribe [:options])
         stories (subscribe [:stories])
         started-tasks (subscribe [:started-tasks])
         entries-map (subscribe [:entries-map])
-        update-search (fn [ts]
-                        (fn [_ev]
-                          (let [query-id (:query-id local-cfg)
-                                q (get-in @query-cfg [:queries query-id])]
-                            (put-fn [:search/update
-                                     (update-in q [:linked] #(when-not (= % ts) ts))]))))
         linked-filters {:active  (up/parse-search "#task ~#done ~#closed ~#backlog")
                         :open    (up/parse-search "#task ~#done ~#closed ~#backlog")
                         :done    (up/parse-search "#task #done")
@@ -130,7 +122,7 @@
                                        @entries-map)))
         linked-mapper (u/find-missing-entry entries-w-done put-fn)]
     (fn open-linked-tasks-render [ts local local-cfg put-fn]
-      (let [{:keys [tab-group query-id]} local-cfg
+      (let [{:keys [tab-group]} local-cfg
             linked-entries-set (into (sorted-set) (:linked-entries-list @entry))
             linked-entries (mapv linked-mapper linked-entries-set)
             conf (merge @cfg @options)
@@ -146,8 +138,7 @@
                               (= selected (:linked-saga story)))
                             true))
             active-filter (fn [t]
-                            (let [active-from (-> t :task :active-from)
-                                  current-filter (get linked-filters (:filter @local))]
+                            (let [active-from (-> t :task :active-from)]
                               (if (and active-from (= (:filter @local) :active))
                                 (let [from-now (.fromNow (moment active-from))]
                                   (s/includes? from-now "ago"))
@@ -206,4 +197,4 @@
                    (when-let [estimate (-> task :task :estimate-m)]
                      (m-to-hhmm estimate))]
                   [:td.left [:strong text]]
-                  [:span.fa.fa-unlink {:on-click unlink}]]))]])]))))
+                  [:td [:span.fa.fa-unlink {:on-click unlink}]]]))]])]))))

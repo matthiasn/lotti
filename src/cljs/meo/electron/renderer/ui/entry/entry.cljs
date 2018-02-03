@@ -115,7 +115,7 @@
          [m/spotify-view @entry put-fn]
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
-         [reward/reward-details @entry put-fn edit-mode?]
+         [reward/reward-details @entry put-fn]
          (when (contains? (:tags @entry) "#briefing")
            [b/briefing-view @entry put-fn edit-mode? local-cfg])
          [:div.footer

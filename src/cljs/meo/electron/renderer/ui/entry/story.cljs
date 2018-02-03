@@ -13,7 +13,7 @@
   (fn [_ _ _]
     [:div.story-edit-field
      {:content-editable true
-      :on-input         on-input-fn
+      :on-change        on-input-fn
       :on-key-down      on-keydown-fn}
      text]))
 

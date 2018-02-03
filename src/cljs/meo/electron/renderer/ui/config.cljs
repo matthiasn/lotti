@@ -83,8 +83,8 @@
                  [:span.name field]]
                 [:div
                  [:label "Label:"]
-                 [:input {:value    label
-                          :on-input input-fn}]
+                 [:input {:value     label
+                          :on-change input-fn}]
                  (when-not (= (get-in backend-cfg (drop 1 label-path)) label)
                    [:span.warn [:span.fa.fa-exclamation] "unsaved"])]
                 [:div
@@ -123,7 +123,7 @@
                      [:span.warn [:span.fa.fa-exclamation] "unsaved"])])]))
            [:div.field
             [:label "New Field:"]
-            [:input {:on-input new-field-input}]
+            [:input {:on-change new-field-input}]
             (when (valid-field-name (:new-field-input @local ""))
               [:span.add {:on-click add-field}
                [:span.fa.fa-plus] "add"])]
@@ -215,7 +215,7 @@
                 [:span.cancel {:on-click cancel-fn}
                  [:span.fa.fa-ban] "  cancel"]])
              [:div.input-line
-              [:input {:on-input input-fn}]
+              [:input {:on-change input-fn}]
               (when (and (empty? items)
                          ((specs/is-tag? "#") text))
                 [:span.add {:on-click (add-tag text)}

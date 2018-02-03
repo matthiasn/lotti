@@ -1,6 +1,5 @@
 (ns meo.electron.renderer.ui.entry.habit
   (:require [matthiasn.systems-toolbox.component :as st]
-            [clojure.string :as s]
             [moment]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.helpers :as h]))
@@ -28,8 +27,7 @@
         (dissoc :latitude)
         (dissoc :longitude))))
 
-(defn habit-details
-  [entry local-cfg put-fn edit-mode?]
+(defn habit-details [entry local-cfg put-fn edit-mode?]
   (let [planning-mode (subscribe [:planning-mode])
         active-from (fn [entry]
                       (fn [ev]
@@ -133,19 +131,16 @@
               [:option {:value :E} "E"]]
              [:label "Active: "]
              [:input {:type      :datetime-local
-                      :read-only (not edit-mode?)
-                      :on-input  (active-from entry)
+                      :on-change (active-from entry)
                       :value     (get-in entry [:habit :active-from])}]]
             [:div
              [:label [:span.fa.fa-diamond.bonus]]
              [:input {:type      :number
-                      :read-only (not edit-mode?)
-                      :on-input  (set-points entry :points)
+                      :on-change (set-points entry :points)
                       :value     (get-in entry [:habit :points] 0)}]
              [:label [:span.fa.fa-diamond.penalty]]
              [:input {:type      :number
-                      :read-only (not edit-mode?)
-                      :on-input  (set-points entry :penalty)
+                      :on-change (set-points entry :penalty)
                       :value     (get-in entry [:habit :penalty] 0)}]]
             [:div
              [:label "Done? "]

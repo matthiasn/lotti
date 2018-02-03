@@ -6,7 +6,7 @@
             [meo.electron.renderer.router :as router]
             [meo.electron.renderer.screenshot :as screenshot]
             [meo.electron.renderer.spellcheck :as spellcheck]
-            [taoensso.timbre :as timbre :refer-macros [info debug]]
+            [taoensso.timbre :as timbre :refer-macros [info debug error]]
             [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
             [matthiasn.systems-toolbox-sente.client :as sente]
             [meo.electron.renderer.exec :as exec]
@@ -114,3 +114,7 @@
   (start))
 
 (.addEventListener js/window "load" load-handler)
+
+(aset js/window "onerror" (fn [message file line column errorObject]
+                            (error "" message file line column errorObject)
+                            true))

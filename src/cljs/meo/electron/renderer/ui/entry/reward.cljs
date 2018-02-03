@@ -4,8 +4,7 @@
             [moment]
             [meo.electron.renderer.helpers :as h]))
 
-(defn reward-details
-  [entry put-fn edit-mode?]
+(defn reward-details [entry put-fn]
   (let [claimed (fn [entry]
                (fn [ev]
                  (let [completion-ts (.format (moment))
@@ -20,7 +19,7 @@
                              updated (assoc-in entry [:reward :points] parsed)]
                          (when parsed
                            (put-fn [:entry/update-local updated])))))]
-    (fn [entry put-fn edit-mode?]
+    (fn [entry put-fn]
       (when (contains? (:tags entry) "#reward")
         [:form.task-details
          [:fieldset
@@ -28,8 +27,7 @@
           [:div
            [:label "Reward points: "]
            [:input {:type      :number
-                    :read-only (not edit-mode?)
-                    :on-input  (set-points entry)
+                    :on-change  (set-points entry)
                     :value     (get-in entry [:reward :points] 0)}]]
           [:div
            [:label "Claimed? "]

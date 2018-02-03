@@ -8,26 +8,6 @@
             [matthiasn.systems-toolbox.component :as st]
             [reagent.core :as r]))
 
-(defn select-elem
-  "Render select element for the given options. On change, dispatch message
-   to change the local entry at the given path. When numeric? is set, coerces
-   the value to int."
-  [entry options path numeric? put-fn]
-  (let [ts (:timestamp entry)
-        select-handler (fn [ev]
-                         (let [selected (h/target-val ev)
-                               coerced (if numeric?
-                                         (js/parseInt selected)
-                                         selected)]
-                           (put-fn [:entry/update-local
-                                    (assoc-in entry path coerced)])))]
-    [:select {:value     (get-in entry path)
-              :on-change select-handler}
-     [:option {:value ""} ""]
-     (for [opt options]
-       ^{:key (str ts opt)}
-       [:option {:value opt} opt])]))
-
 (defn for-day
   [entry edit-mode? put-fn]
   (when (and (contains? (:tags entry) "#for-day")
@@ -45,9 +25,9 @@
        [:legend "#for-day"]
        (if edit-mode?
          [:div [:label "Day: "]
-          [:input {:type     :datetime-local
-                   :on-input (input-fn entry)
-                   :value    for-day}]]
+          [:input {:type      :datetime-local
+                   :on-change (input-fn entry)
+                   :value     for-day}]]
          [:div for-day])])))
 
 (defn custom-fields-div
@@ -110,8 +90,7 @@
                    [:label (:label field) ":"]
                    [:input (merge
                              input-cfg
-                             {:read-only (not edit-mode?)
-                              :on-change on-change-fn
+                             {:on-change on-change-fn
                               :value     value})]]))])])))))
 
 (defn questionnaire-div

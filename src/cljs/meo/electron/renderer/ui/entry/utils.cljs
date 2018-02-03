@@ -4,6 +4,11 @@
             [clojure.string :as s]
             [meo.common.utils.misc :as u]))
 
+(defn compare-relevant [entry]
+  (-> entry
+      (update-in [:md] u/clean-text)
+      (dissoc :text)))
+
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])
         entries-map (subscribe [:entries-map])
@@ -12,8 +17,8 @@
         edit-mode (reaction (contains? @new-entries ts))
         unsaved (reaction
                   (and @edit-mode
-                       (not= (u/clean-text (get-in @new-entries [ts :md]))
-                             (u/clean-text (get-in @entries-map [ts :md])))))]
+                       (not= (compare-relevant (get-in @new-entries [ts]))
+                             (compare-relevant (get-in @entries-map [ts])))))]
     {:entry            entry
      :entries-map      entries-map
      :combined-entries combined-entries

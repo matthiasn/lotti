@@ -1,12 +1,10 @@
 (ns meo.electron.renderer.ui.entry.task
   (:require [matthiasn.systems-toolbox.component :as st]
-            [clojure.string :as s]
             [moment]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.helpers :as h]))
 
-(defn task-details
-  [entry local-cfg put-fn _edit-mode?]
+(defn task-details [entry local-cfg put-fn _edit-mode?]
   (let [planning-mode (subscribe [:planning-mode])
         prio-select (fn [entry]
                       (fn [ev]
@@ -37,11 +35,9 @@
             (put-fn [:entry/update-local updated])))
         [:form.task-details
          [:fieldset
-          [:legend "Task details"]
           [:div
            [:span " Priority: "]
            [:select {:value     (get-in entry [:task :priority] "")
-                     ;:disabled  (not edit-mode?)
                      :on-change (prio-select entry)}
             [:option ""]
             [:option {:value :A} "A"]
@@ -61,11 +57,9 @@
           [:span
            [:label "Reward points: "]
            [:input {:type      :number
-                    :read-only (not edit-mode?)
-                    :on-input  (h/update-numeric entry [:task :points] put-fn)
+                    :on-change (h/update-numeric entry [:task :points] put-fn)
                     :value     (get-in entry [:task :points] 0)}]
            [:label "Estimated min: "]
            [:input {:type      :number
-                    :read-only (not edit-mode?)
-                    :on-input  (h/update-numeric entry [:task :estimate-m] put-fn)
+                    :on-change (h/update-numeric entry [:task :estimate-m] put-fn)
                     :value     (get-in entry [:task :estimate-m] 0)}]]]]))))

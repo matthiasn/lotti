@@ -3,6 +3,7 @@
             [re-frame.core :refer [subscribe]]
             [matthiasn.systems-toolbox.component :as st]
             [meo.common.utils.parse :as up]
+            [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.helpers :as h]
             [moment]
             [react-big-calendar]
@@ -46,5 +47,6 @@
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         [:div.big-calendar
          [cal (merge {:events cal-entries
-                      :date   (.toDate (moment. day))}
+                      :date   (.toDate (moment. day))
+                      :onNavigate #(info :navigate %)}
                      scroll-to)]]))))

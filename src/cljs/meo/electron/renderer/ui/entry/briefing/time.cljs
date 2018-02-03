@@ -93,10 +93,10 @@
                    [:td [:strong (:saga-name v)]]
                    [:td.time
                     (if edit-mode?
-                      [:input {:on-input (time-alloc entry k)
-                               :value    (when allocation
-                                           (h/s-to-hh-mm allocation))
-                               :type     :time}]
+                      [:input {:on-change (time-alloc entry k)
+                               :value     (when allocation
+                                            (h/s-to-hh-mm allocation))
+                               :type      :time}]
                       [:span (u/duration-string allocation)])]
                    [:td.time (u/duration-string actual)]
                    [:td.time [:strong (u/duration-string remaining)]]]))))]]))))
