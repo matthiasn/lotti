@@ -1,16 +1,13 @@
 (ns meo.jvm.migrations
   "This namespace is used for migrating entries to new versions."
   (:require [meo.jvm.files :as f]
-            [meo.jvm.location :as loc]
             [meo.jvm.net :as net]
             [clojure.pprint :as pp]
             [clojure.tools.logging :as log]
             [clj-uuid :as uuid]
             [camel-snake-kebab.core :refer :all]
             [cheshire.core :as cc]
-            [clojure.string :as s]
             [clj-http.client :as hc]
-            [clj-time.coerce :as ctc]
             [clj-time.format :as ctf]
             [clj-time.core :as ct]
             [me.raynes.fs :as fs]))
@@ -199,26 +196,29 @@
                   (log/error "Exception" ex "when parsing line:\n" line)))))))
       (log/info (count @ts-uuids) "entries in" @line-count "lines migrated."))))
 
-(defn migrate-to-vclock
-  ; (m/migrate-to-vclock "./data/migrations/vclock" "./data/migrations/vclock-out")
-  [path out-path]
+;(m/migrate-to-vclock "./data/migrations/vclock" "./data/migrations/vclock-out" "some-uuid")
+(defn migrate-to-vclock [path out-path node-id]
   (let [files (file-seq (clojure.java.io/file path))
-        ts-uuids (atom {})
-        mac-address (net/mac-address)
-        line-count (atom 0)]
-    (doseq [f (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")]
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)]
+    (fs/mkdirs out-path)
+    (doseq [f sorted-files]
       (with-open [reader (clojure.java.io/reader f)]
-        (let [filename (.getName f)]
-          (let [lines (line-seq reader)]
-            (doseq [line lines]
-              (try
-                (swap! line-count inc)
-                (let [entry (-> (clojure.edn/read-string line)
-                                (assoc-in [:vclock] {mac-address @line-count}))
-                      id (:timestamp entry)
-                      serialized (str (pr-str entry) "\n")]
-                  (swap! ts-uuids assoc-in [id] entry)
-                  (spit (str out-path "/" filename) serialized :append true))
-                (catch Exception ex
-                  (log/error "Exception" ex "when parsing line:\n" line)))))))
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (log/info filename)
+          (doseq [line lines]
+            (try
+              (swap! line-count inc)
+              (let [entry (-> (clojure.edn/read-string line)
+                              (assoc-in [:vclock] {node-id @line-count}))
+                    id (:timestamp entry)
+                    no-editor-state (dissoc entry :editor-state)
+                    serialized (str (pr-str no-editor-state) "\n")]
+                (swap! ts-uuids conj id)
+                (spit (str out-path "/" filename) serialized :append true))
+              (catch Exception ex
+                (log/error "Exception" ex "when parsing line:\n" line))))))
       (log/info (count @ts-uuids) "entries in" @line-count "lines migrated."))))

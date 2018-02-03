@@ -35,6 +35,10 @@
      :export-path     export-path
      :trash-path      trash-path}))
 
+(defn write-conf [conf conf-path]
+  (fs/mkdirs data-path)
+  (spit conf-path (with-out-str (pp/pprint conf))))
+
 (defn load-cfg
   "Load config from file. When not exists, use default config and write the
    default to data path."
@@ -46,9 +50,11 @@
                     (let [default (edn/read-string
                                     (slurp (io/resource "default-conf.edn")))]
                       (log/warn "No config found -> copying from default.")
-                        (fs/mkdirs data-path)
-                        (spit conf-path (with-out-str (pp/pprint default)))
-                        default)))]
+                      (write-conf default conf-path)
+                      default)))]
+    (when-not (:node-id conf)
+      (let [with-node-id (assoc-in conf [:node-id] (str (st/make-uuid)))]
+        (write-conf with-node-id conf-path)))
     (update-in conf [:questionnaires] #(merge-with merge questionnaires %))))
 
 (defn write-cfg [{:keys [msg-payload]}]

@@ -88,22 +88,26 @@
       (let [{:keys [navigate goBack]} navigation
             entry @entry-detail
             bg (get-in c/colors [:list-bg @theme])
+            text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
         [scroll {:style {:flex-direction   "column"
                          :padding-top      15
                          :background-color bg
                          :padding-bottom   10}}
-         [text {:style {:color          text-color
-                        :text-align     "center"
-                        :font-size      8
-                        :padding-bottom 5
-                        :margin-top     5}}
-          (h/format-time (:timestamp entry))]
-         [text {:style {:color          text-color
-                        :text-align     "center"
-                        :font-weight    "bold"
-                        :padding-bottom 20}}
-          (:md entry)]
+         [view {:style {:flex-direction   "column"
+                        :padding-top      5
+                        :background-color text-bg}}
+          [text {:style {:color          text-color
+                         :text-align     "center"
+                         :font-size      8
+                         :padding-bottom 5
+                         :margin-top     5}}
+           (h/format-time (:timestamp entry))]
+          [text {:style {:color          text-color
+                         :text-align     "center"
+                         :font-weight    "bold"
+                         :padding-bottom 20}}
+           (:md entry)]]
          (when (:latitude entry)
            [map-view {:showUserLocation true
                       :centerCoordinate [(:longitude entry) (:latitude entry)]
@@ -122,7 +126,8 @@
 
 (defn journal-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
-        text-color (get-in c/colors [:text @theme])]
+        text-color (get-in c/colors [:text @theme])
+        list-bg (get-in c/colors [:list-bg @theme])]
     (stack-navigator
       {:journal {:screen (stack-screen
                            (fn [{:keys [screenProps navigation] :as props}]
@@ -145,4 +150,5 @@
        :entry   {:screen (stack-screen (entry-detail local put-fn)
                                        {:title            "Detail"
                                         :headerTitleStyle {:color text-color}
-                                        :headerStyle      {:backgroundColor header-bg}})}})))
+                                        :headerStyle      {:backgroundColor header-bg}})}}
+      {:cardStyle {:backgroundColor list-bg}})))

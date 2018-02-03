@@ -327,6 +327,7 @@
 (defn settings-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
+        list-bg (get-in c/colors [:list-bg @theme])
         opts (fn [title]
                {:title            title
                 :headerTitleStyle {:color text-color}
@@ -346,4 +347,5 @@
        :db       {:screen (stack-screen (db-settings local put-fn)
                                         (opts "Database"))}
        :sync     {:screen (stack-screen (sync-settings local put-fn)
-                                        (opts "Sync"))}})))
+                                        (opts "Sync"))}}
+      {:cardStyle {:backgroundColor list-bg}})))

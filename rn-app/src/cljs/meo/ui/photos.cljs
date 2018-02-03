@@ -63,6 +63,7 @@
                              (swap! local assoc-in [:photos] parsed)))))
         header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
+        list-bg (get-in c/colors [:list-bg @theme])
         header-right (fn [_]
                        [touchable-highlight {:on-press get-fn
                                              :style    {:padding-top    8
@@ -78,4 +79,5 @@
               :headerTitleStyle {:color text-color}
               :headerStyle      {:backgroundColor header-bg}}]
     (stack-navigator
-      {:photos {:screen (stack-screen (photos-wrapper local put-fn) opts)}})))
+      {:photos {:screen (stack-screen (photos-wrapper local put-fn) opts)}}
+      {:cardStyle {:backgroundColor list-bg}})))

@@ -111,11 +111,11 @@
                  (apply (fn [_ b] b) maps)))
              maps))))
 
-(defn clean-entry
-  [entry]
+(defn clean-entry [entry]
   (-> entry
       (dissoc :comments)
       (dissoc :new-entry)
+      (dissoc :editor-state)
       (dissoc :pomodoro-running)
       (dissoc :linked-entries-list)))
 

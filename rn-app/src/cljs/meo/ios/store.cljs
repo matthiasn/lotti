@@ -7,7 +7,7 @@
 
 (defn persist [{:keys [current-state put-fn msg-payload]}]
   (let [{:keys [timestamp vclock id]} msg-payload
-        last-vclock (:latest-vclock current-state)
+        last-vclock (:global-vclock current-state)
         instance-id (:instance-id current-state)
         new-vclock (update-in last-vclock [instance-id] #(inc (or % 0)))
         new-vclock (merge vclock new-vclock)
@@ -18,13 +18,13 @@
                       :vclock     new-vclock})
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
-                      (assoc-in [:latest-vclock] new-vclock))
+                      (assoc-in [:global-vclock] new-vclock))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)]
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
-      (go (<! (as/set-item :latest-vclock last-vclock)))
+      (go (<! (as/set-item :global-vclock last-vclock)))
       (go (<! (as/set-item :timestamps (set (keys (:entries new-state))))))
       {:new-state new-state})))
 
@@ -70,9 +70,9 @@
 (defn load-state [{:keys [cmp-state put-fn]}]
   (go
     (try
-      (let [latest-vclock (second (<! (as/get-item :latest-vclock)))]
+      (let [latest-vclock (second (<! (as/get-item :global-vclock)))]
         (put-fn [:debug/latest-vclock latest-vclock])
-        (swap! cmp-state assoc-in [:latest-vclock] latest-vclock))
+        (swap! cmp-state assoc-in [:global-vclock] latest-vclock))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (go
@@ -113,6 +113,8 @@
   (let [state (atom {:entries       (avl/sorted-map)
                      :active-theme  :light
                      :latest-synced 0})]
+    (load-state {:cmp-state state
+                 :put-fn    put-fn})
     {:state state}))
 
 (defn cmp-map [cmp-id]

@@ -2,9 +2,9 @@
   "Here, we test some helpter functions. These tests are written in cljc and
    can also run on the JVM, as we only have pure punctions in the target
    namespace."
-  (:require #?(:clj  [clojure.test :refer [deftest testing is]]
+  (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-            [meo.common.utils.misc :as u]))
+                    [meo.common.utils.misc :as u]))
 
 (deftest duration-string-test
   (testing "test output for some different durations"
@@ -17,44 +17,44 @@
     (is (= (u/duration-string 7931.999999999999) "2h 12m 11s"))))
 
 (def test-entry
-  {:mentions       #{}
-   :tags           #{}
-   :timezone       "Europe/Berlin"
-   :utc-offset     -120
-   :timestamp      1465059173965
-   :md             ""})
+  {:mentions   #{}
+   :tags       #{}
+   :timezone   "Europe/Berlin"
+   :utc-offset -120
+   :timestamp  1465059173965
+   :md         ""})
 
 (def test-entry2
-  {:mentions       #{}
-   :tags           #{"#cljc"}
-   :timezone       "Europe/Berlin"
-   :utc-offset     -120
-   :timestamp      1465059173966
-   :md             "Moving to #cljc"})
+  {:mentions   #{}
+   :tags       #{"#cljc"}
+   :timezone   "Europe/Berlin"
+   :utc-offset -120
+   :timestamp  1465059173966
+   :md         "Moving to #cljc"})
 
 (def pvt-entry
-  {:mentions       #{}
-   :tags           #{"#pvt"}
-   :timezone       "Europe/Berlin"
-   :utc-offset     -120
-   :timestamp      1465059173965
-   :md             "Some #pvt entry"})
+  {:mentions   #{}
+   :tags       #{"#pvt"}
+   :timezone   "Europe/Berlin"
+   :utc-offset -120
+   :timestamp  1465059173965
+   :md         "Some #pvt entry"})
 
 (def pvt-entry2
-  {:mentions       #{}
-   :tags           #{"#private"}
-   :timezone       "Europe/Berlin"
-   :utc-offset     -120
-   :timestamp      1465059173965
-   :md             "Some #private entry"})
+  {:mentions   #{}
+   :tags       #{"#private"}
+   :timezone   "Europe/Berlin"
+   :utc-offset -120
+   :timestamp  1465059173965
+   :md         "Some #private entry"})
 
 (def pvt-entry3
-  {:mentions       #{}
-   :tags           #{"#nsfw"}
-   :timezone       "Europe/Berlin"
-   :utc-offset     -120
-   :timestamp      1465059173965
-   :md             "Something #nsfw"})
+  {:mentions   #{}
+   :tags       #{"#nsfw"}
+   :timezone   "Europe/Berlin"
+   :utc-offset -120
+   :timestamp  1465059173965
+   :md         "Something #nsfw"})
 
 (def pvt-test-conf {:pvt-hashtags #{"#pvt" "#private" "#nsfw" "#consumption"}})
 
@@ -72,7 +72,7 @@
     (is (= 100000 (u/double-ts-to-long 100))))
   (testing "converted number is of correct type"
     (is (= (type (u/double-ts-to-long 100)) #?(:clj  java.lang.Long
-                                             :cljs js/Number))))
+                                               :cljs js/Number))))
   (testing "calling with other than number results in nil"
     (is (nil? (u/double-ts-to-long nil)))
     (is (nil? (u/double-ts-to-long "123")))))
@@ -148,3 +148,48 @@
   (testing "counts words properly when word at beginning of line"
     (is (= 29
            (u/count-words {:md "Alabama \nArizona\nCalifornia\nColorado\nConnecticut\nDelaware\nDistrictOfColumbia\nFlorida\nIllinois\nLouisiana\nMaine\nMaryland\nMassachussets\nMississippi \nNevada\nNew Hampshire\nNew Jersey\nNew York\nOregon\nPennsylvania\nRhode Island\nUtah\nVermont\nVirgina\nWashington\n\n"})))))
+
+(def clean-test-entry
+  {:mentions         #{},
+   :tags             #{"#PSS"},
+   :linked-stories   #{}
+   :timezone         "CET"
+   :utc-offset       -60
+   :new-entry        true
+   :pomodoro-running true
+   :longitude        12.3
+   :planned-dur      1500
+   :comment-for      1517587606253
+   :last-saved       1517602023551
+   :vclock           {"edf3da73-f8e7-4076-8387-bfb35b7999e1" 77}
+   :latitude         51.5
+   :editor-state     {:entityMap {}
+                      :blocks    [{:key          "5peo9"
+                                   :text         "fixing the faulty implementation"
+                                   :type         "unordered-list-item"
+                                   :depth        0 :inlineStyleRanges []
+                                   :entityRanges []
+                                   :data         {}}]}
+   :completed-time   2040
+   :timestamp        1517589827814
+   :text             "fixing the faulty implementation"
+   :md               "- fixing the faulty implementation"})
+
+(deftest clean-entry-test
+  (testing "expected keys are removed"
+    (is (= {:comment-for    1517587606253
+            :completed-time 2040
+            :last-saved     1517602023551
+            :latitude       51.5
+            :linked-stories #{}
+            :longitude      12.3
+            :md             "- fixing the faulty implementation"
+            :mentions       #{}
+            :planned-dur    1500
+            :tags           #{"#PSS"}
+            :text           "fixing the faulty implementation"
+            :timestamp      1517589827814
+            :timezone       "CET"
+            :utc-offset     -60
+            :vclock         {"edf3da73-f8e7-4076-8387-bfb35b7999e1" 77}}
+           (u/clean-entry clean-test-entry)))))

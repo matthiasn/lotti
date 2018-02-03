@@ -12,7 +12,8 @@
             [clojure.tools.logging :as log]
             [me.raynes.fs :as fs]
             [meo.jvm.file-utils :as fu]
-            [meo.jvm.net :as net]))
+            [meo.jvm.net :as net]
+            [meo.common.utils.vclock :as vc]))
 
 (defn read-dir [state entries-to-index put-fn]
   (let [path (:daily-logs-path (fu/paths))
@@ -32,7 +33,7 @@
                       (swap! entries-to-index dissoc ts))
                   (do (swap! entries-to-index assoc-in [ts] parsed)
                       (swap! state ga/add-node parsed)))
-                (swap! state assoc-in [:latest-vclock] (:vclock parsed))
+                (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
                 (when (zero? (mod @cnt 5000))
                   (log/info "Lines read:" @cnt)))
               (catch Exception ex
@@ -64,7 +65,7 @@
         entries-to-index (atom {})
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
-                     :host-id        (or (net/mac-address) (sth/make-uuid))
+                     :global-vclock  {}
                      :cfg            conf})]
     (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
       (log/info "Read" (count @entries-to-index) "entries." t)

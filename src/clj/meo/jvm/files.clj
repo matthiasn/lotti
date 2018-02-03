@@ -12,13 +12,11 @@
             [matthiasn.systems-toolbox.component :as st]
             [me.raynes.fs :as fs]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [taoensso.nippy :as nippy]
             [clojure.pprint :as pp]
             [meo.jvm.file-utils :as fu]
-            [meo.jvm.location :as loc]
             [ubergraph.core :as uc]
-            [meo.jvm.net :as net])
+            [meo.common.utils.vclock :as vc])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -84,18 +82,15 @@
   "Handler function for persisting journal entry."
   [{:keys [current-state msg-payload msg-meta]}]
   (let [ts (:timestamp msg-payload)
-        last-vclock (:latest-vclock current-state)
-        mac-address (or (net/mac-address) (:host-id current-state))
-        new-vclock (update-in last-vclock [mac-address] #(inc (or % 0)))
-        new-vclock (merge (:vclock msg-payload) new-vclock)
-        id (or (:id msg-payload) (uuid/v1))
-        entry (merge msg-payload {:last-saved (st/now)
-                                  :id         id
-                                  :vclock     new-vclock})
+        node-id (-> current-state :cfg :node-id)
+        new-global-vclock (vc/next-global-vclock current-state)
+        entry (assoc-in msg-payload [:last-saved] (st/now))
+        entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
+        entry (vc/set-latest-vclock entry node-id new-global-vclock)
         g (:graph current-state)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
         new-state (ga/add-node current-state entry)
-        new-state (assoc-in new-state [:latest-vclock] new-vclock)
+        new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         broadcast-meta (merge msg-meta {:sente-uid :broadcast})]
     (when (System/getenv "CACHED_APPSTATE")
       (future (persist-state! new-state)))
@@ -119,7 +114,7 @@
         new-state (ga/add-node current-state entry)]
     (when (System/getenv "CACHED_APPSTATE")
       (future (persist-state! new-state)))
-    (put-fn [:sync/next {:newer-than ts} ])
+    (put-fn [:sync/next {:newer-than ts}])
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
       (append-daily-log (:cfg current-state) entry)
@@ -127,18 +122,14 @@
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))
 
-(defn move-attachment-to-trash
-  "Moves attached media file to trash folder."
-  [cfg entry dir k]
+(defn move-attachment-to-trash [cfg entry dir k]
   (when-let [filename (k entry)]
     (let [{:keys [data-path trash-path]} (fu/paths)]
       (fs/rename (str data-path "/" dir "/" filename)
                  (str trash-path filename))
       (log/info "Moved file to trash:" filename))))
 
-(defn trash-entry-fn
-  "Handler function for deleting journal entry."
-  [{:keys [current-state msg-payload]}]
+(defn trash-entry-fn [{:keys [current-state msg-payload]}]
   (let [entry-ts (:timestamp msg-payload)
         new-state (ga/remove-node current-state entry-ts)
         cfg (:cfg current-state)]
