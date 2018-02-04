@@ -26,7 +26,7 @@
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.32"]
                  [matthiasn/systems-toolbox-kafka "0.6.16"]
-                 [matthiasn/systems-toolbox-sente "0.6.21"]
+                 [matthiasn/systems-toolbox-sente "0.6.22"]
                  [matthiasn/systems-toolbox-electron "0.6.21"]
                  [reagent "0.8.0-alpha2" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [re-frame "0.10.3"]

@@ -114,7 +114,3 @@
   (start))
 
 (.addEventListener js/window "load" load-handler)
-
-(aset js/window "onerror" (fn [message file line column errorObject]
-                            (error "" message file line column errorObject)
-                            true))
