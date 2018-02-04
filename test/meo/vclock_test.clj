@@ -4,6 +4,7 @@
 
 (def some-node-id "some-node-id")
 (def another-node-id "another-node-id")
+(def yet-another-node-id "yet-another-node-id")
 
 (deftest new-global-vclock-test
   (testing "returns latest vclock values"
@@ -56,32 +57,54 @@
              some-node-id
              {some-node-id 2})))))
 
-(deftest vlock-comparator-test
+(deftest vclock-comparator-test
+
   (testing "return :equal when both clocks are the same"
     (is (= :equal
-           (vc/vlock-comparator
+           (vc/vclock-comparator
              {some-node-id    1
               another-node-id 2}
              {some-node-id    1
               another-node-id 2}))))
+
   (testing "returns :conflict when there is a conflict"
     (is (= :conflict
-           (vc/vlock-comparator
+           (vc/vclock-comparator
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
               another-node-id 2}))))
-  (testing "returns :a>b when a is strictly greater than b"
+
+  (testing "returns :a>b when A is strictly greater than A"
     (is (= :a>b
-           (vc/vlock-comparator
+           (vc/vclock-comparator
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
               another-node-id 1}))))
-  (testing "returns :b>a when b is strictly greater than a"
+
+  (testing "returns :b>a when A is strictly greater than A"
     (is (= :a>b
-           (vc/vlock-comparator
+           (vc/vclock-comparator
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
-              another-node-id 1})))))
+              another-node-id 1}))))
+
+  (testing "returns :b>a when B is strictly greater than A via additional node"
+    (is (= :b>a
+           (vc/vclock-comparator
+             {some-node-id    2
+              another-node-id 1}
+             {some-node-id    2
+              another-node-id 1
+              yet-another-node-id 3}))))
+
+  (testing "returns :conflict both A updated and B has a previously unknown node"
+    (is (= :conflict
+           (vc/vclock-comparator
+             {some-node-id    3
+              another-node-id 1}
+             {some-node-id    2
+              another-node-id 1
+              yet-another-node-id 3})))))
