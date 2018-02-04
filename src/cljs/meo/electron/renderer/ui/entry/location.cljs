@@ -33,22 +33,22 @@
                       :value     (:radius location)}]
              [:span (:radius location)])]]]))))
 
-(defn geonames
-  [entry put-fn edit-mode?]
+(defn geonames [entry put-fn]
   (let [detail (r/atom false)
         toggle-detail (fn [_] (swap! detail not))
-        remove #(put-fn [:entry/update (assoc-in @entry [:geoname] :removed)])]
-    (fn location-details-render [entry put-fn edit-mode?]
+        remove #(put-fn [:entry/update-local (assoc-in @entry [:geoname] :removed)])]
+    (fn location-details-render [entry put-fn]
       (let [geoname (:geoname @entry)]
         (when (and geoname (not= :removed geoname))
           (let [{:keys [admin-4-name admin-3-name admin-2-name country-code]} geoname
+                loc-name (:name geoname)
                 flag (get (js->clj (.countryCode emoji-flags country-code)) "emoji")]
-            [:div {:on-click toggle-detail}
-             [:span.geoname (:name geoname)]
-             (when (and @detail admin-4-name) [:span.geoname ", " admin-4-name])
-             (when (and @detail admin-3-name) [:span.geoname ", " admin-3-name])
-             (when (and @detail admin-2-name) [:span.geoname ", " admin-2-name])
+            [:div.geoname {:on-click toggle-detail}
+             (when @detail [:div.loc [:span.fa.fa-trash.up {:on-click remove}]])
+             (when (and @detail loc-name) [:div.loc loc-name ", "])
+             (when (and @detail (seq admin-4-name)) [:div.loc admin-4-name ", "])
+             (when (and @detail (seq admin-3-name)) [:div.loc admin-3-name ", "])
+             (when (and @detail (seq admin-2-name)) [:div.loc admin-2-name ", "])
              (when-let [admin-1-name (:admin-1-name geoname)]
-               [:span.geoname ", " admin-1-name])
-             (when @detail [:span.fa.fa-trash.up {:on-click remove}])
-             [:span.flag flag]]))))))
+               [:div.loc admin-1-name])
+             [:div [:span.flag flag]]]))))))

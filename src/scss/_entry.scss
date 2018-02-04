@@ -103,16 +103,25 @@
     display: flex;
     justify-content: space-between;
     padding-top: 3px;
+    height: 14px;
 
     .geoname {
       font-size: 0.6em;
-      vertical-align: top;
+      display: flex;
     }
+
+    .loc {
+      padding-right: 3px;
+    }
+    .fa {
+      padding-top: 7px;
+      padding-left: 0;
+    }
+
     .flag {
-      padding-left: 3px;
       position: relative;
-      top: -4px;
       font-size: 1.5em;
+      top: -2px;
     }
     .fa {
       position: relative;

@@ -8,17 +8,15 @@
             [clojure.string :as s]
             [meo.common.utils.parse :as up]))
 
-(defn editable-field
-  [on-input-fn on-keydown-fn text]
+(defn editable-field [on-input-fn on-keydown-fn text]
   (fn [_ _ _]
     [:div.story-edit-field
      {:content-editable true
-      :on-change        on-input-fn
+      :on-input         on-input-fn
       :on-key-down      on-keydown-fn}
      text]))
 
-(defn keydown-fn
-  [entry k put-fn]
+(defn keydown-fn [entry k put-fn]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
           updated (assoc-in entry [k] text)
@@ -28,8 +26,7 @@
         (put-fn [:entry/update updated])
         (.preventDefault ev)))))
 
-(defn input-fn
-  [entry k put-fn]
+(defn input-fn [entry k put-fn]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
           updated (assoc-in entry [k] text)]
@@ -64,8 +61,7 @@
 (defn story-div
   "Shows story name."
   [entry tab-group put-fn]
-  (let [options (subscribe [:options])
-        stories (subscribe [:stories])
+  (let [stories (subscribe [:stories])
         linked-story (reaction (:primary-story @entry))
         story-name (reaction (:story-name (get @stories @linked-story)))
         local (r/atom {})

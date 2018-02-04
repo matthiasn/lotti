@@ -84,7 +84,7 @@
           [:div
            [es/story-div entry tab-group put-fn]
            [es/saga-select @entry put-fn edit-mode?]]
-          [loc/geonames entry put-fn edit-mode?]]
+          [loc/geonames entry put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
