@@ -99,7 +99,6 @@
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
       (append-daily-log (:cfg current-state) entry)
-      (log/info "saving" entry)
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
       {:new-state    new-state
@@ -121,7 +120,6 @@
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
       (append-daily-log (:cfg current-state) entry)
-      (log/info "saving" entry)
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))
 

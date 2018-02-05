@@ -18,6 +18,17 @@ This repository contains the **web application** part of **meo**. This system is
 
 ## Installation
 
+You will need the following:
+
+ - 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
 First, you need to compile the **ClojureScript**:
 
     $ lein cljsbuild once release
@@ -36,6 +47,11 @@ You can also have the CSS automatically recompiled when there are changes:
 
     $ sass --watch src/scss/meo.scss:resources/public/css/meo.css
     
+
+On Ubuntu 
+
+
+
 
 There is no **CSS** framework involved here. Rather, the styling is self-contained, which is possible thanks to **[CSS Flexible Box Layout](https://www.w3.org/TR/css-flexbox-1/)**. It's great for layout. You should learn it.
 
