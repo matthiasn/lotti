@@ -16,7 +16,7 @@
         jdk (case platform
               "darwin" "/zulu9.0.4.1-jdk9.0.4-macosx_x64/bin/java"
               "win32" "/zulu9.0.4.1-jdk9.0.4-win_x64/bin/java"
-              "/zulu9.0.4.1-jdk9.0.4-linux_x64/bin/java")
+              "/zulu9.0.1.3-jdk9.0.1-linux_x64/bin/java")
         info {:platform       (.-platform process)
               :download-path  download-path
               :java           (str app-path "/bin" jdk)
