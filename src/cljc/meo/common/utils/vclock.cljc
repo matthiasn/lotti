@@ -1,5 +1,8 @@
 (ns meo.common.utils.vclock
-  (:require [clojure.set :as set]))
+  (:require [clojure.set :as set]
+            [clojure.spec.alpha :as s]
+            [meo.common.specs]
+            [expound.alpha :as exp]))
 
 (defn next-global-vclock [current-state]
   (let [global-vclock (:global-vclock current-state)
@@ -18,6 +21,10 @@
   (let [latest-vclock-cnt (get-in new-global-vclock [node-id])]
     (assoc-in entry [:vclock node-id] latest-vclock-cnt)))
 
+(s/def :meo.vclock/node-id string?)
+(s/def :meo.vclock/counter int?)
+(s/def :meo.vclock/map (s/map-of :meo.vclock/node-id :meo.vclock/counter))
+
 (defn vclock-comparator [a b]
   "Compares two vector clock maps. Those maps consist of node id strings as keys
    and an integer, which is the counter on the particular node associated with
@@ -25,19 +32,26 @@
    Will return :a>b if vclock a is strictly greater than b, :b>a in the opposite
    case, :equal if they are the same, and :conflict if there is are conflict
    that requires user interaction."
-  (let [node-ids (set/union (set (keys a)) (set (keys b)))
-        compare (fn [k]
-                  (let [av (or (get a k 0))
-                        bv (or (get b k 0))]
-                    (cond
-                      (> av bv) :a>b
-                      (> bv av) :b>a
-                      :else :equal)))
-        comparisons (set (map compare node-ids))]
-    (cond
-      (= a b) :equal
-      (and (contains? comparisons :a>b)
-           (not (contains? comparisons :b>a))) :a>b
-      (and (contains? comparisons :b>a)
-           (not (contains? comparisons :a>b))) :b>a
-      :else :conflict)))
+  (let [a-valid (s/valid? :meo.vclock/map a)
+        b-valid (s/valid? :meo.vclock/map b)]
+    (if (and a-valid b-valid)
+      (let [node-ids (set/union (set (keys a)) (set (keys b)))
+            compare (fn [k]
+                      (let [av (or (get a k 0))
+                            bv (or (get b k 0))]
+                        (cond
+                          (> av bv) :a>b
+                          (> bv av) :b>a
+                          :else :equal)))
+            comparisons (set (map compare node-ids))]
+        (cond
+          (= a b) :equal
+          (and (contains? comparisons :a>b)
+               (not (contains? comparisons :b>a))) :a>b
+          (and (contains? comparisons :b>a)
+               (not (contains? comparisons :a>b))) :b>a
+          :else :conflict))
+      (do
+        (when-not a-valid (exp/expound :meo.vclock/map a))
+        (when-not b-valid (exp/expound :meo.vclock/map b))
+        :corrupt))))

@@ -107,4 +107,22 @@
               another-node-id 1}
              {some-node-id    2
               another-node-id 1
-              yet-another-node-id 3})))))
+              yet-another-node-id 3}))))
+
+  (testing "returns :corrupt if A is invalid"
+    (is (= :corrupt
+           (vc/vclock-comparator
+             {:foo 1
+              3 "a"}
+             {some-node-id    2
+              another-node-id 1
+              yet-another-node-id 3}))))
+
+  (testing "returns :corrupt if B is invalid"
+    (is (= :corrupt
+           (vc/vclock-comparator
+             {some-node-id    2
+              another-node-id 1
+              yet-another-node-id 3}
+             {:foo 1
+              3 "a"})))))
