@@ -8,9 +8,7 @@
             [meo.jvm.graph.query :as gq]
             [meo.store-test-common :as stc]
             [meo.jvm.files :as f]
-            [clojure.pprint :as pp]
             [meo.jvm.file-utils :as fu]
-            [meo.jvm.location :as loc]
             [me.raynes.fs :as fs]))
 
 (deftest persist-test

@@ -62,12 +62,15 @@
      storing the hashtags and mentions in graph."
     (let [test-ts (System/currentTimeMillis)
           {:keys [current-state test-path logs-path]} (mk-test-state test-ts)
-          test-entry (mk-test-entry test-ts)]
+          test-entry (mk-test-entry test-ts)
+          test-atom (atom [])]
       (with-redefs [fu/data-path test-path
                     fu/daily-logs-path logs-path]
         (let [{:keys [new-state emit-msg]}
-              (f/geo-entry-persist-fn {:current-state current-state
-                                       :msg-payload   test-entry})
+              (f/geo-entry-persist-fn
+                {:current-state current-state
+                                       :msg-payload   test-entry
+                                       :put-fn (fn [msg] (swap! test-atom conj msg))})
               res (gq/get-filtered new-state simple-query)]
 
           (testing
@@ -104,7 +107,7 @@
             "handler emits saved message"
             (let [entry-saved-msg (first emit-msg)
                   saved-msg (second entry-saved-msg)]
-              (is (= :entry/saved (first entry-saved-msg)))
+              (is (= :entry/saved (ffirst @test-atom)))
               (is (= test-entry (dissoc saved-msg :id :last-saved :vclock))))))))))
 
 (defn geo-entry-update-assertions
@@ -140,6 +143,7 @@
     (let [test-ts (System/currentTimeMillis)
           {:keys [current-state test-path logs-path]} (mk-test-state test-ts)
           test-entry (mk-test-entry test-ts)
+          test-atom (atom [])
           updated-test-entry (merge test-entry
                                     {:tags     #{"#testing" "#new" "#entry"}
                                      :md       "Some #testing #entry @me #new"
@@ -149,9 +153,11 @@
                     fu/daily-logs-path logs-path]
         (let [{:keys [new-state]} (f/geo-entry-persist-fn
                                     {:current-state current-state
+                                     :put-fn (fn [msg] (swap! test-atom conj msg))
                                      :msg-payload   test-entry})
               {:keys [new-state emit-msg]} (f/geo-entry-persist-fn
                                              {:current-state new-state
+                                              :put-fn (fn [msg] (swap! test-atom conj msg))
                                               :msg-payload   updated-test-entry})
               res (gq/get-filtered new-state simple-query)
 
@@ -174,7 +180,7 @@
             "handler emits updated message"
             (let [entry-saved-msg (first emit-msg)
                   saved-msg (second entry-saved-msg)]
-              (is (= :entry/saved (first entry-saved-msg)))
+              (is (= :entry/saved (ffirst @test-atom)))
               (is (= updated-test-entry
                      (dissoc saved-msg :id :last-saved :vclock)))))
 
@@ -210,14 +216,17 @@
     (let [test-ts (System/currentTimeMillis)
           {:keys [current-state test-path logs-path]} (mk-test-state test-ts)
           test-entry (mk-test-entry test-ts)
+          test-atom (atom [])
           delete-msg {:timestamp (:timestamp test-entry) :deleted true}]
       (with-redefs [fu/data-path test-path
                     fu/daily-logs-path logs-path]
         (let [{:keys [new-state]} (f/geo-entry-persist-fn
                                     {:current-state current-state
+                                     :put-fn (fn [msg] (swap! test-atom conj msg))
                                      :msg-payload   some-test-entry})
               {:keys [new-state]} (f/geo-entry-persist-fn
                                     {:current-state new-state
+                                     :put-fn (fn [msg] (swap! test-atom conj msg))
                                      :msg-payload   test-entry})
               {:keys [new-state]} (f/trash-entry-fn {:current-state new-state
                                                      :msg-payload   delete-msg})

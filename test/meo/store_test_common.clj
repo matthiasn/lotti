@@ -67,10 +67,11 @@
     :timestamp 1450998400000
     :md        "And yet another completed #task - #done"}])
 
-(def private-tags #{"#pvt" "#private" "#nsfw" "#consumption"})
+(def private-tags #{"#pvt" "#nsfw"})
 
 (defn persist-reducer
   "Reducing function for adding entries to component state."
   [acc entry]
   (:new-state (f/geo-entry-persist-fn {:current-state acc
+                                       :put-fn (fn [_])
                                        :msg-payload   entry})))

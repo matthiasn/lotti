@@ -68,14 +68,14 @@
               another-node-id 2}))))
 
   (testing "returns :conflict when there is a conflict"
-    (is (= :conflict
+    (is (= :concurrent
            (vc/vclock-comparator
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
               another-node-id 2}))))
 
-  (testing "returns :a>b when A is strictly greater than A"
+  (testing "returns :a>b when A dominates B"
     (is (= :a>b
            (vc/vclock-comparator
              {some-node-id    2
@@ -83,7 +83,7 @@
              {some-node-id    1
               another-node-id 1}))))
 
-  (testing "returns :b>a when A is strictly greater than A"
+  (testing "returns :b>a when B dominates A"
     (is (= :a>b
            (vc/vclock-comparator
              {some-node-id    2
@@ -91,38 +91,38 @@
              {some-node-id    1
               another-node-id 1}))))
 
-  (testing "returns :b>a when B is strictly greater than A via additional node"
+  (testing "returns :b>a when B dominates A via additional node"
     (is (= :b>a
            (vc/vclock-comparator
              {some-node-id    2
               another-node-id 1}
-             {some-node-id    2
-              another-node-id 1
+             {some-node-id        2
+              another-node-id     1
               yet-another-node-id 3}))))
 
   (testing "returns :conflict both A updated and B has a previously unknown node"
-    (is (= :conflict
+    (is (= :concurrent
            (vc/vclock-comparator
              {some-node-id    3
               another-node-id 1}
-             {some-node-id    2
-              another-node-id 1
+             {some-node-id        2
+              another-node-id     1
               yet-another-node-id 3}))))
 
-  (testing "returns :corrupt if A is invalid"
-    (is (= :corrupt
-           (vc/vclock-comparator
-             {:foo 1
-              3 "a"}
-             {some-node-id    2
-              another-node-id 1
-              yet-another-node-id 3}))))
+  (testing "throws exception if A is invalid"
+    (is (thrown? Exception
+                 (vc/vclock-comparator
+                   {:foo 1
+                    3    "a"}
+                   {some-node-id        2
+                    another-node-id     1
+                    yet-another-node-id 3}))))
 
-  (testing "returns :corrupt if B is invalid"
-    (is (= :corrupt
-           (vc/vclock-comparator
-             {some-node-id    2
-              another-node-id 1
-              yet-another-node-id 3}
-             {:foo 1
-              3 "a"})))))
+  (testing "throws exception if B is invalid"
+    (is (thrown? Exception
+                 (vc/vclock-comparator
+                   {some-node-id        2
+                    another-node-id     1
+                    yet-another-node-id 3}
+                   {:foo 1
+                    3    "a"})))))

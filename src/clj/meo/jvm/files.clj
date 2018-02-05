@@ -105,7 +105,7 @@
       {:new-state    new-state
        :send-to-self (when-let [comment-for (:comment-for msg-payload)]
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
-       :emit-msg     [:ft/add entry]})))
+       :emit-msg     [[:ft/add entry]]})))
 
 (defn sync-entry
   "Handler function for syncing journal entry."
