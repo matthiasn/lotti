@@ -81,7 +81,7 @@
 
 (defn geo-entry-persist-fn
   "Handler function for persisting journal entry."
-  [{:keys [current-state msg-payload msg-meta]}]
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         node-id (-> current-state :cfg :node-id)
         new-global-vclock (vc/next-global-vclock current-state)
@@ -100,11 +100,12 @@
                 (dissoc entry :last-saved :vclock))
       (append-daily-log (:cfg current-state) entry)
       (log/info "saving" entry)
+      (when-not (:silent msg-meta)
+        (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
       {:new-state    new-state
        :send-to-self (when-let [comment-for (:comment-for msg-payload)]
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
-       :emit-msg     [(with-meta [:entry/saved entry] broadcast-meta)
-                      [:ft/add entry]]})))
+       :emit-msg     [:ft/add entry]})))
 
 (defn sync-entry
   "Handler function for syncing journal entry."

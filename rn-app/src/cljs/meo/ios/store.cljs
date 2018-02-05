@@ -61,12 +61,6 @@
     (when entry (put-fn [:sync/entry (merge entry {:timestamp ts})]))
     {:new-state new-state}))
 
-(defn state-reset [{:keys []}]
-  (let [new-state {:entries       (avl/sorted-map)
-                   :latest-synced 0}]
-    (go (<! (as/set-item :latest-synced 0)))
-    {:new-state new-state}))
-
 (defn load-state [{:keys [cmp-state put-fn]}]
   (go
     (try
@@ -78,7 +72,7 @@
   (go
     (try
       (let [active-theme (second (<! (as/get-item :active-theme)))]
-        (swap! cmp-state assoc-in [:active-theme] active-theme))
+        (swap! cmp-state assoc-in [:active-theme] (or active-theme :light)))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (go
@@ -102,12 +96,18 @@
       (let [timestamps (second (<! (as/get-item :timestamps)))]
         (doseq [ts timestamps]
           (let [entry (second (<! (as/get-item ts)))]
-            (put-fn [:debug/entry entry])
             (swap! cmp-state assoc-in [:entries ts] entry))))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (put-fn [:debug/state-fn-complete])
   {})
+
+(defn state-reset [{:keys [cmp-state put-fn]}]
+  (let [new-state {:entries       (avl/sorted-map)
+                   :latest-synced 0}]
+    (go (<! (as/clear)))
+    (load-state {:cmp-state cmp-state :put-fn put-fn})
+    {:new-state new-state}))
 
 (defn state-fn [put-fn]
   (let [state (atom {:entries       (avl/sorted-map)

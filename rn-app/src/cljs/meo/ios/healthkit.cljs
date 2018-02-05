@@ -38,8 +38,8 @@
                                 :linked-stories #{1475314976880}
                                 :primary-story  1475314976880
                                 :custom-fields  {tag {:cnt cnt}}}]
-                     (put-fn [:entry/persist entry])
-                     (put-fn [:entry/update entry]))))))
+                     (put-fn (with-meta [:entry/update entry] {:silent true}))
+                     (put-fn [:entry/persist entry]))))))
         init-cb (fn [err res]
                   (.getFlightsClimbed health-kit opts (cb "#flights-of-stairs"))
                   (.getStepCount health-kit opts (cb "#steps")))]
@@ -63,8 +63,8 @@
                                    :custom-fields  {"#weight" {:weight kg}}
                                    :linked-stories #{1475314976880}
                                    :primary-story  1475314976880}]
-                        (put-fn [:entry/persist entry])
-                        (put-fn [:entry/update entry]))))
+                        (put-fn (with-meta [:entry/update entry] {:silent true}))
+                        (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
                   (.getWeightSamples health-kit weight-opts weight-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))
@@ -90,8 +90,8 @@
                                                        :bp-diastolic bp-diastolic}}
                                :linked-stories #{1475314976880}
                                :primary-story  1475314976880}]
-                    (put-fn [:entry/persist entry])
-                    (put-fn [:entry/update entry]))))
+                    (put-fn (with-meta [:entry/update entry] {:silent true}))
+                    (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
                   (.getBloodPressureSamples health-kit bp-opts bp-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))
@@ -117,8 +117,8 @@
                                   :custom-fields  {tag {:duration minutes}}
                                   :linked-stories #{1479889430353}
                                   :primary-story  1479889430353}]
-                       (put-fn [:entry/persist entry])
-                       (put-fn [:entry/update entry]))))
+                       (put-fn (with-meta [:entry/update entry] {:silent true}))
+                       (put-fn [:entry/persist entry]))))
         init-cb (fn [err res] (.getSleepSamples health-kit sleep-opts sleep-cb))]
     (.initHealthKit health-kit health-kit-opts init-cb))
   {})
