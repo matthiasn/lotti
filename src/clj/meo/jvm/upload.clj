@@ -3,15 +3,17 @@
   (:require [ring.adapter.jetty :as j]
             [compojure.core :refer [routes POST PUT]]
             [clojure.java.io :as io]
+            [hiccup.page :refer [html5]]
             [meo.jvm.imports.entries :as ie]
-            [meo.jvm.files :as f]
             [image-resizer.util :refer :all]
-            [clojure.string :as s]
             [clojure.tools.logging :as log]
-            [meo.jvm.file-utils :as fu])
+            [meo.jvm.file-utils :as fu]
+            [matthiasn.systems-toolbox.switchboard :as sb]
+            [matthiasn.systems-toolbox-sente.server :as sente])
   (:import (java.net ServerSocket)))
 
 (def upload-port (atom nil))
+(def sync-ws-port (atom nil))
 
 (defn get-free-port []
   (let [socket (ServerSocket. 0)
@@ -59,15 +61,56 @@
                    :message [:import/stop-server]}]
                  (with-meta [:cfg/show-qr] new-meta)]}))
 
-(defn stop-server
-  [{:keys [current-state]}]
-  (log/info "Stopping Upload Server")
+(defn stop-server [{:keys [current-state]}]
+  (log/info "Stopping upload server")
   (.stop (:server current-state))
   {:new-state (assoc-in current-state [:server] nil)})
 
-(defn cmp-map
-  [cmp-id]
+(defn start-ws-server [{:keys [current-state]}]
+  (let [switchboard (:switchboard current-state)
+        ws-port (get-free-port)
+        server-name :sync/ws-cmp
+        opts {:port          ws-port
+              :index-page-fn (fn [_] "hello world")
+              :sente-opts    {:ws-kalive-ms 2000}
+              :host          "0.0.0.0"
+              :relay-types   #{:sync/start :sync/progress
+                               :sync/entry :ws/ping}
+              :opts          (:reload-cmp true)}
+        new-state (assoc-in current-state [:ws-port] ws-port)
+        new-state (assoc-in new-state [:server-name] server-name)]
+    (reset! sync-ws-port ws-port)
+    (log/info "Starting" server-name)
+    (sb/send-mult-cmd
+      switchboard
+      [[:cmd/init-comp (sente/cmp-map server-name opts)]
+       [:cmd/route {:from server-name
+                    :to   #{:server/store-cmp
+                            :server/upload-cmp}}]])
+    {:new-state new-state}))
+
+(defn stop-ws-server [{:keys [current-state]}]
+  (let [switchboard (:switchboard current-state)
+        server-name (:server-name current-state)
+        new-state (assoc-in current-state [:ws-port] nil)]
+    (when server-name
+      (log/info "Stopping" server-name)
+      (sb/send-mult-cmd
+        switchboard
+        [[:cmd/shutdown server-name]])
+      {:new-state new-state})))
+
+(defn state-fn [switchboard]
+  (fn [put-fn]
+    (log/info "Starting upload component")
+    {:state (atom {:switchboard switchboard})}))
+
+(defn cmp-map [cmp-id switchboard]
+  (prn (keys switchboard))
   {:cmp-id      cmp-id
+   :state-fn    (state-fn switchboard)
    :handler-map {:import/listen      start-server
-                 :import/stop-server stop-server}})
+                 :import/stop-server stop-server
+                 :sync/start-server  start-ws-server
+                 :sync/stop-server   stop-ws-server}})
 

@@ -48,7 +48,7 @@
                      (e/cmp-map :server/export-cmp)
                      (st/cmp-map :server/store-cmp)
                      (bak/cmp-map :server/backup-cmp)
-                     (up/cmp-map :server/upload-cmp)
+                     (up/cmp-map :server/upload-cmp switchboard)
                      (ft/cmp-map :server/ft-cmp)}
         components (make-observable components)]
     (sb/send-mult-cmd

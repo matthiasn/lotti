@@ -68,7 +68,9 @@
         toggle-qr-code #(put-fn [:import/listen])
         ws-address (fn [_]
                      (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
-                     (put-fn [:import/ws]))
+                     (if (:ws-qr-code @cfg )
+                       (put-fn [:sync/stop-server])
+                       (put-fn [:sync/start-server])))
         screenshot #(put-fn [:screenshot/take])]
     (fn [put-fn]
       [:div

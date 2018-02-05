@@ -14,12 +14,10 @@
         (log/info "QR Code for:" url)
         (qr/from url :size [300 300])))))
 
-(def env-port (get (System/getenv) "PORT"))
-
 (defn ws-address-qr-route [port]
   (GET "/ws-address/:uuid/qrcode.png" [_uuid]
     (qr/as-input-stream
       (let [ip (ffirst (net/ips))
-            url (str ip ":" (or env-port port))]
+            url (str ip ":" @up/sync-ws-port)]
         (log/info "QR Code for:" url)
         (qr/from url :size [300 300])))))

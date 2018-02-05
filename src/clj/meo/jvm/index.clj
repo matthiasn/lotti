@@ -9,11 +9,8 @@
 (defn index-page [_]
   (html5
     {:lang "en"}
-    [:head
-     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-     [:title "test"]]
-    [:body
-     [:div [:h1 "hello world"]]]))
+    [:head [:title "test"]]
+    [:body "hello world"]))
 
 (def port 8765)
 
