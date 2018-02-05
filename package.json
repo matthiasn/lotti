@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.105",
+  "version": "0.4.106",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -62,8 +62,8 @@
   "devDependencies": {
     "browser-resolve": "1.11.2",
     "electron": "1.7.11",
-    "electron-builder": "19.55.2",
-    "electron-publisher-s3": "19.55.2",
+    "electron-builder": "19.56.0",
+    "electron-publisher-s3": "19.56.0",
     "module-deps": "5.0.1",
     "resolve": "^1.5.0"
   }
