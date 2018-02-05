@@ -3,7 +3,7 @@ asar: false
 files:
     - "!**/*"
     - "bin/blink1-${os}*"
-    - "bin/zulu8.23.0.3-jdk8.0.144-${os}_x64/**"
+    - "bin/zulu9-${os}_x64/**"
     - "bin/meo.jar"
     - "node_modules/**"
     - "prod/**"

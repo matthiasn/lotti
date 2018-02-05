@@ -29,5 +29,6 @@ cd ./bin/
 wget http://cdn.azul.com/zulu/bin/zulu9.0.1.3-jdk9.0.1-linux_x64.tar.gz
 tar -xzf zulu9.0.1.3-jdk9.0.1-linux_x64.tar.gz
 rm zulu9.0.1.3-jdk9.0.1-linux_x64.tar.gz
+mv zulu9.0.1.3-jdk9.0.1-linux_x64 zulu9-linux_x64
 
 cd ..

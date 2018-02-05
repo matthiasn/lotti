@@ -18,6 +18,6 @@ cd ./bin/
 
 wget https://cdn.azul.com/zulu/bin/zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
 tar -xzf zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
-rm zulu9.0.4.1-jdk9.0.4-macos_x64.tar.gz
-
+rm zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
+mv zulu9.0.4.1-jdk9.0.4-macosx_x64 zulu9-mac_x64
 cd ..
