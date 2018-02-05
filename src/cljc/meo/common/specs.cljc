@@ -343,3 +343,6 @@
 
 (s/def :wm.progress/v number?)
 (s/def :window/progress (s/keys :req-un [:wm.progress/v]))
+
+(s/def :sync/start-server nil?)
+(s/def :sync/stop-server (s/nilable keyword?))

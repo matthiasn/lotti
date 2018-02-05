@@ -66,6 +66,7 @@
 
        [:cmd/route {:from :server/upload-cmp
                     :to   #{:server/store-cmp
+                            :server/scheduler-cmp
                             :server/ws-cmp}}]
 
        [:cmd/route {:from :server/store-cmp
