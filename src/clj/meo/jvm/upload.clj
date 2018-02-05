@@ -73,13 +73,13 @@
     {:sente-uid :broadcast}))
 
 (defn ws-opts [port]
-  {:port          port
-   :index-page-fn (fn [_] "hello world")
-   :sente-opts    {:ws-kalive-ms 2000}
-   :host          "0.0.0.0"
-   :relay-types   #{:sync/start :sync/progress
-                    :sync/entry :ws/ping}
-   :opts          (:reload-cmp true)})
+  {:mandatory-port port
+   :index-page-fn  (fn [_] "hello world")
+   :sente-opts     {:ws-kalive-ms 2000}
+   :host           "0.0.0.0"
+   :relay-types    #{:sync/start :sync/progress
+                     :sync/entry :ws/ping}
+   :opts           (:reload-cmp true)})
 
 (defn start-ws-server [{:keys [current-state]}]
   (let [switchboard (:switchboard current-state)
