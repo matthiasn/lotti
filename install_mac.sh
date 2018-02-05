@@ -16,8 +16,8 @@ npm install -g webpack
 mkdir ./bin
 cd ./bin/
 
-wget https://cdn.azul.com/zulu/bin/zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
-tar -xzf zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
-rm zulu9.0.4.1-jdk9.0.4-macosx_x64.tar.gz
-mv zulu9.0.4.1-jdk9.0.4-macosx_x64 zulu9-mac_x64
+wget https://cdn.azul.com/zulu/bin/zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
+unzip zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
+rm zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
+mv zulu8.27.0.7-jdk8.0.162-macosx_x64 zulu8-mac_x64
 cd ..

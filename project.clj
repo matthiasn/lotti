@@ -46,8 +46,13 @@
 
   :source-paths ["src/cljc" "src/clj/"]
 
-  :clean-targets ^{:protect false} ["resources/public/js/build" "prod" "target"
-                                    "out" "dev"]
+  :clean-targets ^{:protect false} ["prod/main"
+                                    "prod/renderer"
+                                    "prod/geocoder"
+                                    "prod/updater"
+                                    "target"
+                                    "out"
+                                    "dev/renderer"]
   :auto-clean false
   :uberjar-name "meo.jar"
 
