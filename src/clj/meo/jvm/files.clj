@@ -16,7 +16,8 @@
             [clojure.pprint :as pp]
             [meo.jvm.file-utils :as fu]
             [ubergraph.core :as uc]
-            [meo.common.utils.vclock :as vc])
+            [meo.common.utils.vclock :as vc]
+            [meo.common.utils.misc :as u])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -84,7 +85,8 @@
   (let [ts (:timestamp msg-payload)
         node-id (-> current-state :cfg :node-id)
         new-global-vclock (vc/next-global-vclock current-state)
-        entry (assoc-in msg-payload [:last-saved] (st/now))
+        entry (u/clean-entry msg-payload)
+        entry (assoc-in entry [:last-saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
         g (:graph current-state)

@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.client-store-cfg
-  (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])))
+  (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
+    [clojure.pprint :as pp]))
 
 (def default-config
   {:active            nil
