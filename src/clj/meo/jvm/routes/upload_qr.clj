@@ -20,7 +20,7 @@
     (qr/as-input-stream
       (let [ip (ffirst (net/ips))
             url (str ip ":" @up/sync-ws-port)
-            data {:url  url
-                  :data (str (st/make-uuid))}]
+            data {:url    url
+                  :shared (str (st/make-uuid))}]
         (log/info "QR Code for:" url)
         (qr/from (str data) :size [300 300])))))

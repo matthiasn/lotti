@@ -8,7 +8,8 @@
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [subscribe]]
             [meo.ui.colors :as c]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [cljs.tools.reader.edn :as edn]))
 
 (defn render-item [text-color item-bg]
   (fn [item]
@@ -195,7 +196,7 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 5] (put-fn [:healthkit/steps n]))
+        steps-fn #(dotimes [n 21] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
         activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]
@@ -257,9 +258,9 @@
   (let [theme (subscribe [:active-theme])
         on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
-                                data (get qr-code "data")]
+                                data (edn/read-string (get qr-code "data"))]
                             (swap! local assoc-in [:barcode] data)
-                            (put-fn [:ws/connect {:host data}])
+                            (put-fn [:ws/connect {:host (:url data)}])
                             (swap! local assoc-in [:cam] false)))]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -273,7 +274,7 @@
          [settings-list {:border-color bg
                          :width        "100%"}
           [settings-list-item {:title            "Scan barcode"
-                               :has-switch       true
+                               ;:has-switch       true
                                :hasNavArrow      false
                                :background-color item-bg
                                :titleStyle       {:color text-color}
@@ -285,13 +286,15 @@
                                :on-press         #(put-fn [:sync/initiate])}]]
          (when (:cam @local)
            [cam {:style         {:width  "100%"
-                                 :height 300}
+                                 :flex   4
+                                 :height "100%"}
                  :onBarCodeRead on-barcode-read}])
 
          (when-let [barcode (:barcode @local)]
            [text {:style {:font-size   10
                           :color       "#888"
                           :font-weight "100"
+                          :flex        1
                           :margin      5
                           :text-align  "center"}}
             (str barcode)])]))))
