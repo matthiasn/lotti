@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.102",
+  "version": "0.4.103",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -54,6 +54,7 @@
     "react-dom": "15.6.2",
     "react-responsive-carousel": "3.1.30",
     "react-with-direction": "^1.1.0",
+    "rome": "^2.1.22",
     "s": "0.1.1",
     "shell-escape": "0.2.0",
     "tcp-port-used": "0.1.2"

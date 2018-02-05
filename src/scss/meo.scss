@@ -39,10 +39,21 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 
+.cal-container {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+
+  .rome {
+    font-size: 0.95em;
+    margin-bottom: 5px;
+  }
+}
+
 .big-calendar {
   background-color: white;
+  flex: 2;
   padding: 2px;
-  height: 100%;
   font-size: 0.7em;
 }
 

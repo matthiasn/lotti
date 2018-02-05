@@ -5,10 +5,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [matthiasn.systems-toolbox.component :as stc]
             [reagent.core :as r]
-            [react-dates :as rd]
-            [cljs.reader :refer [read-string]]
-            [meo.common.utils.parse :as up]
-            [meo.common.utils.parse :as p]))
+            [taoensso.timbre :refer-macros [info]]
+            [cljs.reader :refer [read-string]]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -68,7 +66,7 @@
         toggle-qr-code #(put-fn [:import/listen])
         ws-address (fn [_]
                      (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
-                     (if (:ws-qr-code @cfg )
+                     (if (:ws-qr-code @cfg)
                        (put-fn [:sync/stop-server])
                        (put-fn [:sync/start-server])))
         screenshot #(put-fn [:screenshot/take])]
@@ -98,42 +96,6 @@
          [:img {:src (str "http://" iww-host "/ws-address/"
                           (stc/make-uuid) "/qrcode.png")}])])))
 
-(defn calendar-view [put-fn]
-  (let [picker (r/adapt-react-class rd/SingleDatePicker)
-        briefings (subscribe [:briefings])
-        cfg (subscribe [:cfg])
-        planning-mode (subscribe [:planning-mode])
-        local (r/atom {:focused false})
-        select-date (fn [dt]
-                      (let [fmt (.format dt "YYYY-MM-DD")
-                            q (up/parse-search (str "b:" fmt))]
-                        (swap! local assoc-in [:date] dt)
-                        (when-not (get @briefings fmt)
-                          (let [weekday (.format dt "dddd")
-                                md (str "## " weekday "'s #briefing")
-                                new-entry (merge
-                                            (p/parse-entry md)
-                                            {:briefing      {:day fmt}
-                                             :primary-story (-> @cfg :briefing :story)})
-                                new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
-                            (new-entry-fn)))
-                        (put-fn [:cal/to-day {:day fmt}])
-                        (put-fn [:search/add {:tab-group :briefing :query q}])
-                        (put-fn [:search/refresh])))
-        focus-fn #(swap! local update-in [:focused] not)
-        briefing-days (reaction (set (keys @briefings)))
-        highlighted? (fn [day] (contains? @briefing-days (h/ymd day)))]
-    (fn stats-view-render [put-fn]
-      (when @planning-mode
-        [:div.calendar
-         [picker {:placeholder        "briefing"
-                  :date               (:date @local)
-                  :on-date-change     select-date
-                  :is-day-highlighted highlighted?
-                  :focused            (:focused @local)
-                  :on-focus-change    focus-fn
-                  :is-outside-range   (constantly false)}]]))))
-
 (defn busy-status []
   (let [busy-color (subscribe [:busy-color])
         planning-mode (subscribe [:planning-mode])]
@@ -146,7 +108,6 @@
    [:div.menu-header
     [busy-status]
     [new-import-view put-fn]
-    [calendar-view put-fn]
     [:h1 "meo"]
     [cfg-view put-fn]
     [upload-view]]])
