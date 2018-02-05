@@ -50,9 +50,9 @@
                          "OK")
         app (routes
               (PUT "/upload/:dir/:file" [dir file :as r]
-                (binary-post-fn dir file r))
+                   (binary-post-fn dir file r))
               (POST "/upload/:filename" [filename :as r]
-                (post-fn filename r put-fn)))
+                    (post-fn filename r put-fn)))
         server (j/run-jetty app {:port @upload-port :join? false})
         new-meta (assoc-in msg-meta [:sente-uid] :broadcast)]
     {:new-state (assoc-in current-state [:server] server)
@@ -67,10 +67,11 @@
   {:new-state (assoc-in current-state [:server] nil)})
 
 (def qr-reset-msg
-  (with-meta
-    [:cmd/toggle-key {:path     [:cfg :ws-qr-code]
-                      :reset-to false}]
-    {:sente-uid :broadcast}))
+  [:cmd/schedule-new {:message (with-meta
+                                 [:cmd/toggle-key {:path     [:cfg :ws-qr-code]
+                                                   :reset-to false}]
+                                 {:sente-uid :broadcast})
+                      :timeout 15000}])
 
 (defn ws-opts [port]
   {:mandatory-port port
@@ -98,11 +99,7 @@
                             :server/upload-cmp}}]
        [:cmd/route {:from :server/store-cmp
                     :to   server-name}]])
-    {:new-state new-state
-     :emit-msg  [[:cmd/schedule-new {:message [:sync/stop-server server-name]
-                                     :timeout 120000}]
-                 [:cmd/schedule-new {:message qr-reset-msg
-                                     :timeout 15000}]]}))
+    {:new-state new-state}))
 
 (defn stop-ws-server [{:keys [current-state msg-payload]}]
   (let [switchboard (:switchboard current-state)
