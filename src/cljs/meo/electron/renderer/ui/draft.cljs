@@ -18,8 +18,9 @@
     (.createWithContent Draft.EditorState content-from-raw)))
 
 (defn story-mapper [[ts story]]
-  {:name (:story-name story)
-   :id   ts})
+  (when-let [story-name (:story-name story)]
+    {:name story-name
+     :id   ts}))
 
 (defn on-editor-change [update-cb]
   (fn [new-state]
@@ -45,7 +46,7 @@
   (let [editor (adapt-react-class "SearchFieldEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
-        stories-list (reaction (map story-mapper @sorted-stories))
+        stories-list (reaction (filter identity (map story-mapper @sorted-stories)))
         cfg (subscribe [:cfg])
         mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
         hashtags (reaction
@@ -68,7 +69,7 @@
   (let [editor (adapt-react-class "EntryTextEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
-        stories-list (reaction (map story-mapper @sorted-stories))
+        stories-list (reaction (filter identity (map story-mapper @sorted-stories)))
         cfg (subscribe [:cfg])
         mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
         hashtags (reaction

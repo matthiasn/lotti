@@ -34,6 +34,25 @@ let _createClass = function () {
     };
 }();
 
+// Get the first 15 suggestions that match
+function size(list) {
+    return list.constructor.name === 'List' ? list.size : list.length;
+}
+
+function get(obj, attr) {
+    return obj.get ? obj.get(attr) : obj[attr];
+}
+
+function suggestionsFilter(searchValue, suggestions) {
+    let value = searchValue.toLowerCase();
+
+    let filteredSuggestions = suggestions.filter(function (suggestion) {
+        return !value || get(suggestion, 'name').toLowerCase().indexOf(value) > -1;
+    });
+    let length = size(filteredSuggestions) < 15 ? size(filteredSuggestions) : 15;
+    return filteredSuggestions.slice(0, length);
+}
+
 let _react = require('react');
 let _react2 = _interopRequireDefault(_react);
 
@@ -86,11 +105,7 @@ function _inherits(subClass, superClass) {
         }
     });
     if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-} // eslint-disable-line import/no-unresolved
-// eslint-disable-line import/no-unresolved
-// eslint-disable-line import/no-unresolved
-// eslint-disable-line import/no-unresolved
-
+}
 
 let hasCommandModifier = _draftJs.KeyBindingUtil.hasCommandModifier;
 
@@ -165,28 +180,28 @@ let EntryTextEditor = function (_Component) {
 
         _this.onSearchChange = function (_ref) {
             let value = _ref.value;
-
             let mentions = _this.state.mentions;
+
             _this.setState({
-                mentionSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, mentions)
+                mentionSuggestions: (0, suggestionsFilter)(value, mentions)
             });
         };
 
         _this.onSearchChange2 = function (_ref2) {
             let value = _ref2.value;
-
             let hashtags = _this.state.hashtags;
+
             _this.setState({
-                hashtagSuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, hashtags)
+                hashtagSuggestions: (0, suggestionsFilter)(value, hashtags)
             });
         };
 
         _this.onSearchChangeStories = function (_ref3) {
             let value = _ref3.value;
-
             let stories = _this.state.stories;
+
             _this.setState({
-                storySuggestions: (0, _draftJsMentionPlugin.defaultSuggestionsFilter)(value, stories)
+                storySuggestions: (0, suggestionsFilter)(value, stories)
             });
         };
 

@@ -16,7 +16,7 @@
         url "https://accounts.spotify.com/api/token"
         refresh-token (:spotify-refresh-token conf)
         client-secret (slurp "SPOTIFY_SECRET")]
-    (log/info :get-access-token refresh-token client-secret)
+    (log/info :get-access-token (subs refresh-token 0 6) (subs client-secret 0 6))
     (when (and refresh-token client-secret)
       (body-parser (hc/post url {:form-params {:grant_type    "refresh_token"
                                                :refresh_token refresh-token}
