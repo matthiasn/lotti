@@ -23,6 +23,7 @@
 
 .entry {
   padding: 0.5em 0.8em 0.2em 0.8em;
+  font-size: $font-size-medium;
 
   .entry-text {
     padding-bottom: 0.3em;
@@ -37,7 +38,7 @@
 
     .word-count {
       flex: 1;
-      font-size: 0.8em;
+      font-size: $font-size-small;
       text-align: right;
       color: $body-background-color;
     }
@@ -68,7 +69,7 @@
   }
 
   div > div > pre > code {
-    font-size: 0.8em;
+    font-size: $font-size-medium;
   }
 
   label, select {
@@ -76,12 +77,12 @@
   }
 
   h1, h2 {
-    font-size: 1.1em;
+    font-size: $font-size-large;
     margin-top: 0.2em;
   }
 
   h3 {
-    font-size: 1em;
+    font-size: $font-size-medium;
     margin-top: 0.2em;
   }
 
@@ -106,7 +107,7 @@
     height: 14px;
 
     .geoname {
-      font-size: 0.6em;
+      font-size: $font-size-small;
       display: flex;
     }
 
@@ -120,7 +121,7 @@
 
     .flag {
       position: relative;
-      font-size: 1.5em;
+      font-size: $font-size-medium;
       top: -2px;
     }
     .fa {
@@ -141,7 +142,7 @@
 
     .starred {
       color: gold;
-      font-size: 1.7em;
+      font-size: $font-size-large;
     }
 
     time {
@@ -224,7 +225,7 @@
     }
     input {
       min-width: 60px;
-      font-size: 0.8em;
+      font-size: $font-size-small;
     }
   }
 
@@ -258,7 +259,7 @@
     color: white;
     background-color: lighten(desaturate($hashtag-blue, 35%), 15%);
     cursor: pointer;
-    font-size: 0.8em;
+    font-size: $font-size-small;
   }
 }
 
@@ -379,13 +380,13 @@
     padding-bottom: 5px;
   }
   cite {
-    font-size: 0.8em;
+    font-size: $font-size-small;
   }
 }
 
 .custom-fields, .briefing-details, .task-details, .habit-details {
   fieldset {
-    font-size: 0.9em;
+    font-size: $font-size-small;
     margin: 0.5em 0;
     border: 1px dashed #BBB;
     legend {
@@ -401,7 +402,6 @@
         text-align: center;
         display: inline-block;
         color: white;
-        font-size: 0.8em;
         font-weight: bold;
         background-color: #BBB;
         padding: 0 2px;
@@ -454,7 +454,7 @@
       margin-right: 4px;
       width: 90px;
       padding: 1px 2px;
-      font-size: 9px;
+      font-size: $font-size-small;
     }
     input[type="number"], input[type="time"] {
       width: 65px;

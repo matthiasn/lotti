@@ -105,7 +105,8 @@
   "Calls randomColor with seed, which returns same color for seed in subsequent
    invocations."
   [seed]
-  (randomcolor (clj->js {"seed" (str seed)})))
+  (randomcolor (clj->js {"seed"       (str seed)
+                         "luminosity" "light"})))
 
 (defn horizontal-bar
   "Draws horizontal stacked bar."

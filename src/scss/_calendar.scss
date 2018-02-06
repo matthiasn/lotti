@@ -199,7 +199,6 @@ button.rbc-input::-moz-focus-inner {
 .rbc-event {
   cursor: pointer;
   padding: 2px 5px;
-  background-color: #3174ad;
   border-radius: 5px;
   color: #fff;
 }
@@ -209,7 +208,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-event-label {
-  font-size: $font-size-small;
+  font-size: 0;
+  color: $font-color;
 }
 
 .rbc-event-overlaps {
@@ -443,7 +443,7 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-label {
   padding: 3px 5px;
-  font-size: $font-size-medium;
+  font-size: $font-size-small;
 }
 
 .rbc-day-slot {
@@ -471,7 +471,8 @@ button.rbc-input::-moz-focus-inner {
   word-wrap: break-word;
   line-height: 1;
   height: 100%;
-  font-size: $font-size-medium;
+  font-size: $font-size-small;
+  color: $font-color;
   min-height: 1em;
 }
 
