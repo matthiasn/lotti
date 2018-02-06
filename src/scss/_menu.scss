@@ -29,18 +29,18 @@
   h1 {
     padding-left: 30px;
     color:white;
-    font-size: 1.5em;
+    font-size: $font-size-meo-header;
     flex: 2;
   }
 
   button {
-    font-size: 0.8em;
+    font-size: $font-size-medium;
     margin-right: 5px;
     height: 22px;
   }
 
   .fa {
-    font-size: 1.2em;
+    font-size: $font-size-large;
   }
 
   .busy-status {

@@ -45,16 +45,14 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
 
   .rome {
-    font-size: 0.95em;
-    margin-bottom: 5px;
+    font-size: $font-size-cal;
   }
 }
 
 .big-calendar {
   background-color: white;
   flex: 2;
-  padding: 2px;
-  font-size: 0.7em;
+  font-size: $font-size-cal;
 }
 
 ::-webkit-scrollbar-corner {
