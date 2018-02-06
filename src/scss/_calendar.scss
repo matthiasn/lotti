@@ -59,7 +59,7 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-off-range {
-    color: #b3b3b3;
+    //color: #b3b3b3;
 }
 
 .rbc-header {
@@ -88,7 +88,7 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-today {
-    background-color: #eaf6ff;
+    //background-color: #eaf6ff;
 }
 
 .rbc-toolbar {
@@ -114,7 +114,7 @@ button.rbc-input::-moz-focus-inner {
     background-image: none;
     border: 1px solid #ccc;
     padding: .375rem 1rem;
-    border-radius: 0;
+    border-radius: 5px;
     line-height: normal;
     white-space: nowrap;
 }
@@ -164,19 +164,19 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-rtl .rbc-btn-group > button:first-child:not(:last-child) {
-    border-radius: 0;
+    border-radius: 5px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
 
 .rbc-rtl .rbc-btn-group > button:last-child:not(:first-child) {
-    border-radius: 0;
+    border-radius: 5px;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
 }
 
 .rbc-btn-group > button:not(:first-child):not(:last-child) {
-    border-radius: 0;
+    border-radius: 5px;
 }
 
 .rbc-btn-group button + button {
@@ -197,7 +197,7 @@ button.rbc-input::-moz-focus-inner {
     cursor: pointer;
     padding: 2px 5px;
     background-color: #3174ad;
-    border-radius: 0;
+    border-radius: 5px;
     color: #fff;
 }
 
@@ -439,7 +439,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-label {
-    padding: 0 5px;
+    padding: 1px 5px;
+    font-size: 10px;
 }
 
 .rbc-day-slot {

@@ -39,7 +39,7 @@ let _react = require('react');
 let _reactBigCalendar = require('react-big-calendar');
 let _reactBigCalendar2 = _interopRequireDefault(_reactBigCalendar);
 
-let _moment = require('moment');
+let _moment = require('moment/min/moment-with-locales');
 let _moment2 = _interopRequireDefault(_moment);
 
 function _interopRequireDefault(obj) {
@@ -74,7 +74,13 @@ function _inherits(subClass, superClass) {
     if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 }
 
-_reactBigCalendar2.default.momentLocalizer(_moment2.default);
+let globalize = require("globalize");
+globalize.load( require( "cldr-data" ).entireSupplemental() );
+globalize.load( require( "cldr-data" ).entireMainFor( "en", "de", "fr", "es" ) );
+globalize.loadTimeZone( require( "iana-tz-data" ) );
+globalize.locale( "de" );
+
+_reactBigCalendar2.default.setLocalizer(_reactBigCalendar2.default.globalizeLocalizer(globalize));
 
 let allViews = ['day', 'week'];
 

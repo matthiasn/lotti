@@ -5,7 +5,7 @@
             [meo.common.utils.parse :as up]
             [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.helpers :as h]
-            [moment]
+            [moment :as moment]
             [rome :as rome]
             [react-big-calendar]
             [meo.electron.renderer.ui.charts.common :as cc]
@@ -43,7 +43,9 @@
                                [:div.rome {:ref (fn [cmp] (reset! ref cmp))}])})))
 
 (defn calendar-view [put-fn]
-  (let [cal (r/adapt-react-class (aget js/window "deps" "BigCalendar" "default"))
+  (let [rbc (aget js/window "deps" "BigCalendar")
+        default (aget rbc "default")
+        cal (r/adapt-react-class default)
         chart-data (subscribe [:chart-data])
         sagas (subscribe [:sagas])
         cal-day (subscribe [:cal-day])
