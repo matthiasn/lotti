@@ -125,7 +125,9 @@
   "Replaces all occurrences of multiple whitespaces with a single blank space."
   [s]
   (when (string? s)
-    (s/replace s #"\s+" " ")))
+    (-> s
+        (s/replace #"\s+" " ")
+        (s/trim))))
 
 (defn linked-filter-fn
   "Filter linked entries by search."

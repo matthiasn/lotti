@@ -41,7 +41,7 @@
 (defn geo-enrich-fn
   "Enrich locally stored new entry with geolocation once it becomes available.
    Does nothing when entry is already saved in backend."
-  [{:keys [current-state msg-payload put-fn]}]
+  [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         geo-info (select-keys msg-payload [:timestamp :latitude :longitude])
         local-entry (get-in current-state [:new-entries ts])
@@ -57,13 +57,13 @@
   [{:keys [current-state msg-payload msg-meta]}]
   (let [ts (:timestamp msg-payload)
         curr-local (get-in current-state [:new-entries ts])
-        parent-ts (:comment-for msg-payload)
         new-state (if (= (:md curr-local) (:md msg-payload))
                     (-> current-state
                         (update-in [:new-entries] dissoc ts)
                         (assoc-in [:busy] false)
                         (assoc-in [:entries-map ts] msg-payload))
                     current-state)]
+    (prn "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
     {:new-state    new-state
      :send-to-self (with-meta [:search/refresh] msg-meta)}))

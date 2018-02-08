@@ -93,7 +93,7 @@
 
 (defn entry-editor [entry put-fn]
   (let [ts (:timestamp @entry)
-        {:keys [entry unsaved]} (eu/entry-reaction ts)
+        {:keys [entry new-entries entries-map unsaved]} (eu/entry-reaction ts)
         editor-cb (fn [md plain editor-state]
                     (when-not (= md (:md @entry))
                       (let [new-state (js->clj editor-state :keywordize-keys true)
