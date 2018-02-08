@@ -30,7 +30,7 @@
                                (set (keys @local-comments)))))))
 
 (defn total-time-logged [ts]
-  (let [{:keys [entry combined-entries]} (eu/entry-reaction ts)
+  (let [{:keys [combined-entries]} (eu/entry-reaction ts)
         planning-mode (subscribe [:planning-mode])
         all-comments-set (all-comments-set ts)
         total-dur (reaction
@@ -89,8 +89,8 @@
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
            [:time (u/visit-duration @entry)]]
-          (if (= :pomodoro (:entry-type @entry))
-            [pomo/pomodoro-header entry edit-mode? put-fn]
+          #_
+          (when-not (= :pomodoro (:entry-type @entry))
             [:div (when-not (:comment-for @entry) [total-time-logged ts])])
           [:div
            (when (seq (:linked-entries-list @entry))

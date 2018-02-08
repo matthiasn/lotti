@@ -148,8 +148,8 @@
             prev-saved? (or (:last-saved @entry) (< ts 1479563777132))
             comment? (:comment-for @entry)
             starred (:starred @entry)]
-        [:div {:on-mouse-enter mouse-enter
-               :on-mouse-leave hide-fn}
+        [:div.actions {:on-mouse-enter mouse-enter
+                       :on-mouse-leave hide-fn}
          [:div {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
           (when map? [:span.fa.fa-map-o.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? @entry])

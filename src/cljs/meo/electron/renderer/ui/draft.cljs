@@ -7,7 +7,8 @@
             [meo.common.utils.misc :as u]
             [draft-js :as Draft]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.electron.renderer.ui.entry.pomodoro :as pomo]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -93,7 +94,7 @@
 
 (defn entry-editor [entry put-fn]
   (let [ts (:timestamp @entry)
-        {:keys [entry new-entries entries-map unsaved]} (eu/entry-reaction ts)
+        {:keys [entry edit-mode unsaved]} (eu/entry-reaction ts)
         editor-cb (fn [md plain editor-state]
                     (when-not (= md (:md @entry))
                       (let [new-state (js->clj editor-state :keywordize-keys true)
@@ -114,6 +115,7 @@
                           (put-fn [:entry/update-local updated])))))]
     (fn [entry put-fn]
       (let [latest-entry (dissoc @entry :comments)
+            edit-mode? @edit-mode
             editor-state (when-let [editor-state (:editor-state latest-entry)]
                            (editor-state-from-raw (clj->js editor-state)))
             save-fn (fn [_ev]
@@ -136,6 +138,9 @@
             md (or (:md @entry) "")]
         [:div
          [draft-text-editor editor-state md editor-cb save-fn small-img @unsaved]
-         (when @unsaved
-           [:div.save [:span.not-saved {:on-click save-fn}
-                       [:span.fa.fa-floppy-o] "  click to save"]])]))))
+         [:div.entry-footer
+          [:div.save
+           (when @unsaved
+             [:span.not-saved {:on-click save-fn}
+              [:span.fa.fa-floppy-o] "click to save"])]
+          [pomo/pomodoro-header entry edit-mode? put-fn]]]))))

@@ -33,6 +33,56 @@
     border: 1px solid red;
   }
 
+  .fa-floppy-o {
+    padding-right: 5px;
+  }
+
+  .entry-footer {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
+    user-select: none;
+
+    .pomodoro {
+      .completed {
+        color: $green;
+        font-size: 1em;
+      }
+
+      .dur {
+        margin-left: 0.2em;
+        margin-right: 0.3em;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      .btn {
+        margin-left: 0.5em;
+      }
+
+      .fa {
+        padding-right: 3px;
+        cursor: pointer;
+      }
+
+      .start-stop {
+        display: inline-block;
+        width: 50px;
+      }
+
+      .start {
+        background-color: $green;
+      }
+      .stop {
+        background-color: $red;
+      }
+      input {
+        min-width: 60px;
+        font-size: $font-size-small;
+      }
+    }
+  }
+
   .footer {
     display: flex;
 
@@ -142,7 +192,13 @@
 
     .starred {
       color: gold;
-      font-size: $font-size-large;
+    }
+
+    .actions {
+      flex: 2;
+      align-items: flex-end;
+      display: flex;
+      justify-content: flex-end;
     }
 
     time {
@@ -229,20 +285,18 @@
     }
   }
 
-  p,ul {
+  p, ul {
     margin-top: 0.2em;
     margin-bottom: 0.4em;
   }
 
-  h1,h2,h3,h4,h5,h6 {
+  h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.3em;
   }
 }
 
 .comments {
   > .entry {
-    padding-left: 20px;
-    padding-right: 5px;
   }
   .entry:nth-child(even) {
     background-color: lighten($hashtag-blue, 40%);
@@ -326,7 +380,7 @@
   .tooltip .tooltiptext {
     visibility: hidden;
     width: 100px;
-    background-color: rgba(233,233,233,0.9);
+    background-color: rgba(233, 233, 233, 0.9);
     color: #333;
     font-weight: bold;
     text-align: center;
@@ -495,7 +549,7 @@
     margin: 3px 0;
   }
   input[type="number"] {
-    width: 45px!important;
+    width: 45px !important;
     margin-right: 15px;
   }
   span {
@@ -544,7 +598,7 @@ u {
   }
   .award-points, .estimate {
     padding: 0 3px 0 2px;
-    text-align:right;
+    text-align: right;
     width: 20px;
   }
   .award-points {
@@ -580,7 +634,6 @@ u {
     width: 100%;
   }
 }
-
 
 .edit-menu {
   background-color: $edit-menu-bg;
