@@ -35,6 +35,5 @@
            (when edit-mode?
              [:span.btn {:on-click start-stop
                          :class    (if running? "stop" "start")}
-              [:span.fa
-               {:class (if running? "fa-pause-circle-o" "fa-play-circle-o")}]
-              (if running? "pause" "start")])])))))
+              [:span.fa {:class (if running? "fa-pause-circle-o"
+                                             "fa-play-circle-o")}]])])))))
