@@ -24,18 +24,17 @@
                           (put-fn [:cmd/pomodoro-start @entry]))]
         (when (and (= (:entry-type @entry) :pomodoro) @planning-mode)
           [:div.pomodoro
-           [:span.fa.fa-clock-o.completed]
-           (when (pos? completed-time)
-             (if (and edit-mode? (:edit @local) (not running?))
-               [:input {:value     (h/s-to-hh-mm completed-time)
-                        :type      :time
-                        :on-change on-change}]
-               [:span.dur {:on-click click}
-                (u/duration-string completed-time)]))
            (when edit-mode?
              [:span.btn.start-stop
               {:on-click start-stop
                :class    (if running? "stop" "start")}
               [:span.fa {:class (if running? "fa-pause-circle-o"
                                              "fa-play-circle-o")}]
-              (if running? "pause" "start")])])))))
+              (if running? "pause" "start")])
+           (when (pos? completed-time)
+             (if (and edit-mode? (:edit @local) (not running?))
+               [:input {:value     (h/s-to-hh-mm completed-time)
+                        :type      :time
+                        :on-change on-change}]
+               [:span.dur {:on-click click}
+                (h/s-to-hh-mm-ss completed-time)]))])))))

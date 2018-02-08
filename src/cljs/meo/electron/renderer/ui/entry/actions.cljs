@@ -150,7 +150,7 @@
             starred (:starred @entry)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
+         [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
           (when map? [:span.fa.fa-map-o.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? @entry])
           (when-not comment? [:span.fa.fa-clock-o.toggle {:on-click new-pomodoro}])

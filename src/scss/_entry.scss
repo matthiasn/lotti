@@ -42,6 +42,7 @@
     flex-flow: row;
     justify-content: space-between;
     user-select: none;
+    padding-bottom: 5px;
 
     .pomodoro {
       .completed {
@@ -50,10 +51,11 @@
       }
 
       .dur {
-        margin-left: 0.2em;
+        margin-left: 10px;
         margin-right: 0.3em;
         font-size: 0.8em;
         font-weight: bold;
+        font-family: monospace;
       }
 
       .btn {
@@ -199,6 +201,16 @@
       align-items: flex-end;
       display: flex;
       justify-content: flex-end;
+      flex-wrap: nowrap;
+
+      .items {
+        white-space: nowrap;
+      }
+
+      .fa {
+        margin: 0;
+        padding: 2px 0 2px 6px;
+      }
     }
 
     time {

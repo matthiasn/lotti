@@ -59,12 +59,18 @@
 (defn format-time [m] (.format (moment m) "YYYY-MM-DDTHH:mm"))
 (defn hh-mm [m] (.format (moment m) "HH:mm"))
 (defn ymd [m] (.format (moment m) ymd-format))
+
 (defn m-to-hh-mm [m]
   (let [t (moment (* m 60 1000))]
     (.format (.utc t) "HH:mm")))
+
 (defn s-to-hh-mm [m]
   (let [t (moment (* m 1000))]
     (.format (.utc t) "HH:mm")))
+
+(defn s-to-hh-mm-ss [s]
+  (let [t (moment (* s 1000))]
+    (.format (.utc t) "HH:mm:ss")))
 
 (defn get-stats
   "Retrieves stats for the last n days."

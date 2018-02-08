@@ -1,7 +1,6 @@
 (ns meo.electron.renderer.ui.entry.entry
   (:require [meo.electron.renderer.ui.leaflet :as l]
             [meo.electron.renderer.ui.media :as m]
-            [meo.electron.renderer.ui.entry.pomodoro :as pomo]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.parse :as up]
@@ -28,18 +27,6 @@
         local-comments (reaction (into {} (filter comments-filter @new-entries)))]
     (reaction (sort (set/union (set (:comments @entry))
                                (set (keys @local-comments)))))))
-
-(defn total-time-logged [ts]
-  (let [{:keys [combined-entries]} (eu/entry-reaction ts)
-        planning-mode (subscribe [:planning-mode])
-        all-comments-set (all-comments-set ts)
-        total-dur (reaction
-                    (apply + (map #(:completed-time (get @combined-entries %))
-                                  @all-comments-set)))]
-    (fn [ts]
-      (when (and (pos? @total-dur) @planning-mode)
-        [:span [:span.fa.fa-clock-o.completed]
-         [:span.dur (u/duration-string @total-dur)]]))))
 
 (defn hashtags-mentions-list [ts tab-group put-fn]
   (let [cfg (subscribe [:cfg])
@@ -89,9 +76,6 @@
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
            [:time (u/visit-duration @entry)]]
-          #_
-          (when-not (= :pomodoro (:entry-type @entry))
-            [:div (when-not (:comment-for @entry) [total-time-logged ts])])
           [:div
            (when (seq (:linked-entries-list @entry))
              (let [ts (:timestamp @entry)
