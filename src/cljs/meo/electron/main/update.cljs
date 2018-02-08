@@ -79,7 +79,7 @@
 
 (defn quit-install [_]
   (info "UPDATE: quit and install")
-  (.quitAndInstall autoUpdater)
+  (.quitAndInstall autoUpdater false)
   {})
 
 (defn cmp-map [cmp-id]

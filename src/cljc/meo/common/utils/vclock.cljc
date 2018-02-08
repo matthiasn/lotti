@@ -54,5 +54,7 @@
           (and (contains? comparisons :b>a)
                (not (contains? comparisons :a>b))) :b>a
           :else :concurrent))
-      (throw (Exception. (str (exp/expound-str :meo.vclock/map a)
-                              (exp/expound-str :meo.vclock/map b)))))))
+      (let [err (str (exp/expound-str :meo.vclock/map a)
+                     (exp/expound-str :meo.vclock/map b))]
+        #?(:clj (throw (Exception. err))
+           :cljs (throw (js/Error err)))))))

@@ -22,7 +22,7 @@
             [meo.common.utils.parse :as p]))
 
 (defn all-comments-set [ts]
-  (let [{:keys [entry combined-entries new-entries]} (eu/entry-reaction ts)
+  (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
         comments-filter (fn [[_ts c]] (= (:comment-for c) ts))
         local-comments (reaction (into {} (filter comments-filter @new-entries)))]
     (reaction (sort (set/union (set (:comments @entry))
