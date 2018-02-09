@@ -20,16 +20,12 @@
                              :value sel}])))]
     (fn [put-fn]
       [:div.footer
-       [:div {:style {:max-height (when @dashboard-banner
-                                    (str (:height @local) "px"))}}
-        [db/dashboard put-fn]
-        [:div
-         [:select {:value     (or @active-dashboard "")
-                   :on-change select}
-          (for [dashboard-id (keys @dashboards)]
-            ^{:key dashboard-id}
-            [:option {:value dashboard-id} (name dashboard-id)])]
-         (when @dashboard-banner
-           [:span.fa.fa-plus-square {:on-click increase-height}])
-         (when @dashboard-banner
-           [:span.fa.fa-minus-square {:on-click decrease-height}])]]])))
+       (when @dashboard-banner
+         [:div
+          [db/dashboard put-fn]
+          [:div
+           [:select {:value     (or @active-dashboard "")
+                     :on-change select}
+            (for [dashboard-id (keys @dashboards)]
+              ^{:key dashboard-id}
+              [:option {:value dashboard-id} (name dashboard-id)])]]])])))
