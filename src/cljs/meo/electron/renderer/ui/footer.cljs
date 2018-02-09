@@ -20,7 +20,7 @@
                              :value sel}])))]
     (fn [put-fn]
       [:div.footer
-       (when @dashboard-banner
+       (if @dashboard-banner
          [:div
           [db/dashboard put-fn]
           [:div
@@ -28,4 +28,5 @@
                      :on-change select}
             (for [dashboard-id (keys @dashboards)]
               ^{:key dashboard-id}
-              [:option {:value dashboard-id} (name dashboard-id)])]]])])))
+              [:option {:value dashboard-id} (name dashboard-id)])]]]
+         [stats/stats-text])])))

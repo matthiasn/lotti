@@ -17,34 +17,31 @@
         planning-mode (subscribe [:planning-mode])
         timing (subscribe [:timing])]
     (fn stats-text-render []
-      [:div.stats-string
-       (when stats
+      (when stats
+        [:div.stats-string
          (if @planning-mode
            [:div
-            (:entry-count @stats) " entries, "
-            (count (:hashtags @options)) " tags, "
-            (count (:mentions @options)) " people, "
-            (Math/floor (:hours-logged @stats)) " hours, "
-            (:word-count @stats) " words, "
-            (:open-tasks-cnt @stats) " open tasks, "
-            (:backlog-cnt @stats) " backlog, "
-            (:completed-cnt @stats) " done, "
-            (:closed-cnt @stats) " closed, "
-            (:import-cnt @stats) " #import. PID: " (:pid @cfg)
-            (when-let [ms (:query @timing)]
-              (str ". Query with " (:count @timing)
-                   " results: " ms ", RTT "
-                   (:rtt @timing) " ms"))]
+            (:entry-count @stats) " entries | "
+            (count (:hashtags @options)) " tags | "
+            (count (:mentions @options)) " people | "
+            (Math/floor (:hours-logged @stats)) " hours | "
+            (:word-count @stats) " words | "
+            (:open-tasks-cnt @stats) " open tasks | "
+            (:backlog-cnt @stats) " backlog | "
+            (:completed-cnt @stats) " done | "
+            (:closed-cnt @stats) " closed | "
+            (:import-cnt @stats) " #import"]
            [:div
-            (:entry-count @stats) " entries, "
-            (count (:hashtags @options)) " tags, "
-            (count (:mentions @options)) " people, "
-            (:word-count @stats) " words, "
-            (:import-cnt @stats) " #import. PID: " (:pid @cfg)
-            (when-let [ms (:query @timing)]
-              (str ". Query with " (:count @timing)
-                   " results: " ms ", RTT "
-                   (:rtt @timing) " ms"))]))])))
+            (:entry-count @stats) " entries | "
+            (count (:hashtags @options)) " tags | "
+            (count (:mentions @options)) " people | "
+            (:word-count @stats) " words | "
+            (:import-cnt @stats) " #import"])
+         [:div
+          "PID " (:pid @cfg)
+          (when-let [ms (:query @timing)]
+            (str ". Query with " (:count @timing)
+                 " results: " ms))]]))))
 
 (defn stats-view [put-fn]
   [:div.stats.charts

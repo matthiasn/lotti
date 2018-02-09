@@ -213,6 +213,8 @@ $backlog-weekend: lighten($backlog, 30);
 .stats-string {
   background-color: $stats-bg-color;
   color: $stats-color;
+  font-size: 0.9em;
+  line-height: 1.4em;
   padding: 2px 4px;
 }
 
