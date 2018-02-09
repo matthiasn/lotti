@@ -20,4 +20,8 @@ wget https://cdn.azul.com/zulu/bin/zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
 unzip zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
 rm zulu8.27.0.7-jdk8.0.162-macosx_x64.zip
 mv zulu8.27.0.7-jdk8.0.162-macosx_x64 zulu8-mac_x64
+
+# fix for update fail issue
+chmod -R -v u+w zulu8-mac_x64
+
 cd ..
