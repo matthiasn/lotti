@@ -26,12 +26,12 @@ npm install -g webpack
 mkdir ./bin
 cd ./bin/
 
-wget https://cdn.azul.com/zulu/bin/zulu8.27.0.7-jdk8.0.162-linux_x64.tar.gz
+curl -O https://cdn.azul.com/zulu/bin/zulu8.27.0.7-jdk8.0.162-linux_x64.tar.gz
 tar -xzf zulu8.27.0.7-jdk8.0.162-linux_x64.tar.gz
 rm zulu8.27.0.7-jdk8.0.162-linux_x64.tar.gz
 mv zulu8.27.0.7-jdk8.0.162-linux_x64 zulu8-linux_x64
 
-# fix for update fail issue
+# fix for update fail issue #3
 chmod -R -v u+w zulu8-linux_x64
 
 cd ..
