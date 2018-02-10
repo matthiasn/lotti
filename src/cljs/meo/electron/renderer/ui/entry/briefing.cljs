@@ -72,7 +72,7 @@
             [legend "actual" 3 21]
             [legend "remaining" 3 32]]])))))
 
-(defn briefing-view [entry put-fn edit-mode? local-cfg]
+(defn briefing-view [entry put-fn local-cfg]
   (let [chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
         last-update (subscribe [:last-update])
@@ -82,7 +82,7 @@
         local (r/atom {:filter                  filter-btn
                        :outstanding-time-filter true
                        :on-hold                 false})]
-    (fn briefing-render [entry put-fn edit-mode? local-cfg]
+    (fn briefing-render [entry put-fn local-cfg]
       (h/keep-updated2 :stats/wordcount day local @last-update put-fn)
       (h/keep-updated2 :stats/pomodoro day local @last-update put-fn)
       (h/keep-updated2 :stats/tasks day local @last-update put-fn)
@@ -90,6 +90,7 @@
             {:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
             day (-> entry :briefing :day)
             day-stats (get pomodoro-stats day)
+            locale (get @cfg :locale :en)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> day-stats
                           :time-by-saga
@@ -98,27 +99,28 @@
                           (apply +))
             dur (u/duration-string logged-s)
             word-stats (get wordcount-stats day)
-            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)]
+            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)
+            time-allocation (-> entry :briefing :time-allocation)]
         [:div.briefing
-         [:form.briefing-details
-          [:fieldset
-           [:legend (or day "date not set")]
-           [:div
-            "Tasks: " [:strong tasks-cnt] " created, "
-            [:strong done-cnt] " done, "
-            [:strong closed-cnt] " closed. "
-            [:strong (or (:word-count word-stats) 0)] " words written."]
-           [planned-actual entry]
-           [:div
-            "Total planned: "
-            [:strong
-             (u/duration-string
-               (apply + (map second (-> entry :briefing :time-allocation))))]
-            (when (seq dur)
-              [:span
-               " Logged: " [:strong dur] " in " (:total day-stats) " entries."])]
-           [time/time-by-sagas entry day-stats local edit-mode? put-fn]
-           [:div
-            [tasks/started-tasks local local-cfg put-fn]
-            [tasks/open-linked-tasks ts local local-cfg put-fn]
-            [habits/waiting-habits entry local local-cfg put-fn]]]]]))))
+         [:h2 (h/localize-date day locale)]
+         [:div.summary
+          "Tasks: " [:strong tasks-cnt] " created | "
+          [:strong done-cnt] " done | "
+          [:strong closed-cnt] " closed | Words: "
+          [:strong (or (:word-count word-stats) 0)]]
+         ;[planned-actual entry]
+         [:div.summary
+          (when (seq time-allocation)
+            [:span
+             "Total planned: "
+             [:strong
+              (u/duration-string
+                (apply + (map second time-allocation)))]])
+          (when (seq dur)
+            [:span
+             " Logged: " [:strong dur] " in " (:total day-stats) " entries."])]
+         ;[time/time-by-sagas entry day-stats local edit-mode? put-fn]
+         [:div.briefing-details
+          [tasks/started-tasks local local-cfg put-fn]
+          [tasks/open-linked-tasks ts local local-cfg put-fn]
+          [habits/waiting-habits entry local local-cfg put-fn]]]))))

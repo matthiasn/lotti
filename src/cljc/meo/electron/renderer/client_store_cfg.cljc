@@ -10,6 +10,7 @@
    :show-comments-for {}
    :show-pvt          true
    :mute              true
+   :locale            :de
    :thumbnails        true
    :dashboard         {:active :general}
    :app-screenshot    false

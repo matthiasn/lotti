@@ -94,7 +94,7 @@
                   [:td.estimate
                    (when-let [estimate (-> entry :task :estimate-m)]
                      (m-to-hhmm estimate))]
-                  [:td [:strong text]]]))]]])))))
+                  [:td.text text]]))]]])))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
@@ -156,13 +156,13 @@
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]
                        (put-fn [:entry/update upd])))]
-        [:div.linked-tasks
-         [filter-btn :active (str " - " (m-to-hhmm total-time))]
-         [filter-btn :open (str " - " (m-to-hhmm total-time))]
-         [filter-btn :done]
-         [filter-btn :closed]
-         [filter-btn :backlog]
-         (when (seq linked-entries)
+        (when (seq linked-tasks)
+          [:div.linked-tasks
+           [filter-btn :active (str " - " (m-to-hhmm total-time))]
+           [filter-btn :open (str " - " (m-to-hhmm total-time))]
+           [filter-btn :done]
+           [filter-btn :closed]
+           [filter-btn :backlog]
            [:table.tasks
             [:tbody
              [:tr
@@ -196,5 +196,5 @@
                   [:td.estimate
                    (when-let [estimate (-> task :task :estimate-m)]
                      (m-to-hhmm estimate))]
-                  [:td.left [:strong text]]
-                  [:td [:span.fa.fa-unlink {:on-click unlink}]]]))]])]))))
+                  [:td.left.text text]
+                  [:td [:span.fa.fa-unlink {:on-click unlink}]]]))]]])))))

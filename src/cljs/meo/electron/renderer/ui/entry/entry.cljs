@@ -55,7 +55,6 @@
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         q-date-string (.format (moment ts) "YYYY-MM-DD")
-        formatted-time (.format (moment ts) "ddd YY-MM-DD HH:mm")
         tab-group (:tab-group local-cfg)
         add-search (up/add-search q-date-string tab-group put-fn)
         open-linked (up/add-search (str "l:" ts) tab-group put-fn)
@@ -63,7 +62,8 @@
         toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
                                     (put-fn [:entry/update-local @entry]))]
     (fn journal-entry-render [ts put-fn local-cfg]
-      (let [edit-mode? @edit-mode]
+      (let [edit-mode? @edit-mode
+            formatted-time (h/localize-datetime (moment ts) (:locale @cfg))]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
@@ -100,11 +100,40 @@
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
-         (when (contains? (:tags @entry) "#briefing")
-           [b/briefing-view @entry put-fn edit-mode? local-cfg])
          [:div.footer
           [hashtags-mentions-list ts tab-group put-fn]
           [:div.word-count (u/count-words-formatted @entry)]]]))))
+
+(defn briefing
+  "Renders individual journal entry. Interaction with application state happens
+   via messages that are sent to the store component, for example for toggling
+   the display of the edit mode or showing the map for an entry. The editable
+   content component used in edit mode also sends a modified entry to the store
+   component, which is useful for displaying updated hashtags, or also for
+   showing the warning that the entry is not saved yet."
+  [ts put-fn local-cfg]
+  (let [cfg (subscribe [:cfg])
+        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
+        active (reaction (:active @cfg))
+        tab-group (:tab-group local-cfg)
+        open-linked (up/add-search (str "l:" ts) tab-group put-fn)
+        drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
+    (fn journal-entry-render [ts put-fn local-cfg]
+      (let [edit-mode? @edit-mode]
+        [:div.entry {:on-drop       drop-fn
+                     :on-drag-over  h/prevent-default
+                     :on-drag-enter h/prevent-default}
+         [:div.header
+          [:div
+           (when (seq (:linked-entries-list @entry))
+             (let [ts (:timestamp @entry)
+                   entry-active? (when-let [query-id (:query-id local-cfg)]
+                                   (= (query-id @active) ts))]
+               [:span.link-btn {:on-click open-linked
+                                :class    (when entry-active? "active")}
+                (str " linked: " (count (:linked-entries-list @entry)))]))]
+          [a/briefing-actions ts put-fn edit-mode? local-cfg]]
+         [b/briefing-view @entry put-fn local-cfg]]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens
@@ -139,11 +168,12 @@
                                    :value (when-not (= @show-comments-for? query-id)
                                             query-id)}])]
     (fn entry-with-comments-render [ts put-fn local-cfg]
-      (let [entry @entry
-            comments @comments]
+      (let [comments @comments]
         [:div.entry-with-comments
-         [journal-entry ts put-fn local-cfg]
-         (when @thumbnails? [t/thumbnails entry local-cfg put-fn])
+         (if (contains? (:tags @entry) "#briefing")
+           [briefing ts put-fn local-cfg]
+           [journal-entry ts put-fn local-cfg])
+         (when @thumbnails? [t/thumbnails @entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

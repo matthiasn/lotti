@@ -465,6 +465,6 @@
                      {:entries-map {} :entries {}}
                      res)
         ms (/ (- (System/nanoTime) start-ts) 1000000)
-        dur {:duration-ms (pp/cl-format nil "~,3f ms" ms)}]
+        dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
     (log/debug queries)
     {:emit-msg [:state/new (merge res2 dur)]}))

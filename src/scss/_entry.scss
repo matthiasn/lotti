@@ -209,7 +209,7 @@
 
       .fa {
         margin: 0;
-        padding: 2px 0 2px 6px;
+        padding: 2px 2px 2px 4px;
       }
     }
 
@@ -340,6 +340,11 @@
 
 .briefing {
   display: flex;
+  flex-direction: column;
+
+  .summary {
+    font-size: $font-size-medium;
+  }
 
   svg {
     &.vertical-bar {
@@ -451,108 +456,102 @@
 }
 
 .custom-fields, .briefing-details, .task-details, .habit-details {
-  fieldset {
-    font-size: $font-size-small;
-    margin: 0.5em 0;
-    border: 1px dashed #BBB;
-    legend {
-      font-weight: 400;
+  font-size: $font-size-medium;
+  margin: 0.5em 0;
+
+  table {
+    border-collapse: collapse;
+    margin-bottom: 4px;
+
+    .prio {
+      min-width: 12px;
+      text-align: center;
+      display: inline-block;
+      color: white;
+      font-weight: bold;
+      background-color: #BBB;
+      padding: 0 2px;
+    }
+    .A {
+      background-color: $red;
+    }
+    .B {
+      background-color: $link-color;
     }
 
-    table {
-      border-collapse: collapse;
-      margin-bottom: 4px;
+    th {
+      background-color: $edit-menu-bg;
+    }
 
-      .prio {
-        min-width: 12px;
-        text-align: center;
-        display: inline-block;
-        color: white;
-        font-weight: bold;
-        background-color: #BBB;
-        padding: 0 2px;
-      }
-      .A {
-        background-color: $red;
-      }
-      .B {
-        background-color: $link-color;
-      }
+    tr {
+      cursor: pointer;
+      height: 1.3em;
 
-      th {
-        background-color: $edit-menu-bg;
+      &.selected {
+        background-color: desaturate(lighten($hashtag-blue, 30), 15);
       }
+      &:hover {
+        background-color: antiquewhite;
+      }
+    }
 
-      tr {
-        cursor: pointer;
+    td {
+      .legend {
         height: 1.3em;
-
-        &.selected {
-          background-color: desaturate(lighten($hashtag-blue, 30), 15);
-        }
-        &:hover {
-          background-color: antiquewhite;
-        }
+        width: 12px;
       }
 
-      td {
-        .legend {
-          height: 1.3em;
-          width: 12px;
-        }
+      &.left {
+        text-align: left;
+      }
 
-        &.left {
-          text-align: left;
-        }
-
-        &.time {
-          text-align: center;
-          min-width: 50px;
-        }
+      &.time {
+        text-align: center;
+        min-width: 50px;
       }
     }
+  }
 
-    label {
-      white-space: nowrap;
-      margin-right: 2px;
+  label {
+    white-space: nowrap;
+    margin-right: 2px;
+  }
+  input {
+    margin-right: 4px;
+    width: 90px;
+    padding: 1px 2px;
+    font-size: $font-size-small;
+  }
+  input[type="number"], input[type="time"] {
+    width: 65px;
+    margin-left: 5px;
+  }
+  input[type="text"] {
+    width: 120px;
+    &.url {
+      width: 330px;
     }
-    input {
-      margin-right: 4px;
-      width: 90px;
-      padding: 1px 2px;
-      font-size: $font-size-small;
-    }
-    input[type="number"], input[type="time"] {
-      width: 65px;
-      margin-left: 5px;
-    }
-    input[type="text"] {
-      width: 120px;
-      &.url {
-        width: 330px;
-      }
-    }
-    input[type="checkbox"] {
-      width: 15px;
-    }
-    input[type="date"] {
-      width: 130px;
-    }
-    input[type="datetime-local"] {
-      width: 150px;
-    }
-    div {
-      line-height: 1.5em;
-    }
-    .name {
-      min-width: 100px;
-      margin-right: 5px;
-      display: inline-block;
-    }
-    .allocated, .actual, .remaining {
-      min-width: 50px;
-      display: inline-block;
-    }
+  }
+  input[type="checkbox"] {
+    width: 15px;
+  }
+  input[type="date"] {
+    width: 130px;
+  }
+  input[type="datetime-local"] {
+    width: 150px;
+  }
+  div {
+    line-height: 1.5em;
+  }
+  .name {
+    min-width: 100px;
+    margin-right: 5px;
+    display: inline-block;
+  }
+  .allocated, .actual, .remaining {
+    min-width: 50px;
+    display: inline-block;
   }
 }
 
@@ -582,6 +581,7 @@
 }
 
 .linked-tasks {
+  margin-top: 6px;
   div {
     display: flex;
   }
@@ -615,9 +615,6 @@ u {
   }
   .award-points {
     font-weight: 700;
-  }
-  .habit {
-    font-weight: 400;
   }
 }
 

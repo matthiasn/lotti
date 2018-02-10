@@ -2,6 +2,9 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [meo.common.utils.parse :as p]
             [goog.dom.Range]
+            [globalize :as globalize]
+            [cldr-data :as cldr-data]
+            [iana-tz-data :as iana-tz-data]
             [moment]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
@@ -19,6 +22,30 @@
         (put-fn [:entry/geo-enrich updated])))
     (fn [err] (prn err))))
 
+(def timezone
+  (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
+        (.-timeZone resolved))
+      (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
+        (.-timeZone resolved))))
+
+(.load globalize (.entireSupplemental cldr-data))
+(.load globalize (.entireMainFor cldr-data "en" "de" "fr" "es"))
+(.loadTimeZone globalize iana-tz-data)
+
+(def locales
+  {:en (globalize. "en")
+   :de (globalize. "de")
+   :fr (globalize. "fr")
+   :es (globalize. "es")})
+
+(defn localize-date [s locale]
+  (when-let [locale (get locales locale)]
+    (.formatDate locale (.toDate (moment. s)) (clj->js {:date "full"}))))
+
+(defn localize-datetime [s locale]
+  (when-let [locale (get locales locale)]
+    (.formatDate locale (.toDate (moment. s)) (clj->js {:datetime "medium"}))))
+
 (defn new-entry-fn
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.
@@ -27,13 +54,8 @@
   [put-fn opts run-fn]
   (fn [_ev]
     (let [ts (st/now)
-          timezone (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
-                         (.-timeZone resolved))
-                       (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
-                         (.-timeZone resolved)))
           entry (merge (p/parse-entry "")
                        {:timestamp  ts
-                        :new-entry  true
                         :timezone   timezone
                         :utc-offset (.getTimezoneOffset (new js/Date))}
                        opts)]

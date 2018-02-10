@@ -21,12 +21,14 @@
                          (when-not (get @briefings ymd)
                            (let [weekday (.format (moment. ymd) "dddd")
                                  md (str "## " weekday "'s #briefing")
-                                 new-entry (merge
-                                             (p/parse-entry md)
-                                             {:briefing      {:day ymd}
-                                              :primary-story (-> @cfg :briefing :story)})
-                                 new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
-                             (new-entry-fn)))
+                                 entry (merge
+                                         (p/parse-entry md)
+                                         {:briefing      {:day ymd}
+                                          :timestamp     (st/now)
+                                          :timezone      h/timezone
+                                          :utc-offset    (.getTimezoneOffset (new js/Date))
+                                          :primary-story (-> @cfg :briefing :story)})]
+                             (put-fn [:entry/update entry])))
                          (put-fn [:cal/to-day {:day ymd}])
                          (put-fn [:search/add {:tab-group :briefing :query q}])
                          (put-fn [:search/refresh])))

@@ -8,22 +8,19 @@
             [clojure.set :as set]
             [taoensso.timbre :as timbre :refer-macros [info]]
             [matthiasn.systems-toolbox.component :as st]
-            [clojure.pprint :as pp]))
+            [cljs.pprint :as pp]))
 
-(defn trash-icon
-  "Renders a trash icon, which transforms into a warning button that needs to be
-   clicked again for actual deletion. This label is a little to the right, so it
-   can't be clicked accidentally, and disappears again within 5 seconds."
-  [trash-fn]
-  (let [clicked (r/atom false)
-        guarded-trash-fn (fn [_ev]
-                           (swap! clicked not)
-                           (.setTimeout js/window #(reset! clicked false) 5000))]
+(defn trash-icon [trash-fn]
+  (let [local (r/atom {:visible false})
+        toggle-visible #(swap! local update-in [:visible] not)]
     (fn [trash-fn]
-      (if @clicked
-        [:span.delete-warn {:on-click trash-fn}
-         [:span.fa.fa-trash] "  confirm delete?"]
-        [:span.fa.fa-trash-o.toggle {:on-click guarded-trash-fn}]))))
+      [:span.new-link-btn
+       [:span.fa.fa-trash-o.toggle {:on-click toggle-visible}]
+       (when (:visible @local)
+         [:span.new-link
+          {:on-click #(do (toggle-visible))}
+          [:span.delete-warn {:on-click trash-fn}
+           [:span.fa.fa-trash] " are you sure?"]])])))
 
 (defn edit-icon
   "Renders an edit icon, which transforms into a warning button that needs to be
@@ -162,9 +159,45 @@
             [:span.fa.fa-external-link.toggle {:on-click open-external}])
           (when-not comment? [new-link @entry put-fn create-linked-entry])
           ; [add-location @entry put-fn]
-          [:span.fa.fa-file-pdf-o.toggle {:on-click export-pdf}]
+          ; [:span.fa.fa-file-pdf-o.toggle {:on-click export-pdf}]
           [trash-icon trash-entry]]
          [:span.fa.toggle
           {:on-click star-entry
            :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
            :class    (if starred "fa-star starred" "fa-star-o")}]]))))
+
+
+(defn briefing-actions
+  "Entry-related action buttons. Hidden by default, become visible when mouse
+   hovers over element, stays visible for a little while after mose leaves."
+  [ts put-fn edit-mode? local-cfg]
+  (let [visible (r/atom false)
+        entry (:entry (eu/entry-reaction ts))
+        hide-fn (fn [_ev] (.setTimeout js/window #(reset! visible false) 60000))
+        query-id (:query-id local-cfg)
+        show-hide-comments #(put-fn [:cmd/assoc-in
+                                     {:path  [:cfg :show-comments-for ts]
+                                      :value %}])
+        show-comments #(show-hide-comments query-id)
+        create-comment (h/new-entry-fn put-fn {:comment-for ts} show-comments)
+        story (:primary-story entry)
+        create-linked-entry (h/new-entry-fn put-fn {:linked-entries #{ts}
+                                                    :primary-story  story
+                                                    :linked-stories #{story}} nil)
+        new-pomodoro (h/new-entry-fn
+                       put-fn (p/pomodoro-defaults ts) show-comments)
+        trash-entry #(if edit-mode?
+                       (put-fn [:entry/remove-local {:timestamp ts}])
+                       (put-fn [:entry/trash @entry]))
+        mouse-enter #(reset! visible true)]
+    (fn entry-actions-render [ts put-fn edit-mode? local-cfg]
+      (let [comment? (:comment-for @entry)]
+        [:div.actions {:on-mouse-enter mouse-enter
+                       :on-mouse-leave hide-fn}
+         [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
+          (when-not comment? [:span.fa.fa-clock-o.toggle {:on-click new-pomodoro}])
+          (when-not comment?
+            [:span.fa.fa-comment-o.toggle {:on-click create-comment}])
+          [:span.fa.fa-plus-square-o.toggle
+           {:on-click #(create-linked-entry)}]
+          [trash-icon trash-entry]]]))))
