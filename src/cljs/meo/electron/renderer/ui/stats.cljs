@@ -36,12 +36,11 @@
             (count (:hashtags @options)) " tags | "
             (count (:mentions @options)) " people | "
             (:word-count @stats) " words | "
-            (:import-cnt @stats) " #import"])
-         [:div
-          "PID " (:pid @cfg)
-          (when-let [ms (:query @timing)]
-            (str ". Query with " (:count @timing)
-                 " results: " ms))]]))))
+            (:import-cnt @stats) " #import | "
+            "PID " (:pid @cfg)
+            (when-let [ms (:query @timing)]
+              (str "| Query: " (:count @timing)
+                   " results " ms))])]))))
 
 (defn stats-view [put-fn]
   [:div.stats.charts
