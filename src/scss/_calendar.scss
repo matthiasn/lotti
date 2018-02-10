@@ -1,5 +1,11 @@
 @import "variables.scss";
 
+.big-calendar {
+  background-color: $entry-bg;
+  flex: 2;
+  font-size: $font-size-cal;
+}
+
 .rbc-btn {
   color: inherit;
   font: inherit;
@@ -24,7 +30,7 @@ button.rbc-input::-moz-focus-inner {
 .rbc-calendar {
   box-sizing: border-box;
   height: 100%;
-  min-width: 320px;
+  min-width: 240px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -469,11 +475,9 @@ button.rbc-input::-moz-focus-inner {
   width: 100%;
   flex: 1 1 0;
   word-wrap: break-word;
-  line-height: 1;
   height: 100%;
   font-size: $font-size-small;
   color: $font-color;
-  min-height: 1em;
 }
 
 .rbc-day-slot .rbc-time-slot {
