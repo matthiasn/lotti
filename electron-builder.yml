@@ -12,6 +12,7 @@ files:
     - "node_modules/cldr-data/main/en/**"
     - "node_modules/cldr-data/main/fr/**"
     - "node_modules/cldr-data/main/es/**"
+    - "node_modules/iana-tz-data/**"
     - "prod/**"
     - "electron/**"
     - "src/**"
