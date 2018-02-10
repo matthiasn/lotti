@@ -169,6 +169,25 @@
                  ^{:key (str tag k)}
                  [:li (:label v)])]]))]))))
 
+(defn locale [put-fn]
+  (let [cfg (subscribe [:cfg])
+        locales {:de "German"
+                 :en "English"
+                 :fr "French"
+                 :es "Spanish"}
+        set-locale (fn [ev]
+                     (let [sel (keyword (-> ev .-nativeEvent .-target .-value))]
+                       (put-fn [:cmd/toggle-key {:path     [:cfg :locale]
+                                                 :reset-to sel}])))]
+    (fn [put-fn]
+      [:div.locale
+       [:h2 "Localization"]
+       [:select {:value     (:locale @cfg :en)
+                 :on-change set-locale}
+        (for [[k locale-name] locales]
+          ^{:key k}
+          [:option {:value k} locale-name])]])))
+
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""})
@@ -222,5 +241,6 @@
                  [:span.fa.fa-plus] "add"])]
              [custom-fields-list local]]
             [custom-field-cfg local]
-            [:div.third-col]]
+            [:div.third-col]
+            [locale put-fn]]
            [:div.footer [stats/stats-text]]]]]))))

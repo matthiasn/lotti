@@ -14,12 +14,11 @@
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.thumbnails :as t]
-            [moment]
             [meo.common.utils.misc :as u]
             [meo.electron.renderer.helpers :as h]
-            [clojure.set :as set]
             [meo.electron.renderer.ui.draft :as d]
-            [meo.common.utils.parse :as p]))
+            [clojure.set :as set]
+            [moment]))
 
 (defn all-comments-set [ts]
   (let [{:keys [entry new-entries]} (eu/entry-reaction ts)

@@ -1,6 +1,5 @@
 (ns meo.electron.renderer.ui.entry.pomodoro
-  (:require [meo.common.utils.misc :as u]
-            [reagent.core :as r]
+  (:require [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
             [moment]
             [meo.electron.renderer.helpers :as h]
