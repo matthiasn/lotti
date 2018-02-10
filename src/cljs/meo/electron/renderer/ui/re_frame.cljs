@@ -66,8 +66,7 @@
            [:div.cal
             [cal/calendar-view put-fn]])
          (when @planning-mode
-           [:div.briefing
-            [g/tabs-view :briefing put-fn]])
+           [g/briefing-column-view :briefing put-fn])
          [:div {:class (if @single-column "single" "left")}
           [g/tabs-view :left put-fn]]
          (when-not @single-column

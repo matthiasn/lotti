@@ -83,7 +83,6 @@
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         [:div.cal-container
-         [rome-component put-fn]
          [:div.big-calendar
           [cal (merge {:events     cal-entries
                        :date       (.toDate (moment. day))
