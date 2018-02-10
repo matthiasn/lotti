@@ -51,7 +51,6 @@
       }
 
       .dur {
-        margin-left: 10px;
         margin-right: 0.3em;
         font-size: 0.8em;
         font-weight: bold;
@@ -68,15 +67,15 @@
       }
 
       .start-stop {
-        display: inline-block;
-        width: 50px;
+        font-size: 1.2em;
+        font-weight: bold;
       }
 
       .start {
-        background-color: $green;
+        color: $green;
       }
       .stop {
-        background-color: $red;
+        color: $red;
       }
       input {
         min-width: 60px;
@@ -284,12 +283,17 @@
   .pomodoro {
     .btn {
       margin-left: 0.5em;
+      margin-right: 0;
+      padding-right: 1px;
+      top: 1px;
+      position: relative;
+      font-size: 1.4em;
     }
     .start {
-      background-color: $green;
+      color: $green;
     }
     .stop {
-      background-color: $red;
+      color: $red;
     }
     input {
       min-width: 60px;

@@ -3,12 +3,15 @@
             [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
             [moment]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn pomodoro-header [entry edit-mode? put-fn]
   (let [local (r/atom {:edit false})
         click #(swap! local assoc-in [:edit] true)
         planning-mode (subscribe [:planning-mode])
+        last-busy (subscribe [:last-busy])
+        running-pomodoro (subscribe [:running-pomodoro])
         on-change (fn [ev]
                     (let [v (.. ev -target -value)
                           parsed (when (seq v)
@@ -17,11 +20,17 @@
                       (put-fn [:entry/update-local updated])))]
     (fn [entry edit-mode? put-fn]
       (when-not edit-mode? (swap! local assoc-in [:edit] false))
-      (let [running? (:pomodoro-running @entry)
-            completed-time (:completed-time @entry)
+      (let [since-last-busy (- (st/now) (or @last-busy 0))
+            running? (and (:pomodoro-running @entry)
+                          (= @running-pomodoro (:timestamp @entry))
+                          (< since-last-busy 2000))
+            completed-time (:completed-time @entry 0)
             start-stop #(let [color (if running? :green :red)]
                           (put-fn [:blink/busy {:color color}])
-                          (put-fn [:cmd/pomodoro-start @entry]))]
+                          (if running?
+                            (put-fn [:cmd/pomodoro-stop @entry])
+                            (put-fn [:cmd/pomodoro-start @entry])))
+            formatted (h/s-to-hh-mm-ss completed-time)]
         (when (and (= (:entry-type @entry) :pomodoro) @planning-mode)
           [:div.pomodoro
            (when edit-mode?
@@ -29,12 +38,10 @@
               {:on-click start-stop
                :class    (if running? "stop" "start")}
               [:span.fa {:class (if running? "fa-pause-circle-o"
-                                             "fa-play-circle-o")}]
-              (if running? "pause" "start")])
-           (when (pos? completed-time)
-             (if (and edit-mode? (:edit @local) (not running?))
-               [:input {:value     (h/s-to-hh-mm completed-time)
-                        :type      :time
-                        :on-change on-change}]
-               [:span.dur {:on-click click}
-                (h/s-to-hh-mm-ss completed-time)]))])))))
+                                             "fa-play-circle-o")}]])
+           (if (and edit-mode? (:edit @local) (not running?))
+             [:input {:value     (h/s-to-hh-mm completed-time)
+                      :type      :time
+                      :on-change on-change}]
+             [:span.dur {:on-click click}
+              formatted])])))))

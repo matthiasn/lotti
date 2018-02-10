@@ -20,6 +20,8 @@
 ;; Subscription Handlers
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
+(reg-sub :last-busy (fn [db _] (:last-busy db)))
+(reg-sub :running-pomodoro (fn [db _] (:running (:pomodoro db))))
 (reg-sub :options (fn [db _] (:options db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :stories (fn [db _] (:stories (:options db))))

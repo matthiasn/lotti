@@ -82,8 +82,8 @@
         completed-time (:completed-time msg-payload)
         dur (+ completed-time
                (/ (- (st/now) started) 1000))
-        dur  #?(:cljs (js/parseInt dur)
-                :clj dur)
+        dur #?(:cljs (js/parseInt dur)
+               :clj  dur)
         new-state (assoc-in current-state [:new-entries ts :completed-time] dur)]
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
@@ -94,27 +94,31 @@
             cfg (:cfg current-state)
             new-state (-> new-state
                           (assoc-in [:busy] (not done?))
-                          (assoc-in [:last-busy] (st/now)))]
+                          (assoc-in [:last-busy] (st/now)))
+            since-last-busy (- (st/now) (get current-state :last-busy 0))]
         (put-fn [:window/progress {:v progress}])
-        (if (:pomodoro-running new-entry)
+        (if (and (or (:pomodoro-running new-entry)
+                     (> since-last-busy 2000))
+                 (= (:running (:pomodoro current-state)) ts))
           (let [color (if done? :orange :red)
                 new-state (assoc-in new-state [:busy-color] color)]
             (when (and (= :orange color)
                        (not= :orange (:busy-color current-state)))
               (put-fn [:blink/busy {:color :orange}])
-              (put-fn [:spotify/pause]))
+              (when (:pause-spotify cfg) (put-fn [:spotify/pause])))
             (when-not (:mute cfg)
-                (if done? (play-audio "ringer")
-                          (when (:ticking-clock cfg)
-                            (play-audio "ticking-clock"))))
-              (update-local-storage new-state)
-              {:new-state new-state
-               :emit-msg  [[:cmd/schedule-new
-                            {:timeout 1000
-                             :message [:cmd/pomodoro-inc
-                                       {:started        started
-                                        :completed-time completed-time
-                                        :timestamp      ts}]}]]})
+              (if done? (play-audio "ringer")
+                        (when (:ticking-clock cfg)
+                          (play-audio "ticking-clock"))))
+            (update-local-storage new-state)
+            {:new-state new-state
+             :emit-msg  [[:cmd/schedule-new
+                          {:timeout 1000
+                           :id      (keyword (str "timer-") ts)
+                           :message [:cmd/pomodoro-inc
+                                     {:started        started
+                                      :completed-time completed-time
+                                      :timestamp      ts}]}]]})
           {:new-state current-state})))))
 
 (defn pomodoro-start-fn
@@ -123,7 +127,8 @@
   [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         new-state (-> current-state
-                      (update-in [:new-entries ts :pomodoro-running] not)
+                      (assoc-in [:new-entries ts :pomodoro-running] true)
+                      (assoc-in [:pomodoro :running] ts)
                       (assoc-in [:busy] false))]
     (when-let [entry (get-in current-state [:new-entries ts])]
       (update-local-storage new-state)
@@ -133,7 +138,16 @@
                               {:started        (st/now)
                                :completed-time (:completed-time entry)
                                :timestamp      ts}]
-                    :timeout 1}]})))
+                    :timeout 1
+                    :id      (keyword (str "timer-") ts)}]})))
+
+(defn pomodoro-stop-fn [{:keys [current-state msg-payload]}]
+  (let [ts (:timestamp msg-payload)
+        new-state (-> current-state
+                      (assoc-in [:new-entries ts :pomodoro-running] false)
+                      (assoc-in [:pomodoro :running] nil)
+                      (assoc-in [:busy] false))]
+    {:new-state new-state}))
 
 (defn update-local-fn
   "Update locally stored new entry with changes from edit element."
@@ -187,4 +201,5 @@
    :entry/saved        entry-saved-fn
    :geonames/res       geo-res
    :cmd/pomodoro-inc   pomodoro-inc-fn
-   :cmd/pomodoro-start pomodoro-start-fn})
+   :cmd/pomodoro-start pomodoro-start-fn
+   :cmd/pomodoro-stop  pomodoro-stop-fn})
