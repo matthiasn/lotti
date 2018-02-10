@@ -63,7 +63,8 @@
                                     (put-fn [:entry/update-local @entry]))]
     (fn journal-entry-render [ts put-fn local-cfg]
       (let [edit-mode? @edit-mode
-            formatted-time (h/localize-datetime (moment ts) (:locale @cfg))]
+            locale (:locale @cfg :en)
+            formatted-time (h/localize-datetime (moment ts) locale)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}

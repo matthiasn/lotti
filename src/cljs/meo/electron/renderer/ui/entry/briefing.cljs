@@ -90,7 +90,7 @@
             {:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
             day (-> entry :briefing :day)
             day-stats (get pomodoro-stats day)
-            locale (get @cfg :locale :en)
+            locale (:locale @cfg :en)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> day-stats
                           :time-by-saga
