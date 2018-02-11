@@ -10,16 +10,12 @@
         rp (.-resourcesPath process)
         repo-dir (s/includes? (s/lower-case rp) "electron")
         app-path (if repo-dir cwd (str rp "/app"))
-        platform (.-platform process)
+        platform (.-platform process)    ; e.g. darwin, win32
         download-path (.getPath app "downloads")
         data-path (str user-data "/data")
-        jdk (case platform
-              "darwin" "/zulu8-mac_x64/bin/java"
-              "win32" "/zulu8-win_x64/bin/java"
-              "/zulu8-linux_x64/bin/java")
         info {:platform       (.-platform process)
               :download-path  download-path
-              :java           (str app-path "/bin" jdk)
+              :java           "/usr/bin/java"
               :electron-path  (first (.-argv process))
               :node-path      "/usr/local/bin/node"
               :data-path      data-path
@@ -29,6 +25,7 @@
               :blink          (str app-path "/bin/blink1-mac-cli")
               :user-data      user-data
               :cwd            cwd
+              :platform       platform
               :pid-file       (str user-data "/meo.pid")
               :resources-path rp
               :app-path       app-path}]
