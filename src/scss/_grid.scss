@@ -18,7 +18,7 @@
     height: 100vh;
     grid-gap: 4px;
     grid-template-columns: fit-content(160px) 0 minmax(250px, 1fr) minmax(250px, 1fr);
-    grid-template-rows: 50px minmax(0, 2fr) fit-content(95vh);
+    grid-template-rows: 44px minmax(0, 2fr) fit-content(95vh);
   }
   .col-3 {
     grid-template-columns: fit-content(160px) minmax(320px, 1fr) minmax(250px, 1fr) minmax(250px, 1fr)!important;

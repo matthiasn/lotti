@@ -1,6 +1,8 @@
 @import "variables.scss";
 
 .menu-header {
+  -webkit-app-region: drag;
+  user-select: none;
   flex: 0 0 auto;
   display: flex;
   z-index: 1004;

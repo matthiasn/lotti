@@ -215,7 +215,7 @@
                       (swap! local assoc-in [:changes :custom-fields] updated))))]
     (fn config-render [put-fn]
       (let [text (:search @local)
-            item-filter #(s/includes? (s/lower-case (first %)) text)
+            item-filter #(s/includes? (s/lower-case (first %)) (s/trim text))
             items (filter item-filter @custom-fields)
             save-key-fn (fn [ev]
                           (when (and (= (.-keyCode ev) 83) (.-metaKey ev))
@@ -239,7 +239,8 @@
                          ((specs/is-tag? "#") text))
                 [:span.add {:on-click (add-tag text)}
                  [:span.fa.fa-plus] "add"])]
-             [custom-fields-list local]]
+             (when (seq text)
+               [custom-fields-list local])]
             [custom-field-cfg local]
             [:div.third-col]
             [locale put-fn]]
