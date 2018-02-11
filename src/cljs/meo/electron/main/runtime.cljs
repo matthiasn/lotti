@@ -13,7 +13,7 @@
         platform (.-platform process)    ; e.g. darwin, win32
         download-path (.getPath app "downloads")
         data-path (str user-data "/data")
-        info {:platform       (.-platform process)
+        info {:platform       platform
               :download-path  download-path
               :java           "/usr/bin/java"
               :electron-path  (first (.-argv process))
@@ -25,7 +25,6 @@
               :blink          (str app-path "/bin/blink1-mac-cli")
               :user-data      user-data
               :cwd            cwd
-              :platform       platform
               :pid-file       (str user-data "/meo.pid")
               :resources-path rp
               :app-path       app-path}]
