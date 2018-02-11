@@ -1,7 +1,9 @@
 var modules = {
     'react-native': require('react-native'),
     'react': require('react'),
+    'create-react-class': require('create-react-class'),
     'moment': require('moment'),
+    'figwheel-bridge': require('figwheel-bridge'),
     './images/meo.png': require('./images/meo.png'),
     'rn-apple-healthkit': require('rn-apple-healthkit'),
     'react-native-camera': require('react-native-camera'),

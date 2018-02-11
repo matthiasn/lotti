@@ -4,10 +4,8 @@ Cross-platform mobile app for meo. Uses react native.
 
 ## Usage
 
-    $ react-native link react-native-device-info
-    $ react-native link react-native-contacts
-    $ react-native link react-native-vector-icons
-    $ react-native link rn-apple-healthkit    
+    $yarn install
+    $ ./link_deps.sh
     
     $ re-natal use-ios-device simulator
 

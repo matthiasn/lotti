@@ -4,7 +4,7 @@
             [meo.helpers :as h]
             [meo.ui.colors :as c]
             [reagent.ratom :refer-macros [reaction]]
-            [meo.ui.shared :refer [view text scroll search-bar flat-list
+            [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
                                    map-view mapbox-style-url icon image logo-img
                                    touchable-highlight]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
@@ -81,9 +81,10 @@
                      :data         as-array
                      :render-item  (render-item local put-fn navigate)}]]))))
 
-(defn entry-detail [local put-fn]
+(defn entry-detail [cfg-map put-fn]
   (let [entry-detail (subscribe [:entry-detail])
-        theme (subscribe [:active-theme])]
+        theme (subscribe [:active-theme])
+        local (r/atom {})]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             entry @entry-detail
@@ -103,20 +104,36 @@
                          :padding-bottom 5
                          :margin-top     5}}
            (h/format-time (:timestamp entry))]
-          [text {:style {:color          text-color
-                         :text-align     "center"
-                         :font-weight    "bold"
-                         :padding-bottom 20}}
-           (:md entry)]]
+          [text-input {:style              {:flex             2
+                                            :font-weight      "100"
+                                            :padding          16
+                                            :font-size        24
+                                            :max-height       400
+                                            :background-color text-bg
+                                            :margin-bottom    20
+                                            :color            text-color
+                                            :width            "100%"}
+                       :multiline          true
+                       :default-value      (:md entry)
+                       :keyboard-type      "twitter"
+                       :keyboardAppearance (if (= @theme :dark) "dark" "light")
+                       :on-change-text     (fn [text]
+                                             (swap! local assoc-in [:md] text))}]]
          (when (:latitude entry)
            [map-view {:showUserLocation true
                       :centerCoordinate [(:longitude entry) (:latitude entry)]
                       :scrollEnabled    false
                       :rotateEnabled    false
-                      :styleURL         (get mapbox-style-url (:map-style @local))
+                      :styleURL         (get mapbox-style-url (:map-style @cfg-map))
                       :style            {:width  "100%"
                                          :height 200}
                       :zoomLevel        15}])
+         [text {:style {:color       text-color
+                        :text-align  "center"
+                        :font-weight "bold"
+                        :padding     10}}
+          (:md @local)]
+
          [text {:style {:margin-top  500
                         :margin-left 10
                         :color       text-color
