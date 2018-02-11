@@ -104,10 +104,14 @@
         [:div.busy-status {:class (name (or @busy-color :green))}]))))
 
 (defn menu-view [put-fn]
-  [:div.menu
-   [:div.menu-header
-    [busy-status]
-    [new-import-view put-fn]
-    [:h1 "meo"]
-    [cfg-view put-fn]
-    [upload-view]]])
+  (let [cal-day (subscribe [:cal-day])
+        cfg (subscribe [:cfg])]
+    (fn [put-fn]
+      (let [locale (:locale @cfg :en)]
+        [:div.menu
+         [:div.menu-header
+          [new-import-view put-fn]
+          [:h1 (h/localize-date @cal-day locale)]
+          [busy-status]
+          [cfg-view put-fn]
+          [upload-view]]]))))

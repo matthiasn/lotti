@@ -9,7 +9,7 @@
   justify-content: space-between;
 
   background-color: $menu-bg;
-  padding: 0 110px 0 0;
+  padding: 0 100px 0 0;
 
   .new-import {
     padding-left: 10px;
@@ -27,10 +27,9 @@
   }
 
   h1 {
-    padding-left: 30px;
+    padding-left: 100px;
     color:white;
     font-size: $font-size-meo-header;
-    flex: 2;
   }
 
   button {
@@ -44,9 +43,10 @@
   }
 
   .busy-status {
-    height: 50px;
-    width: 25px;
-    padding-right: 20px;
+    height: 28px;
+    width: 28px;
+    border-radius: 14px;
+    margin: 0 auto 0 14px;
 
     &.red {
       background-color: $red;

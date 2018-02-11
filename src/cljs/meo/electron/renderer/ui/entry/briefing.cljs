@@ -90,7 +90,6 @@
             {:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
             day (-> entry :briefing :day)
             day-stats (get pomodoro-stats day)
-            locale (:locale @cfg :en)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> day-stats
                           :time-by-saga
@@ -102,7 +101,6 @@
             {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)
             time-allocation (-> entry :briefing :time-allocation)]
         [:div.briefing
-         [:h2 (h/localize-date day locale)]
          [:div.summary
           "Tasks: " [:strong tasks-cnt] " created | "
           [:strong done-cnt] " done | "

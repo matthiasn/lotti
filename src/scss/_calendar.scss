@@ -4,6 +4,7 @@
   background-color: $entry-bg;
   flex: 2;
   font-size: $font-size-cal;
+  height: 100%;
 }
 
 .rbc-btn {
@@ -30,7 +31,7 @@ button.rbc-input::-moz-focus-inner {
 .rbc-calendar {
   box-sizing: border-box;
   height: 100%;
-  min-width: 240px;
+  min-width: 160px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -437,7 +438,7 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-timeslot-group {
   border-bottom: 1px solid #DDD;
-  min-height: 40px;
+  min-height: 10px;
   display: flex;
   flex-flow: column nowrap;
 }
