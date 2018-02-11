@@ -31,8 +31,9 @@
   [local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         query-cfg (subscribe [:query-cfg])
+        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         started-tasks (subscribe [:started-tasks])
-        options (subscribe [:options])
         entries-map (subscribe [:entries-map])
         entries-map (reaction (merge @entries-map (:entries-map @started-tasks)))
         options (subscribe [:options])
@@ -67,7 +68,8 @@
                            (filter (u/pvt-filter conf @entries-map) entries))))]
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
-            tab-group (:tab-group local-cfg)]
+            tab-group (:tab-group local-cfg)
+            search-text @search-text]
         (when (seq entries-list)
           [:div.linked-tasks
            [:table.tasks
@@ -84,7 +86,8 @@
                (let [ts (:timestamp entry)
                      text (eu/first-line entry)]
                  ^{:key ts}
-                 [:tr {:on-click (up/add-search ts tab-group put-fn)}
+                 [:tr {:on-click (up/add-search ts tab-group put-fn)
+                       :class    (when (= (str ts) search-text) "selected")}
                   [:td
                    (when-let [prio (-> entry :task :priority)]
                      [:span.prio {:class prio} prio])]
@@ -105,6 +108,9 @@
         stories (subscribe [:stories])
         started-tasks (subscribe [:started-tasks])
         entries-map (subscribe [:entries-map])
+        query-cfg (subscribe [:query-cfg])
+        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         linked-filters {:active  (up/parse-search "#task ~#done ~#closed ~#backlog")
                         :open    (up/parse-search "#task ~#done ~#closed ~#backlog")
                         :done    (up/parse-search "#task #done")
@@ -155,7 +161,8 @@
             unlink (fn [entry ts]
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]
-                       (put-fn [:entry/update upd])))]
+                       (put-fn [:entry/update upd])))
+            search-text @search-text]
         (when (seq linked-tasks)
           [:div.linked-tasks
            [filter-btn :active (str " - " (m-to-hhmm total-time))]
@@ -181,7 +188,8 @@
                               (unlink task ts)
                               (unlink @entry tts))]
                  ^{:key tts}
-                 [:tr {:on-click (up/add-search tts tab-group put-fn)}
+                 [:tr {:on-click (up/add-search tts tab-group put-fn)
+                       :class    (when (= (str tts) search-text) "selected")}
                   [:td (when (:starred task)
                          [:span.fa.fa-star])]
                   (let [prio (or (-> task :task :priority) "-")]

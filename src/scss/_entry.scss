@@ -459,6 +459,12 @@
   }
 }
 
+.task-details, .habit-details {
+  fieldset {
+    border: $edit-menu-bg 1px dashed;
+  }
+}
+
 .custom-fields, .briefing-details, .task-details, .habit-details {
   font-size: $font-size-medium;
   margin: 0.5em 0;
@@ -491,11 +497,11 @@
       cursor: pointer;
       height: 1.3em;
 
-      &.selected {
-        background-color: desaturate(lighten($hashtag-blue, 30), 15);
-      }
       &:hover {
         background-color: antiquewhite;
+      }
+      &.selected {
+        background-color: desaturate(lighten($hashtag-blue, 30), 15);
       }
     }
 

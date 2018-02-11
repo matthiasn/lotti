@@ -21,6 +21,8 @@
   [entry local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         query-cfg (subscribe [:query-cfg])
+        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         waiting-habits (subscribe [:waiting-habits])
         options (subscribe [:options])
         expand-fn #(swap! local update-in [:expanded-habits] not)
@@ -46,7 +48,8 @@
       (let [habits (if (:expanded-habits @local) @habits (take 12 @habits))
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")
-            briefing-day (-> entry :briefing :day)]
+            briefing-day (-> entry :briefing :day)
+            search-text @search-text]
         (when (and (= today briefing-day) (seq habits))
           [:div
            [:table.habits
@@ -60,7 +63,8 @@
                (let [ts (:timestamp entry)
                      text (eu/first-line entry)]
                  ^{:key ts}
-                 [:tr {:on-click (up/add-search ts tab-group put-fn)}
+                 [:tr {:on-click (up/add-search ts tab-group put-fn)
+                       :class    (when (= (str ts) search-text) "selected")}
                   [:td
                    (when-let [prio (-> entry :habit :priority)]
                      [:span.prio {:class prio} prio])]
