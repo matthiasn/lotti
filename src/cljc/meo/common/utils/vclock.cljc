@@ -26,13 +26,13 @@
 (s/def :meo.vclock/map (s/map-of :meo.vclock/node-id :meo.vclock/counter))
 
 (defn vclock-comparator [a b]
-  "Compares two vector clock maps. Those maps consist of node id strings as keys
+  "Compares two vector clocks. A and B are maps with node id strings as keys
    and an integer as value, which is the offset on the node associated with
    persisting the particular entry. See examples in the tests.
 
-   Will return :a>b if vclock a dominates b, :b>a in the opposite
-   case, :equal if they are the same, and :concurrent if a strict order could
-   not be determined.
+   Will return :a>b if clock B dominates A, :b>a in the opposite
+   case, :equal if they are the same, and :concurrent if no strict order could
+   be determined.
 
    Throws an exception when input is invalid."
   (let [a-valid (s/valid? :meo.vclock/map a)

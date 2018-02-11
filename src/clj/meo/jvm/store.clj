@@ -7,6 +7,7 @@
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.add :as ga]
             [meo.common.specs]
+            [clojure.data.avl :as avl]
             [ubergraph.core :as uber]
             [matthiasn.systems-toolbox.component.helpers :as sth]
             [clojure.tools.logging :as log]
@@ -19,14 +20,16 @@
   (let [path (:daily-logs-path (fu/paths))
         files (file-seq (clojure.java.io/file path))
         filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")
-        cnt (atom 0)]
+        cnt (atom 0)
+        node-id (-> @state :cfg :node-id)]
     (doseq [f (sort-by #(.getName %) filtered)]
       (with-open [reader (clojure.java.io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]
             (try
               (let [parsed (clojure.edn/read-string line)
-                    ts (:timestamp parsed)]
+                    ts (:timestamp parsed)
+                    local-offset (get-in parsed [:vclock node-id])]
                 (swap! cnt inc)
                 (if (:deleted parsed)
                   (do (swap! state ga/remove-node ts)
@@ -34,8 +37,11 @@
                   (do (swap! entries-to-index assoc-in [ts] parsed)
                       (swap! state ga/add-node parsed)))
                 (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
+                (when local-offset
+                  (swap! state update-in [:vclock-map] assoc local-offset parsed))
                 (when (zero? (mod @cnt 5000))
-                  (log/info "Lines read:" @cnt)))
+                  (log/info "Lines read:" @cnt)
+                  (log/info (last (:vclock-map @state)))))
               (catch Exception ex
                 (log/error "Exception" ex "when parsing line:\n" line)))))))
     (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
@@ -66,6 +72,7 @@
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
                      :global-vclock  {}
+                     :vclock-map     (avl/sorted-map)
                      :cfg            conf})]
     (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
       (log/info "Read" (count @entries-to-index) "entries." t)
