@@ -93,14 +93,7 @@
                    :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
                                             :message [:import/spotify]
                                             :repeat  true
-                                            :initial true}]}]
-
-       [:cmd/send {:to  :server/scheduler-cmp
-                   :msg [:cmd/schedule-new {:timeout 10000
-                                            :message (with-meta
-                                                       [:ws/ping]
-                                                       {:sente-uid :broadcast})
-                                            :repeat  true}]}]])))
+                                            :initial true}]}]])))
 
 (defn -main
   "Starts the application from command line, saves and logs process ID. The
