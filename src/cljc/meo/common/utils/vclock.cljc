@@ -40,8 +40,8 @@
     (if (and a-valid b-valid)
       (let [node-ids (set/union (set (keys a)) (set (keys b)))
             compare (fn [k]
-                      (let [av (or (get a k 0))
-                            bv (or (get b k 0))]
+                      (let [av (get a k 0)
+                            bv (get b k 0)]
                         (cond
                           (> av bv) :a>b
                           (> bv av) :b>a

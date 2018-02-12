@@ -8,6 +8,7 @@
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
                  [org.clojure/data.avl "0.0.17"]
+                 [org.clojure/test.check "0.10.0-alpha2"]
                  [clj-pid "0.1.2"]
                  [clj-time "0.14.2"]
                  [clj-http "3.7.0"]

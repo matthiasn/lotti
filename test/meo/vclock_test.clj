@@ -1,6 +1,9 @@
 (ns meo.vclock-test
   (:require [clojure.test :refer :all]
-            [meo.common.utils.vclock :as vc]))
+            [meo.common.utils.vclock :as vc]
+            [clojure.test.check :as tc]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]))
 
 (def some-node-id "some-node-id")
 (def another-node-id "another-node-id")
@@ -83,14 +86,6 @@
              {some-node-id    1
               another-node-id 1}))))
 
-  (testing "returns :b>a when B dominates A"
-    (is (= :a>b
-           (vc/vclock-comparator
-             {some-node-id    2
-              another-node-id 1}
-             {some-node-id    1
-              another-node-id 1}))))
-
   (testing "returns :b>a when B dominates A via additional node"
     (is (= :b>a
            (vc/vclock-comparator
@@ -100,7 +95,7 @@
               another-node-id     1
               yet-another-node-id 3}))))
 
-  (testing "returns :conflict both A updated and B has a previously unknown node"
+  (testing "returns :concurrent both A updated and B has a previously unknown node"
     (is (= :concurrent
            (vc/vclock-comparator
              {some-node-id    3
@@ -126,3 +121,53 @@
                     yet-another-node-id 3}
                    {:foo 1
                     3    "a"})))))
+
+
+;;; QuickCheck tests for comparing vclocks
+
+(def gen-not-empty-alphanumeric
+  (gen/such-that not-empty gen/string-alphanumeric))
+
+(def gen-vclock
+  (gen/such-that
+    not-empty
+    (gen/map gen-not-empty-alphanumeric gen/pos-int)))
+
+(def gen-type (gen/elements [:a>b :b>a :concurrent :equal]))
+
+(def gen-vclock-type-pair (gen/tuple gen-vclock gen-type))
+
+(defn change-vclock [op pos]
+  (fn [vclock]
+    (if (empty? vclock)
+      {}
+      (let [first-node (pos (keys vclock))]
+        (update-in vclock [first-node] op)))))
+
+(def make-lower (change-vclock dec first))
+(def make-greater (change-vclock inc first))
+
+(defn create-conflict [vclock]
+  (let [first-node (first (keys vclock))
+        updated (update-in vclock [first-node] dec)]
+    (assoc-in updated ["______concurrent"] 1)))
+
+(defn create-expectation [[vclock mutation]]
+  (cond
+    (= mutation :equal) [vclock vclock :equal]
+    (= mutation :a>b) [vclock (make-lower vclock) :a>b]
+    (= mutation :b>a) [vclock (make-greater vclock) :b>a]
+    (= mutation :concurrent) [(make-greater vclock)
+                              (create-conflict vclock)
+                              :concurrent]))
+
+(def gen-l-r-expected (gen/fmap create-expectation gen-vclock-type-pair))
+
+(def property
+  (prop/for-all [v gen-l-r-expected]
+                (let [[a b exp] v]
+                  (= (vc/vclock-comparator a b) exp))))
+
+(deftest vclock-quick-check
+  (testing "property checks for vector clock comparison succeed"
+    (is (:result (tc/quick-check 500 property)))))
