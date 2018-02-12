@@ -159,7 +159,6 @@
             [:span.fa.fa-external-link.toggle {:on-click open-external}])
           (when-not comment? [new-link @entry put-fn create-linked-entry])
           ; [add-location @entry put-fn]
-          ; [:span.fa.fa-file-pdf-o.toggle {:on-click export-pdf}]
           [trash-icon trash-entry]]
          [:span.fa.toggle
           {:on-click star-entry

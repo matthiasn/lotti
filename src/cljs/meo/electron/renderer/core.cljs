@@ -6,7 +6,7 @@
             [meo.electron.renderer.router :as router]
             [meo.electron.renderer.screenshot :as screenshot]
             [meo.electron.renderer.spellcheck :as spellcheck]
-            [taoensso.timbre :as timbre :refer-macros [info debug error]]
+            [taoensso.timbre :refer-macros [info debug error]]
             [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
             [matthiasn.systems-toolbox-sente.client :as sente]
             [meo.electron.renderer.exec :as exec]
@@ -24,7 +24,7 @@
   (merge sente-base-cfg
          {:relay-types #{:entry/update :entry/find :entry/trash :backend-cfg/save
                          :import/photos :import/spotify :import/flight
-                         :export/pdf :stats/pomo-day-get :import/screenshot
+                         :stats/pomo-day-get :import/screenshot
                          :stats/get :stats/get2 :import/movie :entry/unlink
                          :state/stats-tags-get :import/listen :spotify/play
                          :spotify/pause :state/search :cfg/refresh

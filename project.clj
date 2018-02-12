@@ -14,7 +14,6 @@
                  [enlive "1.1.6"]
                  [me.raynes/fs "1.4.6"]
                  [markdown-clj "1.0.2"]
-                 [clj-pdf "2.2.30"]
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]

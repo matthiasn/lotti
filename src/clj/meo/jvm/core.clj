@@ -14,8 +14,7 @@
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
-            [meo.jvm.imports :as i]
-            [meo.jvm.export :as e]))
+            [meo.jvm.imports :as i]))
 
 (defonce switchboard (sb/component :server/switchboard))
 
@@ -46,7 +45,6 @@
   (let [components #{(sente/cmp-map :server/ws-cmp idx/sente-map)
                      (sched/cmp-map :server/scheduler-cmp)
                      (i/cmp-map :server/imports-cmp)
-                     (e/cmp-map :server/export-cmp)
                      (st/cmp-map :server/store-cmp)
                      (bak/cmp-map :server/backup-cmp)
                      (up/cmp-map :server/upload-cmp switchboard)
