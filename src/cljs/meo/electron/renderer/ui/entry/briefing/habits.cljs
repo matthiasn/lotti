@@ -55,7 +55,7 @@
            [:table.habits
             [:tbody
              [:tr {:on-click expand-fn}
-              [:th [:span.fa.fa-exclamation-triangle]]
+              [:th.xs [:span.fa.fa-exclamation-triangle]]
               [:th [:span.fa.fa-diamond]]
               [:th [:span.fa.fa-diamond.penalty]]
               [:th "waiting habit"]]

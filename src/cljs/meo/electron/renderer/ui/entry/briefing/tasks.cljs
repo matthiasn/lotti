@@ -75,7 +75,7 @@
            [:table.tasks
             [:tbody
              [:tr
-              [:th ""]
+              [:th.xs [:span.fa.fa-exclamation-triangle]]
               [:th [:span.fa.fa-diamond]]
               [:th [:span.fa.fa-clock-o]]
               [:th
@@ -173,8 +173,7 @@
            [:table.tasks
             [:tbody
              [:tr
-              [:th.xs [:span.fa.fa-star-o]]
-              [:th.xs ""]
+              [:th.xs [:span.fa.fa-exclamation-triangle]]
               [:th [:span.fa.fa-diamond]]
               [:th [:span.fa.fa-clock-o]]
               [:th [:strong "tasks"]]
@@ -190,8 +189,6 @@
                  ^{:key tts}
                  [:tr {:on-click (up/add-search tts tab-group put-fn)
                        :class    (when (= (str tts) search-text) "selected")}
-                  [:td (when (:starred task)
-                         [:span.fa.fa-star])]
                   (let [prio (or (-> task :task :priority) "-")]
                     [:td
                      [:span.prio {:class         prio
