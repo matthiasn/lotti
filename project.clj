@@ -26,7 +26,6 @@
                  ;[matthiasn/systems-toolbox-kafka "0.6.16"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
                  [clucy "0.4.0"]
-                 [seesaw "1.4.5"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
                  [danlentz/clj-uuid "0.1.7"]]
