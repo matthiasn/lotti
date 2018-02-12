@@ -4,7 +4,7 @@ Cross-platform mobile app for meo. Uses react native.
 
 ## Usage
 
-    $yarn install
+    $ yarn install
     $ ./link_deps.sh
     
     $ re-natal use-ios-device simulator

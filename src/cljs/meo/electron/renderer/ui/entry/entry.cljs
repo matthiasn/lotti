@@ -28,8 +28,7 @@
                                (set (keys @local-comments)))))))
 
 (defn hashtags-mentions-list [ts tab-group put-fn]
-  (let [cfg (subscribe [:cfg])
-        entry (:entry (eu/entry-reaction ts))]
+  (let [entry (:entry (eu/entry-reaction ts))]
     (fn hashtags-mentions-render [ts tab-group put-fn]
       [:div.hashtags
        (for [mention (:mentions @entry)]
@@ -41,6 +40,18 @@
          [:span.hashtag {:on-click (up/add-search hashtag tab-group put-fn)}
           hashtag])])))
 
+(defn linked-btn [entry local-cfg active put-fn]
+  (when (seq (:linked-entries-list @entry))
+    (let [ts (:timestamp @entry)
+          tab-group (:tab-group local-cfg)
+          open-linked (up/add-search (str "l:" ts) tab-group put-fn)
+          entry-active? (when-let [query-id (:query-id local-cfg)]
+                          (= (query-id @active) ts))]
+      [:div
+       [:span.link-btn {:on-click open-linked
+                        :class    (when entry-active? "active")}
+        (str " linked: " (count (:linked-entries-list @entry)))]])))
+
 (defn journal-entry
   "Renders individual journal entry. Interaction with application state happens
    via messages that are sent to the store component, for example for toggling
@@ -50,7 +61,7 @@
    showing the warning that the entry is not saved yet."
   [ts put-fn local-cfg]
   (let [cfg (subscribe [:cfg])
-        {:keys [entry edit-mode entries-map new-entries]} (eu/entry-reaction ts)
+        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         q-date-string (.format (moment ts) "YYYY-MM-DD")
@@ -76,14 +87,7 @@
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
            [:time (u/visit-duration @entry)]]
-          [:div
-           (when (seq (:linked-entries-list @entry))
-             (let [ts (:timestamp @entry)
-                   entry-active? (when-let [query-id (:query-id local-cfg)]
-                                   (= (query-id @active) ts))]
-               [:span.link-btn {:on-click open-linked
-                                :class    (when entry-active? "active")}
-                (str " linked: " (count (:linked-entries-list @entry)))]))]
+          [linked-btn entry local-cfg active put-fn]
           [a/entry-actions ts put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-name-field @entry edit-mode? put-fn]
          [es/saga-name-field @entry edit-mode? put-fn]
@@ -114,9 +118,6 @@
   [ts put-fn local-cfg]
   (let [cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
-        active (reaction (:active @cfg))
-        tab-group (:tab-group local-cfg)
-        open-linked (up/add-search (str "l:" ts) tab-group put-fn)
         drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
     (fn journal-entry-render [ts put-fn local-cfg]
       (let [edit-mode? @edit-mode]
@@ -124,14 +125,6 @@
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
          [:div.header
-          [:div
-           (when (seq (:linked-entries-list @entry))
-             (let [ts (:timestamp @entry)
-                   entry-active? (when-let [query-id (:query-id local-cfg)]
-                                   (= (query-id @active) ts))]
-               [:span.link-btn {:on-click open-linked
-                                :class    (when entry-active? "active")}
-                (str " linked: " (count (:linked-entries-list @entry)))]))]
           [a/briefing-actions ts put-fn edit-mode? local-cfg]]
          [b/briefing-view @entry put-fn local-cfg]]))))
 
