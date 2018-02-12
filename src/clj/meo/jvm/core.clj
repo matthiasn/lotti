@@ -4,21 +4,22 @@
   (:gen-class)
   (:require [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox-sente.server :as sente]
+            [matthiasn.systems-toolbox.scheduler :as sched]
             [meo.jvm.index :as idx]
             [meo.common.specs]
             [clojure.tools.logging :as log]
             [clj-pid.core :as pid]
-            [matthiasn.systems-toolbox-kafka.kafka-producer2 :as kp2]
+            ;[matthiasn.systems-toolbox-kafka.kafka-producer2 :as kp2]
             [meo.jvm.store :as st]
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
-            [meo.jvm.export :as e]
-            [matthiasn.systems-toolbox.scheduler :as sched]))
+            [meo.jvm.export :as e]))
 
 (defonce switchboard (sb/component :server/switchboard))
 
+#_
 (defn make-observable [components]
   (if (System/getenv "OBSERVER")
     (let [cfg {:cfg         {:bootstrap-servers "localhost:9092"
@@ -50,7 +51,8 @@
                      (bak/cmp-map :server/backup-cmp)
                      (up/cmp-map :server/upload-cmp switchboard)
                      (ft/cmp-map :server/ft-cmp)}
-        components (make-observable components)]
+        ;components (make-observable components)
+        ]
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp components]
@@ -85,7 +87,7 @@
                             :server/backup-cmp
                             :server/imports-cmp}
                     :to   :server/scheduler-cmp}]
-
+       #_
        (when (System/getenv "OBSERVER")
          [:cmd/attach-to-firehose :server/kafka-firehose])
 
