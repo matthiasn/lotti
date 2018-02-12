@@ -63,3 +63,7 @@ env/dev/env/config.cljs
 # Figwheel
 #
 figwheel_server.log
+
+release.jsbundle
+release.jsbundle.tmp
+release.jsbundle.tmp.meta

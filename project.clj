@@ -4,7 +4,6 @@
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.9.946"]
                  [org.clojure/tools.logging "0.4.0"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
@@ -20,7 +19,6 @@
                  [me.raynes/conch "0.8.0"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
-                 [cljsjs/moment "2.17.1-1"]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
                  [ubergraph "0.4.0"]
                  [factual/geo "1.2.1"]
@@ -28,22 +26,11 @@
                  [matthiasn/systems-toolbox "0.6.33"]
                  [matthiasn/systems-toolbox-kafka "0.6.16"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
-                 [matthiasn/systems-toolbox-electron "0.6.22"]
-                 [reagent "0.8.0-alpha2" :exclusions [cljsjs/react cljsjs/react-dom]]
-                 [re-frame "0.10.4"]
-                 [secretary "1.2.3"]
-                 [capacitor "0.6.0"]
                  [clucy "0.4.0"]
                  [seesaw "1.4.5"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
-                 [danlentz/clj-uuid "0.1.7"]
-                 [org.webjars.bower/fontawesome "4.7.0"]
-                 [org.webjars.npm/randomcolor "0.4.4"]
-                 [org.webjars.bower/normalize-css "5.0.0"]
-                 [org.webjars.bower/leaflet "0.7.7"]
-                 [org.webjars.npm/github-com-mrkelly-lato "0.3.0"]
-                 [org.webjars.npm/intl "1.2.4"]]
+                 [danlentz/clj-uuid "0.1.7"]]
 
   :source-paths ["src/cljc" "src/clj/"]
 
@@ -63,7 +50,14 @@
   :profiles {:uberjar      {:aot :all}
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
-                                           [cljsjs/create-react-class "15.6.0-2"]]}}
+                                           [cljsjs/create-react-class "15.6.0-2"]]}
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.9.946"]
+                                           [reagent "0.8.0-alpha2"
+                                            :exclusions [cljsjs/react cljsjs/react-dom]]
+                                           [re-frame "0.10.4"]
+                                           [cljsjs/moment "2.17.1-1"]
+                                           [matthiasn/systems-toolbox-electron "0.6.22"]
+                                           [secretary "1.2.3"]]}}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 
@@ -83,15 +77,25 @@
   :sass {:source-paths ["src/scss/"]
          :target-path  "resources/public/css/"}
 
-  :aliases {"dist" ["do"
-                    ["clean"]
-                    ["test"]
-                    ["cljsbuild" "once" "main"]
-                    ["cljsbuild" "once" "renderer"]
-                    ["cljsbuild" "once" "geocoder"]
-                    ["cljsbuild" "once" "updater"]
-                    ["sass4clj" "once"]
-                    ["uberjar"]]}
+  :aliases {"cljs-main"         ["with-profile" "cljs" "cljsbuild" "once" "main"]
+            "cljs-renderer"     ["with-profile" "cljs" "cljsbuild" "once" "renderer"]
+            "cljs-geocoder"     ["with-profile" "cljs" "cljsbuild" "once" "geocoder"]
+            "cljs-updater"      ["with-profile" "cljs" "cljsbuild" "once" "updater"]
+
+            "cljs-main-dev"     ["with-profile" "cljs" "cljsbuild" "auto" "main"]
+            "cljs-renderer-dev" ["with-profile" "cljs" "cljsbuild" "auto" "renderer-dev"]
+            "cljs-geocoder-dev" ["with-profile" "cljs" "cljsbuild" "auto" "geocoder"]
+            "cljs-updater-dev"  ["with-profile" "cljs" "cljsbuild" "auto" "updater"]
+
+            "dist"         ["do"
+                            ["clean"]
+                            ["test"]
+                            ["cljs-main"]
+                            ["cljs-renderer"]
+                            ["cljs-geocoder"]
+                            ["cljs-updater"]
+                            ["sass4clj" "once"]
+                            ["uberjar"]]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"
