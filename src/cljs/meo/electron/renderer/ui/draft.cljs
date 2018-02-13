@@ -66,7 +66,7 @@
                :stories     @stories-list
                :onChange    on-change}])))
 
-(defn draft-text-editor [editor-state md update-cb save-fn small-img changed]
+(defn draft-text-editor [editor-state md update-cb save-fn start-fn small-img changed]
   (let [editor (adapt-react-class "EntryTextEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
@@ -81,7 +81,7 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn [editor-state md update-cb save-fn small-img changed]
+    (fn [editor-state md update-cb save-fn start-fn small-img changed]
       [editor {:editorState editor-state
                :md          md
                :changed     changed
@@ -89,6 +89,7 @@
                :hashtags    @hashtags
                :stories     @stories-list
                :saveFn      save-fn
+               :startFn     start-fn
                :smallImg    small-img
                :onChange    update-cb}])))
 
@@ -127,6 +128,8 @@
                           (put-fn [:window/progress {:v 0}])
                           (put-fn [:blink/busy {:color :green}]))
                         (put-fn [:entry/update updated])))
+            start-fn #(when (= (:entry-type latest-entry) :pomodoro)
+                        (put-fn [:cmd/pomodoro-start latest-entry]))
             small-img (fn [smaller]
                         (let [img-size (:img-size @entry 50)
                               img-size (if smaller (- img-size 10) (+ img-size 10))
@@ -137,7 +140,8 @@
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
         [:div
-         [draft-text-editor editor-state md editor-cb save-fn small-img @unsaved]
+         [draft-text-editor
+          editor-state md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save
            (when @unsaved

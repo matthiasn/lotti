@@ -60,7 +60,7 @@
         new-state (if (= (:md curr-local) (:md msg-payload))
                     (-> current-state
                         (update-in [:new-entries] dissoc ts)
-                        (assoc-in [:busy] false)
+                        (assoc-in [:busy-status :busy] false)
                         (assoc-in [:entries-map ts] msg-payload))
                     current-state)]
     (prn "entry saved, clearing" msg-payload)
@@ -74,8 +74,7 @@
   #?(:cljs (.play (.getElementById js/document id))))
 
 (defn pomodoro-inc-fn
-  "Increments completed time of entry. Plays next tick sound and schedules a new
-   increment message. Finally plays completion sound."
+  "Increments completed time for entry."
   [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         started (:started msg-payload)
@@ -88,22 +87,22 @@
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
             completed (:completed-time new-entry)
+            comment-for (:comment-for new-entry)
             planned (:planned-dur new-entry)
             done? (> completed planned)
             progress (min (/ completed planned) 1)
             cfg (:cfg current-state)
             new-state (-> new-state
-                          (assoc-in [:busy] (not done?))
-                          (assoc-in [:last-busy] (st/now)))
-            since-last-busy (- (st/now) (get current-state :last-busy 0))]
+                          (assoc-in [:busy-status :busy] (not done?))
+                          (assoc-in [:busy-status :last] (st/now))
+                          (assoc-in [:busy-status :active] comment-for))]
         (put-fn [:window/progress {:v progress}])
-        (if (and (or (:pomodoro-running new-entry)
-                     (> since-last-busy 2000))
+        (if (and (:pomodoro-running new-entry)
                  (= (:running (:pomodoro current-state)) ts))
           (let [color (if done? :orange :red)
-                new-state (assoc-in new-state [:busy-color] color)]
+                new-state (assoc-in new-state [:busy-status :color] color)]
             (when (and (= :orange color)
-                       (not= :orange (:busy-color current-state)))
+                       (not= :orange (:color (:busy-status current-state))))
               (put-fn [:blink/busy {:color :orange}])
               (when (:pause-spotify cfg) (put-fn [:spotify/pause])))
             (when-not (:mute cfg)
@@ -129,7 +128,7 @@
         new-state (-> current-state
                       (assoc-in [:new-entries ts :pomodoro-running] true)
                       (assoc-in [:pomodoro :running] ts)
-                      (assoc-in [:busy] false))]
+                      (assoc-in [:busy-status :busy] false))]
     (when-let [entry (get-in current-state [:new-entries ts])]
       (update-local-storage new-state)
       {:new-state new-state
@@ -146,7 +145,7 @@
         new-state (-> current-state
                       (assoc-in [:new-entries ts :pomodoro-running] false)
                       (assoc-in [:pomodoro :running] nil)
-                      (assoc-in [:busy] false))]
+                      (assoc-in [:busy-status :busy] false))]
     {:new-state new-state}))
 
 (defn update-local-fn

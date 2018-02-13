@@ -111,7 +111,9 @@ let hasCommandModifier = _draftJs.KeyBindingUtil.hasCommandModifier;
 
 
 function myKeyBindingFn(e) {
-    if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
+    if (e.keyCode === 82 /* `S` key */ && hasCommandModifier(e)) {
+        return 'editor-start';
+    }if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
         return 'editor-save';
     }
     if (e.keyCode === 187 && hasCommandModifier(e)) {
@@ -158,6 +160,11 @@ let EntryTextEditor = function (_Component) {
 
             if (command === 'editor-save') {
                 _this.props.saveFn();
+                return 'handled';
+            }
+
+            if (command === 'editor-start') {
+                _this.props.startFn();
                 return 'handled';
             }
 

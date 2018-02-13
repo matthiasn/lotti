@@ -92,9 +92,9 @@
     {:new-state new-state}))
 
 (defn blink-busy [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:busy-color] (:color msg-payload))]
+  (let [color (:color msg-payload)
+        new-state (assoc-in current-state [:busy-status :color] color)]
     {:new-state new-state}))
-
 
 (defn save-backend-cfg [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:backend-cfg] msg-payload)]

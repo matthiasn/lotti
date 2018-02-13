@@ -9,7 +9,7 @@
   (let [local (r/atom {:edit false})
         click #(swap! local assoc-in [:edit] true)
         planning-mode (subscribe [:planning-mode])
-        last-busy (subscribe [:last-busy])
+        busy-status (subscribe [:busy-status])
         running-pomodoro (subscribe [:running-pomodoro])
         on-change (fn [ev]
                     (let [v (.. ev -target -value)
@@ -19,7 +19,7 @@
                       (put-fn [:entry/update-local updated])))]
     (fn [entry edit-mode? put-fn]
       (when-not edit-mode? (swap! local assoc-in [:edit] false))
-      (let [since-last-busy (- (st/now) (or @last-busy 0))
+      (let [since-last-busy (- (st/now) (or (:last @busy-status) 0))
             running? (and (:pomodoro-running @entry)
                           (= @running-pomodoro (:timestamp @entry))
                           (< since-last-busy 2000))

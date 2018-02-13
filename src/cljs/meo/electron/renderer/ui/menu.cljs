@@ -6,7 +6,8 @@
             [matthiasn.systems-toolbox.component :as stc]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info]]
-            [cljs.reader :refer [read-string]]))
+            [cljs.reader :refer [read-string]]
+            [meo.common.utils.parse :as up]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -96,12 +97,18 @@
          [:img {:src (str "http://" iww-host "/ws-address/"
                           (stc/make-uuid) "/qrcode.png")}])])))
 
-(defn busy-status []
-  (let [busy-color (subscribe [:busy-color])
-        planning-mode (subscribe [:planning-mode])]
-    (fn busy-status-render []
-      (when @planning-mode
-        [:div.busy-status {:class (name (or @busy-color :green))}]))))
+(defn busy-status [put-fn]
+  (let [status (subscribe [:busy-status])
+        planning-mode (subscribe [:planning-mode])
+        click (fn [_]
+                (let [q (up/parse-search (str (:active @status)))]
+                  (info q )
+                  (put-fn [:search/add {:tab-group :left :query q}])))]
+    (fn busy-status-render [put-fn]
+      (let [cls (name (or (:color @status) :green))]
+        (when @planning-mode
+          [:div.busy-status {:class cls
+                             :on-click click}])))))
 
 (defn menu-view [put-fn]
   (let [cal-day (subscribe [:cal-day])
@@ -112,6 +119,6 @@
          [:div.menu-header
           [new-import-view put-fn]
           [:h1 (h/localize-date @cal-day locale)]
-          [busy-status]
+          [busy-status put-fn]
           [cfg-view put-fn]
           [upload-view]]]))))
