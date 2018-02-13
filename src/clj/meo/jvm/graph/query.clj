@@ -274,6 +274,8 @@
                       ; set with all timestamps
                       :else (take (+ n 100) (:sorted-entries state)))
         matched-entries (map mapper-fn (sort-fn matched-ids))
+        matched-entries (filter #(or (:briefing query)
+                                     (not (:briefing %))) matched-entries)
         parent-ids (filter identity (map :comment-for matched-entries))
         parents (map mapper-fn parent-ids)]
     (flatten [matched-entries parents])))
