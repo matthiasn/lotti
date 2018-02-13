@@ -147,6 +147,7 @@
   (s/nilable #(re-find #"[0-9]{4}-[0-9]{2}-[0-9]{2}" %)))
 (s/def :meo.search/timestamp (s/nilable #(re-find #"[0-9]{13}" %)))
 (s/def :meo.search/n pos-int?)
+(s/def :meo.search/story (s/nilable possible-timestamp?))
 (s/def :meo.search/query-id keyword?)
 (s/def :meo.search/tab-group keyword?)
 
@@ -178,7 +179,9 @@
 (s/def :search/add (s/keys :req-un [:meo.search/tab-group]))
 (s/def :search/set-active (s/keys :req-un [:meo.search/tab-group
                                            :meo.search/query-id]))
-(s/def :search/remove :search/set-active)
+(s/def :search/remove (s/nilable :search/set-active))
+(s/def :search/remove-all (s/keys :req-un [:meo.search/story
+                                           :meo.search/search-text]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Search Result Spec

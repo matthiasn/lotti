@@ -6,8 +6,7 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.misc :as u]
             [clojure.set :as set]
-            [taoensso.timbre :as timbre :refer-macros [info]]
-            [matthiasn.systems-toolbox.component :as st]
+            [taoensso.timbre :refer-macros [info]]
             [cljs.pprint :as pp]))
 
 (defn trash-icon [trash-fn]
@@ -133,9 +132,12 @@
                                                     :linked-stories #{story}} nil)
         new-pomodoro (h/new-entry-fn
                        put-fn (p/pomodoro-defaults ts) show-comments)
-        trash-entry #(if edit-mode?
-                       (put-fn [:entry/remove-local {:timestamp ts}])
-                       (put-fn [:entry/trash @entry]))
+        trash-entry (fn [_]
+                      (put-fn [:search/remove-all {:story (:linked-story @entry)
+                                                   :search-text (str ts)}])
+                      (if edit-mode?
+                        (put-fn [:entry/remove-local {:timestamp ts}])
+                        (put-fn [:entry/trash @entry])))
         open-external (up/add-search ts tab-group put-fn)
         export-pdf #(put-fn [:export/pdf @entry])
         star-entry #(put-fn [:entry/update (update-in @entry [:starred] not)])

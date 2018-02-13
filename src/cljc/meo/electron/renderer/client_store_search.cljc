@@ -1,6 +1,8 @@
 (ns meo.electron.renderer.client-store-search
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
     [meo.electron.renderer.client-store-cfg :as c]
+    #?(:clj [taoensso.timbre :refer [info debug]]
+       :cljs [taoensso.timbre :refer-macros [info debug]])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.parse :as p]
     [clojure.set :as set]
@@ -127,16 +129,29 @@
 (defn remove-query
   "Remove query inside tab group specified in msg."
   [{:keys [current-state msg-payload]}]
-  (let [{:keys [query-id tab-group]} msg-payload
-        all-path [:query-cfg :tab-groups tab-group :all]
-        query-path [:query-cfg :queries]
-        new-state (-> current-state
-                      (update-in all-path #(disj (set %) query-id))
-                      (previously-active query-id tab-group)
-                      (update-in query-path dissoc query-id)
-                      (update-in [:results] dissoc query-id))]
-    (reset! query-cfg (:query-cfg new-state))
-    {:new-state new-state}))
+  (if msg-payload
+    (let [{:keys [query-id tab-group]} msg-payload
+          all-path [:query-cfg :tab-groups tab-group :all]
+          query-path [:query-cfg :queries]
+          new-state (-> current-state
+                        (update-in all-path #(disj (set %) query-id))
+                        (previously-active query-id tab-group)
+                        (update-in query-path dissoc query-id)
+                        (update-in [:results] dissoc query-id))]
+      (reset! query-cfg (:query-cfg new-state))
+      {:new-state new-state})
+    {}))
+
+(defn remove-all
+  "Remove all queries for a given entry inside tab group specified in msg."
+  [{:keys [current-state msg-payload]}]
+  (let [query-cfg (:query-cfg current-state)
+        left (find-existing query-cfg :left msg-payload)
+        right (find-existing query-cfg :right msg-payload)]
+    {:send-to-self [[:search/remove {:tab-group :left
+                                     :query-id (:query-id left)}]
+                    [:search/remove {:tab-group :right
+                                     :query-id (:query-id right)}]]}))
 
 (defn close-all
   "Remove query inside tab group specified in msg."
@@ -201,6 +216,7 @@
    :search/set-active  set-active-query
    :search/add         add-query
    :search/remove      remove-query
+   :search/remove-all  remove-all
    :search/close-all   close-all
    :search/refresh     search-refresh-fn
    :search/set-dragged set-dragged-fn
