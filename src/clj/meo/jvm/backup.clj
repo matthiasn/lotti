@@ -1,11 +1,11 @@
 (ns meo.jvm.backup
-  (:require [clojure.tools.logging :as log]
+  (:require [taoensso.timbre :refer [info]]
             [clojure.java.shell :refer [sh]]
             [meo.jvm.file-utils :as fu]))
 
 (defn backup [{:keys []}]
   (when (System/getenv "GIT_COMMITS")
-    (log/info "creating git commit")
+    (info "creating git commit")
     (prn (sh "/usr/bin/git" "add" fu/data-path :dir fu/data-path))
     (prn (sh "/usr/bin/git" "commit" "-m" "hourly commit" :dir fu/data-path)))
   {})

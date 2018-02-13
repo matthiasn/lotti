@@ -3,7 +3,7 @@
   (:require [compojure.core :refer [GET]]
             [clj.qrgen :as qr]
             [meo.jvm.upload :as up]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error]]
             [meo.jvm.net :as net]
             [matthiasn.systems-toolbox.component :as st]))
 
@@ -12,7 +12,7 @@
     (qr/as-input-stream
       (let [ip (ffirst (net/ips))
             url (str "http://" ip ":" @up/upload-port "/upload/")]
-        (log/info "QR Code for:" url)
+        (info "QR Code for:" url)
         (qr/from url :size [300 300])))))
 
 (defn ws-address-qr-route [port]
@@ -22,5 +22,5 @@
             url (str ip ":" @up/sync-ws-port)
             data {:url    url
                   :shared (str (st/make-uuid))}]
-        (log/info "QR Code for:" url)
+        (info "QR Code for:" url)
         (qr/from (str data) :size [300 300])))))

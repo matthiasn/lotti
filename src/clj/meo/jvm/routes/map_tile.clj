@@ -5,7 +5,7 @@
             [meo.jvm.files :as f]
             [clojure.java.io :as io]
             [clj-http.client :as client]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [debug]]
             [me.raynes.fs :as fs]
             [meo.jvm.file-utils :as fu]))
 
@@ -20,7 +20,7 @@
               res (client/get tile-url {:as :byte-array
                                         :headers {"user-agent" "meo"}})
               body (:body res)]
-          (log/info "Retrieved map tile" tile-url)
+          (debug "Retrieved map tile" tile-url)
           (io/copy body file)))
-      (log/info "Serving map tile" file-path)
+      (debug "Serving map tile" file-path)
       {:body file})))

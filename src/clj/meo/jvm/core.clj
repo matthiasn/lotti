@@ -7,31 +7,31 @@
             [matthiasn.systems-toolbox.scheduler :as sched]
             [meo.jvm.index :as idx]
             [meo.common.specs]
-            [clojure.tools.logging :as log]
             [clj-pid.core :as pid]
+            [meo.jvm.log]
             ;[matthiasn.systems-toolbox-kafka.kafka-producer2 :as kp2]
             [meo.jvm.store :as st]
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
-            [meo.jvm.imports :as i]))
+            [meo.jvm.imports :as i]
+            [taoensso.timbre :refer [info]]))
 
 (defonce switchboard (sb/component :server/switchboard))
 
-#_
-(defn make-observable [components]
-  (if (System/getenv "OBSERVER")
-    (let [cfg {:cfg         {:bootstrap-servers "localhost:9092"
-                             :auto-offset-reset "latest"
-                             :topic             "firehose"}
-               :relay-types #{:firehose/cmp-put
-                              :firehose/cmp-publish-state
-                              :firehose/cmp-recv}}
-          mapper #(assoc-in % [:opts :msgs-on-firehose] true)
-          components (set (mapv mapper components))
-          firehose-kafka (kp2/cmp-map :server/kafka-firehose cfg)]
-      (conj components firehose-kafka))
-    components))
+#_(defn make-observable [components]
+    (if (System/getenv "OBSERVER")
+      (let [cfg {:cfg         {:bootstrap-servers "localhost:9092"
+                               :auto-offset-reset "latest"
+                               :topic             "firehose"}
+                 :relay-types #{:firehose/cmp-put
+                                :firehose/cmp-publish-state
+                                :firehose/cmp-recv}}
+            mapper #(assoc-in % [:opts :msgs-on-firehose] true)
+            components (set (mapv mapper components))
+            firehose-kafka (kp2/cmp-map :server/kafka-firehose cfg)]
+        (conj components firehose-kafka))
+      components))
 
 (defn restart!
   "Starts or restarts system by asking switchboard to fire up the ws-cmp for
@@ -85,9 +85,8 @@
                             :server/backup-cmp
                             :server/imports-cmp}
                     :to   :server/scheduler-cmp}]
-       #_
-       (when (System/getenv "OBSERVER")
-         [:cmd/attach-to-firehose :server/kafka-firehose])
+       #_(when (System/getenv "OBSERVER")
+           [:cmd/attach-to-firehose :server/kafka-firehose])
 
        [:cmd/send {:to  :server/scheduler-cmp
                    :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
@@ -103,6 +102,6 @@
   [& _args]
   (pid/save "meo.pid")
   (pid/delete-on-shutdown! "meo.pid")
-  (log/info "meo started, PID" (pid/current))
+  (info "meo started, PID" (pid/current))
   (restart! switchboard)
   (Thread/sleep Long/MAX_VALUE))

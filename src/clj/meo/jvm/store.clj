@@ -2,6 +2,7 @@
   "This namespace contains the functions necessary to instantiate the store-cmp,
    which then holds the server side application state."
   (:require [meo.jvm.files :as f]
+            [taoensso.timbre :refer [info error]]
             [taoensso.timbre.profiling :refer [p profile]]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.stats :as gs]
@@ -9,11 +10,8 @@
             [meo.common.specs]
             [clojure.data.avl :as avl]
             [ubergraph.core :as uber]
-            [matthiasn.systems-toolbox.component.helpers :as sth]
-            [clojure.tools.logging :as log]
             [me.raynes.fs :as fs]
             [meo.jvm.file-utils :as fu]
-            [meo.jvm.net :as net]
             [meo.common.utils.vclock :as vc]))
 
 (defn read-dir [state entries-to-index put-fn]
@@ -40,10 +38,10 @@
                 (when local-offset
                   (swap! state update-in [:vclock-map] assoc local-offset parsed))
                 (when (zero? (mod @cnt 5000))
-                  (log/info "Lines read:" @cnt)
-                  (log/info (last (:vclock-map @state)))))
+                  (info "Lines read:" @cnt)
+                  (info (last (:vclock-map @state)))))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
+                (error "Exception" ex "when parsing line:\n" line)))))))
     (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
 
 (defn ft-index [entries-to-index put-fn]
@@ -53,11 +51,11 @@
     (when clucy-dir-empty?
       (future
         (Thread/sleep 2000)
-        (log/info "Fulltext-Indexing started")
+        (info "Fulltext-Indexing started")
         (let [t (with-out-str
                   (time (doseq [entry (vals @entries-to-index)]
                           (put-fn [:ft/add entry]))))]
-          (log/info "Indexed" (count @entries-to-index) "entries." t))
+          (info "Indexed" (count @entries-to-index) "entries." t))
         (reset! entries-to-index [])))))
 
 (defn recreate-state
@@ -75,7 +73,7 @@
                      :vclock-map     (avl/sorted-map)
                      :cfg            conf})]
     (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
-      (log/info "Read" (count @entries-to-index) "entries." t)
+      (info "Read" (count @entries-to-index) "entries." t)
       (ft-index entries-to-index put-fn))
     {:state state}))
 
@@ -89,7 +87,7 @@
              (fs/exists? (:app-cache (fu/paths))))
       (f/state-from-file)
       (recreate-state put-fn))
-    (catch Exception ex (do (log/error "Error reading cache" ex)
+    (catch Exception ex (do (error "Error reading cache" ex)
                             (recreate-state put-fn)))))
 
 (defn refresh-cfg

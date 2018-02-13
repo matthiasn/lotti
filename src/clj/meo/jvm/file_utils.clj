@@ -1,13 +1,9 @@
 (ns meo.jvm.file-utils
-  (:require [clj-uuid :as uuid]
-            [clj-time.core :as time]
-            [clj-time.format :as tf]
-            [clojure.tools.logging :as log]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [matthiasn.systems-toolbox.component :as st]
+            [taoensso.timbre :refer [info warn]]
             [me.raynes.fs :as fs]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [clojure.tools.logging :as l]
             [clojure.pprint :as pp]))
 
 (def data-path (or (System/getenv "DATA_PATH") "data"))
@@ -49,7 +45,7 @@
                   (catch Exception ex
                     (let [default (edn/read-string
                                     (slurp (io/resource "default-conf.edn")))]
-                      (log/warn "No config found -> copying from default.")
+                      (warn "No config found -> copying from default.")
                       (write-conf default conf-path)
                       default)))]
     (when-not (:node-id conf)
@@ -62,6 +58,6 @@
         bak-path (str bak-path "/conf-" (st/now) ".edn")
         pretty (with-out-str (pp/pprint msg-payload))]
     (fs/rename conf-path bak-path)
-    (log/info "writing new config")
+    (info "writing new config")
     (spit conf-path pretty)
     {:emit-msg [:backend-cfg/new msg-payload]}))

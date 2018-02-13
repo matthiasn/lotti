@@ -6,7 +6,6 @@
             [clj-time.format :as ctf]
             [clojure.string :as s]
             [clojure.set :as set]
-            [clojure.tools.logging :as log]
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.datetime :as dt]

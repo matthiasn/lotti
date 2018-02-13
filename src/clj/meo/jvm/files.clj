@@ -8,12 +8,11 @@
             [clj-uuid :as uuid]
             [clj-time.core :as time]
             [clj-time.format :as tf]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error]]
             [matthiasn.systems-toolbox.component :as st]
             [me.raynes.fs :as fs]
             [clojure.java.io :as io]
             [taoensso.nippy :as nippy]
-            [clojure.pprint :as pp]
             [meo.jvm.file-utils :as fu]
             [ubergraph.core :as uc]
             [meo.common.utils.vclock :as vc]
@@ -61,13 +60,13 @@
 
 (defn persist-state! [state]
   (try
-    (log/info "Persisting application state")
+    (info "Persisting application state")
     (let [file-path (:app-cache (fu/paths))
           serializable (update-in state [:graph] uc/ubergraph->edn)]
       (with-open [writer (io/output-stream file-path)]
         (nippy/freeze-to-out! (DataOutputStream. writer) serializable))
-      (log/info "Application state saved to" file-path))
-    (catch Exception ex (log/error "Error persisting cache" ex))))
+      (info "Application state saved to" file-path))
+    (catch Exception ex (error "Error persisting cache" ex))))
 
 (defn state-from-file []
   (let [file-path (:app-cache (fu/paths))
@@ -76,7 +75,7 @@
         state (-> thawed
                   (update-in [:sorted-entries] #(into (sorted-set-by >) %))
                   (update-in [:graph] uc/edn->ubergraph))]
-    (log/info "Application state read from" file-path)
+    (info "Application state read from" file-path)
     {:state (atom state)}))
 
 (defn geo-entry-persist-fn
@@ -100,7 +99,7 @@
       (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
-      (log/info (last (:vclock-map new-state)))
+      (info (last (:vclock-map new-state)))
       (append-daily-log (:cfg current-state) entry)
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
@@ -131,13 +130,13 @@
     (let [{:keys [data-path trash-path]} (fu/paths)]
       (fs/rename (str data-path "/" dir "/" filename)
                  (str trash-path filename))
-      (log/info "Moved file to trash:" filename))))
+      (info "Moved file to trash:" filename))))
 
 (defn trash-entry-fn [{:keys [current-state msg-payload]}]
   (let [entry-ts (:timestamp msg-payload)
         new-state (ga/remove-node current-state entry-ts)
         cfg (:cfg current-state)]
-    (log/info "Entry" entry-ts "marked as deleted.")
+    (info "Entry" entry-ts "marked as deleted.")
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
                            :deleted   true})
     (move-attachment-to-trash cfg msg-payload "images" :img-file)

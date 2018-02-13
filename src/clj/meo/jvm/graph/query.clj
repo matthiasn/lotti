@@ -7,7 +7,7 @@
             [clj-time.format :as ctf]
             [clojure.string :as s]
             [clojure.set :as set]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error warn debug]]
             [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
@@ -219,7 +219,7 @@
                       (-> (uc/attrs g n)
                           (get-comments g n)
                           (get-linked-entries g n false))
-                      (log/warn "extract-sorted-entries can't find node: " n)))
+                      (warn "extract-sorted-entries can't find node: " n)))
         sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
         matched-ids (cond
                       ; full-text search
@@ -443,7 +443,7 @@
       (let [comments-linked-mapper (comments-linked-for-entry g false)
             entry (comments-linked-mapper (uc/attrs g ts))]
         {:emit-msg (when entry [:entry/found entry])})
-      (log/warn "cannot find node: " ts))))
+      (warn "cannot find node: " ts))))
 
 (defn run-query [current-state msg-meta]
   (fn [[query-id query]]
@@ -466,5 +466,5 @@
                      res)
         ms (/ (- (System/nanoTime) start-ts) 1000000)
         dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
-    (log/debug queries)
+    (debug queries)
     {:emit-msg [:state/new (merge res2 dur)]}))

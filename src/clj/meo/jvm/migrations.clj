@@ -1,9 +1,8 @@
 (ns meo.jvm.migrations
   "This namespace is used for migrating entries to new versions."
   (:require [meo.jvm.files :as f]
-            [meo.jvm.net :as net]
             [clojure.pprint :as pp]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error]]
             [clj-uuid :as uuid]
             [camel-snake-kebab.core :refer :all]
             [cheshire.core :as cc]
@@ -56,8 +55,8 @@
                 (swap! ts-uuid assoc-in [ts] id)
                 (spit out-file serialized :append true))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
-    (log/info (count @ts-uuid) "migrated")))
+                (error "Exception" ex "when parsing line:\n" line)))))))
+    (info (count @ts-uuid) "migrated")))
 
 (defn migrate-books-to-sagas
   ; (migrate-to-uuids "./data/migration/book-to-saga" "./data/migration/2017-03-20.jrn")
@@ -89,8 +88,8 @@
                 (swap! ts-uuid assoc-in [ts] entry)
                 (spit out-file serialized :append true))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
-    (log/info (count @ts-uuid) "migrated")))
+                (error "Exception" ex "when parsing line:\n" line)))))))
+    (info (count @ts-uuid) "migrated")))
 
 (defn migrate-weight
   ; (migrate-weight "./data/migration/weight" "./data/migration/2017-03-23.jrn")
@@ -116,8 +115,8 @@
                 (swap! ts-uuids assoc-in [ts] entry)
                 (spit out-file serialized :append true))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
-    (log/info (count @weight-entry-uuids) "-" (count @ts-uuids) "migrated.")))
+                (error "Exception" ex "when parsing line:\n" line)))))))
+    (info (count @weight-entry-uuids) "-" (count @ts-uuids) "migrated.")))
 
 (defn get-geoname [entry]
   (let [lat (:latitude entry)
@@ -149,12 +148,12 @@
                   (let [ts (:timestamp parsed)]
                     (swap! state update-in [:deleted] #(set (conj % ts))))))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
+                (error "Exception" ex "when parsing line:\n" line)))))))
     (doseq [f (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")]
       (with-open [reader (clojure.java.io/reader f)]
         (let [lines (line-seq reader)
               filename (.getName f)]
-          (log/info filename)
+          (info filename)
           (doseq [line lines]
             (try
               (let [parsed (clojure.edn/read-string line)
@@ -164,9 +163,9 @@
                 (when-not (contains? (:deleted @state) ts)
                   (spit out-file serialized :append true)))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line)))))))
+                (error "Exception" ex "when parsing line:\n" line)))))))
     (let [deleted (:deleted @state)]
-      (log/info (count deleted) " deleted."))))
+      (info (count deleted) " deleted."))))
 
 
 (defn migrate-linked-stories
@@ -193,8 +192,8 @@
                   (swap! ts-uuids assoc-in [ts] entry)
                   (spit (str out-path "/" filename) serialized :append true))
                 (catch Exception ex
-                  (log/error "Exception" ex "when parsing line:\n" line)))))))
-      (log/info (count @ts-uuids) "entries in" @line-count "lines migrated."))))
+                  (error "Exception" ex "when parsing line:\n" line)))))))
+      (info (count @ts-uuids) "entries in" @line-count "lines migrated."))))
 
 ;(m/migrate-to-vclock "./data/migrations/vclock" "./data/migrations/vclock-out" "some-uuid")
 (defn migrate-to-vclock [path out-path node-id]
@@ -219,6 +218,5 @@
                 (swap! ts-uuids conj id)
                 (spit (str out-path "/" filename) serialized :append true))
               (catch Exception ex
-                (log/error "Exception" ex "when parsing line:\n" line))))
-          (log/info
-            filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))

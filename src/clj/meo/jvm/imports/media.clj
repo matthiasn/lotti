@@ -2,7 +2,6 @@
   "This namespace does imports, for example of photos."
   (:require [clojure.pprint :as pp]
             [clojure.java.shell :refer [sh]]
-            [clojure.string :as str]
             [clj-time.format :as tf]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
@@ -10,7 +9,7 @@
             [meo.jvm.file-utils :as fu]
             [clojure.string :as s]
             [clojure.java.io :as io]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error warn]]
             [meo.jvm.files :as f]
             [meo.common.specs :as specs]
             [cheshire.core :as cc]
@@ -145,10 +144,10 @@
   "Imports photos from respective directory."
   [{:keys [put-fn msg-meta]}]
   (let [files (file-seq (io/file (str fu/data-path "/import")))]
-    (log/info "importing media files")
+    (info "importing media files")
     (doseq [file (f/filter-by-name files specs/media-file-regex)]
       (let [filename (.getName file)]
-        (log/info "Trying to import " filename)
+        (info "Trying to import " filename)
         (try (let [[_ file-type] (re-find #"^.*\.([a-z0-9]{3})$" filename)
                    file-info (case file-type
                                "m4v" (import-video file)
@@ -156,7 +155,7 @@
                                (import-image file))]
                (when file-info
                  (put-fn (with-meta [:entry/import file-info] msg-meta))))
-             (catch Exception ex (log/error (str "Error while importing "
+             (catch Exception ex (error (str "Error while importing "
                                                  filename) ex)))))
     {:emit-msg [:cmd/schedule-new
                 {:timeout 3000 :message (with-meta [:search/refresh] msg-meta)}]}))
@@ -172,7 +171,7 @@
 (defn import-movie
   "Imports movie metadata from IMDb."
   [{:keys [msg-payload]}]
-  (log/info "importing movie" msg-payload)
+  (info "importing movie" msg-payload)
   (let [imdb-id (:imdb-id msg-payload)
         parser (fn [res] (cc/parse-string (:body res) #(keyword (s/lower-case %))))
         res (hc/get (str "http://www.omdbapi.com/?i=" imdb-id))
@@ -181,6 +180,6 @@
                  {:series (parser
                             (hc/get (str "http://www.omdbapi.com/?i=" sid)))})]
     (if (:error imdb)
-      (log/error "could not find on omdbapi.com:" imdb-id)
+      (error "could not find on omdbapi.com:" imdb-id)
       {:emit-msg [:entry/update (merge (:entry msg-payload)
                                        {:imdb (merge imdb series)})]})))

@@ -1,16 +1,7 @@
 (ns meo.jvm.graph.stats.questionnaires
   "Get stats from graph."
-  (:require [ubergraph.core :as uber]
-            [meo.jvm.graph.query :as gq]
-            [clj-time.core :as t]
-            [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.stats.time :as t-s]
-            [meo.common.utils.misc :as u]
-            [meo.electron.renderer.ui.questionnaires :as q]
-            [clj-time.format :as ctf]
-            [matthiasn.systems-toolbox.log :as l]
-            [clojure.tools.logging :as log]
-            [ubergraph.core :as uc]))
+  (:require [meo.jvm.graph.query :as gq]
+            [meo.electron.renderer.ui.questionnaires :as q]))
 
 (defn by-tag
   "Calculates individual questionnaire scores."

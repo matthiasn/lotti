@@ -1,6 +1,6 @@
 (ns meo.jvm.imports.spotify
   (:require [cheshire.core :as cc]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error warn]]
             [clj-http.client :as hc]
             [clj-time.coerce :as c]
             [camel-snake-kebab.core :refer :all]
@@ -16,14 +16,14 @@
         url "https://accounts.spotify.com/api/token"
         refresh-token (:spotify-refresh-token conf)
         client-secret (slurp "SPOTIFY_SECRET")]
-    (log/info :get-access-token (subs refresh-token 0 6) (subs client-secret 0 6))
+    (info :get-access-token (subs refresh-token 0 6) (subs client-secret 0 6))
     (when (and refresh-token client-secret)
       (body-parser (hc/post url {:form-params {:grant_type    "refresh_token"
                                                :refresh_token refresh-token}
                                  :basic-auth  [client-id client-secret]})))))
 
 (defn import-spotify [{:keys [put-fn]}]
-  (log/info "Importing from Spotify.")
+  (info "Importing from Spotify.")
   (let [rp-url "https://api.spotify.com/v1/me/player/recently-played?access_token="
         item-mapper (fn [item]
                       (let [track (:track item)
@@ -46,20 +46,20 @@
                           :uri       (:uri item)
                           :tags      #{"#spotify"}
                           :spotify   item}))
-        ex-handler (fn [ex] (log/error (.getMessage ex)))
+        ex-handler (fn [ex] (error (.getMessage ex)))
         get (fn [url handler] (hc/get url {:async? true} handler ex-handler))
         rp-handler (fn [res]
                      (let [parsed (body-parser res)
                            recently-played (map item-mapper (:items parsed))
                            new-entries (map entry-mapper recently-played)]
-                       (log/info "obtained response from spotify")
+                       (info "obtained response from spotify")
                        (doseq [entry new-entries]
                          (put-fn [:entry/update entry]))))
         access-token (:access-token (get-access-token))
         url (str rp-url access-token)]
     (if access-token
       (get url rp-handler)
-      (log/warn "incomplete spotify credentials")))
+      (warn "incomplete spotify credentials")))
   {})
 
 (defn spotify-play [{:keys [msg-payload]}]
@@ -70,12 +70,12 @@
                     {:body         body
                      :content-type :json
                      :accept       :json})]
-    (log/info :spotify-play msg-payload body res)
+    (info :spotify-play msg-payload body res)
     {}))
 
 (defn spotify-pause [{:keys [msg-payload]}]
   (let [pause-url "https://api.spotify.com/v1/me/player/pause?access_token="
         token (:access-token (get-access-token))
         res (hc/put (str pause-url token))]
-    (log/info :spotify-pause msg-payload res)
+    (info :spotify-pause msg-payload res)
     {}))

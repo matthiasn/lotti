@@ -2,12 +2,7 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [clj-time.core :as t]
-            [meo.jvm.graph.stats.awards :as aw]
-            [meo.common.utils.misc :as u]
             [clj-time.format :as ctf]
-            [matthiasn.systems-toolbox.log :as l]
-            [clojure.tools.logging :as log]
             [ubergraph.core :as uc]
             [meo.jvm.datetime :as dt]
             [clj-time.coerce :as c]))

@@ -2,17 +2,13 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [clj-time.core :as t]
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.stats.time :as t-s]
             [meo.jvm.graph.stats.location :as sl]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.common.utils.misc :as u]
-            [clj-time.format :as ctf]
-            [matthiasn.systems-toolbox.log :as l]
-            [clojure.tools.logging :as log]
-            [ubergraph.core :as uc]
+            [taoensso.timbre :refer [info error warn]]
             [clojure.set :as set]
             [clj-pid.core :as pid]))
 
@@ -89,11 +85,11 @@
           stats (when stats-mapper
                   (let [res (mapv (stats-mapper current-state) days)]
                     (into {} res)))]
-      (log/info stats-type (count (str stats)))
+      (info stats-type (count (str stats)))
       (if stats
         (put-fn (with-meta [:stats/result {:stats stats
                                            :type  stats-type}] msg-meta))
-        (l/warn "No mapper defined for" stats-type))))
+        (warn "No mapper defined for" stats-type))))
   {})
 
 (defn get-basic-stats [state]

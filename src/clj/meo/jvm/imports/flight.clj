@@ -1,16 +1,8 @@
 (ns meo.jvm.imports.flight
-  (:require [clojure.pprint :as pp]
-            [meo.jvm.files :as f]
-            [meo.jvm.migrations :as m]
-            [meo.common.specs :as specs]
-            [clj-time.coerce :as c]
-            [clj-time.core :as t]
-            [net.cgrand.enlive-html :as eh]
-            [cheshire.core :as cc]
+  (:require [net.cgrand.enlive-html :as eh]
             [camel-snake-kebab.core :refer :all]
             [clj-http.client :as hc]
-            [clj-time.format :as tf]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error warn]]
             [clojure.string :as s]
             [clj-time.format :as ctf]))
 
@@ -197,9 +189,9 @@
    "HMT"   "+05:00"})
 
 (defn import-flight [{:keys [put-fn msg-payload]}]
-  (log/info "Importing from FlightAware.")
+  (info "Importing from FlightAware.")
   (let [url (str "http://service.prerender.io/" (-> msg-payload :flight :url))
-        ex-handler (fn [ex] (log/error (.getMessage ex)))
+        ex-handler (fn [ex] (error (.getMessage ex)))
         get (fn [url handler] (hc/get url {:async? true} handler ex-handler))
         handler (fn [res]
                   (let [body (:body res)

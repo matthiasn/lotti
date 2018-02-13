@@ -1,26 +1,10 @@
 (ns meo.jvm.imports.entries
-  (:require [clojure.pprint :as pp]
-            [meo.jvm.files :as f]
-            [meo.jvm.migrations :as m]
-            [meo.jvm.imports.screenshot :as is]
-            [meo.jvm.imports.spotify :as iss]
-            [meo.common.specs :as specs]
-            [meo.jvm.imports.flight :as fl]
-            [meo.jvm.imports.media :as im]
-            [clj-time.coerce :as c]
-            [clj-time.core :as t]
+  (:require [meo.jvm.migrations :as m]
             [cheshire.core :as cc]
             [camel-snake-kebab.core :refer :all]
-            [clj-time.coerce :as c]
-            [me.raynes.fs :as fs]
-            [clj-http.client :as hc]
-            [clj-time.format :as tf]
-            [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
+            [taoensso.timbre :refer [info error warn]]
             [clojure.string :as s]
-            [meo.common.utils.misc :as u]
-            [meo.jvm.file-utils :as fu]
-            [clj-time.format :as ctf]))
+            [meo.common.utils.misc :as u]))
 
 (defn import-visits-fn
   [rdr put-fn msg-meta filename]
@@ -42,8 +26,8 @@
                             :tags      #{"#visit" "#import"}})]
           (if-not (neg? (:timestamp visit))
             (put-fn (with-meta [:entry/import visit] msg-meta))
-            (log/warn "negative timestamp?" visit)))))
-    (catch Exception ex (log/error "Error while importing " filename ex))))
+            (warn "negative timestamp?" visit)))))
+    (catch Exception ex (error "Error while importing " filename ex))))
 
 (defn update-audio-tag
   [entry]
@@ -73,5 +57,4 @@
                            (set-linked entry)
                            (update-in entry [:tags] conj "#import"))]
                (put-fn (with-meta [:entry/import entry] msg-meta))))))
-       (catch Exception ex (log/error (str "Error while importing "
-                                           filename) ex))))
+       (catch Exception ex (error (str "Error while importing " filename) ex))))

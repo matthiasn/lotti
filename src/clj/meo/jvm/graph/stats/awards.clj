@@ -1,13 +1,7 @@
 (ns meo.jvm.graph.stats.awards
   "Get stats from graph."
-  (:require [ubergraph.core :as uber]
-            [meo.jvm.datetime :as dt]
-            [meo.jvm.graph.query :as gq]
-            [meo.common.utils.misc :as u]
-            [matthiasn.systems-toolbox.log :as l]
-            [clojure.tools.logging :as log]
-            [ubergraph.core :as uc]
-            [clojure.pprint :as pp]))
+  (:require [meo.jvm.datetime :as dt]
+            [meo.jvm.graph.query :as gq]))
 
 (defn award-points-by [k initial entries]
   (let [done-entries (filter #(and (-> % k :done) (-> % k :points)) entries)

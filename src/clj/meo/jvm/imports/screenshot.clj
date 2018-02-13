@@ -1,7 +1,7 @@
 (ns meo.jvm.imports.screenshot
   (:require [clojure.pprint :as pp]
             [me.raynes.conch :refer [programs let-programs]]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info]]
             [meo.jvm.file-utils :as fu]))
 
 (programs scrot)
@@ -9,7 +9,7 @@
 (defn import-screenshot [{:keys [put-fn msg-meta msg-payload]}]
   (let [filename (str fu/img-path (:filename msg-payload))
         os (System/getProperty "os.name")]
-    (log/info "importing screenshot" filename)
+    (info "importing screenshot" filename)
     (when (= os "Mac OS X")
       (let-programs [screencapture "/usr/sbin/screencapture"]
                     (screencapture filename)))

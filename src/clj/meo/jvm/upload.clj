@@ -6,7 +6,7 @@
             [hiccup.page :refer [html5]]
             [meo.jvm.imports.entries :as ie]
             [image-resizer.util :refer :all]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error]]
             [meo.jvm.file-utils :as fu]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox-sente.server :as sente])
@@ -29,30 +29,30 @@
    Then schedules shutdown."
   [{:keys [put-fn cmp-state current-state msg-meta]}]
   (when-let [server (:server current-state)]
-    (log/info "Stopping Upload Server")
+    (info "Stopping Upload Server")
     (.stop server))
   (reset! upload-port (get-free-port))
-  (log/info "Starting Upload Server on port" @upload-port)
+  (info "Starting Upload Server on port" @upload-port)
   (let [post-fn (fn [filename req put-fn]
                   (with-open [rdr (io/reader (:body req))]
                     (case filename
                       "text-entries.json" (ie/import-text-entries-fn
                                             rdr put-fn {} filename)
                       "visits.json" (ie/import-visits-fn rdr put-fn {} filename)
-                      (log/info :server/upload-cmp :text req))
+                      (info :server/upload-cmp :text req))
                     "OK"))
         binary-post-fn (fn [dir filename req]
                          (let [filename (str fu/data-path "/" dir "/" filename)
                                file (java.io.File. filename)]
                            (io/make-parents file)
-                           (log/info :server/upload-cmp :binary req)
+                           (info :server/upload-cmp :binary req)
                            (io/copy (:body req) file))
                          "OK")
         app (routes
               (PUT "/upload/:dir/:file" [dir file :as r]
-                   (binary-post-fn dir file r))
+                (binary-post-fn dir file r))
               (POST "/upload/:filename" [filename :as r]
-                    (post-fn filename r put-fn)))
+                (post-fn filename r put-fn)))
         server (j/run-jetty app {:port @upload-port :join? false})
         new-meta (assoc-in msg-meta [:sente-uid] :broadcast)]
     {:new-state (assoc-in current-state [:server] server)
@@ -62,7 +62,7 @@
                  (with-meta [:cfg/show-qr] new-meta)]}))
 
 (defn stop-server [{:keys [current-state]}]
-  (log/info "Stopping upload server")
+  (info "Stopping upload server")
   (.stop (:server current-state))
   {:new-state (assoc-in current-state [:server] nil)})
 
@@ -90,7 +90,7 @@
         new-state (assoc-in current-state [:ws-port] ws-port)
         new-state (assoc-in new-state [:server-name] server-name)]
     (reset! sync-ws-port ws-port)
-    (log/info "Starting" server-name)
+    (info "Starting" server-name)
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp (sente/cmp-map server-name opts)]
@@ -106,7 +106,7 @@
         server-name (or msg-payload (:server-name current-state))
         new-state (assoc-in current-state [:ws-port] nil)]
     (when server-name
-      (log/info "Stopping" server-name)
+      (info "Stopping" server-name)
       (sb/send-mult-cmd
         switchboard
         [[:cmd/shutdown server-name]])
@@ -114,7 +114,7 @@
 
 (defn state-fn [switchboard]
   (fn [put-fn]
-    (log/info "Starting upload component")
+    (info "Starting upload component")
     {:state (atom {:switchboard switchboard})}))
 
 (defn cmp-map [cmp-id switchboard]

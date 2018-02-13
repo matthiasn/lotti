@@ -2,7 +2,7 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [clojure.tools.logging :as log]
+            [taoensso.timbre :refer [info error warn debug]]
             [clj-time.coerce :as c]
             [clj-time.format :as ctf]
             [clj-time.core :as ct]))
@@ -54,7 +54,7 @@
                           res (vec (filter #(:v %) (mapv val-mapper nodes)))]
                       [field (if op
                                (try (op res)
-                                    (catch Exception e (log/error e res)))
+                                    (catch Exception e (error e res)))
                                res)]))]
               [k (into {} (mapv field-mapper fields))]))
           day-stats (into {:date-string date-string}
