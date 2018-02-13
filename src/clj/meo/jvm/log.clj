@@ -31,9 +31,9 @@
 
 ; See https://github.com/ptaoussanis/timbre
 (def timbre-config
-  {:level          :trace
+  {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
-   :middleware     [(middleware namespace-log-levels)]
+   ;:middleware     [(middleware namespace-log-levels)]
    :appenders      {:spit (appenders/spit-appender
                             {:fname          "/tmp/meo.log"
                              :hostname_      "foo"
