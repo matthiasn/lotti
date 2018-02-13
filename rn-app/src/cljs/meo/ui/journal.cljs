@@ -6,10 +6,11 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
                                    map-view mapbox-style-url icon image logo-img
-                                   touchable-highlight]]
+                                   touchable-opacity]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.string :as s]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [meo.utils.parse :as p]))
 
 (defn render-item [local put-fn navigate]
   (let [theme (subscribe [:active-theme])]
@@ -29,22 +30,22 @@
                             :width            "100%"}
                  :on-press #(do (put-fn [:entry/detail entry])
                                 (navigate "entry"))}
-           [touchable-highlight {:on-press to-detail
-                                 :style    {:padding-top    8
-                                            :padding-left   12
-                                            :padding-right  12
-                                            :padding-bottom 2}}
+           [touchable-opacity {:on-press to-detail
+                               :style    {:padding-top    8
+                                          :padding-left   12
+                                          :padding-right  12
+                                          :padding-bottom 2}}
             [text {:style {:color       text-color
                            :text-align  "center"
                            :font-size   10
                            :font-weight "100"
                            :margin-top  5}}
              (h/format-time ts)]]
-           [touchable-highlight {:on-press to-detail
-                                 :style    {:padding-top    4
-                                            :padding-left   12
-                                            :padding-right  12
-                                            :padding-bottom 8}}
+           [touchable-opacity {:on-press to-detail
+                               :style    {:padding-top    4
+                                          :padding-left   12
+                                          :padding-right  12
+                                          :padding-bottom 8}}
             [text {:style {:color       text-color
                            :text-align  "center"
                            :font-weight "bold"}}
@@ -81,16 +82,16 @@
                      :data         as-array
                      :render-item  (render-item local put-fn navigate)}]]))))
 
-(defn entry-detail [cfg-map put-fn]
+(defn entry-detail [cfg-map entry-local nav put-fn]
   (let [entry-detail (subscribe [:entry-detail])
-        theme (subscribe [:active-theme])
-        local (r/atom {})]
+        theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             entry @entry-detail
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
+        (reset! nav navigation)
         [scroll {:style {:flex-direction   "column"
                          :padding-top      15
                          :background-color bg
@@ -118,7 +119,7 @@
                        :keyboard-type      "twitter"
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
-                                             (swap! local assoc-in [:md] text))}]]
+                                             (swap! entry-local assoc-in [:md] text))}]]
          (when (:latitude entry)
            [map-view {:showUserLocation true
                       :centerCoordinate [(:longitude entry) (:latitude entry)]
@@ -128,13 +129,13 @@
                       :style            {:width  "100%"
                                          :height 200}
                       :zoomLevel        15}])
-         [text {:style {:color       text-color
+         [text {:style {:margin-top  400
+                        :color       text-color
                         :text-align  "center"
                         :font-weight "bold"
                         :padding     10}}
-          (:md @local)]
-
-         [text {:style {:margin-top  500
+          (:md @entry-local)]
+         [text {:style {:margin-top  20
                         :margin-left 10
                         :color       text-color
                         :text-align  "left"
@@ -144,7 +145,24 @@
 (defn journal-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
-        list-bg (get-in c/colors [:list-bg @theme])]
+        list-bg (get-in c/colors [:list-bg @theme])
+        entry-local (r/atom {})
+        nav (r/atom {})
+        detail-view-entry (subscribe [:entry-detail])
+        save-fn #(let [updated (p/parse-entry (:md @entry-local))
+                       go-back (:goBack @nav)]
+                   (put-fn [:entry/persist (merge @detail-view-entry updated)])
+                   (go-back))
+        header-right (fn [_]
+                       [touchable-opacity {:on-press save-fn
+                                           :style    {:padding-top    8
+                                                      :padding-left   12
+                                                      :padding-right  12
+                                                      :padding-bottom 8}}
+                        [text {:style {:color      "#0078e7"
+                                       :text-align "center"
+                                       :font-size  18}}
+                         "save"]])]
     (stack-navigator
       {:journal {:screen (stack-screen
                            (fn [{:keys [screenProps navigation] :as props}]
@@ -164,8 +182,9 @@
                                                                 :margin-top  6
                                                                 :font-size   20}}
                                                   "meo"]])})}
-       :entry   {:screen (stack-screen (entry-detail local put-fn)
+       :entry   {:screen (stack-screen (entry-detail local entry-local nav put-fn)
                                        {:title            "Detail"
                                         :headerTitleStyle {:color text-color}
+                                        :headerRight      header-right
                                         :headerStyle      {:backgroundColor header-bg}})}}
       {:cardStyle {:backgroundColor list-bg}})))

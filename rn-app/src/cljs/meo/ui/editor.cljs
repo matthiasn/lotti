@@ -1,6 +1,6 @@
 (ns meo.ui.editor
   (:require [re-frame.core :refer [subscribe]]
-            [meo.ui.shared :refer [view text text-input touchable-highlight btn
+            [meo.ui.shared :refer [view text text-input touchable-opacity btn
                                    keyboard-avoiding-view icon]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [meo.helpers :as h]
@@ -23,21 +23,21 @@
                                             :background-color bg
                                             :flex             1
                                             :align-items      "center"}}
-         [text-input {:style          {:flex             2
-                                       :font-weight      "100"
-                                       :padding          16
-                                       :font-size        24
-                                       :max-height       400
-                                       :background-color text-bg
-                                       :margin-bottom    20
-                                       :color            text-color
-                                       :width            "100%"}
-                      :multiline      true
-                      :default-value  (:md @local)
-                      :keyboard-type  "twitter"
+         [text-input {:style              {:flex             2
+                                           :font-weight      "100"
+                                           :padding          16
+                                           :font-size        24
+                                           :max-height       400
+                                           :background-color text-bg
+                                           :margin-bottom    20
+                                           :color            text-color
+                                           :width            "100%"}
+                      :multiline          true
+                      :default-value      (:md @local)
+                      :keyboard-type      "twitter"
                       :keyboardAppearance (if (= @theme :dark) "dark" "light")
-                      :on-change-text (fn [text]
-                                        (swap! local assoc-in [:md] text))}]]))))
+                      :on-change-text     (fn [text]
+                                            (swap! local assoc-in [:md] text))}]]))))
 
 (defn editor-tab [local put-fn theme]
   (let [local2 (r/atom {})
@@ -50,11 +50,11 @@
         header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
         header-right (fn [_]
-                       [touchable-highlight {:on-press save-fn
-                                             :style    {:padding-top    8
-                                                        :padding-left   12
-                                                        :padding-right  12
-                                                        :padding-bottom 8}}
+                       [touchable-opacity {:on-press save-fn
+                                           :style    {:padding-top    8
+                                                      :padding-left   12
+                                                      :padding-right  12
+                                                      :padding-bottom 8}}
                         [text {:style {:color      "#0078e7"
                                        :text-align "center"
                                        :font-size  18}}

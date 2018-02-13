@@ -4,7 +4,7 @@
             [re-frame.db :as rdb]
             [meo.ui.editor :as edit]
             [meo.ui.photos :as photos]
-            [meo.ui.shared :refer [view text text-input touchable-highlight btn
+            [meo.ui.shared :refer [view text text-input touchable-opacity btn
                                    tab-bar keyboard-avoiding-view vibration
                                    tab-bar-item app-registry icon safe-area-view]]
             [meo.ui.journal :as jrn]

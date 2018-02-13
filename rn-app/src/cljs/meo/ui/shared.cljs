@@ -14,6 +14,7 @@
 (def flat-list (r/adapt-react-class (.-FlatList react-native)))
 (def touchable (r/adapt-react-class (.-TouchableWithoutFeedback react-native)))
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight react-native)))
+(def touchable-opacity (r/adapt-react-class (.-TouchableOpacity react-native)))
 (def text-input (r/adapt-react-class (.-TextInput react-native)))
 (def tab-bar (r/adapt-react-class (.-TabBarIOS react-native)))
 (def picker (r/adapt-react-class (.-Picker react-native)))

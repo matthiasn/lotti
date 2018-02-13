@@ -1,5 +1,5 @@
 (ns meo.ui.photos
-  (:require [meo.ui.shared :refer [view text touchable-highlight cam-roll
+  (:require [meo.ui.shared :refer [view text touchable-opacity cam-roll
                                    scroll map-view mapbox-style-url image]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
@@ -65,11 +65,11 @@
         text-color (get-in c/colors [:text @theme])
         list-bg (get-in c/colors [:list-bg @theme])
         header-right (fn [_]
-                       [touchable-highlight {:on-press get-fn
-                                             :style    {:padding-top    8
-                                                        :padding-left   12
-                                                        :padding-right  12
-                                                        :padding-bottom 8}}
+                       [touchable-opacity {:on-press get-fn
+                                           :style    {:padding-top    8
+                                                      :padding-left   12
+                                                      :padding-right  12
+                                                      :padding-bottom 8}}
                         [text {:style {:color      "#0078e7"
                                        :text-align "center"
                                        :font-size  18}}

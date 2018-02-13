@@ -45,7 +45,7 @@
           parsed (when (seq v) (js/parseFloat v))
           updated (assoc-in entry path parsed)]
       (when parsed
-        (put-fn [:entry/update-local updated])))))
+        (put-fn [:entry/update updated])))))
 
 (def ymd-format "YYYY-MM-DD")
 (defn n-days-ago [n] (.subtract (js/moment.) n "d"))

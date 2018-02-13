@@ -1,6 +1,6 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
-            [meo.ui.shared :refer [view text touchable-highlight cam contacts
+            [meo.ui.shared :refer [view text touchable-opacity cam contacts
                                    scroll btn flat-list map-view mapbox
                                    mapbox-style-url picker picker-item divider
                                    settings-list settings-list-header
