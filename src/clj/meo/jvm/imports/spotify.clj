@@ -5,7 +5,8 @@
             [clj-time.coerce :as c]
             [camel-snake-kebab.core :refer :all]
             [meo.jvm.file-utils :as fu]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp])
+  (:import (java.net UnknownHostException)))
 
 (defn body-parser [res]
   (cc/parse-string (:body res) #(keyword (->kebab-case %))))
@@ -23,43 +24,45 @@
                                  :basic-auth  [client-id client-secret]})))))
 
 (defn import-spotify [{:keys [put-fn]}]
-  (info "Importing from Spotify.")
-  (let [rp-url "https://api.spotify.com/v1/me/player/recently-played?access_token="
-        item-mapper (fn [item]
-                      (let [track (:track item)
-                            album (:album track)
-                            images (:images album)
-                            artists (map (fn [a] (select-keys a [:id :uri :name]))
-                                         (:artists track))]
-                        {:name      (:name track)
-                         :id        (:id track)
-                         :uri       (:uri track)
-                         :album-uri (:uri album)
-                         :artists   artists
-                         :image     (:url (first images))
-                         :played-at (:played-at item)}))
-        entry-mapper (fn [item]
-                       (let [ts (c/to-long (:played-at item))]
-                         {:timestamp ts
-                          :md        "listened on #spotify"
-                          :id        ts
-                          :uri       (:uri item)
-                          :tags      #{"#spotify"}
-                          :spotify   item}))
-        ex-handler (fn [ex] (error (.getMessage ex)))
-        get (fn [url handler] (hc/get url {:async? true} handler ex-handler))
-        rp-handler (fn [res]
-                     (let [parsed (body-parser res)
-                           recently-played (map item-mapper (:items parsed))
-                           new-entries (map entry-mapper recently-played)]
-                       (info "obtained response from spotify")
-                       (doseq [entry new-entries]
-                         (put-fn [:entry/update entry]))))
-        access-token (:access-token (get-access-token))
-        url (str rp-url access-token)]
-    (if access-token
-      (get url rp-handler)
-      (warn "incomplete spotify credentials")))
+  (try
+    (info "Importing from Spotify.")
+    (let [rp-url "https://api.spotify.com/v1/me/player/recently-played?access_token="
+          item-mapper (fn [item]
+                        (let [track (:track item)
+                              album (:album track)
+                              images (:images album)
+                              artists (map (fn [a] (select-keys a [:id :uri :name]))
+                                           (:artists track))]
+                          {:name      (:name track)
+                           :id        (:id track)
+                           :uri       (:uri track)
+                           :album-uri (:uri album)
+                           :artists   artists
+                           :image     (:url (first images))
+                           :played-at (:played-at item)}))
+          entry-mapper (fn [item]
+                         (let [ts (c/to-long (:played-at item))]
+                           {:timestamp ts
+                            :md        "listened on #spotify"
+                            :id        ts
+                            :uri       (:uri item)
+                            :tags      #{"#spotify"}
+                            :spotify   item}))
+          ex-handler (fn [ex] (error (.getMessage ex)))
+          get (fn [url handler] (hc/get url {:async? true} handler ex-handler))
+          rp-handler (fn [res]
+                       (let [parsed (body-parser res)
+                             recently-played (map item-mapper (:items parsed))
+                             new-entries (map entry-mapper recently-played)]
+                         (info "obtained response from spotify")
+                         (doseq [entry new-entries]
+                           (put-fn [:entry/update entry]))))
+          access-token (:access-token (get-access-token))
+          url (str rp-url access-token)]
+      (if access-token
+        (get url rp-handler)
+        (warn "incomplete spotify credentials")))
+    (catch UnknownHostException _ (error "Host api.spotify.com not found")))
   {})
 
 (defn spotify-play [{:keys [msg-payload]}]
