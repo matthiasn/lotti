@@ -638,3 +638,9 @@ button.rbc-input::-moz-focus-inner {
   left: 0;
   right: -3px;
 }
+
+.pvt {
+  .rbc-day-slot .rbc-event-content {
+    font-size: 0;
+  }
+}

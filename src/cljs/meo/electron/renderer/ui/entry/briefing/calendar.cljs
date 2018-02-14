@@ -50,6 +50,7 @@
         cal (r/adapt-react-class default)
         chart-data (subscribe [:chart-data])
         sagas (subscribe [:sagas])
+        show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         stories (subscribe [:stories])]
     (fn calendar-view-render [put-fn]
@@ -83,7 +84,7 @@
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         [:div.cal-container
-         [:div.big-calendar
+         [:div.big-calendar {:class (when-not @show-pvt "pvt")}
           [cal (merge {:events     cal-entries
                        :date       (.toDate (moment. day))
                        :onNavigate #(info :navigate %)}

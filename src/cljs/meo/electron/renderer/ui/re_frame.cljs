@@ -24,6 +24,7 @@
 (reg-sub :options (fn [db _] (:options db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :stories (fn [db _] (:stories (:options db))))
+(reg-sub :show-pvt (fn [db _] (:show-pvt (:cfg db))))
 (reg-sub :sagas (fn [db _] (:sagas (:options db))))
 (reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))
 (reg-sub :busy-status (fn [db _] (:busy-status db)))
