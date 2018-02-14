@@ -115,7 +115,6 @@
   [stats-key day local last-update put-fn]
   (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
         last-update (:last-update last-update)]
-    (info (> last-update last-fetched))
     (when (> last-update last-fetched)
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
       (put-fn [:stats/get {:days [{:date-string day}] :type stats-key}]))))

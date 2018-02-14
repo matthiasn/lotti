@@ -61,7 +61,8 @@
   (fn [_ev]
     (put-fn [:search/add
              {:tab-group (case tab-group
-                           :briefing :off
+                           :off :off
+                           :briefing :left
                            :left :right
                            :left)
               :query     (parse-search query-string)}])))

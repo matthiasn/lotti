@@ -17,7 +17,6 @@
         cfg (subscribe [:cfg])
         data-handler (fn [ymd]
                        (let [q (up/parse-search (str "b:" ymd))]
-                         (info ymd)
                          (when-not (get @briefings ymd)
                            (let [weekday (.format (moment. ymd) "dddd")
                                  md (str "## " weekday "'s #briefing")

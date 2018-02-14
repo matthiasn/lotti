@@ -102,7 +102,6 @@
         planning-mode (subscribe [:planning-mode])
         click (fn [_]
                 (let [q (up/parse-search (str (:active @status)))]
-                  (info q )
                   (put-fn [:search/add {:tab-group :left :query q}])))]
     (fn busy-status-render [put-fn]
       (let [cls (name (or (:color @status) :green))]

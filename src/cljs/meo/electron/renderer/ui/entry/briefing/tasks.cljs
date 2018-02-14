@@ -153,7 +153,7 @@
             linked-entries-set (into (sorted-set) (:linked-entries-list @entry))
             linked-entries (mapv linked-mapper linked-entries-set)
             conf (merge @cfg @options)
-            add-search (up/add-search (str "l:" ts) :briefing put-fn)
+            add-search (up/add-search (str "l:" ts) :off put-fn)
             linked-entries (if (:show-pvt conf)
                              linked-entries
                              (filter (u/pvt-filter conf entries-w-done) linked-entries))
