@@ -24,7 +24,6 @@
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.33"]
-                 ;[matthiasn/systems-toolbox-kafka "0.6.16"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
@@ -56,7 +55,10 @@
                                            [re-frame "0.10.4"]
                                            [cljsjs/moment "2.17.1-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.22"]
-                                           [secretary "1.2.3"]]}}
+                                           [secretary "1.2.3"]]}
+             :inspect      {:dependencies [[matthiasn/systems-toolbox-kafka "0.6.16"]]
+                            :source-paths ["src/cljc" "src/clj/" "env/inspect"]
+                            :main         meo.inspect.core}}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 
@@ -86,15 +88,15 @@
             "cljs-geocoder-dev" ["with-profile" "cljs" "cljsbuild" "auto" "geocoder"]
             "cljs-updater-dev"  ["with-profile" "cljs" "cljsbuild" "auto" "updater"]
 
-            "dist"         ["do"
-                            ["clean"]
-                            ["test"]
-                            ["cljs-main"]
-                            ["cljs-renderer"]
-                            ["cljs-geocoder"]
-                            ["cljs-updater"]
-                            ["sass4clj" "once"]
-                            ["uberjar"]]}
+            "dist"              ["do"
+                                 ["clean"]
+                                 ["test"]
+                                 ["cljs-main"]
+                                 ["cljs-renderer"]
+                                 ["cljs-geocoder"]
+                                 ["cljs-updater"]
+                                 ["sass4clj" "once"]
+                                 ["uberjar"]]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"

@@ -1,7 +1,7 @@
 (ns meo.electron.main.core
   (:require [meo.electron.main.log]
             [meo.common.specs]
-            [taoensso.timbre :as timbre :refer-macros [info]]
+            [taoensso.timbre :refer-macros [info]]
             [matthiasn.systems-toolbox-electron.ipc-main :as ipc]
             [matthiasn.systems-toolbox-electron.window-manager :as wm]
             [meo.electron.main.menu :as menu]
@@ -24,8 +24,7 @@
 
 (defonce switchboard (sb/component :electron/switchboard))
 
-(def OBSERVER (:repo-dir rt/runtime-info))
-(info "OBSERVER" OBSERVER)
+(def OBSERVER true)
 
 (defn make-observable [components]
   (if OBSERVER
@@ -42,7 +41,9 @@
                 :spellcheck/off
                 :import/screenshot
                 :import/photos
-                :import/listen})
+                :import/listen
+                :firehose/cmp-put
+                :firehose/cmp-recv})
 
 (def app-path (:app-path rt/runtime-info))
 

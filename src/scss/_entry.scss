@@ -503,6 +503,18 @@
       &.selected {
         background-color: desaturate(lighten($hashtag-blue, 30), 15);
       }
+      &.active-timer {
+        background-color: desaturate(lighten($green, 40), 15);
+      }
+      &.active-timer-selected {
+        background-color: desaturate(lighten($green, 30), 10);
+      }
+      &.active-timer-selected-busy {
+        background-color: desaturate(lighten($red, 30), 10);
+      }
+      &.active-timer-busy {
+        background-color: desaturate(lighten($red, 40), 15);
+      }
     }
 
     td {

@@ -35,6 +35,7 @@
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         started-tasks (subscribe [:started-tasks])
         entries-map (subscribe [:entries-map])
+        busy-status (subscribe [:busy-status])
         entries-map (reaction (merge @entries-map (:entries-map @started-tasks)))
         options (subscribe [:options])
         stories (subscribe [:stories])
@@ -69,7 +70,8 @@
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
-            search-text @search-text]
+            search-text @search-text
+            busy-status @busy-status]
         (when (seq entries-list)
           [:div.linked-tasks
            [:table.tasks
@@ -84,10 +86,29 @@
                 [filter-btn :on-hold]]]]
              (for [entry entries-list]
                (let [ts (:timestamp entry)
-                     text (eu/first-line entry)]
+                     text (eu/first-line entry)
+                     active (= ts (:active busy-status))
+                     active-selected (and (= (str ts) search-text) active)
+                     busy (> 100 (- (st/now) (:last busy-status)))
+
+                     cls (cond
+                           (and active-selected busy)
+                           "active-timer-selected-busy"
+
+                           (and active busy)
+                           "active-timer-busy"
+
+                           active-selected
+                           "active-timer-selected"
+
+                           active
+                           "active-timer"
+
+                           (= (str ts) search-text)
+                           "selected")]
                  ^{:key ts}
                  [:tr {:on-click (up/add-search ts tab-group put-fn)
-                       :class    (when (= (str ts) search-text) "selected")}
+                       :class    cls}
                   [:td
                    (when-let [prio (-> entry :task :priority)]
                      [:span.prio {:class prio} prio])]
