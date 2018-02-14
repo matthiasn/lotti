@@ -2,6 +2,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [meo.common.utils.parse :as p]
             [goog.dom.Range]
+            [taoensso.timbre :refer-macros [info debug error]]
             [globalize :as globalize]
             [cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
@@ -114,6 +115,7 @@
   [stats-key day local last-update put-fn]
   (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
         last-update (:last-update last-update)]
+    (info (> last-update last-fetched))
     (when (> last-update last-fetched)
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
       (put-fn [:stats/get {:days [{:date-string day}] :type stats-key}]))))

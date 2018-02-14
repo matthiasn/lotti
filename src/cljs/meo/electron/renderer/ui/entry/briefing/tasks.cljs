@@ -39,7 +39,6 @@
         entries-map (reaction (merge @entries-map (:entries-map @started-tasks)))
         options (subscribe [:options])
         stories (subscribe [:stories])
-        not-on-hold #(not (:on-hold (:task %)))
         on-hold-filter (fn [entry]
                          (let [on-hold (:on-hold (:task entry))]
                            (if (:on-hold @local)
@@ -137,6 +136,7 @@
                         :done    (up/parse-search "#task #done")
                         :closed  (up/parse-search "#task #closed")
                         :backlog (up/parse-search "#task #backlog")}
+        find-missing (u/find-missing-entry entries-map put-fn)
         filter-btn (fn [fk text]
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
@@ -147,12 +147,13 @@
                                               (update-in v [:tags] conj "#done")
                                               v)])
                                        @entries-map)))
-        linked-mapper (u/find-missing-entry entries-w-done put-fn)]
+        linked-mapper (u/find-missing-entry entries-map put-fn)]
     (fn open-linked-tasks-render [ts local local-cfg put-fn]
       (let [{:keys [tab-group]} local-cfg
             linked-entries-set (into (sorted-set) (:linked-entries-list @entry))
             linked-entries (mapv linked-mapper linked-entries-set)
             conf (merge @cfg @options)
+            add-search (up/add-search (str "l:" ts) :briefing put-fn)
             linked-entries (if (:show-pvt conf)
                              linked-entries
                              (filter (u/pvt-filter conf entries-w-done) linked-entries))
@@ -184,6 +185,7 @@
                            upd (update-in entry [:linked-entries] rm-link)]
                        (put-fn [:entry/update upd])))
             search-text @search-text]
+        (add-search)
         (when (seq linked-tasks)
           [:div.linked-tasks
            [filter-btn :active (str " - " (m-to-hhmm total-time))]

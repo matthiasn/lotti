@@ -38,7 +38,7 @@
         [:div.journal
          [:div.journal-entries
           (when-let [story (:story local-cfg)]
-            (put-fn [:entry/find {:timestamp story }])
+            (put-fn [:entry/find {:timestamp story}])
             (when (get entries-map-deref story)
               ^{:key (str "story" story)}
               [e/entry-with-comments story put-fn local-cfg]))
