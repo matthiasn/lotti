@@ -108,6 +108,7 @@
        [:cmd/send {:to  :electron/startup
                    :msg [:jvm/loaded?]}]
 
+       #_
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:message [:geocoder/start]
                                             :timeout 2000}]}]

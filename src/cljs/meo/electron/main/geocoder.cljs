@@ -23,7 +23,7 @@
   (let [geocoder (:geocoder current-state)
         serialized (serialize msg-type msg-payload msg-meta)]
     (debug "GEONAMES IPC sending" serialized)
-    (.send geocoder serialized))
+    (when geocoder (.send geocoder serialized)))
   {})
 
 (defn start-geocoder [{:keys [current-state put-fn]}]
