@@ -22,6 +22,6 @@
    kafka producer that emits all of the application's events for consumption
    in inspect."
   [& _args]
-  (info "meo with inpect started, PID" (pid/current))
+  (info "meo with inspect started, PID" (pid/current))
   (mjc/restart! mjc/switchboard (make-observable mjc/cmp-maps) true)
   (Thread/sleep Long/MAX_VALUE))

@@ -101,8 +101,12 @@
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
-               {:label "Enable Planning Mode"
+               {:label "Toggle Planning Mode"
                 :click #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}])}
+               {:label "Toggle Calendar"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-calendar]}])}
+               {:label "Toggle Charts"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}

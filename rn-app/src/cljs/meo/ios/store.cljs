@@ -58,7 +58,9 @@
         [ts entry] (avl/nearest entries > newer-than)
         new-state (assoc-in current-state [:latest-synced] newer-than)]
     (go (<! (as/set-item :latest-synced newer-than)))
-    (when entry (put-fn [:sync/entry (merge entry {:timestamp ts})]))
+    (doseq [[ts entry] entries]
+      (put-fn [:sync/entry entry]))
+    (when entry (put-fn [:sync/entry {:timestamp ts}]))
     {:new-state new-state}))
 
 (defn load-state [{:keys [cmp-state put-fn]}]

@@ -78,8 +78,7 @@
    :index-page-fn  (fn [_] "hello world")
    :sente-opts     {:ws-kalive-ms 2000}
    :host           "0.0.0.0"
-   :relay-types    #{:sync/start :sync/progress
-                     :sync/entry :ws/ping}
+   :relay-types    #{:sync/start :sync/progress :sync/entry :ws/ping :sync/next}
    :opts           (:reload-cmp true)})
 
 (defn start-ws-server [{:keys [current-state]}]
@@ -96,7 +95,8 @@
       [[:cmd/init-comp (sente/cmp-map server-name opts)]
        [:cmd/route {:from server-name
                     :to   #{:server/store-cmp
-                            :server/upload-cmp}}]
+                            :server/upload-cmp
+                            :server/kafka-firehose}}]
        [:cmd/route {:from :server/store-cmp
                     :to   server-name}]])
     {:new-state new-state}))

@@ -14,7 +14,8 @@
    :thumbnails        true
    :dashboard         {:active :general}
    :app-screenshot    false
-   :planning-mode     false
+   :planning-mode     true
+   :show-calendar     true
    :lines-shortened   10})
 
 #?(:clj  (defonce app-cfg (atom default-config))

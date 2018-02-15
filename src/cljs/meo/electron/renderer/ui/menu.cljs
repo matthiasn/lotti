@@ -7,7 +7,8 @@
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info]]
             [cljs.reader :refer [read-string]]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -26,14 +27,14 @@
 
 (def all-options
   [{:option :show-pvt :cls "fa-user-secret"}
-   {:option :comments-standalone :cls "fa-comments"}
-   {:option :mute :cls "fa-volume-off"}
-   {:option :ticking-clock :cls "fa-clock-o"}
-   {:option :show-calendar :cls "fa-calendar"}
-   {:option :hide-hashtags :cls "fa-hashtag"}
-   {:option :single-column :cls "fa-columns"}
+   ;{:option :comments-standalone :cls "fa-comments"}
+   ;{:option :mute :cls "fa-volume-off"}
+   ;{:option :ticking-clock :cls "fa-clock-o"}
+   ;{:option :show-calendar :cls "fa-calendar"}
+   ;{:option :hide-hashtags :cls "fa-hashtag"}
+   ;{:option :single-column :cls "fa-columns"}
    {:option :dashboard-banner :cls "fa-line-chart"}
-   {:option :sort-asc :cls " fa-sort-asc"}
+   ;{:option :sort-asc :cls " fa-sort-asc"}
    {:option :app-screenshot :cls "fa-window-minimize"}])
 
 (defn change-language [cc]
@@ -113,11 +114,12 @@
   (let [cal-day (subscribe [:cal-day])
         cfg (subscribe [:cfg])]
     (fn [put-fn]
-      (let [locale (:locale @cfg :en)]
+      (let [locale (:locale @cfg :en)
+            day (or @cal-day (h/ymd (st/now)))]
         [:div.menu
          [:div.menu-header
           [new-import-view put-fn]
-          [:h1 (h/localize-date @cal-day locale)]
+          [:h1 (h/localize-date day locale)]
           [busy-status put-fn]
           [cfg-view put-fn]
           [upload-view]]]))))
