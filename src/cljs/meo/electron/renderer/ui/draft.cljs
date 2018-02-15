@@ -126,7 +126,9 @@
                                       cleaned)]
                         (when (:pomodoro-running @entry)
                           (put-fn [:window/progress {:v 0}])
-                          (put-fn [:blink/busy {:color :green}]))
+                          (put-fn [:blink/busy {:color :green}])
+                          (put-fn [:cmd/pomodoro-stop updated]))
+                        (put-fn [:entry/update-local updated])
                         (put-fn [:entry/update updated])))
             start-fn #(when (= (:entry-type latest-entry) :pomodoro)
                         (put-fn [:cmd/pomodoro-start latest-entry]))

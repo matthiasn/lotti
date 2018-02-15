@@ -96,7 +96,8 @@
                           (assoc-in [:busy-status :busy] (not done?))
                           (assoc-in [:busy-status :last] (st/now))
                           (assoc-in [:busy-status :active] comment-for))]
-        (put-fn [:window/progress {:v progress}])
+        (when (zero? (mod completed 30))
+          (put-fn [:window/progress {:v progress}]))
         (if (and (:pomodoro-running new-entry)
                  (= (:running (:pomodoro current-state)) ts))
           (let [color (if done? :orange :red)
