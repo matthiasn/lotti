@@ -158,6 +158,7 @@
         relevant #(select-keys % [:md :questionnaires :custom-fields :task
                                   :habit :completed-time :starred :img-size])
         changed? (not= (relevant saved) (relevant msg-payload))]
+    #_
     (when (and latitude longitude (not geoname))
       (put-fn [:geonames/lookup {:timestamp ts
                                  :latitude  latitude

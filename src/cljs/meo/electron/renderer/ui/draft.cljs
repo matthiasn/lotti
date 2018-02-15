@@ -66,7 +66,7 @@
                :stories     @stories-list
                :onChange    on-change}])))
 
-(defn draft-text-editor [editor-state md update-cb save-fn start-fn small-img changed]
+(defn draft-text-editor [md update-cb save-fn start-fn small-img changed]
   (let [editor (adapt-react-class "EntryTextEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
@@ -81,44 +81,31 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn [editor-state md update-cb save-fn start-fn small-img changed]
-      [editor {:editorState editor-state
-               :md          md
-               :changed     changed
-               :mentions    @mentions
-               :hashtags    @hashtags
-               :stories     @stories-list
-               :saveFn      save-fn
-               :startFn     start-fn
-               :smallImg    small-img
-               :onChange    update-cb}])))
+    (fn [md update-cb save-fn start-fn small-img changed]
+      [editor {:md       md
+               :changed  changed
+               :mentions @mentions
+               :hashtags @hashtags
+               :stories  @stories-list
+               :saveFn   save-fn
+               :startFn  start-fn
+               :smallImg small-img
+               :onChange update-cb}])))
 
 (defn entry-editor [entry put-fn]
   (let [ts (:timestamp @entry)
         {:keys [entry edit-mode unsaved]} (eu/entry-reaction ts)
-        editor-cb (fn [md plain editor-state]
+        editor-cb (fn [md plain]
                     (when-not (= md (:md @entry))
-                      (let [new-state (js->clj editor-state :keywordize-keys true)
-                            parsed-stories (entry-stories new-state)
-                            stories (set/union (:linked-stories @entry)
-                                               (set parsed-stories))
-                            stories (set (filter identity stories))
-                            story (first parsed-stories)
-                            updated (merge
+                      (let [updated (merge
                                       @entry
                                       (p/parse-entry md)
-                                      (when (and story (not (:primary-story @entry)))
-                                        {:primary-story story})
-                                      {:linked-stories stories
-                                       :editor-state   new-state
-                                       :text           plain})]
+                                      {:text plain})]
                         (when (:timestamp updated)
                           (put-fn [:entry/update-local updated])))))]
     (fn [entry put-fn]
       (let [latest-entry (dissoc @entry :comments)
             edit-mode? @edit-mode
-            editor-state (when-let [editor-state (:editor-state latest-entry)]
-                           (editor-state-from-raw (clj->js editor-state)))
             save-fn (fn [_ev]
                       (let [cleaned (u/clean-entry latest-entry)
                             updated (if (= (:entry-type entry) :pomodoro)
@@ -142,8 +129,7 @@
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
         [:div
-         [draft-text-editor
-          editor-state md editor-cb save-fn start-fn small-img @unsaved]
+         [draft-text-editor md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save
            (when @unsaved

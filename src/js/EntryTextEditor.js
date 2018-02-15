@@ -288,9 +288,8 @@ let EntryTextEditor = function (_Component) {
             let content = newState.getCurrentContent();
             let plain = content.getPlainText();
             let rawContent = (0, _draftJs.convertToRaw)(content);
-            let rawContent2 = JSON.parse(JSON.stringify(rawContent));
             let md = (0, _draftjsMdConverter.draftjsToMd)(rawContent, myMdDict);
-            props.onChange(md, plain, rawContent2);
+            props.onChange(md, plain);
         };
 
         _this.throttledSave = (0, _lodash2.default)(_this.saveExternal, 500);
