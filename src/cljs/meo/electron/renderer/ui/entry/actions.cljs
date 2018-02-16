@@ -188,8 +188,12 @@
         create-linked-entry (h/new-entry-fn put-fn {:linked-entries #{ts}
                                                     :primary-story  story
                                                     :linked-stories #{story}} nil)
-        new-pomodoro (h/new-entry-fn
-                       put-fn (p/pomodoro-defaults ts) show-comments)
+        new-pomodoro (fn [_ev]
+                       (let [new-entry-fn (h/new-entry-fn put-fn
+                                                          (p/pomodoro-defaults ts)
+                                                          show-comments)
+                             new-entry (new-entry-fn)]
+                         (put-fn [:cmd/pomodoro-start new-entry])))
         trash-entry #(if edit-mode?
                        (put-fn [:entry/remove-local {:timestamp ts}])
                        (put-fn [:entry/trash @entry]))

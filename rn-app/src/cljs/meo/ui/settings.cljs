@@ -283,7 +283,8 @@
                                :hasNavArrow      false
                                :background-color item-bg
                                :titleStyle       {:color text-color}
-                               :on-press         #(put-fn [:sync/initiate])}]]
+                               :on-press         #(put-fn [:sync/initiate
+                                                           {:newer-than 0}])}]]
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :flex   4

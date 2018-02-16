@@ -79,7 +79,8 @@
    :sente-opts     {:ws-kalive-ms 2000}
    :host           "0.0.0.0"
    :relay-types    #{:sync/start :sync/progress :sync/entry :ws/ping :sync/next}
-   :opts           (:reload-cmp true)})
+   :opts           {:reload-cmp true
+                    :msgs-on-firehose true}})
 
 (defn start-ws-server [{:keys [current-state]}]
   (let [switchboard (:switchboard current-state)

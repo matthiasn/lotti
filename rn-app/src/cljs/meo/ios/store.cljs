@@ -58,9 +58,7 @@
         [ts entry] (avl/nearest entries > newer-than)
         new-state (assoc-in current-state [:latest-synced] newer-than)]
     (go (<! (as/set-item :latest-synced newer-than)))
-    (doseq [[ts entry] entries]
-      (put-fn [:sync/entry entry]))
-    (when entry (put-fn [:sync/entry {:timestamp ts}]))
+    (when entry (put-fn [:sync/entry entry]))
     {:new-state new-state}))
 
 (defn load-state [{:keys [cmp-state put-fn]}]
@@ -126,9 +124,9 @@
                  :entry/new        persist
                  :entry/geo-enrich geo-enrich
                  :sync/initiate    sync-start
+                 :sync/next        sync-start
                  :state/load       load-state
                  :state/reset      state-reset
                  :entry/detail     detail
                  :theme/active     theme
-                 :activity/current current-activity
-                 :sync/next        sync-start}})
+                 :activity/current current-activity}})
