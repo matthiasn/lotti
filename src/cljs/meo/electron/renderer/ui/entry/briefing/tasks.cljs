@@ -76,9 +76,9 @@
            [:table.tasks
             [:tbody
              [:tr
-              [:th.xs [:span.fa.fa-exclamation-triangle]]
-              [:th [:span.fa.fa-diamond]]
-              [:th [:span.fa.fa-clock-o]]
+              [:th.xs [:i.far.fa-exclamation-triangle]]
+              [:th [:i.fa.far.fa-gem]]
+              [:th [:i.fa.far.fa-clock]]
               [:th
                [:div
                 "started tasks: "
@@ -196,11 +196,11 @@
            [:table.tasks
             [:tbody
              [:tr
-              [:th.xs [:span.fa.fa-exclamation-triangle]]
-              [:th [:span.fa.fa-diamond]]
-              [:th [:span.fa.fa-clock-o]]
+              [:th.xs [:i.far.fa-exclamation-triangle]]
+              [:th [:i.fa.far.fa-gem]]
+              [:th [:i.fa.far.fa-clock]]
               [:th [:strong "tasks"]]
-              [:th.xs [:span.fa.fa-link]]]
+              [:th.xs [:i.fa.far.fa-link]]]
              (for [task linked-tasks]
                (let [tts (:timestamp task)
                      on-drag-start (a/drag-start-fn task put-fn)
@@ -225,4 +225,4 @@
                    (when-let [estimate (-> task :task :estimate-m)]
                      (m-to-hhmm estimate))]
                   [:td.left.text text]
-                  [:td [:span.fa.fa-unlink {:on-click unlink}]]]))]]])))))
+                  [:td [:i.fa.far.fa-unlink {:on-click unlink}]]]))]]])))))

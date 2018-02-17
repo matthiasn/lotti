@@ -49,4 +49,4 @@
           (when (> (count entries) 1)
             (let [show-more #(put-fn [:show/more {:query-id query-id}])]
               [:div.show-more {:on-click show-more :on-mouse-over show-more}
-               [:span.show-more-btn [:span.fa.fa-plus-square] " show more"]]))]]))))
+               [:span.show-more-btn [:i.far.fa-plus-square] " show more"]]))]]))))

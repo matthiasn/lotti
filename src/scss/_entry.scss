@@ -26,7 +26,7 @@
   font-size: $font-size-medium;
 
   .entry-text {
-    padding-bottom: 0.3em;
+    padding-bottom: 10px;
   }
 
   .active {
@@ -41,8 +41,8 @@
     display: flex;
     flex-flow: row;
     justify-content: space-between;
+    align-items: center;
     user-select: none;
-    padding-bottom: 5px;
 
     .pomodoro {
       .completed {
@@ -52,7 +52,6 @@
 
       .dur {
         margin-right: 0.3em;
-        font-size: 0.8em;
         font-weight: bold;
         font-family: monospace;
       }
@@ -61,14 +60,12 @@
         margin-left: 0.5em;
       }
 
-      .fa {
-        padding-right: 3px;
+      .fas {
+        padding-right: 5px;
         cursor: pointer;
       }
 
       .start-stop {
-        font-size: 1.2em;
-        font-weight: bold;
       }
 
       .start {
@@ -193,6 +190,7 @@
 
     .starred {
       color: gold;
+      font-weight: 900;
     }
 
     .actions {
@@ -208,7 +206,8 @@
 
       .fa {
         margin: 0;
-        padding: 2px 2px 2px 4px;
+        padding: 2px 2px 8px 3px;
+        font-size: 11px;
       }
     }
 
@@ -335,11 +334,6 @@
 
 .markdown h1:first-child {
   margin-top: 0;
-}
-
-.redacted {
-  font-family: "redacted_scriptregular";
-  line-height: 1.2em;
 }
 
 .briefing {

@@ -7,7 +7,6 @@
             [meo.common.utils.misc :as u]
             [draft-js :as Draft]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [clojure.set :as set]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]))
 
 (defn editor-state-from-text [text]
@@ -134,5 +133,5 @@
           [:div.save
            (when @unsaved
              [:span.not-saved {:on-click save-fn}
-              [:span.fa.fa-floppy-o] "click to save"])]
+              [:i.far.fa-save] " save"])]
           [pomo/pomodoro-header entry edit-mode? put-fn]]]))))

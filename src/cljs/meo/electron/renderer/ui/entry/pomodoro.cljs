@@ -36,8 +36,8 @@
              [:span.btn.start-stop
               {:on-click start-stop
                :class    (if running? "stop" "start")}
-              [:span.fa {:class (if running? "fa-pause-circle-o"
-                                             "fa-play-circle-o")}]])
+              [:i.fas {:class (if running? "fa-pause-circle"
+                                           "fa-play-circle")}]])
            (if (and edit-mode? (:edit @local) (not running?))
              [:input {:value     (h/s-to-hh-mm completed-time)
                       :type      :time

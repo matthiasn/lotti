@@ -11,15 +11,18 @@
 
 (defn trash-icon [trash-fn]
   (let [local (r/atom {:visible false})
-        toggle-visible #(swap! local update-in [:visible] not)]
+        toggle-visible (fn [_]
+                         (swap! local update-in [:visible] not)
+                         (.setTimeout js/window
+                                      #(swap! local assoc-in [:visible] false)
+                                      5000))]
     (fn [trash-fn]
-      [:span.new-link-btn
-       [:span.fa.fa-trash-o.toggle {:on-click toggle-visible}]
+      [:span.delete-btn
+       [:i.fa.fa-trash-alt.toggle {:on-click toggle-visible}]
        (when (:visible @local)
-         [:span.new-link
-          {:on-click #(do (toggle-visible))}
-          [:span.delete-warn {:on-click trash-fn}
-           [:span.fa.fa-trash] " are you sure?"]])])))
+         [:span.warn.delete
+          {:on-click trash-fn}
+          [:i.far.fa-trash-alt] " are you sure?"])])))
 
 (defn edit-icon
   "Renders an edit icon, which transforms into a warning button that needs to be
@@ -32,16 +35,16 @@
                           (swap! clicked not)
                           (.setTimeout js/window #(reset! clicked false) 5000))]
     (fn [toggle-edit edit-mode? entry]
-      (if edit-mode?
-        (if @clicked
-          (let [click #(do (toggle-edit)
-                           (swap! clicked not)
-                           (info "Discarding local changes:\n"
-                                 (with-out-str (pp/pprint entry))))]
-            [:span.delete-warn {:on-click click}
-             [:span.fa.fa-trash] "  discard changes?"])
-          [:span.fa.fa-pencil-square-o.toggle {:on-click guarded-edit-fn}])
-        [:span.fa.fa-pencil-square-o.toggle {:on-click toggle-edit}]))))
+      (when edit-mode?
+        [:span.delete-btn
+         [:i.fa.fa-edit.toggle {:on-click guarded-edit-fn}]
+         (when @clicked
+           (let [click #(do (toggle-edit)
+                            (swap! clicked not)
+                            (info "Discarding local changes:\n"
+                                  (with-out-str (pp/pprint entry))))]
+             [:span.warn.discard {:on-click click}
+              [:i.far.fa-trash-alt] " discard changes?"]))]))))
 
 (defn drop-linked-fn
   "Creates handler function for drop event, which takes the timestamp of the
@@ -79,17 +82,21 @@
   "Renders input for adding link entry."
   [entry put-fn create-linked-entry]
   (let [local (r/atom {:visible false})
-        toggle-visible #(swap! local update-in [:visible] not)
+        toggle-visible (fn [_]
+                         (swap! local update-in [:visible] not)
+                         (.setTimeout js/window
+                                      #(swap! local assoc-in [:visible] false)
+                                      5000))
         on-drag-start (drag-start-fn entry put-fn)]
     (fn [entry put-fn create-linked-entry]
       [:span.new-link-btn
-       [:span.fa.fa-link.toggle {:on-click      toggle-visible
-                                 :draggable     true
-                                 :on-drag-start on-drag-start}]
+       [:i.fa.fa-link.toggle {:on-click      toggle-visible
+                              :draggable     true
+                              :on-drag-start on-drag-start}]
        (when (:visible @local)
          [:span.new-link
           {:on-click #(do (create-linked-entry) (toggle-visible))}
-          [:span.fa.fa-plus-square] "add linked"])])))
+          [:i.fas.fa-plus-square] "add linked"])])))
 
 (defn add-location
   "Renders context menu for adding location."
@@ -101,12 +108,12 @@
                               (assoc-in % [:location :type] :location)])]
         (when-not (:location entry)
           [:span.new-link-btn
-           [:span.fa.fa-map-marker.toggle
+           [:i.fa.fa-map-marker.toggle
             {:on-click toggle-visible}]
            (when (:visible @local)
              [:span.new-link
               {:on-click #(do (toggle-visible) (new-loc entry))}
-              [:span.fa.fa-plus-square] "add location"])])))))
+              [:i.fa.fa-plus-square] "add location"])])))))
 
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
@@ -132,12 +139,12 @@
                                                     :linked-stories #{story}} nil)
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry-fn put-fn
-                                            (p/pomodoro-defaults ts)
-                                            show-comments)
+                                                          (p/pomodoro-defaults ts)
+                                                          show-comments)
                              new-entry (new-entry-fn)]
                          (put-fn [:cmd/pomodoro-start new-entry])))
         trash-entry (fn [_]
-                      (put-fn [:search/remove-all {:story (:linked-story @entry)
+                      (put-fn [:search/remove-all {:story       (:linked-story @entry)
                                                    :search-text (str ts)}])
                       (if edit-mode?
                         (put-fn [:entry/remove-local {:timestamp ts}])
@@ -153,22 +160,22 @@
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
-          (when map? [:span.fa.fa-map-o.toggle {:on-click toggle-map}])
+          (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? @entry])
-          (when-not comment? [:span.fa.fa-clock-o.toggle {:on-click new-pomodoro}])
+          (when-not comment? [:i.fa.fa-clock.toggle {:on-click new-pomodoro}])
           (when-not comment?
-            [:span.fa.fa-comment-o.toggle {:on-click create-comment}])
+            [:i.fa.fa-comment.toggle {:on-click create-comment}])
           (when-not comment?
-            [:span.fa.fa-desktop.toggle {:on-click screenshot}])
+            [:i.fa.fa-desktop.toggle {:on-click screenshot}])
           (when (and (not comment?) prev-saved?)
-            [:span.fa.fa-external-link.toggle {:on-click open-external}])
+            [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
           (when-not comment? [new-link @entry put-fn create-linked-entry])
           ; [add-location @entry put-fn]
           [trash-icon trash-entry]]
-         [:span.fa.toggle
+         [:i.fa.toggle
           {:on-click star-entry
            :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
-           :class    (if starred "fa-star starred" "fa-star-o")}]]))))
+           :class    (if starred "fa-star starred" "fa-star")}]]))))
 
 
 (defn briefing-actions
@@ -203,9 +210,9 @@
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
-          (when-not comment? [:span.fa.fa-clock-o.toggle {:on-click new-pomodoro}])
+          (when-not comment? [:i.fa.fa-clock.toggle {:on-click new-pomodoro}])
           (when-not comment?
-            [:span.fa.fa-comment-o.toggle {:on-click create-comment}])
-          [:span.fa.fa-plus-square-o.toggle
+            [:i.fa.fa-comment.toggle {:on-click create-comment}])
+          [:i.fa.fa-plus-square.toggle
            {:on-click #(create-linked-entry)}]
           [trash-icon trash-entry]]]))))

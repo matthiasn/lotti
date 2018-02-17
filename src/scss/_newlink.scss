@@ -7,14 +7,18 @@
   .new-link {
     position: absolute;
     z-index: 1002;
-    margin-top: 1.5em;
-    margin-left: -120px;
+    margin-top: 21px;
+    margin-left: -60px;
     cursor: pointer;
     font-weight: bold;
-    padding: 1px 2px;
+    padding: 1px 6px;
+    font-size: 0.8em;
+    color: white;
+    background-color: $green;
 
-    .fa-plus-square {
-      margin: 5px 5px 0 0;
+    i {
+      margin-right: 4px;
+      color: white;
     }
   }
 }

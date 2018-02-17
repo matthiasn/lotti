@@ -53,6 +53,13 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(0, 0, 0, 0.5);
 }
 
+i {
+  &.fa {
+    color: $fa-color;
+    font-weight: 300;
+  }
+}
+
 @import "buttons.scss";
 @import "journal.scss";
 @import "entry.scss";

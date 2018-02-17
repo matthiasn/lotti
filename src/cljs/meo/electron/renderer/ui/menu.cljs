@@ -15,7 +15,7 @@
     (fn toggle-option-render [{:keys [option cls]} put-fn]
       (let [show-option? (option @cfg)
             toggle-option #(put-fn [:cmd/toggle-key {:path [:cfg option]}])]
-        [:span.fa.toggle
+        [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))
 
@@ -77,12 +77,12 @@
        (for [option (if @planning-mode all-options limited-options)]
          ^{:key (str "toggle" (:cls option))}
          [toggle-option-view option put-fn])
-       [:span.fa.fa-desktop.toggle.inactive
+       [:i.far.fa-desktop.toggle.inactive
         {:on-click screenshot}]
-       [:span.fa.fa-qrcode.toggle
+       [:i.far.fa-qrcode.toggle
         {:on-click toggle-qr-code
          :class    (when-not (:qr-code @cfg) "inactive")}]
-       [:span.fa.fa-qrcode.toggle
+       [:span.far.fa-qrcode.toggle
         {:on-click ws-address
          :class    (when-not (:ws-qr-code @cfg) "inactive")}]])))
 

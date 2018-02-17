@@ -193,20 +193,3 @@
             :utc-offset     -60
             :vclock         {"edf3da73-f8e7-4076-8387-bfb35b7999e1" 77}}
            (u/clean-entry clean-test-entry)))))
-
-(deftest clean-text-test
-
-  (testing "deals with empty text"
-    (is (= ""
-           (u/clean-text ""))))
-
-  (testing "returns nil when passed nil"
-    (is (nil? (u/clean-text nil))))
-
-  (testing "returns nil when called with non-strings"
-    (is (nil? (u/clean-text 1)))
-    (is (nil? (u/clean-text :foo))))
-
-  (testing "removes excessive whitespace as expected"
-    (is (= "some random string with line breaks"
-           (u/clean-text "some random string   \nwith  line breaks")))))

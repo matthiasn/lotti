@@ -81,12 +81,12 @@ let StyleButton = function (_Component) {
     _createClass(StyleButton, [{
         key: 'render',
         value: function render() {
-            let className = 'fa ' + this.props.icon;
+            let className = 'fa far ' + this.props.icon;
             if (this.props.active) {
                 className += ' active-button';
             }
             return _react2.default.createElement(
-                'span',
+                'i',
                 {
                     className: className,
                     onMouseDown: this.onToggle
@@ -119,10 +119,11 @@ let INLINE_STYLES = [{
 
 let BLOCK_TYPES = [{
     style: 'header-one',
-    icon: 'fa-header'
-}, {style: 'header-two', icon: 'fa-header header-2'}, {
+    icon: 'fa-heading'
+}, {style: 'header-two',
+    icon: 'fa-heading header-2'}, {
     style: 'header-three',
-    icon: 'fa-header header-3'
+    icon: 'fa-heading header-3'
 }, {
     style: 'unordered-list-item',
     icon: 'fa-list-ul fa-wide'

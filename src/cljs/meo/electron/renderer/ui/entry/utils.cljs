@@ -6,7 +6,6 @@
 
 (defn compare-relevant [entry]
   (-> entry
-      (update-in [:md] u/clean-text)
       (dissoc :text :editor-state)))
 
 (defn entry-reaction [ts]

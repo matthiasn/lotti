@@ -119,14 +119,6 @@
       (dissoc :pomodoro-running)
       (dissoc :linked-entries-list)))
 
-(defn clean-text
-  "Replaces all occurrences of multiple whitespaces with a single blank space."
-  [s]
-  (when (string? s)
-    (-> s
-        (s/replace #"\s+" " ")
-        (s/trim))))
-
 (defn linked-filter-fn
   "Filter linked entries by search."
   [entries-map linked-filter put-fn]
