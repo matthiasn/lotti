@@ -58,31 +58,6 @@
          [editable-field on-input-fn on-keydown-fn (:saga-name entry)]]
         [:h2 "Saga: " (:saga-name entry)]))))
 
-(defn story-div
-  "Shows story name."
-  [entry tab-group put-fn]
-  (let [stories (subscribe [:stories])
-        linked-story (reaction (:primary-story @entry))
-        story-name (reaction (:story-name (get @stories @linked-story)))
-        local (r/atom {})
-        click-fn (fn [_]
-                   (swap! local update-in [:show-del] not)
-                   (let [q (merge (up/parse-search "") {:story @linked-story})
-                         tab-group (case tab-group
-                                     :briefing :left
-                                     :left :right
-                                     :left)]
-                     (put-fn [:search/add {:tab-group tab-group :query q}])))
-        remove-story (fn [_]
-                       (let [updated (assoc-in @entry [:primary-story] nil)]
-                         (put-fn [:entry/update updated])))]
-    (fn story-select-render [entry tab-group put-fn]
-      (when linked-story
-        [:div.story {:on-click click-fn}
-         @story-name
-         (when (:show-del @local)
-           [:span.fa.fa-trash {:on-click remove-story}])]))))
-
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
   [entry put-fn edit-mode?]
@@ -114,3 +89,47 @@
                     [:option {:value id} saga-name]))]])
             (when linked-saga
               [:div.story "Saga: " (:saga-name (get @sagas linked-saga))])))))))
+
+
+(defn story-select [entry tab-group put-fn]
+  (let [stories (subscribe [:stories])
+        linked-story (reaction (:primary-story @entry))
+        story-name (reaction (:story-name (get @stories @linked-story)))
+        local (r/atom {:search "" :show false})
+        filtered-stories (reaction
+                           (let [stories (vals @stories)
+                                 filtered (filter #(s/includes? (:story-name %)
+                                                                (:search @local))
+                                                  stories)]
+                             (sort-by :story-name filtered)))
+        input-fn (fn [ev]
+                   (let [s (-> ev .-nativeEvent .-target .-value)]
+                     (swap! local assoc-in [:search] s)))
+        assign-story (fn [story]
+                       (let [ts (:timestamp story)
+                             updated (assoc-in @entry [:primary-story] ts)]
+                         (swap! local assoc-in [:show] false)
+                         (put-fn [:entry/update updated])))]
+    (fn story-select-filter-render [entry tab-group put-fn]
+      (let [sorted @filtered-stories
+            linked-story @linked-story]
+        (when-not (or (:comment-for @entry)
+                      (= (:entry-type @entry) :story))
+          [:div.story-select
+           [:div.story
+            [:i.fal.fa-book {:on-click #(swap! local update-in [:show] not)}]
+            @story-name]
+           (when (:show @local)
+             [:div.story-search
+              [:div
+               [:input {:type      :text
+                        :on-change input-fn
+                        :value     (:search @local)}]]
+              [:table
+               [:tbody
+                (for [story (take 15 sorted)]
+                  (let [active (= linked-story (:timestamp story))]
+                    ^{:key (:timestamp story)}
+                    [:tr {:on-click #(assign-story story)}
+                     [:td {:class (when active "current")}
+                      (:story-name story)]]))]]])])))))

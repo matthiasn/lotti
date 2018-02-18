@@ -134,11 +134,11 @@
                       :on-change (active-from entry)
                       :value     (get-in entry [:habit :active-from])}]]
             [:div
-             [:label [:span.fa.fa-diamond.bonus]]
+             [:label [:span.fa.fa-gem.bonus]]
              [:input {:type      :number
                       :on-change (set-points entry :points)
                       :value     (get-in entry [:habit :points] 0)}]
-             [:label [:span.fa.fa-diamond.penalty]]
+             [:label [:span.fa.fa-gem.penalty]]
              [:input {:type      :number
                       :on-change (set-points entry :penalty)
                       :value     (get-in entry [:habit :penalty] 0)}]]
