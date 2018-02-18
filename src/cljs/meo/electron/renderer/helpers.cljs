@@ -6,7 +6,8 @@
             [globalize :as globalize]
             [cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
-            [moment]))
+            [moment]
+            [clojure.string :as s]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 
@@ -120,3 +121,9 @@
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
       (put-fn [:stats/get {:days [{:date-string day}] :type stats-key}]))))
 
+(defn str-contains-lc?
+  "Tests if string s contains substring. Both are converted to lowercase.
+   Returns nil when not both of the arguments are strings."
+  [s substring]
+  (when (and (string? s) (string? substring))
+    (s/includes? (s/lower-case s) (s/lower-case substring))))

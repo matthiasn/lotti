@@ -59,10 +59,16 @@
 
   .story-search {
     position: absolute;
-    background-color: lighten($hashtag-blue, 40%);
+    background-color: white;
     z-index: 1002;
     padding: 4px 6px 12px 6px;
     white-space: nowrap;
+    border: $hashtag-blue 1px dashed;
+    font-size: 0.8em;
+
+    tr:nth-child(even) {
+      background-color: lighten($hashtag-blue, 40%);
+    }
 
     tr {
       cursor: pointer;

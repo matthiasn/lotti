@@ -1,12 +1,8 @@
 (ns meo.electron.renderer.ui.entry.story
-  (:require [meo.electron.renderer.helpers :as h]
-            [meo.electron.renderer.ui.entry.capture :as c]
-            [meo.electron.renderer.ui.draft :as d]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
-            [clojure.string :as s]
-            [meo.common.utils.parse :as up]))
+            [meo.electron.renderer.helpers :as h]))
 
 (defn editable-field [on-input-fn on-keydown-fn text]
   (fn [_ _ _]
@@ -90,18 +86,17 @@
             (when linked-saga
               [:div.story "Saga: " (:saga-name (get @sagas linked-saga))])))))))
 
-
-(defn story-select [entry tab-group put-fn]
+(defn story-select [entry put-fn]
   (let [stories (subscribe [:stories])
         linked-story (reaction (:primary-story @entry))
         story-name (reaction (:story-name (get @stories @linked-story)))
         local (r/atom {:search "" :show false})
-        filtered-stories (reaction
-                           (let [stories (vals @stories)
-                                 filtered (filter #(s/includes? (:story-name %)
-                                                                (:search @local))
-                                                  stories)]
-                             (sort-by :story-name filtered)))
+        filtered (reaction
+                   (let [stories (vals @stories)
+                         s (:search @local)
+                         filter-fn #(h/str-contains-lc? (:story-name %) s)
+                         filtered (filter filter-fn stories)]
+                     (sort-by :story-name filtered)))
         input-fn (fn [ev]
                    (let [s (-> ev .-nativeEvent .-target .-value)]
                      (swap! local assoc-in [:search] s)))
@@ -110,8 +105,8 @@
                              updated (assoc-in @entry [:primary-story] ts)]
                          (swap! local assoc-in [:show] false)
                          (put-fn [:entry/update updated])))]
-    (fn story-select-filter-render [entry tab-group put-fn]
-      (let [sorted @filtered-stories
+    (fn story-select-filter-render [entry put-fn]
+      (let [sorted @filtered
             linked-story @linked-story]
         (when-not (or (:comment-for @entry)
                       (= (:entry-type @entry) :story))
@@ -127,7 +122,7 @@
                         :value     (:search @local)}]]
               [:table
                [:tbody
-                (for [story (take 15 sorted)]
+                (for [story (take 20 sorted)]
                   (let [active (= linked-story (:timestamp story))]
                     ^{:key (:timestamp story)}
                     [:tr {:on-click #(assign-story story)}

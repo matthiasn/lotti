@@ -80,7 +80,7 @@
                      :on-drag-enter h/prevent-default}
          [:div.header-1
           [:div
-           [es/story-select entry tab-group put-fn]
+           [es/story-select entry put-fn]
            [es/saga-select @entry put-fn edit-mode?]]
           [loc/geonames entry put-fn]]
          [:div.header
