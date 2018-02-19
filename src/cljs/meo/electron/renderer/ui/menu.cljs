@@ -82,7 +82,7 @@
        [:i.far.fa-qrcode.toggle
         {:on-click toggle-qr-code
          :class    (when-not (:qr-code @cfg) "inactive")}]
-       [:span.far.fa-qrcode.toggle
+       [:i.far.fa-qrcode.toggle
         {:on-click ws-address
          :class    (when-not (:ws-qr-code @cfg) "inactive")}]])))
 

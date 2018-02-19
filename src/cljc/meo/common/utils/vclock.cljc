@@ -25,7 +25,7 @@
 (s/def :meo.vclock/counter int?)
 (s/def :meo.vclock/map (s/map-of :meo.vclock/node-id :meo.vclock/counter))
 
-(defn vclock-comparator [a b]
+(defn vclock-compare [a b]
   "Compares two vector clocks. A and B are maps with node id strings as keys
    and an integer as value, which is the offset on the node associated with
    persisting the particular entry. See examples in the tests.

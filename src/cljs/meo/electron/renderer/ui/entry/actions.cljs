@@ -95,7 +95,7 @@
                               :on-drag-start on-drag-start}]
        (when (:visible @local)
          [:span.new-link
-          {:on-click #(do (create-linked-entry) (toggle-visible))}
+          {:on-click #(do (create-linked-entry) (toggle-visible %))}
           [:i.fas.fa-plus-square] "add linked"])])))
 
 (defn add-location

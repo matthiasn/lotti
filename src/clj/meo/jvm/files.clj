@@ -8,7 +8,7 @@
             [clj-uuid :as uuid]
             [clj-time.core :as time]
             [clj-time.format :as tf]
-            [taoensso.timbre :refer [info error]]
+            [taoensso.timbre :refer [info error warn]]
             [matthiasn.systems-toolbox.component :as st]
             [me.raynes.fs :as fs]
             [clojure.java.io :as io]
@@ -95,8 +95,8 @@
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
         broadcast-meta (merge msg-meta {:sente-uid :broadcast})]
-    (when (System/getenv "CACHED_APPSTATE")
-      (future (persist-state! new-state)))
+    #_(when (System/getenv "CACHED_APPSTATE")
+        (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
       (info (last (:vclock-map new-state)))
@@ -108,19 +108,26 @@
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
        :emit-msg     [[:ft/add entry]]})))
 
-(defn sync-entry
+(defn sync-receive
   "Handler function for syncing journal entry."
   [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         entry msg-payload
         g (:graph current-state)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
-        new-state (ga/add-node current-state entry)]
-    (when (System/getenv "CACHED_APPSTATE")
-      (future (persist-state! new-state)))
-    (put-fn [:sync/next {:newer-than ts}])
-    (when (not= (dissoc prev :last-saved :vclock)
-                (dissoc entry :last-saved :vclock))
+        new-state (ga/add-node current-state entry)
+        new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
+        broadcast-meta (merge new-meta {:sente-uid :broadcast})
+        vclocks-compared (when prev (vc/vclock-compare
+                                      (:vclock prev)
+                                      (:vclock entry)))]
+    (info vclocks-compared)
+    (put-fn (with-meta [:sync/next {:newer-than ts}] new-meta))
+    (when (= vclocks-compared :concurrent)
+      (warn "conflict:" prev entry))
+    (when-not (contains? #{:a>b :concurrent :equal} vclocks-compared)
+      (when (= :b>a vclocks-compared)
+        (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
       (append-daily-log (:cfg current-state) entry)
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))

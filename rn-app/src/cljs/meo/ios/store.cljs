@@ -8,7 +8,7 @@
 (defn persist [{:keys [current-state put-fn msg-payload]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
-        instance-id (:instance-id current-state)
+        instance-id (str (:instance-id current-state))
         new-vclock (update-in last-vclock [instance-id] #(inc (or % 0)))
         new-vclock (merge vclock new-vclock)
         id (or id (st/make-uuid))
@@ -58,7 +58,8 @@
         [ts entry] (avl/nearest entries > newer-than)
         new-state (assoc-in current-state [:latest-synced] newer-than)]
     (go (<! (as/set-item :latest-synced newer-than)))
-    (when entry (put-fn [:sync/entry entry]))
+    (if entry (put-fn [:sync/entry entry])
+              (put-fn [:sync/done]))
     {:new-state new-state}))
 
 (defn load-state [{:keys [cmp-state put-fn]}]

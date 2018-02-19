@@ -64,7 +64,7 @@
 
   (testing "return :equal when both clocks are the same"
     (is (= :equal
-           (vc/vclock-comparator
+           (vc/vclock-compare
              {some-node-id    1
               another-node-id 2}
              {some-node-id    1
@@ -72,7 +72,7 @@
 
   (testing "returns :conflict when there is a conflict"
     (is (= :concurrent
-           (vc/vclock-comparator
+           (vc/vclock-compare
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
@@ -80,7 +80,7 @@
 
   (testing "returns :a>b when A dominates B"
     (is (= :a>b
-           (vc/vclock-comparator
+           (vc/vclock-compare
              {some-node-id    2
               another-node-id 1}
              {some-node-id    1
@@ -88,7 +88,7 @@
 
   (testing "returns :b>a when B dominates A via additional node"
     (is (= :b>a
-           (vc/vclock-comparator
+           (vc/vclock-compare
              {some-node-id    2
               another-node-id 1}
              {some-node-id        2
@@ -97,7 +97,7 @@
 
   (testing "returns :concurrent both A updated and B has a previously unknown node"
     (is (= :concurrent
-           (vc/vclock-comparator
+           (vc/vclock-compare
              {some-node-id    3
               another-node-id 1}
              {some-node-id        2
@@ -106,7 +106,7 @@
 
   (testing "throws exception if A is invalid"
     (is (thrown? Exception
-                 (vc/vclock-comparator
+                 (vc/vclock-compare
                    {:foo 1
                     3    "a"}
                    {some-node-id        2
@@ -115,7 +115,7 @@
 
   (testing "throws exception if B is invalid"
     (is (thrown? Exception
-                 (vc/vclock-comparator
+                 (vc/vclock-compare
                    {some-node-id        2
                     another-node-id     1
                     yet-another-node-id 3}
@@ -182,7 +182,7 @@
 (def property
   (prop/for-all [v gen-l-r-expected]
                 (let [[a b exp] v]
-                  (= (vc/vclock-comparator a b) exp))))
+                  (= (vc/vclock-compare a b) exp))))
 
 (deftest vclock-quick-check
   (testing "property checks for successful vector clock comparison"
@@ -197,18 +197,18 @@
                 (let [[a b exp] v]
                   (cond
                     (= exp :equal)
-                    (= (vc/vclock-comparator a b) (vc/vclock-comparator b a))
+                    (= (vc/vclock-compare a b) (vc/vclock-compare b a))
 
                     (= exp :concurrent)
-                    (= (vc/vclock-comparator a b) (vc/vclock-comparator b a))
+                    (= (vc/vclock-compare a b) (vc/vclock-compare b a))
 
                     (= exp :a>b)
-                    (and (= (vc/vclock-comparator a b) :a>b)
-                         (= (vc/vclock-comparator b a) :b>a))
+                    (and (= (vc/vclock-compare a b) :a>b)
+                         (= (vc/vclock-compare b a) :b>a))
 
                     (= exp :b>a)
-                    (and (= (vc/vclock-comparator a b) :b>a)
-                         (= (vc/vclock-comparator b a) :a>b))))))
+                    (and (= (vc/vclock-compare a b) :b>a)
+                         (= (vc/vclock-compare b a) :a>b))))))
 
 (deftest vclock-symmetry-test
   (testing "property checks for vector clock comparison succeed"

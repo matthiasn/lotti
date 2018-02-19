@@ -20,7 +20,7 @@
             item (js->clj item :keywordize-keys true)
             entry (:item item)
             ts (:timestamp entry)
-            to-detail #(do (put-fn [:entry/detail entry])
+            to-detail #(do (put-fn [:entry/detail {:timestamp ts}])
                            (navigate "entry"))]
         (r/as-element
           [view {:style    {:flex             1
@@ -84,10 +84,12 @@
 
 (defn entry-detail [cfg-map entry-local nav put-fn]
   (let [entry-detail (subscribe [:entry-detail])
+        entries (subscribe [:entries])
+        entry (reaction (get-in @entries [(:timestamp @entry-detail)]))
         theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
-            entry @entry-detail
+            entry @entry
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]

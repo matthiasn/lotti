@@ -97,6 +97,14 @@
     (put-fn [:backend-cfg/new cfg])
     {:new-state (assoc-in current-state [:cfg] cfg)}))
 
+(defn sync-done [{:keys [put-fn]}]
+  (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))
+  {:send-to-self [:sync/initiate 0]})
+
+(defn sync-send [{:keys [current-state msg-payload put-fn]}]
+  
+  {})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
@@ -107,7 +115,10 @@
                    :entry/find       gq/find-entry
                    :entry/unlink     ga/unlink
                    :entry/update     f/geo-entry-persist-fn
-                   :sync/entry       f/sync-entry
+                   :sync/entry       f/sync-receive
+                   :sync/done        sync-done
+                   :sync/initiate    sync-send
+                   :sync/next        sync-send
                    :entry/trash      f/trash-entry-fn
                    :state/search     gq/query-fn
                    :cfg/refresh      refresh-cfg

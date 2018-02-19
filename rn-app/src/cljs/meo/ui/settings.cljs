@@ -196,7 +196,7 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 21] (put-fn [:healthkit/steps n]))
+        steps-fn #(dotimes [n 180] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
         activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]
@@ -287,7 +287,7 @@
                                                            {:newer-than 0}])}]]
          (when (:cam @local)
            [cam {:style         {:width  "100%"
-                                 :flex   4
+                                 :flex   5
                                  :height "100%"}
                  :onBarCodeRead on-barcode-read}])
 
@@ -295,7 +295,7 @@
            [text {:style {:font-size   10
                           :color       "#888"
                           :font-weight "100"
-                          :flex        1
+                          :flex        2
                           :margin      5
                           :text-align  "center"}}
             (str barcode)])]))))
