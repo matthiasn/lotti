@@ -26,6 +26,47 @@
         fmt (.format utc "HH:mm")]
     fmt))
 
+(defn s-to-hhmmss [seconds]
+  (let [dur (.duration moment seconds "seconds")
+        ms (.asMilliseconds dur)
+        utc (.utc moment ms)
+        fmt (.format utc "HH:mm:ss")]
+    fmt))
+
+(defn task-line [entry tab-group search-text put-fn unlink]
+  (let [ts (:timestamp entry)
+        logged-time (subscribe [:entry-logged-time ts])
+        busy-status (subscribe [:busy-status])]
+    (fn [entry tab-group search-text put-fn unlink]
+      (let [text (eu/first-line entry)
+            active (= ts (:active @busy-status))
+            active-selected (and (= (str ts) search-text) active)
+            busy (> 1000 (- (st/now) (:last @busy-status)))
+            cls (cond
+                  (and active-selected busy) "active-timer-selected-busy"
+                  (and active busy) "active-timer-busy"
+                  active-selected "active-timer-selected"
+                  active "active-timer"
+                  (= (str ts) search-text) "selected")]
+        [:tr {:on-click (up/add-search ts tab-group put-fn)
+              :class    cls}
+         [:td
+          (when-let [prio (-> entry :task :priority)]
+            [:span.prio {:class prio} prio])]
+         [:td.award-points
+          (when-let [points (-> entry :task :points)]
+            points)]
+         [:td.estimate
+          (when-let [estimate (-> entry :task :estimate-m)]
+            (let [actual @logged-time
+                  remaining (- (* 60 estimate) actual)
+                  cls (when (neg? remaining) "neg")]
+              [:span {:class cls}
+               (s-to-hhmmss (.abs js/Math remaining))]))]
+         [:td.text text]
+         (when unlink
+           [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
+
 (defn started-tasks
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
@@ -35,7 +76,6 @@
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         started-tasks (subscribe [:started-tasks])
         entries-map (subscribe [:entries-map])
-        busy-status (subscribe [:busy-status])
         entries-map (reaction (merge @entries-map (:entries-map @started-tasks)))
         options (subscribe [:options])
         stories (subscribe [:stories])
@@ -69,8 +109,7 @@
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
-            search-text @search-text
-            busy-status @busy-status]
+            search-text @search-text]
         (when (seq entries-list)
           [:div.linked-tasks
            [:table.tasks
@@ -84,40 +123,8 @@
                 "started tasks: "
                 [filter-btn :on-hold]]]]
              (for [entry entries-list]
-               (let [ts (:timestamp entry)
-                     text (eu/first-line entry)
-                     active (= ts (:active busy-status))
-                     active-selected (and (= (str ts) search-text) active)
-                     busy (> 100 (- (st/now) (:last busy-status)))
-
-                     cls (cond
-                           (and active-selected busy)
-                           "active-timer-selected-busy"
-
-                           (and active busy)
-                           "active-timer-busy"
-
-                           active-selected
-                           "active-timer-selected"
-
-                           active
-                           "active-timer"
-
-                           (= (str ts) search-text)
-                           "selected")]
-                 ^{:key ts}
-                 [:tr {:on-click (up/add-search ts tab-group put-fn)
-                       :class    cls}
-                  [:td
-                   (when-let [prio (-> entry :task :priority)]
-                     [:span.prio {:class prio} prio])]
-                  [:td.award-points
-                   (when-let [points (-> entry :task :points)]
-                     points)]
-                  [:td.estimate
-                   (when-let [estimate (-> entry :task :estimate-m)]
-                     (m-to-hhmm estimate))]
-                  [:td.text text]]))]]])))))
+               ^{:key (:timestamp entry)}
+               [task-line entry tab-group search-text put-fn])]]])))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
@@ -136,7 +143,6 @@
                         :done    (up/parse-search "#task #done")
                         :closed  (up/parse-search "#task #closed")
                         :backlog (up/parse-search "#task #backlog")}
-        find-missing (u/find-missing-entry entries-map put-fn)
         filter-btn (fn [fk text]
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
@@ -201,28 +207,6 @@
               [:th [:i.fa.far.fa-clock]]
               [:th [:strong "tasks"]]
               [:th.xs [:i.fa.far.fa-link]]]
-             (for [task linked-tasks]
-               (let [tts (:timestamp task)
-                     on-drag-start (a/drag-start-fn task put-fn)
-                     text (eu/first-line task)
-                     unlink (fn [_]
-                              (put-fn [:entry/unlink #{ts tts}])
-                              (unlink task ts)
-                              (unlink @entry tts))]
-                 ^{:key tts}
-                 [:tr {:on-click (up/add-search tts tab-group put-fn)
-                       :class    (when (= (str tts) search-text) "selected")}
-                  (let [prio (or (-> task :task :priority) "-")]
-                    [:td
-                     [:span.prio {:class         prio
-                                  :draggable     true
-                                  :on-drag-start on-drag-start}
-                      prio]])
-                  [:td.award-points
-                   (when-let [points (-> task :task :points)]
-                     points)]
-                  [:td.estimate
-                   (when-let [estimate (-> task :task :estimate-m)]
-                     (m-to-hhmm estimate))]
-                  [:td.left.text text]
-                  [:td [:i.fa.far.fa-unlink {:on-click unlink}]]]))]]])))))
+             (for [entry linked-tasks]
+               ^{:key (:timestamp entry)}
+               [task-line entry tab-group search-text put-fn unlink])]]])))))

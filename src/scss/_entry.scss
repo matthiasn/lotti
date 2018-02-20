@@ -45,6 +45,9 @@
     user-select: none;
 
     .pomodoro {
+      display: flex;
+      align-items: center;
+
       .completed {
         color: $green;
         font-size: 1em;
@@ -52,8 +55,8 @@
 
       .dur {
         margin-right: 0.3em;
-        font-weight: bold;
         font-family: monospace;
+        font-size: $font-size-small;
       }
 
       .btn {
@@ -284,7 +287,7 @@
       margin-left: 0.5em;
       margin-right: 0;
       padding-right: 1px;
-      top: 1px;
+      top: -2px;
       position: relative;
       font-size: 1.4em;
     }
@@ -504,7 +507,7 @@
         background-color: desaturate(lighten($green, 30), 10);
       }
       &.active-timer-selected-busy {
-        background-color: desaturate(lighten($red, 30), 10);
+        background-color: desaturate(lighten($red, 35), 10);
       }
       &.active-timer-busy {
         background-color: desaturate(lighten($red, 40), 15);
@@ -629,6 +632,11 @@ u {
     padding: 0 3px 0 2px;
     text-align: right;
     width: 20px;
+
+    .neg {
+      font-weight: bold;
+      color: $red;
+    }
   }
   .award-points {
     font-weight: 700;

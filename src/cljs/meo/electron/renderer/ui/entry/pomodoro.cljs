@@ -9,6 +9,7 @@
   (let [local (r/atom {:edit false})
         click #(swap! local assoc-in [:edit] true)
         planning-mode (subscribe [:planning-mode])
+        logged-time (subscribe [:entry-logged-time (:timestamp @entry)])
         busy-status (subscribe [:busy-status])
         running-pomodoro (subscribe [:running-pomodoro])
         on-change (fn [ev]
@@ -30,7 +31,7 @@
                             (put-fn [:cmd/pomodoro-stop @entry])
                             (put-fn [:cmd/pomodoro-start @entry])))
             formatted (h/s-to-hh-mm-ss completed-time)]
-        (when (and (= (:entry-type @entry) :pomodoro) @planning-mode)
+        (if (and (= (:entry-type @entry) :pomodoro) @planning-mode)
           [:div.pomodoro
            (when edit-mode?
              [:span.btn.start-stop
@@ -43,4 +44,6 @@
                       :type      :time
                       :on-change on-change}]
              [:span.dur {:on-click click}
-              formatted])])))))
+              formatted])]
+          [:div.pomodoro
+           [:span.dur (h/s-to-hh-mm-ss @logged-time)]])))))

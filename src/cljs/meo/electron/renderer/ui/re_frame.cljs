@@ -50,6 +50,15 @@
                                         :task-stats
                                         :wordcount-stats
                                         :media-stats])))
+(reg-sub :entry-logged-time
+         (fn [db [_ ts]]
+           (let [combined (merge (:entries-map db) (:new-entries db))
+                 entry (get-in combined [ts])
+                 time-mapper (fn [comment-ts]
+                               (or (get-in combined [comment-ts :completed-time])
+                                   0))
+                 logged (map time-mapper (:comments entry))]
+             (apply + logged))))
 
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
