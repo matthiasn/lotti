@@ -67,7 +67,6 @@
         q-date-string (.format (moment ts) "YYYY-MM-DD")
         tab-group (:tab-group local-cfg)
         add-search (up/add-search q-date-string tab-group put-fn)
-        open-linked (up/add-search (str "l:" ts) tab-group put-fn)
         drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)
         toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
                                     (put-fn [:entry/update-local @entry]))]

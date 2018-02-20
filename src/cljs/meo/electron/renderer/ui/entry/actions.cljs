@@ -150,7 +150,7 @@
                         (put-fn [:entry/remove-local {:timestamp ts}])
                         (put-fn [:entry/trash @entry])))
         open-external (up/add-search ts tab-group put-fn)
-        star-entry #(put-fn [:entry/update (update-in @entry [:starred] not)])
+        star-entry #(put-fn [:entry/update-local (update-in @entry [:starred] not)])
         mouse-enter #(reset! visible true)]
     (fn entry-actions-render [ts put-fn edit-mode? toggle-edit local-cfg]
       (let [map? (:latitude @entry)

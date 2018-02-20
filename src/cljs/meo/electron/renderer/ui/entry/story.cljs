@@ -104,7 +104,7 @@
                        (let [ts (:timestamp story)
                              updated (assoc-in @entry [:primary-story] ts)]
                          (swap! local assoc-in [:show] false)
-                         (put-fn [:entry/update updated])))]
+                         (put-fn [:entry/update-local updated])))]
     (fn story-select-filter-render [entry put-fn]
       (let [sorted @filtered
             linked-story @linked-story]
@@ -119,7 +119,8 @@
               [:div
                [:input {:type      :text
                         :on-change input-fn
-                        :value     (:search @local)}]]
+                        :value     (:search @local)}]
+               [:i.fal.fa-search]]
               [:table
                [:tbody
                 (for [story (take 20 sorted)]

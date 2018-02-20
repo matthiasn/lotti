@@ -102,7 +102,6 @@
   {:send-to-self [:sync/initiate 0]})
 
 (defn sync-send [{:keys [current-state msg-payload put-fn]}]
-  
   {})
 
 (defn cmp-map [cmp-id]
