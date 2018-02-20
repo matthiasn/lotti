@@ -127,6 +127,7 @@
                                      (:timestamp updated))
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
+        ^{:key (:vclock @entry)}
         [:div
          [draft-text-editor md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
