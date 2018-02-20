@@ -30,7 +30,10 @@
                           (if running?
                             (put-fn [:cmd/pomodoro-stop @entry])
                             (put-fn [:cmd/pomodoro-start @entry])))
-            formatted (h/s-to-hh-mm-ss completed-time)]
+            formatted (h/s-to-hh-mm-ss completed-time)
+            logged-duration (when-let [t @logged-time]
+                              (when (pos? t)
+                                (h/s-to-hh-mm-ss t)))]
         (if (and (= (:entry-type @entry) :pomodoro) @planning-mode)
           [:div.pomodoro
            (when edit-mode?
@@ -45,5 +48,6 @@
                       :on-change on-change}]
              [:span.dur {:on-click click}
               formatted])]
-          [:div.pomodoro
-           [:span.dur (h/s-to-hh-mm-ss @logged-time)]])))))
+          (when logged-duration
+            [:div.pomodoro
+             [:span.dur logged-duration]]))))))

@@ -11,6 +11,7 @@
         instance-id (str (:instance-id current-state))
         new-vclock (update-in last-vclock [instance-id] #(inc (or % 0)))
         new-vclock (merge vclock new-vclock)
+        offset (get-in new-vclock [instance-id])
         id (or id (st/make-uuid))
         entry (merge msg-payload
                      {:last-saved (st/now)
@@ -18,6 +19,7 @@
                       :vclock     new-vclock})
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
+                      (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)]
@@ -52,12 +54,14 @@
     {:new-state new-state}))
 
 (defn sync-start [{:keys [current-state msg-payload put-fn]}]
-  (let [entries (:entries current-state)
-        latest-synced (:latest-synced current-state)
-        newer-than (:newer-than msg-payload latest-synced)
-        [ts entry] (avl/nearest entries > newer-than)
-        new-state (assoc-in current-state [:latest-synced] newer-than)]
-    (go (<! (as/set-item :latest-synced newer-than)))
+  (let [vclock-map (:vclock-map current-state)
+        ;latest-synced (:latest-synced current-state)
+        ;newer-than (:newer-than msg-payload latest-synced)
+        instance-id (str (:instance-id current-state))
+        offset (get-in msg-payload [:newer-than-vc instance-id])
+        [_offset entry] (avl/nearest vclock-map > offset)
+        new-state (assoc-in current-state [:latest-synced] offset)]
+    (go (<! (as/set-item :latest-synced offset)))
     (if entry (put-fn [:sync/entry entry])
               (put-fn [:sync/done]))
     {:new-state new-state}))
@@ -86,18 +90,16 @@
   (go
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
-                                 (st/make-uuid)))]
+                                 (st/make-uuid)))
+            timestamps (second (<! (as/get-item :timestamps)))]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
-        (put-fn [:debug/instance-id instance-id])
-        (<! (as/set-item :instance-id instance-id)))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
-  (go
-    (try
-      (let [timestamps (second (<! (as/get-item :timestamps)))]
+        (<! (as/set-item :instance-id instance-id))
         (doseq [ts timestamps]
-          (let [entry (second (<! (as/get-item ts)))]
-            (swap! cmp-state assoc-in [:entries ts] entry))))
+          (let [entry (second (<! (as/get-item ts)))
+                offset (get-in entry [:vclock instance-id])]
+            (swap! cmp-state assoc-in [:entries ts] entry)
+            (when offset
+              (swap! cmp-state assoc-in [:vclock-map offset] entry)))))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (put-fn [:debug/state-fn-complete])
@@ -113,6 +115,7 @@
 (defn state-fn [put-fn]
   (let [state (atom {:entries       (avl/sorted-map)
                      :active-theme  :light
+                     :vclock-map    (avl/sorted-map)
                      :latest-synced 0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})

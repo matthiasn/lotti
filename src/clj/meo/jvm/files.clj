@@ -113,6 +113,7 @@
   [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         entry msg-payload
+        received-vclock (:vclock entry)
         g (:graph current-state)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
         new-state (ga/add-node current-state entry)
@@ -120,9 +121,10 @@
         broadcast-meta (merge new-meta {:sente-uid :broadcast})
         vclocks-compared (when prev (vc/vclock-compare
                                       (:vclock prev)
-                                      (:vclock entry)))]
+                                      received-vclock))]
     (info vclocks-compared)
-    (put-fn (with-meta [:sync/next {:newer-than ts}] new-meta))
+    (put-fn (with-meta [:sync/next {:newer-than    ts
+                                    :newer-than-vc received-vclock}] new-meta))
     (when (= vclocks-compared :concurrent)
       (warn "conflict:" prev entry))
     (when-not (contains? #{:a>b :concurrent :equal} vclocks-compared)
