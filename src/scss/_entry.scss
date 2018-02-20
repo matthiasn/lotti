@@ -123,8 +123,12 @@
     font-size: $font-size-medium;
   }
 
-  label, select {
-    margin-right: 0.5em;
+  select {
+    margin-right: 10px;
+  }
+
+  label {
+    margin-right: 4px;
   }
 
   h1, h2 {
@@ -533,17 +537,14 @@
 
   label {
     white-space: nowrap;
-    margin-right: 2px;
   }
   input {
-    margin-right: 4px;
     width: 90px;
     padding: 1px 2px;
     font-size: $font-size-small;
   }
   input[type="number"], input[type="time"] {
     width: 65px;
-    margin-left: 5px;
   }
   input[type="text"] {
     width: 120px;
@@ -580,7 +581,7 @@
   }
   input[type="number"] {
     width: 45px !important;
-    margin-right: 15px;
+    margin-right: 8px;
   }
   span {
     white-space: nowrap;

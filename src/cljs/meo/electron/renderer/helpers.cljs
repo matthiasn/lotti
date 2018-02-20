@@ -78,6 +78,14 @@
       (when parsed
         (put-fn [:entry/update-local updated])))))
 
+(defn update-time [entry path put-fn]
+  (fn [ev]
+    (let [v (.. ev -target -value)
+          parsed (when (seq v) (.asMinutes (.duration moment v)))
+          updated (assoc-in entry path parsed)]
+      (when parsed
+        (put-fn [:entry/update-local updated])))))
+
 (def ymd-format "YYYY-MM-DD")
 (defn n-days-ago [n] (.subtract (moment.) n "d"))
 (defn n-days-ago-fmt [n] (.format (n-days-ago n) ymd-format))

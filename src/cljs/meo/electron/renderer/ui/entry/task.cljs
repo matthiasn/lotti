@@ -33,33 +33,35 @@
                 now (st/now)
                 updated (assoc-in entry [:task] {:due (+ now d d)})]
             (put-fn [:entry/update-local updated])))
-        [:form.task-details
-         [:fieldset
-          [:div
-           [:span " Priority: "]
-           [:select {:value     (get-in entry [:task :priority] "")
-                     :on-change (prio-select entry)}
-            [:option ""]
-            [:option {:value :A} "A"]
-            [:option {:value :B} "B"]
-            [:option {:value :C} "C"]
-            [:option {:value :D} "D"]
-            [:option {:value :E} "E"]]
-           [:span
-            [:label "Done? "]
-            [:input {:type      :checkbox
-                     :checked   (get-in entry [:task :done])
-                     :on-change (done entry)}]
-            [:label "On hold? "]
-            [:input {:type      :checkbox
-                     :checked   (get-in entry [:task :on-hold])
-                     :on-change (hold entry)}]]]
-          [:span
-           [:label "Reward points: "]
-           [:input {:type      :number
-                    :on-change (h/update-numeric entry [:task :points] put-fn)
-                    :value     (get-in entry [:task :points] 0)}]
-           [:label "Estimated min: "]
-           [:input {:type      :number
-                    :on-change (h/update-numeric entry [:task :estimate-m] put-fn)
-                    :value     (get-in entry [:task :estimate-m] 0)}]]]]))))
+        (let [allocation (get-in entry [:task :estimate-m] 0)]
+          [:form.task-details
+           [:fieldset
+            [:div
+             [:span " Priority: "]
+             [:select {:value     (get-in entry [:task :priority] "")
+                       :on-change (prio-select entry)}
+              [:option ""]
+              [:option {:value :A} "A"]
+              [:option {:value :B} "B"]
+              [:option {:value :C} "C"]
+              [:option {:value :D} "D"]
+              [:option {:value :E} "E"]]
+             [:span
+              [:label "Done? "]
+              [:input {:type      :checkbox
+                       :checked   (get-in entry [:task :done])
+                       :on-change (done entry)}]
+              [:label "On hold? "]
+              [:input {:type      :checkbox
+                       :checked   (get-in entry [:task :on-hold])
+                       :on-change (hold entry)}]]]
+            [:span
+             [:label "Reward points: "]
+             [:input {:type      :number
+                      :on-change (h/update-numeric entry [:task :points] put-fn)
+                      :value     (get-in entry [:task :points] 0)}]
+             [:label "Allocation: "]
+             [:input {:on-change (h/update-time entry [:task :estimate-m] put-fn)
+                      :value     (when allocation
+                                   (h/m-to-hh-mm allocation))
+                      :type      :time}]]]])))))
