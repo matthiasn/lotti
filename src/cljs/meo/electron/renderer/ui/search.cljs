@@ -9,25 +9,6 @@
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
-(defn tags-view
-  "Renders a row with tags, if any in current query."
-  [current-query]
-  (let [get-tags #(% current-query)
-        tags (get-tags :tags)
-        not-tags (get-tags :not-tags)
-        mentions (get-tags :mentions)]
-    (when (or (seq tags) (seq not-tags) (seq mentions))
-      [:div.hashtags
-       (for [tag tags]
-         ^{:key (str "search-" tag)}
-         [:span.hashtag tag])
-       (for [tag not-tags]
-         ^{:key (str "search-n" tag)}
-         [:span.hashtag.not-tag tag])
-       (for [tag mentions]
-         ^{:key (str "search-" tag)}
-         [:span.mention tag])])))
-
 (defn editor-state
   "Create editor-state, either from deserialized state or from search string."
   [q]
@@ -52,11 +33,15 @@
             query @query
             starred (:starred query)
             star-fn #(put-fn [:search/update (update-in query [:starred] not)])]
-        (when-not (:briefing query)
+        (put-fn [:search/update query])
+        (when-not (or (:briefing query)
+                      (:timestamp query))
           [:div.search
-           [tags-view query]
            [:div.search-row
+            [:div [:i.far.fa-search]]
             [d/draft-search-field (editor-state query) search-send]
-            [:div [:span.fa
-                   {:class    (if starred "fa-star starred" "fa-star-o")
-                    :on-click star-fn}]]]])))))
+            [:div.star
+             [:i {:class    (if starred
+                              "fas fa-star starred"
+                              "fal fa-star")
+                  :on-click star-fn}]]]])))))

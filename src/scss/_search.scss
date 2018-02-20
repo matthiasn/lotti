@@ -1,7 +1,7 @@
 @import "variables.scss";
 
 .search {
-  padding: 5px 0.4em 5px 0;
+  padding: 0 0.4em 3px 0;
   flex-flow: column;
   display: flex;
   flex: 0 0 auto;
@@ -16,12 +16,15 @@
   display: flex;
   background-color: $search-field-color;
 
-  .fa {
-    font-size: 1.6em;
-    cursor: pointer;
-    padding: 4px;
+  i {
+    font-size: 16px;
+    padding: 6px;
+  }
 
-    &.starred {
+  .star {
+    cursor: pointer;
+
+    .starred {
       color: gold;
     }
   }
