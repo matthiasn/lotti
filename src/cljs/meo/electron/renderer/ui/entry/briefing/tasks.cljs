@@ -33,6 +33,13 @@
         fmt (.format utc "HH:mm:ss")]
     fmt))
 
+(defn s-to-hhmm [seconds]
+  (let [dur (.duration moment seconds "seconds")
+        ms (.asMilliseconds dur)
+        utc (.utc moment ms)
+        fmt (.format utc "HH:mm")]
+    fmt))
+
 (defn task-line [entry tab-group search-text put-fn unlink]
   (let [ts (:timestamp entry)
         logged-time (subscribe [:entry-logged-time ts])
@@ -56,6 +63,8 @@
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
+         [:td.estimate
+          [:span (s-to-hhmm @logged-time)]]
          [:td.estimate
           (when-let [estimate (-> entry :task :estimate-m)]
             (let [actual @logged-time
@@ -117,7 +126,8 @@
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
-              [:th [:i.fa.far.fa-stopwatch]]
+              [:th [:i.fas.fa-stopwatch]]
+              [:th [:i.far.fa-stopwatch]]
               [:th
                [:div
                 "started tasks: "
