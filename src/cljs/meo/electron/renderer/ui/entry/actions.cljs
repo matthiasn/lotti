@@ -162,7 +162,7 @@
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? @entry])
-          (when-not comment? [:i.fa.fa-clock.toggle {:on-click new-pomodoro}])
+          (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
           (when-not comment?
@@ -210,7 +210,7 @@
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
-          (when-not comment? [:i.fa.fa-clock.toggle {:on-click new-pomodoro}])
+          (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
           [:i.fa.fa-plus-square.toggle

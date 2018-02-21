@@ -117,7 +117,7 @@
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
-              [:th [:i.fa.far.fa-clock]]
+              [:th [:i.fa.far.fa-stopwatch]]
               [:th
                [:div
                 "started tasks: "
@@ -204,7 +204,7 @@
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
-              [:th [:i.fa.far.fa-clock]]
+              [:th [:i.fa.far.fa-stopwatch]]
               [:th [:strong "tasks"]]
               [:th.xs [:i.fa.far.fa-link]]]
              (for [entry linked-tasks]
