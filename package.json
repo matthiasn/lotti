@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.174",
+  "version": "0.4.175",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "homepage": "https://github.com/matthiasn/meo",
   "dependencies": {
     "@cljs-oss/module-deps": "1.1.1",
-    "asar": "0.14.1",
+    "asar": "0.14.2",
     "cldr-data": "32.0.1",
     "cookie-parser": "1.4.3",
     "draft-js": "0.10.4",
@@ -33,7 +33,7 @@
     "draftjs-md-converter": "0.1.6",
     "electron-fetch": "1.1.0",
     "electron-log": "2.2.14",
-    "electron-packager": "11.0.0",
+    "electron-packager": "11.0.1",
     "electron-spellchecker": "1.1.2",
     "electron-updater": "2.20.1",
     "emoji-flags": "1.2.0",
@@ -64,8 +64,8 @@
   "devDependencies": {
     "browser-resolve": "1.11.2",
     "electron": "1.8.2",
-    "electron-builder": "20.0.4",
-    "electron-publisher-s3": "20.0.2",
+    "electron-builder": "20.0.8",
+    "electron-publisher-s3": "20.0.5",
     "module-deps": "6.0.0",
     "resolve": "^1.5.0"
   }
