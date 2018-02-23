@@ -455,8 +455,8 @@
 (defn query-fn
   "Runs all queries in request, sends back to client, with all entry maps
    for the individual queries merged into one."
-  [{:keys [current-state msg-payload msg-meta]}]
-  (if (= 1 (:startup-progress current-state))
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  (when (= 1 (:startup-progress current-state))
     (let [queries (:queries msg-payload)
           start-ts (System/nanoTime)
           res-mapper (run-query current-state msg-meta)
@@ -470,5 +470,6 @@
           ms (/ (- (System/nanoTime) start-ts) 1000000)
           dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
       (debug queries)
-      {:emit-msg [:state/new (merge res2 dur)]})
-    {:emit-msg [:startup/progress (:startup-progress current-state)]}))
+      (info "queries took" dur)
+      (put-fn [:state/new (merge res2 dur)])))
+  {:emit-msg [:startup/progress (:startup-progress current-state)]})

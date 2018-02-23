@@ -72,6 +72,7 @@
     {:state state}))
 
 (defn initial-queries [{:keys [current-state put-fn]}]
+  (info "performing initial queries")
   (put-fn [:state/stats-tags-get])
   (put-fn [:stats/get2])
   (put-fn [:cfg/refresh])
