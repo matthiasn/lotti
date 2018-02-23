@@ -20,6 +20,7 @@
 ;; Subscription Handlers
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
+(reg-sub :startup-progress (fn [db _] (:startup-progress db)))
 (reg-sub :running-pomodoro (fn [db _] (:running (:pomodoro db))))
 (reg-sub :options (fn [db _] (:options db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
@@ -104,19 +105,34 @@
   [:div.flex-container
    [cal/calendar-view put-fn]])
 
-(defn re-frame-ui [put-fn]
-  (let [current-page (subscribe [:current-page])]
+(defn load-progress [put-fn]
+  (let [startup-progress (subscribe [:startup-progress])]
     (fn [put-fn]
-      (let [current-page @current-page]
-        (case (:page current-page)
-          :dashboards [dashboards put-fn]
-          :config [cfg/config put-fn]
-          :charts-1 [charts-page put-fn]
-          :countries [countries-page put-fn]
-          :calendar [cal put-fn]
-          :correlation [corr/scatter-matrix put-fn]
-          :empty [:div.flex-container]
-          [main-page put-fn])))))
+      (let [startup-progress @startup-progress
+            percent (Math/floor (* 100 startup-progress))]
+        [:div.loader
+         [:div.content
+          [:h1 "starting meo..."]
+          [:div.meter
+           [:span {:style {:width (str percent "%")}}]]]]))))
+
+(defn re-frame-ui [put-fn]
+  (let [current-page (subscribe [:current-page])
+        startup-progress (subscribe [:startup-progress])]
+    (fn [put-fn]
+      (let [current-page @current-page
+            startup-progress @startup-progress]
+        (if (= 1 startup-progress)
+          (case (:page current-page)
+            :dashboards [dashboards put-fn]
+            :config [cfg/config put-fn]
+            :charts-1 [charts-page put-fn]
+            :countries [countries-page put-fn]
+            :calendar [cal put-fn]
+            :correlation [corr/scatter-matrix put-fn]
+            :empty [:div.flex-container]
+            [main-page put-fn])
+          [load-progress put-fn])))))
 
 (defn state-fn [put-fn]
   (rc/render [re-frame-ui put-fn] (.getElementById js/document "reframe"))

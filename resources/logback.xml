@@ -40,7 +40,7 @@
     <logger name="org.xnio.nio" level="warn"/>
     <logger name="matthiasn.systems-toolbox" level="info"/>
     <logger name="meo.jvm.store" level="debug"/>
-    <logger name="matthiasn.systems-toolbox-sente" level="debug"/>
+    <logger name="matthiasn.systems-toolbox-sente" level="info"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>

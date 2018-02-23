@@ -10,7 +10,7 @@
   (-> fltr enc/compile-ns-filter taoensso.encore/memoize_))
 
 (def namespace-log-levels
-  {"taoensso.sente" :trace
+  {;"taoensso.sente" :trace
    :all             :info})
 
 (defn middleware

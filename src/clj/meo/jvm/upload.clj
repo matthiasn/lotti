@@ -39,13 +39,13 @@
                       "text-entries.json" (ie/import-text-entries-fn
                                             rdr put-fn {} filename)
                       "visits.json" (ie/import-visits-fn rdr put-fn {} filename)
-                      (info :server/upload-cmp :text req))
+                      (info :backend/upload :text req))
                     "OK"))
         binary-post-fn (fn [dir filename req]
                          (let [filename (str fu/data-path "/" dir "/" filename)
                                file (java.io.File. filename)]
                            (io/make-parents file)
-                           (info :server/upload-cmp :binary req)
+                           (info :backend/upload-cmp :binary req)
                            (io/copy (:body req) file))
                          "OK")
         app (routes
@@ -66,26 +66,19 @@
   (.stop (:server current-state))
   {:new-state (assoc-in current-state [:server] nil)})
 
-(def qr-reset-msg
-  [:cmd/schedule-new {:message (with-meta
-                                 [:cmd/toggle-key {:path     [:cfg :ws-qr-code]
-                                                   :reset-to false}]
-                                 {:sente-uid :broadcast})
-                      :timeout 15000}])
-
 (defn ws-opts [port]
   {:mandatory-port port
    :index-page-fn  (fn [_] "hello world")
    :sente-opts     {:ws-kalive-ms 2000}
    :host           "0.0.0.0"
    :relay-types    #{:sync/start :sync/progress :sync/entry :ws/ping :sync/next}
-   :opts           {:reload-cmp true
+   :opts           {:reload-cmp       true
                     :msgs-on-firehose true}})
 
 (defn start-ws-server [{:keys [current-state]}]
   (let [switchboard (:switchboard current-state)
         ws-port (get-free-port)
-        server-name :server/sync-ws-cmp
+        server-name :backend/sync-ws
         opts (ws-opts ws-port)
         new-state (assoc-in current-state [:ws-port] ws-port)
         new-state (assoc-in new-state [:server-name] server-name)]
@@ -95,10 +88,10 @@
       switchboard
       [[:cmd/init-comp (sente/cmp-map server-name opts)]
        [:cmd/route {:from server-name
-                    :to   #{:server/store-cmp
-                            :server/upload-cmp
-                            :server/kafka-firehose}}]
-       [:cmd/route {:from :server/store-cmp
+                    :to   #{:backend/store
+                            :backend/upload
+                            :backend/kafka-firehose}}]
+       [:cmd/route {:from :backend/store
                     :to   server-name}]])
     {:new-state new-state}))
 

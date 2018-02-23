@@ -2,11 +2,11 @@
   (:require #?(:cljs [reagent.core :refer [atom]])
     #?(:clj [taoensso.timbre :refer [info debug]]
        :cljs [taoensso.timbre :refer-macros [info debug]])
-    [matthiasn.systems-toolbox.component :as st]
-    [meo.electron.renderer.client-store-entry :as cse]
-    [meo.electron.renderer.client-store-search :as s]
-    [meo.electron.renderer.client-store-cfg :as c]
-    [meo.common.utils.misc :as u]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.electron.renderer.client-store-entry :as cse]
+            [meo.electron.renderer.client-store-search :as s]
+            [meo.electron.renderer.client-store-cfg :as c]
+            [meo.common.utils.misc :as u]))
 
 (defn new-state-fn [{:keys [current-state msg-payload msg-meta]}]
   (let [store-meta (:renderer/store-cmp msg-meta)
@@ -58,16 +58,17 @@
 
 (defn initial-state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
-        state (atom {:entries         []
-                     :last-alive      (st/now)
-                     :busy-color      :green
-                     :new-entries     @cse/new-entries-ls
-                     :query-cfg       @s/query-cfg
-                     :pomodoro-stats  (sorted-map)
-                     :task-stats      (sorted-map)
-                     :wordcount-stats (sorted-map)
-                     :options         {:pvt-hashtags #{"#pvt"}}
-                     :cfg             cfg})]
+        state (atom {:entries          []
+                     :startup-progress 0
+                     :last-alive       (st/now)
+                     :busy-color       :green
+                     :new-entries      @cse/new-entries-ls
+                     :query-cfg        @s/query-cfg
+                     :pomodoro-stats   (sorted-map)
+                     :task-stats       (sorted-map)
+                     :wordcount-stats  (sorted-map)
+                     :options          {:pvt-hashtags #{"#pvt"}}
+                     :cfg              cfg})]
     (put-fn [:state/stats-tags-get])
     (put-fn [:stats/get2])
     (put-fn [:cfg/refresh])
@@ -100,6 +101,10 @@
   (let [new-state (assoc-in current-state [:backend-cfg] msg-payload)]
     {:new-state new-state}))
 
+(defn progress [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:startup-progress] msg-payload)]
+    {:new-state new-state}))
+
 (defn ping [_]
   #?(:cljs (info :ping))
   {})
@@ -116,6 +121,7 @@
                         :state/stats-tags  stats-tags-fn
                         :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
+                        :startup/progress  progress
                         :ws/ping           ping
                         :backend-cfg/new   save-backend-cfg
                         :nav/to            nav-handler

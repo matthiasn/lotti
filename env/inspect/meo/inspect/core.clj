@@ -14,7 +14,7 @@
                             :firehose/cmp-recv}}
         mapper #(assoc-in % [:opts :msgs-on-firehose] true)
         components (set (mapv mapper components))
-        firehose-kafka (kp2/cmp-map :server/kafka-firehose cfg)]
+        firehose-kafka (kp2/cmp-map :backend/kafka-firehose cfg)]
     (conj components firehose-kafka)))
 
 (defn -main

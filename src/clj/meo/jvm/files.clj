@@ -99,7 +99,6 @@
         (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
-      (info (last (:vclock-map new-state)))
       (append-daily-log (:cfg current-state) entry)
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
@@ -119,9 +118,8 @@
         new-state (ga/add-node current-state entry)
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         broadcast-meta (merge new-meta {:sente-uid :broadcast})
-        vclocks-compared (when prev (vc/vclock-compare
-                                      (:vclock prev)
-                                      received-vclock))]
+        vclocks-compared (when prev
+                           (vc/vclock-compare (:vclock prev) received-vclock))]
     (info vclocks-compared)
     (put-fn (with-meta [:sync/next {:newer-than    ts
                                     :newer-than-vc received-vclock}] new-meta))

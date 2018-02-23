@@ -349,3 +349,6 @@
 
 (s/def :sync/start-server nil?)
 (s/def :sync/stop-server (s/nilable keyword?))
+
+(s/def :startup/progress number?)
+(s/def :startup/read nil?)

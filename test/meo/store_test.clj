@@ -50,9 +50,12 @@
     (fs/mkdirs test-daily-logs-path)
     (with-redefs [fu/data-path test-path
                   fu/daily-logs-path test-daily-logs-path]
-      {:current-state @(:state (s/state-fn (fn [_])))
-       :logs-path     test-daily-logs-path
-       :test-path     test-path})))
+      (let [put-fn (fn [_])
+            state (:state (s/state-fn put-fn))]
+        (s/read-entries {:cmp-state state :put-fn put-fn})
+        {:current-state @state
+         :logs-path     test-daily-logs-path
+         :test-path     test-path}))))
 
 (def private-tags #{"#pvt" "#private" "#nsfw" "#consumption"})
 

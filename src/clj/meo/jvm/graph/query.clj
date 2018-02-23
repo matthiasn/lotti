@@ -456,17 +456,19 @@
   "Runs all queries in request, sends back to client, with all entry maps
    for the individual queries merged into one."
   [{:keys [current-state msg-payload msg-meta]}]
-  (let [queries (:queries msg-payload)
-        start-ts (System/nanoTime)
-        res-mapper (run-query current-state msg-meta)
-        res (mapv res-mapper queries)
-        res2 (reduce (fn [acc [k v]]
-                       (-> acc
-                           (update-in [:entries-map] merge (:entries-map v))
-                           (assoc-in [:entries k] (:entries v))))
-                     {:entries-map {} :entries {}}
-                     res)
-        ms (/ (- (System/nanoTime) start-ts) 1000000)
-        dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
-    (debug queries)
-    {:emit-msg [:state/new (merge res2 dur)]}))
+  (if (= 1 (:startup-progress current-state))
+    (let [queries (:queries msg-payload)
+          start-ts (System/nanoTime)
+          res-mapper (run-query current-state msg-meta)
+          res (mapv res-mapper queries)
+          res2 (reduce (fn [acc [k v]]
+                         (-> acc
+                             (update-in [:entries-map] merge (:entries-map v))
+                             (assoc-in [:entries k] (:entries v))))
+                       {:entries-map {} :entries {}}
+                       res)
+          ms (/ (- (System/nanoTime) start-ts) 1000000)
+          dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
+      (debug queries)
+      {:emit-msg [:state/new (merge res2 dur)]})
+    {:emit-msg [:startup/progress (:startup-progress current-state)]}))

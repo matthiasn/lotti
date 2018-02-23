@@ -60,6 +60,39 @@ i {
   }
 }
 
+.loader {
+  -webkit-app-region: drag;
+
+  .content {
+    color: white;
+    width: 500px;
+    margin: 30vh auto auto auto;
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    // adapted from https://css-tricks.com/css3-progress-bars/
+    .meter {
+      height: 20px;
+      position: relative;
+      background: $body-background-color;
+      border-radius: 6px;
+      padding: 4px;
+    }
+
+    .meter > span {
+      display: block;
+      height: 100%;
+      border-radius: 4px;
+      background-color: $green;
+      position: relative;
+      overflow: hidden;
+    }
+  }
+}
+
 @import "buttons.scss";
 @import "journal.scss";
 @import "entry.scss";

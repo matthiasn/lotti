@@ -16,16 +16,16 @@
             [meo.jvm.imports :as i]
             [taoensso.timbre :refer [info]]))
 
-(defonce switchboard (sb/component :server/switchboard))
+(defonce switchboard (sb/component :backend/switchboard))
 
 (def cmp-maps
-  #{(sente/cmp-map :server/ws-cmp idx/sente-map)
-    (sched/cmp-map :server/scheduler-cmp)
-    (i/cmp-map :server/imports-cmp)
-    (st/cmp-map :server/store-cmp)
-    (bak/cmp-map :server/backup-cmp)
-    (up/cmp-map :server/upload-cmp switchboard)
-    (ft/cmp-map :server/ft-cmp)})
+  #{(sente/cmp-map :backend/ws idx/sente-map)
+    (sched/cmp-map :backend/scheduler)
+    (i/cmp-map :backend/imports)
+    (st/cmp-map :backend/store)
+    (bak/cmp-map :backend/backup)
+    (up/cmp-map :backend/upload switchboard)
+    (ft/cmp-map :backend/ft)})
 
 (defn restart!
   "Starts or restarts system by asking switchboard to fire up the ws-cmp for
@@ -40,40 +40,43 @@
     switchboard
     [[:cmd/init-comp cmp-maps]
 
-     [:cmd/route {:from :server/ws-cmp
-                  :to   #{:server/store-cmp
-                          :server/export-cmp
-                          :server/upload-cmp
-                          :server/imports-cmp}}]
+     [:cmd/route {:from :backend/ws
+                  :to   #{:backend/store
+                          :backend/export
+                          :backend/upload
+                          :backend/imports}}]
 
-     [:cmd/route {:from :server/imports-cmp
-                  :to   :server/store-cmp}]
+     [:cmd/route {:from :backend/imports
+                  :to   :backend/store}]
 
-     [:cmd/route {:from :server/upload-cmp
-                  :to   #{:server/store-cmp
-                          :server/scheduler-cmp
-                          :server/ws-cmp}}]
+     [:cmd/route {:from :backend/upload
+                  :to   #{:backend/store
+                          :backend/scheduler
+                          :backend/ws}}]
 
-     [:cmd/route {:from :server/store-cmp
-                  :to   #{:server/ws-cmp
-                          :server/ft-cmp}}]
+     [:cmd/route {:from :backend/store
+                  :to   #{:backend/ws
+                          :backend/ft}}]
 
-     [:cmd/route {:from :server/scheduler-cmp
-                  :to   #{:server/store-cmp
-                          :server/backup-cmp
-                          :server/imports-cmp
-                          :server/upload-cmp
-                          :server/ws-cmp}}]
+     [:cmd/route {:from :backend/scheduler
+                  :to   #{:backend/store
+                          :backend/backup
+                          :backend/imports
+                          :backend/upload
+                          :backend/ws}}]
 
-     [:cmd/route {:from #{:server/store-cmp
-                          :server/upload-cmp
-                          :server/backup-cmp
-                          :server/imports-cmp}
-                  :to   :server/scheduler-cmp}]
+     [:cmd/route {:from #{:backend/store
+                          :backend/upload
+                          :backend/backup
+                          :backend/imports}
+                  :to   :backend/scheduler}]
      (when observer
-       [:cmd/attach-to-firehose :server/kafka-firehose])
+       [:cmd/attach-to-firehose :backend/kafka-firehose])
 
-     [:cmd/send {:to  :server/scheduler-cmp
+     [:cmd/send {:to  :backend/store
+                 :msg [:startup/read]}]
+
+     [:cmd/send {:to  :backend/scheduler
                  :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
                                           :message [:import/spotify]
                                           :repeat  true

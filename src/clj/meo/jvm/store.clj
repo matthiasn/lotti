@@ -10,39 +10,48 @@
             [meo.common.specs]
             [clojure.data.avl :as avl]
             [ubergraph.core :as uber]
-            [me.raynes.fs :as fs]
             [meo.jvm.file-utils :as fu]
-            [meo.common.utils.vclock :as vc]))
+            [meo.common.utils.vclock :as vc]
+            [matthiasn.systems-toolbox.component :as st]))
 
-(defn read-dir [state entries-to-index put-fn]
+(defn process-line [parsed node-id state entries-to-index]
+  (let [ts (:timestamp parsed)
+        local-offset (get-in parsed [:vclock node-id])]
+    (if (:deleted parsed)
+      (do (swap! state ga/remove-node ts)
+          (swap! entries-to-index dissoc ts))
+      (do (swap! entries-to-index assoc-in [ts] parsed)
+          (swap! state ga/add-node parsed)))
+    (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
+    (when local-offset
+      (swap! state update-in [:vclock-map] assoc local-offset parsed))))
+
+(defn read-lines []
   (let [path (:daily-logs-path (fu/paths))
         files (file-seq (clojure.java.io/file path))
         filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")
-        cnt (atom 0)
-        node-id (-> @state :cfg :node-id)]
+        all-lines (atom [])
+        start (st/now)]
+    (info "read entry log files")
     (doseq [f (sort-by #(.getName %) filtered)]
       (with-open [reader (clojure.java.io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]
-            (try
-              (let [parsed (clojure.edn/read-string line)
-                    ts (:timestamp parsed)
-                    local-offset (get-in parsed [:vclock node-id])]
-                (swap! cnt inc)
-                (if (:deleted parsed)
-                  (do (swap! state ga/remove-node ts)
-                      (swap! entries-to-index dissoc ts))
-                  (do (swap! entries-to-index assoc-in [ts] parsed)
-                      (swap! state ga/add-node parsed)))
-                (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
-                (when local-offset
-                  (swap! state update-in [:vclock-map] assoc local-offset parsed))
-                (when (zero? (mod @cnt 5000))
-                  (info "Lines read:" @cnt)
-                  (info (last (:vclock-map @state)))))
-              (catch Exception ex
-                (error "Exception" ex "when parsing line:\n" line)))))))
-    (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))))
+            (swap! all-lines conj line)))))
+    (info (count @all-lines) "lines read in" (- (st/now) start) "ms")
+    @all-lines))
+
+(defn parse-line [s]
+  (try
+    (clojure.edn/read-string s)
+    (catch Exception ex
+      (error "Exception" ex "when parsing line:\n" s))))
+
+(defn parse-lines [lines]
+  (let [start (st/now)
+        parsed-lines (vec (filter identity (pmap parse-line lines)))]
+    (info (count parsed-lines) "lines parsed in" (- (st/now) start) "ms")
+    parsed-lines))
 
 (defn ft-index [entries-to-index put-fn]
   (let [path (:clucy-path (fu/paths))
@@ -58,37 +67,47 @@
           (info "Indexed" (count @entries-to-index) "entries." t))
         (reset! entries-to-index [])))))
 
-(defn recreate-state
+(defn read-entries [{:keys [cmp-state put-fn]}]
+  (let [lines (read-lines)
+        parsed-lines (parse-lines lines)
+        cnt (count parsed-lines)
+        indexed (vec (map-indexed (fn [idx v] [idx v]) parsed-lines))
+        node-id (-> @cmp-state :cfg :node-id)
+        entries (atom (avl/sorted-map))
+        start (st/now)
+        broadcast #(put-fn (with-meta % {:sente-uid :broadcast}))
+        entries-to-index (atom {})]
+    (doseq [[idx parsed] indexed]
+      (let [ts (:timestamp parsed)
+            progress (double (/ idx cnt))]
+        (process-line parsed node-id cmp-state entries-to-index)
+        (swap! cmp-state assoc-in [:startup-progress] progress)
+        (when (zero? (mod idx 1000))
+          (broadcast [:startup/progress progress]))
+        (if (:deleted parsed)
+          (swap! entries dissoc ts)
+          (swap! entries update-in [ts] conj parsed))))
+    (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
+    (swap! cmp-state assoc-in [:startup-progress] 1)
+    (broadcast [:startup/progress 1])
+    (broadcast [:search/refresh])
+    (ft-index entries-to-index put-fn)
+    {}))
+
+(defn state-fn
   "Creates state atom and then parses all files in data directory into the
    component state.
    Entries are stored as attributes of graph nodes, where the node itself is
    timestamp of an entry. A sort order by descending timestamp is maintained
    in a sorted set of the nodes timestamps."
-  [put-fn]
+  [_put-fn]
   (let [conf (fu/load-cfg)
-        entries-to-index (atom {})
         state (atom {:sorted-entries (sorted-set-by >)
                      :graph          (uber/graph)
                      :global-vclock  {}
                      :vclock-map     (avl/sorted-map)
                      :cfg            conf})]
-    (let [t (with-out-str (time (read-dir state entries-to-index put-fn)))]
-      (info "Read" (count @entries-to-index) "entries." t)
-      (ft-index entries-to-index put-fn))
     {:state state}))
-
-(defn state-fn
-  "Initial state function. If persisted state exists, read that (much faster),
-   otherwise recreate it from then append log. Should be deleted or renamed
-   whenever there is an application update to avoid inconsistencies."
-  [put-fn]
-  (try
-    (if (and (System/getenv "CACHED_APPSTATE")
-             (fs/exists? (:app-cache (fu/paths))))
-      (f/state-from-file)
-      (recreate-state put-fn))
-    (catch Exception ex (do (error "Error reading cache" ex)
-                            (recreate-state put-fn)))))
 
 (defn refresh-cfg
   "Refresh configuration by reloading the config file."
@@ -114,6 +133,7 @@
                    :entry/find       gq/find-entry
                    :entry/unlink     ga/unlink
                    :entry/update     f/geo-entry-persist-fn
+                   :startup/read     read-entries
                    :sync/entry       f/sync-receive
                    :sync/done        sync-done
                    :sync/initiate    sync-send
