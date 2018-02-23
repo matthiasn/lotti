@@ -128,20 +128,20 @@
    entry and schedule an initial increment message."
   [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
+        new-entry (assoc-in msg-payload [:pomodoro-running] true)
         new-state (-> current-state
-                      (assoc-in [:new-entries ts :pomodoro-running] true)
+                      (assoc-in [:new-entries ts] new-entry)
                       (assoc-in [:pomodoro :running] ts)
                       (assoc-in [:busy-status :busy] false))]
-    (when-let [entry (get-in current-state [:new-entries ts])]
-      (update-local-storage new-state)
-      {:new-state new-state
-       :emit-msg  [:cmd/schedule-new
-                   {:message [:cmd/pomodoro-inc
-                              {:started        (st/now)
-                               :completed-time (:completed-time entry)
-                               :timestamp      ts}]
-                    :timeout 1
-                    :id      (keyword (str "timer-") ts)}]})))
+    (update-local-storage new-state)
+    {:new-state new-state
+     :emit-msg  [:cmd/schedule-new
+                 {:message [:cmd/pomodoro-inc
+                            {:started        (st/now)
+                             :completed-time (:completed-time new-entry)
+                             :timestamp      ts}]
+                  :timeout 1
+                  :id      (keyword (str "timer-") ts)}]}))
 
 (defn pomodoro-stop-fn [{:keys [current-state]}]
   (let [new-state (-> current-state

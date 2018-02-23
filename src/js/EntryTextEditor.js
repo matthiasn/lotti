@@ -111,7 +111,7 @@ let hasCommandModifier = _draftJs.KeyBindingUtil.hasCommandModifier;
 
 
 function myKeyBindingFn(e) {
-    if (e.keyCode === 82 /* `S` key */ && hasCommandModifier(e)) {
+    if (e.keyCode === 82 /* `E` key */ && hasCommandModifier(e)) {
         return 'editor-start';
     }if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
         return 'editor-save';
