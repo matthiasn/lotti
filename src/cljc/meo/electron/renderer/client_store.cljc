@@ -69,11 +69,14 @@
                      :wordcount-stats  (sorted-map)
                      :options          {:pvt-hashtags #{"#pvt"}}
                      :cfg              cfg})]
-    (put-fn [:state/stats-tags-get])
-    (put-fn [:stats/get2])
-    (put-fn [:cfg/refresh])
-    (put-fn [:state/search (u/search-from-cfg @state)])
     {:state state}))
+
+(defn initial-queries [{:keys [current-state put-fn]}]
+  (put-fn [:state/stats-tags-get])
+  (put-fn [:stats/get2])
+  (put-fn [:cfg/refresh])
+  (put-fn [:state/search (u/search-from-cfg current-state)])
+  {})
 
 (defn save-stats-fn [{:keys [current-state msg-payload]}]
   (let [k (case (:type msg-payload)
@@ -122,6 +125,7 @@
                         :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
                         :startup/progress  progress
+                        :startup/query     initial-queries
                         :ws/ping           ping
                         :backend-cfg/new   save-backend-cfg
                         :nav/to            nav-handler

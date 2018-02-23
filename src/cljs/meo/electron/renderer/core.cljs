@@ -108,7 +108,10 @@
                             :to   :renderer/screenshot}]
 
        (when OBSERVER
-         [:cmd/attach-to-firehose :renderer/ws-firehose])])))
+         [:cmd/attach-to-firehose :renderer/ws-firehose])
+
+       [:cmd/send {:to  :renderer/store
+                   :msg [:startup/query]}]])))
 
 (defn load-handler [ev]
   (info "RENDERER loaded")
