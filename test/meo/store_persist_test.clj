@@ -41,7 +41,8 @@
                        tasks-not-done-query-uid stc/tasks-not-done-query}}
 
             res (second (:emit-msg (gq/query-fn {:current-state @thawed-state
-                                                 :msg-payload   req-msg})))]
+                                                 :msg-payload   req-msg
+                                                 :put-fn        (fn [_])})))]
 
         (testing
           "query with no matches should return 0 results"

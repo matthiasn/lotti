@@ -33,7 +33,8 @@
                        tasks-not-done-query-uid stc/tasks-not-done-query}}
 
             res (second (:emit-msg (gq/query-fn {:current-state new-state
-                                                 :msg-payload   req-msg})))]
+                                                 :msg-payload   req-msg
+                                                 :put-fn        (fn [_])})))]
 
         (testing
           "query with no matches should return 0 results"
@@ -90,7 +91,9 @@
             req-msg {:queries {"query1" stc/tasks-done-query
                                "query2" stc/tasks-not-done-query}}
             res (second (:emit-msg (gq/query-fn {:current-state new-state
-                                                 :msg-payload   req-msg})))]
+                                                 :msg-payload   req-msg
+                                                 :put-fn        (fn [_])})))]
+        (prn :fooooooo)
         (testing
           "all expected entries are fetched"
           (is (= {:entries     {"query1" [1450998400000

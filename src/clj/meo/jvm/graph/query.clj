@@ -447,7 +447,7 @@
         {:emit-msg (when entry [:entry/found entry])})
       (warn "cannot find node: " ts))))
 
-(defn run-query [current-state msg-meta]
+(defn run-query [current-state]
   (fn [[query-id query]]
     (let [res (get-filtered current-state query)]
       [query-id res])))
@@ -455,11 +455,12 @@
 (defn query-fn
   "Runs all queries in request, sends back to client, with all entry maps
    for the individual queries merged into one."
-  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  [{:keys [current-state msg-payload put-fn]}]
+  (put-fn [:startup/progress (:startup-progress current-state)])
   (when (= 1 (:startup-progress current-state))
     (let [queries (:queries msg-payload)
           start-ts (System/nanoTime)
-          res-mapper (run-query current-state msg-meta)
+          res-mapper (run-query current-state)
           res (mapv res-mapper queries)
           res2 (reduce (fn [acc [k v]]
                          (-> acc
@@ -470,6 +471,5 @@
           ms (/ (- (System/nanoTime) start-ts) 1000000)
           dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
       (debug queries)
-      (info "queries took" dur)
-      (put-fn [:state/new (merge res2 dur)])))
-  {:emit-msg [:startup/progress (:startup-progress current-state)]})
+      (prn "queries took" (:duration-ms dur))
+      {:emit-msg [:state/new (merge res2 dur)]})))
