@@ -73,16 +73,18 @@
   [id]
   #?(:cljs (.play (.getElementById js/document id))))
 
+(defn parse-int-js [n]
+  #?(:cljs (js/parseInt n)
+     :clj  n))
+
 (defn pomodoro-inc-fn
   "Increments completed time for entry."
   [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         started (:started msg-payload)
         completed-time (:completed-time msg-payload)
-        dur (+ completed-time
-               (/ (- (st/now) started) 1000))
-        dur #?(:cljs (js/parseInt dur)
-               :clj  dur)
+        dur (parse-int-js (+ completed-time
+                             (/ (- (st/now) started) 1000)))
         new-state (assoc-in current-state [:new-entries ts :completed-time] dur)]
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
@@ -141,10 +143,8 @@
                     :timeout 1
                     :id      (keyword (str "timer-") ts)}]})))
 
-(defn pomodoro-stop-fn [{:keys [current-state msg-payload]}]
-  (let [ts (:timestamp msg-payload)
-        new-state (-> current-state
-                      (assoc-in [:new-entries ts :pomodoro-running] false)
+(defn pomodoro-stop-fn [{:keys [current-state]}]
+  (let [new-state (-> current-state
                       (assoc-in [:pomodoro :running] nil)
                       (assoc-in [:busy-status :busy] false))]
     {:new-state new-state}))

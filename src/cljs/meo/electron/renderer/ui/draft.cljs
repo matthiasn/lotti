@@ -110,7 +110,7 @@
                             updated (if (= (:entry-type entry) :pomodoro)
                                       (assoc-in cleaned [:pomodoro-running] false)
                                       cleaned)]
-                        (when (:pomodoro-running @entry)
+                        (when (:pomodoro-running latest-entry)
                           (put-fn [:window/progress {:v 0}])
                           (put-fn [:blink/busy {:color :green}])
                           (put-fn [:cmd/pomodoro-stop updated]))
