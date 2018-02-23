@@ -224,4 +224,4 @@
                ^{:key (:timestamp entry)}
                [task-line entry put-fn {:tab-group   tab-group
                                         :search-text search-text
-                                        :unlink      true}])]]])))))
+                                        :unlink      unlink}])]]])))))
