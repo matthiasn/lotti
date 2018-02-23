@@ -40,11 +40,11 @@
         fmt (.format utc "HH:mm")]
     fmt))
 
-(defn task-line [entry tab-group search-text put-fn unlink]
+(defn task-line [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
         logged-time (subscribe [:entry-logged-time ts])
         busy-status (subscribe [:busy-status])]
-    (fn [entry tab-group search-text put-fn unlink]
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -63,8 +63,9 @@
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
-         [:td.estimate
-          [:span (s-to-hhmm @logged-time)]]
+         (when show-logged?
+           [:td.estimate
+            [:span (s-to-hhmm @logged-time)]])
          [:td.estimate
           (when-let [estimate (-> entry :task :estimate-m)]
             (let [actual @logged-time
@@ -134,7 +135,9 @@
                 [filter-btn :on-hold]]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-line entry tab-group search-text put-fn])]]])))))
+               [task-line entry put-fn {:tab-group    tab-group
+                                        :search-text  search-text
+                                        :show-logged? true}])]]])))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
@@ -219,4 +222,6 @@
               [:th.xs [:i.fa.far.fa-link]]]
              (for [entry linked-tasks]
                ^{:key (:timestamp entry)}
-               [task-line entry tab-group search-text put-fn unlink])]]])))))
+               [task-line entry put-fn {:tab-group   tab-group
+                                        :search-text search-text
+                                        :unlink      true}])]]])))))
