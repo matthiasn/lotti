@@ -13,6 +13,7 @@
                  [clj-time "0.14.2"]
                  [clj-http "3.7.0"]
                  [enlive "1.1.6"]
+                 [buddy/buddy-sign "2.2.0"]
                  [me.raynes/fs "1.4.6"]
                  [markdown-clj "1.0.2"]
                  [cheshire "5.8.0"]

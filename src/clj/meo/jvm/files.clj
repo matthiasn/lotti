@@ -14,6 +14,10 @@
             [clojure.java.io :as io]
             [taoensso.nippy :as nippy]
             [meo.jvm.file-utils :as fu]
+            [buddy.core.hash :as hash]
+            [buddy.core.codecs.base64 :as b64]
+            [buddy.sign.jwe :as jwe]
+            [buddy.core.nonce :as nonce]
             [ubergraph.core :as uc]
             [meo.common.utils.vclock :as vc]
             [meo.common.utils.misc :as u])
@@ -24,6 +28,22 @@
   [file-s regexp]
   (filter (fn [f] (re-matches regexp (.getName f))) file-s))
 
+;; e.g. from: openssl rand -base64 512 > data/secret.txt
+(def secret (hash/sha512 (slurp (str (:data-path (fu/paths)) "/secret.txt"))))
+
+(defn write-encrypted [filename]
+  (let [unencrypted (slurp filename)
+        opts {:alg :dir :enc :a256cbc-hs512}
+        encrypted (jwe/encrypt unencrypted secret opts)
+        enc-filename (str filename ".enc")
+        _ (spit enc-filename encrypted)
+        encrypted-file (slurp enc-filename)
+        dec-filename (str enc-filename ".dec")
+        decrypted (String. (jwe/decrypt encrypted-file secret opts))
+        _ (spit dec-filename decrypted)
+        identical? (= unencrypted (slurp dec-filename))]
+    (info filename "encryption/decryption success:" identical?)))
+
 (defn append-daily-log
   "Appends journal entry to the current day's log file."
   [cfg entry]
@@ -31,7 +51,8 @@
                       (tf/unparse (tf/formatters :year-month-day) (time/now))
                       ".jrn")
         serialized (str (pr-str entry) "\n")]
-    (spit filename serialized :append true)))
+    (spit filename serialized :append true)
+    (write-encrypted filename)))
 
 (defn entry-import-fn
   "Handler function for persisting an imported journal entry."
