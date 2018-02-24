@@ -190,7 +190,7 @@
                                 (let [from-now (.fromNow (moment active-from))]
                                   (s/includes? from-now "ago"))
                                 true)))
-            started-tasks (set @started-tasks)
+            started-tasks (set (:entries @started-tasks))
             linked-tasks (->> linked-entries
                               (filter filter-fn)
                               (filter saga-filter)
