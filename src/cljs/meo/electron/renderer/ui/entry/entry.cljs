@@ -107,23 +107,15 @@
           [hashtags-mentions-list ts tab-group put-fn]
           [:div.word-count (u/count-words-formatted @entry)]]]))))
 
-(defn briefing
-  "Renders individual journal entry. Interaction with application state happens
-   via messages that are sent to the store component, for example for toggling
-   the display of the edit mode or showing the map for an entry. The editable
-   content component used in edit mode also sends a modified entry to the store
-   component, which is useful for displaying updated hashtags, or also for
-   showing the warning that the entry is not saved yet."
-  [ts put-fn local-cfg]
+(defn briefing [ts put-fn local-cfg]
   (let [cfg (subscribe [:cfg])
-        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
+        {:keys [entry entries-map]} (eu/entry-reaction ts)
         drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
-    (fn journal-entry-render [ts put-fn local-cfg]
-      (let [edit-mode? @edit-mode]
-        [:div.entry {:on-drop       drop-fn
-                     :on-drag-over  h/prevent-default
-                     :on-drag-enter h/prevent-default}
-         [b/briefing-view @entry put-fn local-cfg]]))))
+    (fn briefing-render [ts put-fn local-cfg]
+      [:div.entry {:on-drop       drop-fn
+                   :on-drag-over  h/prevent-default
+                   :on-drag-enter h/prevent-default}
+       [b/briefing-view ts put-fn local-cfg]])))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

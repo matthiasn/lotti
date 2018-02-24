@@ -69,9 +69,7 @@
         (when (and ts (not= ts (:timestamp updated)))
           (put-fn [:entry/update (u/clean-entry updated)]))))))
 
-(defn drag-start-fn
-  "Generates function for handling drag-start event."
-  [entry put-fn]
+(defn drag-start-fn [entry put-fn]
   (fn [ev]
     (let [dt (.-dataTransfer ev)]
       (put-fn [:cmd/set-dragged entry])

@@ -8,6 +8,7 @@
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]
             [meo.electron.renderer.ui.entry.briefing.time :as time]
             [reagent.core :as r]
+            [taoensso.timbre :refer-macros [info]]
             [moment]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.actions :as a]
@@ -90,28 +91,26 @@
          ^{:key ts}
          [:option {:value ts} (:saga-name saga)])])))
 
-(defn briefing-view [entry put-fn local-cfg]
+(defn briefing-view [ts put-fn local-cfg]
   (let [chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
-        ts (:timestamp entry)
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         last-update (subscribe [:last-update])
-        day (-> entry :briefing :day)
+        day (reaction (-> @entry :briefing :day))
         today (.format (moment.) "YYYY-MM-DD")
-        filter-btn (if (= day today) :active :open)
+        filter-btn (if (= @day today) :active :open)
         local (r/atom {:filter                  filter-btn
                        :outstanding-time-filter true
                        :on-hold                 false})]
-    (fn briefing-render [entry put-fn local-cfg]
-      (h/keep-updated2 :stats/wordcount day local @last-update put-fn)
-      (h/keep-updated2 :stats/pomodoro day local @last-update put-fn)
-      (h/keep-updated2 :stats/tasks day local @last-update put-fn)
+    (fn briefing-render [ts put-fn local-cfg]
+      (h/keep-updated2 :stats/wordcount @day local @last-update put-fn)
+      (h/keep-updated2 :stats/pomodoro @day local @last-update put-fn)
+      (h/keep-updated2 :stats/tasks @day local @last-update put-fn)
       (for [ts (:linked-entries-list entry)]
         (put-fn [:entry/find {:timestamp ts}]))
       (let [ts (:timestamp entry)
             {:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
-            day (-> entry :briefing :day)
-            day-stats (get pomodoro-stats day)
+            day-stats (get pomodoro-stats @day)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> day-stats
                           :time-by-saga
@@ -119,11 +118,10 @@
                           (map second)
                           (apply +))
             dur (u/duration-string logged-s)
-            word-stats (get wordcount-stats day)
-            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)
+            word-stats (get wordcount-stats @day)
+            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats @day)
             time-allocation (-> entry :briefing :time-allocation)]
         [:div.briefing
-
          ; rethink this
          ; [planned-actual entry]
          ; [time/time-by-sagas entry day-stats local edit-mode? put-fn]

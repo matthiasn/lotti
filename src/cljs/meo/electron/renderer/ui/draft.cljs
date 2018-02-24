@@ -134,6 +134,7 @@
          [:div.entry-footer
           [:div.save
            (when @unsaved
+             #_
              (info (data/diff (get-in @entries-map [ts])
                               (get-in @new-entries [ts])))
              [:span.not-saved {:on-click save-fn}

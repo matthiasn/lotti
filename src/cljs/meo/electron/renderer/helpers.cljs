@@ -121,8 +121,7 @@
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
       (get-stats stats-key n (:meta last-update {}) put-fn))))
 
-(defn keep-updated2
-  [stats-key day local last-update put-fn]
+(defn keep-updated2 [stats-key day local last-update put-fn]
   (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
         last-update (:last-update last-update)]
     (when (> last-update last-fetched)
