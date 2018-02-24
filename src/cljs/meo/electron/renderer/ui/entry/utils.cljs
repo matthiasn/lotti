@@ -5,8 +5,7 @@
             [meo.common.utils.misc :as u]))
 
 (defn compare-relevant [entry]
-  (-> entry
-      (dissoc :text :editor-state)))
+  (dissoc entry :text :editor-state :vclock))
 
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])
