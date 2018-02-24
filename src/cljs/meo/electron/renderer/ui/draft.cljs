@@ -7,7 +7,8 @@
             [meo.common.utils.misc :as u]
             [draft-js :as Draft]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.electron.renderer.ui.entry.pomodoro :as pomo]))
+            [meo.electron.renderer.ui.entry.pomodoro :as pomo]
+            [clojure.data :as data]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -93,7 +94,7 @@
 
 (defn entry-editor [entry put-fn]
   (let [ts (:timestamp @entry)
-        {:keys [entry edit-mode unsaved]} (eu/entry-reaction ts)
+        {:keys [entry edit-mode unsaved new-entries entries-map]} (eu/entry-reaction ts)
         editor-cb (fn [md plain]
                     (when-not (= md (:md @entry))
                       (let [updated (merge
@@ -133,6 +134,8 @@
          [:div.entry-footer
           [:div.save
            (when @unsaved
+             (info (data/diff (get-in @entries-map [ts])
+                              (get-in @new-entries [ts])))
              [:span.not-saved {:on-click save-fn}
               [:i.far.fa-save] " save"])]
           [pomo/pomodoro-header entry edit-mode? put-fn]]]))))
