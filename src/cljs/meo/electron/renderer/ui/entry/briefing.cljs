@@ -11,7 +11,8 @@
             [moment]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.actions :as a]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [clojure.string :as s]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -85,7 +86,7 @@
       [:select {:value     (:selected @local "")
                 :on-change saga-select}
        [:option ""]
-       (for [[ts saga] @sagas]
+       (for [[ts saga] (sort-by #(s/lower-case (:saga-name (second %))) @sagas)]
          ^{:key ts}
          [:option {:value ts} (:saga-name saga)])])))
 
