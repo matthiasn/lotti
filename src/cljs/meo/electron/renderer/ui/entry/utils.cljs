@@ -16,6 +16,7 @@
         edit-mode (reaction (contains? @new-entries ts))
         unsaved (reaction
                   (and @edit-mode
+                       (:md (get-in @new-entries [ts]))
                        (not= (compare-relevant (get-in @new-entries [ts]))
                              (compare-relevant (get-in @entries-map [ts])))))]
     {:entry            entry

@@ -29,20 +29,23 @@
   (filter (fn [f] (re-matches regexp (.getName f))) file-s))
 
 ;; e.g. from: openssl rand -base64 512 > data/secret.txt
-(def secret (hash/sha512 (slurp (str (:data-path (fu/paths)) "/secret.txt"))))
+(def secret-path (str (:data-path (fu/paths)) "/secret.txt"))
+(def secret (when (fs/exists? secret-path)
+              (hash/sha512 (slurp secret-path))))
 
 (defn write-encrypted [filename]
-  (let [unencrypted (slurp filename)
-        opts {:alg :dir :enc :a256cbc-hs512}
-        encrypted (jwe/encrypt unencrypted secret opts)
-        enc-filename (str filename ".enc")
-        _ (spit enc-filename encrypted)
-        encrypted-file (slurp enc-filename)
-        dec-filename (str enc-filename ".dec")
-        decrypted (String. (jwe/decrypt encrypted-file secret opts))
-        _ (spit dec-filename decrypted)
-        identical? (= unencrypted (slurp dec-filename))]
-    (info filename "encryption/decryption success:" identical?)))
+  (when secret
+    (let [unencrypted (slurp filename)
+          opts {:alg :dir :enc :a256cbc-hs512}
+          encrypted (jwe/encrypt unencrypted secret opts)
+          enc-filename (str filename ".enc")
+          _ (spit enc-filename encrypted)
+          encrypted-file (slurp enc-filename)
+          dec-filename (str enc-filename ".dec")
+          decrypted (String. (jwe/decrypt encrypted-file secret opts))
+          _ (spit dec-filename decrypted)
+          identical? (= unencrypted (slurp dec-filename))]
+      (info filename "encryption/decryption success:" identical?))))
 
 (defn append-daily-log
   "Appends journal entry to the current day's log file."
