@@ -128,7 +128,7 @@
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
         ^{:key (:vclock @entry)}
-        [:div
+        [:div {:class (when @unsaved "unsaved")}
          [draft-text-editor md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save

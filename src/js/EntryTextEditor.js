@@ -323,7 +323,8 @@ let EntryTextEditor = function (_Component) {
                 _react2.default.createElement(_styleControls2.default, {
                     editorState: editorState,
                     state: this,
-                    show: this.props.changed,
+                    //show: this.props.changed,
+                    show: true,
                     onToggleInline: this.toggleInlineStyle,
                     onToggleBlockType: this.toggleBlockType
                 }),

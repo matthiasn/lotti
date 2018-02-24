@@ -672,15 +672,31 @@ u {
 }
 
 .edit-menu {
-  background-color: $edit-menu-bg;
-  padding: 0 4px;
-  margin: 0 -10px 3px -10px;
-  color: #666;
+  background-color: lighten($edit-menu-bg, 7);
+  i.fa {
+    color: #BBB;
+  }
 
   .active-button {
-    background-color: #BBB;
+    background-color: #DDD;
     color: #333;
   }
+
+  @at-root .unsaved .edit-menu {
+    background-color: $edit-menu-bg;
+
+    i.fa {
+      color: #555;
+    }
+
+    .active-button {
+      background-color: #BBB;
+      color: #333;
+    }
+  }
+
+  padding: 0 4px;
+  margin: 0 -10px 5px -10px;
 
   .header-2 {
     font-size: 0.9em;
@@ -693,19 +709,19 @@ u {
   }
 
   .spacer {
-    padding: 3px 5px;
+    padding: 3px 3px;
   }
 
   .spacer-sm {
-    padding: 3px 5px;
+    padding: 3px 1px;
   }
 
   .fa {
-    padding: 3px;
+    padding: 4px 2px;
     cursor: pointer;
   }
 
   .fa-wide {
-    padding: 3px 5px;
+    padding: 4px 3px;
   }
 }
