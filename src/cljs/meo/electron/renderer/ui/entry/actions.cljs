@@ -201,18 +201,14 @@
                                                           show-comments)
                              new-entry (new-entry-fn)]
                          (put-fn [:cmd/pomodoro-start new-entry])))
-        trash-entry #(if edit-mode?
-                       (put-fn [:entry/remove-local {:timestamp ts}])
-                       (put-fn [:entry/trash @entry]))
         mouse-enter #(reset! visible true)]
     (fn entry-actions-render [ts put-fn edit-mode? local-cfg]
       (let [comment? (:comment-for @entry)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
+         [:div.items
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
           [:i.fa.fa-plus-square.toggle
-           {:on-click #(create-linked-entry)}]
-          [trash-icon trash-entry]]]))))
+           {:on-click #(create-linked-entry)}]]]))))

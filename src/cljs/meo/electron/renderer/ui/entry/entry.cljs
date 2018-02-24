@@ -123,8 +123,6 @@
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
-         [:div.header
-          [a/briefing-actions ts put-fn edit-mode? local-cfg]]
          [b/briefing-view @entry put-fn local-cfg]]))))
 
 (defn entry-with-comments

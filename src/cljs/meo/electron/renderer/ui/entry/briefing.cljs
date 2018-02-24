@@ -9,7 +9,9 @@
             [meo.electron.renderer.ui.entry.briefing.time :as time]
             [reagent.core :as r]
             [moment]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.entry.actions :as a]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -72,9 +74,26 @@
             [legend "actual" 3 21]
             [legend "remaining" 3 32]]])))))
 
+(defn sagas-filter [local]
+  (let [sagas (subscribe [:sagas])
+        saga-select (fn [ev]
+                      (let [v (js/parseInt (-> ev .-nativeEvent .-target .-value))
+                            selected (when (pos? v) v)]
+                        (swap! local assoc-in [:selected] selected)))]
+    (fn sagas-filter-render [local]
+      ^{:key (:selected @local)}
+      [:select {:value     (:selected @local "")
+                :on-change saga-select}
+       [:option ""]
+       (for [[ts saga] @sagas]
+         ^{:key ts}
+         [:option {:value ts} (:saga-name saga)])])))
+
 (defn briefing-view [entry put-fn local-cfg]
   (let [chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
+        ts (:timestamp entry)
+        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         last-update (subscribe [:last-update])
         day (-> entry :briefing :day)
         today (.format (moment.) "YYYY-MM-DD")
@@ -103,24 +122,30 @@
             {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats day)
             time-allocation (-> entry :briefing :time-allocation)]
         [:div.briefing
-         [:div.summary
-          "Tasks: " [:strong tasks-cnt] " created | "
-          [:strong done-cnt] " done | "
-          [:strong closed-cnt] " closed | Words: "
-          [:strong (or (:word-count word-stats) 0)]]
-         ;[planned-actual entry]
-         [:div.summary
-          (when (seq time-allocation)
-            [:span
-             "Total planned: "
-             [:strong
-              (u/duration-string
-                (apply + (map second time-allocation)))]])
-          (when (seq dur)
-            [:span
-             " Logged: " [:strong dur] " in " (:total day-stats) " entries."])]
-         ;[time/time-by-sagas entry day-stats local edit-mode? put-fn]
+
+         ; rethink this
+         ; [planned-actual entry]
+         ; [time/time-by-sagas entry day-stats local edit-mode? put-fn]
+         [:div.header
+          [sagas-filter local]
+          [a/briefing-actions ts put-fn @edit-mode local-cfg]]
          [:div.briefing-details
           [tasks/started-tasks local local-cfg put-fn]
           [tasks/open-linked-tasks ts local local-cfg put-fn]
-          [habits/waiting-habits entry local local-cfg put-fn]]]))))
+          [habits/waiting-habits entry local local-cfg put-fn]]
+         [:div.summary
+          [:div
+           "Tasks: " [:strong tasks-cnt] " created | "
+           [:strong done-cnt] " done | "
+           [:strong closed-cnt] " closed | Words: "
+           [:strong (or (:word-count word-stats) 0)]]
+          [:div
+           (when (seq time-allocation)
+             [:span
+              "Total planned: "
+              [:strong
+               (u/duration-string
+                 (apply + (map second time-allocation)))]])
+           (when (seq dur)
+             [:span
+              " Logged: " [:strong dur] " in " (:total day-stats) " entries."])]]]))))
