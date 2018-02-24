@@ -86,6 +86,7 @@
 
   .footer {
     display: flex;
+    color: $body-background-color;
 
     .word-count {
       flex: 1;
