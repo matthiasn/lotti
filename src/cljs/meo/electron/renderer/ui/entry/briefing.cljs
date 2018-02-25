@@ -130,7 +130,7 @@
          [:div.briefing-details
           [tasks/started-tasks local local-cfg put-fn]
           [tasks/open-linked-tasks ts local local-cfg put-fn]
-          [habits/waiting-habits entry local local-cfg put-fn]]
+          [habits/waiting-habits ts local local-cfg put-fn]]
          [:div.summary
           [:div
            "Tasks: " [:strong tasks-cnt] " created | "

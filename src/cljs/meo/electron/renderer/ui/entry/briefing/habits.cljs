@@ -18,7 +18,7 @@
 
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
-  [entry local local-cfg put-fn]
+  [ts local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
@@ -32,7 +32,7 @@
                         (let [story (get @stories (:primary-story entry))]
                           (= selected (:linked-saga story)))
                         true))
-        entries-map (subscribe [:entries-map])
+        {:keys [entry entries-map]} (eu/entry-reaction ts)
         entries-map (reaction (merge @entries-map (:entries-map @waiting-habits)))
         habits (reaction
                  (let [find-missing (u/find-missing-entry entries-map put-fn)
@@ -44,11 +44,11 @@
                    (if (:show-pvt @cfg)
                      entries
                      (filter (u/pvt-filter conf @entries-map) entries))))]
-    (fn waiting-habits-list-render [entry local local-cfg put-fn]
+    (fn waiting-habits-list-render [ts local local-cfg put-fn]
       (let [habits (if (:expanded-habits @local) @habits (take 12 @habits))
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")
-            briefing-day (-> entry :briefing :day)
+            briefing-day (-> @entry :briefing :day)
             search-text @search-text]
         (when (and (= today briefing-day) (seq habits))
           [:div
