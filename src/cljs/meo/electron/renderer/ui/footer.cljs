@@ -37,5 +37,6 @@
             [:option {:value "50vh"} "50%"]
             [:option {:value "66vh"} "66%"]
             [:option {:value "75vh"} "75%"]
-            [:option {:value "100vh"} "100%"]]]]
+            [:option {:value "100vh"} "100%"]]
+           [stats/stats-text]]]
          [stats/stats-text])])))
