@@ -2,6 +2,8 @@
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.misc :as u]
+    #?(:clj [taoensso.timbre :refer [info debug]]
+       :cljs [taoensso.timbre :refer-macros [info debug]])
     [meo.common.utils.parse :as p]))
 
 #?(:clj  (defonce new-entries-ls (atom {}))
@@ -63,7 +65,7 @@
                         (assoc-in [:busy-status :busy] false)
                         (assoc-in [:entries-map ts] msg-payload))
                     current-state)]
-    (prn "entry saved, clearing" msg-payload)
+    (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
     {:new-state    new-state
      :send-to-self (with-meta [:search/refresh] msg-meta)}))

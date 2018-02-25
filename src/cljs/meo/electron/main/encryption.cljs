@@ -8,9 +8,7 @@
             [child_process :refer [spawn]]
             [moment]))
 
-(defn encrypt
-  "Encrypt"
-  [{:keys [current-state msg-payload]}]
+(defn encrypt [{:keys [msg-payload]}]
   (let [start (st/now)
         filename (:filename msg-payload)
         {:keys [daily-logs-path encrypted-path repo-dir data-path]} rt/runtime-info
@@ -25,7 +23,6 @@
         dur (- (st/now) start)]
     (when-not (existsSync encrypted-path)
       (mkdirSync encrypted-path))
-    (info encrypted-path)
     (writeFileSync enc-path ciphertext)
     (let [success (= content decrypted)]
       (if success
