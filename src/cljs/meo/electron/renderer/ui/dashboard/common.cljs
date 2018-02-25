@@ -154,41 +154,45 @@
           :text-anchor "end"}
    label])
 
-(defn barchart-row [{:keys [days span mx label start stats tag k h y
-                            cls threshold success-cls]} put-fn]
-  (let [btm-y (+ y h)
-        indexed (indexed-days stats tag k start days)
-        mx (or mx (apply max (map #(:v (second %)) indexed)))
-        scale (if (pos? mx) (/ (- h 3) mx) 1)]
-    [:g
-     [row-label (or label tag) y h]
-     (for [[n {:keys [ymd v weekday]}] indexed]
-       (let [d (* 24 60 60 1000)
-             offset (* n d)
-             span (if (zero? span) 1 span)
-             scaled (* 1800 (/ offset span))
-             x (+ 201 scaled)
-             v (min mx v)
-             h (* v scale)
-             cls (if (and threshold (> v threshold))
-                   success-cls
-                   cls)
-             display-v (if (= :duration k)
-                         (h/m-to-hh-mm v)
-                         v)]
-         ^{:key (str tag k n)}
-         [rect {:v   display-v
-                :x   x
-                :w   9
-                :ymd ymd
-                :y   btm-y
-                :h   h
-                :cls cls
-                :n   n}]))
-     [line (+ y h) "#000" 2]]))
+(defn barchart-row [_ _]
+  (let [show-pvt (subscribe [:show-pvt])]
+    (fn barchart-row [{:keys [days span mx label start stats tag k h y
+                              cls threshold success-cls]} put-fn]
+      (let [btm-y (+ y h)
+            indexed (indexed-days stats tag k start days)
+            mx (or mx (apply max (map #(:v (second %)) indexed)))
+            scale (if (pos? mx) (/ (- h 3) mx) 1)]
+        [:g
+         (when @show-pvt
+           [row-label (or label tag) y h])
+         (for [[n {:keys [ymd v weekday]}] indexed]
+           (let [d (* 24 60 60 1000)
+                 offset (* n d)
+                 span (if (zero? span) 1 span)
+                 scaled (* 1800 (/ offset span))
+                 x (+ 201 scaled)
+                 v (min mx v)
+                 h (* v scale)
+                 cls (if (and threshold (> v threshold))
+                       success-cls
+                       cls)
+                 display-v (if (= :duration k)
+                             (h/m-to-hh-mm v)
+                             v)]
+             ^{:key (str tag k n)}
+             [rect {:v   display-v
+                    :x   x
+                    :w   9
+                    :ymd ymd
+                    :y   btm-y
+                    :h   h
+                    :cls cls
+                    :n   n}]))
+         [line (+ y h) "#000" 2]]))))
 
 (defn points-by-day-chart [{:keys [y h label span]}]
-  (let [stats (subscribe [:stats])]
+  (let [stats (subscribe [:stats])
+        show-pvt (subscribe [:show-pvt])]
     (fn points-by-day-render [{:keys [y h label]}]
       (let [btm-y (+ y h)
             award-points (:award-points @stats)
@@ -221,10 +225,12 @@
                        :width  14
                        :height h}])))
          [line (+ y h) "#000" 2]
-         [row-label label y h]]))))
+         (when @show-pvt
+           [row-label label y h])]))))
 
 (defn points-lost-by-day-chart [{:keys [y h label]}]
-  (let [stats (subscribe [:stats])]
+  (let [stats (subscribe [:stats])
+        show-pvt (subscribe [:show-pvt])]
     (fn points-by-day-render [{:keys [y h label]}]
       (let [btm-y (+ y h)
             award-points (:award-points @stats)
@@ -246,4 +252,5 @@
                        :width  6
                        :height h}])))
          [line (+ y h) "#000" 2]
-         [row-label label y h]]))))
+         (when @show-pvt
+           [row-label label y h])]))))

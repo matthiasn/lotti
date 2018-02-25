@@ -15,6 +15,7 @@
 (defn scores-chart
   [{:keys [k score-k]} _put-fn]
   (let [stats (subscribe [:stats])
+        show-pvt (subscribe [:show-pvt])
         scores (reaction (filter score-k (scores-fn @stats k)))]
     (fn scores-chart-render [{:keys [y k w h score-k start end mn mx color
                                      x-offset label scatter]} put-fn]
@@ -47,4 +48,5 @@
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
-         [dc/row-label label y h]]))))
+         (when @show-pvt
+           [dc/row-label label y h])]))))

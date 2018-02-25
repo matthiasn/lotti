@@ -78,11 +78,12 @@
    doesn't exist locally."
   [entries-map put-fn]
   (fn [ts]
-    (let [entry (get @entries-map ts)]
-      (or entry
-          (let [missing-entry {:timestamp ts}]
-            (put-fn [:entry/find missing-entry])
-            missing-entry)))))
+    (when ts
+      (let [entry (get @entries-map ts)]
+        (or entry
+            (let [missing-entry {:timestamp ts}]
+              (put-fn [:entry/find missing-entry])
+              missing-entry))))))
 
 (defn count-words
   "Naive implementation of a wordcount function."

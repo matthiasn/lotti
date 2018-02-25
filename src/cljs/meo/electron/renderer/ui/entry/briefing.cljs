@@ -107,7 +107,8 @@
       (h/keep-updated2 :stats/pomodoro @day local @last-update put-fn)
       (h/keep-updated2 :stats/tasks @day local @last-update put-fn)
       (for [ts (:linked-entries-list entry)]
-        (put-fn [:entry/find {:timestamp ts}]))
+        (when ts
+          (put-fn [:entry/find {:timestamp ts}])))
       (let [{:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
             day-stats (get pomodoro-stats @day)
             excluded (:excluded (:briefing @cfg))
