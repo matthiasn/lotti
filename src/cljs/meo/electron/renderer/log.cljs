@@ -10,21 +10,41 @@
   [fltr]
   (-> fltr enc/compile-ns-filter taoensso.encore/memoize_))
 
-(defn middleware
-  "From: https://github.com/yonatane/timbre-ns-pattern-level"
-  [ns-patterns]
-  (fn log-by-ns-pattern [{:keys [?ns-str config level] :as opts}]
-    (let [namesp (or (some->> ns-patterns
-                              keys
-                              (filter #(and (string? %)
-                                            ((ns-filter %) ?ns-str)))
-                              not-empty
-                              (apply max-key count))
-                     :all)
-          log-level (get ns-patterns namesp (get config :level))]
-      (when (and (taoensso.timbre/may-log? log-level namesp)
-                 (taoensso.timbre/level>= level log-level))
-        opts))))
+(defonce ns-patterns
+         (atom {"meo.electron.main.core" :info
+                :all                     :info}))
+
+;; meo.electron.renderer.log.set_log_level("meo.electron.renderer.ui.draft", "info")
+(defn ^:export set-log-level
+  "Set log level for a given namespace from the electron console, see example
+   above."
+  [ns lvl]
+  (let [level (case lvl
+                "info" :info
+                "warn" :warn
+                "debug" :debug
+                "trace" :trace
+                nil)]
+    (when level
+      (swap! ns-patterns assoc-in [ns] level))
+    (if level
+      (println "log level" level "set for namespace" ns)
+      (println "ERROR:" lvl "is not a currently defined log level"))
+    nil))
+
+;; adapted from https://github.com/yonatane/timbre-ns-pattern-level
+(defn log-by-ns-pattern [{:keys [?ns-str config level] :as opts}]
+  (let [namesp (or (some->> @ns-patterns
+                            keys
+                            (filter #(and (string? %)
+                                          ((ns-filter %) ?ns-str)))
+                            not-empty
+                            (apply max-key count))
+                   :all)
+        log-level (get @ns-patterns namesp (get config :level))]
+    (when (and (taoensso.timbre/may-log? log-level namesp)
+               (taoensso.timbre/level>= level log-level))
+      opts)))
 
 (defn appender-fn [data]
   (let [{:keys [output_ level]} data
@@ -36,8 +56,7 @@
 
 ; See https://github.com/ptaoussanis/timbre
 (def timbre-config
-  {:middleware [(middleware {"meo.electron.main.core" :info
-                             :all                     :info})]
+  {:middleware [log-by-ns-pattern]
    :appenders  {:console {:enabled? true
                           :fn       appender-fn}}})
 

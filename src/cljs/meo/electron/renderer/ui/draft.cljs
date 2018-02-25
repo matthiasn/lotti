@@ -8,7 +8,8 @@
             [draft-js :as Draft]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
-            [clojure.data :as data]))
+            [clojure.data :as data]
+            [clojure.pprint :as pp]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -128,15 +129,20 @@
                                      (:timestamp updated))
                             (put-fn [:entry/update-local updated]))))
             md (or (:md @entry) "")]
+        (when @unsaved
+          (let [[things-only-in-a things-only-in-b _things-in-both]
+                (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
+                           (eu/compare-relevant (get-in @new-entries [ts])))]
+            (debug "\n--- only in entry from entries-map:\n"
+                   (with-out-str (pp/pprint things-only-in-a))
+                   "\n--- only in entry from new-entries:\n"
+                   (with-out-str (pp/pprint things-only-in-b)))))
         ^{:key (:vclock @entry)}
         [:div {:class (when @unsaved "unsaved")}
          [draft-text-editor md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save
            (when @unsaved
-             #_
-             (info (data/diff (get-in @entries-map [ts])
-                              (get-in @new-entries [ts])))
              [:span.not-saved {:on-click save-fn}
               [:i.far.fa-save] " save"])]
           [pomo/pomodoro-header entry edit-mode? put-fn]]]))))
