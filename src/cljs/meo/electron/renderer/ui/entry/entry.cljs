@@ -90,7 +90,7 @@
           [a/entry-actions ts put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-name-field @entry edit-mode? put-fn]
          [es/saga-name-field @entry edit-mode? put-fn]
-         [d/entry-editor entry put-fn]
+         [d/entry-editor ts put-fn]
          [c/custom-fields-div @entry put-fn edit-mode?]
          [c/questionnaire-div @entry put-fn edit-mode?]
          [m/audioplayer-view @entry put-fn]

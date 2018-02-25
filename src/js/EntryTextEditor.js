@@ -223,6 +223,8 @@ let EntryTextEditor = function (_Component) {
         };
 
         _this.componentWillReceiveProps = function (nextProps) {
+            let t0 = performance.now();
+
             let nextEditorState = nextProps.editorState;
             let currentEditorState = _this.state.editorState;
             let sinceUpdate = Date.now() - _this.state.lastUpdated;
@@ -241,6 +243,8 @@ let EntryTextEditor = function (_Component) {
                     _this.setState({editorState: nextProps.editorState});
                 }
             }
+            let t1 = performance.now();
+            //console.log("componentWillReceiveProps took " + (t1 - t0) + "ms.");
         };
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
@@ -289,13 +293,18 @@ let EntryTextEditor = function (_Component) {
         _this.state.storySuggestions = props.stories;
 
         _this.saveExternal = function (newState) {
-            //let t0 = performance.now();
+            let t0 = performance.now();
             let content = newState.getCurrentContent();
             let plain = content.getPlainText();
             let rawContent = _draftJs.convertToRaw(content);
+            let t1 = performance.now();
             let md = _draftjsMdConverter.draftjsToMd(rawContent, myMdDict);
-            //let t1 = performance.now();
-            //console.log("export took " + (t1 - t0) + "ms.");
+            let t2 = performance.now();
+            //console.log("convertToRaw took " + (t1 - t0) + "ms.");
+            //console.log("draftjsToMd took " + (t2 - t1) + "ms.");
+            let t3 = performance.now();
+            localStorage.setItem(props.ts, md);
+            //let md2 = localStorage.getItem(props.ts);
             props.onChange(md, plain);
         };
 

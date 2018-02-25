@@ -67,7 +67,7 @@
                :stories     @stories-list
                :onChange    on-change}])))
 
-(defn draft-text-editor [md update-cb save-fn start-fn small-img changed]
+(defn draft-text-editor [ts md update-cb save-fn start-fn small-img changed]
   (let [editor (adapt-react-class "EntryTextEditor")
         options (subscribe [:options])
         sorted-stories (reaction (:sorted-stories @options))
@@ -82,8 +82,9 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn [md update-cb save-fn start-fn small-img changed]
+    (fn [ts md update-cb save-fn start-fn small-img changed]
       [editor {:md       md
+               :ts       ts
                :changed  changed
                :mentions @mentions
                :hashtags @hashtags
@@ -93,9 +94,8 @@
                :smallImg small-img
                :onChange update-cb}])))
 
-(defn entry-editor [entry put-fn]
-  (let [ts (:timestamp @entry)
-        {:keys [entry edit-mode unsaved new-entries entries-map]} (eu/entry-reaction ts)
+(defn entry-editor [ts put-fn]
+  (let [{:keys [entry edit-mode unsaved new-entries entries-map]} (eu/entry-reaction ts)
         editor-cb (fn [md plain]
                     (when-not (= md (:md @entry))
                       (let [updated (merge
@@ -104,7 +104,7 @@
                                       {:text plain})]
                         (when (:timestamp updated)
                           (put-fn [:entry/update-local updated])))))]
-    (fn [entry put-fn]
+    (fn [ts put-fn]
       (let [latest-entry (dissoc @entry :comments)
             edit-mode? @edit-mode
             save-fn (fn [_ev]
@@ -139,7 +139,7 @@
                    (with-out-str (pp/pprint things-only-in-b)))))
         ^{:key (:vclock @entry)}
         [:div {:class (when @unsaved "unsaved")}
-         [draft-text-editor md editor-cb save-fn start-fn small-img @unsaved]
+         [draft-text-editor ts md editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save
            (when @unsaved
