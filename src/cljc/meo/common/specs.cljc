@@ -352,3 +352,6 @@
 
 (s/def :startup/progress number?)
 (s/def :startup/read nil?)
+
+(s/def :meo.enc/filename string?)
+(s/def :file/encrypt (s/keys :req-un [:meo.enc/filename]))

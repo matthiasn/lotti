@@ -7,6 +7,7 @@
             [meo.electron.main.menu :as menu]
             [meo.electron.main.update :as upd]
             [meo.electron.main.blink :as bl]
+            [meo.electron.main.encryption :as enc]
             [meo.electron.main.geocoder :as geocoder]
             [meo.electron.main.startup :as st]
             [electron :refer [app]]
@@ -53,6 +54,7 @@
                      (st/cmp-map :electron/startup)
                      (ipc/cmp-map :electron/ipc-cmp)
                      (bl/cmp-map :electron/blink)
+                     (enc/cmp-map :electron/encryption)
                      (upd/cmp-map :electron/updater)
                      (sched/cmp-map :electron/scheduler)
                      (menu/cmp-map :electron/menu-cmp)
@@ -81,6 +83,7 @@
                             :electron/updater
                             :electron/geocoder
                             :electron/blink
+                            :electron/encryption
                             :electron/scheduler
                             :electron/window-manager}}]
 

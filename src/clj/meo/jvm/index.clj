@@ -31,4 +31,4 @@
    :relay-types   #{:entry/saved :entry/found :state/new :backend-cfg/new
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
                     :state/stats-tags2 :search/refresh :cfg/show-qr :ws/ping
-                    :startup/progress}})
+                    :startup/progress :file/encrypt}})

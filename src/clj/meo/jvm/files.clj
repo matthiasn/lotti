@@ -49,17 +49,19 @@
 
 (defn append-daily-log
   "Appends journal entry to the current day's log file."
-  [cfg entry]
-  (let [filename (str (:daily-logs-path (fu/paths))
-                      (tf/unparse (tf/formatters :year-month-day) (time/now))
+  [cfg entry put-fn]
+  (let [filename (str (tf/unparse (tf/formatters :year-month-day) (time/now))
                       ".jrn")
+        full-path (str (:daily-logs-path (fu/paths))
+                       filename)
         serialized (str (pr-str entry) "\n")]
-    (spit filename serialized :append true)
-    (write-encrypted filename)))
+    (spit full-path serialized :append true)
+    (write-encrypted full-path)
+    (put-fn [:file/encrypt {:filename filename}])))
 
 (defn entry-import-fn
   "Handler function for persisting an imported journal entry."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [id (or (:id msg-payload) (uuid/v1))
         entry (merge msg-payload {:last-saved (st/now) :id id})
         ts (:timestamp entry)
@@ -78,7 +80,7 @@
                       entry)
         cfg (:cfg current-state)]
     (when-not (= existing node-to-add)
-      (append-daily-log cfg node-to-add))
+      (append-daily-log cfg node-to-add put-fn))
     {:new-state (ga/add-node current-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
@@ -123,7 +125,7 @@
         (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
-      (append-daily-log (:cfg current-state) entry)
+      (append-daily-log (:cfg current-state) entry put-fn)
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
       {:new-state    new-state
@@ -152,7 +154,7 @@
     (when-not (contains? #{:a>b :concurrent :equal} vclocks-compared)
       (when (= :b>a vclocks-compared)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
-      (append-daily-log (:cfg current-state) entry)
+      (append-daily-log (:cfg current-state) entry put-fn)
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))
 
@@ -163,13 +165,14 @@
                  (str trash-path filename))
       (info "Moved file to trash:" filename))))
 
-(defn trash-entry-fn [{:keys [current-state msg-payload]}]
+(defn trash-entry-fn [{:keys [current-state msg-payload put-fn]}]
   (let [entry-ts (:timestamp msg-payload)
         new-state (ga/remove-node current-state entry-ts)
         cfg (:cfg current-state)]
     (info "Entry" entry-ts "marked as deleted.")
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
-                           :deleted   true})
+                           :deleted   true}
+                      put-fn)
     (move-attachment-to-trash cfg msg-payload "images" :img-file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)

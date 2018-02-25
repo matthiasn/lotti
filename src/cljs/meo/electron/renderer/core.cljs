@@ -40,14 +40,17 @@
       (set (mapv mapper components)))
     components))
 
+(def ipc-relay-types #{:wm/open-external
+                       :geonames/lookup
+                       :window/hide
+                       :window/show
+                       :window/progress
+                       :file/encrypt
+                       :blink/busy})
+
 (defn start []
   (info "Starting SYSTEM")
-  (let [components #{(ipc/cmp-map :renderer/ipc-cmp #{:wm/open-external
-                                                      :geonames/lookup
-                                                      :window/hide
-                                                      :window/show
-                                                      :window/progress
-                                                      :blink/busy})
+  (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
                      (spellcheck/cmp-map :renderer/spellcheck)
                      (screenshot/cmp-map :renderer/screenshot)
                      (sente/cmp-map :renderer/ws-cmp sente-cfg)
