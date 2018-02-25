@@ -190,7 +190,7 @@ let EntryTextEditor = function (_Component) {
             let mentions = _this.state.mentions;
 
             _this.setState({
-                mentionSuggestions: (0, suggestionsFilter)(value, mentions)
+                mentionSuggestions: suggestionsFilter(value, mentions)
             });
         };
 
@@ -199,7 +199,7 @@ let EntryTextEditor = function (_Component) {
             let hashtags = _this.state.hashtags;
 
             _this.setState({
-                hashtagSuggestions: (0, suggestionsFilter)(value, hashtags)
+                hashtagSuggestions: suggestionsFilter(value, hashtags)
             });
         };
 
@@ -208,7 +208,7 @@ let EntryTextEditor = function (_Component) {
             let stories = _this.state.stories;
 
             _this.setState({
-                storySuggestions: (0, suggestionsFilter)(value, stories)
+                storySuggestions: suggestionsFilter(value, stories)
             });
         };
 
@@ -244,9 +244,13 @@ let EntryTextEditor = function (_Component) {
         };
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
-        let stateFromMd = (0, _draftJs.convertFromRaw)((0, _draftjsMdConverter.mdToDraftjs)(props.md));
+
+        let rawFromMd = _draftjsMdConverter.mdToDraftjs(props.md);
+        let stateFromMd = _draftJs.convertFromRaw(rawFromMd);
         let stateFromMd2 = _draftJs.EditorState.createWithContent(stateFromMd);
+
         _this.state.editorState = props.editorState ? props.editorState : stateFromMd2;
+
         _this.toggleInlineStyle = function (style) {
             return _this._toggleInlineStyle(style);
         };
@@ -254,10 +258,10 @@ let EntryTextEditor = function (_Component) {
             return _this._toggleBlockType(type);
         };
 
-        let hashtagPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "#"});
-        let mentionPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "@"});
-        let storyPlugin = (0, _draftJsMentionPlugin2.default)({mentionTrigger: "$"});
-        let linkifyPlugin = (0, _draftJsLinkifyPlugin2.default)({
+        let hashtagPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "#"});
+        let mentionPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "@"});
+        let storyPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "$"});
+        let linkifyPlugin = _draftJsLinkifyPlugin2.default ({
             target: "_blank",
             component: function component(props) {
                 return (
@@ -285,14 +289,17 @@ let EntryTextEditor = function (_Component) {
         _this.state.storySuggestions = props.stories;
 
         _this.saveExternal = function (newState) {
+            //let t0 = performance.now();
             let content = newState.getCurrentContent();
             let plain = content.getPlainText();
-            let rawContent = (0, _draftJs.convertToRaw)(content);
-            let md = (0, _draftjsMdConverter.draftjsToMd)(rawContent, myMdDict);
+            let rawContent = _draftJs.convertToRaw(content);
+            let md = _draftjsMdConverter.draftjsToMd(rawContent, myMdDict);
+            //let t1 = performance.now();
+            //console.log("export took " + (t1 - t0) + "ms.");
             props.onChange(md, plain);
         };
 
-        _this.throttledSave = (0, _lodash2.default)(_this.saveExternal, 500);
+        _this.throttledSave = _lodash2.default(_this.saveExternal, 500);
 
         _this.onChange = function (newState) {
             let now = Date.now();
