@@ -67,11 +67,10 @@
                :stories     @stories-list
                :onChange    on-change}])))
 
-(defn draft-text-editor [ts md update-cb save-fn start-fn small-img changed]
+(defn draft-text-editor [ts update-cb save-fn start-fn small-img changed]
   (let [editor (adapt-react-class "EntryTextEditor")
+        {:keys [entry entries-map]} (eu/entry-reaction ts)
         options (subscribe [:options])
-        sorted-stories (reaction (:sorted-stories @options))
-        stories-list (reaction (filter identity (map story-mapper @sorted-stories)))
         cfg (subscribe [:cfg])
         mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
         hashtags (reaction
@@ -82,17 +81,18 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn [ts md update-cb save-fn start-fn small-img changed]
-      [editor {:md       md
-               :ts       ts
-               :changed  changed
-               :mentions @mentions
-               :hashtags @hashtags
-               :stories  @stories-list
-               :saveFn   save-fn
-               :startFn  start-fn
-               :smallImg small-img
-               :onChange update-cb}])))
+    (fn draft-editor-render [ts update-cb save-fn start-fn small-img changed]
+      (let [md (or (get-in @entry [:md]) "")]
+        (debug :draft-editor-render ts)
+        [editor {:md       md
+                 :ts       ts
+                 :changed  changed
+                 :mentions @mentions
+                 :hashtags @hashtags
+                 :saveFn   save-fn
+                 :startFn  start-fn
+                 :smallImg small-img
+                 :onChange update-cb}]))))
 
 (defn entry-editor [ts put-fn]
   (let [{:keys [entry edit-mode unsaved new-entries entries-map]} (eu/entry-reaction ts)
@@ -127,19 +127,21 @@
                           (when (and (pos? img-size)
                                      (< img-size 101)
                                      (:timestamp updated))
-                            (put-fn [:entry/update-local updated]))))
-            md (or (:md @entry) "")]
+                            (put-fn [:entry/update-local updated]))))]
         (when @unsaved
-          (let [[things-only-in-a things-only-in-b _things-in-both]
-                (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
-                           (eu/compare-relevant (get-in @new-entries [ts])))]
-            (debug "\n--- only in entry from entries-map:\n"
-                   (with-out-str (pp/pprint things-only-in-a))
-                   "\n--- only in entry from new-entries:\n"
-                   (with-out-str (pp/pprint things-only-in-b)))))
+          #_
+          (debug
+            (time
+              (let [[things-only-in-a things-only-in-b _things-in-both]
+                    (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
+                               (eu/compare-relevant (get-in @new-entries [ts])))]
+                (str "\n--- only in entry from entries-map:\n"
+                     (with-out-str (pp/pprint things-only-in-a))
+                     "\n--- only in entry from new-entries:\n"
+                     (with-out-str (pp/pprint things-only-in-b)))))))
         ^{:key (:vclock @entry)}
         [:div {:class (when @unsaved "unsaved")}
-         [draft-text-editor ts md editor-cb save-fn start-fn small-img @unsaved]
+         [draft-text-editor ts editor-cb save-fn start-fn small-img @unsaved]
          [:div.entry-footer
           [:div.save
            (when @unsaved

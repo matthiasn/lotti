@@ -44,12 +44,15 @@ function get(obj, attr) {
 }
 
 function suggestionsFilter(searchValue, suggestions) {
+    let t0 = performance.now();
     let value = searchValue.toLowerCase();
 
     let filteredSuggestions = suggestions.filter(function (suggestion) {
         return !value || get(suggestion, 'name').toLowerCase().indexOf(value) > -1;
     });
     let length = size(filteredSuggestions) < 15 ? size(filteredSuggestions) : 15;
+    let t1 = performance.now();
+    console.log("suggestionsFilter took " + (t1 - t0) + "ms.");
     return filteredSuggestions.slice(0, length);
 }
 
@@ -203,15 +206,6 @@ let EntryTextEditor = function (_Component) {
             });
         };
 
-        _this.onSearchChangeStories = function (_ref3) {
-            let value = _ref3.value;
-            let stories = _this.state.stories;
-
-            _this.setState({
-                storySuggestions: suggestionsFilter(value, stories)
-            });
-        };
-
         _this.focus = function () {
             _this.editor.focus();
         };
@@ -219,8 +213,6 @@ let EntryTextEditor = function (_Component) {
         _this.onAddMention = function () {
         };
 
-        _this.onAddStory = function (story) {
-        };
 
         _this.componentWillReceiveProps = function (nextProps) {
             let t0 = performance.now();
@@ -231,7 +223,6 @@ let EntryTextEditor = function (_Component) {
 
             _this.state.mentions = nextProps.mentions;
             _this.state.hashtags = nextProps.hashtags;
-            _this.state.stories = nextProps.stories;
 
             if (nextEditorState && currentEditorState && sinceUpdate > 1000) {
                 let nextPropsContent = nextEditorState.getCurrentContent();
@@ -264,7 +255,6 @@ let EntryTextEditor = function (_Component) {
 
         let hashtagPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "#"});
         let mentionPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "@"});
-        let storyPlugin = _draftJsMentionPlugin2.default({mentionTrigger: "$"});
         let linkifyPlugin = _draftJsLinkifyPlugin2.default ({
             target: "_blank",
             component: function component(props) {
@@ -279,18 +269,16 @@ let EntryTextEditor = function (_Component) {
             }
         });
 
-        _this.plugins = [hashtagPlugin, mentionPlugin, storyPlugin, linkifyPlugin];
+        //_this.plugins = [linkifyPlugin];
+        _this.plugins = [hashtagPlugin, mentionPlugin, linkifyPlugin];
         _this.HashtagSuggestions = hashtagPlugin.MentionSuggestions;
         _this.MentionSuggestions = mentionPlugin.MentionSuggestions;
-        _this.StorySuggestions = storyPlugin.MentionSuggestions;
 
         _this.state.mentions = props.mentions;
         _this.state.hashtags = props.hashtags;
-        _this.state.stories = props.stories;
 
         _this.state.mentionSuggestions = props.mentions;
         _this.state.hashtagSuggestions = props.hashtags;
-        _this.state.storySuggestions = props.stories;
 
         _this.saveExternal = function (newState) {
             let t0 = performance.now();
@@ -308,7 +296,7 @@ let EntryTextEditor = function (_Component) {
             props.onChange(md, plain);
         };
 
-        _this.throttledSave = _lodash2.default(_this.saveExternal, 500);
+        _this.throttledSave = _lodash2.default(_this.saveExternal, 1000);
 
         _this.onChange = function (newState) {
             let now = Date.now();
@@ -327,7 +315,6 @@ let EntryTextEditor = function (_Component) {
             let _this2 = this;
             let HashtagSuggestions = this.HashtagSuggestions;
             let MentionSuggestions = this.MentionSuggestions;
-            let StorySuggestions = this.StorySuggestions;
             let editorState = this.state.editorState;
 
             return _react2.default.createElement(
@@ -364,11 +351,6 @@ let EntryTextEditor = function (_Component) {
                     onSearchChange: this.onSearchChange2,
                     suggestions: this.state.hashtagSuggestions,
                     onAddMention: this.onAddMention
-                }),
-                _react2.default.createElement(StorySuggestions, {
-                    onSearchChange: this.onSearchChangeStories,
-                    suggestions: this.state.storySuggestions,
-                    onAddMention: this.onAddStory
                 })
             );
         }
