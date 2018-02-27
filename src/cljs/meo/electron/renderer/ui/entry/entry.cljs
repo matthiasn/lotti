@@ -18,7 +18,8 @@
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.draft :as d]
             [clojure.set :as set]
-            [moment]))
+            [moment]
+            [meo.electron.renderer.ui.entry.pomodoro :as pomo]))
 
 (defn all-comments-set [ts]
   (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
@@ -104,6 +105,7 @@
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
          [:div.footer
+          [pomo/pomodoro-header entry edit-mode? put-fn]
           [hashtags-mentions-list ts tab-group put-fn]
           [:div.word-count (u/count-words-formatted @entry)]]]))))
 

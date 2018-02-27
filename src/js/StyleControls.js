@@ -130,7 +130,7 @@ let BLOCK_TYPES = [{
 }, {
     style: 'ordered-list-item',
     icon: 'fa-list-ol fa-wide'
-}, {style: 'code-block', icon: 'fa-code'}];
+}];
 
 let StyleControls = function StyleControls(props) {
     let editorState = props.editorState,
@@ -145,6 +145,13 @@ let StyleControls = function StyleControls(props) {
         return _react2.default.createElement(
             'div',
             {className: 'RichEditor-controls edit-menu'},
+
+            _react2.default.createElement(StyleButton, {
+                icon: "fa-save fa-wide",
+                onToggle: props.save,
+                style: "menu-save"
+            }),
+
             INLINE_STYLES.map(function (type) {
                 return _react2.default.createElement(StyleButton, {
                     key: type.style,

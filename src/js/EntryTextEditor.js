@@ -135,6 +135,20 @@ let myMdDict = {
     UNDERLINE: "__"
 };
 
+function extractAndSave (editorState, saveFn) {
+    let t0 = performance.now();
+    let content = editorState.getCurrentContent();
+    let plain = content.getPlainText();
+    let rawContent = _draftJs.convertToRaw(content);
+    let t1 = performance.now();
+    let md = _draftjsMdConverter.draftjsToMd(rawContent, myMdDict);
+    let t2 = performance.now();
+    console.log("SAVE convertToRaw took   " + (t1 - t0) + "ms.");
+    console.log("SAVE draftjsToMd took    " + (t2 - t1) + "ms.");
+
+    saveFn(md, plain);
+}
+
 let EntryTextEditor = function (_Component) {
     _inherits(EntryTextEditor, _Component);
 
@@ -160,9 +174,8 @@ let EntryTextEditor = function (_Component) {
         _this.handleKeyCommand = function (command) {
             let editorState = _this.state.editorState;
 
-
             if (command === 'editor-save') {
-                _this.props.saveFn();
+                extractAndSave (editorState, _this.props.saveFn);
                 return 'handled';
             }
 
@@ -288,12 +301,12 @@ let EntryTextEditor = function (_Component) {
             let t1 = performance.now();
             let md = _draftjsMdConverter.draftjsToMd(rawContent, myMdDict);
             let t2 = performance.now();
-            //console.log("convertToRaw took " + (t1 - t0) + "ms.");
-            //console.log("draftjsToMd took " + (t2 - t1) + "ms.");
-            let t3 = performance.now();
-            localStorage.setItem(props.ts, md);
+            //localStorage.setItem(props.ts, md);
             //let md2 = localStorage.getItem(props.ts);
             props.onChange(md, plain);
+            let t3 = performance.now();
+            console.log("convertToRaw " + (t1 - t0) + " draftjsToMd "+ (t2 - t1)
+                + "props.onChange " + (t3 - t2));
         };
 
         _this.throttledSave = _lodash2.default(_this.saveExternal, 1000);
@@ -317,6 +330,9 @@ let EntryTextEditor = function (_Component) {
             let MentionSuggestions = this.MentionSuggestions;
             let editorState = this.state.editorState;
 
+            let save = () => {
+                extractAndSave(editorState, this.props.saveFn)
+            };
             return _react2.default.createElement(
                 'div',
                 {
@@ -328,6 +344,7 @@ let EntryTextEditor = function (_Component) {
                     state: this,
                     //show: this.props.changed,
                     show: true,
+                    save: save,
                     onToggleInline: this.toggleInlineStyle,
                     onToggleBlockType: this.toggleBlockType
                 }),

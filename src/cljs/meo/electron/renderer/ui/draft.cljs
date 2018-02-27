@@ -106,12 +106,14 @@
                           (put-fn [:entry/update-local updated])))))]
     (fn [ts put-fn]
       (let [latest-entry (dissoc @entry :comments)
-            edit-mode? @edit-mode
-            save-fn (fn [_ev]
+            save-fn (fn [md plain]
                       (let [cleaned (u/clean-entry latest-entry)
-                            updated (if (= (:entry-type entry) :pomodoro)
-                                      (assoc-in cleaned [:pomodoro-running] false)
-                                      cleaned)]
+                            updated (merge cleaned
+                                           (p/parse-entry md)
+                                           {:text plain})
+                            updated (if (= (:entry-type latest-entry) :pomodoro)
+                                      (assoc-in updated [:pomodoro-running] false)
+                                      updated)]
                         (when (:pomodoro-running latest-entry)
                           (put-fn [:window/progress {:v 0}])
                           (put-fn [:blink/busy {:color :green}])
@@ -129,22 +131,15 @@
                                      (:timestamp updated))
                             (put-fn [:entry/update-local updated]))))]
         (when @unsaved
-          #_
-          (debug
-            (time
-              (let [[things-only-in-a things-only-in-b _things-in-both]
-                    (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
-                               (eu/compare-relevant (get-in @new-entries [ts])))]
-                (str "\n--- only in entry from entries-map:\n"
-                     (with-out-str (pp/pprint things-only-in-a))
-                     "\n--- only in entry from new-entries:\n"
-                     (with-out-str (pp/pprint things-only-in-b)))))))
+          #_(debug
+              (time
+                (let [[things-only-in-a things-only-in-b _things-in-both]
+                      (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
+                                 (eu/compare-relevant (get-in @new-entries [ts])))]
+                  (str "\n--- only in entry from entries-map:\n"
+                       (with-out-str (pp/pprint things-only-in-a))
+                       "\n--- only in entry from new-entries:\n"
+                       (with-out-str (pp/pprint things-only-in-b)))))))
         ^{:key (:vclock @entry)}
         [:div {:class (when @unsaved "unsaved")}
-         [draft-text-editor ts editor-cb save-fn start-fn small-img @unsaved]
-         [:div.entry-footer
-          [:div.save
-           (when @unsaved
-             [:span.not-saved {:on-click save-fn}
-              [:i.far.fa-save] " save"])]
-          [pomo/pomodoro-header entry edit-mode? put-fn]]]))))
+         [draft-text-editor ts editor-cb save-fn start-fn small-img @unsaved]]))))

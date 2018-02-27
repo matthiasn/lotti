@@ -43,10 +43,29 @@
     justify-content: space-between;
     align-items: center;
     user-select: none;
+  }
+
+  .footer {
+    display: flex;
+    color: $body-background-color;
+
+    .word-count {
+      flex: 1;
+      padding-top: 4px;
+      font-size: $font-size-small;
+      text-align: right;
+      font-family: monospace;
+      color: $body-background-color;
+    }
+    .likes {
+      flex: 1;
+    }
 
     .pomodoro {
       display: flex;
       align-items: center;
+      margin-right: 20px;
+      height: 20px;
 
       .completed {
         color: $green;
@@ -57,10 +76,6 @@
         margin-right: 0.3em;
         font-family: monospace;
         font-size: $font-size-small;
-      }
-
-      .btn {
-        margin-left: 0.5em;
       }
 
       .fas {
@@ -81,21 +96,6 @@
         min-width: 60px;
         font-size: $font-size-small;
       }
-    }
-  }
-
-  .footer {
-    display: flex;
-    color: $body-background-color;
-
-    .word-count {
-      flex: 1;
-      font-size: $font-size-small;
-      text-align: right;
-      color: $body-background-color;
-    }
-    .likes {
-      flex: 1;
     }
   }
 
@@ -683,6 +683,10 @@ u {
     color: #333;
   }
 
+  i.fa-save {
+    margin-right: 3px;
+  }
+
   @at-root .unsaved .edit-menu {
     background-color: $edit-menu-bg;
 
@@ -693,6 +697,12 @@ u {
     .active-button {
       background-color: #BBB;
       color: #333;
+    }
+
+    i.fa-save {
+      background-color: $red;
+      color: white;
+      font-weight: 500;
     }
   }
 
