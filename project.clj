@@ -24,8 +24,9 @@
                  [ubergraph "0.4.0"]
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
-                 [matthiasn/systems-toolbox "0.6.33"]
+                 [matthiasn/systems-toolbox "0.6.34"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
+                 [org.clojure/tools.reader "1.2.1"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
@@ -50,7 +51,7 @@
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.0-2"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.9.946"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.64"]
                                            [reagent "0.8.0-alpha2"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.4"]
