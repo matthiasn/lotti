@@ -62,11 +62,15 @@ i {
 
 .loader {
   -webkit-app-region: drag;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  padding-top: 30vh;
 
   .content {
     color: white;
     width: 500px;
-    margin: 30vh auto auto auto;
+    margin: 0 auto auto auto;
 
     h1 {
       text-align: center;

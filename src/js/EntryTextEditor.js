@@ -305,8 +305,7 @@ let EntryTextEditor = function (_Component) {
             //let md2 = localStorage.getItem(props.ts);
             props.onChange(md, plain);
             let t3 = performance.now();
-            console.log("convertToRaw " + (t1 - t0) + " draftjsToMd "+ (t2 - t1)
-                + "props.onChange " + (t3 - t2));
+            //console.log("convertToRaw " + (t1 - t0) + " draftjsToMd "+ (t2 - t1) + "props.onChange " + (t3 - t2));
         };
 
         _this.throttledSave = _lodash2.default(_this.saveExternal, 1000);
