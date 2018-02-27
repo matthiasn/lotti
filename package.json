@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.208",
+  "version": "0.4.209",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -60,7 +60,8 @@
     "rome": "2.1.22",
     "s": "0.1.1",
     "shell-escape": "0.2.0",
-    "tcp-port-used": "0.1.2"
+    "tcp-port-used": "0.1.2",
+    "webdav": "1.2.1"
   },
   "devDependencies": {
     "browser-resolve": "1.11.2",
