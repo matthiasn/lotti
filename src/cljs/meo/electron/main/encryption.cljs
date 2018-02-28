@@ -10,20 +10,26 @@
             [webdav :as webdav]
             [moment]))
 
-(defn copy-to-webdav [filename]
+(defn copy-to-webdav [filename node-id]
   (let [{:keys [encrypted-path repo-dir data-path]} rt/runtime-info
+        data-path (if repo-dir "./data" data-path)
         enc-path (str encrypted-path "/" filename)
-        cred-path (str (if repo-dir "./data" data-path) "/webdav.edn")]
+        cred-path (str data-path "/webdav.edn")]
     (if (existsSync cred-path)
       (let [cred-file (readFileSync cred-path "utf-8")
             {:keys [server username password]} (edn/read-string cred-file)
             client (webdav. server username password)
             file-data (readFileSync enc-path "utf-8")
-            filename (str "/meo/" filename)
+            dir (str "/meo/" node-id "/")
+            filename (str dir filename)
             file-stats (statSync enc-path)
             filesize (str (/ (Math/round (/ (.-size file-stats) 10.24)) 100) "kB")]
-        (.putFileContents client filename file-data {:format "text"})
-        (info "copied" filename "to" server filesize))
+        (-> (.createDirectory client dir)
+            (.then #(info "created" dir))
+            (.catch #(warn "could not create" dir %)))
+        (-> (.putFileContents client filename file-data {:format "text"})
+            (.then #(info "copied" filename "to" server filesize))
+            (.catch #(error "could not copy" filename "to" server %))))
       (warn "No WebDAV credentials found - file upload ABORTED"))))
 
 (defn read-secret []
@@ -34,7 +40,7 @@
 
 (defn encrypt [{:keys [msg-payload]}]
   (let [start (st/now)
-        filename (:filename msg-payload)
+        {:keys [filename node-id]} msg-payload
         {:keys [daily-logs-path encrypted-path repo-dir]} rt/runtime-info
         secret (read-secret)
         daily-logs-path (if repo-dir "./data/daily-logs" daily-logs-path)]
@@ -48,7 +54,7 @@
         (when-not (existsSync encrypted-path)
           (mkdirSync encrypted-path))
         (writeFileSync enc-path ciphertext)
-        (copy-to-webdav filename)
+        (copy-to-webdav filename node-id)
         (let [success (= content decrypted)]
           (if success
             (info "encrypted file" filename "in" dur "ms, SUCCESS")
