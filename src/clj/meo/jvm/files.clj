@@ -28,35 +28,16 @@
   [file-s regexp]
   (filter (fn [f] (re-matches regexp (.getName f))) file-s))
 
-;; e.g. from: openssl rand -base64 512 > data/secret.txt
-(def secret-path (str (:data-path (fu/paths)) "/secret.txt"))
-(def secret (when (fs/exists? secret-path)
-              (hash/sha512 (slurp secret-path))))
-
-(defn write-encrypted [filename]
-  (when secret
-    (let [unencrypted (slurp filename)
-          opts {:alg :dir :enc :a256cbc-hs512}
-          encrypted (jwe/encrypt unencrypted secret opts)
-          enc-filename (str filename ".enc")
-          _ (spit enc-filename encrypted)
-          encrypted-file (slurp enc-filename)
-          dec-filename (str enc-filename ".dec")
-          decrypted (String. (jwe/decrypt encrypted-file secret opts))
-          _ (spit dec-filename decrypted)
-          identical? (= unencrypted (slurp dec-filename))]
-      (info filename "encryption/decryption success:" identical?))))
-
 (defn append-daily-log
   "Appends journal entry to the current day's log file."
-  [cfg entry node-id put-fn]
-  (let [filename (str (tf/unparse (tf/formatters :year-month-day) (time/now))
+  [cfg entry put-fn]
+  (let [node-id (:node-id cfg)
+        filename (str (tf/unparse (tf/formatters :year-month-day) (time/now))
                       ".jrn")
         full-path (str (:daily-logs-path (fu/paths))
                        filename)
         serialized (str (pr-str entry) "\n")]
     (spit full-path serialized :append true)
-    (write-encrypted full-path)
     (put-fn [:file/encrypt {:filename filename
                             :node-id  node-id}])))
 
@@ -67,7 +48,7 @@
         entry (merge msg-payload {:last-saved (st/now) :id id})
         ts (:timestamp entry)
         graph (:graph current-state)
-        node-id (-> current-state :cfg :node-id)
+        cfg (:cfg current-state)
         exists? (uc/has-node? graph ts)
         existing (when exists? (uc/attrs graph ts))
         node-to-add (if exists?
@@ -79,10 +60,9 @@
                                                          :horizontal-accuracy
                                                          :gps-timestamp
                                                          :linked-entries])))
-                      entry)
-        cfg (:cfg current-state)]
+                      entry)]
     (when-not (= existing node-to-add)
-      (append-daily-log cfg node-to-add node-id put-fn))
+      (append-daily-log cfg node-to-add put-fn))
     {:new-state (ga/add-node current-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
@@ -110,7 +90,8 @@
   "Handler function for persisting journal entry."
   [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
-        node-id (-> current-state :cfg :node-id)
+        cfg (:cfg current-state)
+        node-id (:node-id cfg)
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
         entry (assoc-in entry [:last-saved] (st/now))
@@ -127,7 +108,7 @@
         (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
-      (append-daily-log (:cfg current-state) entry node-id put-fn)
+      (append-daily-log cfg entry put-fn)
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
       {:new-state    new-state
@@ -141,6 +122,7 @@
   (let [ts (:timestamp msg-payload)
         entry msg-payload
         received-vclock (:vclock entry)
+        cfg (:cfg current-state)
         g (:graph current-state)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
         new-state (ga/add-node current-state entry)
@@ -156,7 +138,7 @@
     (when-not (contains? #{:a>b :concurrent :equal} vclocks-compared)
       (when (= :b>a vclocks-compared)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
-      (append-daily-log (:cfg current-state) entry put-fn)
+      (append-daily-log cfg entry put-fn)
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))
 
