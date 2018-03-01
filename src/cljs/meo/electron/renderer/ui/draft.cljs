@@ -6,10 +6,12 @@
             [meo.common.utils.parse :as p]
             [meo.common.utils.misc :as u]
             [draft-js :as Draft]
+            [draftjs-md-converter :as md-converter]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
             [clojure.data :as data]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -23,6 +25,11 @@
   (when-let [story-name (:story-name story)]
     {:name story-name
      :id   ts}))
+
+(def md-dict (clj->js {:BOLD          "**"
+                       :STRIKETHROUGH "~~"
+                       :CODE          "`"
+                       :UNDERLINE     "__"}))
 
 (defn on-editor-change [update-cb]
   (fn [new-state]
@@ -67,9 +74,10 @@
                :stories     @stories-list
                :onChange    on-change}])))
 
-(defn draft-text-editor [ts update-cb save-fn start-fn small-img changed]
+(defn draft-text-editor [ts update-cb save-fn start-fn small-img]
   (let [editor (adapt-react-class "EntryTextEditor")
-        {:keys [entry entries-map]} (eu/entry-reaction ts)
+        {:keys [entry unsaved]} (eu/entry-reaction ts)
+        md (reaction (:md @entry))
         options (subscribe [:options])
         cfg (subscribe [:cfg])
         mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
@@ -81,65 +89,71 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn draft-editor-render [ts update-cb save-fn start-fn small-img changed]
-      (let [md (or (get-in @entry [:md]) "")]
-        (debug :draft-editor-render ts)
-        [editor {:md       md
-                 :ts       ts
-                 :changed  changed
-                 :mentions @mentions
-                 :hashtags @hashtags
-                 :saveFn   save-fn
-                 :startFn  start-fn
-                 :smallImg small-img
-                 :onChange update-cb}]))))
+    (fn draft-editor-render [ts update-cb save-fn start-fn small-img]
+      (debug :draft-editor-render ts)
+      [editor {:md       @md
+               :ts       ts
+               :changed  @unsaved
+               :mentions @mentions
+               :hashtags @hashtags
+               :saveFn   save-fn
+               :startFn  start-fn
+               :smallImg small-img
+               :onChange update-cb}])))
 
 (defn entry-editor [ts put-fn]
-  (let [{:keys [entry edit-mode unsaved new-entries entries-map]} (eu/entry-reaction ts)
-        editor-cb (fn [md plain]
-                    (when-not (= md (:md @entry))
-                      (let [updated (merge
-                                      @entry
-                                      (p/parse-entry md)
-                                      {:text plain})]
-                        (when (:timestamp updated)
-                          (put-fn [:entry/update-local updated])))))]
-    (fn [ts put-fn]
-      (let [latest-entry (dissoc @entry :comments)
-            save-fn (fn [md plain]
-                      (let [cleaned (u/clean-entry latest-entry)
-                            updated (merge cleaned
-                                           (p/parse-entry md)
-                                           {:text plain})
-                            updated (if (= (:entry-type latest-entry) :pomodoro)
-                                      (assoc-in updated [:pomodoro-running] false)
-                                      updated)]
-                        (when (:pomodoro-running latest-entry)
-                          (put-fn [:window/progress {:v 0}])
-                          (put-fn [:blink/busy {:color :green}])
-                          (put-fn [:cmd/pomodoro-stop updated]))
-                        (put-fn [:entry/update-local updated])
-                        (put-fn [:entry/update updated])))
-            start-fn #(when (= (:entry-type latest-entry) :pomodoro)
-                        (put-fn [:cmd/pomodoro-start latest-entry]))
-            small-img (fn [smaller]
-                        (let [img-size (:img-size @entry 50)
-                              img-size (if smaller (- img-size 10) (+ img-size 10))
-                              updated (assoc-in @entry [:img-size] img-size)]
-                          (when (and (pos? img-size)
-                                     (< img-size 101)
-                                     (:timestamp updated))
-                            (put-fn [:entry/update-local updated]))))]
-        (when @unsaved
-          #_(debug
-              (time
-                (let [[things-only-in-a things-only-in-b _things-in-both]
-                      (data/diff (eu/compare-relevant (get-in @entries-map [ts]))
-                                 (eu/compare-relevant (get-in @new-entries [ts])))]
-                  (str "\n--- only in entry from entries-map:\n"
-                       (with-out-str (pp/pprint things-only-in-a))
-                       "\n--- only in entry from new-entries:\n"
-                       (with-out-str (pp/pprint things-only-in-b)))))))
-        ^{:key (:vclock @entry)}
-        [:div {:class (when @unsaved "unsaved")}
-         [draft-text-editor ts editor-cb save-fn start-fn small-img @unsaved]]))))
+  (let [{:keys [entry unsaved]} (eu/entry-reaction ts)
+        vclock (reaction (:vclock @entry))
+        cb-atom (atom {:last-sent 0})
+        update-local (fn []
+                       (let [start (st/now)
+                             editor-state (:editor-state @cb-atom)
+                             content (.getCurrentContent editor-state)
+                             plain (.getPlainText content)
+                             raw-content (.convertToRaw Draft content)
+                             md (.draftjsToMd md-converter raw-content md-dict)
+                             updated (merge @entry
+                                            (p/parse-entry md)
+                                            {:text         plain
+                                             :edit-running true})]
+                         (swap! cb-atom dissoc :timeout)
+                         (when (:timestamp updated)
+                           (put-fn [:entry/update-local updated]))
+                         (info "update-local took" (- (st/now) start) "ms")))
+        change-cb (fn [editor-state]
+                    (swap! cb-atom assoc-in [:editor-state] editor-state)
+                    (when-not (:edit-running @entry) (update-local))
+                    (when-not (:timeout @cb-atom)
+                      (let [timeout (.setTimeout js/window update-local 5000)]
+                        (swap! cb-atom assoc-in [:timeout] timeout))))
+        save-fn (fn [md plain]
+                  (let [latest-entry (dissoc @entry :comments)
+                        cleaned (u/clean-entry latest-entry)
+                        updated (merge (dissoc cleaned :edit-running)
+                                       (p/parse-entry md)
+                                       {:text plain})
+                        updated (if (= (:entry-type latest-entry) :pomodoro)
+                                  (assoc-in updated [:pomodoro-running] false)
+                                  updated)]
+                    (when (:pomodoro-running latest-entry)
+                      (put-fn [:window/progress {:v 0}])
+                      (put-fn [:blink/busy {:color :green}])
+                      (put-fn [:cmd/pomodoro-stop updated]))
+                    (put-fn [:entry/update-local updated])
+                    (put-fn [:entry/update updated])))
+        start-fn #(let [latest-entry (dissoc @entry :comments)]
+                    (when (= (:entry-type latest-entry) :pomodoro)
+                      (put-fn [:cmd/pomodoro-start latest-entry])))
+        small-img (fn [smaller]
+                    (let [img-size (:img-size @entry 50)
+                          img-size (if smaller (- img-size 10) (+ img-size 10))
+                          updated (assoc-in @entry [:img-size] img-size)]
+                      (when (and (pos? img-size)
+                                 (< img-size 101)
+                                 (:timestamp updated))
+                        (put-fn [:entry/update-local updated]))))]
+    (fn [_ts _put-fn]
+      (debug :entry-editor-render ts)
+      ^{:key @vclock}
+      [:div {:class (when @unsaved "unsaved")}
+       [draft-text-editor ts change-cb save-fn start-fn small-img]])))

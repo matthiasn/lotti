@@ -229,26 +229,19 @@ let EntryTextEditor = function (_Component) {
 
         _this.componentWillReceiveProps = function (nextProps) {
             let t0 = performance.now();
-
-            let nextEditorState = nextProps.editorState;
-            let currentEditorState = _this.state.editorState;
             let sinceUpdate = Date.now() - _this.state.lastUpdated;
 
             _this.state.mentions = nextProps.mentions;
             _this.state.hashtags = nextProps.hashtags;
 
-            if (nextEditorState && currentEditorState && sinceUpdate > 1000) {
-                let nextPropsContent = nextEditorState.getCurrentContent();
-                let currentContent = currentEditorState.getCurrentContent();
-                let nextPropsPlain = nextPropsContent.getPlainText();
-                let statePlain = currentContent.getPlainText();
-                let changedOutside = nextPropsPlain !== statePlain;
-                if (changedOutside) {
-                    _this.setState({editorState: nextProps.editorState});
-                }
+            if (sinceUpdate > 1000) {
+                let rawFromMd = _draftjsMdConverter.mdToDraftjs(nextProps.md);
+                let content = _draftJs.convertFromRaw(rawFromMd);
+                let newState = _draftJs.EditorState.createWithContent(content);
+                _this.setState({editorState: newState});
             }
             let t1 = performance.now();
-            //console.log("componentWillReceiveProps took " + (t1 - t0) + "ms.");
+            console.log("componentWillReceiveProps took " + (t1 - t0) + "ms.");
         };
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
@@ -293,7 +286,7 @@ let EntryTextEditor = function (_Component) {
         _this.state.mentionSuggestions = props.mentions;
         _this.state.hashtagSuggestions = props.hashtags;
 
-        _this.saveExternal = function (newState) {
+        _this.changeCallback = function (newState) {
             let t0 = performance.now();
             let content = newState.getCurrentContent();
             let plain = content.getPlainText();
@@ -301,14 +294,14 @@ let EntryTextEditor = function (_Component) {
             let t1 = performance.now();
             let md = _draftjsMdConverter.draftjsToMd(rawContent, myMdDict);
             let t2 = performance.now();
-            //localStorage.setItem(props.ts, md);
-            //let md2 = localStorage.getItem(props.ts);
-            props.onChange(md, plain);
-            let t3 = performance.now();
-            //console.log("convertToRaw " + (t1 - t0) + " draftjsToMd "+ (t2 - t1) + "props.onChange " + (t3 - t2));
-        };
 
-        _this.throttledSave = _lodash2.default(_this.saveExternal, 1000);
+            localStorage.setItem(props.ts, md);
+            console.log(localStorage.getItem(props.ts));
+
+            //props.onChange(md, plain);
+
+            console.log("convertToRaw " + (t1 - t0) + " draftjsToMd "+ (t2 - t1));
+        };
 
         _this.onChange = function (newState) {
             let now = Date.now();
@@ -316,7 +309,8 @@ let EntryTextEditor = function (_Component) {
                 editorState: newState,
                 lastUpdated: now
             });
-            _this.throttledSave(newState);
+            //_this.changeCallback(newState);
+            props.onChange(newState);
         };
         return _this;
     }
