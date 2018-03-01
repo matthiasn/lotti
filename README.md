@@ -22,18 +22,27 @@ There are two install scripts, one for Ubuntu and one for the Mac. These install
  
  For Mac:
 
-     $ ./install_mac.sh
+    $ ./install_mac.sh
      
 For Linux: 
      
-     $ ./install_ubuntu.sh
- 
-Once that is done, you need to compile the ClojureScript code into JavaScript. I usually run one or more of these four in different terminals or split view:
+    $ ./install_ubuntu.sh
 
-    $ lein cljsbuild auto main
-    $ lein cljsbuild auto geocoder
-    $ lein cljsbuild auto renderer-dev
-    $ lein cljsbuild auto updater
+Then, you need to install the JavaScript dependencies:
+
+    $ yarn install
+ 
+Once that is done, you need to compile the ClojureScript code into JavaScript. These need to be run with the `cljs` profile. Using this profile keeps the size of the uberjar for the JVM-based backend smaller. I usually run one or more of these in different terminals or split views:
+
+    $ lein with-profile cljs cljsbuild auto main
+    $ lein with-profile cljs cljsbuild auto renderer-dev
+    $ lein with-profile cljs cljsbuild auto updater
+
+Alternatively, you can run these aliases (see project.clj);
+
+    $ cljs-main-dev
+    $ cljs-renderer-dev
+    $ cljs-updater-dev
 
 Next, you need to compile the SCSS files into CSS:
 

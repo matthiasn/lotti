@@ -82,12 +82,10 @@
 
   :aliases {"cljs-main"         ["with-profile" "cljs" "cljsbuild" "once" "main"]
             "cljs-renderer"     ["with-profile" "cljs" "cljsbuild" "once" "renderer"]
-            "cljs-geocoder"     ["with-profile" "cljs" "cljsbuild" "once" "geocoder"]
             "cljs-updater"      ["with-profile" "cljs" "cljsbuild" "once" "updater"]
 
             "cljs-main-dev"     ["with-profile" "cljs" "cljsbuild" "auto" "main"]
             "cljs-renderer-dev" ["with-profile" "cljs" "cljsbuild" "auto" "renderer-dev"]
-            "cljs-geocoder-dev" ["with-profile" "cljs" "cljsbuild" "auto" "geocoder"]
             "cljs-updater-dev"  ["with-profile" "cljs" "cljsbuild" "auto" "updater"]
 
             "dist"              ["do"
@@ -95,7 +93,6 @@
                                  ["test"]
                                  ["cljs-main"]
                                  ["cljs-renderer"]
-                                 ["cljs-geocoder"]
                                  ["cljs-updater"]
                                  ["sass4clj" "once"]
                                  ["uberjar"]]}

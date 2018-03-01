@@ -23,7 +23,7 @@
     "asar": "0.14.2",
     "cldr-data": "32.0.1",
     "cookie-parser": "1.4.3",
-    "crypto-js": "^3.1.9-1",
+    "crypto-js": "3.1.9-1",
     "draft-js": "0.10.4",
     "draft-js-export-html": "1.2.0",
     "draft-js-export-markdown": "1.2.0",
