@@ -15,7 +15,20 @@ var modules = {
     'react-navigation': require('react-navigation'),
     'react-native-settings-list': require('react-native-settings-list'),
     'react-native-activity-recognition': require('react-native-activity-recognition'),
-    '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
+    '@buttercup/mobile-compat': require('@buttercup/mobile-compat'),
+    'url-parse': require('url-parse'),
+    'querystringify': require('querystringify'),
+    'querystring': require('querystring'),
+    'requires-port': require('requires-port'),
+    'crypto-js': require('crypto-js'),
+    'webdav': require('webdav'),
+    'webdav-fs': require('webdav-fs'),
+    'buffer': require('buffer'),
+    'timers': require('timers'),
+    'events': require('events'),
+    'path': require('path'),
+    'stream': require('stream')
+//    '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
 };
 
 module.exports=modules;

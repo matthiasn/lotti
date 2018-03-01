@@ -24,7 +24,7 @@
                       (assoc-in [:global-vclock] new-vclock))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)]
-    (sync/hello-world instance-id "hello world, this is meo on mobile" put-fn)
+    (sync/write-to-webdav instance-id entry put-fn)
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
