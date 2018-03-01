@@ -1,8 +1,9 @@
 (ns meo.ui.settings
   (:require [reagent.core :as r]
             [meo.ui.shared :refer [view text touchable-opacity cam contacts
-                                   scroll btn flat-list map-view mapbox
-                                   mapbox-style-url picker picker-item divider
+                                   scroll btn flat-list
+                                   ;map-view mapbox mapbox-style-url
+                                   picker picker-item divider
                                    settings-list settings-list-header
                                    settings-list-item icon]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
@@ -119,6 +120,7 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
+         #_
          [scroll {}
           [view {:style {:flex-direction "column"
                          :width          "100%"}}

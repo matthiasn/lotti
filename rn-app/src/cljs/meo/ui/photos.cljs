@@ -1,6 +1,7 @@
 (ns meo.ui.photos
   (:require [meo.ui.shared :refer [view text touchable-opacity cam-roll
-                                   scroll map-view mapbox-style-url image]]
+                                   ;map-view mapbox-style-url
+                                   scroll image]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.ui.colors :as c]))
@@ -30,6 +31,7 @@
                                :height     160
                                :max-height 160}
                       :source {:uri (:uri img)}}]
+              #_
               (when (:latitude loc)
                 [map-view {:showUserLocation true
                            :centerCoordinate [(:longitude loc) (:latitude loc)]

@@ -5,7 +5,8 @@
             [meo.ui.colors :as c]
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                   map-view mapbox-style-url icon image logo-img
+                                   ;map-view mapbox-style-url
+                                   icon image logo-img
                                    touchable-opacity]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.string :as s]
@@ -122,6 +123,7 @@
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
                                              (swap! entry-local assoc-in [:md] text))}]]
+         #_
          (when (:latitude entry)
            [map-view {:showUserLocation true
                       :centerCoordinate [(:longitude entry) (:latitude entry)]

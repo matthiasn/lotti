@@ -3,6 +3,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
+            [meo.ios.sync :as sync]
             [cljs.core.async :refer [<!]]))
 
 (defn persist [{:keys [current-state put-fn msg-payload]}]
@@ -23,6 +24,7 @@
                       (assoc-in [:global-vclock] new-vclock))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)]
+    (sync/hello-world instance-id "hello world, this is meo on mobile" put-fn)
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
