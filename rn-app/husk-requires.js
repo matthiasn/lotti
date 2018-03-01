@@ -15,7 +15,6 @@ var modules = {
     'react-navigation': require('react-navigation'),
     'react-native-settings-list': require('react-native-settings-list'),
     'react-native-activity-recognition': require('react-native-activity-recognition'),
-    '@buttercup/mobile-compat': require('@buttercup/mobile-compat'),
     'url-parse': require('url-parse'),
     'querystringify': require('querystringify'),
     'querystring': require('querystring'),
