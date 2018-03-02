@@ -77,7 +77,7 @@
 (defn draft-text-editor [ts update-cb save-fn start-fn small-img]
   (let [editor (adapt-react-class "EntryTextEditor")
         {:keys [entry unsaved]} (eu/entry-reaction ts)
-        md (reaction (:md @entry))
+        md (reaction (:md @entry ""))
         options (subscribe [:options])
         cfg (subscribe [:cfg])
         mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
