@@ -117,9 +117,11 @@
                                             {:text         plain
                                              :edit-running true})]
                          (swap! cb-atom dissoc :timeout)
-                         (when (:timestamp updated)
-                           (put-fn [:entry/update-local updated]))
-                         (info "update-local took" (- (st/now) start) "ms")))
+                         (when (not= md (:md @entry))
+                           (when (:timestamp updated)
+                             (put-fn [:entry/update-local updated]))
+                           (info "update-local" (:timestamp updated)
+                                 "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
                     (when-not (:edit-running @entry) (update-local))
@@ -135,6 +137,9 @@
                         updated (if (= (:entry-type latest-entry) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
                                   updated)]
+                    (when-let [timeout (:timeout @cb-atom)]
+                      (.clearTimeout js/window timeout)
+                      (swap! cb-atom dissoc :timeout))
                     (when (:pomodoro-running latest-entry)
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
