@@ -13,7 +13,8 @@
           {:keys [server username password aes-secret]} secrets
           ciphertext (.toString (.encrypt aes data aes-secret))
           client (webdav-fs. server username password)
-          dir (str "/meo/" node-id)
+          ;dir (str "/meo/" node-id)
+          dir (str "/meo/inbox")
           filename (str dir "/" (:timestamp entry) ".edn")
           mk-dir (aget client "mkdir")
           write (aget client "writeFile")

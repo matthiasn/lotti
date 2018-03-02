@@ -37,6 +37,7 @@
                 :cmd/toggle-key
                 :update/status
                 :screenshot/take
+                :entry/update
                 :geonames/res
                 :spellcheck/lang
                 :spellcheck/off
@@ -75,6 +76,7 @@
                     :to   #{:electron/updater
                             :electron/window-manager
                             :electron/geocoder
+                            :electron/encryption
                             :electron/blink
                             :electron/startup}}]
 
@@ -96,6 +98,9 @@
        [:cmd/route {:from :electron/geocoder
                     :to   :electron/window-manager}]
 
+       [:cmd/route {:from :electron/encryption
+                    :to   :electron/window-manager}]
+
        [:cmd/route {:from :electron/updater
                     :to   #{:electron/scheduler
                             :electron/window-manager
@@ -115,6 +120,12 @@
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:message [:geocoder/start]
                                             :timeout 2000}]}]
+
+       [:cmd/send {:to  :electron/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 15 1000)
+                                            :message [:sync/scan-inbox]
+                                            :repeat  true
+                                            :initial true}]}]
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
