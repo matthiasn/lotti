@@ -133,6 +133,7 @@
                    :entry/find       gq/find-entry
                    :entry/unlink     ga/unlink
                    :entry/update     f/geo-entry-persist-fn
+                   :entry/sync       f/sync
                    :startup/read     read-entries
                    :sync/entry       f/sync-receive
                    :sync/done        sync-done

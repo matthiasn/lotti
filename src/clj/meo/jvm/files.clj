@@ -116,6 +116,35 @@
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
        :emit-msg     [[:ft/add entry]]})))
 
+(defn sync
+  "Handler function for syncing journal entry."
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  (let [ts (:timestamp msg-payload)
+        entry msg-payload
+        rcv-vclock (:vclock entry)
+        cfg (:cfg current-state)
+        g (:graph current-state)
+        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
+        broadcast-meta (merge new-meta {:sente-uid :broadcast})
+        vclocks-compared (if prev
+                           (vc/vclock-compare (:vclock prev) rcv-vclock)
+                           :b>a)]
+    (info vclocks-compared)
+    (case vclocks-compared
+      :b>a (let [new-state (ga/add-node current-state entry)]
+             (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+             (append-daily-log cfg entry put-fn)
+             {:new-state new-state
+              :emit-msg  [:ft/add entry]})
+      :concurrent  (let [with-conflict (assoc-in prev [:conflict] entry)
+                         new-state (ga/add-node current-state with-conflict)]
+                     (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+                     ;(append-daily-log cfg entry put-fn)
+                     {:new-state new-state
+                      :emit-msg  [:ft/add entry]})
+      {})))
+
 (defn sync-receive
   "Handler function for syncing journal entry."
   [{:keys [current-state msg-payload msg-meta put-fn]}]

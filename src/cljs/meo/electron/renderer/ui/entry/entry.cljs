@@ -19,7 +19,8 @@
             [meo.electron.renderer.ui.draft :as d]
             [clojure.set :as set]
             [moment]
-            [meo.electron.renderer.ui.entry.pomodoro :as pomo]))
+            [meo.electron.renderer.ui.entry.pomodoro :as pomo]
+            [clojure.pprint :as pp]))
 
 (defn all-comments-set [ts]
   (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
@@ -52,6 +53,14 @@
        [:span.link-btn {:on-click open-linked
                         :class    (when entry-active? "active")}
         (str " linked: " (count (:linked-entries-list @entry)))]])))
+
+(defn conflict-view [entry put-fn]
+  (let []
+    (fn [entry put-fn]
+      (when-let [conflict (:conflict @entry)]
+        [:div.conflict
+         [:div.warn [:span.fa.fa-exclamation] "Conflict"]
+         [:pre [:code (with-out-str (pp/pprint conflict))]]]))))
 
 (defn journal-entry
   "Renders individual journal entry. Interaction with application state happens
@@ -104,6 +113,7 @@
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
+         [conflict-view entry put-fn]
          [:div.footer
           [pomo/pomodoro-header entry edit-mode? put-fn]
           [hashtags-mentions-list ts tab-group put-fn]

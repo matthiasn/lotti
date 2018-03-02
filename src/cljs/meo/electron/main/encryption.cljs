@@ -94,7 +94,7 @@
                                         (info filename "parsed")
                                         (-> (.moveFile client filename move-to)
                                             (.catch #(error %)))
-                                        (put-fn [:entry/update parsed]))))
+                                        (put-fn [:entry/sync parsed]))))
                              (.catch #(error %)))))))))
         (.catch #(warn %)))
     {}))

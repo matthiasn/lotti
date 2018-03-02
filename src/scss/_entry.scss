@@ -736,3 +736,16 @@ u {
     padding: 3px 3px;
   }
 }
+
+.conflict {
+
+  .warn {
+    background-color: $red;
+    color: white;
+    padding: 5px 10px;
+
+    .fa {
+      padding-right: 5px;
+    }
+  }
+}

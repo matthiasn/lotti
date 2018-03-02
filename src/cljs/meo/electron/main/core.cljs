@@ -38,6 +38,7 @@
                 :update/status
                 :screenshot/take
                 :entry/update
+                :entry/sync
                 :geonames/res
                 :spellcheck/lang
                 :spellcheck/off
@@ -122,7 +123,7 @@
                                             :timeout 2000}]}]
 
        [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 15 1000)
+                   :msg [:cmd/schedule-new {:timeout (* 10 1000)
                                             :message [:sync/scan-inbox]
                                             :repeat  true
                                             :initial true}]}]
