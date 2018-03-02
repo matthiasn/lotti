@@ -1,29 +1,17 @@
 (ns meo.ios.sync)
 
-(def credentials
-  {:server    "https://foo.com/"
-   :username  "mn"
-   :password  ""
-   :directory "/meo/"})
-
-(def secret "some shared secret")
-
 (def crypto-js (js/require "crypto-js"))
 (def aes (aget crypto-js "AES"))
-
 (def webdav-fs (js/require "webdav-fs"))
+(def buffer (aget (js/require "buffer") "Buffer"))
+(aset js/window "Buffer" buffer)
 
-(def buffer (js/require "buffer"))
-(def buffer2 (aget buffer "Buffer"))
-
-(defn write-to-webdav [node-id entry put-fn]
-  (put-fn [:log/info (str "buffer: " (js->clj buffer))])
-  (put-fn [:log/info (str "buffer2: " (js->clj buffer2))])
-  (aset js/window "Buffer" buffer2)
+(defn write-to-webdav [node-id secrets entry put-fn]
   (try
-    (let [data (pr-str entry)
-          ciphertext (.toString (.encrypt aes data secret))
-          {:keys [server username password]} credentials
+    (let [_ (put-fn [:log/info (str secrets)])
+          data (pr-str entry)
+          {:keys [server username password aes-secret]} secrets
+          ciphertext (.toString (.encrypt aes data aes-secret))
           client (webdav-fs. server username password)
           dir (str "/meo/" node-id)
           filename (str dir "/" (:timestamp entry) ".edn")

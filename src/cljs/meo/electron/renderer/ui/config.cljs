@@ -10,7 +10,8 @@
             [reagent.core :as r]
             [clojure.string :as s]
             [meo.common.specs :as specs]
-            [meo.common.utils.parse :as p]))
+            [meo.common.utils.parse :as p]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn custom-field-cfg [local]
   (let [stories (subscribe [:stories])
@@ -191,6 +192,7 @@
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""})
+        iww-host (.-iwwHOST js/window)
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
                    (let [text (h/target-val ev)]
@@ -244,4 +246,6 @@
             [custom-field-cfg local]
             [:div.third-col]
             [locale put-fn]]
+           [:img {:src (str "http://" iww-host "/secrets/"
+                            (stc/make-uuid) "/secrets.png")}]
            [:div.footer [stats/stats-text]]]]]))))

@@ -23,8 +23,9 @@
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))
         prev (dissoc (get-in current-state [:entries timestamp])
-                     :id :last-saved :vclock)]
-    (sync/write-to-webdav instance-id entry put-fn)
+                     :id :last-saved :vclock)
+        secrets (:secrets current-state)]
+    (sync/write-to-webdav instance-id secrets entry put-fn)
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
@@ -84,6 +85,12 @@
         (put-fn [:debug/error {:msg e}]))))
   (go
     (try
+      (let [secrets (second (<! (as/get-item :secrets)))]
+        (swap! cmp-state assoc-in [:secrets] secrets))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
       (let [latest-synced (second (<! (as/get-item :latest-synced)))]
         (put-fn [:debug/latest-synced latest-synced])
         (swap! cmp-state assoc-in [:latest-synced] latest-synced))
@@ -114,6 +121,11 @@
     (load-state {:cmp-state cmp-state :put-fn put-fn})
     {:new-state new-state}))
 
+(defn set-secrets [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:secrets] msg-payload)]
+    ;(<! (as/set-item :secrets msg-payload))
+    {:new-state new-state}))
+
 (defn state-fn [put-fn]
   (let [state (atom {:entries       (avl/sorted-map)
                      :active-theme  :light
@@ -133,6 +145,7 @@
                  :sync/next        sync-start
                  :state/load       load-state
                  :state/reset      state-reset
+                 :secrets/set      set-secrets
                  :entry/detail     detail
                  :theme/active     theme
                  :activity/current current-activity}})

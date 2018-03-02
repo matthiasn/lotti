@@ -18,8 +18,9 @@
   [(r/files "/photos" {:root fu/img-path})
    (r/files "/audio" {:root (str fu/data-path "/audio/")})
    (r/files "/videos" {:root (str fu/data-path "/videos/")})
-   qr/address-qr-route
-   (qr/ws-address-qr-route 8765)
+   qr/address-route
+   qr/ws-address-route
+   qr/secrets-route
    ir/img-resized-route
    mt/map-tile-route])
 

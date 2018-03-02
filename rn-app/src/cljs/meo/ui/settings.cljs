@@ -108,7 +108,14 @@
             :titleStyle       {:color text-color}
             :icon             (settings-icon "refresh" text-color)
             :on-press         #(navigate "sync")
-            :title            "Sync"}]]]))))
+            :title            "Sync"}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "shield" text-color)
+            :on-press         #(navigate "security")
+            :title            "Security"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
   (let [theme (subscribe [:active-theme])]
@@ -302,6 +309,46 @@
                           :text-align  "center"}}
             (str barcode)])]))))
 
+(defn security-settings [local put-fn]
+  (let [theme (subscribe [:active-theme])
+        on-barcode-read (fn [e]
+                          (let [qr-code (js->clj e)
+                                data (edn/read-string (get qr-code "data"))]
+                            (swap! local assoc-in [:barcode] data)
+                            (put-fn [:secrets/set data])
+                            (swap! local assoc-in [:cam] false)))]
+    (fn [{:keys [screenProps navigation] :as props}]
+      (let [{:keys [navigate goBack]} navigation
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [settings-list {:border-color bg
+                         :width        "100%"}
+          [settings-list-item {:title            "Scan barcode"
+                               ;:has-switch       true
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(swap! local update-in [:cam] not)}]]
+         (when (:cam @local)
+           [cam {:style         {:width  "100%"
+                                 :flex   5
+                                 :height "100%"}
+                 :onBarCodeRead on-barcode-read}])
+
+         (when-let [barcode (:barcode @local)]
+           [text {:style {:font-size   10
+                          :color       "#888"
+                          :font-weight "100"
+                          :flex        2
+                          :margin      5
+                          :text-align  "center"}}
+            (str barcode)])]))))
+
 (defn db-settings [local put-fn]
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
@@ -353,5 +400,7 @@
        :db       {:screen (stack-screen (db-settings local put-fn)
                                         (opts "Database"))}
        :sync     {:screen (stack-screen (sync-settings local put-fn)
-                                        (opts "Sync"))}}
+                                        (opts "Sync"))}
+       :security {:screen (stack-screen (security-settings local put-fn)
+                                        (opts "Security"))}}
       {:cardStyle {:backgroundColor list-bg}})))

@@ -3,11 +3,12 @@
   (:require [compojure.core :refer [GET]]
             [clj.qrgen :as qr]
             [meo.jvm.upload :as up]
-            [taoensso.timbre :refer [info error]]
+            [taoensso.timbre :refer [info error debug]]
             [meo.jvm.net :as net]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.jvm.file-utils :as fu]))
 
-(def address-qr-route
+(def address-route
   (GET "/upload-address/:uuid/qrcode.png" [_uuid]
     (qr/as-input-stream
       (let [ip (ffirst (net/ips))
@@ -15,7 +16,7 @@
         (info "QR Code for:" url)
         (qr/from url :size [300 300])))))
 
-(defn ws-address-qr-route [port]
+(def ws-address-route
   (GET "/ws-address/:uuid/qrcode.png" [_uuid]
     (qr/as-input-stream
       (let [ip (ffirst (net/ips))
@@ -24,3 +25,10 @@
                   :shared (str (st/make-uuid))}]
         (info "QR Code for:" url)
         (qr/from (str data) :size [300 300])))))
+
+(def secrets-route
+  (GET "/secrets/:uuid/secrets.png" [_uuid]
+    (qr/as-input-stream
+      (let [secrets (str (fu/read-secrets))]
+        (debug "QR Code for:" secrets)
+        (qr/from secrets :size [400 400])))))

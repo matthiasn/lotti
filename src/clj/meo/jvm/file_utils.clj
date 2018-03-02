@@ -53,6 +53,13 @@
         (write-conf with-node-id conf-path)))
     (update-in conf [:questionnaires] #(merge-with merge questionnaires %))))
 
+(defn read-secrets []
+  (try
+    (let [secrets (edn/read-string (slurp (str data-path "/webdav.edn")))
+          aes-secret (slurp (str data-path "/secret.txt"))]
+      (merge secrets {:aes-secret aes-secret}))
+    (catch Exception ex (warn "No secrets found." ex))))
+
 (defn write-cfg [{:keys [msg-payload]}]
   (let [conf-path (str data-path "/conf.edn")
         bak-path (str bak-path "/conf-" (st/now) ".edn")
