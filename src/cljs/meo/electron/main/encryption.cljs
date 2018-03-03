@@ -19,10 +19,10 @@
         cred-path (str data-path "/webdav.edn")]
     (if (existsSync cred-path)
       (let [cred-file (readFileSync cred-path "utf-8")
-            {:keys [server username password]} (edn/read-string cred-file)
+            {:keys [server username password directory]} (edn/read-string cred-file)
             client (webdav. server username password)
             file-data (readFileSync enc-path "utf-8")
-            dir (str "/meo/" node-id "/")
+            dir (str directory "/" node-id "/")
             filename (str dir filename)
             file-stats (statSync enc-path)
             filesize (str (/ (Math/round (/ (.-size file-stats) 10.24)) 100) "kB")]
@@ -73,13 +73,12 @@
         data-path (if repo-dir "./data" data-path)
         cred-path (str data-path "/webdav.edn")
         cred-file (readFileSync cred-path "utf-8")
-        {:keys [server username password]} (edn/read-string cred-file)
+        {:keys [server username password directory]} (edn/read-string cred-file)
+        inbox (str directory "/inbox")
         client (webdav. server username password)
-        tmp-path "/tmp/meo/inbox"]
+        processed (str directory "/processed")]
     (info "scan-inbox")
-    (when-not (existsSync tmp-path)
-      (mkdirSync tmp-path))
-    (-> (.getDirectoryContents client "/meo/inbox")
+    (-> (.getDirectoryContents client inbox)
         (.then (fn [contents]
                  (let [contents (js->clj contents :keywordize-keys true)]
                    (doseq [file contents]
@@ -90,7 +89,7 @@
                                       (let [bytes (.decrypt AES ciphertext secret)
                                             decrypted (.toString bytes utf-8)
                                             parsed (edn/read-string decrypted)
-                                            move-to (str "/meo/processed/" basename)]
+                                            move-to (str processed "/" basename)]
                                         (info filename "parsed")
                                         (-> (.moveFile client filename move-to)
                                             (.catch #(error %)))

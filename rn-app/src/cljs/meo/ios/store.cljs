@@ -25,7 +25,7 @@
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)
         secrets (:secrets current-state)]
-    (sync/write-to-webdav instance-id secrets entry put-fn)
+    (sync/write-to-webdav secrets entry put-fn)
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
