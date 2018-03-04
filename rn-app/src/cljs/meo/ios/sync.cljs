@@ -1,4 +1,5 @@
-(ns meo.ios.sync)
+(ns meo.ios.sync
+  (:require [matthiasn.systems-toolbox.component :as st]))
 
 (def crypto-js (js/require "crypto-js"))
 (def aes (aget crypto-js "AES"))
@@ -13,7 +14,7 @@
           ciphertext (.toString (.encrypt aes data aes-secret))
           client (webdav-fs. server username password)
           dir (str directory "/inbox")
-          filename (str dir "/" (:timestamp entry) ".edn")
+          filename (str dir "/" (st/now) "-" (:timestamp entry) ".edn")
           mk-dir (aget client "mkdir")
           write (aget client "writeFile")
           write-err (fn [err]

@@ -8,14 +8,14 @@
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the
   callback function"
-  [data put-fn]
+  [ts put-fn]
   (.getCurrentPosition
     (.-geolocation js/navigator)
     (fn [pos]
       (let [coords (.-coords pos)]
-        (put-fn [:entry/geo-enrich
-                 (merge data {:latitude  (.-latitude coords)
-                              :longitude (.-longitude coords)})])))
+        (put-fn [:entry/persist {:timestamp ts
+                                 :latitude  (.-latitude coords)
+                                 :longitude (.-longitude coords)}])))
     (fn [err] (prn err))))
 
 (defn new-entry-fn [put-fn opts run-fn]
@@ -32,7 +32,7 @@
                         :utc-offset (.getTimezoneOffset (new js/Date))}
                        opts)]
       (put-fn [:entry/new entry])
-      (send-w-geolocation entry put-fn)
+      (send-w-geolocation ts put-fn)
       (when run-fn (run-fn)))))
 
 (defn prevent-default [ev] (.preventDefault ev))

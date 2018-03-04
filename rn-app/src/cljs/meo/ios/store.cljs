@@ -14,33 +14,21 @@
         new-vclock (merge vclock new-vclock)
         offset (get-in new-vclock [instance-id])
         id (or id (st/make-uuid))
-        entry (merge msg-payload
-                     {:last-saved (st/now)
-                      :id         (str id)
-                      :vclock     new-vclock})
+        prev (dissoc (get-in current-state [:entries timestamp])
+                     :id :last-saved :vclock)
+        entry (merge prev msg-payload {:last-saved (st/now)
+                                       :id         (str id)
+                                       :vclock     new-vclock})
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
                       (assoc-in [:vclock-map offset] entry)
-                      (assoc-in [:global-vclock] new-vclock))
-        prev (dissoc (get-in current-state [:entries timestamp])
-                     :id :last-saved :vclock)
-        secrets (:secrets current-state)]
-    (sync/write-to-webdav secrets entry put-fn)
+                      (assoc-in [:global-vclock] new-vclock))]
+    (sync/write-to-webdav (:secrets current-state) entry put-fn)
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))
       (go (<! (as/set-item :timestamps (set (keys (:entries new-state))))))
-      {:new-state new-state})))
-
-(defn geo-enrich [{:keys [current-state msg-payload]}]
-  (let [ts (:timestamp msg-payload)
-        geo-info (select-keys msg-payload [:latitude :timestamp :longitude])
-        prev (get-in current-state [:entries ts])
-        merged (merge prev geo-info)
-        new-state (assoc-in current-state [:entries ts] merged)]
-    (when prev
-      (go (<! (as/set-item ts merged)))
       {:new-state new-state})))
 
 (defn detail [{:keys [current-state msg-payload]}]
@@ -140,7 +128,6 @@
    :state-fn    state-fn
    :handler-map {:entry/persist    persist
                  :entry/new        persist
-                 :entry/geo-enrich geo-enrich
                  :sync/initiate    sync-start
                  :sync/next        sync-start
                  :state/load       load-state

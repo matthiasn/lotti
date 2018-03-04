@@ -106,9 +106,6 @@
 (s/def :ft/add entry-spec)
 (s/def :ft/remove timestamp-required-spec)
 
-;; geo-enriched entries require a properly formed entry with latitude and longitude
-(s/def :entry/geo-enrich entry-w-geo-spec)
-
 ;; the following message types only require timestamp to be present
 (s/def :entry/remove-local timestamp-required-spec)
 (s/def :entry/trash timestamp-required-spec)
