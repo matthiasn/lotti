@@ -50,7 +50,7 @@
 (def ymd-format "YYYY-MM-DD")
 (defn n-days-ago [n] (.subtract (js/moment.) n "d"))
 (defn n-days-ago-fmt [n] (.format (n-days-ago n) ymd-format))
-(defn format-time [m] (.format (js/moment m) "YYYY-MM-DDTHH:mm"))
+(defn format-time [m] (.format (js/moment m) "YYYY-MM-DD HH:mm"))
 (defn hh-mm [m] (.format (js/moment m) "HH:mm"))
 (defn ymd [m] (.format (js/moment m) ymd-format))
 (defn m-to-hh-mm [m]

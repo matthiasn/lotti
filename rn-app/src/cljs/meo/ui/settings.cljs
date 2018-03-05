@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             [meo.ui.shared :refer [view text touchable-opacity cam contacts
                                    scroll btn flat-list
-                                   ;map-view mapbox mapbox-style-url
+                                   map-view mapbox mapbox-style-url
                                    picker picker-item divider
                                    settings-list settings-list-header
                                    settings-list-item icon]]
@@ -47,6 +47,7 @@
 
 (defn settings-wrapper [local put-fn]
   (let [entries (subscribe [:entries])
+        all-timestamps (subscribe [:all-timestamps])
         theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -65,7 +66,7 @@
             :title            "Entries"
             :titleStyle       {:color text-color}
             :icon             (settings-icon "list" text-color)
-            :title-info       (str (count @entries))}]
+            :title-info       (str (count @all-timestamps))}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg
@@ -127,7 +128,6 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
-         #_
          [scroll {}
           [view {:style {:flex-direction "column"
                          :width          "100%"}}
@@ -205,7 +205,7 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 30] (put-fn [:healthkit/steps n]))
+        steps-fn #(dotimes [n 180] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
         activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]

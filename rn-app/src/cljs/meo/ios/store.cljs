@@ -21,6 +21,7 @@
                                        :vclock     new-vclock})
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
+                      (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
     (sync/write-to-webdav (:secrets current-state) entry put-fn)
@@ -28,7 +29,7 @@
       (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))
-      (go (<! (as/set-item :timestamps (set (keys (:entries new-state))))))
+      (go (<! (as/set-item :timestamps (:all-timestamps new-state))))
       {:new-state new-state})))
 
 (defn detail [{:keys [current-state msg-payload]}]
@@ -90,7 +91,9 @@
                                  (st/make-uuid)))
             timestamps (second (<! (as/get-item :timestamps)))]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
+        (swap! cmp-state update-in [:all-timestamps] into timestamps)
         (<! (as/set-item :instance-id instance-id))
+        #_
         (doseq [ts timestamps]
           (let [entry (second (<! (as/get-item ts)))
                 offset (get-in entry [:vclock instance-id])]
@@ -115,10 +118,11 @@
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {:entries       (avl/sorted-map)
-                     :active-theme  :light
-                     :vclock-map    (avl/sorted-map)
-                     :latest-synced 0})]
+  (let [state (atom {:entries        (avl/sorted-map)
+                     :active-theme   :light
+                     :all-timestamps (avl/sorted-set)
+                     :vclock-map     (avl/sorted-map)
+                     :latest-synced  0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
     {:state state}))
