@@ -26,8 +26,8 @@ var modules = {
     'timers': require('timers'),
     'events': require('events'),
     'path': require('path'),
-    'stream': require('stream')
-//    '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
+    'stream': require('stream'),
+    '@mapbox/react-native-mapbox-gl': require('@mapbox/react-native-mapbox-gl')
 };
 
 module.exports=modules;

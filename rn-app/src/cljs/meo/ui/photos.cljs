@@ -1,6 +1,6 @@
 (ns meo.ui.photos
   (:require [meo.ui.shared :refer [view text touchable-opacity cam-roll
-                                   ;map-view mapbox-style-url
+                                   map-view mapbox-style-url point-annotation
                                    scroll image]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
@@ -19,6 +19,8 @@
          (for [photo (:edges (:photos @local))]
            (let [node (:node photo)
                  loc (:location node)
+                 lat (:latitude loc)
+                 lon (:longitude loc)
                  img (:image node)]
              ^{:key (:uri img)}
              [view {:style {:padding-top    10
@@ -31,10 +33,9 @@
                                :height     160
                                :max-height 160}
                       :source {:uri (:uri img)}}]
-              #_
-              (when (:latitude loc)
-                [map-view {:showUserLocation true
-                           :centerCoordinate [(:longitude loc) (:latitude loc)]
+              (when lat
+                [map-view {;:showUserLocation true
+                           :centerCoordinate [lon lat]
                            :scrollEnabled    false
                            :rotateEnabled    false
                            :styleURL         (get mapbox-style-url current-map-style)
@@ -42,7 +43,19 @@
                                               :max-width 160
                                               :flex      2
                                               :height    160}
-                           :zoomLevel        15}])]))
+                           :zoomLevel        15}
+                 [point-annotation {:coordinate [lon lat]}
+                  [view {:style {:width           24
+                                 :height          24
+                                 :alignItems      "center"
+                                 :justifyContent  "center"
+                                 :backgroundColor "white"
+                                 :borderRadius    12}}
+                   [view {:style {:width           24
+                                  :height          24
+                                  :backgroundColor "orange"
+                                  :borderRadius    12
+                                  :transform       [{:scale 0.7}]}}]]]])]))
 
          [text {:style {:color       "#777"
                         :text-align  "center"

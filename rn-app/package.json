@@ -7,7 +7,7 @@
 		"test": "jest"
 	},
 	"dependencies": {
-		"@mapbox/react-native-mapbox-gl": "6.0.3-rc1",
+		"@mapbox/react-native-mapbox-gl": "6.1.0-beta",
 		"babel-plugin-transform-es2015-block-scoping": "6.15.0",
 		"buffer": "^5.1.0",
 		"create-react-class": "15.6.2",

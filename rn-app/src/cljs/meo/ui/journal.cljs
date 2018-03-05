@@ -5,7 +5,7 @@
             [meo.ui.colors :as c]
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                   ;map-view mapbox-style-url
+                                   map-view mapbox-style-url point-annotation
                                    icon image logo-img
                                    touchable-opacity]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
@@ -93,7 +93,9 @@
             entry @entry
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])]
+            text-color (get-in c/colors [:text @theme])
+            latitude (:latitude entry)
+            longitude (:longitude entry)]
         (reset! nav navigation)
         [scroll {:style {:flex-direction   "column"
                          :padding-top      15
@@ -123,16 +125,27 @@
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
                                              (swap! entry-local assoc-in [:md] text))}]]
-         #_
-         (when (:latitude entry)
-           [map-view {:showUserLocation true
-                      :centerCoordinate [(:longitude entry) (:latitude entry)]
+         (when latitude
+           [map-view {;:showUserLocation true
+                      :centerCoordinate [longitude latitude]
                       :scrollEnabled    false
                       :rotateEnabled    false
                       :styleURL         (get mapbox-style-url (:map-style @cfg-map))
                       :style            {:width  "100%"
                                          :height 200}
-                      :zoomLevel        15}])
+                      :zoomLevel        15}
+            [point-annotation {:coordinate [longitude latitude]}
+             [view {:style {:width           24
+                            :height          24
+                            :alignItems      "center"
+                            :justifyContent  "center"
+                            :backgroundColor "white"
+                            :borderRadius    12}}
+              [view {:style {:width           24
+                             :height          24
+                             :backgroundColor "orange"
+                             :borderRadius    12
+                             :transform       [{:scale 0.7}]}}]]]])
          [text {:style {:margin-top  400
                         :color       text-color
                         :text-align  "center"

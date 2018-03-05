@@ -43,10 +43,11 @@
 
 (def react-navigation (js/require "react-navigation"))
 
-;(def mapbox-gl (js/require "@mapbox/react-native-mapbox-gl"))
-;(def mapbox (aget mapbox-gl "default"))
-;(def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
-;(def map-view (r/adapt-react-class (aget mapbox "MapView")))
+(def mapbox-gl (js/require "@mapbox/react-native-mapbox-gl"))
+(def mapbox (aget mapbox-gl "default"))
+(def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
+(def map-view (r/adapt-react-class (aget mapbox "MapView")))
+(def point-annotation (r/adapt-react-class (aget mapbox "PointAnnotation")))
 
 (def rn-settings-list (js/require "react-native-settings-list"))
 (def settings-list (r/adapt-react-class rn-settings-list))
