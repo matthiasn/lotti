@@ -349,6 +349,8 @@
 
 (s/def :sync/start-server nil?)
 (s/def :sync/stop-server (s/nilable keyword?))
+(s/def :sync/scan-inbox nil?)
+(s/def :sync/scan-images nil?)
 
 (s/def :startup/progress number?)
 (s/def :startup/read nil?)

@@ -129,6 +129,12 @@
                                             :initial true}]}]
 
        [:cmd/send {:to  :electron/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 10 1000)
+                                            :message [:sync/scan-images]
+                                            :repeat  true
+                                            :initial true}]}]
+
+       [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
                                             :message [:update/auto-check]
                                             :repeat  true

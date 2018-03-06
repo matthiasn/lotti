@@ -9,14 +9,14 @@
                                                       cljsjs/react-dom
                                                       cljsjs/react-dom-server
                                                       cljsjs/create-react-class]]
-                 [matthiasn/systems-toolbox "0.6.33"]
+                 [matthiasn/systems-toolbox "0.6.34"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
                  [cljs-react-navigation "0.1.1"]
                  [org.clojure/data.avl "0.0.17"]
                  [core-async-storage "0.3.1"]
                  [re-frame "0.10.2"]]
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-figwheel "0.5.14"]]
+            [lein-figwheel "0.5.15"]]
   :clean-targets ["target/" "index.ios.js" "index.android.js" #_($PLATFORM_CLEAN$)]
   :aliases {"prod-build"     ^{:doc "Recompile code with prod profile."}
                              ["do" "clean"
@@ -24,7 +24,7 @@
             "advanced-build" ^{:doc "Recompile code for production using :advanced compilation."}
                              ["do" "clean"
                               ["with-profile" "advanced" "cljsbuild" "once"]]}
-  :profiles {:dev      {:dependencies [[figwheel-sidecar "0.5.14"]
+  :profiles {:dev      {:dependencies [[figwheel-sidecar "0.5.15"]
                                        [com.cemerick/piggieback "0.2.2"]]
                         :source-paths ["src" "env/dev"]
                         :cljsbuild    {:builds [{:id           "ios"
@@ -50,6 +50,8 @@
                                                              ;:source-map    "index.ios.js.map"
                                                              :main               "env.ios.main"
                                                              :output-dir         "target/ios"
+                                                             :language-in        :ecmascript5
+                                                             :language-out       :ecmascript5
                                                              :static-fns         true
                                                              :optimize-constants true
                                                              :optimizations      :simple

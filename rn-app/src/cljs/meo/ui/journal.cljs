@@ -30,36 +30,45 @@
             entry (:entry @local)
             to-detail #(do (put-fn [:entry/detail {:timestamp ts}])
                            (navigate "entry"))]
-        [view {:style    {:flex             1
-                          :background-color text-bg
-                          :margin-top       10
-                          :padding-top      8
-                          :padding-left     10
-                          :padding-right    10
-                          :padding-bottom   8
-                          :width            "100%"}
-               :on-press #(do (put-fn [:entry/detail entry])
-                              (navigate "entry"))}
-         [touchable-opacity {:on-press to-detail
-                             :style    {:padding-top    4
-                                        :padding-left   12
-                                        :padding-right  12
-                                        :padding-bottom 2}}
-          [text {:style {:color       text-color
-                         :text-align  "center"
-                         :font-size   9
-                         :font-weight "100"
-                         :margin-top  5}}
-           (h/format-time ts)]]
-         [touchable-opacity {:on-press to-detail
-                             :style    {:padding-top    4
-                                        :padding-left   12
-                                        :padding-right  12
-                                        :padding-bottom 8}}
-          [text {:style {:color       text-color
-                         :text-align  "left"
-                         :font-weight "normal"}}
-           (:md entry)]]]))))
+        [touchable-opacity {:on-press to-detail
+                            :style    {:flex             1
+                                       :flex-direction   :row
+                                       :margin-top       10
+                                       :background-color text-bg
+                                       :width            "100%"}}
+         [view {:style {:width            100
+                        :height           100
+                        :background-color "#191970"}}
+          (when-let [media (:media entry)]
+            [image {:style  {:width  100
+                             :height 100}
+                    :source {:uri (-> media :image :uri)}}])]
+         [view {:style {:flex             1
+                        :flex-direction   :column
+                        :background-color text-bg
+                        :padding-top      8
+                        :padding-left     10
+                        :padding-right    10
+                        :padding-bottom   8
+                        :width            "100%"}}
+          [view {:style {:padding-top    4
+                         :padding-left   12
+                         :padding-right  12
+                         :padding-bottom 2}}
+           [text {:style {:color       text-color
+                          :text-align  "left"
+                          :font-size   9
+                          :font-weight "100"
+                          :margin-top  5}}
+            (h/format-time ts)]]
+          [view {:style {:padding-top    4
+                         :padding-left   12
+                         :padding-right  12
+                         :padding-bottom 8}}
+           [text {:style {:color       text-color
+                          :text-align  "left"
+                          :font-weight "normal"}}
+            (:md entry)]]]]))))
 
 (defn render-item [put-fn navigate]
   (fn [item]
@@ -149,6 +158,11 @@
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
                                              (swap! entry-local assoc-in [:md] text))}]]
+         (when-let [media (:media entry)]
+           [image {:style  {:width         "100%"
+                            :height        300
+                            :margin-bottom 20}
+                   :source {:uri (-> media :image :uri)}}])
          (when latitude
            [map-view {;:showUserLocation true
                       :centerCoordinate [longitude latitude]
@@ -170,7 +184,7 @@
                              :backgroundColor "orange"
                              :borderRadius    12
                              :transform       [{:scale 0.7}]}}]]]])
-         [text {:style {:margin-top  400
+         [text {:style {:margin-top  300
                         :color       text-color
                         :text-align  "center"
                         :font-weight "bold"

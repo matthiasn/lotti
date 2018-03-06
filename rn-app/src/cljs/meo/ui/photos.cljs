@@ -4,7 +4,9 @@
                                    scroll image]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
-            [meo.ui.colors :as c]))
+            [meo.ui.colors :as c]
+            [meo.helpers :as h]
+            [meo.utils.parse :as p]))
 
 (defn photos-page [local put-fn]
   (let [theme (subscribe [:active-theme])]
@@ -21,7 +23,19 @@
                  loc (:location node)
                  lat (:latitude loc)
                  lon (:longitude loc)
-                 img (:image node)]
+                 img (:image node)
+                 ts (.floor js/Math (* 1000 (:timestamp node)))
+                 save-fn #(let [entry (p/parse-entry "imported #photo")
+                                filename (str (h/img-fnt ts) "_" (:filename img))
+                                entry (merge
+                                        entry {:latitude  lat
+                                               :longitude lon
+                                               :location  loc
+                                               :md        "imported #photo"
+                                               :media     node
+                                               :img-file  filename
+                                               :timestamp ts})]
+                            (put-fn [:entry/new entry]))]
              ^{:key (:uri img)}
              [view {:style {:padding-top    10
                             :padding-bottom 10
@@ -33,6 +47,12 @@
                                :height     160
                                :max-height 160}
                       :source {:uri (:uri img)}}]
+              [touchable-opacity {:on-press save-fn
+                                  :style    {:padding 3}}
+               [text {:style {:color      "#0078e7"
+                              :text-align "center"
+                              :font-size  18}}
+                "add"]]
               (when lat
                 [map-view {;:showUserLocation true
                            :centerCoordinate [lon lat]

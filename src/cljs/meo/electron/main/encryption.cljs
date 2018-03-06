@@ -98,7 +98,43 @@
         (.catch #(warn %)))
     {}))
 
+(defn buf-from-base64 [b64]
+  (.from js/Buffer b64 "base64"))
+
+(defn scan-images [{:keys [put-fn]}]
+  (let [secret (read-secret)
+        {:keys [repo-dir data-path img-path]} rt/runtime-info
+        data-path (if repo-dir "./data" data-path)
+        cred-path (str data-path "/webdav.edn")
+        cred-file (readFileSync cred-path "utf-8")
+        {:keys [server username password directory]} (edn/read-string cred-file)
+        inbox (str directory "/images")
+        client (webdav. server username password)
+        processed (str directory "/processed")]
+    (info "scan-images")
+    (-> (.getDirectoryContents client inbox)
+        (.then (fn [contents]
+                 (let [contents (js->clj contents :keywordize-keys true)]
+                   (doseq [file contents]
+                     (let [{:keys [filename basename]} file
+                           target (str img-path "/" basename)]
+                       (when (= (:type file) "file")
+                         (-> (.getFileContents client filename (clj->js {:format "text"}))
+                             (.then (fn [ciphertext]
+                                      (let [bytes (.decrypt AES ciphertext secret)
+                                            decrypted (.toString bytes utf-8)
+                                            buf (buf-from-base64 decrypted)
+                                            move-to (str processed "/" basename)]
+                                        (info target "decrypted")
+                                        (writeFileSync target buf)
+                                        (-> (.moveFile client filename move-to)
+                                            (.catch #(error %))))))
+                             (.catch #(error %)))))))))
+        (.catch #(warn %)))
+    {}))
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :handler-map {:sync/scan-inbox scan-inbox
-                 :file/encrypt    encrypt}})
+   :handler-map {:sync/scan-inbox  scan-inbox
+                 :sync/scan-images scan-images
+                 :file/encrypt     encrypt}})

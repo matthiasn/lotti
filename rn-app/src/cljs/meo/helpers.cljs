@@ -16,7 +16,8 @@
         (put-fn [:entry/persist {:timestamp ts
                                  :latitude  (.-latitude coords)
                                  :longitude (.-longitude coords)}])))
-    (fn [err] (prn err))))
+    (fn [err] (prn err))
+    (clj->js {:enableHighAccuracy true :maximumAge 60000})))
 
 (defn new-entry-fn [put-fn opts run-fn]
   (fn [_ev]
@@ -51,6 +52,7 @@
 (defn n-days-ago [n] (.subtract (js/moment.) n "d"))
 (defn n-days-ago-fmt [n] (.format (n-days-ago n) ymd-format))
 (defn format-time [m] (.format (js/moment m) "YYYY-MM-DD HH:mm"))
+(defn img-fnt [m] (.format (js/moment m) "YYYYMMDD_HHmmss_SSS"))
 (defn hh-mm [m] (.format (js/moment m) "HH:mm"))
 (defn ymd [m] (.format (js/moment m) ymd-format))
 (defn m-to-hh-mm [m]

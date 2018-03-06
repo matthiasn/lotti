@@ -46,8 +46,7 @@
                     :text-align :center}}]]))
 
 (defn settings-wrapper [local put-fn]
-  (let [entries (subscribe [:entries])
-        all-timestamps (subscribe [:all-timestamps])
+  (let [all-timestamps (subscribe [:all-timestamps])
         theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -108,8 +107,8 @@
             :background-color item-bg
             :titleStyle       {:color text-color}
             :icon             (settings-icon "refresh" text-color)
-            :on-press         #(navigate "sync")
-            :title            "Sync"}]
+            :on-press         #(navigate "dev")
+            :title            "Dev"}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg
@@ -263,7 +262,7 @@
               first
               :type)]]))))
 
-(defn sync-settings [local put-fn]
+(defn dev-settings [local put-fn]
   (let [theme (subscribe [:active-theme])
         on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
@@ -282,18 +281,13 @@
                        :height           "100%"}}
          [settings-list {:border-color bg
                          :width        "100%"}
-          [settings-list-item {:title            "Scan barcode"
-                               ;:has-switch       true
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(swap! local update-in [:cam] not)}]
-          [settings-list-item {:title            "Sync"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(put-fn [:sync/initiate
-                                                           {:newer-than 0}])}]]
+          [settings-list-item
+           {:title            "Scan barcode"
+            ;:has-switch       true
+            :hasNavArrow      false
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :on-press         #(swap! local update-in [:cam] not)}]]
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :flex   5
@@ -399,7 +393,7 @@
                                         (opts "Health"))}
        :db       {:screen (stack-screen (db-settings local put-fn)
                                         (opts "Database"))}
-       :sync     {:screen (stack-screen (sync-settings local put-fn)
+       :dev      {:screen (stack-screen (dev-settings local put-fn)
                                         (opts "Sync"))}
        :security {:screen (stack-screen (security-settings local put-fn)
                                         (opts "Security"))}}

@@ -6,6 +6,7 @@ var modules = {
     'figwheel-bridge': require('figwheel-bridge'),
     './images/meo.png': require('./images/meo.png'),
     'rn-apple-healthkit': require('rn-apple-healthkit'),
+    'react-native-fs': require('react-native-fs'),
     'react-native-camera': require('react-native-camera'),
     'react-native-vector-icons': require('react-native-vector-icons'),
     'react-native-elements': require('react-native-elements'),

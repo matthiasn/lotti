@@ -26,7 +26,7 @@
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.34"]
                  [matthiasn/systems-toolbox-sente "0.6.27"]
-                 [org.clojure/tools.reader "1.2.1"]
+                 [org.clojure/tools.reader "1.2.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
@@ -51,10 +51,10 @@
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.0-2"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.64"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.126"]
                                            [reagent "0.8.0-alpha2"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
-                                           [re-frame "0.10.4"]
+                                           [re-frame "0.10.5"]
                                            [cljsjs/moment "2.17.1-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.22"]
                                            [secretary "1.2.3"]]}
@@ -66,7 +66,7 @@
 
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
-            [lein-figwheel "0.5.14"]
+            [lein-figwheel "0.5.15"]
             [test2junit "1.3.3"]
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
