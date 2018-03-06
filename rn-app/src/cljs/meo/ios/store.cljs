@@ -4,6 +4,7 @@
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
             [meo.ios.sync :as sync]
+            [cljs.tools.reader.edn :as edn]
             [cljs.core.async :refer [<!]]))
 
 (defn persist [{:keys [current-state put-fn msg-payload]}]
@@ -114,7 +115,7 @@
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]
-    ;(<! (as/set-item :secrets msg-payload))
+    (go (<! (as/set-item :secrets msg-payload)))
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
