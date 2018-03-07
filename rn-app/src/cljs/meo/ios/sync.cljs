@@ -63,6 +63,7 @@
 (defn write-to-webdav [secrets entry put-fn]
   (try
     (let [{:keys [server username password aes-secret directory]} secrets
+          entry (update-in entry [:tags] conj "#import")
           data (pr-str entry)
           ciphertext (.toString (.encrypt aes data aes-secret))
           client (webdav-fs. server username password)

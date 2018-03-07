@@ -29,7 +29,11 @@
             text-color (get-in c/colors [:text @theme])
             entry (:entry @local)
             to-detail #(do (put-fn [:entry/detail {:timestamp ts}])
-                           (navigate "entry"))]
+                           (navigate "entry"))
+            md (:md entry)
+            md (if (> (count md) 100)
+                 (str (subs md 0 100) "...")
+                 md)]
         [touchable-opacity {:on-press to-detail
                             :style    {:flex             1
                                        :flex-direction   :row
@@ -68,7 +72,7 @@
            [text {:style {:color       text-color
                           :text-align  "left"
                           :font-weight "normal"}}
-            (:md entry)]]]]))))
+            md]]]]))))
 
 (defn render-item [put-fn navigate]
   (fn [item]

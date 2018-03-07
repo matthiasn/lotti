@@ -24,15 +24,16 @@
                  lon (:longitude loc)
                  img (:image node)
                  ts (.floor js/Math (* 1000 (:timestamp node)))
-                 save-fn #(let [entry (p/parse-entry "imported #photo")
-                                filename (str (h/img-fnt ts) "_" (:filename img))
-                                entry (merge
-                                        entry {:latitude  lat
-                                               :longitude lon
-                                               :location  loc
-                                               :media     (dissoc node :location)
-                                               :img-file  filename
-                                               :timestamp ts})]
+                 save-fn #(let [filename (str (h/img-fnt ts) "_" (:filename img))
+                                entry {:latitude  lat
+                                       :longitude lon
+                                       :location  loc
+                                       :md        ""
+                                       :tags      #{}
+                                       :mentions  #{}
+                                       :media     (dissoc node :location)
+                                       :img-file  filename
+                                       :timestamp ts}]
                             (put-fn [:entry/new entry]))]
              ^{:key (:uri img)}
              [view {:style {:padding-top    10
