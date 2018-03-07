@@ -12,7 +12,7 @@
                     (str "http://" iww-host "/photos2/" file query-params)
                     path)]
       [:a {:href path :target "_blank"}
-       [:img {:style {:width (str (or (:img-size @entry) 50) "%")}
+       [:img {:style {:width (str (or (:img-size @entry) 100) "%")}
               :src   resized}]])))
 
 (defn audioplayer-view [entry put-fn]
