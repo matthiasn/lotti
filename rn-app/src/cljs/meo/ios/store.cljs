@@ -20,9 +20,10 @@
         entry (merge prev msg-payload {:last-saved (st/now)
                                        :id         (str id)
                                        :vclock     new-vclock})
+        all-ts-op (if (:deleted entry) disj conj)
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
-                      (update-in [:all-timestamps] conj timestamp)
+                      (update-in [:all-timestamps] all-ts-op timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
     (sync/write-to-webdav (:secrets current-state) entry put-fn)
@@ -133,11 +134,11 @@
    :state-fn    state-fn
    :handler-map {:entry/persist    persist
                  :entry/new        persist
+                 :entry/detail     detail
                  :sync/initiate    sync-start
                  :sync/next        sync-start
                  :state/load       load-state
                  :state/reset      state-reset
                  :secrets/set      set-secrets
-                 :entry/detail     detail
                  :theme/active     theme
                  :activity/current current-activity}})

@@ -9,12 +9,15 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
                                    map-view mapbox-style-url point-annotation
-                                   icon image logo-img
+                                   icon image logo-img swipeout
                                    touchable-opacity]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.string :as s]
             [clojure.pprint :as pp]
             [meo.utils.parse :as p]))
+
+(def swipeout-btns [#_{:text "star" :backgroundColor "orange"}
+                    {:text "delete" :backgroundColor "red"}])
 
 (defn list-item [ts navigate put-fn]
   (let [theme (subscribe [:active-theme])
@@ -33,46 +36,53 @@
             md (:md entry)
             md (if (> (count md) 100)
                  (str (subs md 0 100) "...")
-                 md)]
-        [touchable-opacity {:on-press to-detail
-                            :style    {:flex             1
-                                       :flex-direction   :row
-                                       :margin-top       10
-                                       :background-color text-bg
-                                       :width            "100%"}}
-         [view {:style {:width            100
-                        :height           100
-                        :background-color "#191970"}}
-          (when-let [media (:media entry)]
-            [image {:style  {:width  100
-                             :height 100}
-                    :source {:uri (-> media :image :uri)}}])]
+                 md)
+            delete #(put-fn [:entry/persist
+                             (assoc-in (:entry @local) [:deleted] true)])
+            swipeout-btns [{:text            "delete"
+                            :backgroundColor "#CA3C3C"
+                            :onPress         delete}]]
+        [swipeout {:right swipeout-btns
+                   :style {:margin-top       10
+                           :background-color text-bg}}
          [view {:style {:flex             1
-                        :flex-direction   :column
+                        :flex-direction   :row
                         :background-color text-bg
-                        :padding-top      8
-                        :padding-left     10
-                        :padding-right    10
-                        :padding-bottom   8
                         :width            "100%"}}
-          [view {:style {:padding-top    4
-                         :padding-left   12
-                         :padding-right  12
-                         :padding-bottom 2}}
-           [text {:style {:color       text-color
-                          :text-align  "left"
-                          :font-size   9
-                          :font-weight "100"
-                          :margin-top  5}}
-            (h/format-time ts)]]
-          [view {:style {:padding-top    4
-                         :padding-left   12
-                         :padding-right  12
-                         :padding-bottom 8}}
-           [text {:style {:color       text-color
-                          :text-align  "left"
-                          :font-weight "normal"}}
-            md]]]]))))
+          [touchable-opacity {:on-press to-detail
+                              :style    {:width            100
+                                         :height           100
+                                         :background-color "#151560"}}
+           (when-let [media (:media entry)]
+             [image {:style  {:width  100
+                              :height 100}
+                     :source {:uri (-> media :image :uri)}}])]
+          [view {:style {:flex             1
+                         :flex-direction   :column
+                         :background-color text-bg
+                         :padding-top      8
+                         :padding-left     10
+                         :padding-right    10
+                         :padding-bottom   8
+                         :width            "100%"}}
+           [view {:style {:padding-top    4
+                          :padding-left   12
+                          :padding-right  12
+                          :padding-bottom 2}}
+            [text {:style {:color       text-color
+                           :text-align  "left"
+                           :font-size   9
+                           :font-weight "100"
+                           :margin-top  5}}
+             (h/format-time ts)]]
+           [view {:style {:padding-top    4
+                          :padding-left   12
+                          :padding-right  12
+                          :padding-bottom 8}}
+            [text {:style {:color       text-color
+                           :text-align  "left"
+                           :font-weight "normal"}}
+             md]]]]]))))
 
 (defn render-item [put-fn navigate]
   (fn [item]

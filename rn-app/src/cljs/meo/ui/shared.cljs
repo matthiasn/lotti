@@ -49,6 +49,9 @@
 (def map-view (r/adapt-react-class (aget mapbox "MapView")))
 (def point-annotation (r/adapt-react-class (aget mapbox "PointAnnotation")))
 
+(def rn-swipeout (js/require "react-native-swipeout"))
+(def swipeout (r/adapt-react-class (aget rn-swipeout "default")))
+
 (def rn-settings-list (js/require "react-native-settings-list"))
 (def settings-list (r/adapt-react-class rn-settings-list))
 (def settings-list-header (r/adapt-react-class (aget rn-settings-list "Header")))

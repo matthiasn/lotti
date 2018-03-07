@@ -28,6 +28,7 @@
 		"react-native-fs": "2.9.11",
 		"react-native-keyboard-aware-scroll-view": "0.4.3",
 		"react-native-settings-list": "1.8.0",
+		"react-native-swipeout": "2.3.3",
 		"react-native-tabbar-bottom": "1.0.4",
 		"react-native-vector-icons": "4.5.0",
 		"react-navigation": "1.0.3",
