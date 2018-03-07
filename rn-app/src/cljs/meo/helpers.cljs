@@ -12,10 +12,11 @@
   (.getCurrentPosition
     (.-geolocation js/navigator)
     (fn [pos]
-      (let [coords (.-coords pos)]
+      (let [loc (js->clj (.-coords pos) :keywordize-keys true)]
         (put-fn [:entry/persist {:timestamp ts
-                                 :latitude  (.-latitude coords)
-                                 :longitude (.-longitude coords)}])))
+                                 :location  loc
+                                 :latitude  (:latitude loc)
+                                 :longitude (:longitude loc)}])))
     (fn [err] (prn err))
     (clj->js {:enableHighAccuracy true :maximumAge 60000})))
 

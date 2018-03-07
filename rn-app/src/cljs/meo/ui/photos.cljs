@@ -1,7 +1,6 @@
 (ns meo.ui.photos
   (:require [meo.ui.shared :refer [view text touchable-opacity cam-roll
-                                   map-view mapbox-style-url point-annotation
-                                   scroll image]]
+                                   scroll image icon]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.ui.colors :as c]
@@ -11,8 +10,8 @@
 (defn photos-page [local put-fn]
   (let [theme (subscribe [:active-theme])]
     (fn [local put-fn]
-      (let [current-map-style (:map-style @local)
-            bg (get-in c/colors [:list-bg @theme])]
+      (let [bg (get-in c/colors [:list-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [scroll {:style {:flex-direction   "column"
                          :padding-top      10
                          :background-color bg
@@ -31,8 +30,7 @@
                                         entry {:latitude  lat
                                                :longitude lon
                                                :location  loc
-                                               :md        "imported #photo"
-                                               :media     node
+                                               :media     (dissoc node :location)
                                                :img-file  filename
                                                :timestamp ts})]
                             (put-fn [:entry/new entry]))]
@@ -43,39 +41,18 @@
                             :width          "100%"
                             :display        :flex
                             :flex-direction :row}}
-              [image {:style  {:width      240
+              [image {:style  {:width      280
                                :height     160
                                :max-height 160}
                       :source {:uri (:uri img)}}]
               [touchable-opacity {:on-press save-fn
-                                  :style    {:padding 3}}
-               [text {:style {:color      "#0078e7"
-                              :text-align "center"
-                              :font-size  18}}
-                "add"]]
-              (when lat
-                [map-view {;:showUserLocation true
-                           :centerCoordinate [lon lat]
-                           :scrollEnabled    false
-                           :rotateEnabled    false
-                           :styleURL         (get mapbox-style-url current-map-style)
-                           :style            {:width     160
-                                              :max-width 160
-                                              :flex      2
-                                              :height    160}
-                           :zoomLevel        15}
-                 [point-annotation {:coordinate [lon lat]}
-                  [view {:style {:width           24
-                                 :height          24
-                                 :alignItems      "center"
-                                 :justifyContent  "center"
-                                 :backgroundColor "white"
-                                 :borderRadius    12}}
-                   [view {:style {:width           24
-                                  :height          24
-                                  :backgroundColor "orange"
-                                  :borderRadius    12
-                                  :transform       [{:scale 0.7}]}}]]]])]))
+                                  :style    {:padding-left   20
+                                             :padding-right  20
+                                             :padding-top    50
+                                             :padding-bottom 50}}
+               [icon {:name  "plus-square-o"
+                      :size  52
+                      :color text-color}]]]))
 
          [text {:style {:color       "#777"
                         :text-align  "center"
