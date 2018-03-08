@@ -349,8 +349,8 @@
   flex-direction: column;
 
   .summary {
-    font-size: $font-size-medium;
-    margin-bottom: 12px;
+    font-size: $font-size-small;
+    margin-bottom: 8px;
   }
 
   svg {
@@ -521,6 +521,7 @@
     }
 
     td {
+      padding-right: 6px;
       .legend {
         height: 1.3em;
         width: 12px;
@@ -603,7 +604,7 @@
 }
 
 .linked-tasks {
-  margin-top: 6px;
+  margin-top: 2px;
   div {
     display: flex;
   }
@@ -613,8 +614,14 @@ u {
   text-decoration-skip: ink;
 }
 
+.briefing-details {
+  margin: 2px -9px 5px -9px;
+}
+
 .habits, .tasks {
   width: 100%;
+  font-size: $font-size-small;
+
   .fa-diamond {
     color: $green;
     &.penalty {
@@ -632,7 +639,7 @@ u {
     cursor: not-allowed;
   }
   .award-points, .estimate {
-    padding: 0 3px 0 2px;
+    padding: 0 6px 0 2px;
     text-align: right;
     width: 20px;
 
@@ -642,7 +649,7 @@ u {
     }
   }
   .award-points {
-    font-weight: 700;
+    //font-weight: 700;
   }
 }
 

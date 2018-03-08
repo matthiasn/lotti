@@ -54,8 +54,9 @@
                   (and active busy) "active-timer-busy"
                   active-selected "active-timer-selected"
                   active "active-timer"
-                  (= (str ts) search-text) "selected")]
-        [:tr {:on-click (up/add-search ts tab-group put-fn)
+                  (= (str ts) search-text) "selected")
+            estimate (get-in entry [:task :estimate-m] 0)]
+        [:tr.task {:on-click (up/add-search ts tab-group put-fn)
               :class    cls}
          [:td
           (when-let [prio (-> entry :task :priority)]
@@ -63,16 +64,18 @@
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
+         [:td.estimate
+          (let [seconds (* 60 estimate)]
+            [:span {:class cls}
+             (s-to-hhmm (.abs js/Math seconds))])]
          (when show-logged?
            [:td.estimate
-            [:span (s-to-hhmm @logged-time)]])
-         [:td.estimate
-          (when-let [estimate (-> entry :task :estimate-m)]
             (let [actual @logged-time
-                  remaining (- (* 60 estimate) actual)
+                  seconds (* 60 estimate)
+                  remaining (- seconds actual)
                   cls (when (neg? remaining) "neg")]
               [:span {:class cls}
-               (s-to-hhmmss (.abs js/Math remaining))]))]
+               (s-to-hhmmss actual)])])
          [:td.text text]
          (when unlink
            [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
@@ -127,7 +130,7 @@
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
-              [:th [:i.fas.fa-stopwatch]]
+              [:th [:i.fal.fa-bell]]
               [:th [:i.far.fa-stopwatch]]
               [:th
                [:div
