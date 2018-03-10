@@ -104,9 +104,12 @@
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
+         [:div.footer
+          [pomo/pomodoro-header entry edit-mode? put-fn]
+          [hashtags-mentions-list ts tab-group put-fn]
+          [:div.word-count (u/count-words-formatted @entry)]]
          [conflict-view entry put-fn]
          [c/custom-fields-div @entry put-fn edit-mode?]
-         [c/questionnaire-div @entry put-fn edit-mode?]
          [m/audioplayer-view @entry put-fn]
          [l/leaflet-map @entry @show-map? local-cfg put-fn]
          ;[loc/location-details @entry put-fn edit-mode?]
@@ -114,10 +117,7 @@
          [m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]
          [m/spotify-view @entry put-fn]
-         [:div.footer
-          [pomo/pomodoro-header entry edit-mode? put-fn]
-          [hashtags-mentions-list ts tab-group put-fn]
-          [:div.word-count (u/count-words-formatted @entry)]]]))))
+         [c/questionnaire-div @entry put-fn edit-mode?]]))))
 
 (defn briefing [ts put-fn local-cfg]
   (let [cfg (subscribe [:cfg])
@@ -167,7 +167,7 @@
          (if (contains? (:tags @entry) "#briefing")
            [briefing ts put-fn local-cfg]
            [journal-entry ts put-fn local-cfg])
-         (when @thumbnails? [t/thumbnails @entry local-cfg put-fn])
+         ;(when @thumbnails? [t/thumbnails @entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments
