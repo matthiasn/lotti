@@ -104,6 +104,8 @@
                                               :target         :nodejs
                                               :output-to      "prod/main/main.js"
                                               :output-dir     "out/main"
+                                              :language-in    :ecmascript5
+                                              :language-out   :ecmascript5
                                               :optimizations  :simple
                                               :parallel-build true}}
 

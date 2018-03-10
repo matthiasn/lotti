@@ -2,7 +2,8 @@
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.misc :as u]
-    #?(:clj [taoensso.timbre :refer [info debug]]
+    #?(:clj
+    [taoensso.timbre :refer [info debug]]
        :cljs [taoensso.timbre :refer-macros [info debug]])
     [meo.common.utils.parse :as p]))
 
@@ -68,7 +69,8 @@
     (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
     {:new-state    new-state
-     :send-to-self (with-meta [:search/refresh] msg-meta)}))
+     :emit-msg     [:cmd/schedule-new {:timeout 2000
+                                       :message [:search/refresh]}]}))
 
 (defn play-audio
   "Start playing audio element with provided DOM id."
@@ -161,11 +163,10 @@
                                   :habit :completed-time :starred :img-size
                                   :primary-story])
         changed? (not= (relevant saved) (relevant msg-payload))]
-    #_
-    (when (and latitude longitude (not geoname))
-      (put-fn [:geonames/lookup {:timestamp ts
-                                 :latitude  latitude
-                                 :longitude longitude}]))
+    #_(when (and latitude longitude (not geoname))
+        (put-fn [:geonames/lookup {:timestamp ts
+                                   :latitude  latitude
+                                   :longitude longitude}]))
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])
             entry (u/deep-merge saved new-entry msg-payload)

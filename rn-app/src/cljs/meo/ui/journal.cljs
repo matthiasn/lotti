@@ -53,10 +53,14 @@
                               :style    {:width            100
                                          :height           100
                                          :background-color "#151560"}}
-           (when-let [media (:media entry)]
+           (if-let [media (:media entry)]
              [image {:style  {:width  100
                               :height 100}
-                     :source {:uri (-> media :image :uri)}}])]
+                     :source {:uri (-> media :image :uri)}}]
+             [icon {:name  "file-text-o"
+                    :size  50
+                    :color "#CCC"
+                    :style {:padding 25}}])]
           [view {:style {:flex             1
                          :flex-direction   :column
                          :background-color text-bg
