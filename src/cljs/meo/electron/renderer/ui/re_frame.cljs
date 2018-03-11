@@ -11,6 +11,7 @@
             [meo.electron.renderer.ui.charts.award :as aw]
             [meo.electron.renderer.ui.dashboard :as db]
             [meo.electron.renderer.ui.config :as cfg]
+            [meo.electron.renderer.ui.sync :as sync]
             [meo.electron.renderer.ui.charts.custom-fields :as cf2]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
@@ -126,6 +127,7 @@
           (case (:page current-page)
             :dashboards [dashboards put-fn]
             :config [cfg/config put-fn]
+            :sync [sync/sync put-fn]
             :charts-1 [charts-page put-fn]
             :countries [countries-page put-fn]
             :calendar [cal put-fn]

@@ -67,10 +67,11 @@
     }
   }
 
-  .fa-trash-o {
+  .fa-trash-alt {
     float: right;
     cursor: pointer;
     padding: 10px;
+    font-weight: 100;
 
     &.tag-delete {
       padding: 20px;

@@ -92,6 +92,8 @@
                 :click (open "charts1")}
                {:label "Config"
                 :click (open "config")}
+               {:label "Sync Config"
+                :click (open "sync")}
                {:label "Countries"
                 :click (open "countries")}
                {:label "Dashboards"

@@ -13,6 +13,9 @@
             [meo.common.utils.parse :as p]
             [matthiasn.systems-toolbox.component :as stc]))
 
+(defn lower-case [str]
+  (if str (s/lower-case str) ""))
+
 (defn custom-field-cfg [local]
   (let [stories (subscribe [:stories])
         backend-cfg (subscribe [:backend-cfg])
@@ -21,7 +24,7 @@
                           sel (:selected @local)
                           path [:changes :custom-fields sel :default-story]]
                       (swap! local assoc-in path story)))
-        story-sort-fn #(s/lower-case (:story-name (second %)))
+        story-sort-fn #(lower-case (:story-name (second %)))
         valid-field-name #(re-find (re-pattern (str "^" p/tag-char-cls "+$")) %)
         new-field-input (fn [ev]
                           (let [text (h/target-val ev)]
@@ -78,7 +81,7 @@
                    delete-field #(swap! local update-in fields-path dissoc field)]
                ^{:key field}
                [:div.field
-                [:span.fa.fa-trash-o {:on-click delete-field}]
+                [:span.fa.fa-trash-alt {:on-click delete-field}]
                 [:div
                  [:label "Name:"]
                  [:span.name field]]
@@ -142,11 +145,11 @@
         cfg (reaction (if-let [changes (:changes @local)]
                         (:custom-fields changes)
                         (:custom-fields @backend-cfg)))
-        custom-fields (reaction (sort-by #(s/lower-case (first %)) @cfg))]
+        custom-fields (reaction (sort-by #(lower-case (first %)) @cfg))]
     (fn custom-fields-render [local]
       (let [stories @stories
             text (:search @local)
-            item-filter #(s/includes? (s/lower-case (first %)) text)
+            item-filter #(s/includes? (lower-case (first %)) text)
             items (filter item-filter @custom-fields)
             sel (:selected @local)]
         [:div.cfg-items
@@ -162,7 +165,7 @@
               {:on-click #(select-item tag)
                :class    (when (= sel tag) "active")}
               (when (= sel tag)
-                [:span.fa.fa-trash-o {:on-click del}])
+                [:span.fa.fa-trash-alt {:on-click del}])
               [:h3 tag (when-let [ds (:default-story cfg)]
                          (str "   (" (get-in stories [ds :story-name]) ")"))]
               [:ul
@@ -195,7 +198,7 @@
         iww-host (.-iwwHOST js/window)
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
-                   (let [text (h/target-val ev)]
+                   (let [text (lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         save-fn (fn [_]
                   (let [custom-fields (-> @local :changes :custom-fields)
@@ -209,7 +212,7 @@
         cfg (reaction (if-let [changes (:changes @local)]
                         (:custom-fields changes)
                         (:custom-fields @backend-cfg)))
-        custom-fields (reaction (sort-by #(s/lower-case (first %)) @cfg))
+        custom-fields (reaction (sort-by #(lower-case (first %)) @cfg))
         add-tag (fn [tag]
                   (fn [_ev]
                     (let [updated (assoc-in @cfg [tag] {:default-story nil
@@ -217,7 +220,7 @@
                       (swap! local assoc-in [:changes :custom-fields] updated))))]
     (fn config-render [put-fn]
       (let [text (:search @local)
-            item-filter #(s/includes? (s/lower-case (first %)) (s/trim text))
+            item-filter #(s/includes? (lower-case (first %)) (s/trim text))
             items (filter item-filter @custom-fields)
             save-key-fn (fn [ev]
                           (when (and (= (.-keyCode ev) 83) (.-metaKey ev))
@@ -246,6 +249,4 @@
             [custom-field-cfg local]
             [:div.third-col]
             [locale put-fn]]
-           [:img {:src (str "http://" iww-host "/secrets/"
-                            (stc/make-uuid) "/secrets.png")}]
            [:div.footer [stats/stats-text]]]]]))))

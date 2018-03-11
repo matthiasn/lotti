@@ -11,7 +11,7 @@
                  [org.clojure/test.check "0.10.0-alpha2"]
                  [clj-pid "0.1.2"]
                  [clj-time "0.14.2"]
-                 [clj-http "3.7.0"]
+                 [clj-http "3.8.0"]
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "2.2.0"]
                  [me.raynes/fs "1.4.6"]
