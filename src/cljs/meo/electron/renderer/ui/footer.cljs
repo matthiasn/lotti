@@ -8,7 +8,8 @@
 (defn footer [put-fn]
   (let [cfg (subscribe [:cfg])
         dashboard-banner (reaction (:dashboard-banner @cfg))
-        local (r/atom {:height "33vh"})
+        local (r/atom {:height "33vh"
+                       :days   90})
         show-pvt (subscribe [:show-pvt])
         dashboards (subscribe [:dashboards])
         active-dashboard (subscribe [:active-dashboard])
@@ -19,12 +20,15 @@
                              :value sel}])))
         select-height (fn [ev]
                         (let [h (-> ev .-nativeEvent .-target .-value)]
-                          (swap! local assoc-in [:height] h)))]
+                          (swap! local assoc-in [:height] h)))
+        select-days (fn [ev]
+                      (let [d (js/parseInt (-> ev .-nativeEvent .-target .-value))]
+                        (swap! local assoc-in [:days] d)))]
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
          [:div {:style {:max-height (:height @local)}}
-          [db/dashboard put-fn]
+          [db/dashboard (:days @local) put-fn]
           (when @show-pvt
             [:div
              [:select {:value     (or @active-dashboard "")
@@ -39,6 +43,16 @@
               [:option {:value "50vh"} "50%"]
               [:option {:value "66vh"} "66%"]
               [:option {:value "75vh"} "75%"]
-              [:option {:value "100vh"} "100%"]]])
+              [:option {:value "100vh"} "100%"]]
+             [:select {:value     (:days @local)
+                       :on-change select-days}
+              [:option {:value 30} "30 days"]
+              [:option {:value 60} "60 days"]
+              [:option {:value 90} "90 days"]
+              [:option {:value 120} "120 days"]
+              [:option {:value 150} "150 days"]
+              [:option {:value 180} "180 days"]
+              [:option {:value 270} "270 days"]
+              [:option {:value 365} "1 year"]]])
           [stats/stats-text]]
          [stats/stats-text])])))

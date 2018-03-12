@@ -68,16 +68,15 @@
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard]
         [:g
-         #_
-         [:g {:filter "url(#blur1)"}
-          [:rect {:width  "100%"
-                  :height "100%"
-                  :style  {:fill   :none
-                           :stroke :none}}]
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width 1.5
-                               :fill         :none}}]]
+         #_[:g {:filter "url(#blur1)"}
+            [:rect {:width  "100%"
+                    :height "100%"
+                    :style  {:fill   :none
+                             :stroke :none}}]
+            [:polyline {:points line-points
+                        :style  {:stroke       color
+                                 :stroke-width 1.5
+                                 :fill         :none}}]]
          [:g
           [:polyline {:points line-points
                       :style  {:stroke       color
@@ -115,7 +114,7 @@
 (defn rect [{:keys []}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h cls ymd ]}]
+    (fn [{:keys [v x w y h cls ymd]}]
       [:g
        [:rect {:on-click click
                :x        x
@@ -182,7 +181,7 @@
              ^{:key (str tag k n)}
              [rect {:v   display-v
                     :x   x
-                    :w   9
+                    :w   (/ 1500 days)
                     :ymd ymd
                     :y   btm-y
                     :h   h

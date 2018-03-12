@@ -9,7 +9,7 @@
             [reagent.core :as r]
             [matthiasn.systems-toolbox.component :as st]))
 
-(defn dashboard [put-fn]
+(defn dashboard [days put-fn]
   (let [custom-field-stats (subscribe [:custom-field-stats])
         chart-data (subscribe [:chart-data])
         last-update (subscribe [:last-update])
@@ -27,13 +27,10 @@
                        {:last-y 50
                         :last-h 0}
                        (get-in @questionnaires [:dashboards @active-dashboard])))]
-    (h/keep-updated :stats/custom-fields 150 local 0 put-fn)
-    (h/keep-updated :stats/wordcount 150 local 0 put-fn)
-    (fn dashboard-render [put-fn]
-      (h/keep-updated :stats/custom-fields 150 local @last-update put-fn)
-      (h/keep-updated :stats/wordcount 150 local @last-update put-fn)
-      (let [days (:n @local)
-            now (st/now)
+    (fn dashboard-render [days put-fn]
+      (h/keep-updated :stats/custom-fields days local @last-update put-fn)
+      (h/keep-updated :stats/wordcount days local @last-update put-fn)
+      (let [now (st/now)
             d (* 24 60 60 1000)
             within-day (mod now d)
             start (+ dc/tz-offset (- now within-day (* days d)))
