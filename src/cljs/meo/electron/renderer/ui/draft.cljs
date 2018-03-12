@@ -124,9 +124,8 @@
                                  "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
-                    (when-not (:edit-running @entry) (update-local))
                     (when-not (:timeout @cb-atom)
-                      (let [timeout (.setTimeout js/window update-local 5000)]
+                      (let [timeout (.setTimeout js/window update-local 1000)]
                         (swap! cb-atom assoc-in [:timeout] timeout))))
         save-fn (fn [md plain]
                   (let [latest-entry (dissoc @entry :comments)
