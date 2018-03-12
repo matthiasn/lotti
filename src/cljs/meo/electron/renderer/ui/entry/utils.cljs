@@ -7,7 +7,7 @@
 
 (defn compare-relevant [entry]
  (let [entry (dissoc (u/clean-entry entry)
-                     :text :editor-state :vclock :last-saved)]
+                     :text :editor-state :vclock :last-saved :linked-entries)]
    (update-in entry [:md] #(when (string? %) (s/trim %)))))
 
 (defn entry-reaction [ts]
