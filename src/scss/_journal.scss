@@ -38,11 +38,16 @@
       background-color: lighten($red, 30);
       font-weight: bold;
       font-family: monospace;
+      color: #999;
     }
 
     .fa {
+      color: #999;
+      padding-top: 1px;
+    }
+
+    .fa-times {
       margin-left: 3px;
-      color: #AAA;
       cursor: default;
     }
   }

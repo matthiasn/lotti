@@ -31,7 +31,7 @@
                            :on-drag-enter h/prevent-default}
          [:div.tab-item.add
           {:on-click #(put-fn [:search/add {:tab-group tab-group}])}
-          [:span "add"]]
+          [:span.fa.fa-plus]]
          (when (> (count queries) 2)
            [:div.tab-item.close-all
             {:on-click #(put-fn [:search/close-all {:tab-group tab-group}])}

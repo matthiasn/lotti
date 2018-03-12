@@ -6,7 +6,7 @@
   flex-wrap: wrap;
 }
 
-.hashtag {
+.hashtag, .mention {
   margin: 5px 5px 1px 0;
   padding: 1px 5px;
   height: 12px;
@@ -39,9 +39,5 @@
 }
 
 .mention {
-  margin: 3px 5px 1px 0;
-  padding: 1px 5px;
-  color: white;
-  font-size: 0.8em;
   background-color: $mention-color;
 }
