@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.229",
+  "version": "0.4.230",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -45,7 +45,6 @@
     "install": "0.10.1",
     "lato-font": "3.0.0",
     "leaflet": "0.7.7",
-    "local-reverse-geocoder": "0.4.1",
     "lodash": "4.17.5",
     "lodash.throttle": "4.1.1",
     "moment": "2.20.1",
@@ -62,13 +61,13 @@
     "s": "0.1.1",
     "shell-escape": "0.2.0",
     "tcp-port-used": "0.1.2",
-    "webdav": "1.2.1"
+    "webdav": "1.3.0"
   },
   "devDependencies": {
     "browser-resolve": "1.11.2",
-    "electron": "1.8.2",
-    "electron-builder": "20.0.8",
-    "electron-publisher-s3": "20.0.5",
+    "electron": "1.8.3",
+    "electron-builder": "20.4.1",
+    "electron-publisher-s3": "20.5.0",
     "mocha": "5.0.4",
     "module-deps": "6.0.0",
     "resolve": "1.5.0",
