@@ -9,6 +9,7 @@
   (let [cfg (subscribe [:cfg])
         dashboard-banner (reaction (:dashboard-banner @cfg))
         local (r/atom {:height "33vh"})
+        show-pvt (subscribe [:show-pvt])
         dashboards (subscribe [:dashboards])
         active-dashboard (subscribe [:active-dashboard])
         select (fn [ev]
@@ -24,19 +25,20 @@
        (if @dashboard-banner
          [:div {:style {:max-height (:height @local)}}
           [db/dashboard put-fn]
-          [:div
-           [:select {:value     (or @active-dashboard "")
-                     :on-change select}
-            (for [dashboard-id (keys @dashboards)]
-              ^{:key dashboard-id}
-              [:option {:value dashboard-id} (name dashboard-id)])]
-           [:select {:value     (:height @local)
-                     :on-change select-height}
-            [:option {:value "20vh"} "20%"]
-            [:option {:value "33vh"} "33%"]
-            [:option {:value "50vh"} "50%"]
-            [:option {:value "66vh"} "66%"]
-            [:option {:value "75vh"} "75%"]
-            [:option {:value "100vh"} "100%"]]
-           [stats/stats-text]]]
+          (when @show-pvt
+            [:div
+             [:select {:value     (or @active-dashboard "")
+                       :on-change select}
+              (for [dashboard-id (keys @dashboards)]
+                ^{:key dashboard-id}
+                [:option {:value dashboard-id} (name dashboard-id)])]
+             [:select {:value     (:height @local)
+                       :on-change select-height}
+              [:option {:value "20vh"} "20%"]
+              [:option {:value "33vh"} "33%"]
+              [:option {:value "50vh"} "50%"]
+              [:option {:value "66vh"} "66%"]
+              [:option {:value "75vh"} "75%"]
+              [:option {:value "100vh"} "100%"]]])
+          [stats/stats-text]]
          [stats/stats-text])])))

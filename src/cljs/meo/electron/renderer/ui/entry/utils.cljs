@@ -1,6 +1,7 @@
 (ns meo.electron.renderer.ui.entry.utils
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
             [meo.common.utils.misc :as u]))
 
@@ -16,10 +17,13 @@
         entry (reaction (get-in @combined-entries [ts]))
         edit-mode (reaction (contains? @new-entries ts))
         unsaved (reaction
-                  (and @edit-mode
-                       (:md (get-in @new-entries [ts]))
-                       (not= (compare-relevant (get-in @new-entries [ts]))
-                             (compare-relevant (get-in @entries-map [ts])))))]
+                  (let [from-new-entries (get-in @new-entries [ts])
+                        from-entries-map (get-in @entries-map [ts])]
+                    (debug "entry-reaction" from-new-entries from-entries-map)
+                    (and @edit-mode
+                         (:md from-new-entries)
+                         (not= (compare-relevant from-new-entries)
+                               (compare-relevant from-entries-map)))))]
     {:entry            entry
      :entries-map      entries-map
      :combined-entries combined-entries

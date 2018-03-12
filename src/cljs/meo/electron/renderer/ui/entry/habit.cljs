@@ -58,7 +58,6 @@
                                 (assoc-in [:habit :completion-ts] completion-ts)
                                 (update-in [:habit :done] not))]
                 (put-fn [:entry/update next-entry])
-                (h/send-w-geolocation next-entry put-fn)
                 (put-fn [:entry/update updated])
                 (close-tab))
               ;; otherwise just toggle - follow-up is scheduled already
@@ -75,7 +74,6 @@
                                 (assoc-in [:habit :next-entry] next-ts)
                                 (update-in [:habit :skipped] not))]
                 (put-fn [:entry/update next-entry])
-                (h/send-w-geolocation next-entry put-fn)
                 (put-fn [:entry/update updated])
                 (close-tab))
               ;; otherwise just toggle - follow-up is scheduled already
