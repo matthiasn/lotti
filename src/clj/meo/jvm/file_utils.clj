@@ -40,7 +40,11 @@
    default to data path."
   []
   (let [conf-path (str data-path "/conf.edn")
-        questionnaires (edn/read-string (slurp (io/resource "questionnaires.edn")))
+        questionnaires-path (str data-path "/questionnaires.edn")
+        questionnaires (try (edn/read-string (slurp questionnaires-path))
+                            (catch Exception ex
+                              (do (warn "No questionnaires config found.")
+                                  {})))
         conf (try (edn/read-string (slurp conf-path))
                   (catch Exception ex
                     (let [default (edn/read-string
