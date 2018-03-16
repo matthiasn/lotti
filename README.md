@@ -1,19 +1,26 @@
 # meo
 
-**meo** is a **personal information manager** for improving your life, past, present and future. It starts with a **geo-aware diary** or **log** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**. Please get in touch when you require services around this tool, like customization or integration of additional data sources.
+**meo** is a **personal information manager** for recording and improving my life. It starts with a **geo-aware journal** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**.
+
+Here's how that currently looks like:
+
+![screenshot](http://matthiasnehlsen.com/images/2018-03-08-meo-charts.png)
+
 
 ## Motivation
 
-See [here](./doc/motivation.md)
+See this [blog post](http://matthiasnehlsen.com/blog/2018/03/15/introducing-meo/) for the background. More blog posts to follow.
 
 
 ## Components
 
-**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**.
+**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. 
 
-There's also an **iOS app** that keeps track of visits and lets me quickly capture thoughts on the go. Currently, it's a very basic application written in **[Swift](https://swift.org/)**. It is not open sourced yet, but that will happen in due course. Ideally, by then it should also have been rewritten in **ClojureScript** and **[React Native](https://facebook.github.io/react-native/)**. Stay tuned.
+There's also a **mobile companion app** written in **ClojureScript** on top of **[React Native](https://facebook.github.io/react-native/)**, see `./rn-app` in this repository. All subsystems in meo make use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
 
-This repository contains the **web application** part of **meo**. This system is written in **Clojure** and **ClojureScript**, making use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
+Here's how the app currently looks like:
+
+![screenshot](http://matthiasnehlsen.com/images/2018-03-08-mobile.png)
 
 
 ## Installation
@@ -70,26 +77,11 @@ or
 [![TravisCI Build Status](https://travis-ci.org/matthiasn/meo.svg?branch=master)](https://travis-ci.org/matthiasn/meo)
 
 
-## REPL
+## How to help
 
-Inspecting the store component:
+Contributions and pull requests are very welcome. Please check the open issues for where help is required the most, and file issues for anything that you find.
 
-````
-(use 'meo.jvm.core)
-(require '[meo.jvm.file-utils :as fu])
-(with-redefs [fu/data-path "data"] (restart! switchboard))
-(def store (:cmp-state (:server/store-cmp (:components @(:cmp-state switchboard)))))
-(def g (:graph @store))
-
-(require '[ubergraph.core :as uber])
-(uber/has-node? g :hashtags)
-
-; find all hashtags
-(def hashtags (map #(-> % :dest :tag) (uber/find-edges g {:src :hashtags})))
-
-(pprint (sort (map clojure.string/lower-case hashtags)))
-````
 
 ## License
 
-Copyright © 2016-2017 **[Matthias Nehlsen](http://www.matthiasnehlsen.com)**. Distributed under the **GNU AFFERO PUBLIC LICENSE**, Version 3. See separate LICENSE file.
+Copyright © 2016-2018 **[Matthias Nehlsen](http://www.matthiasnehlsen.com)**. Distributed under the **GNU AFFERO PUBLIC LICENSE**, Version 3. See separate LICENSE file.
