@@ -14,9 +14,7 @@ See this [blog post](http://matthiasnehlsen.com/blog/2018/03/15/introducing-meo/
 
 ## Components
 
-**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. 
-
-There's also a **mobile companion app** written in **ClojureScript** on top of **[React Native](https://facebook.github.io/react-native/)**, see `./rn-app` in this repository. All subsystems in meo make use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
+**meo** consists of a **[Clojure](https://clojure.org/)** and **[ClojureScript](https://github.com/clojure/clojurescript)** system spanning an **Electron** application and a backend that runs on the **[JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)**. There's also a **mobile companion app** written in **ClojureScript** on top of **[React Native](https://facebook.github.io/react-native/)**, see `./rn-app` in this repository. All subsystems in meo make use of the **[systems-toolbox](https://github.com/matthiasn/systems-toolbox)** for its architecture.
 
 Here's how the app currently looks like:
 
@@ -45,11 +43,13 @@ Once that is done, you need to compile the ClojureScript code into JavaScript. T
     $ lein with-profile cljs cljsbuild auto renderer-dev
     $ lein with-profile cljs cljsbuild auto updater
 
-Alternatively, you can run these aliases (see project.clj);
+Alternatively, you use these aliases (see project.clj);
 
-    $ cljs-main-dev
-    $ cljs-renderer-dev
-    $ cljs-updater-dev
+    $ lein cljs-main-dev
+    $ lein cljs-renderer-dev
+    $ then cljs-updater-dev
+
+These need to be running in separate terminals, as they watch the file system for changes in auto mode.
 
 Next, you need to compile the SCSS files into CSS:
 
@@ -62,7 +62,16 @@ Once you have completed all the steps in the previous section, all you need to d
 
     $ lein run
     $ npm start
-    
+
+
+## Packaging
+
+You can also package the application using the publish script:
+
+    $ ./publish.sh -m beta
+
+This script will completely build and package the meo desktop application. It will try to upload the application into an S3 bucket if credentials are in the environment. But even without valid credentials, you will still find the packaged application under `./dist/`.
+
 
 ## Tests
 
