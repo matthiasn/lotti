@@ -28,6 +28,7 @@
                                           :utc-offset    (.getTimezoneOffset (new js/Date))
                                           :primary-story (-> @cfg :briefing :story)})]
                              (put-fn [:entry/update entry])))
+                         (put-fn [:search/remove-briefings])
                          (put-fn [:cal/to-day {:day ymd}])
                          (put-fn [:search/add {:tab-group :briefing :query q}])
                          (put-fn [:search/refresh])))

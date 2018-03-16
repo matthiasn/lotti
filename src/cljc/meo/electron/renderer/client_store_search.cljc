@@ -58,8 +58,7 @@
   [query-cfg tab-group query]
   (let [all-path [:tab-groups tab-group :all]
         queries (map #(get-in query-cfg [:queries %]) (get-in query-cfg all-path))
-        matching (filter #(and (= (:search-text query) (:search-text %))
-                               (= (:story query) (:story %)))
+        matching (filter #(= (:search-text query) (:search-text %))
                          queries)]
     (first matching)))
 
@@ -149,9 +148,22 @@
         left (find-existing query-cfg :left msg-payload)
         right (find-existing query-cfg :right msg-payload)]
     {:send-to-self [[:search/remove {:tab-group :left
-                                     :query-id (:query-id left)}]
+                                     :query-id  (:query-id left)}]
                     [:search/remove {:tab-group :right
-                                     :query-id (:query-id right)}]]}))
+                                     :query-id  (:query-id right)}]]}))
+
+(defn remove-briefing-queries [{:keys [current-state]}]
+  (let [briefing-group (-> current-state :query-cfg :tab-groups :briefing)
+        off-group (-> current-state :query-cfg :tab-groups :off)
+        rm (set/union (set (:all briefing-group)) (set (:all off-group)))
+        new-state (-> current-state
+                      (update-in [:query-cfg :queries] #(apply dissoc % rm))
+                      (assoc-in [:query-cfg :tab-groups :briefing :all] #{})
+                      (assoc-in [:query-cfg :tab-groups :off :all] #{})
+                      (assoc-in [:query-cfg :tab-groups :off :active] nil))]
+    (debug "remove-briefing-queries:" (:query-cfg new-state))
+    (reset! query-cfg (:query-cfg new-state))
+    {:new-state new-state}))
 
 (defn close-all
   "Remove query inside tab group specified in msg."
@@ -212,14 +224,15 @@
                  [:state/stats-tags-get]]}))
 
 (def search-handler-map
-  {:search/update      update-query-fn
-   :search/set-active  set-active-query
-   :search/add         add-query
-   :search/remove      remove-query
-   :search/remove-all  remove-all
-   :search/close-all   close-all
-   :search/refresh     search-refresh-fn
-   :search/set-dragged set-dragged-fn
-   :search/move-tab    move-tab-fn
-   :show/more          show-more-fn
-   :linked-filter/set  set-linked-filter})
+  {:search/update           update-query-fn
+   :search/set-active       set-active-query
+   :search/add              add-query
+   :search/remove           remove-query
+   :search/remove-all       remove-all
+   :search/remove-briefings remove-briefing-queries
+   :search/close-all        close-all
+   :search/refresh          search-refresh-fn
+   :search/set-dragged      set-dragged-fn
+   :search/move-tab         move-tab-fn
+   :show/more               show-more-fn
+   :linked-filter/set       set-linked-filter})

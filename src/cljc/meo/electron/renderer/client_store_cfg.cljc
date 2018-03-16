@@ -1,5 +1,7 @@
 (ns meo.electron.renderer.client-store-cfg
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
+    #?(:clj [taoensso.timbre :refer [info debug]]
+       :cljs [taoensso.timbre :refer-macros [info debug]])
     [clojure.pprint :as pp]))
 
 (def default-config

@@ -121,7 +121,7 @@
    :stories       (map-w-names
                     (gq/find-all-stories state) #{:story-name :linked-saga})
    :sagas         (map-w-names (gq/find-all-sagas state) #{:saga-name})
-   :locations     (gq/find-all-locations state)
+   ;:locations     (gq/find-all-locations state)
    :cfg           (merge (:cfg state) {:pid (pid/current)})})
 
 (defn count-words
