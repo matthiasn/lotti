@@ -47,7 +47,7 @@ Alternatively, you use these aliases (see project.clj);
 
     $ lein cljs-main-dev
     $ lein cljs-renderer-dev
-    $ then cljs-updater-dev
+    $ lein cljs-updater-dev
 
 These need to be running in separate terminals, as they watch the file system for changes in auto mode.
 
