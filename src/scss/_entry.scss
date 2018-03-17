@@ -757,3 +757,13 @@ u {
     }
   }
 }
+
+.git-commit {
+  font-family: monospace;
+  font-size: 0.6em;
+  margin-bottom: 5px;
+
+  .repo-name {
+    font-weight: bold;
+  }
+}

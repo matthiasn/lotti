@@ -1,6 +1,7 @@
 (ns meo.common.utils.parse
   "Parsing functions, tested in 'meo.jvm.parse-test' namespace."
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s]
+            [clojure.set :as set]))
 
 (def tag-char-cls "[\\w\\-\\u00C0-\\u017F]")
 
@@ -25,9 +26,10 @@
    Code blocks and inline code is removed before parsing for tags."
   [text]
   (let [no-codeblocks (s/replace text (re-pattern (str "```[^`]*```")) "")
-        without-code (s/replace no-codeblocks (re-pattern (str "`[^`]*`")) "")]
+        without-code (s/replace no-codeblocks (re-pattern (str "`[^`]*`")) "")
+        tags     (set (map s/trim (re-seq entry-tag-regex without-code)))]
     {:md       text
-     :tags     (set (map s/trim (re-seq entry-tag-regex without-code)))
+     :tags     tags
      :mentions (set (map s/trim (re-seq entry-mentions-regex without-code)))}))
 
 (defn parse-search

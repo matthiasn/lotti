@@ -11,7 +11,8 @@
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
             [clojure.data :as data]
             [clojure.pprint :as pp]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [clojure.set :as set]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -133,6 +134,7 @@
                         updated (merge (dissoc cleaned :edit-running)
                                        (p/parse-entry md)
                                        {:text plain})
+                        updated (update-in updated [:tags] set/union (:perm-tags updated))
                         updated (if (= (:entry-type latest-entry) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
                                   updated)]

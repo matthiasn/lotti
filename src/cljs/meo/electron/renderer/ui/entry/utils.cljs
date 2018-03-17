@@ -6,9 +6,10 @@
             [meo.common.utils.misc :as u]))
 
 (defn compare-relevant [entry]
- (let [entry (dissoc (u/clean-entry entry)
-                     :text :editor-state :vclock :last-saved :linked-entries)]
-   (update-in entry [:md] #(when (string? %) (s/trim %)))))
+  (let [entry (dissoc (u/clean-entry entry)
+                      :text :editor-state :vclock :last-saved :linked-entries
+                      :edit-running)]
+    (update-in entry [:md] #(when (string? %) (s/trim %)))))
 
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])
