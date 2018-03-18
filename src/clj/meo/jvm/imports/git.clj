@@ -16,11 +16,10 @@
 (def rfc822-fmt (f/formatters :rfc822))
 
 (defn load-repos []
-  (let []
-    (try (edn/read-string (slurp repos-path))
-         (catch Exception ex
-           (do (warn "No repos config found.")
-               {:repos []})))))
+  (try (edn/read-string (slurp repos-path))
+       (catch Exception ex
+         (do (warn "No repos config found.")
+             {:repos []}))))
 
 (defn set-last-read []
   (let [repos (load-repos)
@@ -52,7 +51,7 @@
       (info repo-name "- read" n "commits"))
     commits))
 
-(defn import-from-git [{:keys [put-fn msg-meta msg-payload]}]
+(defn import-from-git [{:keys [put-fn]}]
   (info :import-from-git)
   (let [repos-cfg (load-repos)]
     (set-last-read)
