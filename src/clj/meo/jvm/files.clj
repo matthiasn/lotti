@@ -116,7 +116,7 @@
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
        :emit-msg     [[:ft/add entry]]})))
 
-(defn sync
+(defn sync-fn
   "Handler function for syncing journal entry."
   [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
