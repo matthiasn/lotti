@@ -63,15 +63,22 @@
          [:pre [:code (with-out-str (pp/pprint conflict))]]]))))
 
 (defn git-commit [entry put-fn]
-  (let []
+  (let [repos (subscribe [:repos])]
     (fn [entry put-fn]
       (when-let [git-commit (:git-commit @entry)]
-        (let [refs (:refs git-commit)]
+        (prn @repos)
+        (let [{:keys [repo-name refs commit subject]} git-commit
+              cfg (get-in @repos [repo-name])
+              url (str
+                    (:repo-url cfg) "/commit/" commit)]
           [:div.git-commit
-           [:span.repo-name (str (:repo-name git-commit) ":")]
-           "[" (:abbreviated-commit git-commit) "] "
+           [:span.repo-name (str repo-name ":")]
+           "["
+           [:a {:href url :target "_blank"}
+            (:abbreviated-commit git-commit)]
+           "] "
            (when (seq refs) (str "(" refs ") "))
-           (:subject git-commit)])))))
+           subject])))))
 
 (defn journal-entry
   "Renders individual journal entry. Interaction with application state happens

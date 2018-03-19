@@ -13,6 +13,13 @@
 (def clucy-path (str data-path "/clucy/"))
 (def export-path (str data-path "/export/"))
 (def img-path (str data-path "/images/"))
+(def repos-path (str data-path "/repos.edn"))
+
+(defn load-repos []
+  (try (edn/read-string (slurp repos-path))
+       (catch Exception ex
+         (do (warn "No repos config found.")
+             {:repos {}}))))
 
 (defn paths []
   (let [trash-path (str data-path "/trash/")]
@@ -51,7 +58,8 @@
                                     (slurp (io/resource "default-conf.edn")))]
                       (warn "No config found -> copying from default.")
                       (write-conf default conf-path)
-                      default)))]
+                      default)))
+        conf (assoc-in conf [:repos] (:repos (load-repos)))]
     (when-not (:node-id conf)
       (let [with-node-id (assoc-in conf [:node-id] (str (st/make-uuid)))]
         (write-conf with-node-id conf-path)))

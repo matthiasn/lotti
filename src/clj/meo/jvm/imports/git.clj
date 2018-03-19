@@ -12,20 +12,13 @@
             [clojure.string :as s]))
 
 (programs git)
-(def repos-path (str fu/data-path "/repos.edn"))
 (def rfc822-fmt (f/formatters :rfc822))
 
-(defn load-repos []
-  (try (edn/read-string (slurp repos-path))
-       (catch Exception ex
-         (do (warn "No repos config found.")
-             {:repos []}))))
-
 (defn set-last-read []
-  (let [repos (load-repos)
+  (let [repos (fu/load-repos)
         now (f/unparse rfc822-fmt (t/now))
         updated (assoc-in repos [:last-read] now)]
-    (spit repos-path (pr-str updated))))
+    (spit fu/repos-path (pr-str updated))))
 
 ; adapted from https://gist.github.com/varemenos/e95c2e098e657c7688fd
 (defn read-repo [repo-cfg since]
@@ -52,12 +45,11 @@
     commits))
 
 (defn import-from-git [{:keys [put-fn]}]
-  (info :import-from-git)
-  (let [repos-cfg (load-repos)]
+  (info "reading git repos")
+  (let [repos-cfg (fu/load-repos)]
     (set-last-read)
-    (doseq [repo-cfg (:repos repos-cfg)]
-      (let [repo-name (:repo-name repo-cfg)
-            commits (read-repo repo-cfg (:last-read repos-cfg))]
+    (doseq [[repo-name repo-cfg] (:repos repos-cfg)]
+      (let [commits (read-repo repo-cfg (:last-read repos-cfg))]
         (doseq [commit commits]
           (let [ts (c/to-long (-> commit :author :date))
                 {:keys [abbreviated-commit author]} commit
