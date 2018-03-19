@@ -85,6 +85,7 @@
             :stats/tasks :task-stats
             :stats/wordcount :wordcount-stats
             :stats/custom-fields :custom-field-stats
+            :stats/git-commits :git-commits
             :stats/media :media-stats
             nil)
         day-stats (into (sorted-map) (:stats msg-payload))]

@@ -20,6 +20,7 @@
 
 ;; Subscription Handlers
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
+(reg-sub :git-stats (fn [db _] (:git-commits db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
 (reg-sub :startup-progress (fn [db _] (:startup-progress db)))
 (reg-sub :running-pomodoro (fn [db _] (:running (:pomodoro db))))

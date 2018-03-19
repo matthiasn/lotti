@@ -7,6 +7,7 @@
             [meo.jvm.graph.stats.location :as sl]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.custom-fields :as cf]
+            [meo.jvm.graph.stats.git :as g]
             [meo.common.utils.misc :as u]
             [taoensso.timbre :refer [info error warn]]
             [clojure.set :as set]
@@ -77,6 +78,7 @@
           stats-mapper (case stats-type
                          :stats/pomodoro t-s/time-mapper
                          :stats/custom-fields cf/custom-fields-mapper
+                         :stats/git-commits g/git-mapper
                          :stats/tasks tasks-mapper
                          :stats/wordcount wordcount-mapper
                          :stats/media media-mapper

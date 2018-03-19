@@ -6,6 +6,7 @@
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
+            [meo.electron.renderer.ui.dashboard.commits :as c]
             [reagent.core :as r]
             [matthiasn.systems-toolbox.component :as st]))
 
@@ -29,6 +30,7 @@
                        (get-in @questionnaires [:dashboards @active-dashboard])))]
     (fn dashboard-render [days put-fn]
       (h/keep-updated :stats/custom-fields days local @last-update put-fn)
+      (h/keep-updated :stats/git-commits days local @last-update put-fn)
       (h/keep-updated :stats/wordcount days local @last-update put-fn)
       (let [now (st/now)
             d (* 24 60 60 1000)
@@ -56,6 +58,7 @@
           (for [chart-cfg (:charts @charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
                              :scores-chart ds/scores-chart
+                             :commits-chart c/commits-chart
                              :bp-chart bp/bp-chart
                              :barchart-row dc/barchart-row
                              :points-by-day dc/points-by-day-chart

@@ -62,11 +62,10 @@
          [:div.warn [:span.fa.fa-exclamation] "Conflict"]
          [:pre [:code (with-out-str (pp/pprint conflict))]]]))))
 
-(defn git-commit [entry put-fn]
+(defn git-commit [_entry _put-fn]
   (let [repos (subscribe [:repos])]
     (fn [entry put-fn]
       (when-let [git-commit (:git-commit @entry)]
-        (prn @repos)
         (let [{:keys [repo-name refs commit subject]} git-commit
               cfg (get-in @repos [repo-name])
               url (str
