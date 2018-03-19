@@ -118,8 +118,8 @@
   (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
         last-update (:last-update last-update)]
     (when (or (>= last-update last-fetched)
-              (not= n (:n @local)))
-      (swap! local assoc-in [:n] n)
+              (not= n (get-in @local [stats-key :n])))
+      (swap! local assoc-in [stats-key :n] n)
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
       (get-stats stats-key n (:meta last-update {}) put-fn))))
 

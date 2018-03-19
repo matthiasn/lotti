@@ -16,7 +16,7 @@
         last-update (subscribe [:last-update])
         active-dashboard (subscribe [:active-dashboard])
         questionnaires (subscribe [:questionnaires])
-        local (r/atom {:n 150})
+        local (r/atom {})
         charts-pos (reaction
                      (reduce
                        (fn [acc m]
@@ -38,9 +38,12 @@
             start (+ dc/tz-offset (- now within-day (* days d)))
             end (+ (- now within-day) d dc/tz-offset)
             span (- end start)
-            custom-field-stats @custom-field-stats
-            common {:start      start :end end :w 1800 :x-offset 200
-                    :span       span :days days :stats custom-field-stats
+            common {:start      start :end end
+                    :w          1800
+                    :x-offset   200
+                    :span       span
+                    :days       days
+                    :stats      @custom-field-stats
                     :chart-data @chart-data}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         [:div.questionnaires
