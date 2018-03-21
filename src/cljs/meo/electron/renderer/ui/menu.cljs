@@ -33,7 +33,8 @@
    ;{:option :show-calendar :cls "fa-calendar"}
    ;{:option :hide-hashtags :cls "fa-hashtag"}
    ;{:option :single-column :cls "fa-columns"}
-   {:option :dashboard-banner :cls "fa-line-chart"}
+   {:option :thumbnails :cls "fa-images"}
+   {:option :dashboard-banner :cls "fa-chart-line"}
    ;{:option :sort-asc :cls " fa-sort-asc"}
    {:option :app-screenshot :cls "fa-window-minimize"}])
 

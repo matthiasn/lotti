@@ -13,7 +13,7 @@
    :show-pvt          true
    :mute              true
    :locale            :de
-   :thumbnails        false
+   :thumbnails        true
    :dashboard         {:active :general}
    :app-screenshot    false
    :planning-mode     true
