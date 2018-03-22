@@ -48,6 +48,10 @@
   (when-let [locale (get locales locale)]
     (.formatDate locale (.toDate (moment. s)) (clj->js {:datetime "medium"}))))
 
+(defn localize-datetime-full [s locale]
+  (when-let [locale (get locales locale)]
+    (.formatDate locale (.toDate (moment. s)) (clj->js {:datetime "full"}))))
+
 (defn new-entry-fn
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.

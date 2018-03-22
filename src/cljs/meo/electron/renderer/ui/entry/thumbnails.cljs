@@ -6,34 +6,37 @@
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [cljs.pprint :as pp]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [meo.electron.renderer.helpers :as h]))
 
 (def iww-host (.-iwwHOST js/window))
 
 (defn image-view
   "Renders image view. Used resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry query-params local-cfg put-fn]
+  [entry query-params local-cfg locale put-fn]
   (when-let [file (:img-file entry)]
     (let [path (str "http://" iww-host "/photos/" file)
           resized (if (s/includes? (s/lower-case path) ".jpg")
                     (str "http://" iww-host "/photos2/" file query-params)
                     path)
           tab-group (:tab-group local-cfg)
+          ts (:timestamp entry)
           add-search (up/add-search (str (:timestamp entry)) tab-group put-fn)]
       [:div {:on-click add-search}
        [:img {:src resized}]
        [:p.legend
         [:a {:href path :target "_blank"}
-         [:span.fa.fa-expand]]]])))
+         (h/localize-datetime-full ts locale)]]])))
 
 (defn carousel [ts linked local-cfg put-fn]
-  (fn [ts linked local-cfg put-fn]
-    (when (seq linked)
-      (into
-        [:> rrc/Carousel]
-        (mapv (fn [entry] (image-view entry "?width=600" local-cfg put-fn))
-              linked)))))
+  (let [locale (subscribe [:locale])]
+    (fn [ts linked local-cfg put-fn]
+      (when (seq linked)
+        (into
+          [:> rrc/Carousel {:showThumbs false}]
+          (mapv (fn [entry] (image-view entry "?width=600" local-cfg @locale put-fn))
+                linked))))))
 
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."

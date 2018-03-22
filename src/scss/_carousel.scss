@@ -182,22 +182,27 @@
       -o-transition: all 0.5s ease-in-out;
       transition: all 0.5s ease-in-out;
       position: absolute;
-      bottom: 40px;
+      bottom: 30px;
       left: 50%;
       margin-left: -45%;
       width: 90%;
-      border-radius: 10px;
+      border-radius: 3px;
       background: #000;
       color: #fff;
-      padding: 10px;
-      font-size: 12px;
+      padding: 3px 6px;
+      font-size: $font-size-small;
       text-align: center;
-      opacity: 0.25;
+      opacity: 0.15;
       -webkit-transition: opacity 0.35s ease-in-out;
       -moz-transition: opacity 0.35s ease-in-out;
       -ms-transition: opacity 0.35s ease-in-out;
       -o-transition: opacity 0.35s ease-in-out;
-      transition: opacity 0.35s ease-in-out; }
+      transition: opacity 0.35s ease-in-out;
+
+      a {
+        color: white;
+      }
+    }
   .carousel .control-dots {
     position: absolute;
     bottom: 0;
@@ -235,4 +240,4 @@
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.9);
     color: #fff; }
   .carousel:hover .slide .legend {
-    opacity: 0.4; }
+    opacity: 0.6; }

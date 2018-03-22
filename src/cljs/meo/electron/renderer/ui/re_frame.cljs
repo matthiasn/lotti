@@ -41,6 +41,7 @@
 (reg-sub :new-entries (fn [db _] (:new-entries db)))
 (reg-sub :combined-entries (fn [db _] (merge (:entries-map db) (:new-entries db))))
 (reg-sub :cfg (fn [db _] (:cfg db)))
+(reg-sub :locale (fn [db _] (:locale (:cfg db) :en)))
 (reg-sub :backend-cfg (fn [db _] (:backend-cfg db)))
 (reg-sub :repos (fn [db _] (:repos (:backend-cfg db))))
 (reg-sub :planning-mode (fn [db _] (:planning-mode (:cfg db))))
