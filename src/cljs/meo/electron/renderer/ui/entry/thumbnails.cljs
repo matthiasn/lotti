@@ -34,7 +34,8 @@
     (fn [ts linked local-cfg put-fn]
       (when (seq linked)
         (into
-          [:> rrc/Carousel {:showThumbs false}]
+          [:> rrc/Carousel {:showThumbs false
+                            :showStatus (> (count linked) 1)}]
           (mapv (fn [entry] (image-view entry "?width=600" local-cfg @locale put-fn))
                 linked))))))
 
