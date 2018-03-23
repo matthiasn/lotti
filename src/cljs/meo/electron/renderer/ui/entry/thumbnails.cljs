@@ -24,10 +24,10 @@
           tab-group (:tab-group local-cfg)
           ts (:timestamp entry)
           add-search (up/add-search (str (:timestamp entry)) tab-group put-fn)
-          fullscreen #(swap! local update-in [:fullscreen] not)]
-      [:div {:on-click fullscreen}
+          fullscreen (fn [ev] (swap! local update-in [:fullscreen] not))]
+      [:div
        [:img {:src resized}]
-       [:p.legend
+       [:p.legend {:on-click fullscreen}
         [:a {:href path :target "_blank"}
          (h/localize-datetime-full ts locale)
          (if (:fullscreen @local)
@@ -56,7 +56,15 @@
         active (reaction (:active @cfg))
         show-pvt? (reaction (:show-pvt @cfg))
         local (r/atom {})
-        get-or-retrieve (u/find-missing-entry entries-map put-fn)]
+        get-or-retrieve (u/find-missing-entry entries-map put-fn)
+        escape (fn [ev]
+                 (let [key-code (.. ev -keyCode)
+                       meta-key (.-metaKey ev)]
+                   (when (= key-code 27)
+                     (swap! local assoc-in [:fullscreen] false))
+                   (when (and meta-key (= key-code 70))
+                     (swap! local update-in [:fullscreen] not))
+                   (.preventDefault ev)))]
     (fn thumbnail-render [entry local-cfg put-fn]
       (let [ts (:timestamp entry)
             entry-active? (contains? (set (vals @active)) (:timestamp entry))
@@ -66,7 +74,8 @@
                        with-imgs
                        (filter (u/pvt-filter @options @entries-map) with-imgs))]
         (when-not entry-active?
-          [:div.thumbnails {:class (when (:fullscreen @local) "fullscreen")}
+          [:div.thumbnails {:class (when (:fullscreen @local) "fullscreen")
+                            :on-key-down escape}
            [carousel {:ts        ts
                       :filtered  filtered
                       :local-cfg local-cfg
