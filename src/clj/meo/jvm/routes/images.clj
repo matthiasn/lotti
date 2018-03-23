@@ -29,5 +29,5 @@
           height (Integer/parseInt (or (:height params) "1024"))]
       (-> file
           (rotate-fn)
-          ((resize-fn width height speed))
+          ;((resize-fn width height speed))
           (as-stream-by-mime-type "image/jpeg")))))

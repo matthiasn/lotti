@@ -7,14 +7,15 @@
             [clojure.string :as s]
             [cljs.pprint :as pp]
             [meo.common.utils.parse :as up]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [reagent.core :as r]))
 
 (def iww-host (.-iwwHOST js/window))
 
 (defn image-view
   "Renders image view. Used resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry query-params local-cfg locale put-fn]
+  [entry query-params local-cfg locale local put-fn]
   (when-let [file (:img-file entry)]
     (let [path (str "http://" iww-host "/photos/" file)
           resized (if (s/includes? (s/lower-case path) ".jpg")
@@ -22,22 +23,29 @@
                     path)
           tab-group (:tab-group local-cfg)
           ts (:timestamp entry)
-          add-search (up/add-search (str (:timestamp entry)) tab-group put-fn)]
-      [:div {:on-click add-search}
+          add-search (up/add-search (str (:timestamp entry)) tab-group put-fn)
+          fullscreen #(swap! local update-in [:fullscreen] not)]
+      [:div {:on-click fullscreen}
        [:img {:src resized}]
        [:p.legend
         [:a {:href path :target "_blank"}
-         (h/localize-datetime-full ts locale)]]])))
+         (h/localize-datetime-full ts locale)
+         (if (:fullscreen @local)
+           [:i.fas.fa-compress]
+           [:i.fas.fa-expand])]]])))
 
-(defn carousel [ts linked local-cfg put-fn]
+(defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [ts linked local-cfg put-fn]
-      (when (seq linked)
+    (fn [{:keys [ts filtered local-cfg local put-fn]}]
+      (when (seq filtered)
         (into
-          [:> rrc/Carousel {:showThumbs false
-                            :showStatus (> (count linked) 1)}]
-          (mapv (fn [entry] (image-view entry "?width=600" local-cfg @locale put-fn))
-                linked))))))
+          [:> rrc/Carousel {:showThumbs        false
+                            :showStatus        (> (count filtered) 1)
+                            :useKeyboardArrows true
+                            :transitionTime    250}]
+          (mapv (fn [entry] (image-view
+                              entry "?width=600" local-cfg @locale local put-fn))
+                filtered))))))
 
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."
@@ -47,6 +55,7 @@
         options (subscribe [:options])
         active (reaction (:active @cfg))
         show-pvt? (reaction (:show-pvt @cfg))
+        local (r/atom {})
         get-or-retrieve (u/find-missing-entry entries-map put-fn)]
     (fn thumbnail-render [entry local-cfg put-fn]
       (let [ts (:timestamp entry)
@@ -57,5 +66,9 @@
                        with-imgs
                        (filter (u/pvt-filter @options @entries-map) with-imgs))]
         (when-not entry-active?
-          [:div.thumbnails
-           [carousel ts filtered local-cfg put-fn]])))))
+          [:div.thumbnails {:class (when (:fullscreen @local) "fullscreen")}
+           [carousel {:ts        ts
+                      :filtered  filtered
+                      :local-cfg local-cfg
+                      :local     local
+                      :put-fn    put-fn}]])))))

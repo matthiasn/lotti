@@ -8,11 +8,31 @@
 
   .thumbnails {
     overflow-y: auto;
-    margin: 0 4px;
+    margin: 0;
+    background-color: black;
 
     .carousel .slide img {
       height: 260px;
       width: auto;
+    }
+
+    &.fullscreen {
+      position: fixed;
+      left: 0;
+      top: 0;
+
+      width: 100vw;
+      height: 100vh;
+      z-index: 1111;
+
+      .carousel .slide img {
+        height: 100vh;
+        width: auto;
+      }
+    }
+
+    i {
+      margin-left: 5px;
     }
 
     .carousel {
