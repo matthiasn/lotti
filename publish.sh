@@ -5,7 +5,7 @@ yarn install
 mkdir bin
 rm -rf ./dist
 lein dist
-cp target/meo.jar bin/
+cp -r target/jlink bin/
 
 PLATFORMS=$1
 ELECTRON_BUILDER_COMPRESSION_LEVEL=3

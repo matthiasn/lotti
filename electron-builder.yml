@@ -3,8 +3,7 @@ asar: false
 files:
     - "!**/*"
     - "bin/blink1-${os}*"
-    - "bin/zulu8-${os}_x64/**"
-    - "bin/meo.jar"
+    - "bin/jlink/**"
     - "node_modules/**"
     - "!node_modules/babel-runtime/**"
     - "!node_modules/cldr-data/main/**"

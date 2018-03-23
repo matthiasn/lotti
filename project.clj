@@ -51,7 +51,7 @@
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.0-2"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.191"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.217"]
                                            [reagent "0.8.0-alpha2"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
@@ -71,7 +71,10 @@
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
+            [lein-jlink "0.2.0"]
             [lein-ancient "0.6.15"]]
+
+  :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming" "java.management"]
 
   ;:global-vars {*assert* false}
 
@@ -95,7 +98,7 @@
                                  ["cljs-renderer"]
                                  ["cljs-updater"]
                                  ["sass4clj" "once"]
-                                 ["uberjar"]]}
+                                 ["jlink" "assemble"]]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"

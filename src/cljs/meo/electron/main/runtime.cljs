@@ -16,7 +16,6 @@
         encrypted-path (str user-data "/encrypted")
         info {:platform        platform
               :download-path   download-path
-              :java            "/usr/bin/java"
               :electron-path   (first (.-argv process))
               :node-path       "/usr/local/bin/node"
               :data-path       data-path
@@ -24,7 +23,7 @@
               :encrypted-path  encrypted-path
               :img-path        (str data-path "/images")
               :cache           (str user-data "/data/cache.dat")
-              :jar             (str app-path "/bin/meo.jar")
+              :meo-jlink       (str app-path "/bin/jlink/bin/meo")
               :blink           (str app-path "/bin/blink1-mac-cli")
               :user-data       user-data
               :cwd             cwd

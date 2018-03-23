@@ -42,20 +42,14 @@
   (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn start-jvm [{:keys [current-state]}]
-  (let [{:keys [user-data app-path jar blink data-path java cwd
-                repo-dir]} rt/runtime-info
-        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts" "-jar" jar]
+  (let [{:keys [user-data meo-jlink data-path]} rt/runtime-info
+        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts"]
         opts {:detached false
               :cwd      user-data
               :env      {:PORT      PORT
-                         ;:CACHED_APPSTATE true
                          :DATA_PATH data-path}}
-        service (spawn-process java args opts)
-        std-out (.-stdout service)
-        std-err (.-stderr service)]
+        service (spawn-process meo-jlink args opts)]
     (info "JVM: startup")
-    ;(.on std-out "data" #(info "JVM " (.toString % "utf8")))
-    ;(.on std-err "data" #(error "JVM " (.toString % "utf8")))
     {:new-state (assoc-in current-state [:service] service)}))
 
 (defn start-spotify [_]
@@ -79,7 +73,7 @@
 (defn open-external [{:keys [msg-payload]}]
   (let [url msg-payload
         img-path (:img-path rt/runtime-info)]
-    (when-not (str/includes? url (str "localhost:" (:port rt/runtime-info) "/#"))
+    (when-not (str/includes? url (str "localhost:" (:port rt/runtime-info)))
       (info "Opening" url)
       (.openExternal shell url))
     ; not working with blank spaces, e.g. Library/Application Support/
