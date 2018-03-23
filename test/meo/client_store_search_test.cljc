@@ -38,7 +38,7 @@
         new-state (:new-state (search/update-query-fn
                                 {:current-state current-state
                                  :msg-payload   st/open-tasks-query}))
-        {:keys [send-to-self]} (search/show-more-fn
+        {:keys [send-to-self]} (search/show-more
                                  {:current-state new-state
                                   :msg-payload   {:query-id :query-1}})
         updated-query (second send-to-self)
