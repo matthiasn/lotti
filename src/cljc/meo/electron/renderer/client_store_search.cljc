@@ -179,14 +179,14 @@
     (reset! query-cfg (:query-cfg new-state))
     {:new-state new-state}))
 
-(defn set-dragged-fn
+(defn set-dragged
   "Set actively dragged tab so it's available when dropped onto another element."
   [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:query-cfg :dragged] msg-payload)]
     (reset! query-cfg (:query-cfg new-state))
     {:new-state new-state}))
 
-(defn move-tab-fn
+(defn move-tab
   "Moves query tab from one tab-group to another."
   [{:keys [current-state msg-payload]}]
   (let [dragged (:dragged msg-payload)
@@ -201,7 +201,7 @@
     (reset! query-cfg (:query-cfg new-state))
     {:new-state new-state}))
 
-(defn show-more-fn
+(defn show-more
   "Runs previous query but with more results. Also updates the number to show in
    the UI."
   [{:keys [current-state msg-payload]}]
@@ -210,7 +210,7 @@
         new-query (update-in merged [:n] + 10)]
     {:send-to-self [:search/update new-query]}))
 
-(defn search-refresh-fn
+(defn search-refresh
   "Refreshes client-side state by sending all queries, plus
    the stats and tags."
   [{:keys [current-state msg-meta]}]
@@ -218,6 +218,7 @@
                       (assoc-in [:query-cfg :last-update] {:last-update (st/now)
                                                            :meta        msg-meta})
                       (assoc-in [:query-cfg :last-update-meta] msg-meta))]
+    (info "search-refresh")
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:stats/get2]
@@ -231,8 +232,8 @@
    :search/remove-all       remove-all
    :search/remove-briefings remove-briefing-queries
    :search/close-all        close-all
-   :search/refresh          search-refresh-fn
-   :search/set-dragged      set-dragged-fn
-   :search/move-tab         move-tab-fn
-   :show/more               show-more-fn
+   :search/refresh          search-refresh
+   :search/set-dragged      set-dragged
+   :search/move-tab         move-tab
+   :show/more               show-more
    :linked-filter/set       set-linked-filter})

@@ -133,13 +133,13 @@
     (info vclocks-compared)
     (case vclocks-compared
       :b>a (let [new-state (ga/add-node current-state entry)]
-             (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+             ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
               :emit-msg  [:ft/add entry]})
       :concurrent  (let [with-conflict (assoc-in prev [:conflict] entry)
                          new-state (ga/add-node current-state with-conflict)]
-                     (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
                      ;(append-daily-log cfg entry put-fn)
                      {:new-state new-state
                       :emit-msg  [:ft/add entry]})
