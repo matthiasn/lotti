@@ -80,7 +80,6 @@
   [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
-        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         story (reaction (get-in @query-cfg [:queries @query-id :story]))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id

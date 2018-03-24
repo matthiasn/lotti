@@ -5,12 +5,15 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
+            [electron :refer [remote]]
             [cljs.pprint :as pp]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]))
 
 (def iww-host (.-iwwHOST js/window))
+(def user-data (.getPath (aget remote "app") "userData"))
+(def photos (str user-data "/data/images/"))
 
 (defn image-view
   "Renders image view. Used resized and properly rotated image endpoint
@@ -42,6 +45,8 @@
           [:> rrc/Carousel {:showThumbs        false
                             :showStatus        (> (count filtered) 1)
                             :useKeyboardArrows true
+                            :selectedItem      (:selected @local)
+                            :onChange          #(swap! local assoc-in [:selected] %)
                             :transitionTime    250}]
           (mapv (fn [entry] (image-view
                               entry "?width=600" local-cfg @locale local put-fn))
@@ -55,7 +60,7 @@
         options (subscribe [:options])
         active (reaction (:active @cfg))
         show-pvt? (reaction (:show-pvt @cfg))
-        local (r/atom {})
+        local (r/atom {:selected 0})
         get-or-retrieve (u/find-missing-entry entries-map put-fn)
         escape (fn [ev]
                  (let [key-code (.. ev -keyCode)
@@ -74,7 +79,7 @@
                        with-imgs
                        (filter (u/pvt-filter @options @entries-map) with-imgs))]
         (when-not entry-active?
-          [:div.thumbnails {:class (when (:fullscreen @local) "fullscreen")
+          [:div.thumbnails {:class       (when (:fullscreen @local) "fullscreen")
                             :on-key-down escape}
            [carousel {:ts        ts
                       :filtered  filtered
