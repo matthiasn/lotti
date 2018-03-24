@@ -36,6 +36,20 @@
       cursor: pointer;
     }
 
+    .stars {
+      margin-right: 20px;
+
+      i {
+        margin-left: 3px;
+
+        &.fa-star {
+          &.fas {
+            color: gold;
+          }
+        }
+      }
+    }
+
     .carousel {
 
     }
