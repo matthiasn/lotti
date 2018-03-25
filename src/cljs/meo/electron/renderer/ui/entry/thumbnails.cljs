@@ -67,7 +67,7 @@
                               :onChange          #(swap! local assoc-in [:selected] %)
                               :transitionTime    0}]
             (mapv (fn [entry] (image-view entry local-cfg @locale local put-fn))
-                  (sort-by :timestamp filtered))))))))
+                  filtered)))))))
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."
   [entry local-cfg put-fn]
@@ -84,13 +84,14 @@
                    (if @show-pvt?
                      @with-imgs
                      (filter (u/pvt-filter @options @entries-map) @with-imgs)))
+        sorted (reaction (sort-by :timestamp @filtered))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         meta-key (.-metaKey ev)
                         set-stars (fn [n]
                                     (info :count (count @filtered))
                                     (let [selected (:selected @local)
-                                          current (get (vec @filtered) selected)
+                                          current (get (vec @sorted) selected)
                                           updated (assoc-in current [:stars] n)]
                                       (put-fn [:entry/update updated])))]
                     (info key-code meta-key)
@@ -114,7 +115,7 @@
                           :on-mouse-leave stop-watch}
          ^{:key (str ts (:fullscreen @local))}
          [carousel {:ts        ts
-                    :filtered  @filtered
+                    :filtered  @sorted
                     :local-cfg local-cfg
                     :local     local
                     :put-fn    put-fn}]]))))

@@ -69,7 +69,7 @@
     (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
     {:new-state    new-state
-     :emit-msg     [:cmd/schedule-new {:timeout 2000
+     :emit-msg     [:cmd/schedule-new {:timeout 20
                                        :message [:search/refresh]}]}))
 
 (defn play-audio
