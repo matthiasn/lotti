@@ -94,6 +94,14 @@
   (let [filename (.getName file)
         rel-path (.getPath file)
         exif (extract-exif file)
+        orientation (get exif "Orientation")
+        orientation (cond (s/includes? orientation "(Rotate 90 CW)")
+                          :rotate-90-cw
+                          (s/includes? orientation "(Rotate 180)")
+                          :rotate-180
+                          (s/includes? orientation "(Rotate 270 CW)")
+                          :rotate-270-cw
+                          :else :none)
         timestamp (or
                     (extract-gps-ts (str (get exif "GPS Date Stamp") " "
                                          (get exif "GPS Time-Stamp")) filename)
@@ -102,13 +110,15 @@
                     (extract-ts (str (get exif "Date/Time Original")) filename)
                     (.lastModified file))
         target-filename (str timestamp "-" filename)]
-    (fs/rename rel-path (str fu/img-path target-filename))
+    (fs/copy rel-path (str fu/img-path target-filename))
     {:timestamp timestamp
      :latitude  (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
      :longitude (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
      :img-file  target-filename
-     :md        "some #photo"
-     :tags      #{"#photo" "#import"}}))
+     :img       {:orientation orientation}
+     :md        ""
+     :tags      #{"#import"}
+     :perm-tags #{"#photo"}}))
 
 (defn import-video
   "Takes a video file (as a java.io.InputStream or java.io.File) and creates
@@ -156,9 +166,26 @@
                (when file-info
                  (put-fn (with-meta [:entry/import file-info] msg-meta))))
              (catch Exception ex (error (str "Error while importing "
-                                                 filename) ex)))))
+                                             filename) ex)))))
     {:emit-msg [:cmd/schedule-new
                 {:timeout 3000 :message (with-meta [:search/refresh] msg-meta)}]}))
+
+(defn import-photos
+  "Imports photos selected in UI. Expects message payload to be a vector with
+   full file paths."
+  [{:keys [put-fn msg-payload msg-meta]}]
+  (doseq [filepath msg-payload]
+    (let [file (io/file filepath)
+          filename (.getName file)]
+      (info "Importing " filename)
+      (try (let [file-info (import-image file)]
+             (when file-info
+               (put-fn (with-meta [:entry/import file-info] msg-meta))))
+           (catch Exception ex (error (str "Error while importing "
+                                           filename) ex)))))
+  {:emit-msg [:cmd/schedule-new
+              {:message (with-meta [:search/refresh] msg-meta)
+               :timeout 3000}]})
 
 (defn update-audio-tag
   [entry]

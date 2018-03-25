@@ -1,7 +1,6 @@
 (ns meo.electron.main.menu
   (:require [taoensso.timbre :as timbre :refer-macros [info]]
-            [electron :refer [app Menu]]
-            [matthiasn.systems-toolbox.component :as stc]
+            [electron :refer [app Menu dialog]]
             [meo.electron.main.runtime :as rt]))
 
 (defn app-menu [put-fn]
@@ -21,6 +20,17 @@
                 :accelerator "CmdOrCtrl+Q"
                 :click       #(put-fn [:app/shutdown])}]}))
 
+(defn import-dialog [put-fn]
+  (let [options (clj->js {:properties  ["openFile" "multiSelections"]
+                          :buttonLabel "Import"
+                          :filters     [{:name       "Images"
+                                         :extensions ["jpg" "png"]}]})
+        callback (fn [res]
+                   (let [files (js->clj res)]
+                     (info files)
+                     (put-fn [:import/photos files])))]
+    (.showOpenDialog dialog options callback)))
+
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_entry()"}])
         new-story #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_story()"}])
@@ -36,7 +46,7 @@
                 :click       #(put-fn [:import/listen])}
                {:label       "Import"
                 :accelerator "CmdOrCtrl+I"
-                :click       #(put-fn [:import/photos])}]}))
+                :click       #(import-dialog put-fn)}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 

@@ -7,7 +7,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :handler-map {:import/photos     im/import-media
+   :handler-map {:import/photos     im/import-photos
                  :import/screenshot is/import-screenshot
                  :import/movie      im/import-movie
                  :import/spotify    iss/import-spotify

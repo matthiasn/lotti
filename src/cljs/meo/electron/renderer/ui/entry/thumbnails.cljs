@@ -1,14 +1,11 @@
 (ns meo.electron.renderer.ui.entry.thumbnails
-  (:require [meo.electron.renderer.ui.media :as m]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [react-responsive-carousel :as rrc]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer [info error]]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
-            [cljs.pprint :as pp]
-            [meo.common.utils.parse :as up]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
             [meo.electron.renderer.ui.entry.utils :as eu]))
