@@ -72,7 +72,7 @@
     margin-top: -13px;
     font-size: 18px; }
   .carousel .thumbs-wrapper {
-    margin: 20px;
+    margin: 16px;
     overflow: hidden; }
   .carousel .thumbs {
     -webkit-transition: all 0.15s ease-in;
@@ -96,13 +96,14 @@
     transition: border 0.15s ease-in;
     display: inline-block;
     width: 80px;
+    max-height: 80px;
     margin-right: 6px;
     white-space: nowrap;
     overflow: hidden;
-    border: 3px solid #fff;
+    border: 3px solid #444;
     padding: 2px; }
     .carousel .thumb.selected, .carousel .thumb:hover {
-      border: 3px solid #333;
+      border: 3px solid #fff;
       padding: 2px; }
     .carousel .thumb img {
       vertical-align: top; }
