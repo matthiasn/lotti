@@ -6,4 +6,4 @@ install:
   - npm install
 script: lein dist
 jdk:
-  - oraclejdk8
+  - oraclejdk9
