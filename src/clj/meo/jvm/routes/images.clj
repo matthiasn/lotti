@@ -7,6 +7,7 @@
             [image-resizer.resize :refer :all]
             [image-resizer.scale-methods :refer :all]
             [image-resizer.rotate :refer :all]
+            [image-resizer.util :refer :all]
             [meo.jvm.imports.media :as im]
             [clojure.string :as s]
             [meo.jvm.file-utils :as fu]))
@@ -23,11 +24,7 @@
                           (rotate-180-counter-clockwise-fn)
                           (s/includes? orientation "(Rotate 270 CW)")
                           (rotate-90-counter-clockwise-fn)
-                          :else identity)
-          params (:params r)
-          width (Integer/parseInt (or (:width params) "1024"))
-          height (Integer/parseInt (or (:height params) "1024"))]
-      (-> file
+                          :else buffered-image)]
+      (-> (buffered-image file)
           (rotate-fn)
-          ;((resize-fn width height speed))
           (as-stream-by-mime-type "image/jpeg")))))

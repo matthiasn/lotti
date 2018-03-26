@@ -64,6 +64,7 @@
                               :showStatus        (> (count filtered) 1)
                               :useKeyboardArrows fullscreen
                               :selectedItem      (:selected @local)
+                              :showIndicators    false
                               :onChange          #(swap! local assoc-in [:selected] %)
                               :transitionTime    0}]
             (mapv (fn [entry] (image-view entry local-cfg @locale local put-fn))

@@ -95,8 +95,6 @@
     -o-transition: border 0.15s ease-in;
     transition: border 0.15s ease-in;
     display: inline-block;
-    width: 80px;
-    max-height: 80px;
     margin-right: 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -106,7 +104,11 @@
       border: 3px solid #fff;
       padding: 2px; }
     .carousel .thumb img {
-      vertical-align: top; }
+      vertical-align: center;
+      object-fit: cover;
+      width: 80px;
+      height: 80px;
+    }
   .carousel.carousel-slider {
     position: relative;
     margin: 0;
@@ -183,7 +185,7 @@
       -o-transition: all 0.5s ease-in-out;
       transition: all 0.5s ease-in-out;
       position: absolute;
-      bottom: 40px;
+      bottom: 10px;
       left: 50%;
       margin-left: -45%;
       width: 90%;
@@ -239,7 +241,8 @@
     padding: 5px;
     font-size: 10px;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.9);
-    color: #fff; }
+    color: #ccc;
+  }
   .carousel:hover .slide .legend {
     opacity: 0.6; }
 
