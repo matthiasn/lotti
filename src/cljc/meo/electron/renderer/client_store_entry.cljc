@@ -60,7 +60,9 @@
   [{:keys [current-state msg-payload msg-meta]}]
   (let [ts (:timestamp msg-payload)
         curr-local (get-in current-state [:new-entries ts])
-        new-state (if (= (:md curr-local) (:md msg-payload))
+        new-state (if (or (= (:md curr-local)
+                             (:md msg-payload))
+                          (not curr-local))
                     (-> current-state
                         (update-in [:new-entries] dissoc ts)
                         (assoc-in [:busy-status :busy] false)
