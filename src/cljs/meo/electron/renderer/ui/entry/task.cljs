@@ -27,7 +27,9 @@
                  (let [updated (update-in entry [:task :on-hold] not)]
                    (put-fn [:entry/update updated]))))]
     (fn [entry _local-cfg put-fn edit-mode?]
-      (when (and (contains? (:tags entry) "#task") @planning-mode)
+      (when (and (or (contains? (:perm-tags entry) "#task")
+                     (contains? (:tags entry) "#task"))
+                 @planning-mode)
         (when (and edit-mode? (not (:task entry)))
           (let [d (* 24 60 60 1000)
                 now (st/now)

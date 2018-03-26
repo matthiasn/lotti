@@ -192,6 +192,8 @@
         story (:primary-story entry)
         create-linked-entry (h/new-entry-fn put-fn {:linked-entries #{ts}
                                                     :primary-story  story
+                                                    :starred        true
+                                                    :perm-tags      #{"#task"}
                                                     :linked-stories #{story}} nil)
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry-fn put-fn
