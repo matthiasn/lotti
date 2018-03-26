@@ -6,6 +6,7 @@ mkdir bin
 rm -rf ./dist
 lein dist
 cp -r target/jlink bin/
+chmod -R +w bin/
 
 PLATFORMS=$1
 ELECTRON_BUILDER_COMPRESSION_LEVEL=3

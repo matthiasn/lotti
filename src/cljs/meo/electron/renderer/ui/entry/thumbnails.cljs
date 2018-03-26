@@ -2,7 +2,7 @@
   (:require [re-frame.core :refer [subscribe]]
             [react-responsive-carousel :as rrc]
             [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer [info error]]
+            [taoensso.timbre :refer [info error debug]]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
@@ -95,7 +95,7 @@
                                           current (get (vec @sorted) selected)
                                           updated (assoc-in current [:stars] n)]
                                       (put-fn [:entry/update updated])))]
-                    (info key-code meta-key)
+                    (debug key-code meta-key)
                     (when (= key-code 27)
                       (swap! local assoc-in [:fullscreen] false))
                     (when (and meta-key (= key-code 70))
