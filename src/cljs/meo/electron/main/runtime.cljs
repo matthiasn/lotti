@@ -23,7 +23,8 @@
               :encrypted-path  encrypted-path
               :img-path        (str data-path "/images")
               :cache           (str user-data "/data/cache.dat")
-              :meo-jlink       (str app-path "/bin/jlink/bin/meo")
+              :java            (str app-path "/bin/jlink/bin/java")
+              :jar             (str app-path "/bin/jlink/meo.jar")
               :blink           (str app-path "/bin/blink1-mac-cli")
               :user-data       user-data
               :cwd             cwd

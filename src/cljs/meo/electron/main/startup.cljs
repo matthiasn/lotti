@@ -42,13 +42,14 @@
   (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn start-jvm [{:keys [current-state]}]
-  (let [{:keys [user-data meo-jlink data-path]} rt/runtime-info
-        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts"]
+  (let [{:keys [user-data java jar data-path]} rt/runtime-info
+        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts"
+              "-Xlog:gc:/tmp/meo-gc.log" "-jar" jar]
         opts {:detached false
               :cwd      user-data
               :env      {:PORT      PORT
                          :DATA_PATH data-path}}
-        service (spawn-process meo-jlink args opts)]
+        service (spawn-process java args opts)]
     (info "JVM: startup")
     {:new-state (assoc-in current-state [:service] service)}))
 
