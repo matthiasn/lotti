@@ -34,7 +34,7 @@
          [star 5 stars]]))))
 
 (defn image-view
-  "Renders image view. Used resized and properly rotated image endpoint
+  "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
   [entry local-cfg locale local put-fn]
   (when-let [file (:img-file entry)]
@@ -59,20 +59,25 @@
         [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
 
 (defn carousel [_]
-  (let [locale (subscribe [:locale])]
+  (let [locale (subscribe [:locale])
+        carousel (r/adapt-react-class rrc/Carousel)]
     (fn [{:keys [ts filtered local-cfg local put-fn]}]
-      (let [fullscreen (:fullscreen @local)]
+      (let [fullscreen (:fullscreen @local)
+            locale @locale]
         (when (seq filtered)
-          (into
-            [:> rrc/Carousel {:showThumbs        fullscreen
-                              :showStatus        (> (count filtered) 1)
-                              :useKeyboardArrows fullscreen
-                              :selectedItem      (:selected @local)
-                              :showIndicators    false
-                              :onChange          #(swap! local assoc-in [:selected] %)
-                              :transitionTime    0}]
-            (mapv (fn [entry] (image-view entry local-cfg @locale local put-fn))
-                  filtered)))))))
+          [carousel
+           {:showThumbs        fullscreen
+            :infiniteLoop      true
+            :showStatus        (> (count filtered) 1)
+            :useKeyboardArrows fullscreen
+            :showIndicators    false
+            ;:selectedItem      (:selected @local)
+            ;:onChange          #(swap! local assoc-in [:selected] %)
+            :transitionTime    0}
+           (for [entry filtered]
+             ^{:key ts}
+             [image-view entry local-cfg locale local put-fn])])))))
+
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."
   [entry local-cfg put-fn]
@@ -83,9 +88,9 @@
         local (r/atom {:selected 0})
         get-or-retrieve (u/find-missing-entry entries-map put-fn)
         linked-comments-set (reaction
-                             (set/union
-                               (set (:linked-entries-list entry))
-                               (set (:comments entry))))
+                              (set/union
+                                (set (:linked-entries-list entry))
+                                (set (:comments entry))))
         with-imgs (reaction (filter :img-file
                                     (map get-or-retrieve @linked-comments-set)))
         filtered (reaction

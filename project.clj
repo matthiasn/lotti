@@ -45,7 +45,7 @@
   :uberjar-name "meo.jar"
 
   :main meo.jvm.core
-  :jvm-opts ["-Xlog:gc:/tmp/meoDev-gc.log"]
+  :jvm-opts ["-Xloggc:/tmp/meoDev-gc.log"]
 
   :profiles {:uberjar      {:aot :all}
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
