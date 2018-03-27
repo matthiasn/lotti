@@ -6,9 +6,11 @@
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
+            [markdown.core :as md]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [clojure.set :as set]))
 
 (def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
@@ -42,17 +44,19 @@
                     path)
           ts (:timestamp entry)
           external (str photos file)
+          html (md/md->html (:md entry))
           fullscreen (fn [ev] (swap! local update-in [:fullscreen] not))]
       [:div
        [:img {:src resized}]
-       [:p.legend
-        [stars-view ts put-fn]
+       [:div.legend
         (h/localize-datetime-full ts locale)
+        [stars-view ts put-fn]
         [:span {:on-click fullscreen}
          (if (:fullscreen @local)
            [:i.fas.fa-compress]
            [:i.fas.fa-expand])]
-        [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]])))
+        [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]
+        [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
@@ -78,9 +82,12 @@
         show-pvt? (reaction (:show-pvt @cfg))
         local (r/atom {:selected 0})
         get-or-retrieve (u/find-missing-entry entries-map put-fn)
-        linked-entries-set (reaction (set (:linked-entries-list entry)))
+        linked-comments-set (reaction
+                             (set/union
+                               (set (:linked-entries-list entry))
+                               (set (:comments entry))))
         with-imgs (reaction (filter :img-file
-                                    (map get-or-retrieve @linked-entries-set)))
+                                    (map get-or-retrieve @linked-comments-set)))
         filtered (reaction
                    (if @show-pvt?
                      @with-imgs

@@ -50,7 +50,7 @@
 
 (defn localize-datetime-full [s locale]
   (when-let [locale (get locales locale)]
-    (.formatDate locale (.toDate (moment. s)) (clj->js {:datetime "full"}))))
+    (.formatDate locale (.toDate (moment. s)) (clj->js {:skeleton "yMMMEdHm"}))))
 
 (defn new-entry-fn
   "Create a new, empty entry. The opts map is merged last with the generated
