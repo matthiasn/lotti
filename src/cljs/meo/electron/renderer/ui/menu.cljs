@@ -34,9 +34,9 @@
    ;{:option :hide-hashtags :cls "fa-hashtag"}
    ;{:option :single-column :cls "fa-columns"}
    ;{:option :thumbnails :cls "fa-images"}
-   {:option :dashboard-banner :cls "fa-chart-line"}
    ;{:option :sort-asc :cls " fa-sort-asc"}
-   {:option :app-screenshot :cls "fa-window-minimize"}])
+   ;{:option :app-screenshot :cls "fa-window-minimize"}
+   {:option :dashboard-banner :cls "fa-chart-line"}])
 
 (defn change-language [cc]
   (let [spellcheck-handler (.-spellCheckHandler js/window)]
@@ -72,15 +72,16 @@
                      (if (:ws-qr-code @cfg)
                        (put-fn [:sync/stop-server])
                        (put-fn [:sync/start-server])))
-        screenshot #(put-fn [:screenshot/take])]
+        ;screenshot #(put-fn [:screenshot/take])
+        ]
     (fn [put-fn]
       [:div
        (for [option (if @planning-mode all-options limited-options)]
          ^{:key (str "toggle" (:cls option))}
          [toggle-option-view option put-fn])
-       [:i.far.fa-desktop.toggle.inactive
+       #_[:i.far.fa-desktop.toggle.inactive
         {:on-click screenshot}]
-       [:i.far.fa-qrcode.toggle
+       #_[:i.far.fa-qrcode.toggle
         {:on-click toggle-qr-code
          :class    (when-not (:qr-code @cfg) "inactive")}]
        [:i.far.fa-qrcode.toggle

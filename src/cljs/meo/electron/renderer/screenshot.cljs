@@ -13,15 +13,15 @@
         filename (str screenshot-ts ".png")
         entry (merge {:img-file filename} msg-payload)
         new-fn (h/new-entry-fn put-fn entry nil)]
-    (js/setTimeout new-fn 2500)
+    (js/setTimeout new-fn 500)
     (info "taking screenshot" entry)
     (when-not (:app-screenshot cfg)
-      (put-fn [:window/hide])
+      ;(put-fn [:window/hide])
       (put-fn [:cmd/schedule-new {:message [:window/show]
-                                  :timeout 3000}]))
+                                  :timeout 1000}]))
     {:emit-msg [:cmd/schedule-new
                 {:message [:import/screenshot {:filename filename}]
-                 :timeout 2000}]}))
+                 :timeout 10}]}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id

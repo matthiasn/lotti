@@ -1,6 +1,6 @@
 (ns meo.electron.main.menu
   (:require [taoensso.timbre :as timbre :refer-macros [info]]
-            [electron :refer [app Menu dialog]]
+            [electron :refer [app Menu dialog globalShortcut]]
             [meo.electron.main.runtime :as rt]))
 
 (defn app-menu [put-fn]
@@ -131,7 +131,7 @@
   (let [screenshot #(put-fn [:screenshot/take])]
     {:label   "Capture"
      :submenu [{:label       "New Screenshot"
-                :accelerator "CmdOrCtrl+P"
+                :accelerator "Command+Shift+3"
                 :click       screenshot}]}))
 
 (defn state-fn [put-fn]
@@ -144,9 +144,11 @@
                   (view-menu put-fn)
                   (capture-menu put-fn)]
         menu (.buildFromTemplate Menu (clj->js menu-tpl))
-        activate #(put-fn [:window/activate])]
+        activate #(put-fn [:window/activate])
+        screenshot #(put-fn [:screenshot/take])]
     (info "Starting Menu Component")
     (.on app "activate" activate)
+    (.register globalShortcut "Command+Shift+3" screenshot)
     (.setApplicationMenu Menu menu))
   {:state (atom {})})
 
