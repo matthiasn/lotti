@@ -2,7 +2,8 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [moment]
             [re-frame.core :refer [subscribe]]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [clojure.set :as set]))
 
 (defn task-details [entry local-cfg put-fn _edit-mode?]
   (let [planning-mode (subscribe [:planning-mode])
@@ -17,10 +18,16 @@
         done (fn [entry]
                (fn [_ev]
                  (let [completion-ts (.format (moment))
-                       updated (-> entry
-                                   (assoc-in [:task :completion-ts] completion-ts)
-                                   (update-in [:task :done] not))]
-                   (put-fn [:entry/update updated])
+                       entry (-> entry
+                                 (assoc-in [:task :completion-ts] completion-ts)
+                                 (update-in [:task :done] not))
+                       set-fn (if (get-in entry [:task :done])
+                                set/union
+                                set/difference)
+                       entry (-> entry
+                                 (update-in [:perm-tags] set-fn #{"#done"})
+                                 (update-in [:tags] set-fn #{"#done"}))]
+                   (put-fn [:entry/update entry])
                    (close-tab))))
         hold (fn [entry]
                (fn [_ev]
