@@ -55,13 +55,13 @@
         [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]
         [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
 
-(defn thumb-view [entry local]
+(defn thumb-view [entry selected local]
   (when-let [file (:img-file entry)]
     (let [resized (str "http://" iww-host "/photos2/" file "?width=256")
           click (fn [_] (swap! local assoc-in [:selected] entry))]
       [:li.thumb
        {:on-click click
-        :class    (when (= entry (:selected @local)) "selected")}
+        :class    (when (= entry selected) "selected")}
        [:img {:src resized}]])))
 
 (defn carousel [_]
@@ -85,7 +85,7 @@
                [:ul
                 (for [entry filtered]
                   ^{:key (:timestamp entry)}
-                  [thumb-view entry local])]]])])))))
+                  [thumb-view entry selected local])]]])])))))
 
 (defn thumbnails
   "Renders thumbnails of photos in linked entries. Respects private entries."
@@ -109,11 +109,14 @@
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
         avl-sorted (reaction (into (avl/sorted-set-by cmp) (filter identity @filtered)))
         sorted (reaction (sort-by :timestamp @filtered))
-        selected (reaction (:selected @local))
+        selected (reaction (or (:selected @local)
+                               (first @filtered)))
         next-click #(let [slide (avl/nearest @avl-sorted > @selected)]
-                      (swap! local assoc-in [:selected] slide))
+                      (swap! local assoc-in [:selected] (or slide
+                                                            (first @filtered))))
         prev-click #(let [slide (avl/nearest @avl-sorted < @selected)]
-                      (swap! local assoc-in [:selected] slide))
+                      (swap! local assoc-in [:selected] (or slide
+                                                            (first @filtered))))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         meta-key (.-metaKey ev)
