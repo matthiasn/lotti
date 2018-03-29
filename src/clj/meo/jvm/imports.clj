@@ -14,4 +14,5 @@
                  :import/git        g/import-from-git
                  :spotify/play      iss/spotify-play
                  :spotify/pause     iss/spotify-pause
+                 :photos/gen-cache  im/gen-cache
                  :import/flight     fl/import-flight}})

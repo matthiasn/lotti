@@ -11,6 +11,7 @@
             [clojure.java.io :as io]
             [taoensso.timbre :refer [info error warn]]
             [meo.jvm.files :as f]
+            [meo.jvm.utils.images :as img]
             [meo.common.specs :as specs]
             [cheshire.core :as cc]
             [clj-http.client :as hc])
@@ -72,20 +73,6 @@
                (re-matches #"\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}" ts))
       (add-filename-offset (c/to-long (tf/parse f ts)) filename))))
 
-(defn extract-from-tag
-  "Creates map for a single Exif directory.
-  Borrowed from: https://github.com/joshuamiller/exif-processor"
-  [tag]
-  (into {} (map #(hash-map (.getTagName %) (.getDescription %)) tag)))
-
-(defn extract-exif
-  [file]
-  (let [metadata (ImageMetadataReader/readMetadata file)
-        exif-directories (.getDirectories metadata)
-        tags (map #(.getTags %) exif-directories)
-        exif (into {} (map extract-from-tag tags))]
-    exif))
-
 (defn import-image
   "Takes an image file (as a java.io.InputStream or java.io.File) and extracts
    exif information into a map.
@@ -93,7 +80,7 @@
   [file]
   (let [filename (.getName file)
         rel-path (.getPath file)
-        exif (extract-exif file)
+        exif (img/extract-exif file)
         orientation (get exif "Orientation")
         orientation (cond (s/includes? orientation "(Rotate 90 CW)")
                           :rotate-90-cw
@@ -181,11 +168,25 @@
       (try (let [file-info (import-image file)]
              (when file-info
                (put-fn (with-meta [:entry/import file-info] msg-meta))))
+           (img/save-rotated file 256)
+           (img/save-rotated file 512)
+           (img/save-rotated file 2048)
            (catch Exception ex (error (str "Error while importing "
                                            filename) ex)))))
   {:emit-msg [:cmd/schedule-new
               {:message (with-meta [:search/refresh] msg-meta)
                :timeout 3000}]})
+
+(defn gen-cache [{:keys []}]
+  (info :gen-cache)
+  (doseq [file (file-seq (io/file fu/img-path))]
+    (let [filename (.getName file)]
+      (info "Generating thumbnails " filename)
+      (try (img/save-rotated file 256)
+           (img/save-rotated file 512)
+           (img/save-rotated file 2048)
+           (catch Exception ex (warn "Creating thumbnails" filename ex)))))
+  {})
 
 (defn update-audio-tag
   [entry]

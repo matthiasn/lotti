@@ -248,5 +248,8 @@
                [custom-fields-list local])]
             [custom-field-cfg local]
             [:div.third-col]
-            [locale put-fn]]
+            [locale put-fn]
+            [:div
+             [:button {:on-click #(put-fn [:photos/gen-cache])}
+              "regenerate cache"]]]
            [:div.footer [stats/stats-text]]]]]))))

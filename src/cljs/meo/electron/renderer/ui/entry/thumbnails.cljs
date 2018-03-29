@@ -6,6 +6,7 @@
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
+            [cljs.nodejs :as nodejs :refer [process]]
             [markdown.core :as md]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
@@ -14,7 +15,11 @@
 
 (def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
-(def photos (str user-data "/data/images/"))
+(def rp (.-resourcesPath process))
+(def repo-dir (s/includes? (s/lower-case rp) "electron"))
+(def photos (str (if repo-dir ".." user-data) "/data/images/"))
+(def thumbs-256 (str (if repo-dir ".." user-data) "/data/thumbs/256/"))
+(def thumbs-2048 (str (if repo-dir ".." user-data) "/data/thumbs/2048/"))
 
 (defn stars-view [ts put-fn]
   (let [{:keys [entry]} (eu/entry-reaction ts)
@@ -38,13 +43,13 @@
    when JPEG file requested."
   [entry local-cfg locale local put-fn]
   (when-let [file (:img-file entry)]
-    (let [resized (str "http://" iww-host "/photos2/" file "?width=2048")
+    (let [resized-rotated (str thumbs-2048 file)
           ts (:timestamp entry)
           external (str photos file)
           html (md/md->html (:md entry))
           fullscreen (fn [ev] (swap! local update-in [:fullscreen] not))]
       [:div.slide
-       [:img {:src resized}]
+       [:img {:src resized-rotated}]
        [:div.legend
         (h/localize-datetime-full ts locale)
         [stars-view ts put-fn]
@@ -57,12 +62,12 @@
 
 (defn thumb-view [entry selected local]
   (when-let [file (:img-file entry)]
-    (let [resized (str "http://" iww-host "/photos2/" file "?width=256")
+    (let [thumb (str thumbs-256 file)
           click (fn [_] (swap! local assoc-in [:selected] entry))]
       [:li.thumb
        {:on-click click
         :class    (when (= entry selected) "selected")}
-       [:img {:src resized}]])))
+       [:img {:src thumb}]])))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
@@ -103,20 +108,23 @@
         with-imgs (reaction (filter :img-file
                                     (map get-or-retrieve @linked-comments-set)))
         filtered (reaction
-                   (if @show-pvt?
-                     @with-imgs
-                     (filter (u/pvt-filter @options @entries-map) @with-imgs)))
+                   (filter identity
+                           (if @show-pvt?
+                             @with-imgs
+                             (filter (u/pvt-filter @options @entries-map)
+                                     @with-imgs))))
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
-        avl-sorted (reaction (into (avl/sorted-set-by cmp) (filter identity @filtered)))
+        avl-sorted (reaction (into (avl/sorted-set-by cmp) @filtered))
         sorted (reaction (sort-by :timestamp @filtered))
         selected (reaction (or (:selected @local)
-                               (first @filtered)))
+                               (first @sorted)))
         next-click #(let [slide (avl/nearest @avl-sorted > @selected)]
                       (swap! local assoc-in [:selected] (or slide
-                                                            (first @filtered))))
+                                                            (first @sorted))))
         prev-click #(let [slide (avl/nearest @avl-sorted < @selected)]
+                      (info slide)
                       (swap! local assoc-in [:selected] (or slide
-                                                            (last @filtered))))
+                                                            (last @sorted))))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         meta-key (.-metaKey ev)
@@ -141,6 +149,7 @@
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
     (fn thumbnail-render [entry local-cfg put-fn]
+      (info :first (first @filtered))
       (let [ts (:timestamp entry)]
         [:div.thumbnails {:class          (when (:fullscreen @local) "fullscreen")
                           :on-mouse-enter start-watch

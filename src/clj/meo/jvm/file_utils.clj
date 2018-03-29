@@ -13,6 +13,10 @@
 (def clucy-path (str data-path "/clucy/"))
 (def export-path (str data-path "/export/"))
 (def img-path (str data-path "/images/"))
+(def thumbs-path (str data-path "/thumbs/"))
+(def thumbs-256 (str data-path "/thumbs/256/"))
+(def thumbs-512 (str data-path "/thumbs/512/"))
+(def thumbs-2048 (str data-path "/thumbs/2048/"))
 (def repos-path (str data-path "/repos.edn"))
 
 (defn load-repos []
@@ -29,6 +33,10 @@
     (fs/mkdirs export-path)
     (fs/mkdirs trash-path)
     (fs/mkdirs img-path)
+    (fs/mkdirs thumbs-path)
+    (fs/mkdirs thumbs-256)
+    (fs/mkdirs thumbs-512)
+    (fs/mkdirs thumbs-2048)
     {:data-path       data-path
      :app-cache       app-cache-file
      :backup-path     bak-path
