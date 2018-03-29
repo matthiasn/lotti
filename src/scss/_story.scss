@@ -49,6 +49,10 @@
   i {
     margin-right: 3px;
     opacity: 0.5;
+
+    &.show {
+      cursor: none;
+    }
   }
 
   &:hover {

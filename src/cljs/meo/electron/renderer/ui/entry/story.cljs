@@ -2,6 +2,7 @@
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
+            [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.helpers :as h]))
 
 (defn editable-field [on-input-fn on-keydown-fn text]
@@ -112,13 +113,15 @@
                       (= (:entry-type @entry) :story))
           [:div.story-select
            [:div.story
-            [:i.fal.fa-book {:on-click #(swap! local update-in [:show] not)}]
+            [:i.fal.fa-book {:on-click #(swap! local update-in [:show] not)
+                             :class (when (:show @local) "show")}]
             @story-name]
            (when (:show @local)
-             [:div.story-search
+             [:div.story-search {:on-mouse-leave #(swap! local assoc-in [:show] false)}
               [:div
                [:input {:type      :text
                         :on-change input-fn
+                        :auto-focus true
                         :value     (:search @local)}]
                [:i.fal.fa-search]]
               [:table
