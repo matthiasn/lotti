@@ -116,7 +116,7 @@
                                                             (first @filtered))))
         prev-click #(let [slide (avl/nearest @avl-sorted < @selected)]
                       (swap! local assoc-in [:selected] (or slide
-                                                            (first @filtered))))
+                                                            (last @filtered))))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         meta-key (.-metaKey ev)
