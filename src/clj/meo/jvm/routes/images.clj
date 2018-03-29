@@ -11,7 +11,7 @@
             [ring.middleware.params :as params]
             [meo.jvm.imports.media :as im]
             [clojure.string :as s]
-            [taoensso.timbre :refer [info error warn]]
+            [taoensso.timbre :refer [info error warn debug]]
             [meo.jvm.file-utils :as fu]))
 
 (def img-resized-route
