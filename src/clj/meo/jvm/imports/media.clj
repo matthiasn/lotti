@@ -177,15 +177,21 @@
               {:message (with-meta [:search/refresh] msg-meta)
                :timeout 3000}]})
 
-(defn gen-cache [{:keys []}]
+(defn gen-cache [{:keys [put-fn]}]
   (info :gen-cache)
-  (doseq [file (file-seq (io/file fu/img-path))]
-    (let [filename (.getName file)]
-      (info "Generating thumbnails " filename)
-      (try (img/save-rotated file 256)
-           (img/save-rotated file 512)
-           (img/save-rotated file 2048)
-           (catch Exception ex (warn "Creating thumbnails" filename ex)))))
+  (let [files (file-seq (io/file fu/img-path))
+        done (atom 0)
+        n (count files)]
+    (future
+      (doseq [file files]
+        (let [filename (.getName file)]
+          (try (img/save-rotated file 256)
+               (img/save-rotated file 512)
+               (img/save-rotated file 2048)
+               (swap! done inc)
+               (info "generated thumbnails" @done "of" n "-" filename)
+               ;(put-fn [:photos/gen-cache-progress {:n n :done @done}])
+               (catch Exception ex (warn "Creating thumbnails" filename ex)))))))
   {})
 
 (defn update-audio-tag

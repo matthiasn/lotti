@@ -33,7 +33,7 @@
                      (s/includes? orientation "(Rotate 270 CW)")
                      (rotate-90-counter-clockwise-fn)
                      :else buffered-image)
-        resize (resize-fn max-w-h max-w-h speed)]
+        resize (resize-fn max-w-h max-w-h quality)]
     (-> (buffered-image file)
         (rotate)
         (resize))))
