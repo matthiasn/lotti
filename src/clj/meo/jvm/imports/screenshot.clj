@@ -2,11 +2,13 @@
   (:require [clojure.pprint :as pp]
             [me.raynes.conch :refer [programs let-programs]]
             [taoensso.timbre :refer [info]]
-            [meo.jvm.file-utils :as fu]))
+            [meo.jvm.file-utils :as fu]
+            [clojure.java.io :as io]
+            [meo.jvm.utils.images :as img]))
 
 (programs scrot)
 
-(defn import-screenshot [{:keys [put-fn msg-meta msg-payload]}]
+(defn import-screenshot [{:keys [msg-meta msg-payload]}]
   (let [filename (str fu/img-path (:filename msg-payload))
         os (System/getProperty "os.name")]
     (info "importing screenshot" filename)
@@ -14,6 +16,10 @@
       (let-programs [screencapture "/usr/sbin/screencapture"]
                     (screencapture filename)))
     (when (= os "Linux")
-      (scrot filename)))
+      (scrot filename))
+    (let [file (io/file filename)]
+      (img/save-rotated file 256)
+      (img/save-rotated file 512)
+      (img/save-rotated file 2048)))
   {:emit-msg [:cmd/schedule-new
               {:timeout 3000 :message (with-meta [:search/refresh] msg-meta)}]})

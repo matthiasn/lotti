@@ -178,10 +178,10 @@
                :timeout 3000}]})
 
 (defn gen-cache [{:keys [put-fn]}]
-  (info :gen-cache)
   (let [files (file-seq (io/file fu/img-path))
         done (atom 0)
         n (count files)]
+    (info "generating thumbnails for" n "images")
     (future
       (doseq [file files]
         (let [filename (.getName file)]
