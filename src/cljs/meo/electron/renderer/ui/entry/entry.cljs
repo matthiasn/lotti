@@ -13,7 +13,7 @@
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.electron.renderer.ui.entry.thumbnails :as t]
+            [meo.electron.renderer.ui.entry.carousel :as carousel]
             [meo.common.utils.misc :as u]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.draft :as d]
@@ -185,7 +185,7 @@
          (if (contains? (:tags @entry) "#briefing")
            [briefing ts put-fn local-cfg]
            [journal-entry ts put-fn local-cfg])
-         (when @thumbnails? [t/thumbnails @entry local-cfg put-fn])
+         (when @thumbnails? [carousel/gallery @entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

@@ -16,6 +16,20 @@
       width: auto;
     }
 
+    .stars-filter {
+      position: absolute;
+      top: 50px;
+      left: 20px;
+
+      line-height: 1.5em;
+
+      .fa-star {
+        &.fas {
+          color: gold;
+        }
+      }
+    }
+
     &.fullscreen {
       position: fixed;
       left: 0;

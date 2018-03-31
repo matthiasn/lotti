@@ -1,4 +1,4 @@
-(ns meo.electron.renderer.ui.entry.thumbnails
+(ns meo.electron.renderer.ui.entry.carousel
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer [info error debug]]
@@ -6,7 +6,7 @@
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
-            [cljs.nodejs :as nodejs :refer [process]]
+            [cljs.nodejs :refer [process]]
             [markdown.core :as md]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
@@ -41,7 +41,7 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry local-cfg locale local put-fn]
+  [entry locale local put-fn]
   (when-let [file (:img-file entry)]
     (let [resized-rotated (str thumbs-2048 file)
           ts (:timestamp entry)
@@ -69,37 +69,74 @@
         :class    (when (= entry selected) "selected")}
        [:img {:src thumb}]])))
 
+(defn stars-filter [local]
+  (let [selected (:filter @local)
+        cls #(if (contains? selected %) "fas" "fal")
+        sel (fn [n]
+              (fn [_]
+                (swap! local update-in [:filter] #(if (contains? % n)
+                                                    (disj % n)
+                                                    (conj % n)))
+                (swap! local dissoc :selected)))]
+    [:div.stars-filter
+     [:div {:on-click (sel 5)}
+      [:i.fa-star {:class (cls 5)}]
+      [:i.fa-star {:class (cls 5)}]
+      [:i.fa-star {:class (cls 5)}]
+      [:i.fa-star {:class (cls 5)}]
+      [:i.fa-star {:class (cls 5)}]]
+     [:div {:on-click (sel 4)}
+      [:i.fa-star {:class (cls 4)}]
+      [:i.fa-star {:class (cls 4)}]
+      [:i.fa-star {:class (cls 4)}]
+      [:i.fa-star {:class (cls 4)}]]
+     [:div {:on-click (sel 3)}
+      [:i.fa-star {:class (cls 3)}]
+      [:i.fa-star {:class (cls 3)}]
+      [:i.fa-star {:class (cls 3)}]]
+     [:div {:on-click (sel 2)}
+      [:i.fa-star {:class (cls 2)}]
+      [:i.fa-star {:class (cls 2)}]]
+     [:div {:on-click (sel 1)}
+      [:i.fa-star {:class (cls 1)}]]]))
+
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [ts filtered local-cfg local put-fn avl-sorted
-                 prev-click next-click]}]
+    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click]}]
       (let [fullscreen (:fullscreen @local)
             locale @locale
-            selected (or (:selected @local) (first filtered))]
-        (when (seq filtered)
-          [:div
-           [:div.carousel.carousel-slider
-            {:style {:width "100%"}}
-            [:button.control-arrow.control-prev {:on-click prev-click}]
-            [:div.slider-wrapper.axis-horizontal
-             [image-view selected local-cfg locale local put-fn]]
-            [:button.control-arrow.control-next {:on-click next-click}]]
-           (when fullscreen
-             [:div.carousel
-              [:div.thumbs-wrapper.axis-horizontal
-               [:ul
-                (for [entry filtered]
-                  ^{:key (:timestamp entry)}
-                  [thumb-view entry selected local])]]])])))))
+            selected (or (:selected @local) (first filtered))
+            n (count filtered)
+            two-or-more (< 1 n)]
+        [:div
+         [:div.carousel.carousel-slider
+          {:style {:width "100%"}}
+          (when two-or-more
+            [:button.control-arrow.control-prev {:on-click prev-click}])
+          [:div.slider-wrapper.axis-horizontal
+           [image-view selected locale local put-fn]]
+          (when two-or-more
+            [:button.control-arrow.control-next {:on-click next-click}])
+          (when two-or-more
+            [:p.carousel-status (inc selected-idx) "/" n])]
+         (when fullscreen
+           [:div.carousel
+            [:div.thumbs-wrapper.axis-horizontal
+             [:ul
+              (for [entry filtered]
+                ^{:key (:timestamp entry)}
+                [thumb-view entry selected local])]]])
+         (when fullscreen
+           [stars-filter local])]))))
 
-(defn thumbnails
+(defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
   [entry local-cfg put-fn]
   (let [entries-map (subscribe [:entries-map])
         cfg (subscribe [:cfg])
         options (subscribe [:options])
         show-pvt? (reaction (:show-pvt @cfg))
-        local (r/atom {})
+        local (r/atom {:filter #{}})
         get-or-retrieve (u/find-missing-entry entries-map put-fn)
         linked-comments-set (reaction
                               (set/union
@@ -107,6 +144,10 @@
                                 (set (:comments entry))))
         with-imgs (reaction (filter :img-file
                                     (map get-or-retrieve @linked-comments-set)))
+        filter-by-stars (fn [entry]
+                          (or (empty? (:filter @local))
+                              (contains? (:filter @local)
+                                         (:stars (get @entries-map (:timestamp entry))))))
         filtered (reaction
                    (filter identity
                            (if @show-pvt?
@@ -114,22 +155,24 @@
                              (filter (u/pvt-filter @options @entries-map)
                                      @with-imgs))))
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
-        avl-sorted (reaction (into (avl/sorted-set-by cmp) @filtered))
         sorted (reaction (sort-by :timestamp @filtered))
+        avl-sort (fn [xs]
+                   (into (avl/sorted-set-by cmp) (filter filter-by-stars xs)))
         selected (reaction (or (:selected @local)
-                               (first @sorted)))
-        next-click #(let [slide (avl/nearest @avl-sorted > @selected)]
+                               (first (vec (avl-sort @sorted)))))
+        next-click #(let [avl-sorted (avl-sort @sorted)
+                          slide (avl/nearest avl-sorted > @selected)]
                       (swap! local assoc-in [:selected] (or slide
-                                                            (first @sorted))))
-        prev-click #(let [slide (avl/nearest @avl-sorted < @selected)]
-                      (info slide)
+                                                            (first (vec avl-sorted)))))
+        prev-click #(let [avl-sorted (avl-sort @sorted)
+                          slide (avl/nearest avl-sorted < @selected)]
                       (swap! local assoc-in [:selected] (or slide
-                                                            (last @sorted))))
+                                                            (last (vec avl-sorted)))))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         meta-key (.-metaKey ev)
                         set-stars (fn [n]
-                                    (let [selected (:selected @local)
+                                    (let [selected @selected
                                           updated (assoc-in selected [:stars] n)]
                                       (debug updated)
                                       (put-fn [:entry/update updated])))]
@@ -148,18 +191,19 @@
                     (.stopPropagation ev)))
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
-    (fn thumbnail-render [entry local-cfg put-fn]
-      (info :first (first @filtered))
-      (let [ts (:timestamp entry)]
+    (fn gallery-render [entry local-cfg put-fn]
+      (let [ts (:timestamp entry)
+            sorted-filtered (filter filter-by-stars @sorted)
+            selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.thumbnails {:class          (when (:fullscreen @local) "fullscreen")
                           :on-mouse-enter start-watch
                           :on-mouse-over  start-watch
                           :on-mouse-leave stop-watch}
          [carousel {:ts         ts
-                    :filtered   @sorted
-                    :avl-sorted avl-sorted
+                    :filtered   sorted-filtered
                     :local-cfg  local-cfg
                     :local      local
+                    :selected-idx selected-idx
                     :next-click next-click
                     :prev-click prev-click
                     :put-fn     put-fn}]]))))
