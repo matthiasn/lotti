@@ -9,7 +9,8 @@
             [taoensso.timbre :refer [info error]]
             [meo.jvm.file-utils :as fu]
             [matthiasn.systems-toolbox.switchboard :as sb]
-            [matthiasn.systems-toolbox-sente.server :as sente])
+            [matthiasn.systems-toolbox-sente.server :as sente]
+            [meo.jvm.utils.images :as img])
   (:import (java.net ServerSocket)))
 
 (def upload-port (atom nil))
@@ -46,7 +47,8 @@
                                file (java.io.File. filename)]
                            (io/make-parents file)
                            (info :backend/upload-cmp :binary req)
-                           (io/copy (:body req) file))
+                           (io/copy (:body req) file)
+                           (img/gen-thumbs file))
                          "OK")
         app (routes
               (PUT "/upload/:dir/:file" [dir file :as r]

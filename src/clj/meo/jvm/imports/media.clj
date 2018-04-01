@@ -98,6 +98,7 @@
                     (.lastModified file))
         target-filename (str timestamp "-" filename)]
     (fs/copy rel-path (str fu/img-path target-filename))
+    (img/gen-thumbs file)
     {:timestamp timestamp
      :latitude  (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
      :longitude (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
@@ -168,9 +169,7 @@
       (try (let [file-info (import-image file)]
              (when file-info
                (put-fn (with-meta [:entry/import file-info] msg-meta))))
-           (img/save-rotated file 256)
-           (img/save-rotated file 512)
-           (img/save-rotated file 2048)
+           (img/gen-thumbs file)
            (catch Exception ex (error (str "Error while importing "
                                            filename) ex)))))
   {:emit-msg [:cmd/schedule-new
@@ -185,13 +184,12 @@
     (future
       (doseq [file files]
         (let [filename (.getName file)]
-          (try (img/save-rotated file 256)
-               (img/save-rotated file 512)
-               (img/save-rotated file 2048)
-               (swap! done inc)
-               (info "generated thumbnails" @done "of" n "-" filename)
-               ;(put-fn [:photos/gen-cache-progress {:n n :done @done}])
-               (catch Exception ex (warn "Creating thumbnails" filename ex)))))))
+          (try
+            (img/gen-thumbs file)
+            (swap! done inc)
+            (info "generated thumbnails" @done "of" n "-" filename)
+            ;(put-fn [:photos/gen-cache-progress {:n n :done @done}])
+            (catch Exception ex (warn "Creating thumbnails" filename ex)))))))
   {})
 
 (defn update-audio-tag

@@ -47,17 +47,19 @@
           ts (:timestamp entry)
           external (str photos file)
           html (md/md->html (:md entry))
-          fullscreen (fn [ev] (swap! local update-in [:fullscreen] not))]
+          toggle-expanded (fn [ev] (swap! local update-in [:fullscreen] not))
+          fullscreen (:fullscreen @local)]
       [:div.slide
        [:img {:src resized-rotated}]
        [:div.legend
         (h/localize-datetime-full ts locale)
         [stars-view ts put-fn]
-        [:span {:on-click fullscreen}
-         (if (:fullscreen @local)
+        [:span {:on-click toggle-expanded}
+         (if fullscreen
            [:i.fas.fa-compress]
            [:i.fas.fa-expand])]
-        [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]
+        (when fullscreen
+          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
         [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
 
 (defn thumb-view [entry selected local]

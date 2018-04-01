@@ -18,8 +18,6 @@
     (when (= os "Linux")
       (scrot filename))
     (let [file (io/file filename)]
-      (img/save-rotated file 256)
-      (img/save-rotated file 512)
-      (img/save-rotated file 2048)))
+      (img/gen-thumbs file)))
   {:emit-msg [:cmd/schedule-new
               {:timeout 3000 :message (with-meta [:search/refresh] msg-meta)}]})
