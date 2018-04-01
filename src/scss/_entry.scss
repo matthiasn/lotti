@@ -16,40 +16,6 @@
       width: auto;
     }
 
-    .stars-filter {
-      position: absolute;
-      top: 50px;
-      left: 20px;
-
-      line-height: 1.5em;
-
-      .fa-star {
-        &.fas {
-          color: gold;
-        }
-      }
-    }
-
-    &.fullscreen {
-      position: fixed;
-      left: 0;
-      top: 0;
-
-      width: 100vw;
-      height: 100vh;
-      z-index: 1111;
-
-      .carousel .slide img {
-        height: calc(100vh - 116px);
-        width: auto;
-      }
-    }
-
-    i {
-      margin-left: 5px;
-      cursor: pointer;
-    }
-
     .stars {
       margin: 0 10px 0 25px;
 
@@ -64,8 +30,83 @@
       }
     }
 
-    .carousel {
+    &.fullscreen {
+      position: fixed;
+      left: 0;
+      top: 0;
 
+      width: 100vw;
+      height: 100vh;
+      z-index: 1111;
+
+      .filters {
+        width: 120px;
+
+        .stars-filter {
+          margin-top: 40px;
+          margin-left: 10px;
+          line-height: 1.5em;
+
+          .fa-star {
+            &.fas {
+              color: gold;
+            }
+          }
+        }
+      }
+
+      .info {
+        width: 200px;
+        background-color: #111;
+        height: calc(100vh - 116px);
+        color: #ccc;
+
+        .stars {
+          margin: 7px;
+        }
+
+        time {
+          display: block;
+          font-size: 0.9em;
+          margin: 10px;
+        }
+
+        .md {
+          margin: 10px;
+
+          ul {
+            margin-left: 25px;
+          }
+        }
+
+        h1, h2, h3 {
+          font-size: 1em;
+        }
+
+        .map {
+          width: 200px;
+          height: 300px;
+        }
+      }
+
+      .carousel .slide img {
+        height: calc(100vh - 116px);
+        width: auto;
+      }
+
+
+      .carousel .control-prev.control-arrow {
+        left: 135px;
+      }
+
+      .carousel .control-next.control-arrow {
+        right: 200px;
+      }
+    }
+
+    i {
+      margin-left: 5px;
+      cursor: pointer;
     }
   }
 }

@@ -11,7 +11,8 @@
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.electron.renderer.ui.leaflet :as l]))
 
 (def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
@@ -102,6 +103,15 @@
      [:div {:on-click (sel 1)}
       [:i.fa-star {:class (cls 1)}]]]))
 
+(defn info-drawer [selected locale put-fn]
+  (let [ts (:timestamp selected)
+        html (md/md->html (:md selected))]
+    [:div.info
+     [l/leaflet-map selected true {} put-fn]
+     [:time (h/localize-datetime-full ts locale)]
+     [stars-view ts put-fn]
+     [:div.md {:dangerouslySetInnerHTML {:__html html}}]]))
+
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
     (fn [{:keys [filtered local put-fn selected-idx prev-click next-click]}]
@@ -113,12 +123,19 @@
         [:div
          [:div.carousel.carousel-slider
           {:style {:width "100%"}}
-          (when two-or-more
-            [:button.control-arrow.control-prev {:on-click prev-click}])
+          [:div.info
+           (when fullscreen
+             [:div.filters
+              [stars-filter local]])]
           [:div.slider-wrapper.axis-horizontal
-           [image-view selected locale local put-fn]]
-          (when two-or-more
-            [:button.control-arrow.control-next {:on-click next-click}])
+           (when two-or-more
+             [:button.control-arrow.control-prev {:on-click prev-click}])
+           [image-view selected locale local put-fn]
+           (when two-or-more
+             [:button.control-arrow.control-next {:on-click next-click}])]
+          (when fullscreen
+            ^{:key (:timestamp selected)}
+            [info-drawer selected locale put-fn])
           (when two-or-more
             [:p.carousel-status (inc selected-idx) "/" n])]
          (when fullscreen
@@ -127,9 +144,7 @@
              [:ul
               (for [entry filtered]
                 ^{:key (:timestamp entry)}
-                [thumb-view entry selected local])]]])
-         (when fullscreen
-           [stars-filter local])]))))
+                [thumb-view entry selected local])]]])]))))
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
