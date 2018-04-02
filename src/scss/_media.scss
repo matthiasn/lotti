@@ -14,3 +14,33 @@ video {
   height: 130px;
   margin-top: 5px;
 }
+
+.wavesurfer {
+
+  .controls {
+    user-select: none;
+
+    .ctrl-btn  {
+      cursor: pointer;
+      text-align: center;
+      margin-top: 5px;
+      display: inline-block;
+      width: 18px;
+      padding: 3px;
+      &:hover {
+        background-color: #ddd;
+      }
+    }
+    i {
+
+    }
+    .time {
+      font-size: 0.7em;
+      font-weight: bold;
+      font-family: monospace;
+      .duration, .progress {
+        padding: 0 2px;
+      }
+    }
+  }
+}

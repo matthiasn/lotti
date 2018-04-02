@@ -109,6 +109,10 @@
   (let [t (moment (* s 1000))]
     (.format (.utc t) "HH:mm:ss")))
 
+(defn s-to-mm-ss-ms [ms]
+  (let [t (moment ms)]
+    (.format (.utc t) "mm:ss:SSS")))
+
 (defn get-stats
   "Retrieves stats for the last n days."
   [stats-key n m put-fn]
