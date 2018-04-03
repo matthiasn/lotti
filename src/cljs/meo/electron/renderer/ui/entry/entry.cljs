@@ -131,7 +131,7 @@
          [git-commit entry put-fn]
          [ws/wavesurfer @entry local-cfg put-fn]
          [l/leaflet-map @entry @show-map? local-cfg put-fn]
-         [m/image-view entry]
+         ;[m/image-view entry]
          [m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]
          [m/spotify-view @entry put-fn]

@@ -12,7 +12,8 @@
             [reagent.core :as r]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.set :as set]
-            [meo.electron.renderer.ui.leaflet :as l]))
+            [meo.electron.renderer.ui.leaflet :as l]
+            [clojure.string :as str]))
 
 (def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
@@ -47,21 +48,24 @@
     (let [resized-rotated (str thumbs-2048 file)
           ts (:timestamp entry)
           external (str photos file)
-          html (md/md->html (:md entry))
-          toggle-expanded (fn [ev] (swap! local update-in [:fullscreen] not))
-          fullscreen (:fullscreen @local)]
+          fullscreen (:fullscreen @local)
+          md (:md entry)
+          md (if fullscreen md (str (first (str/split-lines md))))
+          html (md/md->html md)
+          toggle-expanded #(swap! local update-in [:fullscreen] not)]
       [:div.slide
        [:img {:src resized-rotated}]
-       [:div.legend
-        (h/localize-datetime-full ts locale)
-        [stars-view ts put-fn]
-        [:span {:on-click toggle-expanded}
-         (if fullscreen
-           [:i.fas.fa-compress]
-           [:i.fas.fa-expand])]
-        (when fullscreen
-          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
-        [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
+       (when-not fullscreen
+         [:div.legend
+          (h/localize-datetime-full ts locale)
+          [stars-view ts put-fn]
+          [:span {:on-click toggle-expanded}
+           (if fullscreen
+             [:i.fas.fa-compress]
+             [:i.fas.fa-expand])]
+          (when fullscreen
+            [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
+          [:div {:dangerouslySetInnerHTML {:__html html}}]])])))
 
 (defn thumb-view [entry selected local]
   (when-let [file (:img-file entry)]
@@ -105,12 +109,15 @@
 
 (defn info-drawer [selected locale put-fn]
   (let [ts (:timestamp selected)
-        html (md/md->html (:md selected))]
+        html (md/md->html (:md selected))
+        file (:img-file selected)
+        external (str photos file)]
     [:div.info
      [l/leaflet-map selected true {} put-fn]
      [:time (h/localize-datetime-full ts locale)]
      [stars-view ts put-fn]
-     [:div.md {:dangerouslySetInnerHTML {:__html html}}]]))
+     [:div.md {:dangerouslySetInnerHTML {:__html html}}]
+     [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
@@ -158,6 +165,7 @@
         linked-comments-set (reaction
                               (set/union
                                 (set (:linked-entries-list entry))
+                                #{(:timestamp entry)}
                                 (set (:comments entry))))
         with-imgs (reaction (filter :img-file
                                     (map get-or-retrieve @linked-comments-set)))
@@ -212,15 +220,15 @@
       (let [ts (:timestamp entry)
             sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
-        [:div.thumbnails {:class          (when (:fullscreen @local) "fullscreen")
-                          :on-mouse-enter start-watch
-                          :on-mouse-over  start-watch
-                          :on-mouse-leave stop-watch}
-         [carousel {:ts         ts
-                    :filtered   sorted-filtered
-                    :local-cfg  local-cfg
-                    :local      local
+        [:div.gallery {:class          (when (:fullscreen @local) "fullscreen")
+                       :on-mouse-enter start-watch
+                       :on-mouse-over  start-watch
+                       :on-mouse-leave stop-watch}
+         [carousel {:ts           ts
+                    :filtered     sorted-filtered
+                    :local-cfg    local-cfg
+                    :local        local
                     :selected-idx selected-idx
-                    :next-click next-click
-                    :prev-click prev-click
-                    :put-fn     put-fn}]]))))
+                    :next-click   next-click
+                    :prev-click   prev-click
+                    :put-fn       put-fn}]]))))
