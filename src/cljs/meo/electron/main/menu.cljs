@@ -46,7 +46,9 @@
                 :click       #(put-fn [:import/listen])}
                {:label       "Import"
                 :accelerator "CmdOrCtrl+I"
-                :click       #(import-dialog put-fn)}]}))
+                :click       #(import-dialog put-fn)}
+               {:label       "Export"
+                :click       #(put-fn [:export/geojson])}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 
@@ -106,6 +108,8 @@
                 :click (open "sync")}
                {:label "Countries"
                 :click (open "countries")}
+               {:label "Heatmap"
+                :click (open "heatmap")}
                {:label "Dashboards"
                 :click (open "dashboards/dashboard-1")}
                {:label "Scatter Matrix"

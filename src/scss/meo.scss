@@ -23,6 +23,17 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-flow: column;
   height: 100vh;
+
+  .error {
+    margin: 50px;
+    i {
+      margin-right: 10px;
+      color: orangered;
+    }
+    h1 {
+      font-size: 3em;
+    }
+  }
 }
 
 /* Overwrite the default to keep the scrollbar always visible.
@@ -115,3 +126,4 @@ i {
 @import "datepicker.scss";
 @import "editor.scss";
 @import "rome.scss";
+@import "mapbox-gl.scss";

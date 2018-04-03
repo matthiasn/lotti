@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.4.286",
+  "version": "0.4.287",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -46,6 +46,7 @@
     "leaflet": "0.7.7",
     "lodash": "4.17.5",
     "lodash.throttle": "4.1.1",
+    "mapbox-gl": "^0.44.1",
     "moment": "2.20.1",
     "normalize.css": "7.0.0",
     "npid": "0.4.0",

@@ -12,6 +12,7 @@
     "config" :config
     "sync" :sync
     "countries" :countries
+    "heatmap" :heatmap
     "calendar" :calendar
     "correlation" :correlation
     "empty" :empty

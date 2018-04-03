@@ -40,6 +40,7 @@
                 :entry/update
                 :entry/sync
                 :geonames/res
+                :export/geojson
                 :spellcheck/lang
                 :spellcheck/off
                 :import/screenshot

@@ -7,6 +7,7 @@
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.add :as ga]
+            [meo.jvm.export :as e]
             [meo.common.specs]
             [clojure.data.avl :as avl]
             [ubergraph.core :as uber]
@@ -139,6 +140,7 @@
                    :sync/done        sync-done
                    :sync/initiate    sync-send
                    :sync/next        sync-send
+                   :export/geojson   e/export-geojson
                    :entry/trash      f/trash-entry-fn
                    :state/search     gq/query-fn
                    :cfg/refresh      refresh-cfg
