@@ -42,5 +42,12 @@ video {
         padding: 0 2px;
       }
     }
+
+    input[type="range"] {
+      margin-left: 5px;
+      width: 120px;
+      position: relative;
+      top: 4px;
+    }
   }
 }

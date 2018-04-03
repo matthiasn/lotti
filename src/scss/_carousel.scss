@@ -336,8 +336,10 @@
 
     .carousel .slide img {
       height: calc(100vh - 116px);
-      width: calc(100vw - 350px);
+      width: calc(100vw - 360px);
       object-fit: contain;
+      margin-left: 5px;
+      margin-right: 5px;
     }
 
     .carousel .control-prev.control-arrow {

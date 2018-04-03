@@ -3,7 +3,6 @@
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.core :as rc]
             [reagent.core :as r]
-            [cljs.pprint :as pprint]
             [meo.electron.renderer.helpers :as h]))
 
 (def iww-host (.-iwwHOST js/window))
@@ -39,7 +38,13 @@
                                              (int (* 1000 progress)))
                                   duration (or (:duration @local) 0)
                                   duration (h/s-to-mm-ss-ms
-                                             (int (* 1000 duration)))]
+                                             (int (* 1000 duration)))
+                                  stop #(.stop (:waveform @local))
+                                  zoom (fn [ev]
+                                         (let [v (.. ev -target -value)
+                                               v (when (seq v) (js/parseFloat v))]
+                                           (swap! local assoc-in [:zoom] v)
+                                           (.zoom (:waveform @local) v)))]
                               [:div.wavesurfer
                                [:div {:id (:id props)}]
                                [:div.controls
@@ -49,18 +54,25 @@
                                  (if (= :playing (:status @local))
                                    [:i.fas.fa-pause]
                                    [:i.fas.fa-play])]
+                                [:span.ctrl-btn {:on-click stop}
+                                 [:i.fas.fa-stop]]
                                 [:span.ctrl-btn {:on-click skip-fwd}
                                  [:i.fas.fa-step-forward]]
                                 [:span.time
                                  [:span.progress progress]
                                  "/"
-                                 [:span.duration duration]]]]))}))
+                                 [:span.duration duration]]
+                                [:input {:on-input zoom
+                                         :type     :range
+                                         :min      50
+                                         :max      200
+                                         :value    (:zoom @local)}]]]))}))
 
 (defn wavesurfer [entry local-cfg put-fn]
   (let [{:keys [audio-file timestamp]} entry
         id (str "wavesurfer" (hash (:vclock entry))
                 (when-let [tab-grp (:tab-group local-cfg)] (name tab-grp)))
-        local (r/atom {})
+        local (r/atom {:zoom 50})
         get-waveform #(:waveform @local)
         play-pause #(.playPause (get-waveform))
         skip-fwd #(.skipForward (get-waveform))
