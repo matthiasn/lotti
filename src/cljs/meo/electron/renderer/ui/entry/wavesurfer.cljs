@@ -6,23 +6,34 @@
             [meo.electron.renderer.helpers :as h]))
 
 (def iww-host (.-iwwHOST js/window))
+(def intersection-observer (aget js/window "IntersectionObserver"))
 
 (defn wavesurfer-did-mount [props]
   (fn []
     (let [{:keys [audio-file id put-fn ts local]} props
-          waveform (.create wavesurfer (clj->js {:container     (str "#" id)
+          dom-id (str "#" id)
+          waveform (.create wavesurfer (clj->js {:container     dom-id
                                                  :waveColor     "#FFDE99"
                                                  :height        80
                                                  :normalize     true
-                                                 :cursorWidth   3
+                                                 :cursorWidth   2
                                                  :progressColor "#FF5F1A"}))
-          url (str "http://" iww-host "/audio/" audio-file)]
+          url (str "http://" iww-host "/audio/" audio-file)
+          progress (fn [p]
+                     (swap! local assoc-in [:progress] p)
+                     (.setItem js/localStorage ts p))
+          elem (.querySelector js/document dom-id)
+          stop-on-hide #(when (zero? (aget % 0 "intersectionRatio")) (.stop waveform))
+          io (intersection-observer. stop-on-hide (clj->js {}))]
+      (.observe io elem)
       (.load waveform url)
       (.on waveform "ready" (fn []
-                              (info :ready)
-                              (let [dur (.getDuration waveform)]
+                              (let [dur (.getDuration waveform)
+                                    progress (.getItem js/localStorage ts)]
+                                (info :ready progress)
+                                (when progress (.skip waveform progress))
                                 (swap! local assoc-in [:duration] dur))))
-      (.on waveform "audioprocess" #(swap! local assoc-in [:progress] %))
+      (.on waveform "audioprocess" progress)
       (.on waveform "play" #(swap! local assoc-in [:status] :playing))
       (.on waveform "pause" #(swap! local assoc-in [:status] :paused))
       (.on waveform "finish" #(swap! local assoc-in [:status] :finished))
@@ -64,15 +75,15 @@
                                  [:span.duration duration]]
                                 [:input {:on-input zoom
                                          :type     :range
-                                         :min      50
-                                         :max      200
+                                         :min      1
+                                         :max      100
                                          :value    (:zoom @local)}]]]))}))
 
 (defn wavesurfer [entry local-cfg put-fn]
   (let [{:keys [audio-file timestamp]} entry
         id (str "wavesurfer" (hash (:vclock entry))
                 (when-let [tab-grp (:tab-group local-cfg)] (name tab-grp)))
-        local (r/atom {:zoom 50})
+        local (r/atom {:zoom 1})
         get-waveform #(:waveform @local)
         play-pause #(.playPause (get-waveform))
         skip-fwd #(.skipForward (get-waveform))

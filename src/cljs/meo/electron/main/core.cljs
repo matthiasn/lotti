@@ -121,13 +121,13 @@
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:message [:geocoder/start]
                                             :timeout 2000}]}]
-
+#_
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 10 1000)
                                             :message [:sync/scan-inbox]
                                             :repeat  true
                                             :initial true}]}]
-
+#_
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 10 1000)
                                             :message [:sync/scan-images]
