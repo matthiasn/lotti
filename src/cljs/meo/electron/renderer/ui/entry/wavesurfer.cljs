@@ -1,6 +1,6 @@
 (ns meo.electron.renderer.ui.entry.wavesurfer
   (:require [wavesurfer.js :as wavesurfer]
-            [taoensso.timbre :refer-macros [info]]
+            [taoensso.timbre :refer-macros [info debug]]
             [reagent.core :as rc]
             [reagent.core :as r]
             [cljs.pprint :as pprint]
