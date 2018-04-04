@@ -25,7 +25,7 @@
          {:relay-types #{:entry/update :entry/find :entry/trash :entry/sync
                          :import/photos :import/spotify :import/flight
                          :stats/pomo-day-get :import/screenshot :backend-cfg/save
-                         :photos/gen-cache :export/geojson
+                         :photos/gen-cache :export/geojson :search/geo-photo
                          :stats/get :stats/get2 :import/movie :entry/unlink
                          :state/stats-tags-get :import/listen :spotify/play
                          :spotify/pause :state/search :cfg/refresh

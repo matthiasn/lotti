@@ -224,6 +224,11 @@
                  [:stats/get2]
                  [:state/stats-tags-get]]}))
 
+(defn search-res [{:keys [current-state msg-payload]}]
+  (let [{:keys [type data]} msg-payload
+        new-state (assoc-in current-state [type] data)]
+    {:new-state new-state}))
+
 (def search-handler-map
   {:search/update           update-query-fn
    :search/set-active       set-active-query
@@ -235,5 +240,6 @@
    :search/refresh          search-refresh
    :search/set-dragged      set-dragged
    :search/move-tab         move-tab
+   :search/res              search-res
    :show/more               show-more
    :linked-filter/set       set-linked-filter})

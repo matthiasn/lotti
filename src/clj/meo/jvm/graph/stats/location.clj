@@ -1,6 +1,7 @@
 (ns meo.jvm.graph.stats.location
   "Get stats from graph."
-  (:require [ubergraph.core :as uc]))
+  (:require [ubergraph.core :as uc]
+            [meo.jvm.graph.query :as gq]))
 
 #_
 (defn locations

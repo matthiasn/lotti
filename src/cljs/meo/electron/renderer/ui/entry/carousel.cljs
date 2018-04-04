@@ -164,9 +164,9 @@
         get-or-retrieve (u/find-missing-entry entries-map put-fn)
         linked-comments-set (reaction
                               (set/union
-                                (set (:linked-entries-list entry))
-                                #{(:timestamp entry)}
-                                (set (:comments entry))))
+                                (set (:linked-entries-list @entry))
+                                #{(:timestamp @entry)}
+                                (set (:comments @entry))))
         with-imgs (reaction (filter :img-file
                                     (map get-or-retrieve @linked-comments-set)))
         filter-by-stars (fn [entry]

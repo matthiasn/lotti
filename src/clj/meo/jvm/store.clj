@@ -7,6 +7,7 @@
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.add :as ga]
+            [meo.jvm.graph.geo :as geo]
             [meo.jvm.export :as e]
             [meo.common.specs]
             [clojure.data.avl :as avl]
@@ -143,5 +144,6 @@
                    :export/geojson   e/export-geojson
                    :entry/trash      f/trash-entry-fn
                    :state/search     gq/query-fn
+                   :search/geo-photo geo/photos-within-bounds
                    :cfg/refresh      refresh-cfg
                    :backend-cfg/save fu/write-cfg})})

@@ -185,7 +185,7 @@
          (if (contains? (:tags @entry) "#briefing")
            [briefing ts put-fn local-cfg]
            [journal-entry ts put-fn local-cfg])
-         (when @thumbnails? [carousel/gallery @entry local-cfg put-fn])
+         (when @thumbnails? [carousel/gallery entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

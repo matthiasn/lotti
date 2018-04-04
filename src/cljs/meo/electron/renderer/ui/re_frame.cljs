@@ -51,6 +51,7 @@
 (reg-sub :started-tasks (fn [db _] (:started-tasks db)))
 (reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))
+(reg-sub :geo-photos (fn [db _] (:geo-photos db)))
 (reg-sub :chart-data (fn [db _]
                        (select-keys db [:pomodoro-stats
                                         :task-stats
