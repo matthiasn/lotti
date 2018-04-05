@@ -138,11 +138,10 @@
          [ws/wavesurfer @entry local-cfg put-fn]
          (when @show-map?
            (if mapbox-token
-             [:div {:on-click #(do
-                                 (info "click")
-                                 (swap! local update-in [:scroll-disabled] not))}
+             [:div.entry-mapbox
+              {:on-click #(swap! local update-in [:scroll-disabled] not)}
               [mb/mapbox-cls {:local           local
-                              :id              (str ts)
+                              :id              (str ts (name (:query-id local-cfg)))
                               :selected        @entry
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg

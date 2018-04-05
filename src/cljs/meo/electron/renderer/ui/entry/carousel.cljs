@@ -166,7 +166,7 @@
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
   [entry local-cfg put-fn]
-  (let [entries-map (subscribe [:entries-map])
+  (let [entries-map (subscribe [:combined-entries])
         cfg (subscribe [:cfg])
         options (subscribe [:options])
         show-pvt? (reaction (:show-pvt @cfg))
