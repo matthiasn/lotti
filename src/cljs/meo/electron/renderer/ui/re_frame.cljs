@@ -4,7 +4,7 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
             [meo.electron.renderer.ui.menu :as menu]
-            [meo.electron.renderer.ui.mapbox :as mb]
+            [meo.electron.renderer.ui.heatmap :as hm]
             [meo.electron.renderer.ui.grid :as g]
             [meo.electron.renderer.ui.new-entries :as n]
             [meo.electron.renderer.ui.stats :as stats]
@@ -137,7 +137,7 @@
             :countries [countries-page put-fn]
             :calendar [cal put-fn]
             :correlation [corr/scatter-matrix put-fn]
-            :heatmap [mb/mapbox-map put-fn]
+            :heatmap [hm/heatmap put-fn]
             :empty [:div.flex-container]
             [main-page put-fn])
           [load-progress put-fn])))))

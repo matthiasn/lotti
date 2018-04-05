@@ -1,10 +1,12 @@
 (ns meo.electron.renderer.ui.entry.entry
   (:require [meo.electron.renderer.ui.leaflet :as l]
+            [meo.electron.renderer.ui.mapbox :as mb]
             [meo.electron.renderer.ui.media :as m]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.ui.entry.actions :as a]
+            [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.entry.location :as loc]
             [meo.electron.renderer.ui.entry.capture :as c]
             [meo.electron.renderer.ui.entry.task :as task]
@@ -21,7 +23,8 @@
             [clojure.set :as set]
             [moment]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [reagent.core :as r]))
 
 (defn all-comments-set [ts]
   (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
@@ -92,16 +95,19 @@
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
+        backend-cfg (subscribe [:backend-cfg])
         q-date-string (.format (moment ts) "YYYY-MM-DD")
         tab-group (:tab-group local-cfg)
         add-search (up/add-search q-date-string tab-group put-fn)
         drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)
         toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
-                                    (put-fn [:entry/update-local @entry]))]
+                                    (put-fn [:entry/update-local @entry]))
+        local (r/atom {:scroll-disabled true})]
     (fn journal-entry-render [ts put-fn local-cfg]
       (let [edit-mode? @edit-mode
             locale (:locale @cfg :en)
-            formatted-time (h/localize-datetime (moment ts) locale)]
+            formatted-time (h/localize-datetime (moment ts) locale)
+            mapbox-token (:mapbox-token @backend-cfg)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
@@ -130,7 +136,19 @@
          [c/custom-fields-div @entry put-fn edit-mode?]
          [git-commit entry put-fn]
          [ws/wavesurfer @entry local-cfg put-fn]
-         [l/leaflet-map @entry @show-map? local-cfg put-fn]
+         (when @show-map?
+           (if mapbox-token
+             [:div {:on-click #(do
+                                 (info "click")
+                                 (swap! local update-in [:scroll-disabled] not))}
+              [mb/mapbox-cls {:local           local
+                              :id              (str ts)
+                              :selected        @entry
+                              :scroll-disabled (:scroll-disabled @local)
+                              :local-cfg       local-cfg
+                              :mapbox-token    mapbox-token
+                              :put-fn          put-fn}]]
+             [l/leaflet-map @entry @show-map? local-cfg put-fn]))
          ;[m/image-view entry]
          [m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]

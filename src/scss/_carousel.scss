@@ -285,9 +285,9 @@
     z-index: 1111;
 
     .filters {
-      width: 120px;
 
       .stars-filter {
+        width: 120px;
         margin-top: 40px;
         margin-left: 10px;
         line-height: 1.5em;
@@ -301,7 +301,6 @@
     }
 
     .info {
-      width: 200px;
       background-color: #111;
       height: calc(100vh - 116px);
       color: #ccc;
@@ -336,7 +335,7 @@
 
     .carousel .slide img {
       height: calc(100vh - 116px);
-      width: calc(100vw - 360px);
+      width: calc(100vw - 550px);
       object-fit: contain;
       margin-left: 5px;
       margin-right: 5px;
@@ -347,11 +346,11 @@
     }
 
     .carousel .control-next.control-arrow {
-      right: 200px;
+      right: 400px;
     }
 
     .carousel .carousel-status {
-      right: 200px;
+      right: 450px;
     }
   }
 

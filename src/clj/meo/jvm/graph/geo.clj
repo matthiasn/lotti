@@ -17,8 +17,8 @@
         r (/ diagonal 2)
         circle (sp/circle center r)
         nearby (fn [entry]
-                 (let [{:keys [latitude longitude]} entry]
-                   (when (and latitude longitude)
+                 (let [{:keys [latitude longitude img-file]} entry]
+                   (when (and latitude longitude img-file)
                      (let [point (sp/spatial4j-point latitude longitude)]
                        (sp/intersects? point circle)))))
         entries (filter nearby entries)

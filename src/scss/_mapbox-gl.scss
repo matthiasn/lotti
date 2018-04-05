@@ -583,12 +583,22 @@ a.mapboxgl-ctrl-logo {
 
   .ctrl {
     position: fixed;
-    top: 20px;
+    top: 10px;
     left: 200px;
     z-index: 2;
+    opacity: 0.6;
 
     button {
+      margin: 5px;
+      padding: 3px 6px;
+      border-radius: 2px;
     }
+  }
+
+  .mapbox {
+    background-color: #333;
+    height: 60vh;
+    width: 400px;
   }
 
   .fixed-gallery {

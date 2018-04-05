@@ -1,7 +1,8 @@
 (ns meo.electron.renderer.client-store-search
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
     [meo.electron.renderer.client-store-cfg :as c]
-    #?(:clj [taoensso.timbre :refer [info debug]]
+    #?(:clj
+    [taoensso.timbre :refer [info debug]]
        :cljs [taoensso.timbre :refer-macros [info debug]])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.parse :as p]
@@ -224,9 +225,12 @@
                  [:stats/get2]
                  [:state/stats-tags-get]]}))
 
-(defn search-res [{:keys [current-state msg-payload]}]
+(defn search-res [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [type data]} msg-payload
-        new-state (assoc-in current-state [type] data)]
+        new-state (assoc-in current-state [type] {:ts   (st/now)
+                                                  :data data})]
+    (doseq [ts data]
+      (put-fn [:entry/find {:timestamp ts}]))
     {:new-state new-state}))
 
 (def search-handler-map

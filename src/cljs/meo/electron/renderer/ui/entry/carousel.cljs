@@ -1,19 +1,22 @@
 (ns meo.electron.renderer.ui.entry.carousel
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [reagent.impl.component :as ric]
             [taoensso.timbre :refer [info error debug]]
             [clojure.data.avl :as avl]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [electron :refer [remote]]
             [cljs.nodejs :refer [process]]
+            [mapbox-gl]
             [markdown.core :as md]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.set :as set]
             [meo.electron.renderer.ui.leaflet :as l]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [meo.electron.renderer.ui.mapbox :as mb]))
 
 (def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
@@ -108,16 +111,25 @@
       [:i.fa-star {:class (cls 1)}]]]))
 
 (defn info-drawer [selected locale put-fn]
-  (let [ts (:timestamp selected)
-        html (md/md->html (:md selected))
-        file (:img-file selected)
-        external (str photos file)]
-    [:div.info
-     [l/leaflet-map selected true {} put-fn]
-     [:time (h/localize-datetime-full ts locale)]
-     [stars-view ts put-fn]
-     [:div.md {:dangerouslySetInnerHTML {:__html html}}]
-     [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))
+  (let [local (r/atom {})
+        backend-cfg (subscribe [:backend-cfg])]
+    (fn [selected locale put-fn]
+      (let [ts (:timestamp selected)
+            html (md/md->html (:md selected))
+            file (:img-file selected)
+            mapbox-token (:mapbox-token @backend-cfg)
+            external (str photos file)]
+        [:div.info
+         ;[l/leaflet-map selected true {} put-fn]
+         [mb/mapbox-cls {:local    local
+                         :id       (str ts)
+                         :selected selected
+                         :mapbox-token mapbox-token
+                         :put-fn   put-fn}]
+         [:time (h/localize-datetime-full ts locale)]
+         [stars-view ts put-fn]
+         [:div.md {:dangerouslySetInnerHTML {:__html html}}]
+         [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
@@ -128,12 +140,10 @@
             n (count filtered)
             two-or-more (< 1 n)]
         [:div
-         [:div.carousel.carousel-slider
-          {:style {:width "100%"}}
-          [:div.info
-           (when fullscreen
-             [:div.filters
-              [stars-filter local]])]
+         [:div.carousel.carousel-slider {:style {:width "100%"}}
+          (when fullscreen
+            [:div.filters
+             [stars-filter local]])
           [:div.slider-wrapper.axis-horizontal
            (when two-or-more
              [:button.control-arrow.control-prev {:on-click prev-click}])
@@ -141,7 +151,7 @@
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when fullscreen
-            ^{:key (:timestamp selected)}
+            ;^{:key (:timestamp selected)}
             [info-drawer selected locale put-fn])
           (when two-or-more
             [:p.carousel-status (inc selected-idx) "/" n])]

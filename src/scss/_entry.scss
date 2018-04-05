@@ -11,6 +11,11 @@
   padding: 0.5em 0.8em 0.2em 0.8em;
   font-size: $font-size-medium;
 
+  .mapbox {
+    width: 100%;
+    height: 200px;
+  }
+
   .entry-text {
     padding-bottom: 6px;
   }
