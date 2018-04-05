@@ -430,11 +430,9 @@
         entries (take n (filter (entries-filter-fn query g)
                                 (extract-sorted-entries current-state query)))
         comment-timestamps (set (apply concat (map :comments entries)))
-        linked-timestamps (apply set/union
-                                 (map #(set (:linked-entries-list %))
-                                      entries))
-        linked (map #(uc/attrs g %) linked-timestamps)
-        comments (map #(uc/attrs g %) comment-timestamps)]
+        linked-timestamps (set (apply concat (map :linked-entries-list entries)))
+        comments (map #(uc/attrs g %) comment-timestamps)
+        linked (map #(uc/attrs g %) linked-timestamps)]
     {:entries     (vec (into (sorted-set-by >)
                              (filter identity (mapv :timestamp entries))))
      :entries-map (into {} (concat (map entry-mapper entries)
