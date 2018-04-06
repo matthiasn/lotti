@@ -11,7 +11,8 @@
             [meo.common.utils.misc :as u]
             [taoensso.timbre :refer [info error warn]]
             [clojure.set :as set]
-            [clj-pid.core :as pid]))
+            [clj-pid.core :as pid]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn tasks-mapper
   "Create mapper function for task stats"
@@ -73,26 +74,31 @@
   "Retrieves stats of specified type. Picks the appropriate mapper function
    for the requested message type."
   [{:keys [current-state msg-payload msg-meta put-fn]}]
-  (future
-    (let [stats-type (:type msg-payload)
-          stats-mapper (case stats-type
-                         :stats/pomodoro t-s/time-mapper
-                         :stats/custom-fields cf/custom-fields-mapper
-                         :stats/git-commits g/git-mapper
-                         :stats/tasks tasks-mapper
-                         :stats/wordcount wordcount-mapper
-                         :stats/media media-mapper
-                         nil)
-          days (:days msg-payload)
-          stats (when stats-mapper
-                  (let [res (mapv (stats-mapper current-state) days)]
-                    (into {} res)))]
-      (info stats-type (count (str stats)))
-      (if stats
-        (put-fn (with-meta [:stats/result {:stats stats
-                                           :type  stats-type}] msg-meta))
-        (warn "No mapper defined for" stats-type))))
-  {})
+  (let [stats-type (:type msg-payload)
+        path [:last-stat stats-type]
+        last-gen (get-in current-state path 0)]
+    (when (> (- (st/now) last-gen) 2000)
+      (future
+        (let [start (st/now)
+              stats-mapper (case stats-type
+                             :stats/pomodoro t-s/time-mapper
+                             :stats/custom-fields cf/custom-fields-mapper
+                             :stats/git-commits g/git-mapper
+                             :stats/tasks tasks-mapper
+                             :stats/wordcount wordcount-mapper
+                             :stats/media media-mapper
+                             nil)
+              days (:days msg-payload)
+              stats (when stats-mapper
+                      (let [res (mapv (stats-mapper current-state) days)]
+                        (into {} res)))]
+          (info stats-type (count (str stats)))
+          (if stats
+            (put-fn (with-meta [:stats/result {:stats stats
+                                               :type  stats-type}] msg-meta))
+            (warn "No mapper defined for" stats-type))
+          (info "completed get-stats" stats-type "in" (- (st/now) start) "ms")))
+      {:new-state (assoc-in current-state path (st/now))})))
 
 (defn get-basic-stats [state]
   {:entry-count (count (:sorted-entries state))
@@ -153,31 +159,24 @@
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
   [{:keys [current-state put-fn msg-meta] :as msg-map}]
-  (future
-    (let [stats-tags (make-stats-tags current-state)
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))))
-  (future
-    (let [stats {:started-tasks (gq/get-filtered current-state started-tasks)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:state/stats-tags2 stats] {:sente-uid uid}))))
-  (future
-    (let [stats {:waiting-habits (gq/get-filtered current-state waiting-habits)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:state/stats-tags2 stats] {:sente-uid uid}))))
-  (future
-    (let [stats {:word-count (count-words current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))))
-  (future
-    (let [stats {:hours-logged (hours-logged current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))))
-  (future
-    (let [stats {:briefings (gq/find-all-briefings current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:state/stats-tags2 stats] {:sente-uid uid}))))
-  {})
+  (when (> (- (st/now) (get-in current-state [:last-stat :stats] 0)) 2000)
+    (future
+      (let [start (st/now)
+            uid (:sente-uid msg-meta)
+            stats-tags (make-stats-tags current-state)
+            started {:started-tasks (gq/get-filtered current-state started-tasks)}
+            waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}
+            word-count {:word-count (count-words current-state)}
+            logged {:hours-logged (hours-logged current-state)}
+            briefings {:briefings (gq/find-all-briefings current-state)}]
+        (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 started] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 word-count] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 logged] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 briefings] {:sente-uid uid}))
+        (info "completed stats-tags" "in" (- (st/now) start) "ms")))
+    {:new-state (assoc-in current-state [:last-stat :stats] (st/now))}))
 
 (defn task-summary-stats
   "Generate some very basic stats about the graph for display in UI."
@@ -193,31 +192,29 @@
 (defn task-summary-stats-w
   "Generate some very basic stats about the graph for display in UI."
   [state k msg-meta put-fn]
-  (future
-    (let [res (task-summary-stats state k)]
-      (put-fn (with-meta [:stats/result2 {k res}] msg-meta)))))
+  (let [res (task-summary-stats state k)]
+    (put-fn (with-meta [:stats/result2 {k res}] msg-meta))))
 
 (defn get-stats-fn2
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
   [{:keys [current-state put-fn msg-meta]}]
-  (future
-    (let [stats (get-basic-stats current-state)
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))))
-  (task-summary-stats-w current-state :open-tasks-cnt msg-meta put-fn)
-  (task-summary-stats-w current-state :backlog-cnt msg-meta put-fn)
-  (task-summary-stats-w current-state :completed-cnt msg-meta put-fn)
-  (task-summary-stats-w current-state :closed-cnt msg-meta put-fn)
-  (future
-    (let [stats {:award-points (aw/award-points current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))))
-  (future
-    (let [stats {:questionnaires (q/questionnaires current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))))
-  {})
+  (when (> (- (st/now) (get-in current-state [:last-stat :stats2] 0)) 2000)
+    (future
+      (let [start (st/now)
+            stats (get-basic-stats current-state)
+            aw {:award-points (aw/award-points current-state)}
+            q {:questionnaires (q/questionnaires current-state)}
+            uid (:sente-uid msg-meta)]
+        (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))
+        (task-summary-stats-w current-state :open-tasks-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :backlog-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :completed-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :closed-cnt msg-meta put-fn)
+        (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 q] {:sente-uid uid}))
+        (info "completed stats2" "in" (- (st/now) start) "ms")))
+    {:new-state (assoc-in current-state [:last-stat :stats2] (st/now))}))
 
 (def stats-handler-map
   {:stats/get            get-stats-fn

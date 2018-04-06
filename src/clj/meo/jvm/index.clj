@@ -29,6 +29,7 @@
    :routes-fn     routes-fn
    :port          port
    :sente-opts    {:ws-kalive-ms 2000}
+   :opts          {:in-chan [:buffer 100]}
    :relay-types   #{:entry/saved :entry/found :state/new :backend-cfg/new
                     :stats/result :stats/result2 :state/stats-tags :cmd/toggle-key
                     :state/stats-tags2 :search/refresh :cfg/show-qr :ws/ping

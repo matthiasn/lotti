@@ -18,5 +18,5 @@
           commits (count nodes)
           day-stats {:date-string date-string
                      :git-commits commits}]
-      (info day-stats)
+      (debug day-stats)
       [date-string day-stats])))
