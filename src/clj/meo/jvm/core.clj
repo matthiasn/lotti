@@ -23,6 +23,7 @@
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
+    (st/stats-cmp-map :backend/stats)
     (bak/cmp-map :backend/backup)
     (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
@@ -42,12 +43,16 @@
 
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
+                          :backend/stats
                           :backend/export
                           :backend/upload
                           :backend/imports}}]
 
      [:cmd/route {:from :backend/imports
                   :to   :backend/store}]
+
+     [:cmd/route {:from :backend/stats
+                  :to   :backend/ws}]
 
      [:cmd/route {:from :backend/upload
                   :to   #{:backend/store

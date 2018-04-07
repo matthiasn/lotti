@@ -96,21 +96,6 @@
     (ft-index entries-to-index put-fn)
     {}))
 
-(defn state-fn
-  "Creates state atom and then parses all files in data directory into the
-   component state.
-   Entries are stored as attributes of graph nodes, where the node itself is
-   timestamp of an entry. A sort order by descending timestamp is maintained
-   in a sorted set of the nodes timestamps."
-  [_put-fn]
-  (let [conf (fu/load-cfg)
-        state (atom {:sorted-entries (sorted-set-by >)
-                     :graph          (uber/graph)
-                     :global-vclock  {}
-                     :vclock-map     (avl/sorted-map)
-                     :cfg            conf})]
-    {:state state}))
-
 (defn refresh-cfg
   "Refresh configuration by reloading the config file."
   [{:keys [current-state put-fn]}]
@@ -125,25 +110,42 @@
 (defn sync-send [{:keys [current-state msg-payload put-fn]}]
   {})
 
+(defn make-state []
+  (atom {:sorted-entries (sorted-set-by >)
+         :graph          (uber/graph)
+         :global-vclock  {}
+         :vclock-map     (avl/sorted-map)
+         :cfg            (fu/load-cfg)}))
+
+(defonce state (make-state))
+
+(defn state-fn [_put-fn]
+  {:state state})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
    :opts        {:msgs-on-firehose true}
-   :handler-map (merge
-                  gs/stats-handler-map
-                  {:entry/import     f/entry-import-fn
-                   :entry/find       gq/find-entry
-                   :entry/unlink     ga/unlink
-                   :entry/update     f/geo-entry-persist-fn
-                   :entry/sync       f/sync-fn
-                   :startup/read     read-entries
-                   :sync/entry       f/sync-receive
-                   :sync/done        sync-done
-                   :sync/initiate    sync-send
-                   :sync/next        sync-send
-                   :export/geojson   e/export-geojson
-                   :entry/trash      f/trash-entry-fn
-                   :state/search     gq/query-fn
-                   :search/geo-photo geo/photos-within-bounds
-                   :cfg/refresh      refresh-cfg
-                   :backend-cfg/save fu/write-cfg})})
+   :handler-map {:entry/import     f/entry-import-fn
+                 :entry/find       gq/find-entry
+                 :entry/unlink     ga/unlink
+                 :entry/update     f/geo-entry-persist-fn
+                 :entry/sync       f/sync-fn
+                 :startup/read     read-entries
+                 :sync/entry       f/sync-receive
+                 :sync/done        sync-done
+                 :sync/initiate    sync-send
+                 :sync/next        sync-send
+                 :export/geojson   e/export-geojson
+                 :entry/trash      f/trash-entry-fn
+                 :state/search     gq/query-fn
+                 :search/geo-photo geo/photos-within-bounds
+                 :cfg/refresh      refresh-cfg
+                 :backend-cfg/save fu/write-cfg}})
+
+(defn stats-cmp-map [cmp-id]
+  {:cmp-id      cmp-id
+   :state-fn    state-fn
+   :opts        {:msgs-on-firehose true
+                 :in-chan          [:buffer 100]}
+   :handler-map gs/stats-handler-map})

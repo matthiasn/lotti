@@ -49,7 +49,8 @@
         test-path (str "./test-data")]
     (fs/mkdirs test-daily-logs-path)
     (with-redefs [fu/data-path test-path
-                  fu/daily-logs-path test-daily-logs-path]
+                  fu/daily-logs-path test-daily-logs-path
+                  s/state-fn (fn [_put-fn] {:state (s/make-state)})]
       (let [put-fn (fn [_])
             state (:state (s/state-fn put-fn))]
         (swap! state assoc-in [:startup-progress] 1)
