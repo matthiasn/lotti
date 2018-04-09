@@ -1,9 +1,10 @@
 (ns meo.jvm.export
   (:require [taoensso.timbre :refer [info]]
             [meo.jvm.graph.query :as gq]
-            [cheshire.core :as cc]))
+            [cheshire.core :as cc]
+            [meo.jvm.file-utils :as fu]))
 
-(def path "/tmp/entries.geojson")
+(def path (str fu/export-path "/entries.geojson"))
 (def n Integer/MAX_VALUE)
 
 (defn entry-fmt [entry]

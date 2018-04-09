@@ -6,8 +6,6 @@
             [clojure.data.avl :as avl]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
-            [electron :refer [remote]]
-            [cljs.nodejs :refer [process]]
             [mapbox-gl]
             [markdown.core :as md]
             [meo.electron.renderer.helpers :as h]
@@ -17,14 +15,6 @@
             [meo.electron.renderer.ui.leaflet :as l]
             [clojure.string :as str]
             [meo.electron.renderer.ui.mapbox :as mb]))
-
-(def iww-host (.-iwwHOST js/window))
-(def user-data (.getPath (aget remote "app") "userData"))
-(def rp (.-resourcesPath process))
-(def repo-dir (s/includes? (s/lower-case rp) "electron"))
-(def photos (str (if repo-dir ".." user-data) "/data/images/"))
-(def thumbs-256 (str (if repo-dir ".." user-data) "/data/thumbs/256/"))
-(def thumbs-2048 (str (if repo-dir ".." user-data) "/data/thumbs/2048/"))
 
 (defn stars-view [ts put-fn]
   (let [{:keys [entry]} (eu/entry-reaction ts)
@@ -48,9 +38,9 @@
    when JPEG file requested."
   [entry locale local put-fn]
   (when-let [file (:img-file entry)]
-    (let [resized-rotated (str thumbs-2048 file)
+    (let [resized-rotated (str h/thumbs-2048 file)
           ts (:timestamp entry)
-          external (str photos file)
+          external (str h/photos file)
           fullscreen (:fullscreen @local)
           md (:md entry)
           md (if fullscreen md (str (first (str/split-lines md))))
@@ -72,7 +62,7 @@
 
 (defn thumb-view [entry selected local]
   (when-let [file (:img-file entry)]
-    (let [thumb (str thumbs-256 file)
+    (let [thumb (str h/thumbs-256 file)
           click (fn [_] (swap! local assoc-in [:selected] entry))]
       [:li.thumb
        {:on-click click
@@ -118,7 +108,7 @@
             html (md/md->html (:md selected))
             file (:img-file selected)
             mapbox-token (:mapbox-token @backend-cfg)
-            external (str photos file)]
+            external (str h/photos file)]
         [:div.info
          ;[l/leaflet-map selected true {} put-fn]
          [mb/mapbox-cls {:local    local

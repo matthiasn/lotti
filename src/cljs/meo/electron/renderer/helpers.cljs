@@ -7,6 +7,8 @@
             [cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
             [moment]
+            [electron :refer [remote]]
+            [cljs.nodejs :refer [process]]
             [clojure.string :as s]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
@@ -144,3 +146,13 @@
   [s substring]
   (when (and (string? s) (string? substring))
     (s/includes? (s/lower-case s) (s/lower-case substring))))
+
+
+(def iww-host (.-iwwHOST js/window))
+(def user-data (.getPath (aget remote "app") "userData"))
+(def rp (.-resourcesPath process))
+(def repo-dir (s/includes? (s/lower-case rp) "electron"))
+(def photos (str (if repo-dir ".." user-data) "/data/images/"))
+(def thumbs-256 (str (if repo-dir ".." user-data) "/data/thumbs/256/"))
+(def thumbs-2048 (str (if repo-dir ".." user-data) "/data/thumbs/2048/"))
+(def export (str (if repo-dir ".." user-data) "/data/export/"))

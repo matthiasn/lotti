@@ -6,11 +6,12 @@
             [cljs.nodejs :refer [process]]
             [mapbox-gl]
             [meo.electron.renderer.ui.entry.carousel :as carousel]
-            [reagent.impl.component :as ric]))
+            [meo.electron.renderer.helpers :as h]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (def heatmap-data
   {:type "geojson"
-   :data "/tmp/entries.geojson"})
+   :data (str h/export "entries.geojson")})
 
 (def heatmap-cfg
   {:id     "earthquakes-heat"
@@ -57,10 +58,12 @@
           loaded (fn []
                    (.addSource mb-map "earthquakes"
                                (clj->js heatmap-data))
-                   (.addLayer mb-map (clj->js heatmap-cfg) "waterway-label"))]
+                   (.addLayer mb-map (clj->js heatmap-cfg) "waterway-label"))
+          hide-gallery #(swap! local assoc-in [:gallery] false)]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
-      (.on mb-map "load" loaded))))
+      (.on mb-map "load" loaded)
+      (.on mb-map "zoomstart" hide-gallery))))
 
 (defn heatmap-cls [props]
   (r/create-class
@@ -76,6 +79,8 @@
         geo-photos (subscribe [:geo-photos])
         fake-entry (reaction {:comments (:data @geo-photos)})
         local (r/atom {:gallery false})
+        hide-photos #(swap! local assoc-in [:gallery] false)
+        show-photos #(swap! local assoc-in [:gallery] true)
         get-bounds #(let [mb-map (:mb-map @local)
                           bounds (.getBounds mb-map)
                           zoom (.getZoom mb-map)
@@ -89,8 +94,9 @@
                                  :sw     {:lat (.-lat sw)
                                           :lon (.-lng sw)}}]
                       (put-fn [:search/geo-photo coord])
+                      (hide-photos)
+                      (swap! local assoc-in [:last-res] (:ts @geo-photos))
                       (info coord zoom))
-        hide-photos #(swap! local assoc-in [:gallery] false)
         p0 #(let [mb-map (:mb-map @local)]
               (hide-photos)
               (.flyTo mb-map (clj->js {:center [10.001872149129213
@@ -116,7 +122,9 @@
         toggle-photos #(do (swap! local update-in [:gallery] not))]
     (fn [put-fn]
       (let [mapbox-token (:mapbox-token @backend-cfg)]
-        (info (:ts @geo-photos))
+        (when (not= (:last-res @local) (:ts @geo-photos))
+          (swap! local assoc-in [:last-res] (:ts @geo-photos))
+          (js/setTimeout show-photos 500))
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
           [:div.flex-container
@@ -133,7 +141,7 @@
                    " photos")]]
             [heatmap-cls {:local local :put-fn put-fn}]
             (when (:gallery @local)
-              ^{:key (:ts @geo-photos)}
+              (info :show-gallery)
               [:div.fixed-gallery
                [carousel/gallery fake-entry {} put-fn]])]]
           [:div.flex-container
