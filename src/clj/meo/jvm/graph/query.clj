@@ -338,16 +338,15 @@
    autosuggestions."
   [current-state]
   (let [g (:graph current-state)
-        ltags (map #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))
-        sorted-tags (->> ltags
-                         (map (fn [lt]
-                                (let [tag (:val (uc/attrs g {:tag lt}))
-                                      cnt (count (uc/find-edges g {:src {:tag lt}}))]
-                                  [tag cnt])))
-                         (sort-by second)
-                         reverse
-                         (map first))]
-    sorted-tags))
+        ltags (map #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))]
+    (->> ltags
+         (map (fn [lt]
+                (let [tag (:val (uc/attrs g {:tag lt}))
+                      cnt (count (uc/find-edges g {:src {:tag lt}}))]
+                  [tag cnt])))
+         (sort-by second)
+         reverse
+         (mapv first))))
 
 (defn find-all-pvt-hashtags
   "Finds all private hashtags. Private hashtags are either those used
