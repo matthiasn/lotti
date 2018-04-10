@@ -121,8 +121,8 @@
                          (when (not= md (:md @entry))
                            (when (:timestamp updated)
                              (put-fn [:entry/update-local updated]))
-                           (info "update-local" (:timestamp updated)
-                                 "-" (- (st/now) start) "ms"))))
+                           (debug "update-local" (:timestamp updated)
+                                  "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
                     (when-not (:timeout @cb-atom)

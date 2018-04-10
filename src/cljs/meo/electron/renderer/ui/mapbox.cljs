@@ -28,8 +28,9 @@
       (if scroll-disabled
         (.disable scroll-zoom)
         (.enable scroll-zoom))
-      (swap! local assoc-in [:marker] marker)
-      (.addTo marker mb-map))))
+      (when (and latitude longitude)
+        (swap! local assoc-in [:marker] marker)
+        (.addTo marker mb-map)))))
 
 (defn mapbox-cls [props]
   (aset mapbox-gl "accessToken" (:mapbox-token props))
@@ -55,8 +56,9 @@
                                          (.enable scroll-zoom))
                                        (swap! local assoc-in [:marker] marker)
                                        (when prev-marker (.remove prev-marker))
-                                       (.flyTo mb-map (clj->js fly-to))
-                                       (.addTo marker mb-map)))
+                                       (when (and latitude longitude)
+                                         (.flyTo mb-map (clj->js fly-to))
+                                         (.addTo marker mb-map))))
      :reagent-render               (fn [props]
                                      (let [{:keys [local id]} props]
                                        [:div.mapbox
