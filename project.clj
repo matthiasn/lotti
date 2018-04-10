@@ -74,7 +74,8 @@
             [lein-jlink "0.2.0"]
             [lein-ancient "0.6.15"]]
 
-  :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming" "java.management"]
+  :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
+                  "java.management" "jdk.unsupported"]
 
   ;:global-vars {*assert* false}
 
