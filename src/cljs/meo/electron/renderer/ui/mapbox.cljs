@@ -32,33 +32,33 @@
         (swap! local assoc-in [:marker] marker)
         (.addTo marker mb-map)))))
 
+(defn component-will-receive-props [_this props]
+  (let [props (ric/extract-props props)
+        {:keys [selected local scroll-disabled]} props
+        {:keys [latitude longitude]} selected
+        mb-map (:mb-map @local)
+        prev-marker (:marker @local)
+        ease-to {:center [longitude latitude]
+                 :speed  0.6}
+        marker (-> (mapbox-gl/Marker.)
+                   (.setLngLat (clj->js
+                                 [longitude
+                                  latitude])))
+        scroll-zoom (.-scrollZoom mb-map)]
+    (if scroll-disabled
+      (.disable scroll-zoom)
+      (.enable scroll-zoom))
+    (swap! local assoc-in [:marker] marker)
+    (when prev-marker (.remove prev-marker))
+    (when (and latitude longitude)
+      (.easeTo mb-map (clj->js ease-to))
+      (.addTo marker mb-map))))
+
 (defn mapbox-cls [props]
   (aset mapbox-gl "accessToken" (:mapbox-token props))
   (r/create-class
     {:component-did-mount          (mapbox-did-mount props)
-     :component-will-receive-props (fn [_this props]
-                                     (let [props (ric/extract-props props)
-                                           {:keys [selected local scroll-disabled]} props
-                                           {:keys [latitude longitude]} selected
-                                           mb-map (:mb-map @local)
-                                           prev-marker (:marker @local)
-                                           zoom (.getZoom mb-map)
-                                           fly-to {:center [longitude latitude]
-                                                   :speed  0.6
-                                                   :zoom   zoom}
-                                           marker (-> (mapbox-gl/Marker.)
-                                                      (.setLngLat (clj->js
-                                                                    [longitude
-                                                                     latitude])))
-                                           scroll-zoom (.-scrollZoom mb-map)]
-                                       (if scroll-disabled
-                                         (.disable scroll-zoom)
-                                         (.enable scroll-zoom))
-                                       (swap! local assoc-in [:marker] marker)
-                                       (when prev-marker (.remove prev-marker))
-                                       (when (and latitude longitude)
-                                         (.flyTo mb-map (clj->js fly-to))
-                                         (.addTo marker mb-map))))
+     :component-will-receive-props component-will-receive-props
      :reagent-render               (fn [props]
                                      (let [{:keys [local id]} props]
                                        [:div.mapbox
