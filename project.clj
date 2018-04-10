@@ -25,7 +25,7 @@
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.34"]
-                 [matthiasn/systems-toolbox-sente "0.6.27"]
+                 [matthiasn/systems-toolbox-sente "0.6.29"]
                  [org.clojure/tools.reader "1.2.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
