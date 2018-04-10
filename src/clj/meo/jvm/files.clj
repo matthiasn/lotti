@@ -20,7 +20,8 @@
             [buddy.core.nonce :as nonce]
             [ubergraph.core :as uc]
             [meo.common.utils.vclock :as vc]
-            [meo.common.utils.misc :as u])
+            [meo.common.utils.misc :as u]
+            [meo.jvm.graph.query :as gq])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -126,7 +127,6 @@
         g (:graph current-state)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
-        broadcast-meta (merge new-meta {:sente-uid :broadcast})
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
                            :b>a)]

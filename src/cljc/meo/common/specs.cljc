@@ -93,6 +93,7 @@
 (s/def :entry/new entry-spec)
 (s/def :entry/update-local entry-spec)
 (s/def :entry/update entry-spec)
+(s/def :entry/briefing entry-spec)
 (s/def :entry/saved entry-spec)
 (s/def :entry/import entry-spec)
 (s/def :entry/find timestamp-required-spec)
@@ -336,6 +337,7 @@
 (s/def :geonames/res map?)
 
 (s/def :search/refresh nil?)
+(s/def :import/git nil?)
 (s/def :import/spotify nil?)
 (s/def :import/listen nil?)
 (s/def :import/stop-server nil?)

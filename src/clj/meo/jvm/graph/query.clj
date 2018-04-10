@@ -114,9 +114,6 @@
             (contains? opts ":story")
             (= :story (:entry-type entry))
 
-            (contains? opts ":location")
-            (:location entry)
-
             (contains? opts ":saga")
             (= :saga (:entry-type entry))
 
@@ -391,15 +388,6 @@
         sagas (into {} (map (fn [id] [id (uc/attrs g id)]) saga-ids))]
     sagas))
 
-(defn find-all-locations
-  "Finds all location in graph and returns map with the id of the location
-   (creation timestamp) as key and the location node itself as value."
-  [current-state]
-  (let [g (:graph current-state)
-        location-ids (map :dest (uc/find-edges g {:src :locations}))
-        locations (into {} (map (fn [id] [id (uc/attrs g id)]) location-ids))]
-    locations))
-
 (defn find-all-briefings
   "Finds all briefings in graph and returns map with the day as key and the
    briefing node id as value."
@@ -478,5 +466,5 @@
           ms (/ (- (System/nanoTime) start-ts) 1000000)
           dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
       (debug queries)
-      (prn "queries took" (:duration-ms dur))
+      (info "queries took" (:duration-ms dur))
       {:emit-msg [:state/new (merge res2 dur)]})))

@@ -77,7 +77,7 @@
   (let [stats-type (:type msg-payload)
         path [:last-stat stats-type]
         last-gen (get-in current-state path 0)]
-    (when (> (- (st/now) last-gen) 2000)
+    (when (> (- (st/now) last-gen) 500)
       (let [start (st/now)
             stats-mapper (case stats-type
                            :stats/pomodoro t-s/time-mapper
@@ -128,7 +128,6 @@
    :stories       (map-w-names
                     (gq/find-all-stories state) #{:story-name :linked-saga})
    :sagas         (map-w-names (gq/find-all-sagas state) #{:saga-name})
-   ;:locations     (gq/find-all-locations state)
    :cfg           (merge (:cfg state) {:pid (pid/current)})})
 
 (defn count-words
@@ -157,24 +156,26 @@
 (defn stats-tags-fn
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
-  [{:keys [current-state put-fn msg-meta] :as msg-map}]
-  (when (> (- (st/now) (get-in current-state [:last-stat :stats] 0)) 2000)
-    (let [start (st/now)
-          uid (:sente-uid msg-meta)
-          stats-tags (make-stats-tags current-state)
-          started {:started-tasks (gq/get-filtered current-state started-tasks)}
-          waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}
-          word-count {:word-count (count-words current-state)}
-          logged {:hours-logged (hours-logged current-state)}
-          briefings {:briefings (gq/find-all-briefings current-state)}]
-      (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
-      (put-fn (with-meta [:state/stats-tags2 started] {:sente-uid uid}))
-      (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
-      (put-fn (with-meta [:stats/result2 word-count] {:sente-uid uid}))
-      (put-fn (with-meta [:stats/result2 logged] {:sente-uid uid}))
-      (put-fn (with-meta [:state/stats-tags2 briefings] {:sente-uid uid}))
-      (info "completed stats-tags" "in" (- (st/now) start) "ms"))
-    {:new-state (assoc-in current-state [:last-stat :stats] (st/now))}))
+  [{:keys [current-state put-fn msg-meta]}]
+  (let [path [:last-stat :stats (:sente-uid msg-meta)]
+        last-vclock (:global-vclock current-state)]
+    (when (not= last-vclock (get-in current-state path))
+      (let [start (st/now)
+            uid (:sente-uid msg-meta)
+            stats-tags (make-stats-tags current-state)
+            started {:started-tasks (gq/get-filtered current-state started-tasks)}
+            waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}
+            word-count {:word-count (count-words current-state)}
+            logged {:hours-logged (hours-logged current-state)}
+            briefings {:briefings (gq/find-all-briefings current-state)}]
+        (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 started] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 word-count] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 logged] {:sente-uid uid}))
+        (put-fn (with-meta [:state/stats-tags2 briefings] {:sente-uid uid}))
+        (info "completed stats-tags" "in" (- (st/now) start) "ms"))
+      {:new-state (assoc-in current-state path last-vclock)})))
 
 (defn task-summary-stats
   "Generate some very basic stats about the graph for display in UI."
@@ -197,21 +198,23 @@
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
   [{:keys [current-state put-fn msg-meta]}]
-  (when (> (- (st/now) (get-in current-state [:last-stat :stats2] 0)) 2000)
-    (let [start (st/now)
-          stats (get-basic-stats current-state)
-          aw {:award-points (aw/award-points current-state)}
-          q {:questionnaires (q/questionnaires current-state)}
-          uid (:sente-uid msg-meta)]
-      (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))
-      (task-summary-stats-w current-state :open-tasks-cnt msg-meta put-fn)
-      (task-summary-stats-w current-state :backlog-cnt msg-meta put-fn)
-      (task-summary-stats-w current-state :completed-cnt msg-meta put-fn)
-      (task-summary-stats-w current-state :closed-cnt msg-meta put-fn)
-      (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
-      (put-fn (with-meta [:stats/result2 q] {:sente-uid uid}))
-      (info "completed stats2" "in" (- (st/now) start) "ms"))
-    {:new-state (assoc-in current-state [:last-stat :stats2] (st/now))}))
+  (let [path [:last-stat :stats2 (:sente-uid msg-meta)]
+        last-vclock (:global-vclock current-state)]
+    (when (not= last-vclock (get-in current-state path))
+      (let [start (st/now)
+            stats (get-basic-stats current-state)
+            aw {:award-points (aw/award-points current-state)}
+            q {:questionnaires (q/questionnaires current-state)}
+            uid (:sente-uid msg-meta)]
+        (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))
+        (task-summary-stats-w current-state :open-tasks-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :backlog-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :completed-cnt msg-meta put-fn)
+        (task-summary-stats-w current-state :closed-cnt msg-meta put-fn)
+        (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
+        (put-fn (with-meta [:stats/result2 q] {:sente-uid uid}))
+        (info "completed stats2" "in" (- (st/now) start) "ms"))
+      {:new-state (assoc-in current-state path last-vclock)})))
 
 (def stats-handler-map
   {:stats/get            get-stats-fn

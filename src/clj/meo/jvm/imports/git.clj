@@ -45,7 +45,7 @@
     commits))
 
 (defn import-from-git [{:keys [put-fn]}]
-  (info "reading git repos")
+  (info "reading git repos" fu/repos-path)
   (let [repos-cfg (fu/load-repos)]
     (set-last-read)
     (doseq [[repo-name repo-cfg] (:repos repos-cfg)]

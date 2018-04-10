@@ -15,23 +15,24 @@
   (let [ref (atom nil)
         briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
-        data-handler (fn [ymd]
-                       (let [q (up/parse-search (str "b:" ymd))]
-                         (when-not (get @briefings ymd)
-                           (let [weekday (.format (moment. ymd) "dddd")
-                                 md (str "## " weekday "'s #briefing")
-                                 entry (merge
-                                         (p/parse-entry md)
-                                         {:briefing      {:day ymd}
-                                          :timestamp     (st/now)
-                                          :timezone      h/timezone
-                                          :utc-offset    (.getTimezoneOffset (new js/Date))
-                                          :primary-story (-> @cfg :briefing :story)})]
-                             (put-fn [:entry/update entry])))
-                         (put-fn [:search/remove-briefings])
-                         (put-fn [:cal/to-day {:day ymd}])
-                         (put-fn [:search/add {:tab-group :briefing :query q}])
-                         (put-fn [:search/refresh])))
+        data-fn (fn [ymd]
+                  (let [q (up/parse-search (str "b:" ymd))]
+                    (when-not (get @briefings ymd)
+                      (let [weekday (.format (moment. ymd) "dddd")
+                            md (str "## " weekday "'s #briefing")
+                            entry (merge
+                                    (p/parse-entry md)
+                                    {:briefing      {:day ymd}
+                                     :timestamp     (st/now)
+                                     :timezone      h/timezone
+                                     :utc-offset    (.getTimezoneOffset (new js/Date))
+                                     :primary-story (-> @cfg :briefing :story)})]
+                        (info "creating briefing" ymd)
+                        (put-fn [:entry/update entry])))
+                    (put-fn [:search/remove-briefings])
+                    (put-fn [:cal/to-day {:day ymd}])
+                    (put-fn [:search/add {:tab-group :briefing :query q}])
+                    (put-fn [:search/refresh])))
         opts (clj->js {:time             false
                        :monthsInCalendar 2})]
     (r/create-class
@@ -39,7 +40,7 @@
        :component-did-update (fn [] (some-> @ref .focus))
        :component-did-mount  (fn [props]
                                (let [rome-elem (rome. @ref opts)]
-                                 (.on rome-elem "data" data-handler))
+                                 (.on rome-elem "data" data-fn))
                                (info :component-did-mount @ref (js->clj props)))
        :reagent-render       (fn [put-fn]
                                [:div.rome {:ref (fn [cmp] (reset! ref cmp))}])})))
