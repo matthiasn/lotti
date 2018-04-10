@@ -18,7 +18,9 @@
 
 (def sente-base-cfg
   {:sente-opts {:host     (.-iwwHOST js/window)
-                :protocol "http:"}})
+                :protocol "http:"}
+   :opts       {:in-chan  [:buffer 100]
+                :out-chan [:buffer 100]}})
 
 (def sente-cfg
   (merge sente-base-cfg
@@ -30,8 +32,6 @@
                          :state/stats-tags-get :import/listen :spotify/play
                          :spotify/pause :state/search :cfg/refresh
                          :sync/start-server :sync/stop-server}}))
-
-(def sente-firehose-cfg (merge sente-base-cfg {:opts {:in-chan [:buffer 100]}}))
 
 (def OBSERVER (.-OBSERVER js/window))
 
@@ -56,7 +56,7 @@
                      (screenshot/cmp-map :renderer/screenshot)
                      (sente/cmp-map :renderer/ws-cmp sente-cfg)
                      (when OBSERVER
-                       (sente/cmp-map :renderer/ws-firehose sente-firehose-cfg))
+                       (sente/cmp-map :renderer/ws-firehose sente-base-cfg))
                      (router/cmp-map :renderer/router)
                      (store/cmp-map :renderer/store)
                      (sched/cmp-map :renderer/scheduler)
