@@ -118,6 +118,8 @@
   {:cmp-id      cmp-id
    :state-fn    initial-state-fn
    :state-spec  :state/client-store-spec
+   :opts        {:in-chan  [:buffer 100]
+                 :out-chan [:buffer 100]}
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
                        {:state/new         new-state-fn

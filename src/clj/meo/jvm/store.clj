@@ -125,7 +125,9 @@
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
-   :opts        {:msgs-on-firehose true}
+   :opts        {:msgs-on-firehose true
+                 :in-chan          [:buffer 100]
+                 :out-chan         [:buffer 100]}
    :handler-map {:entry/import     f/entry-import-fn
                  :entry/find       gq/find-entry
                  :entry/unlink     ga/unlink
@@ -147,5 +149,6 @@
   {:cmp-id      cmp-id
    :state-fn    state-fn
    :opts        {:msgs-on-firehose true
-                 :in-chan          [:buffer 100]}
+                 :in-chan          [:buffer 100]
+                 :out-chan         [:buffer 100]}
    :handler-map gs/stats-handler-map})
