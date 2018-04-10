@@ -56,7 +56,8 @@
                              new-entries (map entry-mapper recently-played)]
                          (info "obtained response from spotify")
                          (doseq [entry new-entries]
-                           (put-fn [:entry/update entry]))))
+                           (put-fn (with-meta [:entry/update entry]
+                                              {:silent true})))))
           access-token (:access-token (get-access-token))
           url (str rp-url access-token)]
       (if access-token
