@@ -274,8 +274,8 @@
 (s/def :meo.query-cfg/all (s/coll-of keyword?))
 
 (s/def :meo.query-cfg/tab-group
-  (s/keys :req-un [:meo.query-cfg/active
-                   :meo.query-cfg/all]))
+  (s/keys :req-un [:meo.query-cfg/all]
+          :opt-un [:meo.query-cfg/active]))
 
 (s/def :meo.query-cfg/queries (s/map-of keyword? :meo.search/search))
 (s/def :meo.query-cfg/tab-groups (s/map-of keyword? :meo.query-cfg/tab-group))

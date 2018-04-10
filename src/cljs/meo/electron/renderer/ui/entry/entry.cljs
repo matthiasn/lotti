@@ -107,7 +107,9 @@
       (let [edit-mode? @edit-mode
             locale (:locale @cfg :en)
             formatted-time (h/localize-datetime (moment ts) locale)
-            mapbox-token (:mapbox-token @backend-cfg)]
+            mapbox-token (:mapbox-token @backend-cfg)
+            qid (:query-id local-cfg)
+            map-id (str ts (when qid (name qid)))]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
@@ -141,7 +143,7 @@
              [:div.entry-mapbox
               {:on-click #(swap! local update-in [:scroll-disabled] not)}
               [mb/mapbox-cls {:local           local
-                              :id              (str ts (name (:query-id local-cfg)))
+                              :id              map-id
                               :selected        @entry
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
