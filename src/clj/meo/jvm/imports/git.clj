@@ -16,8 +16,8 @@
 
 (defn set-last-read []
   (let [repos (fu/load-repos)
-        now (f/unparse rfc822-fmt (t/now))
-        updated (assoc-in repos [:last-read] now)]
+        recent (f/unparse rfc822-fmt (- (t/now) (* 60 1000)))
+        updated (assoc-in repos [:last-read] recent)]
     (spit fu/repos-path (pr-str updated))))
 
 ; adapted from https://gist.github.com/varemenos/e95c2e098e657c7688fd
