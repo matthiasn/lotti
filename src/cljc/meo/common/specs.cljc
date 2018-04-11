@@ -359,3 +359,5 @@
 
 (s/def :meo.enc/filename string?)
 (s/def :file/encrypt (s/keys :req-un [:meo.enc/filename]))
+
+(s/def :meo.update/status (s/map-of keyword? keyword?))

@@ -10,7 +10,7 @@
                  [org.clojure/data.avl "0.0.17"]
                  [org.clojure/test.check "0.10.0-alpha2"]
                  [clj-pid "0.1.2"]
-                 [clj-time "0.14.2"]
+                 [clj-time "0.14.3"]
                  [clj-http "3.8.0"]
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "2.2.0"]
@@ -21,11 +21,11 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
-                 [ubergraph "0.4.0"]
+                 [ubergraph "0.5.0"]
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.34"]
-                 [matthiasn/systems-toolbox-sente "0.6.29"]
+                 [matthiasn/systems-toolbox-sente "0.6.29" :exclusions [http-kit]]
                  [org.clojure/tools.reader "1.2.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
@@ -67,7 +67,7 @@
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.15"]
-            [test2junit "1.3.3"]
+            [test2junit "1.4.0"]
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
@@ -75,7 +75,7 @@
             [lein-ancient "0.6.15"]]
 
   :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
-                  "java.management" "jdk.unsupported"]
+                  "java.management"]
 
   ;:global-vars {*assert* false}
 
