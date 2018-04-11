@@ -56,7 +56,7 @@
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
                                            [cljsjs/moment "2.17.1-1"]
-                                           [matthiasn/systems-toolbox-electron "0.6.22"]
+                                           [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
              :inspect      {:dependencies [[matthiasn/systems-toolbox-kafka "0.6.16"]]
                             :source-paths ["src/cljc" "src/clj/" "env/inspect"]

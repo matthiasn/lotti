@@ -139,6 +139,8 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
+   :opts        {:in-chan  [:buffer 100]
+                 :out-chan [:buffer 100]}
    :handler-map {:sync/scan-inbox  scan-inbox
                  :sync/scan-images scan-images
                  :file/encrypt     encrypt}})
