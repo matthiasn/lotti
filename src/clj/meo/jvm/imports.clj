@@ -7,6 +7,8 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
+   :opts        {:in-chan  [:buffer 100]
+                 :out-chan [:buffer 100]}
    :handler-map {:import/photos     im/import-photos
                  :import/screenshot is/import-screenshot
                  :import/movie      im/import-movie

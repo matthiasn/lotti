@@ -85,13 +85,13 @@
                  :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
                                           :message [:import/spotify]
                                           :repeat  true
-                                          :initial true}]}]
+                                          :initial false}]}]
 
      [:cmd/send {:to  :backend/scheduler
-                 :msg [:cmd/schedule-new {:timeout (* 30 1000)
+                 :msg [:cmd/schedule-new {:timeout (* 60 1000)
                                           :message [:import/git]
                                           :repeat  true
-                                          :initial true}]}]]))
+                                          :initial false}]}]]))
 (defn -main
   "Starts the application from command line, saves and logs process ID. The
    system that is fired up when restart! is called proceeds in core.async's

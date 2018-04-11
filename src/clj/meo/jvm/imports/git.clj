@@ -63,5 +63,5 @@
                        :perm-tags  #{"#git-commit"}
                        :tags       #{"#git-commit"}}]
             (when (= (:email repo-cfg) (:email author))
-              (put-fn [:entry/update entry])))))))
+              (put-fn (with-meta [:entry/update entry] {:silent true}))))))))
   {})

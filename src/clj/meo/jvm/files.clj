@@ -104,7 +104,7 @@
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
-        broadcast-meta (merge msg-meta {:sente-uid :broadcast})]
+        broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
     #_(when (System/getenv "CACHED_APPSTATE")
         (future (persist-state! new-state)))
     (when (not= (dissoc prev :last-saved :vclock)
