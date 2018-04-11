@@ -128,6 +128,7 @@
                                               :output-to      "prod/renderer/renderer.js"
                                               :target         :nodejs
                                               :output-dir     "out/renderer"
+                                              :language-in    :es-2017
                                               :optimizations  :simple
                                               :parallel-build true}}
                               {:id           "renderer-dev"
@@ -135,6 +136,7 @@
                                :compiler     {:main           meo.electron.renderer.core
                                               :output-to      "dev/renderer/renderer.js"
                                               :output-dir     "dev/renderer"
+                                              :language-in    :es-2017
                                               :source-map     true
                                               :target         :nodejs
                                               :optimizations  :none
