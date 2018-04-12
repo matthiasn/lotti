@@ -4,8 +4,7 @@
             [taoensso.timbre :refer [info error warn]]
             [meo.jvm.file-utils :as fu]
             [camel-snake-kebab.core :refer :all]
-            [clojure.tools.reader.edn :as edn]
-            [clj-time.core :as t]
+            [matthiasn.systems-toolbox.component :as st]
             [clj-time.coerce :as c]
             [clj-time.format :as f]
             [cheshire.core :as cc]
@@ -16,7 +15,7 @@
 
 (defn set-last-read []
   (let [repos (fu/load-repos)
-        recent (f/unparse rfc822-fmt (- (t/now) (* 60 1000)))
+        recent (f/unparse rfc822-fmt (c/from-long (- (st/now) (* 60 1000))))
         updated (assoc-in repos [:last-read] recent)]
     (spit fu/repos-path (pr-str updated))))
 
