@@ -3,7 +3,7 @@
   together to form the backend system."
   (:gen-class)
   (:require [matthiasn.systems-toolbox.switchboard :as sb]
-            [matthiasn.systems-toolbox-sente.server :as sente]
+            [matthiasn.systems-toolbox-sente.server-http-kit :as sente]
             [matthiasn.systems-toolbox.scheduler :as sched]
             [meo.jvm.index :as idx]
             [meo.common.specs]
