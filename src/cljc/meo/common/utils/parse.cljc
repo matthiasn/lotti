@@ -39,7 +39,7 @@
    either the entry or any of its comments, can be found like this:
    #task ~#done."
   [text]
-  (let [text (str text)]
+  (let [text (s/trim (str text))]
     {:search-text text
      :ft-search   (when-let [ft-search (re-find #"\".*\"" text)]
                     (s/replace ft-search "\"" ""))

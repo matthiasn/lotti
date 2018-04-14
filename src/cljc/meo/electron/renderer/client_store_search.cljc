@@ -27,10 +27,12 @@
         query-path [:query-cfg :queries query-id]
         query-msg (merge msg-payload
                          {:sort-asc (:sort-asc (:cfg current-state))})
-        new-state (assoc-in current-state query-path query-msg)]
+        new-state (assoc-in current-state query-path query-msg)
+        prev @query-cfg]
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
-    {:new-state new-state
-     :emit-msg  [:state/search (u/search-from-cfg new-state)]}))
+    (when-not (= (u/cleaned-queries prev) (u/cleaned-queries @query-cfg))
+      {:new-state new-state
+       :emit-msg  [:state/search (u/search-from-cfg new-state)]})))
 
 ; TODO: linked filter belongs in query-cfg
 (defn set-linked-filter

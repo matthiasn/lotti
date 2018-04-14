@@ -132,3 +132,9 @@
                                        combined-tags)))))))
 
 (defn search-from-cfg [state] (select-keys (:query-cfg state) #{:queries}))
+
+(defn cleaned-queries [query-cfg]
+  (->> query-cfg
+       :queries
+       (map (fn [[k v]] [k (dissoc v :editor-state)]))
+       (into {})))
