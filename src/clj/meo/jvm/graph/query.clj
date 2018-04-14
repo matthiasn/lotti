@@ -19,12 +19,12 @@
   "Calculate time spent as tracked in custom fields."
   [entry]
   (let [custom-fields (:custom-fields entry)
-        duration-secs (filter identity (map (fn [[k v]]
-                                              (let [dur (:duration v)]
-                                                (if (= k "#audio")
-                                                  0
-                                                  (* 60 (or dur 0)))))
-                                            custom-fields))]
+        duration-secs (filter identity (mapv (fn [[k v]]
+                                               (let [dur (:duration v)]
+                                                 (if (= k "#audio")
+                                                   0
+                                                   (* 60 (or dur 0)))))
+                                             custom-fields))]
     (apply + duration-secs)))
 
 (def dtz (ct/default-time-zone))
@@ -51,18 +51,18 @@
           q-country (:country q)
           q-cc-match? (= q-country (-> entry :geoname :country-code))
 
-          q-tags (set (map s/lower-case (:tags q)))
-          q-not-tags (set (map s/lower-case (:not-tags q)))
-          q-mentions (set (map s/lower-case (:mentions q)))
+          q-tags (set (mapv s/lower-case (:tags q)))
+          q-not-tags (set (mapv s/lower-case (:not-tags q)))
+          q-mentions (set (mapv s/lower-case (:mentions q)))
 
-          tags (set (map s/lower-case (:tags entry)))
-          entry-comments (map #(uc/attrs g %) (:comments entry))
-          entry-comments-tags (apply set/union (map :tags entry-comments))
-          tags (set (map s/lower-case (set/union tags entry-comments-tags)))
+          tags (set (mapv s/lower-case (:tags entry)))
+          entry-comments (mapv #(uc/attrs g %) (:comments entry))
+          entry-comments-tags (apply set/union (mapv :tags entry-comments))
+          tags (set (mapv s/lower-case (set/union tags entry-comments-tags)))
 
-          mentions (set (map s/lower-case (:mentions entry)))
-          entry-comments-mentions (apply set/union (map :mentions entry-comments))
-          mentions (set (map s/lower-case (set/union mentions entry-comments-mentions)))
+          mentions (set (mapv s/lower-case (:mentions entry)))
+          entry-comments-mentions (apply set/union (mapv :mentions entry-comments))
+          mentions (set (mapv s/lower-case (set/union mentions entry-comments-mentions)))
 
           story-match? (if-let [story (:story q)]
                          (or (= story (:primary-story entry))
@@ -137,7 +137,7 @@
   (let [edges (uc/find-edges g {:dest ts :relationship :COMMENT})
         comment-ids (->> (flatten edges)
                          (remove :mirror?)
-                         (map :src)
+                         (mapv :src)
                          (sort))]
     (merge entry {:comments (vec comment-ids)})))
 
@@ -148,12 +148,12 @@
                  (fn [tag]
                    (let [q {:src {tag-type tag} :relationship :CONTAINS}
                          edges (uc/find-edges g q)]
-                     (set (map :dest edges)))))
-        t-matched (map (mapper :tag) (map s/lower-case (:tags query)))
-        nt-matched (map (mapper :tag) (map s/lower-case (:not-tags query)))
-        ntp-matched (map (mapper :ptag) (map s/lower-case (:not-tags query)))
-        pt-matched (map (mapper :ptag) (map s/lower-case (:tags query)))
-        m-matched (map (mapper :mention) (map s/lower-case (:mentions query)))
+                     (set (mapv :dest edges)))))
+        t-matched (mapv (mapper :tag) (mapv s/lower-case (:tags query)))
+        nt-matched (mapv (mapper :tag) (mapv s/lower-case (:not-tags query)))
+        ntp-matched (mapv (mapper :ptag) (mapv s/lower-case (:not-tags query)))
+        pt-matched (mapv (mapper :ptag) (mapv s/lower-case (:tags query)))
+        m-matched (mapv (mapper :mention) (mapv s/lower-case (:mentions query)))
         match-sets (filter seq (concat t-matched pt-matched m-matched))
         matched (if (seq match-sets) (apply set/intersection match-sets) #{})
         not-matched (apply set/union (filter seq (concat nt-matched ntp-matched)))]
@@ -163,18 +163,18 @@
   "Extract matching timestamps for query."
   [g query]
   (let [dt (ctf/parse (ctf/formatters :year-month-day) (:date-string query))]
-    (set (map :dest (uc/find-edges g {:src          {:type  :timeline/day
-                                                     :year  (ct/year dt)
-                                                     :month (ct/month dt)
-                                                     :day   (ct/day dt)}
-                                      :relationship :DATE})))))
+    (set (mapv :dest (uc/find-edges g {:src          {:type  :timeline/day
+                                                      :year  (ct/year dt)
+                                                      :month (ct/month dt)
+                                                      :day   (ct/day dt)}
+                                       :relationship :DATE})))))
 
 (defn get-linked-nodes
   "Find all linked nodes for entry."
   [g query]
   (let [for-entry (Long/parseLong (:linked query))
         linked (->> (flatten (uc/find-edges g {:src for-entry :relationship :LINKED}))
-                    (map :dest)
+                    (mapv :dest)
                     (sort))]
     (set linked)))
 
@@ -187,19 +187,19 @@
                     :year  (ct/year dt)
                     :month (ct/month dt)
                     :day   (ct/day dt)}]
-      (set (map :dest (uc/find-edges g {:src          day-node
-                                        :relationship :BRIEFING}))))))
+      (set (mapv :dest (uc/find-edges g {:src          day-node
+                                         :relationship :BRIEFING}))))))
 
 (defn get-connected-nodes
   "Extract matching timestamps for query."
   [g node]
-  (set (map :dest (uc/find-edges g {:src node}))))
+  (set (mapv :dest (uc/find-edges g {:src node}))))
 
 (defn get-linked-entries
   "Extract all linked entries for entry, including their comments."
   [entry g n sort-by-upvotes?]
   (let [linked (->> (flatten (uc/find-edges g {:src n :relationship :LINKED}))
-                    (map :dest)
+                    (mapv :dest)
                     (sort))]
     (merge entry {:linked-entries-list (vec linked)})))
 
@@ -270,11 +270,11 @@
 
                       ; set with all timestamps
                       :else (take (+ n 100) (:sorted-entries state)))
-        matched-entries (map mapper-fn (sort-fn matched-ids))
+        matched-entries (mapv mapper-fn (sort-fn matched-ids))
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
-        parent-ids (filter identity (map :comment-for matched-entries))
-        parents (map mapper-fn parent-ids)]
+        parent-ids (filter identity (mapv :comment-for matched-entries))
+        parents (mapv mapper-fn parent-ids)]
     (flatten [matched-entries parents])))
 
 (defn extract-sorted2
@@ -338,12 +338,12 @@
    autosuggestions."
   [current-state]
   (let [g (:graph current-state)
-        ltags (map #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))]
+        ltags (mapv #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))]
     (->> ltags
-         (map (fn [lt]
-                (let [tag (:val (uc/attrs g {:tag lt}))
-                      cnt (count (uc/find-edges g {:src {:tag lt}}))]
-                  [tag cnt])))
+         (mapv (fn [lt]
+                 (let [tag (:val (uc/attrs g {:tag lt}))
+                       cnt (count (uc/find-edges g {:src {:tag lt}}))]
+                   [tag cnt])))
          (sort-by second)
          reverse
          (mapv first))))
@@ -355,8 +355,8 @@
   [current-state]
   (let [cfg (:cfg current-state)
         g (:graph current-state)
-        ltags (map #(-> % :dest :ptag) (uc/find-edges g {:src :pvt-hashtags}))
-        tags (map #(:val (uc/attrs g {:ptag %})) ltags)]
+        ltags (mapv #(-> % :dest :ptag) (uc/find-edges g {:src :pvt-hashtags}))
+        tags (mapv #(:val (uc/attrs g {:ptag %})) ltags)]
     (disj (set/union (set tags) (:pvt-tags cfg)) "#new" "#import")))
 
 (defn find-all-mentions
@@ -364,9 +364,9 @@
    the :hashtags node."
   [current-state]
   (let [g (:graph current-state)
-        lmentions (map #(-> % :dest :mention)
-                       (uc/find-edges g {:src :mentions}))
-        mentions (map #(:val (uc/attrs g {:mention %})) lmentions)]
+        lmentions (mapv #(-> % :dest :mention)
+                        (uc/find-edges g {:src :mentions}))
+        mentions (mapv #(:val (uc/attrs g {:mention %})) lmentions)]
     (set mentions)))
 
 (defn find-all-stories
@@ -374,8 +374,8 @@
    (creation timestamp) as key and the story node itself as value."
   [current-state]
   (let [g (:graph current-state)
-        story-ids (map :dest (uc/find-edges g {:src :stories}))
-        stories (into {} (map (fn [id] [id (uc/attrs g id)]) story-ids))]
+        story-ids (mapv :dest (uc/find-edges g {:src :stories}))
+        stories (into {} (mapv (fn [id] [id (uc/attrs g id)]) story-ids))]
     stories))
 
 (defn find-all-sagas
@@ -383,8 +383,8 @@
    (creation timestamp) as key and the saga node itself as value."
   [current-state]
   (let [g (:graph current-state)
-        saga-ids (map :dest (uc/find-edges g {:src :sagas}))
-        sagas (into {} (map (fn [id] [id (uc/attrs g id)]) saga-ids))]
+        saga-ids (mapv :dest (uc/find-edges g {:src :sagas}))
+        sagas (into {} (mapv (fn [id] [id (uc/attrs g id)]) saga-ids))]
     sagas))
 
 (defn find-all-briefings
@@ -392,12 +392,12 @@
    briefing node id as value."
   [current-state]
   (let [g (:graph current-state)
-        briefing-ids (map :dest (uc/find-edges g {:src :briefings}))
-        briefings (into {} (map (fn [id]
-                                  (let [entry (uc/attrs g id)
-                                        day (-> entry :briefing :day)]
-                                    [day id]))
-                                briefing-ids))]
+        briefing-ids (mapv :dest (uc/find-edges g {:src :briefings}))
+        briefings (into {} (mapv (fn [id]
+                                   (let [entry (uc/attrs g id)
+                                         day (-> entry :briefing :day)]
+                                     [day id]))
+                                 briefing-ids))]
     briefings))
 
 (defn comments-linked-for-entry
@@ -416,19 +416,20 @@
         entry-mapper (fn [entry] [(:timestamp entry) entry])
         entries (take n (filter (entries-filter-fn query g)
                                 (extract-sorted-entries current-state query)))
-        comment-timestamps (set (apply concat (map :comments entries)))
+        comment-timestamps (set (apply concat (mapv :comments entries)))
         linked-timestamps (apply set/union
-                                 (map #(set (:linked-entries-list %))
-                                      entries))
-        linked (map #(uc/attrs g %) linked-timestamps)
+                                 (mapv #(set (:linked-entries-list %))
+                                       entries))
+        linked (mapv #(uc/attrs g %) linked-timestamps)
         comments-linked (comments-linked-for-entry g false)
-        linked (map comments-linked linked)
-        comments (map #(uc/attrs g %) comment-timestamps)]
+        linked (mapv comments-linked linked)
+        comments (mapv #(uc/attrs g %) comment-timestamps)
+        entry-tuples (concat (mapv entry-mapper entries)
+                             (mapv entry-mapper linked)
+                             (mapv entry-mapper comments))]
     {:entries     (vec (into (sorted-set-by >)
                              (filter identity (mapv :timestamp entries))))
-     :entries-map (into {} (concat (map entry-mapper entries)
-                                   (map entry-mapper linked)
-                                   (map entry-mapper comments)))}))
+     :entries-map (into {} (filter #(identity (first %)) entry-tuples))}))
 
 (defn find-entry
   "Find single entry."
