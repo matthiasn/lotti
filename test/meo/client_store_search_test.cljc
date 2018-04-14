@@ -10,43 +10,44 @@
 
 (deftest update-query-test
   "Test that new query is updated properly in store component state"
-  (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-        handler-res (search/update-query-fn {:current-state current-state
-                                             :msg-payload   st/empty-query})
-        new-state (:new-state handler-res)
-        toggle-msg {:timestamp (:timestamp st/test-entry) :query-id :query-1}
-        new-state2 (:new-state (search/update-query-fn
-                                 {:current-state new-state
-                                  :msg-payload   st/open-tasks-query}))]
-    (testing
-      "query is set locally"
-      (is (= st/empty-query (-> new-state :query-cfg :queries :query-1))))
-    (testing
-      "active entry not set"
-      (is (not (:active new-state))))
-    (testing
-      "query is updated"
-      (is (= st/open-tasks-query
-             (-> new-state2 :query-cfg :queries :query-1))))
-    (testing
-      "active entry not set after updating query"
-      (is (not (:active new-state2))))))
+  (with-redefs [search/query-cfg (atom {})]
+    (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
+          handler-res (search/update-query-fn {:current-state current-state
+                                               :msg-payload   st/empty-query})
+          new-state (:new-state handler-res)
+          new-state2 (:new-state (search/update-query-fn
+                                   {:current-state new-state
+                                    :msg-payload   st/open-tasks-query}))]
+      (testing
+        "query is set locally"
+        (is (= st/empty-query (-> new-state :query-cfg :queries :query-1))))
+      (testing
+        "active entry not set"
+        (is (not (:active new-state))))
+      (testing
+        "query is updated"
+        (is (= st/open-tasks-query
+               (-> new-state2 :query-cfg :queries :query-1))))
+      (testing
+        "active entry not set after updating query"
+        (is (not (:active new-state2)))))))
 
 (deftest show-more-test
   "Ensure that query is properly updated when more results are desired."
-  (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-        new-state (:new-state (search/update-query-fn
-                                {:current-state current-state
-                                 :msg-payload   st/open-tasks-query}))
-        {:keys [send-to-self]} (search/show-more
-                                 {:current-state new-state
-                                  :msg-payload   {:query-id :query-1}})
-        updated-query (second send-to-self)
-        expected-query (update-in st/open-tasks-query [:n] + 10)]
-    (testing
-      "send properly updated query, with increased number of results"
-      (is (= updated-query
-             expected-query)))))
+  (with-redefs [search/query-cfg (atom {})]
+    (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
+          new-state (:new-state (search/update-query-fn
+                                  {:current-state current-state
+                                   :msg-payload   st/open-tasks-query}))
+          {:keys [send-to-self]} (search/show-more
+                                   {:current-state new-state
+                                    :msg-payload   {:query-id :query-1}})
+          updated-query (second send-to-self)
+          expected-query (update-in st/open-tasks-query [:n] + 10)]
+      (testing
+        "send properly updated query, with increased number of results"
+        (is (= updated-query
+               expected-query))))))
 
 (deftest find-existing-test
   "Tests finding existing queries in tab."
