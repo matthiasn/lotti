@@ -138,7 +138,7 @@
                  :sync/done        sync-done
                  :sync/initiate    sync-send
                  :sync/next        sync-send
-                 :export/geojson   e/export-geojson
+                 :export/geojson   e/export
                  :entry/trash      f/trash-entry-fn
                  :state/search     gq/query-fn
                  :search/geo-photo geo/photos-within-bounds

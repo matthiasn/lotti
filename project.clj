@@ -18,6 +18,7 @@
                  [markdown-clj "1.0.2"]
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
+                 [org.clojure/data.csv "0.1.4"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
