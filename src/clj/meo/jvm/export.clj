@@ -5,7 +5,7 @@
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [meo.jvm.file-utils :as fu]
-            [clojure.set :as set])
+            [clojure.string :as s])
   (:import [java.math RoundingMode]))
 
 ;;; Export for mapbox heatmap
@@ -64,6 +64,8 @@
               v)))
         columns))
 
+(defn pascal [k] (s/join "" (map s/capitalize (s/split (name k) #"\-"))))
+
 (defn filtered-examples [entries-map]
   (let [required #{:latitude :longitude :primary-story}
         has-required (fn [x] (every? identity (map #(get x %) required)))]
@@ -77,8 +79,8 @@
         stories (set (map last examples))
         [training-data test-data] (split-at (int (* n 0.8)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
-    (write-csv training-csv (into [(mapv name columns)] training-data))
-    (write-csv test-csv (into [(mapv name columns)] test-data))
+    (write-csv training-csv (into [(mapv pascal columns)] training-data))
+    (write-csv test-csv (into [(mapv pascal columns)] test-data))
     (write-csv stories-csv [(vec stories)])))
 
 (defn export [msg-map]
