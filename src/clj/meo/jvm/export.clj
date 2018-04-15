@@ -4,11 +4,13 @@
             [cheshire.core :as cc]
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
-            [meo.jvm.file-utils :as fu]))
+            [meo.jvm.file-utils :as fu]
+            [clojure.set :as set])
+  (:import [java.math RoundingMode]))
+
+;;; Export for mapbox heatmap
 
 (def path (str fu/export-path "/entries.geojson"))
-(def path2 (str fu/export-path "/entries-stories.csv"))
-
 (def n Integer/MAX_VALUE)
 
 (defn entry-fmt [entry]
@@ -30,35 +32,54 @@
                 :features features})]
     (spit path json)))
 
-(def columns [:timestamp :latitude :longitude :primary-story
-              :timezone :starred :img-file :audio-file :task])
 
-(def xforms {:task       boolean
-             :img-file   boolean
-             :audio-file boolean})
+;;; Export for TensorFlow
 
-(defn entry-fmt2 [entry]
-  (let [{:keys [timestamp latitude longitude primary-story task
-                img-file timezone starred audio-file]} entry]
-    (when (and latitude longitude primary-story)
-      [timestamp latitude longitude primary-story timezone starred
-       (boolean img-file) (boolean audio-file) (boolean task)])))
+(defn write-csv [path data]
+  (with-open [w (io/writer path)]
+    (csv/write-csv w data)))
 
-(defn entry-fmt3 [entry]
+(def columns [:timestamp :latitude :longitude :starred :img-file
+              :audio-file :task :primary-story])
+
+(def training-csv (str fu/export-path "/entries_stories_training.csv"))
+(def test-csv (str fu/export-path "/entries_stories_test.csv"))
+(def stories-csv (str fu/export-path "/stories.csv"))
+
+(defn bool2int [x] (if (boolean x) 1 0))
+(defn round-geo [n] (double (.setScale (bigdec n) 4 RoundingMode/HALF_EVEN)))
+
+(def xforms {:task       bool2int
+             :img-file   bool2int
+             :audio-file bool2int
+             :starred    bool2int
+             :latitude   round-geo
+             :longitude  round-geo})
+
+(defn example-fmt [entry]
   (mapv (fn [k]
           (let [v (k entry)]
-            (if-let [xform (k xforms)]
-              (xform v)
+            (if-let [xf (k xforms)]
+              (xf v)
               v)))
         columns))
 
-(defn export-entry-stories [{:keys [current-state]}]
-  (info "Exporting entries with stories as CSV")
-  (with-open [writer (io/writer path2)]
-    (let [entries-map (:entries-map (gq/get-filtered current-state {:n n}))
+(defn filtered-examples [entries-map]
+  (let [required #{:latitude :longitude :primary-story}
+        has-required (fn [x] (every? identity (map #(get x %) required)))]
+    (filter has-required (vals entries-map))))
 
-          matches (filter identity (map entry-fmt2 (vals entries-map)))]
-      (csv/write-csv writer (into [(mapv name columns)] matches)))))
+(defn export-entry-stories [{:keys [current-state]}]
+  (info "CSV export: entries with stories")
+  (let [entries-map (:entries-map (gq/get-filtered current-state {:n n}))
+        examples (shuffle (map example-fmt (filtered-examples entries-map)))
+        n (count examples)
+        stories (set (map last examples))
+        [training-data test-data] (split-at (int (* n 0.8)) examples)]
+    (info "encountered" (count stories) "stories in" n "examples")
+    (write-csv training-csv (into [(mapv name columns)] training-data))
+    (write-csv test-csv (into [(mapv name columns)] test-data))
+    (write-csv stories-csv [(vec stories)])))
 
 (defn export [msg-map]
   (time (export-geojson msg-map))
