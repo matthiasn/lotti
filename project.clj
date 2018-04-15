@@ -16,6 +16,7 @@
                  [buddy/buddy-sign "2.2.0"]
                  [me.raynes/fs "1.4.6"]
                  [markdown-clj "1.0.2"]
+                 [progrock "0.1.2"]
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
                  [org.clojure/data.csv "0.1.4"]

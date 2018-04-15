@@ -5,7 +5,9 @@
             [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [meo.jvm.file-utils :as fu]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [meo.jvm.datetime :as dt]
+            [matthiasn.systems-toolbox.component :as st])
   (:import [java.math RoundingMode]))
 
 ;;; Export for mapbox heatmap
@@ -39,19 +41,34 @@
   (with-open [w (io/writer path)]
     (csv/write-csv w data)))
 
-(def columns [:timestamp :latitude :longitude :starred :img-file
-              :audio-file :task :primary-story])
+(def columns [:latitude :longitude :starred :img-file
+              :audio-file :task :md :day :hour :primary-story])
 
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
 (def stories-csv (str fu/export-path "/stories.csv"))
 
-(defn bool2int [x] (if (boolean x) 1 0))
-(defn round-geo [n] (double (.setScale (bigdec n) 4 RoundingMode/HALF_EVEN)))
+(def h (* 60 60 1000))
+(def d (* 24 h))
+
+(defn bool2int [k x] (if (boolean (k x)) 1 0))
+(defn word-count [k x] (count (s/split (k x) #" ")))
+(defn round-geo [k x] (double (.setScale (bigdec (k x)) 4 RoundingMode/HALF_EVEN)))
+(defn hour [k x] (int (/ (rem (:timestamp x) d) h)))
+
+(defn days-ago [k x]
+  (let [ts (:timestamp x)
+        now (st/now)]
+    (int (/ (- now ts) d))))
+
+(defn pascal [k] (s/join "" (map s/capitalize (s/split (name k) #"\-"))))
 
 (def xforms {:task       bool2int
              :img-file   bool2int
              :audio-file bool2int
+             :md         word-count
+             :day        days-ago
+             :hour       hour
              :starred    bool2int
              :latitude   round-geo
              :longitude  round-geo})
@@ -60,11 +77,9 @@
   (mapv (fn [k]
           (let [v (k entry)]
             (if-let [xf (k xforms)]
-              (xf v)
+              (xf k entry)
               v)))
         columns))
-
-(defn pascal [k] (s/join "" (map s/capitalize (s/split (name k) #"\-"))))
 
 (defn filtered-examples [entries-map]
   (let [required #{:latitude :longitude :primary-story}
@@ -74,9 +89,15 @@
 (defn export-entry-stories [{:keys [current-state]}]
   (info "CSV export: entries with stories")
   (let [entries-map (:entries-map (gq/get-filtered current-state {:n n}))
-        examples (shuffle (map example-fmt (filtered-examples entries-map)))
+        filtered (filtered-examples entries-map)
+        stories (-> (map :primary-story filtered)
+                    (set)
+                    (sort)
+                    (vec))
+        idx-m (into {} (map-indexed (fn [idx v] [v idx]) stories))
+        w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) filtered)
+        examples (shuffle (map example-fmt w-story-idx))
         n (count examples)
-        stories (set (map last examples))
         [training-data test-data] (split-at (int (* n 0.8)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
     (write-csv training-csv (into [(mapv pascal columns)] training-data))

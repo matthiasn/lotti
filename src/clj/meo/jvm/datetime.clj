@@ -9,3 +9,6 @@
 (defn fmt-from-long
   [ts]
   (ctf/unparse dt-local-fmt (c/from-long ts)))
+
+(def ymd-fmt (ctf/formatter "yyyy-MM-dd" (ct/default-time-zone)))
+(defn ts-to-ymd [ts] (ctf/unparse ymd-fmt (c/from-long ts)))
