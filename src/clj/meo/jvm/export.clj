@@ -42,8 +42,10 @@
   (with-open [w (io/writer path)]
     (csv/write-csv w data)))
 
-(def columns [:geohash :latitude :longitude :starred :img-file
-              :audio-file :task :md :day :hour :primary-story])
+(def columns [:geohash
+              ;:latitude :longitude
+              :starred :img-file
+              :audio-file :task :md :day :hour :mentions :primary-story])
 
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
@@ -57,6 +59,7 @@
 (defn word-count [k x] (count (s/split (k x) #" ")))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
 (defn hour [k x] (int (/ (rem (:timestamp x) d) h)))
+(defn mentions [k x] (or (first (:mentions x)) "none"))
 
 (defn geohash [bits]
   (fn [k x]
@@ -79,8 +82,10 @@
              :hour       hour
              :starred    bool2int
              :geohash    (geohash 35)
-             :latitude   round-geo
-             :longitude  round-geo})
+             :mentions   mentions
+             ;:latitude   round-geo
+             ;:longitude  round-geo
+             })
 
 (defn example-fmt [entry]
   (mapv (fn [k]
@@ -108,7 +113,7 @@
         examples (shuffle (map example-fmt w-story-idx))
         geohashes (set (map first examples))
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
-        ;examples (mapv (fn [x] (update-in x [0] #(get geo-idx-m %))) examples)
+
         n (count examples)
         [training-data test-data] (split-at (int (* n 0.8)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
