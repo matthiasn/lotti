@@ -36,7 +36,6 @@
    ;:middleware     [(middleware namespace-log-levels)]
    :appenders      {:spit (appenders/spit-appender
                             {:fname          "/tmp/meo.log"
-                             :hostname_      "foo"
                              :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSSZ"}})}})
 
 (timbre/merge-config! timbre-config)

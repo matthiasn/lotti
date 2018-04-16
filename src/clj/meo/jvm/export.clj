@@ -7,6 +7,7 @@
             [meo.jvm.file-utils :as fu]
             [clojure.string :as s]
             [meo.jvm.datetime :as dt]
+            [geo [geohash :as geohash] [jts :as jts] [spatial :as spatial] [io :as gio]]
             [matthiasn.systems-toolbox.component :as st])
   (:import [java.math RoundingMode]))
 
@@ -41,20 +42,27 @@
   (with-open [w (io/writer path)]
     (csv/write-csv w data)))
 
-(def columns [:latitude :longitude :starred :img-file
+(def columns [:geohash :latitude :longitude :starred :img-file
               :audio-file :task :md :day :hour :primary-story])
 
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
 (def stories-csv (str fu/export-path "/stories.csv"))
+(def geohashes-csv (str fu/export-path "/geohashes.csv"))
 
 (def h (* 60 60 1000))
 (def d (* 24 h))
 
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
 (defn word-count [k x] (count (s/split (k x) #" ")))
-(defn round-geo [k x] (double (.setScale (bigdec (k x)) 4 RoundingMode/HALF_EVEN)))
+(defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
 (defn hour [k x] (int (/ (rem (:timestamp x) d) h)))
+
+(defn geohash [bits]
+  (fn [k x]
+    (let [p (spatial/spatial4j-point (:latitude x) (:longitude x))
+          h (geohash/geohash p bits)]
+      (geohash/string h))))
 
 (defn days-ago [k x]
   (let [ts (:timestamp x)
@@ -70,6 +78,7 @@
              :day        days-ago
              :hour       hour
              :starred    bool2int
+             :geohash    (geohash 35)
              :latitude   round-geo
              :longitude  round-geo})
 
@@ -97,12 +106,17 @@
         idx-m (into {} (map-indexed (fn [idx v] [v idx]) stories))
         w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) filtered)
         examples (shuffle (map example-fmt w-story-idx))
+        geohashes (set (map first examples))
+        geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
+        ;examples (mapv (fn [x] (update-in x [0] #(get geo-idx-m %))) examples)
         n (count examples)
         [training-data test-data] (split-at (int (* n 0.8)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
+    (info (count geohashes) "geohashes")
     (write-csv training-csv (into [(mapv pascal columns)] training-data))
     (write-csv test-csv (into [(mapv pascal columns)] test-data))
-    (write-csv stories-csv [(vec stories)])))
+    (write-csv stories-csv (mapv (fn [x] [x]) stories))
+    (write-csv geohashes-csv (mapv (fn [x] [x]) geohashes))))
 
 (defn export [msg-map]
   (time (export-geojson msg-map))

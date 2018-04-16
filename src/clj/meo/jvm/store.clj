@@ -10,6 +10,7 @@
             [meo.jvm.graph.geo :as geo]
             [meo.jvm.export :as e]
             [meo.common.specs]
+            [progrock.core :as pr]
             [clojure.data.avl :as avl]
             [ubergraph.core :as uber]
             [meo.jvm.file-utils :as fu]
@@ -78,21 +79,30 @@
         entries (atom (avl/sorted-map))
         start (st/now)
         broadcast #(put-fn (with-meta % {:sente-uid :broadcast}))
-        entries-to-index (atom {})]
+        entries-to-index (atom {})
+        bar (pr/progress-bar cnt)]
     (doseq [[idx parsed] indexed]
       (let [ts (:timestamp parsed)
             progress (double (/ idx cnt))]
         (process-line parsed node-id cmp-state entries-to-index)
         (swap! cmp-state assoc-in [:startup-progress] progress)
+        (pr/print (pr/tick bar idx))
         (when (zero? (mod idx 1000))
           (broadcast [:startup/progress progress]))
+        (when (and (pos? idx) (zero? (mod idx 10000)))
+          (println))
         (if (:deleted parsed)
           (swap! entries dissoc ts)
           (swap! entries update-in [ts] conj parsed))))
+    (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)
     (broadcast [:startup/progress 1])
     (broadcast [:search/refresh])
+    (put-fn [:cmd/schedule-new {:timeout (* 60 1000)
+                                :message [:import/git]
+                                :repeat  true
+                                :initial false}])
     (ft-index entries-to-index put-fn)
     {}))
 

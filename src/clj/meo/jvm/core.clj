@@ -85,12 +85,6 @@
                  :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
                                           :message [:import/spotify]
                                           :repeat  true
-                                          :initial false}]}]
-
-     [:cmd/send {:to  :backend/scheduler
-                 :msg [:cmd/schedule-new {:timeout (* 60 1000)
-                                          :message [:import/git]
-                                          :repeat  true
                                           :initial false}]}]]))
 (defn -main
   "Starts the application from command line, saves and logs process ID. The
