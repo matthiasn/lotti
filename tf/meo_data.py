@@ -6,7 +6,7 @@ TEST_PATH = "./data/export/entries_stories_test.csv"
 
 
 CSV_COLUMN_NAMES = ['Geohash', 'Starred', 'ImgFile', 'AudioFile', 'Task',
-                    'Md', 'Day', 'Hour', 'Mentions', 'PrimaryStory']
+                    'Md', 'Day', 'Hour', 'Tags', 'Mentions', 'PrimaryStory']
 
 def load_data(y_name='PrimaryStory'):
     train = pd.read_csv(TRAIN_PATH, names=CSV_COLUMN_NAMES, header=0)

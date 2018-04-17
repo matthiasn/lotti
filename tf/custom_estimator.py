@@ -57,6 +57,9 @@ def my_model(features, labels, mode, params):
                                    predictions=predicted_classes,
                                    name='acc_op')
 
+    accuracy_top_3 = tf.metrics.mean(tf.nn.in_top_k(predictions=logits,
+                                                    targets=labels,
+                                                    k=3))
     accuracy_top_5 = tf.metrics.mean(tf.nn.in_top_k(predictions=logits,
                                                     targets=labels,
                                                     k=5))
@@ -68,6 +71,7 @@ def my_model(features, labels, mode, params):
                                                      k=25))
 
     metrics = {'accuracy': accuracy,
+               'accuracy_top_3': accuracy_top_3,
                'accuracy_top_5': accuracy_top_5,
                'accuracy_top_10': accuracy_top_10,
                'accuracy_top_25': accuracy_top_25,
@@ -91,13 +95,19 @@ def main(argv):
     (train_x, train_y), (test_x, test_y) = meo_data.load_data()
     my_feature_columns = []
 
-    geohash_set = set(train_x['Geohash'])
+    geohash_set = set(train_x['Geohash']).union(set(test_x['Geohash']))
     geohash_column = tf.feature_column.indicator_column(
         tf.feature_column.categorical_column_with_vocabulary_list(
             "Geohash", geohash_set))
     my_feature_columns.append(geohash_column)
 
-    mentions_set = set(train_x['Mentions'])
+    tags_set = set(train_x['Tags']).union(set(test_x['Tags']))
+    tags_column = tf.feature_column.indicator_column(
+        tf.feature_column.categorical_column_with_vocabulary_list(
+            "Tags", tags_set))
+    my_feature_columns.append(tags_column)
+
+    mentions_set = set(train_x['Mentions']).union(set(test_x['Mentions']))
     mentions_column = tf.feature_column.indicator_column(
         tf.feature_column.categorical_column_with_vocabulary_list(
             "Mentions", mentions_set))
@@ -108,7 +118,7 @@ def main(argv):
             key="Hour", num_buckets=24))
     my_feature_columns.append(hour_column)
 
-    days = max(set(train_x['Day']))
+    days = max(set(train_x['Day']).union(set(test_x['Day'])))
     day_column = tf.feature_column.indicator_column(
         tf.feature_column.categorical_column_with_identity(
             key="Day", num_buckets=days + 1))
@@ -144,7 +154,8 @@ def main(argv):
 
     print(
         '\nTest set accuracy: \033[1m{accuracy:0.3f} match\033[0m, '
-        '{accuracy_top_5:0.3f} top five, \033[1m{accuracy_top_10:0.3f} top ten\033[0m, '
+        '{accuracy_top_3:0.3f} top three, '
+        '\033[1m{accuracy_top_5:0.3f} top five\033[0m, {accuracy_top_10:0.3f} top ten, '
         '{accuracy_top_25:0.3f} top 25\n'.format(
             **eval_result))
 

@@ -8,7 +8,9 @@
             [clojure.string :as s]
             [meo.jvm.datetime :as dt]
             [geo [geohash :as geohash] [jts :as jts] [spatial :as spatial] [io :as gio]]
-            [matthiasn.systems-toolbox.component :as st])
+            [matthiasn.systems-toolbox.component :as st]
+            [clojure.string :as str]
+            [clojure.set :as set])
   (:import [java.math RoundingMode]))
 
 ;;; Export for mapbox heatmap
@@ -42,10 +44,8 @@
   (with-open [w (io/writer path)]
     (csv/write-csv w data)))
 
-(def columns [:geohash
-              ;:latitude :longitude
-              :starred :img-file
-              :audio-file :task :md :day :hour :mentions :primary-story])
+(def columns [:geohash :starred :img-file :audio-file :task
+              :md :day :hour :tags :mentions :primary-story])
 
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
@@ -59,7 +59,7 @@
 (defn word-count [k x] (count (s/split (k x) #" ")))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
 (defn hour [k x] (int (/ (rem (:timestamp x) d) h)))
-(defn mentions [k x] (or (first (:mentions x)) "none"))
+(defn join [k x] (str (name k) "-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
 
 (defn geohash [bits]
   (fn [k x]
@@ -81,11 +81,11 @@
              :day        days-ago
              :hour       hour
              :starred    bool2int
+             :latitude   round-geo
+             :longitude  round-geo
              :geohash    (geohash 35)
-             :mentions   mentions
-             ;:latitude   round-geo
-             ;:longitude  round-geo
-             })
+             :mentions   join
+             :tags       join})
 
 (defn example-fmt [entry]
   (mapv (fn [k]
@@ -100,10 +100,26 @@
         has-required (fn [x] (every? identity (map #(get x %) required)))]
     (filter has-required (vals entries-map))))
 
+(defn dict [k xs]
+  (let [sets (map #(set (k %)) xs)
+        words (apply set/union sets)]
+    (into {} (map-indexed (fn [idx v] [v idx]) words))))
+
+(defn replace-w-idx [k dic]
+  (fn [x]
+    (update-in x [k] (fn [ts] (set (map (fn [t] (get dic t 0)) ts))))))
+
 (defn export-entry-stories [{:keys [current-state]}]
   (info "CSV export: entries with stories")
   (let [entries-map (:entries-map (gq/get-filtered current-state {:n n}))
         filtered (filtered-examples entries-map)
+        tags-dict (dict :tags filtered)
+        mentions-dict (dict :mentions filtered)
+        tags-idxr (replace-w-idx :tags tags-dict)
+        mentions-idxr (replace-w-idx :mentions mentions-dict)
+        filtered (->> filtered
+                     (map tags-idxr)
+                     (map mentions-idxr))
         stories (-> (map :primary-story filtered)
                     (set)
                     (sort)
@@ -113,7 +129,6 @@
         examples (shuffle (map example-fmt w-story-idx))
         geohashes (set (map first examples))
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
-
         n (count examples)
         [training-data test-data] (split-at (int (* n 0.8)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
