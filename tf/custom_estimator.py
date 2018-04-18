@@ -1,27 +1,11 @@
-#  Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import tensorflow as tf
-import random
-
 import meo_data
+import model
 import feature_columns as fc
 import metrics as m
+import predictions as p
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', default=100, type=int, help='batch size')
@@ -31,113 +15,33 @@ parser.add_argument('--classes', default=500, type=int,
                     help='number of classes')
 
 
-def my_model(features, labels, mode, params):
-    """DNN with three hidden layers, and dropout of 0.1 probability."""
-    # Create three fully connected layers each layer having a dropout
-    # probability of 0.1.
-    net = tf.feature_column.input_layer(features, params['feature_columns'])
-    for units in params['hidden_units']:
-        net = tf.layers.dense(net, units=units, activation=tf.nn.relu)
-
-    # Compute logits (1 per class).
-    logits = tf.layers.dense(net, params['n_classes'], activation=None)
-
-    # Compute predictions.
-    predicted_classes = tf.argmax(logits, 1)
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        predictions = {
-            'class_ids': predicted_classes[:, tf.newaxis],
-            'probabilities': tf.nn.softmax(logits),
-            'top_k': tf.nn.top_k(logits, k=10)[1],
-            'logits': logits,
-        }
-        return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
-    # Compute loss.
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-
-    if mode == tf.estimator.ModeKeys.EVAL:
-        return tf.estimator.EstimatorSpec(
-            mode,
-            loss=loss,
-            eval_metric_ops=m.metrics(labels, predicted_classes, logits))
-
-    # Create training op.
-    assert mode == tf.estimator.ModeKeys.TRAIN
-
-    optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
-    train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-    return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
-
-
 def main(argv):
     args = parser.parse_args(argv[1:])
+    batch_size = args.batch_size
+
     (train_x, train_y), (test_x, test_y) = meo_data.load_data()
 
-    feature_columns = [
-        fc.cat_dict_column(train_x, test_x, 'Geohash'),
-        fc.cat_dict_column(train_x, test_x, 'GeohashWide'),
-        fc.cat_dict_column(train_x, test_x, 'Tags'),
-        fc.cat_dict_column(train_x, test_x, 'Mentions'),
-        fc.cat_id_column_fixed_buckets('Hour', 24),
-        fc.cat_id_column_fixed_buckets('HalfQuarterDay', 8),
-        fc.cat_id_column(train_x, test_x, 'WeeksAgo'),
-        fc.cat_id_column(train_x, test_x, 'DaysAgo'),
-        fc.cat_id_column(train_x, test_x, 'Md'),
-        fc.numeric_column('Starred'),
-        fc.numeric_column('ImgFile'),
-        fc.numeric_column('AudioFile'),
-        fc.numeric_column('Task')
-    ]
-
+    # construct classifier
     classifier = tf.estimator.Estimator(
-        model_fn=my_model,
+        model_fn=model.story_model,
         params={
-            'feature_columns': feature_columns,
+            'feature_columns': fc.story_model_columns(train_x, test_x),
             'hidden_units': [512, 512],
             'n_classes': args.classes,
         })
 
+    # train model
     classifier.train(
-        input_fn=lambda: meo_data.train_input_fn(train_x, train_y,
-                                                 args.batch_size),
+        input_fn=lambda: meo_data.train_input_fn(train_x, train_y, batch_size),
         steps=args.train_steps)
 
+    # evaluate and print results
     eval_result = classifier.evaluate(
-        input_fn=lambda: meo_data.eval_input_fn(test_x, test_y,
-                                                args.batch_size))
+        input_fn=lambda: meo_data.eval_input_fn(test_x, test_y, batch_size))
+    m.print_eval(eval_result)
 
-    print(
-        '\nTest set accuracy: \033[1m{accuracy:0.3f} match\033[0m, '
-        '{accuracy_top_3:0.3f} top three, '
-        ' {accuracy_top_5:0.3f} top five, \033[1m{accuracy_top_10:0.3f} top ten\033[0m, '
-        '{accuracy_top_25:0.3f} top 25\n'.format(
-            **eval_result))
-
-    predictions = classifier.predict(
-        input_fn=lambda: meo_data.eval_input_fn(test_x,
-                                                labels=None,
-                                                batch_size=args.batch_size))
-
-    pred_exps = list(zip(predictions, test_y))
-    random.shuffle(pred_exps)
-    print('\n')
-
-    for pred_dict, expec in pred_exps[:50]:
-        template = (
-            'expected: {:3d},  predicted: {:3d} ({:04.1f}%),  top ten: {},  {}')
-
-        class_id = pred_dict['class_ids'][0]
-        probabilities = pred_dict['probabilities']
-        probability = probabilities[class_id]
-        top_k = pred_dict['top_k']
-        contained = expec in set(top_k)
-        success = '\033[92mSUCCESS\033[0m' if contained else '\033[91mFAIL\033[0m'
-
-        print(
-            template.format(expec, class_id, 100 * probability, top_k, success))
-
-    print('\n')
+    # predict classes in test data, print a random sample
+    p.predict(classifier, test_x, test_y, batch_size)
 
 
 if __name__ == '__main__':

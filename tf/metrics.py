@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 
 
@@ -37,3 +33,12 @@ def metrics(labels, predicted, logits):
         'accuracy_top_10': accuracy_top_10,
         'accuracy_top_25': accuracy_top_25,
     }
+
+
+def print_eval(eval_result):
+    print(
+        '\nTest set accuracy: \033[1m{accuracy:0.3f} match\033[0m, '
+        '{accuracy_top_3:0.3f} top three, '
+        ' {accuracy_top_5:0.3f} top five, \033[1m{accuracy_top_10:0.3f} top ten\033[0m, '
+        '{accuracy_top_25:0.3f} top 25\n'.format(
+            **eval_result))
