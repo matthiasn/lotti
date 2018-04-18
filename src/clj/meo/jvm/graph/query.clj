@@ -216,7 +216,7 @@
                       (-> (uc/attrs g n)
                           (get-comments g n)
                           (get-linked-entries g n false))
-                      (warn "extract-sorted-entries can't find node: " n)))
+                      (debug "extract-sorted-entries can't find node: " n)))
         sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
         matched-ids (cond
                       ; full-text search

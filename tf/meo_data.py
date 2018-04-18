@@ -5,8 +5,13 @@ TRAIN_PATH = "./data/export/entries_stories_training.csv"
 TEST_PATH = "./data/export/entries_stories_test.csv"
 
 
-CSV_COLUMN_NAMES = ['Geohash', 'Starred', 'ImgFile', 'AudioFile', 'Task',
-                    'Md', 'Day', 'Hour', 'Tags', 'Mentions', 'PrimaryStory']
+CSV_COLUMN_NAMES = ['Geohash', 'GeohashWide', 'Starred', 'ImgFile', 'AudioFile', 'Task', 'Md',
+                    'WeeksAgo', 'DaysAgo', 'QuarterDay', 'HalfQuarterDay', 'Hour',
+                    'Tags', 'Mentions', 'PrimaryStory']
+
+def hot(sa):
+    ia = [int(k) for k in sa]
+    return tf.one_hot(ia, 500, 1.0, 0.1)
 
 def load_data(y_name='PrimaryStory'):
     train = pd.read_csv(TRAIN_PATH, names=CSV_COLUMN_NAMES, header=0)

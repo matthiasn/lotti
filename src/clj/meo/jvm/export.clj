@@ -6,9 +6,9 @@
             [clojure.java.io :as io]
             [meo.jvm.file-utils :as fu]
             [clojure.string :as s]
+            [progrock.core :as pr]
             [meo.jvm.datetime :as dt]
-            [geo [geohash :as geohash] [jts :as jts] [spatial :as spatial] [io :as gio]]
-            [matthiasn.systems-toolbox.component :as st]
+            [geo [geohash :as geohash] [spatial :as spatial]]
             [clojure.string :as str]
             [clojure.set :as set])
   (:import [java.math RoundingMode]))
@@ -44,22 +44,31 @@
   (with-open [w (io/writer path)]
     (csv/write-csv w data)))
 
-(def columns [:geohash :starred :img-file :audio-file :task
-              :md :day :hour :tags :mentions :primary-story])
-
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
 (def stories-csv (str fu/export-path "/stories.csv"))
 (def geohashes-csv (str fu/export-path "/geohashes.csv"))
 
 (def h (* 60 60 1000))
+(def hqd (* 3 h))
+(def qd (* 6 h))
+(def hd (* 12 h))
 (def d (* 24 h))
+(def w (* 7 d))
+(def m (* 30 d))
+
+(def columns [:geohash :geohash-wide :starred :img-file :audio-file :task :md
+              :weeks-ago :days-ago :quarter-day :half-quarter-day :hour
+              :tags :mentions :primary-story])
 
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
 (defn word-count [k x] (count (s/split (k x) #" ")))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
-(defn hour [k x] (int (/ (rem (:timestamp x) d) h)))
-(defn join [k x] (str (name k) "-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
+(defn join [k x] (str "cat-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
+
+(defn t-day [t]
+  (fn [k x]
+    (int (/ (rem (:timestamp x) d) t))))
 
 (defn geohash [bits]
   (fn [k x]
@@ -67,25 +76,32 @@
           h (geohash/geohash p bits)]
       (geohash/string h))))
 
-(defn days-ago [k x]
-  (let [ts (:timestamp x)
-        now (st/now)]
-    (int (/ (- now ts) d))))
+(defn t-ago [t]
+  (fn [k x]
+    (let [ts (:timestamp x)
+          june-30-2018 1530403199000]
+      (int (/ (- june-30-2018 ts) t)))))
 
 (defn pascal [k] (s/join "" (map s/capitalize (s/split (name k) #"\-"))))
 
-(def xforms {:task       bool2int
-             :img-file   bool2int
-             :audio-file bool2int
-             :md         word-count
-             :day        days-ago
-             :hour       hour
-             :starred    bool2int
-             :latitude   round-geo
-             :longitude  round-geo
-             :geohash    (geohash 35)
-             :mentions   join
-             :tags       join})
+(def xforms {:task             bool2int
+             :img-file         bool2int
+             :audio-file       bool2int
+             :md               word-count
+             :days-ago         (t-ago d)
+             :weeks-ago        (t-ago w)
+             :months-ago       (t-ago m)
+             :hour             (t-day h)
+             :quarter-day      (t-day qd)
+             :half-day         (t-day hd)
+             :half-quarter-day (t-day hqd)
+             :starred          bool2int
+             :latitude         round-geo
+             :longitude        round-geo
+             :geohash          (geohash 40)
+             :geohash-wide     (geohash 35)
+             :mentions         join
+             :tags             join})
 
 (defn example-fmt [entry]
   (mapv (fn [k]
@@ -96,8 +112,10 @@
         columns))
 
 (defn filtered-examples [entries-map]
-  (let [required #{:latitude :longitude :primary-story}
-        has-required (fn [x] (every? identity (map #(get x %) required)))]
+  (let [required #{:latitude :longitude}
+        has-required (fn [x]
+                       (and (every? identity (map #(get x %) required))
+                            (not (contains? (:tags x) "#habit"))))]
     (filter has-required (vals entries-map))))
 
 (defn dict [k xs]
@@ -118,19 +136,20 @@
         tags-idxr (replace-w-idx :tags tags-dict)
         mentions-idxr (replace-w-idx :mentions mentions-dict)
         filtered (->> filtered
-                     (map tags-idxr)
-                     (map mentions-idxr))
-        stories (-> (map :primary-story filtered)
+                      (map tags-idxr)
+                      (map mentions-idxr))
+        with-stories (filter :primary-story filtered)
+        stories (-> (map :primary-story with-stories)
                     (set)
                     (sort)
                     (vec))
         idx-m (into {} (map-indexed (fn [idx v] [v idx]) stories))
-        w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) filtered)
+        w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) with-stories)
         examples (shuffle (map example-fmt w-story-idx))
         geohashes (set (map first examples))
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
         n (count examples)
-        [training-data test-data] (split-at (int (* n 0.8)) examples)]
+        [training-data test-data] (split-at (int (* n 0.7)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
     (info (count geohashes) "geohashes")
     (write-csv training-csv (into [(mapv pascal columns)] training-data))
