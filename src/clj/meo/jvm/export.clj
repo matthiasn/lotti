@@ -46,6 +46,7 @@
 
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
+(def unlabeled-csv (str fu/export-path "/entries_stories_unlabeled.csv"))
 (def stories-csv (str fu/export-path "/stories.csv"))
 (def geohashes-csv (str fu/export-path "/geohashes.csv"))
 
@@ -57,12 +58,13 @@
 (def w (* 7 d))
 (def m (* 30 d))
 
-(def columns [:geohash :geohash-wide :starred :img-file :audio-file :task :md
-              :weeks-ago :days-ago :quarter-day :half-quarter-day :hour
-              :tags :mentions :primary-story])
+(def features [:geohash :geohash-wide :starred :img-file :audio-file :task :md
+               :weeks-ago :days-ago :quarter-day :half-quarter-day :hour
+               :tags :mentions])
+(def features-label (conj features :primary-story))
 
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
-(defn word-count [k x] (count (s/split (k x) #" ")))
+(defn word-count [k x] (if-let [s (k x)] (count (s/split (k x) #" ")) 0))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
 (defn join [k x] (str "cat-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
 
@@ -103,16 +105,17 @@
              :mentions         join
              :tags             join})
 
-(defn example-fmt [entry]
-  (mapv (fn [k]
-          (let [v (k entry)]
-            (if-let [xf (k xforms)]
-              (xf k entry)
-              v)))
-        columns))
+(defn example-fmt [columns]
+  (fn [entry]
+    (mapv (fn [k]
+            (let [v (k entry)]
+              (if-let [xf (k xforms)]
+                (xf k entry)
+                v)))
+          columns)))
 
 (defn filtered-examples [entries-map]
-  (let [required #{:latitude :longitude}
+  (let [required #{:latitude :longitude :md}
         has-required (fn [x]
                        (and (every? identity (map #(get x %) required))
                             (not (contains? (:tags x) "#habit"))))]
@@ -138,22 +141,25 @@
         filtered (->> filtered
                       (map tags-idxr)
                       (map mentions-idxr))
-        with-stories (filter :primary-story filtered)
-        stories (-> (map :primary-story with-stories)
+        labeled (filter :primary-story filtered)
+        unlabeled (mapv (example-fmt features)
+                        (filter #(not (:primary-story %)) filtered))
+        stories (-> (map :primary-story labeled)
                     (set)
                     (sort)
                     (vec))
         idx-m (into {} (map-indexed (fn [idx v] [v idx]) stories))
-        w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) with-stories)
-        examples (shuffle (map example-fmt w-story-idx))
+        w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) labeled)
+        examples (shuffle (map (example-fmt features-label) w-story-idx))
         geohashes (set (map first examples))
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
         n (count examples)
         [training-data test-data] (split-at (int (* n 0.7)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
     (info (count geohashes) "geohashes")
-    (write-csv training-csv (into [(mapv pascal columns)] training-data))
-    (write-csv test-csv (into [(mapv pascal columns)] test-data))
+    (write-csv training-csv (into [(mapv pascal features-label)] training-data))
+    (write-csv test-csv (into [(mapv pascal features-label)] test-data))
+    (write-csv unlabeled-csv (into [(mapv pascal features)] unlabeled))
     (write-csv stories-csv (mapv (fn [x] [x]) stories))
     (write-csv geohashes-csv (mapv (fn [x] [x]) geohashes))))
 
