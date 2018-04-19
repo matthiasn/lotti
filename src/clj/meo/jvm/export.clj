@@ -58,9 +58,9 @@
 (def w (* 7 d))
 (def m (* 30 d))
 
-(def features [:geohash :geohash-wide :starred :img-file :audio-file :task :md
-               :weeks-ago :days-ago :quarter-day :half-quarter-day :hour
-               :tags :mentions])
+(def features [:timestamp :geohash :geohash-wide :starred :img-file :audio-file
+               :task :md :weeks-ago :days-ago :quarter-day :half-quarter-day
+               :hour :tags :mentions])
 (def features-label (conj features :primary-story))
 
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
@@ -141,7 +141,7 @@
         filtered (->> filtered
                       (map tags-idxr)
                       (map mentions-idxr))
-        labeled (filter :primary-story filtered)
+        labeled (filter #(identity (:primary-story %)) filtered)
         unlabeled (mapv (example-fmt features)
                         (filter #(not (:primary-story %)) filtered))
         stories (-> (map :primary-story labeled)
@@ -151,12 +151,17 @@
         idx-m (into {} (map-indexed (fn [idx v] [v idx]) stories))
         w-story-idx (map (fn [x] (update x :primary-story #(get idx-m %))) labeled)
         examples (shuffle (map (example-fmt features-label) w-story-idx))
-        geohashes (set (map first examples))
+        geohashes-labeled (set (map second examples))
+        geohashes-unlabeled (set (map second unlabeled))
+        geohashes (set/union geohashes-labeled geohashes-unlabeled)
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
         n (count examples)
         [training-data test-data] (split-at (int (* n 0.7)) examples)]
     (info "encountered" (count stories) "stories in" n "examples")
-    (info (count geohashes) "geohashes")
+    (info (count geohashes-labeled)
+          (count geohashes-unlabeled)
+          (count geohashes)
+          "geohashes labeled/unlabeled/total")
     (write-csv training-csv (into [(mapv pascal features-label)] training-data))
     (write-csv test-csv (into [(mapv pascal features-label)] test-data))
     (write-csv unlabeled-csv (into [(mapv pascal features)] unlabeled))

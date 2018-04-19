@@ -19,13 +19,13 @@ def main(argv):
     args = parser.parse_args(argv[1:])
     batch_size = args.batch_size
 
-    (train_x, train_y), (test_x, test_y) = meo_data.load_data()
+    (train_x, train_y), (test_x, test_y), unlabeled = meo_data.load_data()
 
     # construct classifier
     classifier = tf.estimator.Estimator(
         model_fn=model.story_model,
         params={
-            'feature_columns': fc.story_model_columns(train_x, test_x),
+            'feature_columns': fc.story_model_columns(train_x, test_x, unlabeled),
             'hidden_units': [512, 512],
             'n_classes': args.classes,
         })
@@ -41,7 +41,7 @@ def main(argv):
     m.print_eval(eval_result)
 
     # predict classes in test data, print a random sample
-    p.predict(classifier, test_x, test_y, batch_size)
+    p.predict(classifier, test_x, test_y, unlabeled, batch_size)
 
 
 if __name__ == '__main__':
