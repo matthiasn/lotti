@@ -14,7 +14,6 @@ parser.add_argument('--train_steps', default=1000, type=int,
 parser.add_argument('--classes', default=500, type=int,
                     help='number of classes')
 
-
 def main(argv):
     args = parser.parse_args(argv[1:])
     batch_size = args.batch_size
@@ -25,8 +24,8 @@ def main(argv):
     classifier = tf.estimator.Estimator(
         model_fn=model.story_model,
         params={
-            'feature_columns': fc.story_model_columns(train_x, test_x, unlabeled),
-            'hidden_units': [512, 512],
+            'feature_columns': fc.story_model_columns(train_x, test_x,
+                                                      unlabeled),
             'n_classes': args.classes,
         })
 

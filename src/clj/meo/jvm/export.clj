@@ -58,15 +58,16 @@
 (def w (* 7 d))
 (def m (* 30 d))
 
-(def features [:timestamp :geohash :geohash-wide :starred :img-file :audio-file
-               :task :md :weeks-ago :days-ago :quarter-day :half-quarter-day
-               :hour :tags :mentions])
+(def features [:timestamp :geohash :geohash-wide :visit :starred :img-file
+               :audio-file :task :screenshot :md :weeks-ago :days-ago
+               :quarter-day :half-quarter-day :hour :tags1 :mentions1])
 (def features-label (conj features :primary-story))
 
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
 (defn word-count [k x] (if-let [s (k x)] (count (s/split (k x) #" ")) 0))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
 (defn join [k x] (str "cat-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
+(defn has-tag? [t] (fn [k x] (if (contains? (set (:tags x)) t) 1 0)))
 
 (defn t-day [t]
   (fn [k x]
@@ -100,10 +101,12 @@
              :starred          bool2int
              :latitude         round-geo
              :longitude        round-geo
+             :visit            (has-tag? "#visit")
+             :screenshot       (has-tag? "#screenshot")
              :geohash          (geohash 40)
              :geohash-wide     (geohash 35)
-             :mentions         join
-             :tags             join})
+             :mentions1        join
+             :tags1            join})
 
 (defn example-fmt [columns]
   (fn [entry]
@@ -128,7 +131,9 @@
 
 (defn replace-w-idx [k dic]
   (fn [x]
-    (update-in x [k] (fn [ts] (set (map (fn [t] (get dic t 0)) ts))))))
+    (let [tags (k x)
+          k (keyword (str (name k) 1))]
+      (assoc-in x [k] (set (map (fn [t] (get dic t 0)) tags))))))
 
 (defn export-entry-stories [{:keys [current-state]}]
   (info "CSV export: entries with stories")
@@ -169,6 +174,6 @@
     (write-csv geohashes-csv (mapv (fn [x] [x]) geohashes))))
 
 (defn export [msg-map]
-  (time (export-geojson msg-map))
   (time (export-entry-stories msg-map))
+  (time (export-geojson msg-map))
   {})

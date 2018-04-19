@@ -1,5 +1,5 @@
 import random
-import json
+import numpy
 import meo_data
 
 PREDICTIONS_PATH = "./data/export/entries_stories_predictions.csv"
@@ -22,7 +22,7 @@ def predict(classifier, test_x, test_y, unlabeled, batch_size):
         class_id = pred_dict['class_ids'][0]
         probabilities = pred_dict['probabilities']
         probability = probabilities[class_id]
-        top_k = pred_dict['top_k']
+        top_k = pred_dict['top_10']
         contained = expec in set(top_k)
         success = '\033[92mSUCCESS\033[0m' if contained else '\033[91mFAIL\033[0m'
 
@@ -46,7 +46,8 @@ def predict(classifier, test_x, test_y, unlabeled, batch_size):
         class_id = pred_dict['class_ids'][0]
         probabilities = pred_dict['probabilities']
         p = probabilities[class_id]
-        top_k = pred_dict['top_k']
-        csv_file.write(csv_tpl.format(ts, p, top_k))
+        ranked = pred_dict['ranked']
+        csv_file.write(csv_tpl.format(ts, p, numpy.array2string(ranked, max_line_width=10000)))
+        #csv_file.write(str(ts) + ',' + str(p) + ',' + str(ranked))
 
     csv_file.close()
