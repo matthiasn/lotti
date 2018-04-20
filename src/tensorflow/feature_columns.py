@@ -51,14 +51,14 @@ def cat_dict_embedding(train_x, test_x, unlabeled, col_name, dimension):
 
 def story_model_columns(train_x, test_x, unlabeled):
     return [
-        cat_dict_embedding(train_x, test_x, unlabeled, 'Geohash', 500),
-        cat_dict_embedding(train_x, test_x, unlabeled, 'GeohashWide', 100),
+        cat_dict_embedding(train_x, test_x, unlabeled, 'Geohash', 1500),
+        cat_dict_column(train_x, test_x, unlabeled, 'GeohashWide'),
         cat_dict_embedding(train_x, test_x, unlabeled, 'Tags1', 1000),
         cat_dict_embedding(train_x, test_x, unlabeled, 'Mentions1', 200),
         cat_id_column_fixed_buckets('Hour', 24),
         cat_id_column_fixed_buckets('HalfQuarterDay', 8),
         cat_id_column(train_x, test_x, unlabeled, 'WeeksAgo'),
-        cat_id_embedding(train_x, test_x, unlabeled, 'DaysAgo', 1000),
+        cat_id_column(train_x, test_x, unlabeled, 'DaysAgo'),
         cat_id_embedding(train_x, test_x, unlabeled, 'Md', 100),
         numeric_column('Visit'),
         numeric_column('Screenshot'),

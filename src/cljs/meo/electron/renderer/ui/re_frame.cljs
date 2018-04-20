@@ -25,6 +25,7 @@
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
 (reg-sub :startup-progress (fn [db _] (:startup-progress db)))
 (reg-sub :running-pomodoro (fn [db _] (:running (:pomodoro db))))
+(reg-sub :story-predict (fn [db _] (:story-predict db)))
 (reg-sub :options (fn [db _] (:options db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :stories (fn [db _] (:stories (:options db))))

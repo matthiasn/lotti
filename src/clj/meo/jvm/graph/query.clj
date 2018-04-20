@@ -114,6 +114,9 @@
             (contains? opts ":story")
             (= :story (:entry-type entry))
 
+            (contains? opts ":no-story")
+            (not (:primary-story entry))
+
             (contains? opts ":saga")
             (= :saga (:entry-type entry))
 
@@ -426,9 +429,10 @@
         comments (mapv #(uc/attrs g %) comment-timestamps)
         entry-tuples (concat (mapv entry-mapper entries)
                              (mapv entry-mapper linked)
-                             (mapv entry-mapper comments))]
-    {:entries     (vec (into (sorted-set-by >)
-                             (filter identity (mapv :timestamp entries))))
+                             (mapv entry-mapper comments))
+        entries (vec (into (sorted-set-by >)
+                           (filter identity (mapv :timestamp entries))))]
+    {:entries     entries
      :entries-map (into {} (filter #(identity (first %)) entry-tuples))}))
 
 (defn find-entry
@@ -457,14 +461,17 @@
           start-ts (System/nanoTime)
           res-mapper (run-query current-state)
           res (mapv res-mapper queries)
-          res2 (reduce (fn [acc [k v]]
-                         (-> acc
-                             (update-in [:entries-map] merge (:entries-map v))
-                             (assoc-in [:entries k] (:entries v))))
-                       {:entries-map {} :entries {}}
-                       res)
+          res (reduce (fn [acc [k v]]
+                        (-> acc
+                            (update-in [:entries-map] merge (:entries-map v))
+                            (assoc-in [:entries k] (:entries v))))
+                      {:entries-map {} :entries {}}
+                      res)
           ms (/ (- (System/nanoTime) start-ts) 1000000)
-          dur {:duration-ms (pp/cl-format nil "~,2f ms" ms)}]
+          story-predict (select-keys (:story-predictions current-state)
+                                     (keys (:entries-map res)))
+          res2 {:duration-ms   (pp/cl-format nil "~,2f ms" ms)
+                :story-predict story-predict}]
       (debug queries)
-      (info "queries took" (:duration-ms dur))
-      {:emit-msg [:state/new (merge res2 dur)]})))
+      (info "queries took" (:duration-ms res2))
+      {:emit-msg [:state/new (merge res res2)]})))

@@ -10,10 +10,11 @@
 
 (defn new-state-fn [{:keys [current-state msg-payload msg-meta]}]
   (let [store-meta (:renderer/store-cmp msg-meta)
-        {:keys [entries entries-map]} msg-payload
+        {:keys [entries entries-map story-predict]} msg-payload
         new-state (-> current-state
                       (assoc-in [:results] entries)
                       (update-in [:entries-map] merge entries-map)
+                      (update-in [:story-predict] merge story-predict)
                       (assoc-in [:timing] {:query (:duration-ms msg-payload)
                                            :rtt   (- (:in-ts store-meta)
                                                      (:out-ts store-meta))

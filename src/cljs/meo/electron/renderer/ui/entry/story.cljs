@@ -89,15 +89,19 @@
 
 (defn story-select [entry put-fn]
   (let [stories (subscribe [:stories])
+        ts (:timestamp @entry)
+        story-predict (subscribe [:story-predict])
+        predictions (reaction (get-in @story-predict [ts :ranked]))
         linked-story (reaction (:primary-story @entry))
         story-name (reaction (:story-name (get @stories @linked-story)))
         local (r/atom {:search "" :show false})
         filtered (reaction
-                   (let [stories (vals @stories)
+                   (let [stories (if-let [ps @predictions]
+                                   (map #(get @stories %) ps)
+                                   (sort-by :story-name (vals @stories)))
                          s (:search @local)
-                         filter-fn #(h/str-contains-lc? (:story-name %) s)
-                         filtered (filter filter-fn stories)]
-                     (sort-by :story-name filtered)))
+                         filter-fn #(h/str-contains-lc? (:story-name %) s)]
+                     (vec (filter filter-fn stories))))
         input-fn (fn [ev]
                    (let [s (-> ev .-nativeEvent .-target .-value)]
                      (swap! local assoc-in [:search] s)))
@@ -105,7 +109,7 @@
                        (let [ts (:timestamp story)
                              updated (assoc-in @entry [:primary-story] ts)]
                          (swap! local assoc-in [:show] false)
-                         (put-fn [:entry/update-local updated])))]
+                         (put-fn [:entry/update updated])))]
     (fn story-select-filter-render [entry put-fn]
       (let [sorted @filtered
             linked-story @linked-story]
@@ -114,19 +118,23 @@
           [:div.story-select
            [:div.story
             [:i.fal.fa-book {:on-click #(swap! local update-in [:show] not)
-                             :class (when (:show @local) "show")}]
+                             :class    (str (when (and
+                                                    (not (:primary-story @entry))
+                                                    @predictions)
+                                              "predicted ")
+                                            (when (:show @local) "show"))}]
             @story-name]
            (when (:show @local)
              [:div.story-search {:on-mouse-leave #(swap! local assoc-in [:show] false)}
               [:div
-               [:input {:type      :text
-                        :on-change input-fn
+               [:input {:type       :text
+                        :on-change  input-fn
                         :auto-focus true
-                        :value     (:search @local)}]
+                        :value      (:search @local)}]
                [:i.fal.fa-search]]
               [:table
                [:tbody
-                (for [story (take 20 sorted)]
+                (for [story (take 10 sorted)]
                   (let [active (= linked-story (:timestamp story))]
                     ^{:key (:timestamp story)}
                     [:tr {:on-click #(assign-story story)}

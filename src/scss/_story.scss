@@ -49,9 +49,14 @@
   i {
     margin-right: 3px;
     opacity: 0.5;
+    padding: 1px;
 
     &.show {
       cursor: none;
+    }
+    &.predicted {
+      background-color: lightgreen;
+      color: black;
     }
   }
 

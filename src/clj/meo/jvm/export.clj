@@ -6,17 +6,21 @@
             [clojure.java.io :as io]
             [meo.jvm.file-utils :as fu]
             [clojure.string :as s]
+            [taoensso.timbre :refer [info error]]
+            [me.raynes.conch :refer [programs let-programs]]
             [progrock.core :as pr]
             [meo.jvm.datetime :as dt]
             [geo [geohash :as geohash] [spatial :as spatial]]
             [clojure.string :as str]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [clojure.edn :as edn])
   (:import [java.math RoundingMode]))
 
 ;;; Export for mapbox heatmap
 
 (def path (str fu/export-path "/entries.geojson"))
 (def n Integer/MAX_VALUE)
+(programs python3)
 
 (defn entry-fmt [entry]
   (let [{:keys [latitude longitude timestamp]} entry]
@@ -47,6 +51,7 @@
 (def training-csv (str fu/export-path "/entries_stories_training.csv"))
 (def test-csv (str fu/export-path "/entries_stories_test.csv"))
 (def unlabeled-csv (str fu/export-path "/entries_stories_unlabeled.csv"))
+(def predictions-csv (str fu/export-path "/entries_stories_predictions.csv"))
 (def stories-csv (str fu/export-path "/stories.csv"))
 (def geohashes-csv (str fu/export-path "/geohashes.csv"))
 
@@ -161,8 +166,9 @@
         geohashes (set/union geohashes-labeled geohashes-unlabeled)
         geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
         n (count examples)
+        n-stories (count stories)
         [training-data test-data] (split-at (int (* n 0.7)) examples)]
-    (info "encountered" (count stories) "stories in" n "examples")
+    (info "encountered" n-stories "stories in" n "examples")
     (info (count geohashes-labeled)
           (count geohashes-unlabeled)
           (count geohashes)
@@ -171,9 +177,28 @@
     (write-csv test-csv (into [(mapv pascal features-label)] test-data))
     (write-csv unlabeled-csv (into [(mapv pascal features)] unlabeled))
     (write-csv stories-csv (mapv (fn [x] [x]) stories))
-    (write-csv geohashes-csv (mapv (fn [x] [x]) geohashes))))
+    (write-csv geohashes-csv (mapv (fn [x] [x]) geohashes))
+    stories))
 
-(defn export [msg-map]
-  (time (export-entry-stories msg-map))
+(defn export [{:keys [cmp-state put-fn] :as msg-map}]
+  (future
+    (let [stories (export-entry-stories msg-map)
+          estimator "src/tensorflow/custom_estimator.py"
+          classes-arg (str "--classes=" (count stories))]
+      (info (python3 estimator classes-arg "--train_steps=4000"))
+      (with-open [reader (clojure.java.io/reader predictions-csv)]
+        (let [lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (let [[ts p-1 ranked] (str/split line #",")
+                    ts (Long/parseLong ts)
+                    p-1 (Float/parseFloat p-1)
+                    ranked (edn/read-string ranked)
+                    p {:ranked (mapv #(get stories %) ranked)
+                       :p-1    p-1}]
+                (swap! cmp-state assoc-in [:story-predictions ts] p))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line))))))
+      (info (count (:story-predictions @cmp-state)) "predictions added")))
   (time (export-geojson msg-map))
   {})
