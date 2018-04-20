@@ -8,6 +8,7 @@
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.add :as ga]
             [meo.jvm.graph.geo :as geo]
+            [meo.jvm.learn :as tf]
             [meo.jvm.export :as e]
             [meo.common.specs]
             [progrock.core :as pr]
@@ -98,6 +99,7 @@
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)
     (broadcast [:startup/progress 1])
+    (tf/import-predictions cmp-state)
     (broadcast [:search/refresh])
     (put-fn [:cmd/schedule-new {:timeout (* 60 1000)
                                 :message [:import/git]
@@ -148,7 +150,8 @@
                  :sync/done        sync-done
                  :sync/initiate    sync-send
                  :sync/next        sync-send
-                 :export/geojson   e/export
+                 :export/geojson   e/export-geojson
+                 :tf/learn-stories tf/learn-stories
                  :entry/trash      f/trash-entry-fn
                  :state/search     gq/query-fn
                  :search/geo-photo geo/photos-within-bounds

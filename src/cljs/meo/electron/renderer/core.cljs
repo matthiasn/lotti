@@ -32,7 +32,8 @@
                          :stats/get :stats/get2 :import/movie :entry/unlink
                          :state/stats-tags-get :import/listen :spotify/play
                          :spotify/pause :state/search :cfg/refresh
-                         :sync/start-server :sync/stop-server}}))
+                         :sync/start-server :sync/stop-server
+                         :tf/learn-stories}}))
 
 (def OBSERVER (.-OBSERVER js/window))
 

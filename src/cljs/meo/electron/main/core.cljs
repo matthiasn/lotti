@@ -41,6 +41,7 @@
                 :entry/sync
                 :geonames/res
                 :export/geojson
+                :tf/learn-stories
                 :spellcheck/lang
                 :spellcheck/off
                 :import/screenshot

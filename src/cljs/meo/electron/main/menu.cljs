@@ -138,6 +138,12 @@
                 :accelerator "Command+Shift+3"
                 :click       screenshot}]}))
 
+(defn learn-menu [put-fn]
+  (let [click #(put-fn [:tf/learn-stories])]
+    {:label   "Learn"
+     :submenu [{:label       "Train Stories Model"
+                :click       click}]}))
+
 (defn state-fn [put-fn]
   (let [put-fn (fn [msg]
                  (let [msg-meta (merge {:window-id :active} (meta msg))]
@@ -146,7 +152,8 @@
                   (file-menu put-fn)
                   (edit-menu put-fn)
                   (view-menu put-fn)
-                  (capture-menu put-fn)]
+                  (capture-menu put-fn)
+                  (learn-menu put-fn)]
         menu (.buildFromTemplate Menu (clj->js menu-tpl))
         activate #(put-fn [:window/activate])
         screenshot #(put-fn [:screenshot/take])]

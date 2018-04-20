@@ -40,6 +40,7 @@ def cat_dict_column(train_x, test_x, unlabeled, col_name):
         tf.feature_column.categorical_column_with_vocabulary_list(
             col_name, dictionary_set))
 
+
 def cat_dict_embedding(train_x, test_x, unlabeled, col_name, dimension):
     train_set = set(train_x[col_name])
     test_set = set(test_x[col_name])
@@ -48,6 +49,7 @@ def cat_dict_embedding(train_x, test_x, unlabeled, col_name, dimension):
     return tf.feature_column.embedding_column(
         tf.feature_column.categorical_column_with_vocabulary_list(
             col_name, dictionary_set), dimension)
+
 
 def story_model_columns(train_x, test_x, unlabeled):
     return [

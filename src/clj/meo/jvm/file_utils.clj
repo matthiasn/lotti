@@ -6,7 +6,8 @@
             [clojure.edn :as edn]
             [clojure.pprint :as pp]))
 
-(def data-path (or (System/getenv "DATA_PATH") "data"))
+(def app-path (or (System/getenv "APP_PATH") "."))
+(def data-path (or (System/getenv "DATA_PATH") "./data"))
 (def daily-logs-path (str data-path "/daily-logs/"))
 (def bak-path (str data-path "/backup/"))
 (def app-cache-file (str data-path "/cache.dat"))
@@ -39,6 +40,7 @@
     (fs/mkdirs thumbs-2048)
     {:data-path       data-path
      :app-cache       app-cache-file
+     :app-path        app-path
      :backup-path     bak-path
      :daily-logs-path daily-logs-path
      :clucy-path      clucy-path
