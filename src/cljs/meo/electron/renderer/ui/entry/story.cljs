@@ -91,12 +91,12 @@
   (let [stories (subscribe [:stories])
         ts (:timestamp @entry)
         story-predict (subscribe [:story-predict])
-        predictions (reaction (get-in @story-predict [ts :ranked]))
+        predictions (reaction (get-in @story-predict [ts]))
         linked-story (reaction (:primary-story @entry))
         story-name (reaction (:story-name (get @stories @linked-story)))
         local (r/atom {:search "" :show false})
         filtered (reaction
-                   (let [stories (if-let [ps @predictions]
+                   (let [stories (if-let [ps (:ranked @predictions)]
                                    (map #(get @stories %) ps)
                                    (sort-by :story-name (vals @stories)))
                          s (:search @local)
@@ -125,6 +125,7 @@
                                             (when (:show @local) "show"))}]
             @story-name]
            (when (:show @local)
+             (when-let [p (:p-1 @predictions)] (info p))
              [:div.story-search {:on-mouse-leave #(swap! local assoc-in [:show] false)}
               [:div
                [:input {:type       :text

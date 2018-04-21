@@ -93,60 +93,60 @@
             res (second (:emit-msg (gq/query-fn {:current-state new-state
                                                  :msg-payload   req-msg
                                                  :put-fn        (fn [_])})))]
-        (prn :fooooooo)
         (testing
           "all expected entries are fetched"
-          (is (= {:entries     {"query1" [1450998400000
-                                          1450998300000
-                                          1450998200000]
-                                "query2" [1450998100000
-                                          1450998000000]}
-                  :entries-map {1450998000000 {:comments            []
-                                               :last-saved          1485107134358
-                                               :linked-entries-list []
-                                               :md                  "Some #task"
-                                               :mentions            #{}
-                                               :tags                #{"#task"}
-                                               :timestamp           1450998000000}
-                                1450998100000 {:comments            []
-                                               :last-saved          1485107134358
-                                               :linked-entries-list []
-                                               :md                  "Some other #task"
-                                               :mentions            #{}
-                                               :tags                #{"#task"}
-                                               :timestamp           1450998100000}
-                                1450998200000 {:comments            []
-                                               :last-saved          1485107134358
-                                               :linked-entries-list []
-                                               :md                  "Some other #task #done"
-                                               :mentions            #{}
-                                               :tags                #{"#done"
-                                                                      "#task"}
-                                               :timestamp           1450998200000}
-                                1450998300000 {:comments            [1450998300001]
-                                               :last-saved          1485107134358
-                                               :linked-entries-list []
-                                               :md                  "Yet another completed #task - #done"
-                                               :mentions            #{}
-                                               :tags                #{"#completed"
-                                                                      "#done"
-                                                                      "#task"}
-                                               :timestamp           1450998300000}
-                                1450998300001 {:mentions    #{}
-                                               :last-saved  1485107134358
-                                               :tags        #{"#comment"}
-                                               :timestamp   1450998300001
-                                               :comment-for 1450998300000
-                                               :md          "Some #comment"}
-                                1450998400000 {:comments            []
-                                               :last-saved          1485107134358
-                                               :linked-entries-list []
-                                               :md                  "And yet another completed #task - #done"
-                                               :mentions            #{}
-                                               :tags                #{"#completed"
-                                                                      "#done"
-                                                                      "#task"}
-                                               :timestamp           1450998400000}}}
+          (is (= {:entries       {"query1" [1450998400000
+                                            1450998300000
+                                            1450998200000]
+                                  "query2" [1450998100000
+                                            1450998000000]}
+                  :story-predict {}
+                  :entries-map   {1450998000000 {:comments            []
+                                                 :last-saved          1485107134358
+                                                 :linked-entries-list []
+                                                 :md                  "Some #task"
+                                                 :mentions            #{}
+                                                 :tags                #{"#task"}
+                                                 :timestamp           1450998000000}
+                                  1450998100000 {:comments            []
+                                                 :last-saved          1485107134358
+                                                 :linked-entries-list []
+                                                 :md                  "Some other #task"
+                                                 :mentions            #{}
+                                                 :tags                #{"#task"}
+                                                 :timestamp           1450998100000}
+                                  1450998200000 {:comments            []
+                                                 :last-saved          1485107134358
+                                                 :linked-entries-list []
+                                                 :md                  "Some other #task #done"
+                                                 :mentions            #{}
+                                                 :tags                #{"#done"
+                                                                        "#task"}
+                                                 :timestamp           1450998200000}
+                                  1450998300000 {:comments            [1450998300001]
+                                                 :last-saved          1485107134358
+                                                 :linked-entries-list []
+                                                 :md                  "Yet another completed #task - #done"
+                                                 :mentions            #{}
+                                                 :tags                #{"#completed"
+                                                                        "#done"
+                                                                        "#task"}
+                                                 :timestamp           1450998300000}
+                                  1450998300001 {:mentions    #{}
+                                                 :last-saved  1485107134358
+                                                 :tags        #{"#comment"}
+                                                 :timestamp   1450998300001
+                                                 :comment-for 1450998300000
+                                                 :md          "Some #comment"}
+                                  1450998400000 {:comments            []
+                                                 :last-saved          1485107134358
+                                                 :linked-entries-list []
+                                                 :md                  "And yet another completed #task - #done"
+                                                 :mentions            #{}
+                                                 :tags                #{"#completed"
+                                                                        "#done"
+                                                                        "#task"}
+                                                 :timestamp           1450998400000}}}
                  (-> res
                      (update-in [:entries-map] #(into {} (map (fn [[k v]]
                                                                 [k (dissoc v :id :vclock)])

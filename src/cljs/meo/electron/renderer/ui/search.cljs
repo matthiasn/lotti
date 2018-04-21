@@ -3,6 +3,7 @@
             [meo.common.utils.misc :as u]
             [meo.common.utils.parse :as p]
             [meo.electron.renderer.ui.draft :as d]
+            [taoensso.timbre :refer-macros [info]]
             [reagent.ratom :refer-macros [reaction]]
             [clojure.string :as s]
             [clojure.set :as set]
@@ -29,6 +30,7 @@
                                          (p/parse-search text)
                                          {:story        story
                                           :editor-state editor-state})]
+                            (info s)
                             (put-fn [:search/update s])))
             query @query
             starred (:starred query)

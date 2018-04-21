@@ -117,6 +117,11 @@
             (contains? opts ":no-story")
             (not (:primary-story entry))
 
+            (contains? opts ":predicted-stories")
+            (and (not (:primary-story entry))
+                 (not (:briefing entry))
+                 (not (= :saga (:entry-type entry))))
+
             (contains? opts ":saga")
             (= :saga (:entry-type entry))
 
@@ -221,6 +226,7 @@
                           (get-linked-entries g n false))
                       (debug "extract-sorted-entries can't find node: " n)))
         sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
+        opts (:opts query)
         matched-ids (cond
                       ; full-text search
                       (:ft-search query)
@@ -255,16 +261,24 @@
                       (get-in state [:sorted-story-entries (:story query)])
 
                       ; query is for tasks
-                      (and (seq (:opts query))
-                           (contains? (:opts query) ":done"))
+                      (and (seq opts)
+                           (contains? opts ":done"))
                       (get-connected-nodes g :done)
 
                       (and (seq (:opts query))
-                           (contains? (:opts query) ":story"))
+                           (contains? opts ":story"))
                       (get-connected-nodes g :stories)
 
                       (and (seq (:opts query))
-                           (contains? (:opts query) ":saga"))
+                           (contains? opts ":predicted-stories"))
+                      (let [order (if (contains? opts ":asc") identity reverse)]
+                        (->> (:story-predictions state)
+                             (sort-by #(:p-1 (second %)))
+                             (order)
+                             (map first)))
+
+                      (and (seq opts)
+                           (contains? opts ":saga"))
                       (get-connected-nodes g :sagas)
 
                       ; set with timestamps matching tags and mentions
@@ -273,7 +287,10 @@
 
                       ; set with all timestamps
                       :else (take (+ n 100) (:sorted-entries state)))
-        matched-entries (mapv mapper-fn (sort-fn matched-ids))
+        matched-ids (if (contains? opts ":predicted-stories")
+                      matched-ids
+                      (sort-fn matched-ids))
+        matched-entries (mapv mapper-fn matched-ids)
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
         parent-ids (filter identity (mapv :comment-for matched-entries))

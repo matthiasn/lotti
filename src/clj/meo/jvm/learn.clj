@@ -13,7 +13,8 @@
             [geo [geohash :as geohash] [spatial :as spatial]]
             [clojure.string :as str]
             [clojure.set :as set]
-            [clojure.edn :as edn])
+            [clojure.edn :as edn]
+            [me.raynes.fs :as fs])
   (:import [java.math RoundingMode]))
 
 (def n Integer/MAX_VALUE)
@@ -159,20 +160,21 @@
 
 (defn import-predictions [cmp-state]
   (try
-    (with-open [reader (clojure.java.io/reader predictions-csv)]
-      (let [stories (mapv #(Long/parseLong %) (str/split-lines (slurp stories-csv)))
-            lines (line-seq reader)]
-        (doseq [line lines]
-          (try
-            (let [[ts p-1 ranked] (str/split line #",")
-                  ts (Long/parseLong ts)
-                  p-1 (Float/parseFloat p-1)
-                  ranked (edn/read-string ranked)
-                  p {:ranked (mapv #(get stories %) ranked)
-                     :p-1    p-1}]
-              (swap! cmp-state assoc-in [:story-predictions ts] p))
-            (catch Exception ex
-              (error "Exception" ex "when parsing line:\n" line))))))
+    (when (fs/exists? predictions-csv)
+      (with-open [reader (clojure.java.io/reader predictions-csv)]
+        (let [stories (mapv #(Long/parseLong %) (str/split-lines (slurp stories-csv)))
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (let [[ts p-1 ranked] (str/split line #",")
+                    ts (Long/parseLong ts)
+                    p-1 (Float/parseFloat p-1)
+                    ranked (edn/read-string ranked)
+                    p {:ranked (mapv #(get stories %) ranked)
+                       :p-1    p-1}]
+                (swap! cmp-state assoc-in [:story-predictions ts] p))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line)))))))
     (catch Exception ex (error ex))))
 
 (defn learn-stories [{:keys [cmp-state put-fn] :as msg-map}]
@@ -182,7 +184,7 @@
             estimator (str fu/app-path "/src/tensorflow/custom_estimator.py")
             classes-arg (str "--classes=" (count stories))]
         (info "running" estimator)
-        (info (python3 estimator classes-arg "--train_steps=4000"))
+        (info (python3 estimator classes-arg "--train_steps=3000"))
         (info (count (:story-predictions @cmp-state)) "predictions added")
         (import-predictions cmp-state))
       (catch Exception ex (error ex))))
