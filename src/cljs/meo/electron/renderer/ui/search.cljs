@@ -30,7 +30,6 @@
                                          (p/parse-search text)
                                          {:story        story
                                           :editor-state editor-state})]
-                            (info s)
                             (put-fn [:search/update s])))
             query @query
             starred (:starred query)

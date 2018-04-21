@@ -18,7 +18,6 @@
   (:import [java.math RoundingMode]))
 
 (def n Integer/MAX_VALUE)
-(programs python3)
 
 ;;; Export for TensorFlow
 
@@ -184,7 +183,8 @@
             estimator (str fu/app-path "/src/tensorflow/custom_estimator.py")
             classes-arg (str "--classes=" (count stories))]
         (info "running" estimator)
-        (info (python3 estimator classes-arg "--train_steps=3000"))
+        (info (let-programs [python3 "/usr/local/bin/python3"]
+                (python3 estimator classes-arg "--train_steps=3000")))
         (info (count (:story-predictions @cmp-state)) "predictions added")
         (import-predictions cmp-state))
       (catch Exception ex (error ex))))
