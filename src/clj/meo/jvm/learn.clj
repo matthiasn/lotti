@@ -40,7 +40,8 @@
 (def w (* 7 d))
 (def m (* 30 d))
 
-(def features [:timestamp :geohash :geohash-wide :visit :starred :img-file
+(def features [:timestamp :geohash40 :geohash35 :geohash30 :geohash25 :geohash20
+               :geohash15 :visit :starred :img-file
                :audio-file :task :screenshot :md :weeks-ago :days-ago
                :quarter-day :half-quarter-day :hour :tags1 :mentions1])
 (def features-label (conj features :primary-story))
@@ -48,7 +49,7 @@
 (defn bool2int [k x] (if (boolean (k x)) 1 0))
 (defn word-count [k x] (if-let [s (k x)] (count (s/split (k x) #" ")) 0))
 (defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
-(defn join [k x] (str "cat-" (or (when (seq (k x)) (str/join ";" (sort (k x)))) "0")))
+(defn join [k x] (or (when (seq (k x)) (str/join "|" (sort (k x)))) "0"))
 (defn has-tag? [t] (fn [k x] (if (contains? (set (:tags x)) t) 1 0)))
 
 (defn t-day [t]
@@ -85,8 +86,12 @@
              :longitude        round-geo
              :visit            (has-tag? "#visit")
              :screenshot       (has-tag? "#screenshot")
-             :geohash          (geohash 40)
-             :geohash-wide     (geohash 35)
+             :geohash40        (geohash 40)
+             :geohash35        (geohash 35)
+             :geohash30        (geohash 30)
+             :geohash25        (geohash 25)
+             :geohash20        (geohash 20)
+             :geohash15        (geohash 15)
              :mentions1        join
              :tags1            join})
 
@@ -103,7 +108,11 @@
   (let [required #{:latitude :longitude :md}
         has-required (fn [x]
                        (and (every? identity (map #(get x %) required))
-                            (not (contains? (:tags x) "#habit"))))]
+                            (not (contains? (:tags x) "#habit"))
+                            (not (contains? (:tags x) "#briefing"))
+                            (not (= (:entry-type x) :story))
+                            (not (= (:entry-type x) :saga))
+                            (not (:comment-for x))))]
     (filter has-required (vals entries-map))))
 
 (defn dict [k xs]
@@ -146,6 +155,8 @@
         n-stories (count stories)
         [training-data test-data] (split-at (int (* n 0.7)) examples)]
     (info "encountered" n-stories "stories in" n "examples")
+    (info "encountered" (count tags-dict) "tags")
+    (info "encountered" (count mentions-dict) "mentions")
     (info (count geohashes-labeled)
           (count geohashes-unlabeled)
           (count geohashes)
@@ -184,7 +195,7 @@
             classes-arg (str "--classes=" (count stories))]
         (info "running" estimator)
         (info (let-programs [python3 "/usr/local/bin/python3"]
-                (python3 estimator classes-arg "--train_steps=3000")))
+                            (python3 estimator classes-arg "--train_steps=3000")))
         (info (count (:story-predictions @cmp-state)) "predictions added")
         (import-predictions cmp-state))
       (catch Exception ex (error ex))))

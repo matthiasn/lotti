@@ -70,7 +70,6 @@
     position: absolute;
     background-color: white;
     z-index: 1002;
-    margin-top: 2px;
     padding: 4px 0 10px 6px;
     white-space: nowrap;
     border: lighten($hashtag-blue, 20%) 1px solid;
@@ -91,6 +90,7 @@
     input {
       width: 100px;
       outline: none;
+      margin-right: 10px;
     }
 
     i {

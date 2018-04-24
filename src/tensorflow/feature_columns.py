@@ -31,6 +31,13 @@ def numeric_column(k):
     return tf.feature_column.numeric_column(key=k)
 
 
+def bucketized(k, boundaries):
+    return tf.feature_column.indicator_column(
+        tf.feature_column.bucketized_column(
+            source_column=numeric_column(k),
+            boundaries=boundaries))
+
+
 def cat_dict_column(train_x, test_x, unlabeled, col_name):
     train_set = set(train_x[col_name])
     test_set = set(test_x[col_name])
@@ -53,15 +60,19 @@ def cat_dict_embedding(train_x, test_x, unlabeled, col_name, dimension):
 
 def story_model_columns(train_x, test_x, unlabeled):
     return [
-        cat_dict_embedding(train_x, test_x, unlabeled, 'Geohash', 1500),
-        cat_dict_column(train_x, test_x, unlabeled, 'GeohashWide'),
+        cat_dict_embedding(train_x, test_x, unlabeled, 'Geohash40', 2000),
+        cat_dict_column(train_x, test_x, unlabeled, 'Geohash35'),
+        cat_dict_column(train_x, test_x, unlabeled, 'Geohash30'),
+        cat_dict_column(train_x, test_x, unlabeled, 'Geohash25'),
+        cat_dict_column(train_x, test_x, unlabeled, 'Geohash20'),
+        cat_dict_column(train_x, test_x, unlabeled, 'Geohash15'),
         cat_dict_embedding(train_x, test_x, unlabeled, 'Tags1', 1000),
         cat_dict_embedding(train_x, test_x, unlabeled, 'Mentions1', 200),
         cat_id_column_fixed_buckets('Hour', 24),
         cat_id_column_fixed_buckets('HalfQuarterDay', 8),
         cat_id_column(train_x, test_x, unlabeled, 'WeeksAgo'),
         cat_id_column(train_x, test_x, unlabeled, 'DaysAgo'),
-        cat_id_embedding(train_x, test_x, unlabeled, 'Md', 100),
+        bucketized('Md', [1, 3, 5, 10, 20, 30, 50, 100, 1000, 10000]),
         numeric_column('Visit'),
         numeric_column('Screenshot'),
         numeric_column('Starred'),

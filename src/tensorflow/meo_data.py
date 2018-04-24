@@ -5,25 +5,26 @@ TRAIN_PATH = "./data/export/entries_stories_training.csv"
 TEST_PATH = "./data/export/entries_stories_test.csv"
 UNLABELED_PATH = "./data/export/entries_stories_unlabeled.csv"
 
-CSV_COLUMN_NAMES = ['Timestamp', 'Geohash', 'GeohashWide', 'Visit', 'Starred',
+CSV_COLUMN_NAMES = ['Timestamp', 'Geohash40', 'Geohash35', 'Geohash30',
+                    'Geohash25', 'Geohash20', 'Geohash15', 'Visit', 'Starred',
                     'ImgFile', 'AudioFile', 'Task', 'Screenshot', 'Md', 'WeeksAgo',
                     'DaysAgo', 'QuarterDay', 'HalfQuarterDay', 'Hour', 'Tags1',
                     'Mentions1']
 CSV_COLUMN_NAMES_2 = CSV_COLUMN_NAMES + ['PrimaryStory']
 
 
-def hot(sa):
+def one_hot(sa):
     ia = [int(k) for k in sa]
     return tf.one_hot(ia, 500, 1.0, 0.1)
 
 
 def load_data(y_name='PrimaryStory'):
     train = pd.read_csv(TRAIN_PATH, names=CSV_COLUMN_NAMES_2, header=0)
-    train['Tags1'] = train['Tags1'].str.replace('cat-', '').str.split(';', expand=True)
+    train['Tags1'] = train['Tags1'].str.split('|', expand=True)
 
     train_x, train_y = train, train.pop(y_name)
     test = pd.read_csv(TEST_PATH, names=CSV_COLUMN_NAMES_2, header=0)
-    test['Tags1'] = test['Tags1'].str.replace('cat-', '').str.split(';', expand=True)
+    test['Tags1'] = test['Tags1'].str.split('|', expand=True)
     test_x, test_y = test, test.pop(y_name)
 
     unlabeled = pd.read_csv(UNLABELED_PATH, names=CSV_COLUMN_NAMES, header=0)

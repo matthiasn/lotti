@@ -28,7 +28,7 @@ def story_model(features, labels, mode, params):
             'class_ids': predicted_classes[:, tf.newaxis],
             'probabilities': tf.nn.softmax(logits),
             'top_10': tf.nn.top_k(logits, k=10)[1],
-            'ranked': tf.nn.top_k(logits, k=n_classes)[1],
+            'ranked': tf.nn.top_k(logits, k=25)[1],
             'logits': logits,
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)

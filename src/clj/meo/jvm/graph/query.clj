@@ -120,6 +120,7 @@
             (contains? opts ":predicted-stories")
             (and (not (:primary-story entry))
                  (not (:briefing entry))
+                 (not (contains? (:tags entry) "#briefing"))
                  (not (= :saga (:entry-type entry))))
 
             (contains? opts ":saga")

@@ -47,8 +47,8 @@
                {:label       "Import"
                 :accelerator "CmdOrCtrl+I"
                 :click       #(import-dialog put-fn)}
-               {:label       "Export"
-                :click       #(put-fn [:export/geojson])}]}))
+               {:label "Export"
+                :click #(put-fn [:export/geojson])}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 
@@ -139,10 +139,16 @@
                 :click       screenshot}]}))
 
 (defn learn-menu [put-fn]
-  (let [click #(put-fn [:tf/learn-stories])]
+  (let [export #(put-fn [:tf/learn-stories #{:export}])
+        learn #(put-fn [:tf/learn-stories #{:learn}])
+        export-learn #(put-fn [:tf/learn-stories #{:export :learn}])]
     {:label   "Learn"
-     :submenu [{:label       "Train Stories Model"
-                :click       click}]}))
+     :submenu [{:label "Export for Stories Model"
+                :click export}
+               {:label "Train Stories Model"
+                :click learn}
+               {:label "Export & Train Stories Model"
+                :click export-learn}]}))
 
 (defn state-fn [put-fn]
   (let [put-fn (fn [msg]
