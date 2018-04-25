@@ -48,5 +48,6 @@ def story_model(features, labels, mode, params):
     assert mode == tf.estimator.ModeKeys.TRAIN
 
     optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+
     train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
     return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)

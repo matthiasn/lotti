@@ -143,11 +143,11 @@
         learn #(put-fn [:tf/learn-stories #{:learn}])
         export-learn #(put-fn [:tf/learn-stories #{:export :learn}])]
     {:label   "Learn"
-     :submenu [{:label "Export for Stories Model"
-                :click export}
-               {:label "Train Stories Model"
-                :click learn}
-               {:label "Export & Train Stories Model"
+     :submenu [#_{:label "Export for Stories Model"
+                  :click export}
+               #_{:label "Train Stories Model"
+                  :click learn}
+               {:label "Export and Train"
                 :click export-learn}]}))
 
 (defn state-fn [put-fn]

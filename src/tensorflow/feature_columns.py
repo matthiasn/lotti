@@ -67,7 +67,7 @@ def story_model_columns(train_x, test_x, unlabeled):
         cat_dict_column(train_x, test_x, unlabeled, 'Geohash20'),
         cat_dict_column(train_x, test_x, unlabeled, 'Geohash15'),
         cat_dict_embedding(train_x, test_x, unlabeled, 'Tags1', 1000),
-        cat_dict_embedding(train_x, test_x, unlabeled, 'Mentions1', 200),
+        cat_dict_column(train_x, test_x, unlabeled, 'Mentions1'),
         cat_id_column_fixed_buckets('Hour', 24),
         cat_id_column_fixed_buckets('HalfQuarterDay', 8),
         cat_id_column(train_x, test_x, unlabeled, 'WeeksAgo'),

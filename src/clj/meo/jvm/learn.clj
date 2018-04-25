@@ -174,6 +174,7 @@
       (with-open [reader (clojure.java.io/reader predictions-csv)]
         (let [stories (mapv #(Long/parseLong %) (str/split-lines (slurp stories-csv)))
               lines (line-seq reader)]
+          (swap! cmp-state assoc-in [:story-predictions] {})
           (doseq [line lines]
             (try
               (let [[ts p-1 ranked] (str/split line #",")
@@ -182,12 +183,14 @@
                     ranked (edn/read-string ranked)
                     p {:ranked (mapv #(get stories %) ranked)
                        :p-1    p-1}]
-                (swap! cmp-state assoc-in [:story-predictions ts] p))
+                (when (> p-1 0.5)
+                  (swap! cmp-state assoc-in [:story-predictions ts] p)))
               (catch Exception ex
-                (error "Exception" ex "when parsing line:\n" line)))))))
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info (count (:story-predictions @cmp-state)) "predictions added"))))
     (catch Exception ex (error ex))))
 
-(defn learn-stories [{:keys [cmp-state put-fn] :as msg-map}]
+(defn learn-stories [{:keys [cmp-state msg-payload] :as msg-map}]
   (future
     (try
       (let [stories (export-entry-stories msg-map)
@@ -196,7 +199,6 @@
         (info "running" estimator)
         (info (let-programs [python3 "/usr/local/bin/python3"]
                             (python3 estimator classes-arg "--train_steps=3000")))
-        (info (count (:story-predictions @cmp-state)) "predictions added")
         (import-predictions cmp-state))
       (catch Exception ex (error ex))))
   {})
