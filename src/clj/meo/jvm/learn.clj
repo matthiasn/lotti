@@ -187,6 +187,7 @@
                   (swap! cmp-state assoc-in [:story-predictions ts] p)))
               (catch Exception ex
                 (error "Exception" ex "when parsing line:\n" line))))
+          (info (count lines) "predictions parsed")
           (info (count (:story-predictions @cmp-state)) "predictions added"))))
     (catch Exception ex (error ex))))
 

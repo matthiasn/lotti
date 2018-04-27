@@ -54,7 +54,7 @@
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.0-2"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.238"]
-                                           [reagent "0.8.0-alpha2"
+                                           [reagent "0.8.0"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
                                            [cljsjs/moment "2.17.1-1"]
