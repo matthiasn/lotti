@@ -33,7 +33,7 @@
                          :state/stats-tags-get :import/listen :spotify/play
                          :spotify/pause :state/search :cfg/refresh
                          :sync/start-server :sync/stop-server
-                         :tf/learn-stories}}))
+                         :tf/learn-stories :gql/query}}))
 
 (def OBSERVER (.-OBSERVER js/window))
 

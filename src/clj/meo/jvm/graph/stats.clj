@@ -101,8 +101,7 @@
 
 (defn get-basic-stats [state]
   {:entry-count (count (:sorted-entries state))
-   :import-cnt  (res-count state {:tags #{"#import"}})
-   :locations   (sl/locations state)})
+   :import-cnt  (res-count state {:tags #{"#import"}})})
 
 (def started-tasks
   {:tags     #{"#task"}
@@ -177,23 +176,6 @@
         (info "completed stats-tags" "in" (- (st/now) start) "ms"))
       {:new-state (assoc-in current-state path last-vclock)})))
 
-(defn task-summary-stats
-  "Generate some very basic stats about the graph for display in UI."
-  [state k]
-  (case k
-    :open-tasks-cnt (res-count state {:tags     #{"#task"}
-                                      :not-tags #{"#done" "#backlog" "#closed"}})
-    :backlog-cnt (res-count state {:tags     #{"#task" "#backlog"}
-                                   :not-tags #{"#done" "#closed"}})
-    :completed-cnt (completed-count state)
-    :closed-cnt (res-count state {:tags #{"#task" "#closed"}})))
-
-(defn task-summary-stats-w
-  "Generate some very basic stats about the graph for display in UI."
-  [state k msg-meta put-fn]
-  (let [res (task-summary-stats state k)]
-    (put-fn (with-meta [:stats/result2 {k res}] msg-meta))))
-
 (defn get-stats-fn2
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
@@ -202,15 +184,9 @@
         last-vclock (:global-vclock current-state)]
     (when (not= last-vclock (get-in current-state path))
       (let [start (st/now)
-            stats (get-basic-stats current-state)
             aw {:award-points (aw/award-points current-state)}
             q {:questionnaires (q/questionnaires current-state)}
             uid (:sente-uid msg-meta)]
-        (put-fn (with-meta [:stats/result2 stats] {:sente-uid uid}))
-        (task-summary-stats-w current-state :open-tasks-cnt msg-meta put-fn)
-        (task-summary-stats-w current-state :backlog-cnt msg-meta put-fn)
-        (task-summary-stats-w current-state :completed-cnt msg-meta put-fn)
-        (task-summary-stats-w current-state :closed-cnt msg-meta put-fn)
         (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
         (put-fn (with-meta [:stats/result2 q] {:sente-uid uid}))
         (info "completed stats2" "in" (- (st/now) start) "ms"))

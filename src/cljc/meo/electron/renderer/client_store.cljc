@@ -75,6 +75,7 @@
 (defn initial-queries [{:keys [current-state put-fn]}]
   (info "performing initial queries")
   (put-fn [:state/stats-tags-get])
+  (put-fn [:gql/query {:file "count-stats.gql" :id :count-stats}])
   (put-fn [:stats/get2])
   (put-fn [:cfg/refresh])
   (put-fn [:state/search (u/search-from-cfg current-state)])
@@ -111,6 +112,12 @@
   (let [new-state (assoc-in current-state [:startup-progress] msg-payload)]
     {:new-state new-state}))
 
+(defn gql-res [{:keys [current-state msg-payload]}]
+  (let [{:keys [id data]} msg-payload
+        new-state (update-in current-state [:gql-res id] merge data)]
+    (info (:gql-res new-state))
+    {:new-state new-state}))
+
 (defn ping [_]
   #?(:cljs (info :ping))
   {})
@@ -129,6 +136,7 @@
                         :state/stats-tags  stats-tags-fn
                         :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
+                        :gql/res           gql-res
                         :startup/progress  progress
                         :startup/query     initial-queries
                         :ws/ping           ping

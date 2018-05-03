@@ -87,8 +87,8 @@
             progress (double (/ idx cnt))]
         (process-line parsed node-id cmp-state entries-to-index)
         (swap! cmp-state assoc-in [:startup-progress] progress)
-        (pr/print (pr/tick bar idx))
         (when (zero? (mod idx 1000))
+          (pr/print (pr/tick bar idx))
           (broadcast [:startup/progress progress]))
         (when (and (pos? idx) (zero? (mod idx 10000)))
           (println))

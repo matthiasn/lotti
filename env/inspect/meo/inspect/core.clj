@@ -23,5 +23,7 @@
    in inspect."
   [& _args]
   (info "meo with inspect started, PID" (pid/current))
+  (pid/save "meo.pid")
+  (pid/delete-on-shutdown! "meo.pid")
   (mjc/restart! mjc/switchboard (make-observable mjc/cmp-maps) true)
   (Thread/sleep Long/MAX_VALUE))

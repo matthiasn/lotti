@@ -20,6 +20,7 @@
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
 
 ;; Subscription Handlers
+(reg-sub :gql-res (fn [db _] (:gql-res db)))
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
 (reg-sub :git-stats (fn [db _] (:git-commits db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))

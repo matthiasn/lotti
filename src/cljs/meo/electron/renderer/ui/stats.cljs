@@ -1,46 +1,26 @@
 (ns meo.electron.renderer.ui.stats
   (:require [meo.electron.renderer.ui.charts.tasks :as ct]
-            [meo.electron.renderer.ui.charts.custom-fields :as cf]
             [meo.electron.renderer.ui.charts.wordcount :as wc]
-            [meo.electron.renderer.ui.charts.location :as loc]
+            [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
             [meo.electron.renderer.ui.charts.media :as m]
-            [meo.electron.renderer.helpers :as h]
-            [re-frame.core :refer [subscribe]]
-            [cljs.pprint :as pp]
-            [meo.electron.renderer.ui.charts.award :as aw]))
+            [re-frame.core :refer [subscribe]]))
 
 (defn stats-text []
-  (let [stats (subscribe [:stats])
-        options (subscribe [:options])
-        cfg (subscribe [:cfg])
-        planning-mode (subscribe [:planning-mode])
-        timing (subscribe [:timing])]
+  (let [gql-res (subscribe [:gql-res])
+        stats (reaction (:count-stats @gql-res))]
     (fn stats-text-render []
-      (when stats
-        [:div.stats-string
-         (if @planning-mode
-           [:div
-            (:entry-count @stats) " entries | "
-            (count (:hashtags @options)) " tags | "
-            (count (:mentions @options)) " people | "
-            (Math/floor (:hours-logged @stats)) " hours | "
-            (:word-count @stats) " words | "
-            (:open-tasks-cnt @stats) " open tasks | "
-            (:backlog-cnt @stats) " backlog | "
-            (:completed-cnt @stats) " done | "
-            (:closed-cnt @stats) " closed | "
-            (:import-cnt @stats) " #import"]
-           [:div
-            (:entry-count @stats) " entries | "
-            (count (:hashtags @options)) " tags | "
-            (count (:mentions @options)) " people | "
-            (:word-count @stats) " words | "
-            (:import-cnt @stats) " #import | "
-            "PID " (:pid @cfg)
-            (when-let [ms (:query @timing)]
-              (str "| Query: " (:count @timing)
-                   " results " ms))])]))))
+      [:div.stats-string
+       [:div (:entry_count @stats) " entries | "
+        (:tag_count @stats) " tags | "
+        (:mention_count @stats) " people | "
+        (Math/floor (:hours_logged @stats)) " hours | "
+        (:word_count @stats) " words | "
+        (:open_tasks @stats) " open tasks | "
+        (:backlog_count @stats) " backlog | "
+        (:completed_count @stats) " done | "
+        (:closed_count @stats) " closed | "
+        (:import_count @stats) " #import"]] )))
 
 (defn stats-view [put-fn]
   [:div.stats.charts

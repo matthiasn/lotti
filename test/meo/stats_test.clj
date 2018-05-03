@@ -1,15 +1,10 @@
 (ns meo.stats-test
   "Here, we test the handler functions of the server side store component."
   (:require [clojure.test :refer [deftest testing is]]
-            [meo.jvm.files :as f]
             [meo.store-test :as st]
-            [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.stats.time :as gst]
-            [meo.jvm.files :as f]
             [meo.store-test-common :as stc]
-            [clojure.pprint :as pp]
             [meo.jvm.graph.add :as ga]
-            [clj-time.core :as ct]
             [clj-time.coerce :as ctc]
             [meo.jvm.file-utils :as fu]))
 
@@ -78,31 +73,6 @@
     :planned-dur    -1
     :comment-for    1450999300010
     :md             "irrelevant #closed @JaneDoe"}])
-
-(deftest summary-stats-test
-  "test that daily summaries"
-  (let [test-ts (System/currentTimeMillis)
-        {:keys [current-state logs-path]} (st/mk-test-state test-ts)]
-    (with-redefs [fu/daily-logs-path logs-path]
-      (let [new-state (reduce stc/persist-reducer
-                              current-state
-                              stats-test-entries)]
-        (testing
-          "task summary stats are correct"
-          (let [stats (gs/task-summary-stats new-state :open-tasks-cnt)]
-            (is (= 1 stats))))
-        (testing
-          "task summary stats are correct"
-          (let [stats (gs/task-summary-stats new-state :backlog-cnt)]
-            (is (= 1 stats))))
-        (testing
-          "task summary stats are correct"
-          (let [stats (gs/task-summary-stats new-state :completed-cnt)]
-            (is (= 2 stats))))
-        (testing
-          "task summary stats are correct"
-          (let [stats (gs/task-summary-stats new-state :closed-cnt)]
-            (is (= 1 stats))))))))
 
 (deftest pomodoro-stats-test
   "test daily pomodoro stats"

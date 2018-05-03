@@ -225,6 +225,7 @@
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:stats/get2]
+                 [:gql/query {:file "count-stats.gql" :id :count-stats}]
                  [:state/stats-tags-get]]}))
 
 (defn search-res [{:keys [current-state msg-payload put-fn]}]

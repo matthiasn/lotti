@@ -14,7 +14,8 @@
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
-            [taoensso.timbre :refer [info]]))
+            [taoensso.timbre :refer [info]]
+            [meo.jvm.graphql :as gql]))
 
 (defonce switchboard (sb/component :backend/switchboard))
 
@@ -24,6 +25,7 @@
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
     (st/stats-cmp-map :backend/stats)
+    (gql/cmp-map :backend/graphql)
     (bak/cmp-map :backend/backup)
     (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
@@ -44,6 +46,7 @@
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
                           :backend/stats
+                          :backend/graphql
                           :backend/export
                           :backend/upload
                           :backend/imports}}]
@@ -52,6 +55,9 @@
                   :to   :backend/store}]
 
      [:cmd/route {:from :backend/stats
+                  :to   :backend/ws}]
+
+     [:cmd/route {:from :backend/graphql
                   :to   :backend/ws}]
 
      [:cmd/route {:from :backend/upload
@@ -86,6 +92,7 @@
                                           :message [:import/spotify]
                                           :repeat  true
                                           :initial false}]}]]))
+
 (defn -main
   "Starts the application from command line, saves and logs process ID. The
    system that is fired up when restart! is called proceeds in core.async's
