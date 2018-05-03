@@ -8,9 +8,6 @@
             [draft-js :as Draft]
             [draftjs-md-converter :as md-converter]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.electron.renderer.ui.entry.pomodoro :as pomo]
-            [clojure.data :as data]
-            [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]))
 
@@ -22,10 +19,10 @@
   (let [content-from-raw (.convertFromRaw Draft editor-state)]
     (.createWithContent Draft.EditorState content-from-raw)))
 
-(defn story-mapper [[ts story]]
+(defn story-mapper [story]
   (when-let [story-name (:story-name story)]
     {:name story-name
-     :id   ts}))
+     :id   (:timestamp story)}))
 
 (def md-dict (clj->js {:BOLD          "**"
                        :STRIKETHROUGH "~~"
@@ -54,15 +51,17 @@
 
 (defn draft-search-field [_editor-state update-cb]
   (let [editor (adapt-react-class "SearchFieldEditor")
-        options (subscribe [:options])
-        sorted-stories (reaction (:sorted-stories @options))
-        stories-list (reaction (filter identity (map story-mapper @sorted-stories)))
         cfg (subscribe [:cfg])
-        mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
+        gql-res (subscribe [:gql-res])
+        mentions (reaction (map (fn [m] {:name m})
+                                (-> @gql-res :options :mentions)))
+        stories (reaction (filter identity
+                                  (map story-mapper
+                                       (-> @gql-res :options :stories))))
         hashtags (reaction
                    (let [show-pvt? (:show-pvt @cfg)
-                         hashtags (:hashtags @options)
-                         pvt-hashtags (:pvt-hashtags @options)
+                         hashtags (-> @gql-res :options :hashtags)
+                         pvt-hashtags (-> @gql-res :options :pvt_hashtags)
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
@@ -72,20 +71,21 @@
       [editor {:editorState editor-state
                :mentions    @mentions
                :hashtags    @hashtags
-               :stories     @stories-list
+               :stories     @stories
                :onChange    on-change}])))
 
 (defn draft-text-editor [ts update-cb save-fn start-fn small-img]
   (let [editor (adapt-react-class "EntryTextEditor")
         {:keys [entry unsaved]} (eu/entry-reaction ts)
         md (reaction (:md @entry ""))
-        options (subscribe [:options])
         cfg (subscribe [:cfg])
-        mentions (reaction (map (fn [m] {:name m}) (:mentions @options)))
+        gql-res (subscribe [:gql-res])
+        mentions (reaction (map (fn [m] {:name m})
+                                (get-in @gql-res [:options :mentions])))
         hashtags (reaction
                    (let [show-pvt? (:show-pvt @cfg)
-                         hashtags (:hashtags @options)
-                         pvt-hashtags (:pvt-hashtags @options)
+                         hashtags (-> @gql-res :options :hashtags)
+                         pvt-hashtags (-> @gql-res :options :pvt_hashtags)
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]

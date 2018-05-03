@@ -209,10 +209,6 @@
                    :meo.search-result/entries-map
                    :meo.search-result/duration-ms]))
 
-(s/def :state/stats-tags
-  (s/keys :req-un [:meo.search-result/hashtags
-                   :meo.search-result/mentions]))
-
 (s/def :state/stats-tags2 map?)
 
 (s/def :stats/day (s/keys :req-un [:meo.search/date-string]))

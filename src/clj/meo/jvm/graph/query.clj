@@ -11,6 +11,8 @@
             [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
+            [camel-snake-kebab.extras :refer [transform-keys]]
+            [camel-snake-kebab.core :refer [->snake_case]]
             [clj-time.core :as ct])
   (:import (org.joda.time DateTimeZone)))
 
@@ -407,6 +409,20 @@
         saga-ids (mapv :dest (uc/find-edges g {:src :sagas}))
         sagas (into {} (mapv (fn [id] [id (uc/attrs g id)]) saga-ids))]
     sagas))
+
+(defn find-all-stories2
+  "Finds all stories in graph and returns list."
+  [current-state]
+  (let [g (:graph current-state)
+        story-ids (mapv :dest (uc/find-edges g {:src :stories}))]
+    (mapv #(transform-keys ->snake_case (uc/attrs g %)) story-ids)))
+
+(defn find-all-sagas2
+  "Finds all stories in graph and returns list."
+  [current-state]
+  (let [g (:graph current-state)
+        story-ids (mapv :dest (uc/find-edges g {:src :sagas}))]
+    (mapv #(transform-keys ->snake_case (uc/attrs g %)) story-ids)))
 
 (defn find-all-briefings
   "Finds all briefings in graph and returns map with the day as key and the

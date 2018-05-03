@@ -10,10 +10,13 @@
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
+            [meo.jvm.upload :as u]
             [meo.jvm.store :as st]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
             [meo.common.utils.parse :as p]
+            [camel-snake-kebab.core :refer [->kebab-case-keyword]]
+            [camel-snake-kebab.extras :refer [transform-keys]]
             [clojure.pprint :as pp])
   (:import (clojure.lang IPersistentMap)))
 
@@ -32,6 +35,13 @@
 (defn mention-count [context args value] (count (gq/find-all-mentions @st/state)))
 (defn completed-count [context args value] (gs/completed-count @st/state))
 
+(defn hashtags [context args value] (gq/find-all-hashtags @st/state))
+(defn pvt-hashtags [context args value] (gq/find-all-pvt-hashtags @st/state))
+(defn mentions [context args value] (gq/find-all-mentions @st/state))
+
+(defn stories [context args value] (gq/find-all-stories2 @st/state))
+(defn sagas [context args value] (gq/find-all-sagas2 @st/state))
+
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
 
@@ -42,15 +52,16 @@
         query-string (if file
                        (slurp (io/resource (str "queries/" file)))
                        (:q msg-payload))
-        res (-> (lacinia/execute schema query-string nil nil)
-                (simplify))]
+        res (lacinia/execute schema query-string nil nil)
+        simplified (transform-keys ->kebab-case-keyword (simplify res))]
     (info "GraphQL query \"" (or file query-string)
           "\" finished in" (- (stc/now) start) "ms")
-    (pp/pprint res)
-    {:emit-msg [:gql/res (merge msg-payload res)]}))
+    {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
 (defn state-fn [_put-fn]
-  (let [schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
+  (let [port (u/get-free-port)
+        port 8766
+        schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      {:query/entry-count     entry-count
                       :query/hours-logged    hours-logged
@@ -58,17 +69,25 @@
                       :query/tag-count       tag-count
                       :query/mention-count   mention-count
                       :query/completed-count completed-count
-                      :query/match-count     match-count})
+                      :query/match-count     match-count
+                      :query/hashtags        hashtags
+                      :query/pvt-hashtags    pvt-hashtags
+                      :query/mentions        mentions
+                      :query/stories         stories
+                      :query/sagas           sagas})
                    schema/compile)
         server (-> schema
-                   (lp/service-map {:graphiql true :port 7999})
+                   (lp/service-map {:graphiql true
+                                    :port     port})
                    http/create-server
                    http/start)]                             ;(http/stop server)
-    (info "Started GraphQL component")
+    (info "Started GraphQL component, listening on port" port)
     {:state (atom {:server server
                    :schema schema})}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
+   :opts        {:in-chan  [:buffer 100]
+                 :out-chan [:buffer 100]}
    :handler-map {:gql/query run-query}})

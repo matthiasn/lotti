@@ -161,7 +161,7 @@
     (when (not= last-vclock (get-in current-state path))
       (let [start (st/now)
             uid (:sente-uid msg-meta)
-            stats-tags (make-stats-tags current-state)
+            stats-tags (select-keys (make-stats-tags current-state) [:cfg])
             started {:started-tasks (gq/get-filtered current-state started-tasks)}
             waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}
             word-count {:word-count (count-words current-state)}

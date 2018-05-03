@@ -21,15 +21,17 @@
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
+;(reg-sub :stories (fn [db _] (:stories (:options db))))
+(reg-sub :stories (fn [db _] (get-in db [:gql-res :options :stories])))
+
+(reg-sub :options (fn [db _] (:options db)))
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
 (reg-sub :git-stats (fn [db _] (:git-commits db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
 (reg-sub :startup-progress (fn [db _] (:startup-progress db)))
 (reg-sub :running-pomodoro (fn [db _] (:running (:pomodoro db))))
 (reg-sub :story-predict (fn [db _] (:story-predict db)))
-(reg-sub :options (fn [db _] (:options db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
-(reg-sub :stories (fn [db _] (:stories (:options db))))
 (reg-sub :show-pvt (fn [db _] (:show-pvt (:cfg db))))
 (reg-sub :sagas (fn [db _] (:sagas (:options db))))
 (reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))

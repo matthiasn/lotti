@@ -1,23 +1,75 @@
-{:objects {}
- :queries {:entry_count     {:type        Int
-                             :description "number of entries"
-                             :resolve     :query/entry-count}
-           :hours_logged    {:type        Int
-                             :description "hours logged"
-                             :resolve     :query/hours-logged}
-           :word_count      {:type        Int
-                             :description "word count"
-                             :resolve     :query/word-count}
-           :tag_count       {:type        Int
-                             :description "tag count"
-                             :resolve     :query/tag-count}
-           :mention_count   {:type        Int
-                             :description "people count"
-                             :resolve     :query/mention-count}
-           :completed_count {:type        Int
-                             :description "completed tasks count"
-                             :resolve     :query/completed-count}
-           :match_count     {:type        Int
-                             :description "result count for given query"
-                             :args        {:query {:type String}}
-                             :resolve     :query/match-count}}}
+{:objects
+ {
+  :Story
+  {:description "A story in meo."
+   :fields      {:timestamp   {:type (non-null ID)}
+                 :story_name  {:type String}
+                 :linked_saga {:type        ID
+                               :description "Saga that the story belongs to."}}}
+  :Saga
+  {:description "A saga in meo."
+   :fields      {:timestamp {:type (non-null ID)}
+                 :saga_name {:type String}}}}
+
+ :queries
+ {:entry_count
+  {:type        Int
+   :description "Number of entries."
+   :resolve     :query/entry-count}
+
+  :hours_logged
+  {:type        Int
+   :description "Hours logged."
+   :resolve     :query/hours-logged}
+
+  :word_count
+  {:type        Int
+   :description "Word count."
+   :resolve     :query/word-count}
+
+  :tag_count
+  {:type        Int
+   :description "Tag count."
+   :resolve     :query/tag-count}
+
+  :mention_count
+  {:type        Int
+   :description "People count."
+   :resolve     :query/mention-count}
+
+  :completed_count
+  {:type        Int
+   :description "Completed tasks count."
+   :resolve     :query/completed-count}
+
+  :match_count
+  {:type        Int
+   :description "Result count for given query."
+   :args        {:query {:type String}}
+   :resolve     :query/match-count}
+
+  :hashtags
+  {:type        (list String)
+   :description "List of all hashtags."
+   :resolve     :query/hashtags}
+
+  :pvt_hashtags
+  {:type        (list String)
+   :description "List of all private hashtags."
+   :resolve     :query/pvt-hashtags}
+
+  :mentions
+  {:type        (list String)
+   :description "List of all mentions."
+   :resolve     :query/mentions}
+
+  :stories
+  {:type        (list :Story)
+   :description "List of all existing stories."
+   :resolve     :query/stories}
+
+  :sagas
+  {:type        (list :Saga)
+   :description "List of all existing sagas."
+   :resolve     :query/sagas}
+  }}
