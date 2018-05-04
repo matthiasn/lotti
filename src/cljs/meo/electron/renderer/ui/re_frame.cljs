@@ -21,8 +21,19 @@
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
-;(reg-sub :stories (fn [db _] (:stories (:options db))))
-(reg-sub :stories (fn [db _] (get-in db [:gql-res :options :stories])))
+(reg-sub :stories (fn [db _]
+                    (->> (get-in db [:gql-res :options :stories])
+                         (map (fn [x] [(:timestamp x) x]))
+                         (into {}))))
+(reg-sub :sagas (fn [db _]
+                  (->> (get-in db [:gql-res :options :sagas])
+                       (map (fn [x] [(:timestamp x) x]))
+                       (into {}))))
+
+(reg-sub :briefings (fn [db _]
+                      (->> (get-in db [:gql-res :options :briefings])
+                           (map (fn [m] [(:day m) (:timestamp m)]))
+                           (into {}))))
 
 (reg-sub :options (fn [db _] (:options db)))
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
@@ -33,7 +44,6 @@
 (reg-sub :story-predict (fn [db _] (:story-predict db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :show-pvt (fn [db _] (:show-pvt (:cfg db))))
-(reg-sub :sagas (fn [db _] (:sagas (:options db))))
 (reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))
 (reg-sub :busy-status (fn [db _] (:busy-status db)))
 (reg-sub :query-cfg (fn [db _] (:query-cfg db)))
@@ -51,7 +61,6 @@
 (reg-sub :repos (fn [db _] (:repos (:backend-cfg db))))
 (reg-sub :planning-mode (fn [db _] (:planning-mode (:cfg db))))
 (reg-sub :stats (fn [db _] (:stats db)))
-(reg-sub :briefings (fn [db _] (:briefings db)))
 (reg-sub :started-tasks (fn [db _] (:started-tasks db)))
 (reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))

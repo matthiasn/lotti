@@ -165,14 +165,12 @@
             started {:started-tasks (gq/get-filtered current-state started-tasks)}
             waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}
             word-count {:word-count (count-words current-state)}
-            logged {:hours-logged (hours-logged current-state)}
-            briefings {:briefings (gq/find-all-briefings current-state)}]
+            logged {:hours-logged (hours-logged current-state)}]
         (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
         (put-fn (with-meta [:state/stats-tags2 started] {:sente-uid uid}))
         (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
         (put-fn (with-meta [:stats/result2 word-count] {:sente-uid uid}))
         (put-fn (with-meta [:stats/result2 logged] {:sente-uid uid}))
-        (put-fn (with-meta [:state/stats-tags2 briefings] {:sente-uid uid}))
         (info "completed stats-tags" "in" (- (st/now) start) "ms"))
       {:new-state (assoc-in current-state path last-vclock)})))
 

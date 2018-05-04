@@ -6,10 +6,17 @@
                  :story_name  {:type String}
                  :linked_saga {:type        ID
                                :description "Saga that the story belongs to."}}}
+
   :Saga
   {:description "A saga in meo."
    :fields      {:timestamp {:type (non-null ID)}
-                 :saga_name {:type String}}}}
+                 :saga_name {:type String}}}
+
+  :Briefing
+  {:description "A briefing (plan for a specific day) in meo."
+   :fields      {:timestamp {:type (non-null ID)}
+                 :day       {:type String}}}
+  }
 
  :queries
  {:entry_count
@@ -72,4 +79,10 @@
   {:type        (list :Saga)
    :description "List of all existing sagas."
    :resolve     :query/sagas}
+
+  :briefings
+  {:type        (list :Briefing)
+   :description "List of all existing briefings."
+   :resolve     :query/briefings}
+
   }}

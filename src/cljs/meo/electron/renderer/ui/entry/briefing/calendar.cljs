@@ -7,6 +7,7 @@
             [meo.electron.renderer.helpers :as h]
             [moment :as moment]
             [rome :as rome]
+            [reagent.ratom :refer-macros [reaction]]
             [react-big-calendar]
             [meo.electron.renderer.ui.charts.common :as cc]
             [meo.common.utils.parse :as p]))
@@ -50,10 +51,10 @@
         default (aget rbc "default")
         cal (r/adapt-react-class default)
         chart-data (subscribe [:chart-data])
-        sagas (subscribe [:sagas])
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
-        stories (subscribe [:stories])]
+        stories (subscribe [:stories])
+        sagas (subscribe [:sagas])]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
             day (or @cal-day today)
@@ -71,7 +72,7 @@
                            end (if (pos? completed)
                                  (+ ts (* completed 1000))
                                  ts)
-                           saga-name (get-in sagas [saga :saga-name])
+                           saga-name (get-in sagas [saga :saga-name] "none")
                            color (cc/item-color saga-name)
                            title (get-in stories [story :story-name])
                            open-ts (or comment-for ts)

@@ -22,30 +22,12 @@
     {:new-state new-state}))
 
 (defn stats-tags-fn [{:keys [current-state msg-payload put-fn]}]
-  (let [stories (:stories msg-payload)
-        sorted-stories (sort (fn [[_ x] [_ y]]
-                               (< (:story-name x) (:story-name y)))
-                             stories)
-        sagas (:sagas msg-payload)
-        sorted-sagas (sort (fn [[_ x] [_ y]]
-                             (< (:saga-name x) (:saga-name y)))
-                           sagas)
-        new-state
+  (let [new-state
         (-> current-state
-            (assoc-in [:options :hashtags] (:hashtags msg-payload))
-            (assoc-in [:options :pvt-hashtags] (:pvt-hashtags msg-payload))
-            (assoc-in [:options :pvt-displayed] (:pvt-displayed msg-payload))
             (assoc-in [:options :custom-fields] (:custom-fields (:cfg msg-payload)))
-            (assoc-in [:cfg :pid] (:pid (:cfg msg-payload)))
             (assoc-in [:options :questionnaires] (:questionnaires (:cfg msg-payload)))
             (assoc-in [:options :custom-field-charts] (:custom-field-charts (:cfg msg-payload)))
-            (assoc-in [:options :stories] stories)
             (assoc-in [:backend-cfg] (:cfg msg-payload))
-            (assoc-in [:options :locations] (:locations msg-payload))
-            (assoc-in [:options :sorted-stories] sorted-stories)
-            (assoc-in [:options :sagas] sagas)
-            (assoc-in [:options :sorted-sagas] sorted-sagas)
-            (assoc-in [:options :mentions] (:mentions msg-payload))
             (assoc-in [:cfg :briefing] (-> msg-payload :cfg :briefing)))]
     {:new-state new-state}))
 

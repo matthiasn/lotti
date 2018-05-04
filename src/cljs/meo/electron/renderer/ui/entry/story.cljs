@@ -59,9 +59,7 @@
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
   [entry put-fn edit-mode?]
-  (let [options (subscribe [:options])
-        sagas (subscribe [:sagas])
-        sorted-sagas (reaction (:sorted-sagas @options))
+  (let [sagas (subscribe [:sagas])
         ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         select-handler
@@ -81,7 +79,7 @@
                [:select {:value     (or linked-saga "")
                          :on-change select-handler}
                 [:option {:value ""} "no saga selected"]
-                (for [[id saga] @sorted-sagas]
+                (for [[id saga] (sort-by #(:saga-name (second %)) @sagas)]
                   (let [saga-name (:saga-name saga)]
                     ^{:key (str ts saga-name)}
                     [:option {:value id} saga-name]))]])

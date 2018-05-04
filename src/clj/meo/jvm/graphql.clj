@@ -23,7 +23,10 @@
 (defn simplify [m]
   (walk/postwalk (fn [node]
                    (cond
-                     (instance? IPersistentMap node) (into {} node)
+                     (instance? IPersistentMap node)
+                     (into {} (map (fn [[k v]] (if (= k :timestamp)
+                                                 [k (Long/parseLong v)]
+                                                 [k v])) node))
                      (seq? node) (vec node)
                      :else node))
                  m))
@@ -41,6 +44,9 @@
 
 (defn stories [context args value] (gq/find-all-stories2 @st/state))
 (defn sagas [context args value] (gq/find-all-sagas2 @st/state))
+(defn briefings [context args value] (map
+                                       (fn [[k v]] {:day k :timestamp v})
+                                       (gq/find-all-briefings @st/state)))
 
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
@@ -74,7 +80,8 @@
                       :query/pvt-hashtags    pvt-hashtags
                       :query/mentions        mentions
                       :query/stories         stories
-                      :query/sagas           sagas})
+                      :query/sagas           sagas
+                      :query/briefings       briefings})
                    schema/compile)
         server (-> schema
                    (lp/service-map {:graphiql true
