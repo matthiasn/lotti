@@ -66,7 +66,6 @@
 
 (defn state-fn [_put-fn]
   (let [port (u/get-free-port)
-        port 8766
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      {:query/entry-count     entry-count
@@ -88,7 +87,7 @@
                                     :port     port})
                    http/create-server
                    http/start)]                             ;(http/stop server)
-    (info "Started GraphQL component, listening on port" port)
+    (info "Started GraphQL component, listening on PORT >>>" port)
     {:state (atom {:server server
                    :schema schema})}))
 

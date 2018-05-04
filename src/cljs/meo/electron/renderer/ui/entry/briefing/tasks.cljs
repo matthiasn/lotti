@@ -60,7 +60,8 @@
               :class    cls}
          [:td
           (when-let [prio (-> entry :task :priority)]
-            [:span.prio {:class prio} prio])]
+            (info prio)
+            [:span.prio {:class (name prio)} prio])]
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
