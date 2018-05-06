@@ -23,6 +23,7 @@
       }
       completed
       summed
+      manual
       comment_for
     }
   }

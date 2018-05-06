@@ -38,6 +38,7 @@
                     (put-fn [:search/add {:tab-group :briefing :query q}])
                     (put-fn [:search/refresh])))
         opts (clj->js {:time             false
+                       :initialValue     (:cal-day @cfg)
                        :monthsInCalendar 2})]
     (r/create-class
       {:display-name         "rome-cal"
@@ -53,44 +54,41 @@
   (let [rbc (aget js/window "deps" "BigCalendar")
         default (aget rbc "default")
         cal (r/adapt-react-class default)
-        chart-data (subscribe [:chart-data])
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
-        stories (subscribe [:stories])
-        sagas (subscribe [:sagas])]
+        gql-res (subscribe [:gql-res])
+        stats (reaction (:logged-time (:logged-by-day @gql-res)))]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
             day (or @cal-day today)
-            {:keys [pomodoro-stats]} @chart-data
-            day-stats (get-in pomodoro-stats [day])
-            time-by-ts (:time-by-ts day-stats)
-            sagas @sagas
-            stories @stories
-            mapper (fn [[ts entry]]
-                     (let [{:keys [completed manual saga story
-                                   comment-for]} entry
-                           start (if (pos? completed)
-                                   ts
-                                   (- ts (* manual 1000)))
-                           end (if (pos? completed)
-                                 (+ ts (* completed 1000))
-                                 ts)
-                           saga-name (get-in sagas [saga :saga-name] "none")
-                           color (cc/item-color saga-name)
-                           title (get-in stories [story :story-name])
-                           open-ts (or comment-for ts)
-                           click (up/add-search open-ts :left put-fn)]
-                       {:title title
-                        :click click
-                        :color color
-                        :start (js/Date. start)
-                        :end   (js/Date. end)}))
-            cal-entries (map mapper time-by-ts)
+            xf (fn [entry]
+                 (let [{:keys [completed manual story text
+                               comment-for timestamp]} entry
+                       start (if (pos? completed)
+                               timestamp
+                               (- timestamp (* manual 1000)))
+                       end (if (pos? completed)
+                             (+ timestamp (* completed 1000))
+                             timestamp)
+                       story-name (get-in story [:story-name])
+                       saga-name (get-in story [:linked-saga :saga-name]
+                                         "none")
+                       color (cc/item-color saga-name)
+                       title (str (when story-name (str story-name " - "))
+                                  text)
+                       open-ts (or comment-for timestamp)
+                       click (up/add-search open-ts :left put-fn)]
+                   {:title title
+                    :click click
+                    :color color
+                    :start (js/Date. start)
+                    :end   (js/Date. end)}))
+            events (map xf (:by-ts @stats))
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         [:div.cal-container
          [:div.big-calendar {:class (when-not @show-pvt "pvt")}
-          [cal (merge {:events     cal-entries
+          [cal (merge {:events     events
                        :date       (.toDate (moment. day))
                        :onNavigate #(info :navigate %)}
                       scroll-to)]]]))))

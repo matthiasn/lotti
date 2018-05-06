@@ -81,8 +81,8 @@
         query-string (apply format query-string args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))]
-    (info "GraphQL query \"" (or file query-string)
-          "\" finished in" (- (stc/now) start) "ms")
+    (info "GraphQL query" (str "'" (or file query-string) "'")
+          "finished in" (- (stc/now) start) "ms")
     {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
 (defn state-fn [_put-fn]

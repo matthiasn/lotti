@@ -357,3 +357,20 @@
 (s/def :file/encrypt (s/keys :req-un [:meo.enc/filename]))
 
 (s/def :meo.update/status (s/map-of keyword? keyword?))
+
+(s/def :meo.gql/id keyword?)
+(s/def :meo.gql/file string?)
+(s/def :meo.gql/data map?)
+
+(s/def :gql/query (s/keys :req-un [:meo.gql/id]
+                          :opt-un [:meo.gql/file
+                                   :meo.gql/args]))
+
+(s/def :gql/res (s/keys :req-un [:meo.gql/id]
+                          :opt-un [:meo.gql/file
+                                   :meo.gql/args
+                                   :meo.gql/data
+                                   :meo.gql/error]))
+
+(s/def :meo.cal/day :meo.search/date-string)
+(s/def :cal/to-day (s/keys :req-un [:meo.cal/day]))

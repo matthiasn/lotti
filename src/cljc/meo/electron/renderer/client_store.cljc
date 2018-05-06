@@ -56,6 +56,10 @@
 
 (defn initial-queries [{:keys [current-state put-fn]}]
   (info "performing initial queries")
+  (when-let [ymd (get-in current-state [:cfg :cal-day])]
+    (put-fn [:gql/query {:file "logged-by-day.gql"
+                         :id   :logged-by-day
+                         :args [ymd]}]))
   (put-fn [:gql/query {:file "options.gql" :id :options}])
   (put-fn [:gql/query {:file "count-stats.gql" :id :count-stats}])
   (put-fn [:stats/get2])

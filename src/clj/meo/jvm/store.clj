@@ -87,11 +87,9 @@
             progress (double (/ idx cnt))]
         (process-line parsed node-id cmp-state entries-to-index)
         (swap! cmp-state assoc-in [:startup-progress] progress)
-        (when (zero? (mod idx 1000))
+        (when (zero? (mod idx 5000))
           (pr/print (pr/tick bar idx))
           (broadcast [:startup/progress progress]))
-        (when (and (pos? idx) (zero? (mod idx 10000)))
-          (println))
         (if (:deleted parsed)
           (swap! entries dissoc ts)
           (swap! entries update-in [ts] conj parsed))))
