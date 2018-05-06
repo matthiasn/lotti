@@ -1,20 +1,20 @@
 {
   stories {
     timestamp
-    linked_saga
+    linked_saga {
+      timestamp
+      saga_name
+    }
     story_name
   }
-
   sagas {
     timestamp
     saga_name
   }
-
   hashtags
   pvt_hashtags
   mentions
-
-  briefings{
+  briefings {
     timestamp
     day
   }

@@ -33,5 +33,6 @@
               :app-path        app-path}]
     (into {:repo-dir   repo-dir
            :index-page (if repo-dir "electron/index-dev.html" "electron/index.html")
-           :port       (if repo-dir 8765 7788)}
+           :port       (if repo-dir 8765 7788)
+           :gql-port   (if repo-dir 8766 7789)}
           (map (fn [[k v]] [k (normalize v)]) info))))

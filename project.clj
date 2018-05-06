@@ -63,9 +63,11 @@
                                            [cljsjs/moment "2.17.1-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
-             :inspect      {:dependencies [[matthiasn/systems-toolbox-kafka "0.6.16"]]
-                            :source-paths ["src/cljc" "src/clj/" "env/inspect"]
-                            :main         meo.inspect.core}}
+             :dev          {:dependencies [[matthiasn/systems-toolbox-kafka "0.6.16"]]
+                            :source-paths ["src/cljc" "src/clj/" "dev-resources"
+                                           "env/inspect"]}}
+
+  :repl-options {:init-ns user}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 

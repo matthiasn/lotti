@@ -42,12 +42,13 @@
   (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn start-jvm [{:keys [current-state]}]
-  (let [{:keys [user-data java jar app-path data-path]} rt/runtime-info
+  (let [{:keys [user-data java jar app-path data-path gql-port]} rt/runtime-info
         args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts"
               "-Xlog:gc:/tmp/meo-gc.log" "-jar" jar]
         opts {:detached false
               :cwd      user-data
               :env      {:PORT      PORT
+                         :GQL_PORT gql-port
                          :APP_PATH app-path
                          :DATA_PATH data-path}}
         service (spawn-process java args opts)]

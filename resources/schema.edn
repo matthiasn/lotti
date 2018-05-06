@@ -1,22 +1,49 @@
 {:objects
  {
-  :Story
-  {:description "A story in meo."
-   :fields      {:timestamp   {:type (non-null ID)}
-                 :story_name  {:type String}
-                 :linked_saga {:type        ID
-                               :description "Saga that the story belongs to."}}}
-
   :Saga
   {:description "A saga in meo."
    :fields      {:timestamp {:type (non-null ID)}
                  :saga_name {:type String}}}
 
+  :Story
+  {:description "A story in meo."
+   :fields      {:timestamp   {:type (non-null ID)}
+                 :story_name  {:type String}
+                 :linked_saga {:type        :Saga
+                               :description "Saga that the story belongs to."}}}
+
   :Briefing
   {:description "A briefing (plan for a specific day) in meo."
    :fields      {:timestamp {:type (non-null ID)}
                  :day       {:type String}}}
-  }
+
+  :LoggedCalItem
+  {:description "Logged time item."
+   :fields      {:timestamp   {:type (non-null ID)}
+                 :md          {:type String}
+                 :text        {:type String}
+                 :comment_for {:type ID}
+                 :completed   {:type        Int
+                               :description "Completed time in seconds"}
+                 :manual      {:type        Int
+                               :description "Manually logged time in seconds"}
+                 :summed      {:type        Int
+                               :description "Summed time in seconds"}
+                 :story       {:type :Story}}}
+
+  :LoggedByStory
+  {:description "Logged time by story."
+   :fields      {:logged {:type        Int
+                          :description "Logged time in seconds"}
+                 :story  {:type :Story}}}
+
+  :CalDayStats
+  {:description "Logged time for specified day."
+   :fields      {:day        {:type (non-null String)}
+                 :by_ts      {:type (list :LoggedCalItem)}
+                 :by_story   {:type (list :LoggedByStory)}
+                 :total_time {:type        (non-null Int)
+                              :description "Logged time in seconds"}}}}
 
  :queries
  {:entry_count
@@ -84,5 +111,10 @@
   {:type        (list :Briefing)
    :description "List of all existing briefings."
    :resolve     :query/briefings}
+
+  :logged_time
+  {:type    :CalDayStats
+   :args    {:day {:type String}}
+   :resolve :query/logged-time}
 
   }}

@@ -32,6 +32,9 @@
                         (put-fn [:entry/update entry])))
                     (put-fn [:search/remove-briefings])
                     (put-fn [:cal/to-day {:day ymd}])
+                    (put-fn [:gql/query {:file "logged-by-day.gql"
+                                         :id   :logged-by-day
+                                         :args [ymd]}])
                     (put-fn [:search/add {:tab-group :briefing :query q}])
                     (put-fn [:search/refresh])))
         opts (clj->js {:time             false

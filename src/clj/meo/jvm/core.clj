@@ -38,7 +38,7 @@
    have a handler function. Also route messages from imports to store component.
    Finally, sends all messages from store component to client via the ws
    component."
-  [switchboard cmp-maps observer]
+  [switchboard cmp-maps opts]
   (sb/send-mult-cmd
     switchboard
     [[:cmd/init-comp cmp-maps]
@@ -81,11 +81,13 @@
                           :backend/backup
                           :backend/imports}
                   :to   :backend/scheduler}]
-     (when observer
+
+     (when (:inspect opts)
        [:cmd/attach-to-firehose :backend/kafka-firehose])
 
-     [:cmd/send {:to  :backend/store
-                 :msg [:startup/read]}]
+     (when (:read-logs opts)
+       [:cmd/send {:to  :backend/store
+                   :msg [:startup/read]}])
 
      [:cmd/send {:to  :backend/scheduler
                  :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
@@ -102,5 +104,5 @@
   (pid/save "meo.pid")
   (pid/delete-on-shutdown! "meo.pid")
   (info "meo started, PID" (pid/current))
-  (restart! switchboard cmp-maps false)
+  (restart! switchboard cmp-maps {:read-logs true})
   (Thread/sleep Long/MAX_VALUE))

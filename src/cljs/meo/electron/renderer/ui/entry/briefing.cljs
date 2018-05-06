@@ -92,7 +92,9 @@
          [:option {:value ts} (:saga-name saga)])])))
 
 (defn briefing-view [ts put-fn local-cfg]
-  (let [chart-data (subscribe [:chart-data])
+  (let [gql-res (subscribe [:gql-res])
+        logged-time (reaction (:logged-time (:logged-by-day @gql-res)))
+        chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         last-update (subscribe [:last-update])
@@ -110,14 +112,16 @@
         (when ts
           (put-fn [:entry/find {:timestamp ts}])))
       (let [{:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
-            day-stats (get pomodoro-stats @day)
             excluded (:excluded (:briefing @cfg))
-            logged-s (->> day-stats
-                          :time-by-saga
-                          (filter (fn [[s _]] (not (contains? excluded s))))
-                          (map second)
+            logged-s (->> @logged-time
+                          :by-ts
+                          (filter (fn [x]
+                                    (not (contains? excluded
+                                           (-> x :story :linked-saga :timestamp)))))
+                          (map :summed)
                           (apply +))
             dur (u/duration-string logged-s)
+            n (count (:by-ts @logged-time))
             word-stats (get wordcount-stats @day)
             {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats @day)
             time-allocation (-> entry :briefing :time-allocation)]
@@ -147,4 +151,4 @@
                  (apply + (map second time-allocation)))]])
            (when (seq dur)
              [:span
-              " Logged: " [:strong dur] " in " (:total day-stats) " entries."])]]]))))
+              " Logged: " [:strong dur] " in " n " entries."])]]]))))

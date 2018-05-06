@@ -414,8 +414,14 @@
   "Finds all stories in graph and returns list."
   [current-state]
   (let [g (:graph current-state)
-        story-ids (mapv :dest (uc/find-edges g {:src :stories}))]
-    (mapv #(transform-keys ->snake_case (uc/attrs g %)) story-ids)))
+        sagas (find-all-sagas current-state)
+        story-ids (mapv :dest (uc/find-edges g {:src :stories}))
+        xf (fn [id]
+             (let [story (uc/attrs g id)
+                   saga (get sagas (:linked-saga story))
+                   story (assoc-in story [:linked-saga] saga)]
+               (transform-keys ->snake_case story)))]
+    (mapv xf story-ids)))
 
 (defn find-all-sagas2
   "Finds all stories in graph and returns list."

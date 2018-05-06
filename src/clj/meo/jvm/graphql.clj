@@ -7,6 +7,7 @@
             [com.walmartlabs.lacinia :as lacinia]
             [com.walmartlabs.lacinia.pedestal :as lp]
             [io.pedestal.http :as http]
+            [ubergraph.core :as uber]
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
@@ -15,18 +16,24 @@
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
             [meo.common.utils.parse :as p]
-            [camel-snake-kebab.core :refer [->kebab-case-keyword]]
+            [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
-            [clojure.pprint :as pp])
+            [clojure.pprint :as pp]
+            [meo.jvm.graph.stats.time :as t-s])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
   (walk/postwalk (fn [node]
                    (cond
                      (instance? IPersistentMap node)
-                     (into {} (map (fn [[k v]] (if (= k :timestamp)
-                                                 [k (Long/parseLong v)]
-                                                 [k v])) node))
+                     (into {} (map (fn [[k v]]
+                                     (if (and v
+                                              (contains? #{:timestamp
+                                                           :comment_for}
+                                                         k))
+                                       [k (Long/parseLong v)]
+                                       [k v]))
+                                   node))
                      (seq? node) (vec node)
                      :else node))
                  m))
@@ -44,9 +51,21 @@
 
 (defn stories [context args value] (gq/find-all-stories2 @st/state))
 (defn sagas [context args value] (gq/find-all-sagas2 @st/state))
-(defn briefings [context args value] (map
-                                       (fn [[k v]] {:day k :timestamp v})
-                                       (gq/find-all-briefings @st/state)))
+
+(defn briefings [context args value]
+  (map (fn [[k v]] {:day k :timestamp v})
+       (gq/find-all-briefings @st/state)))
+
+(defn logged-time [context args value]
+  (let [day (:day args)
+        current-state @st/state
+        g (:graph current-state)
+        stories (gq/find-all-stories current-state)
+        sagas (gq/find-all-sagas current-state)
+        day-nodes (gq/get-nodes-for-day g {:date-string day})
+        day-nodes-attrs (map #(uber/attrs g %) day-nodes)
+        day-stats (t-s/time-by-stories2 g day-nodes-attrs stories sagas day)]
+    (transform-keys ->snake_case day-stats)))
 
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
@@ -55,9 +74,11 @@
   (let [start (stc/now)
         schema (:schema current-state)
         file (:file msg-payload)
+        args (:args msg-payload)
         query-string (if file
                        (slurp (io/resource (str "queries/" file)))
                        (:q msg-payload))
+        query-string (apply format query-string args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))]
     (info "GraphQL query \"" (or file query-string)
@@ -65,7 +86,7 @@
     {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
 (defn state-fn [_put-fn]
-  (let [port (u/get-free-port)
+  (let [port (get (System/getenv) "GQL_PORT" 8766)
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      {:query/entry-count     entry-count
@@ -77,6 +98,7 @@
                       :query/match-count     match-count
                       :query/hashtags        hashtags
                       :query/pvt-hashtags    pvt-hashtags
+                      :query/logged-time     logged-time
                       :query/mentions        mentions
                       :query/stories         stories
                       :query/sagas           sagas
@@ -86,10 +108,13 @@
                    (lp/service-map {:graphiql true
                                     :port     port})
                    http/create-server
-                   http/start)]                             ;(http/stop server)
-    (info "Started GraphQL component, listening on PORT >>>" port)
-    {:state (atom {:server server
-                   :schema schema})}))
+                   http/start)]
+    (info "Started GraphQL component")
+    (info "GraphQL server with GraphiQL data explorer listening on PORT" port)
+    {:state       (atom {:server server
+                         :schema schema})
+     :shutdown-fn #(do (http/stop server)
+                       (info "Stopped GraphQL server"))}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id

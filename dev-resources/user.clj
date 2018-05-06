@@ -1,9 +1,8 @@
-(ns meo.inspect.core
+(ns user
   (:require
     [matthiasn.systems-toolbox-kafka.kafka-producer2 :as kp2]
-    [taoensso.timbre :refer [info]]
-    [meo.jvm.core :as mjc]
-    [clj-pid.core :as pid]))
+    [taoensso.timbre :refer [info]])
+  (:use [meo.jvm.core]))
 
 (defn make-observable [components]
   (let [cfg {:cfg         {:bootstrap-servers "localhost:9092"
@@ -17,13 +16,17 @@
         firehose-kafka (kp2/cmp-map :backend/kafka-firehose cfg)]
     (conj components firehose-kafka)))
 
-(defn -main
-  "Starts the application from command line, with the firehose connected to a
-   kafka producer that emits all of the application's events for consumption
-   in inspect."
-  [& _args]
-  (info "meo with inspect started, PID" (pid/current))
-  (pid/save "meo.pid")
-  (pid/delete-on-shutdown! "meo.pid")
-  (mjc/restart! mjc/switchboard (make-observable mjc/cmp-maps) true)
-  (Thread/sleep Long/MAX_VALUE))
+(defn start-meo
+  ([] (start-meo false))
+  ([inspect]
+   (if inspect
+     (restart! switchboard (make-observable cmp-maps) {:inspect   true
+                                                       :read-logs true})
+     (restart! switchboard cmp-maps {:read-logs true}))))
+
+(defn reload-meo
+  ([] (reload-meo false))
+  ([inspect]
+   (if inspect
+     (restart! switchboard (make-observable cmp-maps) {:inspect true})
+     (restart! switchboard cmp-maps {}))))

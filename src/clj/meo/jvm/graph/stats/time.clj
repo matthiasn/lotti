@@ -4,6 +4,9 @@
             [meo.jvm.graph.query :as gq]
             [clj-time.format :as ctf]
             [ubergraph.core :as uc]
+            [taoensso.timbre :refer [info error warn]]
+            [camel-snake-kebab.core :refer [->snake_case]]
+            [camel-snake-kebab.extras :refer [transform-keys]]
             [meo.jvm.datetime :as dt]
             [clj-time.coerce :as c]))
 
@@ -60,7 +63,6 @@
                                          (c/to-long dt)))
                               ts (or for-ts (:timestamp entry))
                               saga-id (:linked-saga story)
-                              saga (get-in sagas [saga-id])
                               completed (get entry :completed-time 0)
                               manual (manually-logged entry date-string)
                               summed (+ acc-time completed manual)]
@@ -74,12 +76,73 @@
                                                 :manual      manual})
                             acc)))
         by-story (reduce story-reducer {} nodes)
-        by-ts (reduce by-ts-reducer {} nodes)]
+        by-ts (reduce by-ts-reducer {} nodes)
+        total (apply + (map second by-story))]
     {:date-string   date-string
-     :total-time    (apply + (map second by-story))
+     :total-time    total
      :time-by-ts    by-ts
      :time-by-story by-story
      :time-by-saga  (time-by-sagas g by-story)}))
+
+(defn time-by-stories2
+  "Calculate time spent per story, plus total time."
+  [g nodes stories sagas date-string]
+  (let [story-reducer (fn [acc entry]
+                        (let [comment-for (:comment-for entry)
+                              parent (when (and comment-for
+                                                (uc/has-node? g comment-for))
+                                       (uc/attrs g comment-for))
+                              story (or (:primary-story parent)
+                                        (:primary-story entry)
+                                        :no-story)
+                              acc-time (get acc story 0)
+                              completed (get entry :completed-time 0)
+                              manual (manually-logged entry date-string)
+                              summed (+ acc-time completed manual)]
+                          (if (pos? summed)
+                            (assoc-in acc [story] summed)
+                            acc)))
+        by-ts-mapper (fn [entry]
+                       (let [{:keys [timestamp comment-for primary-story md
+                                     text for-day]} entry
+                             parent (when (and comment-for
+                                               (uc/has-node? g comment-for))
+                                      (uc/attrs g comment-for))
+                             story-id (or (:primary-story parent)
+                                          primary-story
+                                          :no-story)
+                             story (get-in stories [story-id])
+                             for-ts (when for-day
+                                      (let [dt (ctf/parse dt/dt-local-fmt for-day)]
+                                        (c/to-long dt)))
+                             ts (or for-ts timestamp)
+                             saga (get-in sagas [(:linked-saga story)])
+                             completed (get entry :completed-time 0)
+                             manual (manually-logged entry date-string)
+                             summed (+ completed manual)]
+                         (when (pos? summed)
+                           {:story       (when story
+                                           (assoc-in story [:linked-saga] saga))
+                            :timestamp   ts
+                            :md          md
+                            :text        text
+                            :comment_for comment-for
+                            :completed   completed
+                            :summed      summed
+                            :manual      manual})))
+        by-story (reduce story-reducer {} nodes)
+        by-ts (filter identity (map by-ts-mapper nodes))
+        total (apply + (map second by-story))
+        by-story (map (fn [[k v]]
+                        (let [story (merge (get stories k) {:timestamp k})
+                              saga (get sagas (:linked-saga story))]
+                          {:logged v
+                           :story  (assoc-in story [:linked-saga] saga)}))
+                      by-story)]
+    {:day        date-string
+     :total-time total
+     :by-ts      by-ts
+     :by-story   by-story}))
 
 (defn time-mapper
   "Create mapper function for time stats"
