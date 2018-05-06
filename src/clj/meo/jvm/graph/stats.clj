@@ -3,8 +3,6 @@
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.stats.time :as t-s]
-            [meo.jvm.graph.stats.location :as sl]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.jvm.graph.stats.git :as g]
@@ -13,37 +11,6 @@
             [clojure.set :as set]
             [clj-pid.core :as pid]
             [matthiasn.systems-toolbox.component :as st]))
-
-(defn tasks-mapper
-  "Create mapper function for task stats"
-  [current-state]
-  (fn [d]
-    (let [g (:graph current-state)
-          date-string (:date-string d)
-          day-nodes (gq/get-nodes-for-day g {:date-string date-string})
-          day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-          task-nodes (filter #(contains? (:tags %) "#task") day-nodes-attrs)
-          done-nodes (filter #(contains? (:tags %) "#done") day-nodes-attrs)
-          closed-nodes (filter #(contains? (:tags %) "#closed") day-nodes-attrs)
-          day-stats {:date-string date-string
-                     :tasks-cnt   (count task-nodes)
-                     :done-cnt    (count done-nodes)
-                     :closed-cnt  (count closed-nodes)}]
-      [date-string day-stats])))
-
-(defn wordcount-mapper
-  "Create mapper function for wordcount stats"
-  [current-state]
-  (fn [d]
-    (let [g (:graph current-state)
-          date-string (:date-string d)
-          day-nodes (gq/get-nodes-for-day g {:date-string date-string})
-          day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-          counts (map (fn [entry] (u/count-words entry)) day-nodes-attrs)
-          day-stats {:date-string date-string
-                     :word-count  (apply + counts)
-                     :entry-count (count day-nodes)}]
-      [date-string day-stats])))
 
 (defn media-mapper
   "Create mapper function for media stats"
@@ -80,11 +47,8 @@
     (when (> (- (st/now) last-gen) 500)
       (let [start (st/now)
             stats-mapper (case stats-type
-                           :stats/pomodoro t-s/time-mapper
                            :stats/custom-fields cf/custom-fields-mapper
                            :stats/git-commits g/git-mapper
-                           :stats/tasks tasks-mapper
-                           :stats/wordcount wordcount-mapper
                            :stats/media media-mapper
                            nil)
             days (:days msg-payload)
@@ -98,10 +62,6 @@
           (warn "No mapper defined for" stats-type))
         (info "completed get-stats" stats-type "in" (- (st/now) start) "ms"))
       {:new-state (assoc-in current-state path (st/now))})))
-
-(defn get-basic-stats [state]
-  {:entry-count (count (:sorted-entries state))
-   :import-cnt  (res-count state {:tags #{"#import"}})})
 
 (def started-tasks
   {:tags     #{"#task"}

@@ -2,6 +2,12 @@
   logged_time(day:"%s") {
     day
     total_time
+    entry_count
+    word_count
+    tasks_cnt
+    closed_tasks_cnt
+    done_tasks_cnt
+
     by_story {
       logged
       story {
@@ -9,10 +15,12 @@
         timestamp
       }
     }
+
     by_ts {
       timestamp
       md
       text
+
       story {
         timestamp
         linked_saga {
@@ -21,6 +29,7 @@
         }
         story_name
       }
+
       completed
       summed
       manual

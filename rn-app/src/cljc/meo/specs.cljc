@@ -216,14 +216,6 @@
 (s/def :pomo-stats/started int-not-neg?)
 (s/def :pomo-stats/total-time int-not-neg?)
 
-(s/def :stats/pomo-day
-  (s/keys :req-un [:iww.search/date-string
-                   :pomo-stats/total
-                   :pomo-stats/completed
-                   :pomo-stats/started
-                   :pomo-stats/total-time]))
-(s/def :stats/pomodoro (s/map-of :iww.search/date-string :stats/pomo-day))
-
 (s/def :task-stats/tasks-cnt int-not-neg?)
 (s/def :task-stats/done-cnt int-not-neg?)
 (s/def :task-stats/closed-cnt int-not-neg?)

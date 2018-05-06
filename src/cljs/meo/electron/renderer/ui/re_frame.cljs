@@ -65,11 +65,7 @@
 (reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))
-(reg-sub :chart-data (fn [db _]
-                       (select-keys db [:pomodoro-stats
-                                        :task-stats
-                                        :wordcount-stats
-                                        :media-stats])))
+(reg-sub :chart-data (fn [db _] (select-keys db [:media-stats])))
 (reg-sub :entry-logged-time
          (fn [db [_ ts]]
            (let [combined (merge (:entries-map db) (:new-entries db))

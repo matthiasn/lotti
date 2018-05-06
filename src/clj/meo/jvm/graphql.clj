@@ -11,7 +11,6 @@
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
-            [meo.jvm.upload :as u]
             [meo.jvm.store :as st]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
@@ -19,7 +18,7 @@
             [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [clojure.pprint :as pp]
-            [meo.jvm.graph.stats.time :as t-s])
+            [meo.jvm.graph.stats.day :as gsd])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -64,7 +63,7 @@
         sagas (gq/find-all-sagas current-state)
         day-nodes (gq/get-nodes-for-day g {:date-string day})
         day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-        day-stats (t-s/time-by-stories2 g day-nodes-attrs stories sagas day)]
+        day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     (transform-keys ->snake_case day-stats)))
 
 (defn match-count [context args value]

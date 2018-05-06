@@ -70,9 +70,6 @@
 
 (defn save-stats-fn [{:keys [current-state msg-payload]}]
   (let [k (case (:type msg-payload)
-            :stats/pomodoro :pomodoro-stats
-            :stats/tasks :task-stats
-            :stats/wordcount :wordcount-stats
             :stats/custom-fields :custom-field-stats
             :stats/git-commits :git-commits
             :stats/media :media-stats

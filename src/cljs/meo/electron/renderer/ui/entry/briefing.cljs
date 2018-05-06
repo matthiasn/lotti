@@ -93,7 +93,7 @@
 
 (defn briefing-view [ts put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
-        logged-time (reaction (:logged-time (:logged-by-day @gql-res)))
+        day-stats (reaction (:logged-time (:logged-by-day @gql-res)))
         chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
@@ -105,15 +105,11 @@
                        :outstanding-time-filter true
                        :on-hold                 false})]
     (fn briefing-render [ts put-fn local-cfg]
-      (h/keep-updated2 :stats/wordcount @day local @last-update put-fn)
-      (h/keep-updated2 :stats/pomodoro @day local @last-update put-fn)
-      (h/keep-updated2 :stats/tasks @day local @last-update put-fn)
       (for [ts (:linked-entries-list entry)]
         (when ts
           (put-fn [:entry/find {:timestamp ts}])))
-      (let [{:keys [pomodoro-stats task-stats wordcount-stats]} @chart-data
-            excluded (:excluded (:briefing @cfg))
-            logged-s (->> @logged-time
+      (let [excluded (:excluded (:briefing @cfg))
+            logged-s (->> @day-stats
                           :by-ts
                           (filter (fn [x]
                                     (not (contains? excluded
@@ -121,9 +117,7 @@
                           (map :summed)
                           (apply +))
             dur (u/duration-string logged-s)
-            n (count (:by-ts @logged-time))
-            word-stats (get wordcount-stats @day)
-            {:keys [tasks-cnt done-cnt closed-cnt]} (get task-stats @day)
+            n (count (:by-ts @day-stats))
             time-allocation (-> entry :briefing :time-allocation)]
         [:div.briefing
          ; rethink this
@@ -138,10 +132,10 @@
           [habits/waiting-habits ts local local-cfg put-fn]]
          [:div.summary
           [:div
-           "Tasks: " [:strong tasks-cnt] " created | "
-           [:strong done-cnt] " done | "
-           [:strong closed-cnt] " closed | Words: "
-           [:strong (or (:word-count word-stats) 0)]]
+           "Tasks: " [:strong (:tasks-cnt @day-stats)] " created | "
+           [:strong (:done-tasks-cnt @day-stats)] " done | "
+           [:strong (:closed-tasks-cnt @day-stats)] " closed | Words: "
+           [:strong (or (:word-count @day-stats) 0)]]
           [:div
            (when (seq time-allocation)
              [:span

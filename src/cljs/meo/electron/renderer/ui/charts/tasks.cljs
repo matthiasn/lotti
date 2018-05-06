@@ -23,7 +23,6 @@
             max-cnt (apply max (map (fn [[_idx v]]
                                       (max (:tasks-cnt v) (:done-cnt v)))
                                     indexed))]
-        (h/keep-updated :stats/tasks 60 local @last-update put-fn)
         [:div
          [:svg
           {:viewBox (str "0 0 600 " chart-h)}

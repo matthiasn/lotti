@@ -1,14 +1,14 @@
-(ns meo.jvm.graph.stats.time
-  "Get stats from graph."
-  (:require [ubergraph.core :as uber]
-            [meo.jvm.graph.query :as gq]
+(ns meo.jvm.graph.stats.day
+  "Get day stats from graph."
+  (:require [meo.jvm.graph.query :as gq]
             [clj-time.format :as ctf]
             [ubergraph.core :as uc]
             [taoensso.timbre :refer [info error warn]]
             [camel-snake-kebab.core :refer [->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [meo.jvm.datetime :as dt]
-            [clj-time.coerce :as c]))
+            [clj-time.coerce :as c]
+            [meo.common.utils.misc :as u]))
 
 (defn time-by-sagas
   "Calculate time spent per saga, plus time not assigned to any saga."
@@ -30,63 +30,18 @@
         (if (= date-string ymd) manual 0))
       manual)))
 
-(defn time-by-stories
-  "Calculate time spent per story, plus total time."
-  [g nodes stories sagas date-string]
-  (let [story-reducer (fn [acc entry]
-                        (let [comment-for (:comment-for entry)
-                              parent (when (and comment-for
-                                                (uc/has-node? g comment-for))
-                                       (uc/attrs g comment-for))
-                              story (or (:primary-story parent)
-                                        (:primary-story entry)
-                                        :no-story)
-                              acc-time (get acc story 0)
-                              completed (get entry :completed-time 0)
-                              manual (manually-logged entry date-string)
-                              summed (+ acc-time completed manual)]
-                          (if (pos? summed)
-                            (assoc-in acc [story] summed)
-                            acc)))
-        by-ts-reducer (fn [acc entry]
-                        (let [comment-for (:comment-for entry)
-                              parent (when (and comment-for
-                                                (uc/has-node? g comment-for))
-                                       (uc/attrs g comment-for))
-                              story-id (or (:primary-story parent)
-                                           (:primary-story entry)
-                                           :no-story)
-                              story (get-in stories [story-id])
-                              acc-time (get acc story-id 0)
-                              for-ts (when-let [for-day (:for-day entry)]
-                                       (let [dt (ctf/parse dt/dt-local-fmt for-day)]
-                                         (c/to-long dt)))
-                              ts (or for-ts (:timestamp entry))
-                              saga-id (:linked-saga story)
-                              completed (get entry :completed-time 0)
-                              manual (manually-logged entry date-string)
-                              summed (+ acc-time completed manual)]
-                          (if (pos? summed)
-                            (assoc-in acc [ts] {:story       story-id
-                                                :timestamp   ts
-                                                :comment-for comment-for
-                                                :saga        saga-id
-                                                :summed      summed
-                                                :completed   completed
-                                                :manual      manual})
-                            acc)))
-        by-story (reduce story-reducer {} nodes)
-        by-ts (reduce by-ts-reducer {} nodes)
-        total (apply + (map second by-story))]
-    {:date-string   date-string
-     :total-time    total
-     :time-by-ts    by-ts
-     :time-by-story by-story
-     :time-by-saga  (time-by-sagas g by-story)}))
+(defn wordcount [entries]
+  (apply + (map (fn [entry] (u/count-words entry)) entries)))
 
-(defn time-by-stories2
-  "Calculate time spent per story, plus total time."
-  [g nodes stories sagas date-string]
+(defn tasks [entries]
+  (let [task-nodes (filter #(contains? (:tags %) "#task") entries)
+        done-nodes (filter #(contains? (:tags %) "#done") entries)
+        closed-nodes (filter #(contains? (:tags %) "#closed") entries)]
+    {:tasks-cnt        (count task-nodes)
+     :done-tasks-cnt   (count done-nodes)
+     :closed-tasks-cnt (count closed-nodes)}))
+
+(defn day-stats [g nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
                         (let [comment-for (:comment-for entry)
                               parent (when (and comment-for
@@ -126,7 +81,7 @@
                             :timestamp   ts
                             :md          md
                             :text        text
-                            :comment_for comment-for
+                            :comment-for comment-for
                             :completed   completed
                             :summed      summed
                             :manual      manual})))
@@ -139,20 +94,11 @@
                           {:logged v
                            :story  (assoc-in story [:linked-saga] saga)}))
                       by-story)]
-    {:day        date-string
-     :total-time total
-     :by-ts      by-ts
-     :by-story   by-story}))
-
-(defn time-mapper
-  "Create mapper function for time stats"
-  [current-state]
-  (let [g (:graph current-state)
-        stories (gq/find-all-stories {:graph g})
-        sagas (gq/find-all-sagas {:graph g})]
-    (fn [d]
-      (let [date-string (:date-string d)
-            day-nodes (gq/get-nodes-for-day g {:date-string date-string})
-            day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-            day-stats (time-by-stories g day-nodes-attrs stories sagas date-string)]
-        [date-string day-stats]))))
+    (merge
+      (tasks nodes)
+      {:day         date-string
+       :total-time  total
+       :word-count  (wordcount nodes)
+       :entry-count (count nodes)
+       :by-ts       by-ts
+       :by-story    by-story})))

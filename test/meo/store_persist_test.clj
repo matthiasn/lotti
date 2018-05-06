@@ -74,12 +74,6 @@
                  (count (get-in res [:entries tasks-not-done-query-uid])))))
 
         (testing
-          "stats show expected numbers"
-          (let [res (gs/get-basic-stats new-state)]
-            (is (= 107
-                   (:entry-count res)))))
-
-        (testing
           "hashtags and mentions in result of stats-tags publish fn"
           (let [res (gs/make-stats-tags new-state)]
             (is (= (set (:hashtags res)) #{"#task" "#entry" "#test" "#done" "#new"

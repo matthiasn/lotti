@@ -37,13 +37,18 @@
                           :description "Logged time in seconds"}
                  :story  {:type :Story}}}
 
-  :CalDayStats
+  :DayStats
   {:description "Logged time for specified day."
-   :fields      {:day        {:type (non-null String)}
-                 :by_ts      {:type (list :LoggedCalItem)}
-                 :by_story   {:type (list :LoggedByStory)}
-                 :total_time {:type        (non-null Int)
-                              :description "Logged time in seconds"}}}}
+   :fields      {:day              {:type (non-null String)}
+                 :by_ts            {:type (list :LoggedCalItem)}
+                 :by_story         {:type (list :LoggedByStory)}
+                 :word_count       {:type Int}
+                 :entry_count      {:type Int}
+                 :tasks_cnt        {:type Int}
+                 :done_tasks_cnt   {:type Int}
+                 :closed_tasks_cnt {:type Int}
+                 :total_time       {:type        (non-null Int)
+                                    :description "Logged time in seconds"}}}}
 
  :queries
  {:entry_count
@@ -113,7 +118,7 @@
    :resolve     :query/briefings}
 
   :logged_time
-  {:type    :CalDayStats
+  {:type    :DayStats
    :args    {:day {:type String}}
    :resolve :query/logged-time}
 

@@ -222,24 +222,9 @@
 (s/def :pomo-stats/started int-not-neg?)
 (s/def :pomo-stats/total-time int-not-neg?)
 
-(s/def :stats/pomo-day
-  (s/keys :req-un [:meo.search/date-string
-                   :pomo-stats/total
-                   :pomo-stats/completed
-                   :pomo-stats/started
-                   :pomo-stats/total-time]))
-(s/def :stats/pomodoro (s/map-of :meo.search/date-string :stats/pomo-day))
-
 (s/def :task-stats/tasks-cnt int-not-neg?)
 (s/def :task-stats/done-cnt int-not-neg?)
 (s/def :task-stats/closed-cnt int-not-neg?)
-
-(s/def :stats/tasks-day
-  (s/keys :req-un [:meo.search/date-string
-                   :task-stats/tasks-cnt
-                   :task-stats/done-cnt
-                   :task-stats/closed-cnt]))
-(s/def :stats/tasks (s/map-of :meo.search/date-string :stats/tasks-day))
 
 (s/def :stats/result
   (s/keys :req-un [:stats/type
