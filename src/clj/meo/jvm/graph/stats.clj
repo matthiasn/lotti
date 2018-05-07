@@ -120,22 +120,6 @@
         total-hours (/ total-seconds 60 60)]
     total-hours))
 
-(defn stats-tags-fn
-  "Generates stats and tags (they only change on insert anyway) and initiates
-   publication thereof to all connected clients."
-  [{:keys [current-state put-fn msg-meta]}]
-  (let [path [:last-stat :stats (:sente-uid msg-meta)]
-        last-vclock (:global-vclock current-state)]
-    (when (not= last-vclock (get-in current-state path))
-      (let [start (st/now)
-            uid (:sente-uid msg-meta)
-            stats-tags (select-keys (make-stats-tags current-state) [:cfg])
-            waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}]
-        (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
-        (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
-        (info "completed stats-tags" "in" (- (st/now) start) "ms"))
-      {:new-state (assoc-in current-state path last-vclock)})))
-
 (defn get-stats-fn2
   "Generates stats and tags (they only change on insert anyway) and initiates
    publication thereof to all connected clients."
@@ -153,6 +137,5 @@
       {:new-state (assoc-in current-state path last-vclock)})))
 
 (def stats-handler-map
-  {:stats/get            get-stats-fn
-   :stats/get2           get-stats-fn2
-   :state/stats-tags-get stats-tags-fn})
+  {:stats/get  get-stats-fn
+   :stats/get2 get-stats-fn2})

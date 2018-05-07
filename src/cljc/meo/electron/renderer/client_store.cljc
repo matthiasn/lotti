@@ -21,16 +21,6 @@
                                            :count (count entries-map)}))]
     {:new-state new-state}))
 
-(defn stats-tags-fn [{:keys [current-state msg-payload put-fn]}]
-  (let [new-state
-        (-> current-state
-            (assoc-in [:options :custom-fields] (:custom-fields (:cfg msg-payload)))
-            (assoc-in [:options :questionnaires] (:questionnaires (:cfg msg-payload)))
-            (assoc-in [:options :custom-field-charts] (:custom-field-charts (:cfg msg-payload)))
-            (assoc-in [:backend-cfg] (:cfg msg-payload))
-            (assoc-in [:cfg :briefing] (-> msg-payload :cfg :briefing)))]
-    {:new-state new-state}))
-
 (defn stats-tags-fn2 [{:keys [current-state msg-payload put-fn]}]
   (let [new-state (merge current-state msg-payload)]
     {:new-state new-state}))
@@ -80,7 +70,10 @@
     {:new-state new-state}))
 
 (defn save-backend-cfg [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:backend-cfg] msg-payload)]
+  (let [new-state (-> (assoc-in current-state [:backend-cfg] msg-payload)
+                      (assoc-in [:options :custom-fields] (:custom-fields msg-payload))
+                      (assoc-in [:options :questionnaires] (:questionnaires msg-payload))
+                      (assoc-in [:options :custom-field-charts] (:custom-field-charts msg-payload)))]
     {:new-state new-state}))
 
 (defn progress [{:keys [current-state msg-payload]}]
@@ -107,7 +100,6 @@
                        {:state/new         new-state-fn
                         :stats/result      save-stats-fn
                         :stats/result2     save-stats-fn2
-                        :state/stats-tags  stats-tags-fn
                         :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
                         :gql/res           gql-res
