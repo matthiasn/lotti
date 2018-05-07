@@ -180,14 +180,15 @@
                                                       :day   (ct/day dt)}
                                        :relationship :DATE})))))
 
-(defn get-linked-nodes
-  "Find all linked nodes for entry."
-  [g query]
-  (let [for-entry (Long/parseLong (:linked query))
-        linked (->> (flatten (uc/find-edges g {:src for-entry :relationship :LINKED}))
+(defn get-linked-for-ts [g ts]
+  (let [
+        linked (->> (flatten (uc/find-edges g {:src ts :relationship :LINKED}))
                     (mapv :dest)
                     (sort))]
     (set linked)))
+
+(defn get-linked-nodes [g query]
+  (get-linked-for-ts g (Long/parseLong (:linked query))))
 
 (defn get-briefing-for-day
   "Extract matching timestamps for query."

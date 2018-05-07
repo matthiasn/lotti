@@ -94,14 +94,9 @@
 (defn briefing-view [ts put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
         day-stats (reaction (:logged-time (:logged-by-day @gql-res)))
-        chart-data (subscribe [:chart-data])
         cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
-        last-update (subscribe [:last-update])
-        day (reaction (-> @entry :briefing :day))
-        today (.format (moment.) "YYYY-MM-DD")
-        filter-btn (if (= @day today) :active :open)
-        local (r/atom {:filter                  filter-btn
+        local (r/atom {:filter                  :open
                        :outstanding-time-filter true
                        :on-hold                 false})]
     (fn briefing-render [ts put-fn local-cfg]

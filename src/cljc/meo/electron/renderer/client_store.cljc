@@ -54,20 +54,10 @@
                      :cfg              cfg})]
     {:state state}))
 
-(defn initial-queries [{:keys [current-state put-fn]}]
+(defn initial-queries [{:keys [put-fn] :as m}]
   (info "performing initial queries")
-  (when-let [ymd (get-in current-state [:cfg :cal-day])]
-    (put-fn [:gql/query {:file "logged-by-day.gql"
-                         :id   :logged-by-day
-                         :args [ymd]}]))
-  (put-fn [:gql/query {:file "options.gql" :id :options}])
-  (put-fn [:gql/query {:file "count-stats.gql" :id :count-stats}])
-  (put-fn [:gql/query {:file "started-tasks.gql" :id :started-tasks}])
-  (put-fn [:stats/get2])
-  (put-fn [:state/stats-tags-get])
   (put-fn [:cfg/refresh])
-  (put-fn [:state/search (u/search-from-cfg current-state)])
-  {})
+  (s/search-refresh m))
 
 (defn save-stats-fn [{:keys [current-state msg-payload]}]
   (let [k (case (:type msg-payload)

@@ -34,7 +34,8 @@
   :Briefing
   {:description "A briefing (plan for a specific day) in meo."
    :fields      {:timestamp {:type (non-null ID)}
-                 :day       {:type String}}}
+                 :day       {:type String}
+                 :linked    {:type (list :Entry)}}}
 
   :LoggedCalItem
   {:description "Logged time item."
@@ -135,6 +136,12 @@
   {:type        (list :Saga)
    :description "List of all existing sagas."
    :resolve     :query/sagas}
+
+  :briefing
+  {:type        :Briefing
+   :description "Briefing for specified day."
+   :args        {:day {:type String}}
+   :resolve     :query/briefing}
 
   :briefings
   {:type        (list :Briefing)

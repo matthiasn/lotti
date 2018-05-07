@@ -60,46 +60,6 @@
                    :class    cls}
          [:td
           (when-let [prio (-> entry :task :priority)]
-            [:span.prio {:class (name prio)} prio])]
-         [:td.award-points
-          (when-let [points (-> entry :task :points)]
-            points)]
-         [:td.estimate
-          (let [seconds (* 60 estimate)]
-            [:span {:class cls}
-             (s-to-hhmm (.abs js/Math seconds))])]
-         (when show-logged?
-           [:td.estimate
-            (let [actual @logged-time
-                  seconds (* 60 estimate)
-                  remaining (- seconds actual)
-                  cls (when (neg? remaining) "neg")]
-              [:span {:class cls}
-               (s-to-hhmmss actual)])])
-         [:td.text text]
-         (when unlink
-           [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
-
-(defn task-line2 [entry _put-fn _cfg]
-  (let [ts (:timestamp entry)
-        logged-time (subscribe [:entry-logged-time ts])
-        busy-status (subscribe [:busy-status])]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
-      (let [text (eu/first-line entry)
-            active (= ts (:active @busy-status))
-            active-selected (and (= (str ts) search-text) active)
-            busy (> 1000 (- (st/now) (:last @busy-status)))
-            cls (cond
-                  (and active-selected busy) "active-timer-selected-busy"
-                  (and active busy) "active-timer-busy"
-                  active-selected "active-timer-selected"
-                  active "active-timer"
-                  (= (str ts) search-text) "selected")
-            estimate (get-in entry [:task :estimate-m] 0)]
-        [:tr.task {:on-click (up/add-search ts tab-group put-fn)
-                   :class    cls}
-         [:td
-          (when-let [prio (-> entry :task :priority)]
             [:span.prio {:class (subs prio 1)} (subs prio 1)])]
          [:td.award-points
           (when-let [points (-> entry :task :points)]
@@ -177,84 +137,57 @@
                 [filter-btn :on-hold]]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-line2 entry put-fn {:tab-group    tab-group
-                                         :search-text  search-text
-                                         :show-logged? true}])]]])))))
+               [task-line entry put-fn {:tab-group    tab-group
+                                        :search-text  search-text
+                                        :show-logged? true}])]]])))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
   [ts local put-fn]
-  (let [entry (:entry (eu/entry-reaction ts))
-        cfg (subscribe [:cfg])
+  (let [cfg (subscribe [:cfg])
         options (subscribe [:options])
-        stories (subscribe [:stories])
         gql-res (subscribe [:gql-res])
         started-tasks (reaction (:started-tasks (:started-tasks @gql-res)))
-        entries-map (subscribe [:entries-map])
+        briefing (reaction (:briefing (:briefing @gql-res)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        linked-filters {:active  (up/parse-search "#task ~#done ~#closed ~#backlog")
-                        :open    (up/parse-search "#task ~#done ~#closed ~#backlog")
-                        :done    (up/parse-search "#task #done")
-                        :closed  (up/parse-search "#task #closed")
-                        :backlog (up/parse-search "#task #backlog")}
+        linked-filters {:all  identity
+                        :open #(not (-> % :task :done))
+                        :done #(-> % :task :done)}
         filter-btn (fn [fk text]
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
-                      (name fk) (when (= fk (:filter @local)) text)])
-        entries-w-done (reaction
-                         (into {} (map (fn [[k v]]
-                                         [k (if (-> v :task :done)
-                                              (update-in v [:tags] conj "#done")
-                                              v)])
-                                       @entries-map)))
-        linked-mapper (u/find-missing-entry entries-map put-fn)]
+                      (name fk) (when (= fk (:filter @local)) text)])]
     (fn open-linked-tasks-render [ts local local-cfg put-fn]
       (let [{:keys [tab-group]} local-cfg
-            linked-entries-set (into (sorted-set) (:linked-entries-list @entry))
-            linked-entries (mapv linked-mapper linked-entries-set)
+            linked-entries (:linked @briefing)
             conf (merge @cfg @options)
-            add-search (up/add-search (str "l:" ts) :off put-fn)
             linked-entries (if (:show-pvt conf)
                              linked-entries
-                             (filter (u/pvt-filter conf entries-w-done) linked-entries))
+                             (filter (u/pvt-filter2 conf) linked-entries))
             current-filter (get linked-filters (:filter @local))
-            filter-fn (u/linked-filter-fn entries-w-done current-filter put-fn)
             saga-filter (fn [entry]
                           (if-let [selected (:selected @local)]
-                            (let [story (get @stories (:primary-story entry))]
-                              (debug :saga-filter selected story)
+                            (let [story (:story entry)]
                               (= selected (:timestamp (:linked-saga story))))
                             true))
-            active-filter (fn [t]
-                            (let [active-from (-> t :task :active-from)]
-                              (if (and active-from (= (:filter @local) :active))
-                                (let [from-now (.fromNow (moment active-from))]
-                                  (s/includes? from-now "ago"))
-                                true)))
             started-tasks (set (map :timestamp @started-tasks))
             linked-tasks (->> linked-entries
-                              (filter filter-fn)
+                              (filter current-filter)
                               (filter saga-filter)
                               (filter #(not (contains? started-tasks (:timestamp %))))
-                              (filter active-filter)
-                              (sort-by #(or (-> % :task :priority) :X)))
-            time-reducer (fn [acc t] (+ acc (get-in t [:task :estimate-m] 0)))
-            total-time (reduce time-reducer 0 linked-tasks)
+                              (sort-by #(or (-> % :task :priority) ":X")))
             unlink (fn [entry ts]
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]
                        (put-fn [:entry/update upd])))
             search-text @search-text]
-        (add-search)
-        (when (seq linked-tasks)
+        (when (seq linked-entries)
           [:div.linked-tasks
-           [filter-btn :active (str " - " (m-to-hhmm total-time))]
-           [filter-btn :open (str " - " (m-to-hhmm total-time))]
+           [filter-btn :open]
            [filter-btn :done]
-           [filter-btn :closed]
-           [filter-btn :backlog]
+           [filter-btn :all]
            [:table.tasks
             [:tbody
              [:tr

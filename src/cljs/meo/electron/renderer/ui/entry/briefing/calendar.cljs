@@ -35,6 +35,9 @@
                     (put-fn [:gql/query {:file "logged-by-day.gql"
                                          :id   :logged-by-day
                                          :args [ymd]}])
+                    (put-fn [:gql/query {:file "briefing.gql"
+                                         :id   :briefing
+                                         :args [ymd]}])
                     (put-fn [:search/add {:tab-group :briefing :query q}])
                     (put-fn [:search/refresh])))
         opts (clj->js {:time             false

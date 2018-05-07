@@ -31,7 +31,6 @@
     (fn dashboard-render [days put-fn]
       (h/keep-updated :stats/custom-fields days local @last-update put-fn)
       (h/keep-updated :stats/git-commits days local @last-update put-fn)
-      (h/keep-updated :stats/wordcount days local @last-update put-fn)
       (let [now (st/now)
             d (* 24 60 60 1000)
             within-day (mod now d)

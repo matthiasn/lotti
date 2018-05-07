@@ -39,7 +39,7 @@
 
 (defn entry-count [context args value] (count (:sorted-entries @st/state)))
 (defn hours-logged [context args value] (gs/hours-logged @st/state))
-(defn word-count [context args value] (gs/count-words @st/state))
+(defn word-count [context args value] (gs/count-words2 @st/state))
 (defn tag-count [context args value] (count (gq/find-all-hashtags @st/state)))
 (defn mention-count [context args value] (count (gq/find-all-mentions @st/state)))
 (defn completed-count [context args value] (gs/completed-count @st/state))
@@ -55,6 +55,29 @@
   (map (fn [[k v]] {:day k :timestamp v})
        (gq/find-all-briefings @st/state)))
 
+(defn get-entry [g ts]
+  (when (and ts (uc/has-node? g ts))
+    (uc/attrs g ts)))
+
+(defn entry-w-story [g entry]
+  (let [story (get-entry g (:primary-story entry))
+        saga (get-entry g (:linked-saga story))]
+    (merge entry
+           {:story (when story
+                     (assoc-in story [:linked-saga] saga))})))
+
+(defn briefing [context args value]
+  (let [g (:graph @st/state)
+        d (:day args)
+        ts (first (gq/get-briefing-for-day g {:briefing d}))
+        briefing (get-entry g ts)
+        linked (gq/get-linked-for-ts g (:timestamp briefing))
+        linked (mapv #(entry-w-story g (get-entry g %)) linked)
+        res (merge briefing {:day    d
+                             :linked linked})]
+    (info "briefing" res)
+    (transform-keys ->snake_case res)))
+
 (defn logged-time [context args value]
   (let [day (:day args)
         current-state @st/state
@@ -62,7 +85,7 @@
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
         day-nodes (gq/get-nodes-for-day g {:date-string day})
-        day-nodes-attrs (map #(uc/attrs g %) day-nodes)
+        day-nodes-attrs (map #(get-entry g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     (transform-keys ->snake_case day-stats)))
 
@@ -77,37 +100,26 @@
         tasks (:entries-list (gq/get-filtered @st/state q))
         current-state @st/state
         g (:graph current-state)
-        stories (gq/find-all-stories @st/state)
-        sagas (gq/find-all-sagas @st/state)
         logged-t (fn [comment-ts]
-                   (or (when (uc/has-node? g comment-ts)
-                         (let [c (uc/attrs g comment-ts)
-                               dur-path [:custom-fields "#duration" :duration]]
-                           (+ (:completed-time c 0)
-                              (* 60 (get-in c dur-path 0)))))
-                       0))
+                   (or
+                     (when-let [c (get-entry g comment-ts)]
+                       (let [path [:custom-fields "#duration" :duration]]
+                         (+ (:completed-time c 0)
+                            (* 60 (get-in c path 0)))))
+                     0))
         task-total-t (fn [t]
                        (let [logged (apply + (map logged-t (:comments t)))]
                          (assoc-in t [:task :completed-s] logged)))
-        add-story (fn [t]
-                    (let [story (get-in stories [(:primary-story t)])
-                          saga (get-in sagas [(:linked-saga story)])]
-                      (merge t
-                        {:story (when story
-                                  (assoc-in story [:linked-saga] saga))})))
         tasks (mapv task-total-t tasks)
-        tasks (mapv add-story tasks)]
+        tasks (mapv #(entry-w-story g %) tasks)]
     (transform-keys ->snake_case tasks)))
 
 (defn run-query [{:keys [current-state msg-payload]}]
   (let [start (stc/now)
         schema (:schema current-state)
-        file (:file msg-payload)
-        args (:args msg-payload)
-        query-string (if file
-                       (slurp (io/resource (str "queries/" file)))
-                       (:q msg-payload))
-        query-string (apply format query-string args)
+        {:keys [file args q]} msg-payload
+        template (if file (slurp (io/resource (str "queries/" file))) q)
+        query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))]
     (info "GraphQL query" (str "'" (or file query-string) "'")
@@ -115,7 +127,7 @@
     {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
 (defn state-fn [_put-fn]
-  (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766" ))
+  (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      {:query/entry-count     entry-count
@@ -132,7 +144,8 @@
                       :query/mentions        mentions
                       :query/stories         stories
                       :query/sagas           sagas
-                      :query/briefings       briefings})
+                      :query/briefings       briefings
+                      :query/briefing        briefing})
                    schema/compile)
         server (-> schema
                    (lp/service-map {:graphiql true

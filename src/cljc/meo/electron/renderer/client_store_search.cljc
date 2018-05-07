@@ -216,12 +216,19 @@
 (defn search-refresh
   "Refreshes client-side state by sending all queries, plus
    the stats and tags."
-  [{:keys [current-state msg-meta]}]
+  [{:keys [current-state msg-meta put-fn]}]
   (let [new-state (-> current-state
                       (assoc-in [:query-cfg :last-update] {:last-update (st/now)
                                                            :meta        msg-meta})
                       (assoc-in [:query-cfg :last-update-meta] msg-meta))]
     (info "search-refresh")
+    (when-let [ymd (get-in current-state [:cfg :cal-day])]
+      (put-fn [:gql/query {:file "logged-by-day.gql"
+                           :id   :logged-by-day
+                           :args [ymd]}])
+      (put-fn [:gql/query {:file "briefing.gql"
+                           :id   :briefing
+                           :args [ymd]}]))
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:stats/get2]

@@ -1,0 +1,25 @@
+{
+  briefing(day: "%s") {
+    day
+    timestamp
+    linked {
+      timestamp
+      story {
+        story_name
+        timestamp
+        linked_saga {
+          saga_name
+          timestamp
+        }
+      }
+      text
+      task {
+        estimate_m
+        points
+        on_hold
+        done
+        priority
+      }
+    }
+  }
+}
