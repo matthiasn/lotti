@@ -82,13 +82,13 @@
 
 (defn task-line2 [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
+        logged-time (subscribe [:entry-logged-time ts])
         busy-status (subscribe [:busy-status])]
     (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
             busy (> 1000 (- (st/now) (:last @busy-status)))
-
             cls (cond
                   (and active-selected busy) "active-timer-selected-busy"
                   (and active busy) "active-timer-busy"
@@ -110,7 +110,9 @@
              (s-to-hhmm (.abs js/Math seconds))])]
          (when show-logged?
            [:td.estimate
-            (let [actual (:completed-s (:task entry))
+            (let [actual (if (and active busy)
+                           @logged-time
+                           (:completed-s (:task entry)))
                   seconds (* 60 estimate)
                   remaining (- seconds actual)
                   cls (when (neg? remaining) "neg")]
@@ -146,15 +148,15 @@
                                     :on-click #(swap! local update-in [:on-hold] not)}
                       (name fk)])
         entries-list (reaction
-                        (let [entries (->> @started-tasks
-                                           (filter on-hold-filter)
-                                           (filter saga-filter)
-                                           (filter open-filter)
-                                           (sort task-sorter))
-                              conf (merge @cfg @options)]
-                          (if (:show-pvt @cfg)
-                            entries
-                            (filter (u/pvt-filter2 conf) entries))))]
+                       (let [entries (->> @started-tasks
+                                          (filter on-hold-filter)
+                                          (filter saga-filter)
+                                          (filter open-filter)
+                                          (sort task-sorter))
+                             conf (merge @cfg @options)]
+                         (if (:show-pvt @cfg)
+                           entries
+                           (filter (u/pvt-filter2 conf) entries))))]
     (fn started-tasks-list-render [local local-cfg put-fn]
       (info @local)
       (let [entries-list @entries-list

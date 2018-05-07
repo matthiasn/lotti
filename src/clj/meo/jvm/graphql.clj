@@ -91,8 +91,7 @@
                          (assoc-in t [:task :completed-s] logged)))
         add-story (fn [t]
                     (let [story (get-in stories [(:primary-story t)])
-                          saga (get-in sagas [(:linked-saga story)])
-                          ]
+                          saga (get-in sagas [(:linked-saga story)])]
                       (merge t
                         {:story (when story
                                   (assoc-in story [:linked-saga] saga))})))

@@ -70,9 +70,10 @@
          (fn [db [_ ts]]
            (let [combined (merge (:entries-map db) (:new-entries db))
                  entry (get-in combined [ts])
-                 time-mapper (fn [comment-ts]
-                               (or (get-in combined [comment-ts :completed-time])
-                                   0))
+                 time-mapper (fn [c-ts]
+                               (let [p [c-ts :custom-fields "#duration" :duration]]
+                                 (+ (get-in combined [c-ts :completed-time] 0)
+                                    (* 60 (get-in combined p 0)))))
                  logged (map time-mapper (:comments entry))]
              (apply + logged))))
 
