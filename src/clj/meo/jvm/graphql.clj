@@ -116,7 +116,7 @@
     {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
 (defn state-fn [_put-fn]
-  (let [port (get (System/getenv) "GQL_PORT" 8766)
+  (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766" ))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      {:query/entry-count     entry-count
