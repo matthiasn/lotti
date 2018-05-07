@@ -5,6 +5,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
             [clojure.pprint :as pp]
+            [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
             [meo.electron.renderer.ui.charts.common :as cc]
             [meo.common.utils.parse :as up]))
@@ -154,18 +155,33 @@
    label])
 
 (defn barchart-row [_ _]
-  (let [show-pvt (subscribe [:show-pvt])]
+  (let [show-pvt (subscribe [:show-pvt])
+        gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span mx label start stats tag k h y
                               cls threshold success-cls]} put-fn]
       (let [btm-y (+ y h)
-            indexed (indexed-days stats tag k start days)
-            mx (or mx (apply max (map #(:v (second %)) indexed)))
+            qid (keyword tag)
+            indexed (map-indexed (fn [i x] [i x])
+                                 (:custom-field-stats (qid @gql-res)))
+            mx (or mx
+                   (apply max (map
+                                (fn [x]
+                                  (:value
+                                    (first (filter #(= (name k) (:field %))
+                                                   (:fields x)))
+                                    0))
+                                (:custom-field-stats (qid @gql-res)))))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]
+        (put-fn [:gql/query {:file "custom-field-stats.gql"
+                             :id   qid
+                             :args [days tag]}])
         [:g
          (when @show-pvt
            [row-label (or label tag) y h])
-         (for [[n {:keys [ymd v weekday]}] indexed]
-           (let [d (* 24 60 60 1000)
+         (for [[n {:keys [date-string fields weekday]}] indexed]
+           (let [field (first (filter #(= (name k) (:field %)) fields))
+                 v (js/parseFloat (:value field 0))
+                 d (* 24 60 60 1000)
                  offset (* n d)
                  span (if (zero? span) 1 span)
                  scaled (* 1800 (/ offset span))
@@ -182,7 +198,7 @@
              [rect {:v   display-v
                     :x   x
                     :w   (/ 1500 days)
-                    :ymd ymd
+                    :ymd date-string
                     :y   btm-y
                     :h   h
                     :cls cls

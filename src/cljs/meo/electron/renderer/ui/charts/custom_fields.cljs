@@ -117,7 +117,6 @@
             n (.floor js/Math (/ w 5))
             n 120
             indexed (map-indexed (fn [idx [k v]] [idx v]) (take-last n @stats))]
-        (h/keep-updated :stats/custom-fields n local @last-update put-fn)
         [:div.stats.custom
          [:svg {:viewBox (str "0 0 " (* 2 w) " " charts-h)}
           [cc/chart-title "custom fields" w]

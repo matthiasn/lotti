@@ -209,8 +209,6 @@
                    :meo.search-result/entries-map
                    :meo.search-result/duration-ms]))
 
-(s/def :state/stats-tags2 map?)
-
 (s/def :stats/day (s/keys :req-un [:meo.search/date-string]))
 (s/def :stats/days (s/coll-of :stats/day))
 (s/def :stats/type keyword?)

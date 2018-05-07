@@ -203,8 +203,6 @@
   (s/keys :req-un [:iww.search-result/hashtags
                    :iww.search-result/mentions]))
 
-(s/def :state/stats-tags2 map?)
-
 (s/def :stats/day (s/keys :req-un [:iww.search/date-string]))
 (s/def :stats/days (s/coll-of :stats/day))
 (s/def :stats/type keyword?)

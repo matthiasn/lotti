@@ -1,0 +1,10 @@
+{
+  custom_field_stats(days:"%d", tag: "%s"){
+    date_string
+    tag
+    fields{
+      field
+      value
+    }
+  }
+}

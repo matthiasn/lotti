@@ -143,4 +143,5 @@
                  :out-chan [:buffer 100]}
    :handler-map {:sync/scan-inbox  scan-inbox
                  :sync/scan-images scan-images
-                 :file/encrypt     encrypt}})
+                 ;:file/encrypt     encrypt
+                 }})

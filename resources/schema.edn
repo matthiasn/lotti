@@ -58,6 +58,17 @@
                                :description "Summed time in seconds"}
                  :story       {:type :Story}}}
 
+  :CustomFieldItem
+  {:description "Custom field stats item."
+   :fields      {:field {:type (non-null String)}
+                 :value {:type Float}}}
+
+  :CustomFieldStatsItem
+  {:description "Custom field stats item."
+   :fields      {:date_string {:type (non-null String)}
+                 :tag         {:type String}
+                 :fields      {:type (list :CustomFieldItem)}}}
+
   :LoggedByStory
   {:description "Logged time by story."
    :fields      {:logged {:type        Int
@@ -154,6 +165,13 @@
    :description "Briefing for specified day."
    :args        {:day {:type String}}
    :resolve     :query/briefing}
+
+  :custom_field_stats
+  {:type        (list :CustomFieldStatsItem)
+   :description "Custom field stats for tag and number of days"
+   :args        {:days {:type Int}
+                 :tag  {:type String}}
+   :resolve     :query/custom-field-stats}
 
   :briefings
   {:type        (list :Briefing)

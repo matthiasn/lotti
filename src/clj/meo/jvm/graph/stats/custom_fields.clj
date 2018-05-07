@@ -16,13 +16,12 @@
    function that takes date string, such as '2016-10-10', and returns map with
    results for the defined custom fields, plus the date string. Performs
    operation specified for field, such as sum, min, max."
-  [current-state]
-  (fn [d]
+  [current-state tag]
+  (fn [date-string]
     (let [g (:graph current-state)
           custom-fields (:custom-fields (:cfg current-state))
           custom-field-stats-def (into {} (map (fn [[k v]] [k (:fields v)])
-                                               custom-fields))
-          date-string (:date-string d)
+                                               (select-keys custom-fields [tag])))
           day-nodes (gq/get-nodes-for-day g {:date-string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
           nodes (filter :custom-fields day-nodes-attrs)
@@ -31,7 +30,6 @@
                              (or (not for-day)
                                  (= date-string (subs for-day 0 10)))))
           nodes (filter for-day-filter nodes)
-
           stats-mapper
           (fn [[k fields]]
             (let [field-mapper
@@ -56,7 +54,12 @@
                                (try (op res)
                                     (catch Exception e (error e res)))
                                res)]))]
-              [k (into {} (mapv field-mapper fields))]))
-          day-stats (into {:date-string date-string}
-                          (mapv stats-mapper custom-field-stats-def))]
-      [date-string day-stats])))
+              (into {} (mapv field-mapper fields))))]
+      (apply merge
+             {:date-string date-string
+              :tag         tag
+              :fields      (mapv (fn [[k v]]
+                                   {:field (name k)
+                                    :value v})
+                                 (first (mapv stats-mapper custom-field-stats-def)))}
+             (mapv stats-mapper custom-field-stats-def)))))

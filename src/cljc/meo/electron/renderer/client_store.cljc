@@ -21,10 +21,6 @@
                                            :count (count entries-map)}))]
     {:new-state new-state}))
 
-(defn stats-tags-fn2 [{:keys [current-state msg-payload put-fn]}]
-  (let [new-state (merge current-state msg-payload)]
-    {:new-state new-state}))
-
 (defn save-stats-fn2 [{:keys [current-state msg-payload put-fn]}]
   (let [new-state (update-in current-state [:stats] merge msg-payload)]
     {:new-state new-state}))
@@ -51,7 +47,6 @@
 
 (defn save-stats-fn [{:keys [current-state msg-payload]}]
   (let [k (case (:type msg-payload)
-            :stats/custom-fields :custom-field-stats
             :stats/git-commits :git-commits
             :stats/media :media-stats
             nil)
@@ -100,7 +95,6 @@
                        {:state/new         new-state-fn
                         :stats/result      save-stats-fn
                         :stats/result2     save-stats-fn2
-                        :state/stats-tags2 stats-tags-fn2
                         :cfg/save          c/save-cfg
                         :gql/res           gql-res
                         :startup/progress  progress

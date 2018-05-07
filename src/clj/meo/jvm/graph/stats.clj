@@ -47,7 +47,6 @@
     (when (> (- (st/now) last-gen) 500)
       (let [start (st/now)
             stats-mapper (case stats-type
-                           :stats/custom-fields cf/custom-fields-mapper
                            :stats/git-commits g/git-mapper
                            :stats/media media-mapper
                            nil)

@@ -110,7 +110,6 @@
         idx (fn [idx v] [idx v])]
     (fn scatter-matrix-render [put-fn]
       (let [n 120]
-        (h/keep-updated :stats/custom-fields n local @last-update put-fn)
         (h/keep-updated :stats/wordcount n local @last-update put-fn)
         [:div.flex-container
          [:div.stats

@@ -18,7 +18,9 @@
             [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [clojure.pprint :as pp]
-            [meo.jvm.graph.stats.day :as gsd])
+            [meo.jvm.graph.stats.day :as gsd]
+            [meo.jvm.datetime :as dt]
+            [meo.jvm.graph.stats.custom-fields :as cf])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -93,6 +95,16 @@
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
 
+(defn custom-field-stats [context args value]
+  (let [{:keys [days tag]} args
+        days (reverse (range days))
+        now (stc/now)
+        custom-fields-mapper (cf/custom-fields-mapper @st/state tag)
+        d (* 24 60 60 1000)
+        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+        stats (mapv custom-fields-mapper day-strings)]
+    (snake-xf stats)))
+
 (defn started-tasks [context args value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
@@ -129,12 +141,12 @@
 (defn run-query [{:keys [current-state msg-payload]}]
   (let [start (stc/now)
         schema (:schema current-state)
-        {:keys [file args q]} msg-payload
+        {:keys [file args q id]} msg-payload
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))]
-    (info "GraphQL query" (str "'" (or file query-string) "'")
+    (info "GraphQL query" (str "'" (or file query-string) "'") id
           "finished in" (- (stc/now) start) "ms")
     {:emit-msg [:gql/res (merge msg-payload simplified)]}))
 
@@ -142,23 +154,24 @@
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
-                     {:query/entry-count     entry-count
-                      :query/hours-logged    hours-logged
-                      :query/word-count      word-count
-                      :query/tag-count       tag-count
-                      :query/mention-count   mention-count
-                      :query/completed-count completed-count
-                      :query/match-count     match-count
-                      :query/hashtags        hashtags
-                      :query/pvt-hashtags    pvt-hashtags
-                      :query/logged-time     logged-time
-                      :query/started-tasks   started-tasks
-                      :query/waiting-habits  waiting-habits
-                      :query/mentions        mentions
-                      :query/stories         stories
-                      :query/sagas           sagas
-                      :query/briefings       briefings
-                      :query/briefing        briefing})
+                     {:query/entry-count        entry-count
+                      :query/hours-logged       hours-logged
+                      :query/word-count         word-count
+                      :query/tag-count          tag-count
+                      :query/mention-count      mention-count
+                      :query/completed-count    completed-count
+                      :query/match-count        match-count
+                      :query/hashtags           hashtags
+                      :query/pvt-hashtags       pvt-hashtags
+                      :query/logged-time        logged-time
+                      :query/started-tasks      started-tasks
+                      :query/waiting-habits     waiting-habits
+                      :query/mentions           mentions
+                      :query/stories            stories
+                      :query/sagas              sagas
+                      :query/custom-field-stats custom-field-stats
+                      :query/briefings          briefings
+                      :query/briefing           briefing})
                    schema/compile)
         server (-> schema
                    (lp/service-map {:graphiql true
