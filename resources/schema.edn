@@ -69,6 +69,11 @@
                  :tag         {:type String}
                  :fields      {:type (list :CustomFieldItem)}}}
 
+  :GitStatsItem
+  {:description "Custom field stats item."
+   :fields      {:date_string {:type (non-null String)}
+                 :commits     {:type Int}}}
+
   :LoggedByStory
   {:description "Logged time by story."
    :fields      {:logged {:type        Int
@@ -172,6 +177,12 @@
    :args        {:days {:type Int}
                  :tag  {:type String}}
    :resolve     :query/custom-field-stats}
+
+  :git_stats
+  {:type        (list :GitStatsItem)
+   :description "Git commit stats for number of days"
+   :args        {:days {:type Int}}
+   :resolve     :query/git-stats}
 
   :briefings
   {:type        (list :Briefing)

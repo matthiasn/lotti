@@ -8,5 +8,9 @@
               {:query/data  [:custom_field_stats {:days days :tag t}
                              [:date_string [:fields [:field :value]]]]
                :query/alias (keyword (s/replace (subs t 1) "-" "_"))})
-        queries (mapv qfn tags)]
+        queries (mapv qfn tags)
+        git-query {:query/data  [:git_stats {:days (+ 2 days)}
+                                 [:date_string :commits]]
+                   :query/alias :git_commits}
+        queries (conj queries git-query)]
     (v/graphql-query {:venia/queries queries})))

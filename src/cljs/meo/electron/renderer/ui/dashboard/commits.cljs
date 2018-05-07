@@ -64,27 +64,29 @@
 
 (defn commits-chart [_ _]
   (let [show-pvt (subscribe [:show-pvt])
-        git-stats (subscribe [:git-stats])]
+        gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span start h y]} put-fn]
       (let [btm-y (+ y h)
-            indexed (indexed-days @git-stats start days)
-            mx (apply max (map #(:v (second %)) indexed))
+            data (get-in @gql-res [:dashboard :git-commits])
+            indexed (map-indexed (fn [i x] [i x]) data)
+            mx (apply max (map #(:commits (second %)) indexed))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]
         [:g
          (when @show-pvt
            [row-label "#git-commit" y h])
-         (for [[n {:keys [ymd v weekday]}] indexed]
+         (for [[n {:keys [date-string commits weekday]}] indexed]
            (let [d (* 24 60 60 1000)
                  offset (* n d)
                  span (if (zero? span) 1 span)
                  scaled (* 1800 (/ offset span))
                  x (+ 201 scaled)
+                 v commits
                  h (* v scale)]
              ^{:key (str :git-commits n)}
              [rect {:v   v
                     :x   x
                     :w   (/ 1500 days)
-                    :ymd ymd
+                    :ymd date-string
                     :y   btm-y
                     :h   h
                     :cls "done"

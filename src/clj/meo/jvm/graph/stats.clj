@@ -37,31 +37,6 @@
         res2 (set (gq/extract-sorted2 current-state q2))]
     (count (set/union res1 res2))))
 
-(defn get-stats-fn
-  "Retrieves stats of specified type. Picks the appropriate mapper function
-   for the requested message type."
-  [{:keys [current-state msg-payload msg-meta put-fn]}]
-  (let [stats-type (:type msg-payload)
-        path [:last-stat stats-type]
-        last-gen (get-in current-state path 0)]
-    (when (> (- (st/now) last-gen) 500)
-      (let [start (st/now)
-            stats-mapper (case stats-type
-                           :stats/git-commits g/git-mapper
-                           :stats/media media-mapper
-                           nil)
-            days (:days msg-payload)
-            stats (when stats-mapper
-                    (let [res (mapv (stats-mapper current-state) days)]
-                      (into {} res)))]
-        (info stats-type (count (str stats)))
-        (if stats
-          (put-fn (with-meta [:stats/result {:stats stats
-                                             :type  stats-type}] msg-meta))
-          (warn "No mapper defined for" stats-type))
-        (info "completed get-stats" stats-type "in" (- (st/now) start) "ms"))
-      {:new-state (assoc-in current-state path (st/now))})))
-
 (def started-tasks
   {:tags     #{"#task"}
    :not-tags #{"#done" "#backlog" "#closed"}
@@ -136,5 +111,4 @@
       {:new-state (assoc-in current-state path last-vclock)})))
 
 (def stats-handler-map
-  {:stats/get  get-stats-fn
-   :stats/get2 get-stats-fn2})
+  {:stats/get2 get-stats-fn2})

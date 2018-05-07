@@ -45,16 +45,6 @@
   (put-fn [:cfg/refresh])
   (s/search-refresh m))
 
-(defn save-stats-fn [{:keys [current-state msg-payload]}]
-  (let [k (case (:type msg-payload)
-            :stats/git-commits :git-commits
-            :stats/media :media-stats
-            nil)
-        day-stats (into (sorted-map) (:stats msg-payload))]
-    (if k
-      {:new-state (assoc-in current-state [k] day-stats)}
-      (prn "WARN: No key defined for " msg-payload))))
-
 (defn nav-handler [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:current-page] msg-payload)]
     {:new-state new-state}))
@@ -93,7 +83,6 @@
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
                        {:state/new         new-state-fn
-                        :stats/result      save-stats-fn
                         :stats/result2     save-stats-fn2
                         :cfg/save          c/save-cfg
                         :gql/res           gql-res

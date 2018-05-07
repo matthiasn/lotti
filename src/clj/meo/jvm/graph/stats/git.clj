@@ -9,14 +9,12 @@
    function that takes date string, such as '2016-10-10', and returns map with
    the number of git commits, plus the date string."
   [current-state]
-  (fn [d]
+  (fn [date-string]
     (let [g (:graph current-state)
-          date-string (:date-string d)
           day-nodes (gq/get-nodes-for-day g {:date-string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
           nodes (filter :git-commit day-nodes-attrs)
-          commits (count nodes)
           day-stats {:date-string date-string
-                     :git-commits commits}]
+                     :commits     (count nodes)}]
       (debug day-stats)
-      [date-string day-stats])))
+      day-stats)))

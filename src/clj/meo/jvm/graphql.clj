@@ -20,7 +20,8 @@
             [clojure.pprint :as pp]
             [meo.jvm.graph.stats.day :as gsd]
             [meo.jvm.datetime :as dt]
-            [meo.jvm.graph.stats.custom-fields :as cf])
+            [meo.jvm.graph.stats.custom-fields :as cf]
+            [meo.jvm.graph.stats.git :as g])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -105,6 +106,18 @@
         stats (mapv custom-fields-mapper day-strings)]
     (snake-xf stats)))
 
+(defn git-stats [context args value]
+  (info "git-stats" args)
+  (let [{:keys [days]} args
+        days (reverse (range days))
+        now (stc/now)
+        git-mapper (g/git-mapper @st/state)
+        d (* 24 60 60 1000)
+        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+        stats (mapv git-mapper day-strings)]
+    (info stats)
+    (snake-xf stats)))
+
 (defn started-tasks [context args value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
@@ -170,6 +183,7 @@
                       :query/stories            stories
                       :query/sagas              sagas
                       :query/custom-field-stats custom-field-stats
+                      :query/git-stats          git-stats
                       :query/briefings          briefings
                       :query/briefing           briefing})
                    schema/compile)
