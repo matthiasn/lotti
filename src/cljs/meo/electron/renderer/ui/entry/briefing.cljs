@@ -94,6 +94,7 @@
 (defn briefing-view [ts put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
         day-stats (reaction (:logged-time (:logged-by-day @gql-res)))
+        briefing (reaction (:briefing (:briefing @gql-res)))
         cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         local (r/atom {:filter                  :open
@@ -124,7 +125,7 @@
          [:div.briefing-details
           [tasks/started-tasks local local-cfg put-fn]
           [tasks/open-linked-tasks ts local local-cfg put-fn]
-          [habits/waiting-habits ts local local-cfg put-fn]]
+          [habits/waiting-habits local local-cfg put-fn]]
          [:div.summary
           [:div
            "Tasks: " [:strong (:tasks-cnt @day-stats)] " created | "

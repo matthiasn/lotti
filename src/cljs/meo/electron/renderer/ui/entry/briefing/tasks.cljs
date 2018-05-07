@@ -118,7 +118,6 @@
                            entries
                            (filter (u/pvt-filter2 conf) entries))))]
     (fn started-tasks-list-render [local local-cfg put-fn]
-      (info @local)
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
             search-text @search-text]

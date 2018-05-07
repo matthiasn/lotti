@@ -12,16 +12,12 @@
    entry."
   [local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
-        query-cfg (subscribe [:query-cfg])
         options (subscribe [:options])
         entries-map (subscribe [:entries-map])
-        results (subscribe [:results])
-        active (reaction (-> @cfg :active))]
+        results (subscribe [:results])]
     (fn journal-view-render [local-cfg put-fn]
       (let [conf (merge @cfg @options)
             query-id (:query-id local-cfg)
-            query (reaction (get-in @query-cfg [:queries (:query-id local-cfg)]))
-            active-id (query-id @active)
             entries (query-id @results)
             entries-map-deref @entries-map
             entries (map (fn [ts] (get entries-map-deref ts)) entries)

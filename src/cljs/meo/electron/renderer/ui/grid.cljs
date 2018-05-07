@@ -8,7 +8,8 @@
             [meo.electron.renderer.ui.search :as search]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.ui.entry.entry :as e]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
+            [meo.electron.renderer.ui.entry.briefing :as b]))
 
 (defn fmt-ts [q]
   (let [ts (:timestamp q)]
@@ -81,6 +82,8 @@
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         story (reaction (get-in @query-cfg [:queries @query-id :story]))
+        gql-res (subscribe [:gql-res])
+        briefing (reaction (:briefing (:briefing @gql-res)))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
@@ -90,5 +93,8 @@
       [:div.briefing
        [cal/rome-component put-fn]
        [:div.tile-tabs
-        (when @query-id
-          [j/journal-view @local-cfg put-fn])]])))
+        [:div.journal
+         [:div.journal-entries
+          [:div.entry-with-comments
+           [:div.entry
+            [b/briefing-view (:timestamp @briefing) put-fn @local-cfg]]]]]]])))

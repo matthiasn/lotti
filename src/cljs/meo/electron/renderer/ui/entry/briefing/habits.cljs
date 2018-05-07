@@ -6,6 +6,7 @@
             [meo.common.utils.parse :as up]
             [clojure.string :as s]
             [moment]
+            [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (defn habit-sorter
@@ -18,8 +19,10 @@
 
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
-  [ts local local-cfg put-fn]
+  [local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
+        gql-res (subscribe [:gql-res])
+        briefing (reaction (:briefing (:briefing @gql-res)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
@@ -32,7 +35,7 @@
                         (let [story (get @stories (:primary-story entry))]
                           (= selected (:linked-saga story)))
                         true))
-        {:keys [entry entries-map]} (eu/entry-reaction ts)
+        entries-map (subscribe [:entries-map])
         entries-map (reaction (merge @entries-map (:entries-map @waiting-habits)))
         habits (reaction
                  (let [find-missing (u/find-missing-entry entries-map put-fn)
@@ -44,13 +47,12 @@
                    (if (:show-pvt @cfg)
                      entries
                      (filter (u/pvt-filter conf @entries-map) entries))))]
-    (fn waiting-habits-list-render [ts local local-cfg put-fn]
+    (fn waiting-habits-list-render [local local-cfg put-fn]
       (let [habits (if (:expanded-habits @local) @habits (take 12 @habits))
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")
-            briefing-day (-> @entry :briefing :day)
             search-text @search-text]
-        (when (and (= today briefing-day) (seq habits))
+        (when (and (= today (:day @briefing)) (seq habits))
           [:div
            [:table.habits
             [:tbody
