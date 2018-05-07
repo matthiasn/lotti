@@ -7,7 +7,7 @@
             [com.walmartlabs.lacinia :as lacinia]
             [com.walmartlabs.lacinia.pedestal :as lp]
             [io.pedestal.http :as http]
-            [ubergraph.core :as uber]
+            [ubergraph.core :as uc]
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
@@ -62,12 +62,43 @@
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
         day-nodes (gq/get-nodes-for-day g {:date-string day})
-        day-nodes-attrs (map #(uber/attrs g %) day-nodes)
+        day-nodes-attrs (map #(uc/attrs g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     (transform-keys ->snake_case day-stats)))
 
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
+
+(defn started-tasks [context args value]
+  (let [q {:tags     #{"#task"}
+           :not-tags #{"#done" "#backlog" "#closed"}
+           :opts     #{":started"}
+           :n        100}
+        tasks (:entries-list (gq/get-filtered @st/state q))
+        current-state @st/state
+        g (:graph current-state)
+        stories (gq/find-all-stories @st/state)
+        sagas (gq/find-all-sagas @st/state)
+        logged-t (fn [comment-ts]
+                   (or (when (uc/has-node? g comment-ts)
+                         (let [c (uc/attrs g comment-ts)
+                               dur-path [:custom-fields "#duration" :duration]]
+                           (+ (:completed-time c 0)
+                              (* 60 (get-in c dur-path 0)))))
+                       0))
+        task-total-t (fn [t]
+                       (let [logged (apply + (map logged-t (:comments t)))]
+                         (assoc-in t [:task :completed-s] logged)))
+        add-story (fn [t]
+                    (let [story (get-in stories [(:primary-story t)])
+                          saga (get-in sagas [(:linked-saga story)])
+                          ]
+                      (merge t
+                        {:story (when story
+                                  (assoc-in story [:linked-saga] saga))})))
+        tasks (mapv task-total-t tasks)
+        tasks (mapv add-story tasks)]
+    (transform-keys ->snake_case tasks)))
 
 (defn run-query [{:keys [current-state msg-payload]}]
   (let [start (stc/now)
@@ -98,6 +129,7 @@
                       :query/hashtags        hashtags
                       :query/pvt-hashtags    pvt-hashtags
                       :query/logged-time     logged-time
+                      :query/started-tasks   started-tasks
                       :query/mentions        mentions
                       :query/stories         stories
                       :query/sagas           sagas

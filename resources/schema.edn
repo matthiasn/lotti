@@ -1,5 +1,24 @@
 {:objects
  {
+  :Task
+  {:description "task details for entry."
+   :fields      {:estimate_m    {:type Int}
+                 :points        {:type Int}
+                 :done          {:type Boolean}
+                 :on_hold       {:type Boolean}
+                 :priority      {:type String}
+                 :completed_s   {:type        Int
+                                 :description "logged time in seconds"}
+                 :completion_ts {:type String}}}
+
+  :Entry
+  {:description "A task entry in meo."
+   :fields      {:timestamp {:type (non-null ID)}
+                 :md        {:type String}
+                 :text      {:type String}
+                 :story     {:type :Story}
+                 :task      {:type :Task}}}
+
   :Saga
   {:description "A saga in meo."
    :fields      {:timestamp {:type (non-null ID)}
@@ -60,6 +79,11 @@
   {:type        Int
    :description "Hours logged."
    :resolve     :query/hours-logged}
+
+  :started_tasks
+  {:type        (list :Entry)
+   :description "List of started tasks."
+   :resolve     :query/started-tasks}
 
   :word_count
   {:type        Int

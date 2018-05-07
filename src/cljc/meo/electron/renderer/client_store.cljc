@@ -62,6 +62,7 @@
                          :args [ymd]}]))
   (put-fn [:gql/query {:file "options.gql" :id :options}])
   (put-fn [:gql/query {:file "count-stats.gql" :id :count-stats}])
+  (put-fn [:gql/query {:file "started-tasks.gql" :id :started-tasks}])
   (put-fn [:stats/get2])
   (put-fn [:state/stats-tags-get])
   (put-fn [:cfg/refresh])

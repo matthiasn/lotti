@@ -470,10 +470,11 @@
         entry-tuples (concat (mapv entry-mapper entries)
                              (mapv entry-mapper linked)
                              (mapv entry-mapper comments))
-        entries (vec (into (sorted-set-by >)
-                           (filter identity (mapv :timestamp entries))))]
-    {:entries     entries
-     :entries-map (into {} (filter #(identity (first %)) entry-tuples))}))
+        timestamps (vec (into (sorted-set-by >)
+                              (filter identity (mapv :timestamp entries))))]
+    {:entries      timestamps
+     :entries-map  (into {} (filter #(identity (first %)) entry-tuples))
+     :entries-list entries}))
 
 (defn find-entry
   "Find single entry."

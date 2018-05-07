@@ -42,6 +42,17 @@
       (and (empty? matched)
            (empty? linked-matched)))))
 
+(defn pvt-filter2
+  "Filter for entries considered private."
+  [options]
+  (fn [entry]
+    (let [tags (set (map s/lower-case (:tags entry)))
+          private-tags (:pvt-hashtags options)
+          hashtags (:hashtags options)
+          only-pvt-tags (set/difference private-tags hashtags)
+          matched (set/intersection tags only-pvt-tags)]
+      (empty? matched))))
+
 (defn suggestions
   "Renders suggestions for hashtags or mentions if either occurs before the
    current caret position. It does so by getting the selection from the DOM API,

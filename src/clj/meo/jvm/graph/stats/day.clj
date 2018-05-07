@@ -49,7 +49,7 @@
                                        (uc/attrs g comment-for))
                               story (or (:primary-story parent)
                                         (:primary-story entry)
-                                        :no-story)
+                                        0)
                               acc-time (get acc story 0)
                               completed (get entry :completed-time 0)
                               manual (manually-logged entry date-string)

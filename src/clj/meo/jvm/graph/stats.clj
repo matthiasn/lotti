@@ -122,10 +122,8 @@
       (let [start (st/now)
             uid (:sente-uid msg-meta)
             stats-tags (select-keys (make-stats-tags current-state) [:cfg])
-            started {:started-tasks (gq/get-filtered current-state started-tasks)}
             waiting {:waiting-habits (gq/get-filtered current-state waiting-habits)}]
         (put-fn (with-meta [:state/stats-tags stats-tags] {:sente-uid uid}))
-        (put-fn (with-meta [:state/stats-tags2 started] {:sente-uid uid}))
         (put-fn (with-meta [:state/stats-tags2 waiting] {:sente-uid uid}))
         (info "completed stats-tags" "in" (- (st/now) start) "ms"))
       {:new-state (assoc-in current-state path last-vclock)})))

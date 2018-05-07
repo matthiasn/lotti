@@ -1,7 +1,7 @@
 (ns user
   (:require
     [matthiasn.systems-toolbox-kafka.kafka-producer2 :as kp2]
-    [taoensso.timbre :refer [info]])
+    [taoensso.timbre :refer [info error]])
   (:use [meo.jvm.core]))
 
 (defn make-observable [components]
@@ -19,14 +19,18 @@
 (defn start-meo
   ([] (start-meo false))
   ([inspect]
-   (if inspect
-     (restart! switchboard (make-observable cmp-maps) {:inspect   true
-                                                       :read-logs true})
-     (restart! switchboard cmp-maps {:read-logs true}))))
+   (try
+     (if inspect
+       (restart! switchboard (make-observable cmp-maps) {:inspect   true
+                                                         :read-logs true})
+       (restart! switchboard cmp-maps {:read-logs true}))
+     (catch Exception ex (error ex)))))
 
 (defn reload-meo
   ([] (reload-meo false))
   ([inspect]
-   (if inspect
-     (restart! switchboard (make-observable cmp-maps) {:inspect true})
-     (restart! switchboard cmp-maps {}))))
+   (try
+     (if inspect
+       (restart! switchboard (make-observable cmp-maps) {:inspect true})
+       (restart! switchboard cmp-maps {}))
+     (catch Exception ex (error ex)))))
