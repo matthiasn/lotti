@@ -160,9 +160,9 @@
     (fn barchart-row [{:keys [days span mx label start stats tag k h y
                               cls threshold success-cls]} put-fn]
       (let [btm-y (+ y h)
-            qid (keyword tag)
-            indexed (map-indexed (fn [i x] [i x])
-                                 (:custom-field-stats (qid @gql-res)))
+            qid (keyword (subs tag 1))
+            data (get-in @gql-res [:dashboard qid])
+            indexed (map-indexed (fn [i x] [i x]) data)
             mx (or mx
                    (apply max (map
                                 (fn [x]
@@ -170,11 +170,8 @@
                                     (first (filter #(= (name k) (:field %))
                                                    (:fields x)))
                                     0))
-                                (:custom-field-stats (qid @gql-res)))))
+                                data)))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]
-        (put-fn [:gql/query {:file "custom-field-stats.gql"
-                             :id   qid
-                             :args [days tag]}])
         [:g
          (when @show-pvt
            [row-label (or label tag) y h])

@@ -8,6 +8,8 @@
             [meo.electron.renderer.ui.dashboard.scores :as ds]
             [meo.electron.renderer.ui.dashboard.commits :as c]
             [reagent.core :as r]
+            [meo.electron.renderer.graphql :as gql]
+            [taoensso.timbre :refer-macros [info debug]]
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn dashboard [days put-fn]
@@ -44,6 +46,12 @@
                     :stats      @custom-field-stats
                     :chart-data @chart-data}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
+        (let [tags (->> (:charts @charts-pos)
+                        (filter #(= :barchart-row (:type %)))
+                        (mapv :tag))
+              query-string (gql/graphql-query days tags)]
+          (put-fn [:gql/query {:q  query-string
+                               :id :dashboard}]))
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
