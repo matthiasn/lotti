@@ -59,8 +59,8 @@
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)
                    :class    cls}
          [:td
-          (when-let [prio (-> entry :task :priority)]
-            [:span.prio {:class (subs prio 1)} (subs prio 1)])]
+          (when-let [prio (some-> entry :task :priority (subs 1))]
+            [:span.prio {:class prio} prio])]
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
@@ -87,7 +87,7 @@
   [local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
-        started-tasks (reaction (:started-tasks (:started-tasks @gql-res)))
+        started-tasks (reaction (:started-tasks (:briefing @gql-res)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
@@ -146,7 +146,7 @@
   (let [cfg (subscribe [:cfg])
         options (subscribe [:options])
         gql-res (subscribe [:gql-res])
-        started-tasks (reaction (:started-tasks (:started-tasks @gql-res)))
+        started-tasks (reaction (:started-tasks (:briefing @gql-res)))
         briefing (reaction (:briefing (:briefing @gql-res)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))

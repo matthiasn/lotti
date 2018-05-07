@@ -11,12 +11,19 @@
                                  :description "logged time in seconds"}
                  :completion_ts {:type String}}}
 
+  :Habit
+  {:description "habit details"
+   :fields      {:points   {:type Int}
+                 :penalty  {:type Int}
+                 :priority {:type String}}}
+
   :Entry
   {:description "A task entry in meo."
    :fields      {:timestamp {:type (non-null ID)}
                  :md        {:type String}
                  :text      {:type String}
                  :story     {:type :Story}
+                 :habit     {:type :Habit}
                  :task      {:type :Task}}}
 
   :Saga
@@ -85,6 +92,11 @@
   {:type        (list :Entry)
    :description "List of started tasks."
    :resolve     :query/started-tasks}
+
+  :waiting_habits
+  {:type        (list :Entry)
+   :description "List of started tasks."
+   :resolve     :query/waiting-habits}
 
   :word_count
   {:type        Int

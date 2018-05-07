@@ -23,32 +23,26 @@
   (let [cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:briefing @gql-res)))
+        habits (reaction (:waiting-habits (:briefing @gql-res)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        waiting-habits (subscribe [:waiting-habits])
         options (subscribe [:options])
         expand-fn #(swap! local update-in [:expanded-habits] not)
-        stories (subscribe [:stories])
         saga-filter (fn [entry]
                       (if-let [selected (:selected @local)]
-                        (let [story (get @stories (:primary-story entry))]
-                          (= selected (:linked-saga story)))
+                        (let [saga (-> entry :story :linked-saga :timestamp)]
+                          (= selected saga))
                         true))
-        entries-map (subscribe [:entries-map])
-        entries-map (reaction (merge @entries-map (:entries-map @waiting-habits)))
-        habits (reaction
-                 (let [find-missing (u/find-missing-entry entries-map put-fn)
-                       entries (->> (:entries @waiting-habits)
-                                    (map (fn [ts] (find-missing ts)))
-                                    (filter saga-filter)
-                                    (sort habit-sorter))
-                       conf (merge @cfg @options)]
-                   (if (:show-pvt @cfg)
-                     entries
-                     (filter (u/pvt-filter conf @entries-map) entries))))]
+        habits (reaction (->> @habits
+                              (filter saga-filter)
+                              (sort habit-sorter)))]
     (fn waiting-habits-list-render [local local-cfg put-fn]
-      (let [habits (if (:expanded-habits @local) @habits (take 12 @habits))
+      (let [habits @habits
+            habits (if (:show-pvt @cfg)
+                     habits
+                     (filter (u/pvt-filter2 (merge @cfg @options)) habits))
+            habits (if (:expanded-habits @local) habits (take 12 habits))
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")
             search-text @search-text]
@@ -68,7 +62,7 @@
                  [:tr {:on-click (up/add-search ts tab-group put-fn)
                        :class    (when (= (str ts) search-text) "selected")}
                   [:td
-                   (when-let [prio (-> entry :habit :priority)]
+                   (when-let [prio (some-> entry :habit :priority (subs 1))]
                      [:span.prio {:class prio} prio])]
                   [:td.award-points
                    (when-let [points (-> entry :habit :points)]

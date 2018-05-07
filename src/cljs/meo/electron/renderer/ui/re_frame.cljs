@@ -61,7 +61,6 @@
 (reg-sub :repos (fn [db _] (:repos (:backend-cfg db))))
 (reg-sub :planning-mode (fn [db _] (:planning-mode (:cfg db))))
 (reg-sub :stats (fn [db _] (:stats db)))
-(reg-sub :started-tasks (fn [db _] (:started-tasks db)))
 (reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))

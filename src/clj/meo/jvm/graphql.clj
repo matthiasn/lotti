@@ -66,17 +66,18 @@
            {:story (when story
                      (assoc-in story [:linked-saga] saga))})))
 
+(defn snake-xf [xs] (transform-keys ->snake_case xs))
+
 (defn briefing [context args value]
   (let [g (:graph @st/state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))
         briefing (get-entry g ts)
         linked (gq/get-linked-for-ts g (:timestamp briefing))
-        linked (mapv #(entry-w-story g (get-entry g %)) linked)
-        res (merge briefing {:day    d
-                             :linked linked})]
-    (info "briefing" res)
-    (transform-keys ->snake_case res)))
+        linked (mapv #(entry-w-story g (get-entry g %)) linked)]
+    (when briefing
+      (snake-xf (merge briefing {:day    d
+                                 :linked linked})))))
 
 (defn logged-time [context args value]
   (let [day (:day args)
@@ -87,7 +88,7 @@
         day-nodes (gq/get-nodes-for-day g {:date-string day})
         day-nodes-attrs (map #(get-entry g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
-    (transform-keys ->snake_case day-stats)))
+    (snake-xf day-stats)))
 
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
@@ -97,8 +98,8 @@
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
            :n        100}
-        tasks (:entries-list (gq/get-filtered @st/state q))
         current-state @st/state
+        tasks (:entries-list (gq/get-filtered current-state q))
         g (:graph current-state)
         logged-t (fn [comment-ts]
                    (or
@@ -112,7 +113,18 @@
                          (assoc-in t [:task :completed-s] logged)))
         tasks (mapv task-total-t tasks)
         tasks (mapv #(entry-w-story g %) tasks)]
-    (transform-keys ->snake_case tasks)))
+    (snake-xf tasks)))
+
+(defn waiting-habits [context args value]
+  (let [q {:tags #{"#habit"}
+           :opts #{":waiting"}
+           :n    100}
+        current-state @st/state
+        g (:graph current-state)
+        habits (filter identity (:entries-list (gq/get-filtered current-state q)))
+        habits (mapv #(entry-w-story g %) habits)
+        habits (mapv #(update-in % [:story] snake-xf) habits)]
+    habits))
 
 (defn run-query [{:keys [current-state msg-payload]}]
   (let [start (stc/now)
@@ -141,6 +153,7 @@
                       :query/pvt-hashtags    pvt-hashtags
                       :query/logged-time     logged-time
                       :query/started-tasks   started-tasks
+                      :query/waiting-habits  waiting-habits
                       :query/mentions        mentions
                       :query/stories         stories
                       :query/sagas           sagas

@@ -22,4 +22,43 @@
       }
     }
   }
+
+  started_tasks {
+    timestamp
+    md
+    story {
+      timestamp
+      story_name
+      linked_saga {
+        timestamp
+        saga_name
+      }
+    }
+    task {
+      estimate_m
+      points
+      on_hold
+      done
+      completed_s
+      priority
+    }
+  }
+
+   waiting_habits {
+     text
+     timestamp
+     habit{
+       points
+       priority
+       penalty
+     }
+     story {
+       story_name
+       timestamp
+       linked_saga {
+         saga_name
+         timestamp
+       }
+     }
+   }
 }

@@ -233,7 +233,6 @@
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:stats/get2]
                  [:gql/query {:file "count-stats.gql" :id :count-stats}]
-                 [:gql/query {:file "started-tasks.gql" :id :started-tasks}]
                  [:gql/query {:file "options.gql" :id :options}]
                  [:state/stats-tags-get]]}))
 

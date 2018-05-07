@@ -17,29 +17,27 @@
         briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
         data-fn (fn [ymd]
-                  (let [q (up/parse-search (str "b:" ymd))]
-                    (when-not (get @briefings ymd)
-                      (let [weekday (.format (moment. ymd) "dddd")
-                            md (str "## " weekday "'s #briefing")
-                            entry (merge
-                                    (p/parse-entry md)
-                                    {:briefing      {:day ymd}
-                                     :timestamp     (st/now)
-                                     :timezone      h/timezone
-                                     :utc-offset    (.getTimezoneOffset (new js/Date))
-                                     :primary-story (-> @cfg :briefing :story)})]
-                        (info "creating briefing" ymd)
-                        (put-fn [:entry/update entry])))
-                    (put-fn [:search/remove-briefings])
-                    (put-fn [:cal/to-day {:day ymd}])
-                    (put-fn [:gql/query {:file "logged-by-day.gql"
-                                         :id   :logged-by-day
-                                         :args [ymd]}])
-                    (put-fn [:gql/query {:file "briefing.gql"
-                                         :id   :briefing
-                                         :args [ymd]}])
-                    (put-fn [:search/add {:tab-group :briefing :query q}])
-                    (put-fn [:search/refresh])))
+                  (when-not (get @briefings ymd)
+                    (let [weekday (.format (moment. ymd) "dddd")
+                          md (str "## " weekday "'s #briefing")
+                          entry (merge
+                                  (p/parse-entry md)
+                                  {:briefing      {:day ymd}
+                                   :timestamp     (st/now)
+                                   :timezone      h/timezone
+                                   :utc-offset    (.getTimezoneOffset (new js/Date))
+                                   :primary-story (-> @cfg :briefing :story)})]
+                      (info "creating briefing" ymd)
+                      (put-fn [:entry/update entry])))
+                  (put-fn [:search/remove-briefings])
+                  (put-fn [:cal/to-day {:day ymd}])
+                  (put-fn [:gql/query {:file "logged-by-day.gql"
+                                       :id   :logged-by-day
+                                       :args [ymd]}])
+                  (put-fn [:gql/query {:file "briefing.gql"
+                                       :id   :briefing
+                                       :args [ymd]}])
+                  (put-fn [:search/refresh]))
         opts (clj->js {:time             false
                        :initialValue     (:cal-day @cfg)
                        :monthsInCalendar 2})]
