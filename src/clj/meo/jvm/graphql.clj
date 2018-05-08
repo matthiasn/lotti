@@ -3,7 +3,7 @@
   (:require [clojure.java.io :as io]
             [com.walmartlabs.lacinia.util :as util]
             [com.walmartlabs.lacinia.schema :as schema]
-            [taoensso.timbre :refer [info error warn]]
+            [taoensso.timbre :refer [info error warn debug]]
             [com.walmartlabs.lacinia :as lacinia]
             [com.walmartlabs.lacinia.pedestal :as lp]
             [io.pedestal.http :as http]
@@ -21,7 +21,8 @@
             [meo.jvm.graph.stats.day :as gsd]
             [meo.jvm.datetime :as dt]
             [meo.jvm.graph.stats.custom-fields :as cf]
-            [meo.jvm.graph.stats.git :as g])
+            [meo.jvm.graph.stats.git :as g]
+            [meo.jvm.graph.stats.questionnaires :as q])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -71,6 +72,8 @@
 
 (defn snake-xf [xs] (transform-keys ->snake_case xs))
 
+(def d (* 24 60 60 1000))
+
 (defn briefing [context args value]
   (let [g (:graph @st/state)
         d (:day args)
@@ -101,7 +104,6 @@
         days (reverse (range days))
         now (stc/now)
         custom-fields-mapper (cf/custom-fields-mapper @st/state tag)
-        d (* 24 60 60 1000)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv custom-fields-mapper day-strings)]
     (snake-xf stats)))
@@ -112,10 +114,19 @@
         days (reverse (range days))
         now (stc/now)
         git-mapper (g/git-mapper @st/state)
-        d (* 24 60 60 1000)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv git-mapper day-strings)]
-    (info stats)
+    (debug stats)
+    (snake-xf stats)))
+
+(defn questionnaires [context args value]
+  (info "git-stats" args)
+  (let [{:keys [days tag k]} args
+        newer-than (- (stc/now) (* d (or days 90)))
+        stats (q/questionnaires-by-tag @st/state tag (keyword k))
+        stats (filter #(:score %) stats)
+        stats (vec (filter #(> (:timestamp %) newer-than) stats))]
+    (debug stats)
     (snake-xf stats)))
 
 (defn started-tasks [context args value]
@@ -185,6 +196,7 @@
                       :query/custom-field-stats custom-field-stats
                       :query/git-stats          git-stats
                       :query/briefings          briefings
+                      :query/questionnaires     questionnaires
                       :query/briefing           briefing})
                    schema/compile)
         server (-> schema

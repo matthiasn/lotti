@@ -49,8 +49,16 @@
                         (filter #(= :barchart-row (:type %)))
                         (mapv :tag))
               query-string (gql/graphql-query days tags)]
-          (put-fn [:gql/query {:q  query-string
-                               :id :dashboard}]))
+          (when query-string
+            (put-fn [:gql/query {:q  query-string
+                                 :id :dashboard}])))
+        (let [items (->> (:charts @charts-pos)
+                         (filter #(= :scores-chart (:type %))))
+              query-string (gql/dashboard-questionnaires days items)]
+          (debug query-string)
+          (when query-string
+            (put-fn [:gql/query {:q  query-string
+                                 :id :dashboard-questionnaires}])))
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}

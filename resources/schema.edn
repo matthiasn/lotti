@@ -44,6 +44,14 @@
                  :day       {:type String}
                  :linked    {:type (list :Entry)}}}
 
+  :QuestionnaireItem
+  {:description "An aggregration for a filled out questionnaire."
+   :fields      {:timestamp {:type (non-null ID)}
+                 :starred   {:type Boolean}
+                 :score     {:type Int}
+                 :agg       {:type String}
+                 :label     {:type String}}}
+
   :LoggedCalItem
   {:description "Logged time item."
    :fields      {:timestamp   {:type (non-null ID)}
@@ -183,6 +191,14 @@
    :description "Git commit stats for number of days"
    :args        {:days {:type Int}}
    :resolve     :query/git-stats}
+
+  :questionnaires
+  {:type        (list :QuestionnaireItem)
+   :description "filled out questionnaires"
+   :args        {:tag  {:type String}
+                 :days {:type Int}
+                 :k    {:type String}}
+   :resolve     :query/questionnaires}
 
   :briefings
   {:type        (list :Briefing)

@@ -13,4 +13,19 @@
                                  [:date_string :commits]]
                    :query/alias :git_commits}
         queries (conj queries git-query)]
-    (v/graphql-query {:venia/queries queries})))
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))
+
+(defn dashboard-questionnaires [days items]
+  (let [qfn (fn [{:keys [tag score-k]}]
+              (let [kn (name score-k)
+                    alias (keyword
+                            (str (s/replace (subs tag 1) "-" "_") "_" kn))]
+                {:query/data [:questionnaires {:days days
+                                               :tag  tag
+                                               :k    kn}
+                              [:timestamp :score]]
+                 :query/alias alias}))
+        queries (mapv qfn items)]
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))

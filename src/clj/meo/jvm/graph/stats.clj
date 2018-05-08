@@ -103,10 +103,8 @@
     (when (not= last-vclock (get-in current-state path))
       (let [start (st/now)
             aw {:award-points (aw/award-points current-state)}
-            q {:questionnaires (q/questionnaires current-state)}
             uid (:sente-uid msg-meta)]
         (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
-        (put-fn (with-meta [:stats/result2 q] {:sente-uid uid}))
         (info "completed stats2" "in" (- (st/now) start) "ms"))
       {:new-state (assoc-in current-state path last-vclock)})))
 
