@@ -179,14 +179,18 @@
 (defn run-query [{:keys [current-state msg-payload]}]
   (let [start (stc/now)
         schema (:schema current-state)
-        {:keys [file args q id]} msg-payload
+        {:keys [file args q id prev-hash]} msg-payload
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
-        simplified (transform-keys ->kebab-case-keyword (simplify res))]
-    (info "GraphQL query" id "finished in" (- (stc/now) start) "ms"
-          (str "'" (or file query-string) "'"))
-    {:emit-msg [:gql/res (merge msg-payload simplified)]}))
+        simplified (transform-keys ->kebab-case-keyword (simplify res))
+        res-hash (hash res)
+        new-data (not= prev-hash res-hash)
+        res (merge msg-payload simplified {:res-hash res-hash})]
+    (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
+          (if new-data "new data" "same hash, omitting response")
+          (str "- '" (or file query-string) "'"))
+    (when new-data {:emit-msg [:gql/res res]})))
 
 (defn state-fn [_put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))

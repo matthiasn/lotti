@@ -93,8 +93,7 @@
 
 (defn briefing-view [ts put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
-        day-stats (reaction (:logged-time (:logged-by-day @gql-res)))
-        briefing (reaction (:briefing (:briefing @gql-res)))
+        day-stats (reaction (:logged-time (:data (:logged-by-day @gql-res))))
         cfg (subscribe [:cfg])
         {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         local (r/atom {:filter                  :open

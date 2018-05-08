@@ -54,14 +54,14 @@
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
-                                (-> @gql-res :options :mentions)))
+                                (-> @gql-res :options :data :mentions)))
         stories (reaction (filter identity
                                   (map story-mapper
-                                       (-> @gql-res :options :stories))))
+                                       (-> @gql-res :options :data :stories))))
         hashtags (reaction
                    (let [show-pvt? (:show-pvt @cfg)
-                         hashtags (-> @gql-res :options :hashtags)
-                         pvt-hashtags (-> @gql-res :options :pvt_hashtags)
+                         hashtags (-> @gql-res :options :data :hashtags)
+                         pvt-hashtags (-> @gql-res :options :data :pvt_hashtags)
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
@@ -81,11 +81,11 @@
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
-                                (get-in @gql-res [:options :mentions])))
+                                (get-in @gql-res [:options :data :mentions])))
         hashtags (reaction
                    (let [show-pvt? (:show-pvt @cfg)
-                         hashtags (-> @gql-res :options :hashtags)
-                         pvt-hashtags (-> @gql-res :options :pvt_hashtags)
+                         hashtags (-> @gql-res :options :data :hashtags)
+                         pvt-hashtags (-> @gql-res :options :data :pvt_hashtags)
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]

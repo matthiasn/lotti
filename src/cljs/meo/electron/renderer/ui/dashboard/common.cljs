@@ -161,7 +161,7 @@
                               cls threshold success-cls]} put-fn]
       (let [btm-y (+ y h)
             qid (keyword (subs tag 1))
-            data (get-in @gql-res [:dashboard qid])
+            data (get-in @gql-res [:dashboard :data qid])
             indexed (map-indexed (fn [i x] [i x]) data)
             mx (or mx
                    (apply max (map
@@ -206,7 +206,7 @@
   (let [gql-res (subscribe [:gql-res])
         show-pvt (subscribe [:show-pvt])]
     (fn points-by-day-render [{:keys [y h label days span]}]
-      (let [data (get-in @gql-res [:dashboard :award-points])
+      (let [data (get-in @gql-res [:dashboard :data :award-points])
             btm-y (+ y h)
             by-day (map (fn [m] [(:date-string m) m]) (:by-day data))
             daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)

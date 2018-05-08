@@ -22,16 +22,16 @@
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
 (reg-sub :stories (fn [db _]
-                    (->> (get-in db [:gql-res :options :stories])
+                    (->> (get-in db [:gql-res :options :data :stories])
                          (map (fn [x] [(:timestamp x) x]))
                          (into {}))))
 (reg-sub :sagas (fn [db _]
-                  (->> (get-in db [:gql-res :options :sagas])
+                  (->> (get-in db [:gql-res :options :data :sagas])
                        (map (fn [x] [(:timestamp x) x]))
                        (into {}))))
 
 (reg-sub :briefings (fn [db _]
-                      (->> (get-in db [:gql-res :options :briefings])
+                      (->> (get-in db [:gql-res :options :data :briefings])
                            (map (fn [m] [(:day m) (:timestamp m)]))
                            (into {}))))
 

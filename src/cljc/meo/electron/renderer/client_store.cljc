@@ -62,8 +62,8 @@
     {:new-state new-state}))
 
 (defn gql-res [{:keys [current-state msg-payload]}]
-  (let [{:keys [id data]} msg-payload
-        new-state (update-in current-state [:gql-res id] merge data)]
+  (let [{:keys [id]} msg-payload
+        new-state (assoc-in current-state [:gql-res id] msg-payload)]
     {:new-state new-state}))
 
 (defn ping [_]

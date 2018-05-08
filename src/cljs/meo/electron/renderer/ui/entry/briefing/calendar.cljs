@@ -57,7 +57,7 @@
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         gql-res (subscribe [:gql-res])
-        stats (reaction (:logged-time (:logged-by-day @gql-res)))]
+        stats (reaction (:logged-time (:data (:logged-by-day @gql-res))))]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
             day (or @cal-day today)

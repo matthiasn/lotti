@@ -60,7 +60,7 @@
                                      x-offset label]} put-fn]
       (let [qid (->kebab-case (keyword (str (name k) "-" (name score-k))))
             data (sort-by :timestamp
-                          (get-in @gql-res [:dashboard-questionnaires qid]))
+                          (get-in @gql-res [:dashboard-questionnaires :data qid]))
             span (- end start)
             rng (- mx mn)
             scale (/ h rng)

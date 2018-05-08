@@ -22,8 +22,8 @@
   [local local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
-        briefing (reaction (:briefing (:briefing @gql-res)))
-        habits (reaction (:waiting-habits (:briefing @gql-res)))
+        briefing (reaction (-> @gql-res :briefing :data :briefing))
+        habits (reaction (-> @gql-res :briefing :data :waiting-habits))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))

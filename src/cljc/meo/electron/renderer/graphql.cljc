@@ -1,13 +1,14 @@
 (ns meo.electron.renderer.graphql
-  (:require [venia.core :as v]
-            [taoensso.timbre :refer-macros [info debug warn]]
-            [clojure.string :as s]))
+  (:require  [venia.core :as v]
+    #?(:clj  [taoensso.timbre :refer [info debug warn]]
+       :cljs [taoensso.timbre :refer-macros [info debug warn]])
+             [clojure.string :as s]))
 
 (defn graphql-query [days tags]
   (let [qfn (fn [t]
               {:query/data  [:custom_field_stats {:days days :tag t}
                              [:date_string [:fields [:field :value]]]]
-               :query/alias (keyword (s/replace (subs t 1) "-" "_"))} )
+               :query/alias (keyword (s/replace (subs t 1) "-" "_"))})
         queries (mapv qfn tags)
         git-query {:query/data [:git_stats {:days days}
                                 [:date_string :commits]]}

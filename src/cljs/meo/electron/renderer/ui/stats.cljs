@@ -8,7 +8,7 @@
 
 (defn stats-text []
   (let [gql-res (subscribe [:gql-res])
-        stats (reaction (:count-stats @gql-res))]
+        stats (reaction (:data (:count-stats @gql-res)))]
     (fn stats-text-render []
       [:div.stats-string
        [:div (:entry-count @stats) " entries | "

@@ -208,21 +208,25 @@
   (let [new-state (-> current-state
                       (assoc-in [:query-cfg :last-update] {:last-update (st/now)
                                                            :meta        msg-meta})
-                      (assoc-in [:query-cfg :last-update-meta] msg-meta))]
+                      (assoc-in [:query-cfg :last-update-meta] msg-meta))
+        prev-hash (fn [q]
+                    (merge q {:prev-hash (get-in current-state
+                                                 [:gql-res (:id q) :res-hash])}))]
     (info "search-refresh")
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (put-fn [:gql/query {:file "logged-by-day.gql"
-                           :id   :logged-by-day
-                           :args [ymd]}])
-      (put-fn [:gql/query {:file "briefing.gql"
-                           :id   :briefing
-                           :args [ymd]}]))
+      (put-fn [:gql/query (prev-hash {:file "logged-by-day.gql"
+                                      :id   :logged-by-day
+                                      :args [ymd]})])
+      (put-fn [:gql/query (prev-hash {:file "briefing.gql"
+                                      :id   :briefing
+                                      :args [ymd]})]))
     (doseq [[_ query] (:gql-queries current-state)]
-      (put-fn [:gql/query query]))
+      (put-fn [:gql/query (prev-hash query)]))
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
-                 [:gql/query {:file "count-stats.gql" :id :count-stats}]
-                 [:gql/query {:file "options.gql" :id :options}]]}))
+                 [:gql/query (prev-hash {:file "count-stats.gql"
+                                         :id   :count-stats})]
+                 [:gql/query (prev-hash {:file "options.gql" :id :options})]]}))
 
 (defn search-res [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [type data]} msg-payload

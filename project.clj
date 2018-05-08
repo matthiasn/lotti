@@ -23,6 +23,7 @@
                  [org.clojure/data.csv "0.1.4"]
                  [com.walmartlabs/lacinia "0.26.0"]
                  [com.walmartlabs/lacinia-pedestal "0.7.0"]
+                 [vincit/venia "0.2.5"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
@@ -60,7 +61,6 @@
                                            [reagent "0.8.0"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
-                                           [vincit/venia "0.2.5"]
                                            [cljsjs/moment "2.17.1-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}

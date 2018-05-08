@@ -83,7 +83,7 @@
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         story (reaction (get-in @query-cfg [:queries @query-id :story]))
         gql-res (subscribe [:gql-res])
-        briefing (reaction (:briefing (:briefing @gql-res)))
+        briefing (reaction (:briefing (:data (:briefing @gql-res))))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
