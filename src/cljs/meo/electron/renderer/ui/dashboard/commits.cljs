@@ -67,7 +67,7 @@
         gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span start h y]} put-fn]
       (let [btm-y (+ y h)
-            data (get-in @gql-res [:dashboard :git-commits])
+            data (get-in @gql-res [:dashboard :git-stats])
             indexed (map-indexed (fn [i x] [i x]) data)
             mx (apply max (map #(:commits (second %)) indexed))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]

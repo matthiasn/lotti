@@ -88,6 +88,20 @@
                           :description "Logged time in seconds"}
                  :story  {:type :Story}}}
 
+  :AwardPointItem
+  {:description "Custom field stats item."
+   :fields      {:date_string {:type (non-null String)}
+                 :task        {:type Int}
+                 :habit       {:type Int}}}
+
+  :AwardPoints
+  {:description "Award points result"
+   :fields      {:total          {:type Int}
+                 :total_skipped  {:type Int}
+                 :claimed        {:type Int}
+                 :by_day         {:type (list :AwardPointItem)}
+                 :by_day_skipped {:type (list :AwardPointItem)}}}
+
   :DayStats
   {:description "Logged time for specified day."
    :fields      {:day              {:type (non-null String)}
@@ -199,6 +213,12 @@
                  :days {:type Int}
                  :k    {:type String}}
    :resolve     :query/questionnaires}
+
+  :award_points
+  {:type        :AwardPoints
+   :description "award points"
+   :args        {:days {:type Int}}
+   :resolve     :query/award-points}
 
   :briefings
   {:type        (list :Briefing)

@@ -21,10 +21,6 @@
                                            :count (count entries-map)}))]
     {:new-state new-state}))
 
-(defn save-stats-fn2 [{:keys [current-state msg-payload put-fn]}]
-  (let [new-state (update-in current-state [:stats] merge msg-payload)]
-    {:new-state new-state}))
-
 (defn initial-state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
         state (atom {:entries          []
@@ -83,7 +79,6 @@
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
                        {:state/new         new-state-fn
-                        :stats/result2     save-stats-fn2
                         :cfg/save          c/save-cfg
                         :gql/res           gql-res
                         :startup/progress  progress

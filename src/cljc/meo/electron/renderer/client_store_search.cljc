@@ -231,7 +231,6 @@
                            :args [ymd]}]))
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
-                 [:stats/get2]
                  [:gql/query {:file "count-stats.gql" :id :count-stats}]
                  [:gql/query {:file "options.gql" :id :options}]]}))
 

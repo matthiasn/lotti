@@ -209,25 +209,6 @@
                    :meo.search-result/entries-map
                    :meo.search-result/duration-ms]))
 
-(s/def :stats/day (s/keys :req-un [:meo.search/date-string]))
-(s/def :stats/days (s/coll-of :stats/day))
-(s/def :stats/type keyword?)
-(s/def :stats/get (s/keys :req.un [:stats/type
-                                   :stats/days]))
-
-(s/def :pomo-stats/total int-not-neg?)
-(s/def :pomo-stats/completed int-not-neg?)
-(s/def :pomo-stats/started int-not-neg?)
-(s/def :pomo-stats/total-time int-not-neg?)
-
-(s/def :task-stats/tasks-cnt int-not-neg?)
-(s/def :task-stats/done-cnt int-not-neg?)
-(s/def :task-stats/closed-cnt int-not-neg?)
-
-(s/def :stats/result
-  (s/keys :req-un [:stats/type
-                   :stats/stats]))
-(s/def :stats/result2 map?)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Spec for :state/publish-current
@@ -320,8 +301,6 @@
 (s/def :import/spotify nil?)
 (s/def :import/listen nil?)
 (s/def :import/stop-server nil?)
-(s/def :state/stats-tags-get nil?)
-(s/def :stats/get2 nil?)
 (s/def :cfg/refresh nil?)
 (s/def :ws/ping nil?)
 

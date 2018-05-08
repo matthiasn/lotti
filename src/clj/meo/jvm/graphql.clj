@@ -22,7 +22,8 @@
             [meo.jvm.datetime :as dt]
             [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.jvm.graph.stats.git :as g]
-            [meo.jvm.graph.stats.questionnaires :as q])
+            [meo.jvm.graph.stats.questionnaires :as q]
+            [meo.jvm.graph.stats.awards :as aw])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -43,7 +44,7 @@
 
 (defn entry-count [context args value] (count (:sorted-entries @st/state)))
 (defn hours-logged [context args value] (gs/hours-logged @st/state))
-(defn word-count [context args value] (gs/count-words2 @st/state))
+(defn word-count [context args value] (gs/count-words @st/state))
 (defn tag-count [context args value] (count (gq/find-all-hashtags @st/state)))
 (defn mention-count [context args value] (count (gq/find-all-mentions @st/state)))
 (defn completed-count [context args value] (gs/completed-count @st/state))
@@ -129,6 +130,19 @@
     (debug stats)
     (snake-xf stats)))
 
+(defn award-points [context args value]
+  (let [{:keys [days]} args
+        newer-than (dt/ts-to-ymd (- (stc/now) (* d (or days 90))))
+        stats (aw/award-points @st/state)
+        sort-filter (fn [k]
+                      (sort-by first (filter #(pos? (compare (first %) newer-than))
+                                             (k stats))))
+        xf (fn [[k v]] (merge v {:date-string k}))
+        sorted (assoc-in stats [:by-day] (mapv xf (sort-filter :by-day)))
+        sorted (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))]
+    (info :stats sorted)
+    (snake-xf sorted)))
+
 (defn started-tasks [context args value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
@@ -197,6 +211,7 @@
                       :query/git-stats          git-stats
                       :query/briefings          briefings
                       :query/questionnaires     questionnaires
+                      :query/award-points       award-points
                       :query/briefing           briefing})
                    schema/compile)
         server (-> schema

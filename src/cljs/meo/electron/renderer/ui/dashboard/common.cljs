@@ -157,7 +157,7 @@
 (defn barchart-row [_ _]
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span mx label start stats tag k h y
+    (fn barchart-row [{:keys [days span mx label tag k h y
                               cls threshold success-cls]} put-fn]
       (let [btm-y (+ y h)
             qid (keyword (subs tag 1))
@@ -175,7 +175,7 @@
         [:g
          (when @show-pvt
            [row-label (or label tag) y h])
-         (for [[n {:keys [date-string fields weekday]}] indexed]
+         (for [[n {:keys [date-string fields]}] indexed]
            (let [field (first (filter #(= (name k) (:field %)) fields))
                  v (js/parseFloat (:value field 0))
                  d (* 24 60 60 1000)
@@ -202,39 +202,49 @@
                     :n   n}]))
          [line (+ y h) "#000" 2]]))))
 
-(defn points-by-day-chart [{:keys [y h label span]}]
-  (let [stats (subscribe [:stats])
+(defn points-by-day-chart [{:keys [y h label]}]
+  (let [gql-res (subscribe [:gql-res])
         show-pvt (subscribe [:show-pvt])]
-    (fn points-by-day-render [{:keys [y h label]}]
-      (let [btm-y (+ y h)
-            award-points (:award-points @stats)
-            by-day (sort-by first (:by-day award-points))
+    (fn points-by-day-render [{:keys [y h label days span]}]
+      (let [data (get-in @gql-res [:dashboard :award-points])
+            btm-y (+ y h)
+            by-day (map (fn [m] [(:date-string m) m]) (:by-day data))
             daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)
             max-val (apply max daily-totals)
-            indexed (map-indexed (fn [idx [day v]] [idx [day v]])
-                                 (take-last 180 by-day))]
+            w (dec (/ 1400 days))
+            indexed (map-indexed (fn [idx [day v]] [idx [day v]]) by-day)]
         [:g
          (for [[idx [day v]] indexed]
            (let [v (h/add (:task v) (:habit v))
                  y-scale (/ h (or max-val 1))
-                 h (if (pos? v) (* y-scale v) 0)]
+                 h (if (pos? v) (* y-scale v) 0)
+                 d (* 24 60 60 1000)
+                 offset (* idx d)
+                 span (if (zero? span) 1 span)
+                 scaled (* 1800 (/ offset span))
+                 x (+ 201 scaled)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 202 (* 20 idx))
+               [:rect {:x      x
                        :y      (- btm-y h)
                        :fill   "#7FE283"
-                       :width  14
+                       :width  w
                        :height h}])))
          (for [[idx [day v]] indexed]
            (let [v (:task v)
                  y-scale (/ h (or max-val 1))
-                 h (if (pos? v) (* y-scale v) 0)]
+                 h (if (pos? v) (* y-scale v) 0)
+                 d (* 24 60 60 1000)
+                 offset (* idx d)
+                 span (if (zero? span) 1 span)
+                 scaled (* 1800 (/ offset span))
+                 x (+ 201 scaled)]
              (when (pos? max-val)
                ^{:key (str day idx)}
-               [:rect {:x      (+ 202 (* 20 idx))
+               [:rect {:x      x
                        :y      (- btm-y h)
                        :fill   "#42b8dd"
-                       :width  14
+                       :width  w
                        :height h}])))
          [line (+ y h) "#000" 2]
          (when @show-pvt

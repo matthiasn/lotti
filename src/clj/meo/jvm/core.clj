@@ -24,7 +24,6 @@
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
-    (st/stats-cmp-map :backend/stats)
     (gql/cmp-map :backend/graphql)
     (bak/cmp-map :backend/backup)
     (up/cmp-map :backend/upload switchboard)
@@ -45,7 +44,6 @@
 
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
-                          :backend/stats
                           :backend/graphql
                           :backend/export
                           :backend/upload
@@ -53,9 +51,6 @@
 
      [:cmd/route {:from :backend/imports
                   :to   :backend/store}]
-
-     [:cmd/route {:from :backend/stats
-                  :to   :backend/ws}]
 
      [:cmd/route {:from :backend/graphql
                   :to   :backend/ws}]

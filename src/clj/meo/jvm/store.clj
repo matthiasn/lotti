@@ -155,11 +155,3 @@
                  :search/geo-photo geo/photos-within-bounds
                  :cfg/refresh      refresh-cfg
                  :backend-cfg/save fu/write-cfg}})
-
-(defn stats-cmp-map [cmp-id]
-  {:cmp-id      cmp-id
-   :state-fn    state-fn
-   :opts        {:msgs-on-firehose true
-                 :in-chan          [:buffer 100]
-                 :out-chan         [:buffer 100]}
-   :handler-map gs/stats-handler-map})

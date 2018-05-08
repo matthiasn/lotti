@@ -67,14 +67,6 @@
   "Count total number of words."
   [current-state]
   (let [g (:graph current-state)
-        entries (map #(uber/attrs g %) (:sorted-entries current-state))
-        counts (map (fn [entry] (u/count-words entry)) entries)]
-    (apply + counts)))
-
-(defn count-words2
-  "Count total number of words."
-  [current-state]
-  (let [g (:graph current-state)
         counts (pmap #(u/count-words (uber/attrs g %))
                      (:sorted-entries current-state))]
     (apply + counts)))
@@ -93,20 +85,3 @@
         total-seconds (apply + seconds-logged)
         total-hours (/ total-seconds 60 60)]
     total-hours))
-
-(defn get-stats-fn2
-  "Generates stats and tags (they only change on insert anyway) and initiates
-   publication thereof to all connected clients."
-  [{:keys [current-state put-fn msg-meta]}]
-  (let [path [:last-stat :stats2 (:sente-uid msg-meta)]
-        last-vclock (:global-vclock current-state)]
-    (when (not= last-vclock (get-in current-state path))
-      (let [start (st/now)
-            aw {:award-points (aw/award-points current-state)}
-            uid (:sente-uid msg-meta)]
-        (put-fn (with-meta [:stats/result2 aw] {:sente-uid uid}))
-        (info "completed stats2" "in" (- (st/now) start) "ms"))
-      {:new-state (assoc-in current-state path last-vclock)})))
-
-(def stats-handler-map
-  {:stats/get2 get-stats-fn2})
