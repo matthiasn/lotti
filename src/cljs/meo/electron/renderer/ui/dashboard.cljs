@@ -13,9 +13,7 @@
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn dashboard [days put-fn]
-  (let [custom-field-stats (subscribe [:custom-field-stats])
-        chart-data (subscribe [:chart-data])
-        active-dashboard (subscribe [:active-dashboard])
+  (let [active-dashboard (subscribe [:active-dashboard])
         questionnaires (subscribe [:questionnaires])
         charts-pos (reaction
                      (reduce
@@ -35,28 +33,27 @@
             start (+ dc/tz-offset (- now within-day (* days d)))
             end (+ (- now within-day) d dc/tz-offset)
             span (- end start)
-            common {:start      start :end end
-                    :w          1800
-                    :x-offset   200
-                    :span       span
-                    :days       days
-                    :chart-data @chart-data}
+            common {:start    start :end end
+                    :w        1800
+                    :x-offset 200
+                    :span     span
+                    :days     days}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         (let [tags (->> (:charts @charts-pos)
                         (filter #(= :barchart-row (:type %)))
                         (mapv :tag))
-              query-string (gql/graphql-query days tags)]
-          (info query-string)
+              query-string (gql/graphql-query (inc days) tags)]
           (when query-string
-            (put-fn [:gql/query {:q  query-string
-                                 :id :dashboard}])))
+            (put-fn [:gql/query {:q        query-string
+                                 :register true
+                                 :id       :dashboard}])))
         (let [items (->> (:charts @charts-pos)
                          (filter #(= :scores-chart (:type %))))
               query-string (gql/dashboard-questionnaires days items)]
-          (debug query-string)
           (when query-string
-            (put-fn [:gql/query {:q  query-string
-                                 :id :dashboard-questionnaires}])))
+            (put-fn [:gql/query {:q        query-string
+                                 :register true
+                                 :id       :dashboard-questionnaires}])))
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}

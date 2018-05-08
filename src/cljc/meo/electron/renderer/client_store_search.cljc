@@ -6,6 +6,7 @@
        :cljs [taoensso.timbre :refer-macros [info debug]])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.parse :as p]
+    [meo.electron.renderer.graphql :as gql]
     [clojure.set :as set]
     [meo.common.utils.misc :as u]))
 
@@ -155,19 +156,6 @@
                     [:search/remove {:tab-group :right
                                      :query-id  (:query-id right)}]]}))
 
-(defn remove-briefing-queries [{:keys [current-state]}]
-  (let [briefing-group (-> current-state :query-cfg :tab-groups :briefing)
-        off-group (-> current-state :query-cfg :tab-groups :off)
-        rm (set/union (set (:all briefing-group)) (set (:all off-group)))
-        new-state (-> current-state
-                      (update-in [:query-cfg :queries] #(apply dissoc % rm))
-                      (assoc-in [:query-cfg :tab-groups :briefing :all] #{})
-                      (assoc-in [:query-cfg :tab-groups :off :all] #{})
-                      (assoc-in [:query-cfg :tab-groups :off :active] nil))]
-    (debug "remove-briefing-queries:" (:query-cfg new-state))
-    (reset! query-cfg (:query-cfg new-state))
-    {:new-state new-state}))
-
 (defn close-all
   "Remove query inside tab group specified in msg."
   [{:keys [current-state msg-payload]}]
@@ -229,6 +217,8 @@
       (put-fn [:gql/query {:file "briefing.gql"
                            :id   :briefing
                            :args [ymd]}]))
+    (doseq [[_ query] (:gql-queries current-state)]
+      (put-fn [:gql/query query]))
     {:new-state new-state
      :emit-msg  [[:state/search (u/search-from-cfg current-state)]
                  [:gql/query {:file "count-stats.gql" :id :count-stats}]
@@ -242,17 +232,24 @@
       (put-fn [:entry/find {:timestamp ts}]))
     {:new-state new-state}))
 
+(defn gql-query [{:keys [current-state msg-payload]}]
+  (let [{:keys [id register]} msg-payload
+        new-state (assoc-in current-state [:gql-queries id] msg-payload)]
+    (when register
+      (info "registering" (:gql-queries new-state))
+      {:new-state new-state})))
+
 (def search-handler-map
-  {:search/update           update-query-fn
-   :search/set-active       set-active-query
-   :search/add              add-query
-   :search/remove           remove-query
-   :search/remove-all       remove-all
-   :search/remove-briefings remove-briefing-queries
-   :search/close-all        close-all
-   :search/refresh          search-refresh
-   :search/set-dragged      set-dragged
-   :search/move-tab         move-tab
-   :search/res              search-res
-   :show/more               show-more
-   :linked-filter/set       set-linked-filter})
+  {:search/update      update-query-fn
+   :search/set-active  set-active-query
+   :search/add         add-query
+   :search/remove      remove-query
+   :search/remove-all  remove-all
+   :search/close-all   close-all
+   :search/refresh     search-refresh
+   :search/set-dragged set-dragged
+   :gql/query          gql-query
+   :search/move-tab    move-tab
+   :search/res         search-res
+   :show/more          show-more
+   :linked-filter/set  set-linked-filter})

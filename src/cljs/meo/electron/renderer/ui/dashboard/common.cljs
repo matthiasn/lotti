@@ -177,7 +177,7 @@
            [row-label (or label tag) y h])
          (for [[n {:keys [date-string fields]}] indexed]
            (let [field (first (filter #(= (name k) (:field %)) fields))
-                 v (js/parseFloat (:value field 0))
+                 v (:value field 0)
                  d (* 24 60 60 1000)
                  offset (* n d)
                  span (if (zero? span) 1 span)
