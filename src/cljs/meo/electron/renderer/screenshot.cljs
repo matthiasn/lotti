@@ -15,7 +15,7 @@
                       :tags      #{"#screenshot"}
                       :perm-tags #{"#screenshot"}}
                      msg-payload)
-        new-fn (h/new-entry-fn put-fn entry nil)]
+        new-fn (h/new-entry put-fn entry nil)]
     (js/setTimeout new-fn 1500)
     (info "taking screenshot" entry)
     (when-not (:app-screenshot cfg)

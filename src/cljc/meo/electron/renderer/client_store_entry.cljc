@@ -129,10 +129,11 @@
                                       :timestamp      ts}]}]]})
           {:new-state current-state})))))
 
-(defn pomodoro-start-fn
+(defn pomodoro-start
   "Start pomodoro for entry. Will toggle the :pomodoro-running status of the
    entry and schedule an initial increment message."
   [{:keys [current-state msg-payload]}]
+  (info "pomodoro-start-fn" msg-payload)
   (let [ts (:timestamp msg-payload)
         new-entry (assoc-in msg-payload [:pomodoro-running] true)
         new-state (-> current-state
@@ -149,13 +150,13 @@
                   :timeout 1
                   :id      (keyword (str "timer-") ts)}]}))
 
-(defn pomodoro-stop-fn [{:keys [current-state]}]
+(defn pomodoro-stop [{:keys [current-state]}]
   (let [new-state (-> current-state
                       (assoc-in [:pomodoro :running] nil)
                       (assoc-in [:busy-status :busy] false))]
     {:new-state new-state}))
 
-(defn update-local-fn
+(defn update-local
   "Update locally stored new entry with changes from edit element."
   [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
@@ -182,7 +183,7 @@
         {:new-state new-state})
       {})))
 
-(defn remove-local-fn [{:keys [current-state msg-payload]}]
+(defn remove-local [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         new-state (update-in current-state [:new-entries] dissoc ts)]
     (update-local-storage new-state)
@@ -203,10 +204,10 @@
   {:entry/new          new-entry-fn
    :entry/found        found-entry-fn
    :entry/geo-enrich   geo-enrich-fn
-   :entry/update-local update-local-fn
-   :entry/remove-local remove-local-fn
+   :entry/update-local update-local
+   :entry/remove-local remove-local
    :entry/saved        entry-saved-fn
    :geonames/res       geo-res
    :cmd/pomodoro-inc   pomodoro-inc-fn
-   :cmd/pomodoro-start pomodoro-start-fn
-   :cmd/pomodoro-stop  pomodoro-stop-fn})
+   :cmd/pomodoro-start pomodoro-start
+   :cmd/pomodoro-stop  pomodoro-stop})

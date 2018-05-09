@@ -12,7 +12,6 @@
             [meo.electron.renderer.ui.entry.task :as task]
             [meo.electron.renderer.ui.entry.habit :as habit]
             [meo.electron.renderer.ui.entry.reward :as reward]
-            [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.carousel :as carousel]
@@ -156,16 +155,6 @@
          [m/spotify-view @entry put-fn]
          [c/questionnaire-div @entry put-fn edit-mode?]]))))
 
-(defn briefing [ts put-fn local-cfg]
-  (let [cfg (subscribe [:cfg])
-        {:keys [entry entries-map]} (eu/entry-reaction ts)
-        drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
-    (fn briefing-render [ts put-fn local-cfg]
-      [:div.entry {:on-drop       drop-fn
-                   :on-drag-over  h/prevent-default
-                   :on-drag-enter h/prevent-default}
-       [b/briefing-view ts put-fn local-cfg]])))
-
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens
    via messages that are sent to the store component, for example for toggling
@@ -201,9 +190,7 @@
     (fn entry-with-comments-render [ts put-fn local-cfg]
       (let [comments @comments]
         [:div.entry-with-comments
-         (if (contains? (:tags @entry) "#briefing")
-           [briefing ts put-fn local-cfg]
-           [journal-entry ts put-fn local-cfg])
+         [journal-entry ts put-fn local-cfg]
          (when @thumbnails? [carousel/gallery entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
@@ -220,3 +207,28 @@
               (let [n (count comments)]
                 [:span {:on-click toggle-comments}
                  (str "show " n " comment" (when (> n 1) "s"))])]))]))))
+
+
+
+
+
+(defn journal-entry2 [entry put-fn local-cfg]
+  (let [ts (:timestamp entry)
+        cfg (subscribe [:cfg])
+        q-date-string (.format (moment ts) "YYYY-MM-DD")
+        tab-group (:tab-group local-cfg)
+        add-search (up/add-search q-date-string tab-group put-fn)]
+    (fn journal-entry-render [entry put-fn local-cfg]
+      (let [locale (:locale @cfg :en)
+            formatted-time (h/localize-datetime (moment ts) locale)]
+        [:div.entry
+         [:div.header-1]
+         [:div.header
+          [:div
+           [:a [:time {:on-click add-search} formatted-time]]]]
+         [d/entry-editor ts put-fn]
+         [d/entry-editor ts put-fn]
+         [:div.footer
+          ;[pomo/pomodoro-header entry false put-fn]
+          [hashtags-mentions-list ts tab-group put-fn]
+          [:div.word-count (u/count-words-formatted entry)]]]))))

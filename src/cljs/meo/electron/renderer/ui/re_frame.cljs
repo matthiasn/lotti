@@ -17,7 +17,8 @@
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
+            [meo.electron.renderer.ui.entry.briefing :as b]))
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
@@ -90,7 +91,7 @@
            [:div.cal
             [cal/calendar-view put-fn]])
          (when @planning-mode
-           [g/briefing-column-view :briefing put-fn])
+           [b/briefing-column-view :briefing put-fn])
          [:div {:class (if @single-column "single" "left")}
           [g/tabs-view :left put-fn]]
          (when-not @single-column

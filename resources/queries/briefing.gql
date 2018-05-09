@@ -13,6 +13,7 @@
         }
       }
       text
+      md
       task {
         estimate_m
         points
@@ -20,6 +21,13 @@
         done
         priority
       }
+    }
+    comments {
+      timestamp
+      md
+      latitude
+      longitude
+      completed_time
     }
   }
 

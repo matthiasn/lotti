@@ -54,7 +54,7 @@
   (when-let [locale (get locales locale)]
     (.formatDate locale (.toDate (moment. s)) (clj->js {:skeleton "yMMMEdHm"}))))
 
-(defn new-entry-fn
+(defn new-entry
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.
    Caveat: the timezone detection currently only works in Chrome. TODO: check

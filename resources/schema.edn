@@ -19,12 +19,15 @@
 
   :Entry
   {:description "A task entry in meo."
-   :fields      {:timestamp {:type (non-null ID)}
-                 :md        {:type String}
-                 :text      {:type String}
-                 :story     {:type :Story}
-                 :habit     {:type :Habit}
-                 :task      {:type :Task}}}
+   :fields      {:timestamp      {:type (non-null ID)}
+                 :md             {:type String}
+                 :text           {:type String}
+                 :story          {:type :Story}
+                 :habit          {:type :Habit}
+                 :latitude       {:type Float}
+                 :longitude      {:type Float}
+                 :completed_time {:type Int}
+                 :task           {:type :Task}}}
 
   :Saga
   {:description "A saga in meo."
@@ -42,7 +45,8 @@
   {:description "A briefing (plan for a specific day) in meo."
    :fields      {:timestamp {:type (non-null ID)}
                  :day       {:type String}
-                 :linked    {:type (list :Entry)}}}
+                 :linked    {:type (list :Entry)}
+                 :comments  {:type (list :Entry)}}}
 
   :QuestionnaireItem
   {:description "An aggregration for a filled out questionnaire."

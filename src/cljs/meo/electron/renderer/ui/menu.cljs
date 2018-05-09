@@ -44,20 +44,20 @@
 
 (defn new-import-view [put-fn]
   (let [local (r/atom {:show false})]
-    (def ^:export new-entry (h/new-entry-fn put-fn {} nil))
-    (def ^:export new-story (h/new-entry-fn put-fn {:entry-type :story} nil))
-    (def ^:export new-saga (h/new-entry-fn put-fn {:entry-type :saga} nil))
+    (def ^:export new-entry (h/new-entry put-fn {} nil))
+    (def ^:export new-story (h/new-entry put-fn {:entry-type :story} nil))
+    (def ^:export new-saga (h/new-entry put-fn {:entry-type :saga} nil))
     (def ^:export planning #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}]))
     (fn [put-fn]
       (when (:show @local)
         [:div.new-import
-         [:button.menu-new {:on-click (h/new-entry-fn put-fn {} nil)}
+         [:button.menu-new {:on-click (h/new-entry put-fn {} nil)}
           [:span.fa.fa-plus-square] " new"]
          [:button.menu-new
-          {:on-click (h/new-entry-fn put-fn {:entry-type :saga} nil)}
+          {:on-click (h/new-entry put-fn {:entry-type :saga} nil)}
           [:span.fa.fa-plus-square] " new saga"]
          [:button.menu-new
-          {:on-click (h/new-entry-fn put-fn {:entry-type :story} nil)}
+          {:on-click (h/new-entry put-fn {:entry-type :story} nil)}
           [:span.fa.fa-plus-square] " new story"]
          [:button {:on-click #(do (put-fn [:import/photos])
                                   (put-fn [:import/spotify]))}

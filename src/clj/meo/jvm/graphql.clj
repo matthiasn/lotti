@@ -78,13 +78,18 @@
 (defn briefing [context args value]
   (let [g (:graph @st/state)
         d (:day args)
-        ts (first (gq/get-briefing-for-day g {:briefing d}))
-        briefing (get-entry g ts)
-        linked (gq/get-linked-for-ts g (:timestamp briefing))
-        linked (mapv #(entry-w-story g (get-entry g %)) linked)]
-    (when briefing
-      (snake-xf (merge briefing {:day    d
-                                 :linked linked})))))
+        ts (first (gq/get-briefing-for-day g {:briefing d}))]
+    (when-let [briefing (get-entry g ts)]
+      (let [linked (gq/get-linked-for-ts g (:timestamp briefing))
+            linked (mapv #(entry-w-story g (get-entry g %)) linked)
+            comments (:comments (gq/get-comments briefing g ts))
+            comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
+                           comments)
+            briefing (merge briefing {:linked   linked
+                                      :comments comments
+                                      :day      d})]
+        (info briefing)
+        (snake-xf briefing)))))
 
 (defn logged-time [context args value]
   (let [day (:day args)

@@ -129,16 +129,16 @@
                                      {:path  [:cfg :show-comments-for ts]
                                       :value %}])
         show-comments #(show-hide-comments query-id)
-        create-comment (h/new-entry-fn put-fn {:comment-for ts} show-comments)
+        create-comment (h/new-entry put-fn {:comment-for ts} show-comments)
         screenshot #(put-fn [:screenshot/take {:comment-for ts}])
         story (:primary-story entry)
-        create-linked-entry (h/new-entry-fn put-fn {:linked-entries #{ts}
-                                                    :primary-story  story
-                                                    :linked-stories #{story}} nil)
+        create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
+                                                 :primary-story  story
+                                                 :linked-stories #{story}} nil)
         new-pomodoro (fn [_ev]
-                       (let [new-entry-fn (h/new-entry-fn put-fn
-                                                          (p/pomodoro-defaults ts)
-                                                          show-comments)
+                       (let [new-entry-fn (h/new-entry put-fn
+                                                       (p/pomodoro-defaults ts)
+                                                       show-comments)
                              new-entry (new-entry-fn)]
                          (put-fn [:cmd/pomodoro-start new-entry])))
         trash-entry (fn [_]
@@ -176,39 +176,28 @@
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
 
-(defn briefing-actions
-  "Entry-related action buttons. Hidden by default, become visible when mouse
-   hovers over element, stays visible for a little while after mose leaves."
-  [ts put-fn edit-mode? local-cfg]
-  (let [visible (r/atom false)
-        entry (:entry (eu/entry-reaction ts))
-        hide-fn (fn [_ev] (.setTimeout js/window #(reset! visible false) 60000))
-        query-id (:query-id local-cfg)
-        show-hide-comments #(put-fn [:cmd/assoc-in
-                                     {:path  [:cfg :show-comments-for ts]
-                                      :value %}])
-        show-comments #(show-hide-comments query-id)
-        create-comment (h/new-entry-fn put-fn {:comment-for ts} show-comments)
-        story (:primary-story entry)
-        create-linked-entry (h/new-entry-fn put-fn {:linked-entries #{ts}
-                                                    :primary-story  story
-                                                    :starred        true
-                                                    :perm-tags      #{"#task"}
-                                                    :linked-stories #{story}} nil)
+(defn briefing-actions [ts put-fn]
+  (let [create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
+                                                 :starred        true
+                                                 :perm-tags      #{"#task"}}
+                                         nil)
+        create-comment (fn [_ev]
+                         (let [create (h/new-entry put-fn {:comment-for ts} nil)
+                               new-entry (create)]
+                           (info "created comment" new-entry)
+                           (put-fn [:entry/update new-entry])))
         new-pomodoro (fn [_ev]
-                       (let [new-entry-fn (h/new-entry-fn put-fn
-                                                          (p/pomodoro-defaults ts)
-                                                          show-comments)
-                             new-entry (new-entry-fn)]
-                         (put-fn [:cmd/pomodoro-start new-entry])))
-        mouse-enter #(reset! visible true)]
-    (fn entry-actions-render [ts put-fn edit-mode? local-cfg]
-      (let [comment? (:comment-for @entry)]
-        [:div.actions {:on-mouse-enter mouse-enter
-                       :on-mouse-leave hide-fn}
-         [:div.items
-          (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
-          (when-not comment?
-            [:i.fa.fa-comment.toggle {:on-click create-comment}])
-          [:i.fa.fa-plus-square.toggle
-           {:on-click #(create-linked-entry)}]]]))))
+                       (let [create (h/new-entry
+                                      put-fn (p/pomodoro-defaults ts) nil)
+                             new-entry (create)]
+                         (info "new-pomodoro" new-entry)
+                         (put-fn [:entry/update new-entry])
+                         (put-fn [:cmd/schedule-new
+                                  {:message [:cmd/pomodoro-start new-entry]
+                                   :timeout 1000}])))]
+    [:div.actions {}
+     [:div.items
+      [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
+      [:i.fa.fa-comment.toggle {:on-click create-comment}]
+      [:i.fa.fa-plus-square.toggle
+       {:on-click #(create-linked-entry)}]]]))

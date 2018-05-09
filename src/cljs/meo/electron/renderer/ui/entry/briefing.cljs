@@ -13,7 +13,9 @@
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.actions :as a]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.electron.renderer.ui.entry.entry :as e]
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -91,53 +93,76 @@
          ^{:key ts}
          [:option {:value ts} (:saga-name saga)])])))
 
-(defn briefing-view [ts put-fn local-cfg]
+(defn briefing-view [put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
+        briefing (reaction (:briefing (:data (:briefing @gql-res))))
         day-stats (reaction (:logged-time (:data (:logged-by-day @gql-res))))
         cfg (subscribe [:cfg])
-        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
         local (r/atom {:filter                  :open
                        :outstanding-time-filter true
                        :on-hold                 false})]
-    (fn briefing-render [ts put-fn local-cfg]
-      (for [ts (:linked-entries-list entry)]
-        (when ts
-          (put-fn [:entry/find {:timestamp ts}])))
-      (let [excluded (:excluded (:briefing @cfg))
+    (fn briefing-render [put-fn local-cfg]
+      (let [ts (:timestamp @briefing)
+            excluded (:excluded (:briefing @cfg))
             logged-s (->> @day-stats
                           :by-ts
-                          (filter (fn [x]
-                                    (not (contains? excluded
-                                           (-> x :story :linked-saga :timestamp)))))
+                          (filter #(not (contains? excluded
+                                                   (-> %
+                                                       :story
+                                                       :linked-saga
+                                                       :timestamp))))
                           (map :summed)
                           (apply +))
             dur (u/duration-string logged-s)
             n (count (:by-ts @day-stats))
-            time-allocation (-> entry :briefing :time-allocation)]
-        [:div.briefing
-         ; rethink this
-         ; [planned-actual entry]
-         ; [time/time-by-sagas entry day-stats local edit-mode? put-fn]
-         [:div.header
-          [sagas-filter local]
-          [a/briefing-actions ts put-fn @edit-mode local-cfg]]
-         [:div.briefing-details
-          [tasks/started-tasks local local-cfg put-fn]
-          [tasks/open-linked-tasks ts local local-cfg put-fn]
-          [habits/waiting-habits local local-cfg put-fn]]
-         [:div.summary
-          [:div
-           "Tasks: " [:strong (:tasks-cnt @day-stats)] " created | "
-           [:strong (:done-tasks-cnt @day-stats)] " done | "
-           [:strong (:closed-tasks-cnt @day-stats)] " closed | Words: "
-           [:strong (or (:word-count @day-stats) 0)]]
-          [:div
-           (when (seq time-allocation)
-             [:span
-              "Total planned: "
-              [:strong
-               (u/duration-string
-                 (apply + (map second time-allocation)))]])
-           (when (seq dur)
-             [:span
-              " Logged: " [:strong dur] " in " n " entries."])]]]))))
+            {:keys [entry entries-map]} (eu/entry-reaction ts)
+            drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
+        (info (:comments @briefing))
+        (when ts (put-fn [:entry/find {:timestamp ts}]))
+        (doseq [c (:comments @briefing)]
+          (do (info "find c" c)
+              (put-fn [:entry/find {:timestamp (:timestamp c)}])))
+        [:div.entry-with-comments
+         [:div.entry
+          [:div.briefing {:on-drop       drop-fn
+                          :on-drag-over  h/prevent-default
+                          :on-drag-enter h/prevent-default}
+           [:div.header
+            [sagas-filter local]
+            [a/briefing-actions ts put-fn]]
+           [:div.briefing-details
+            [tasks/started-tasks local local-cfg put-fn]
+            [tasks/open-linked-tasks ts local local-cfg put-fn]
+            [habits/waiting-habits local local-cfg put-fn]]
+           [:div.summary
+            [:div
+             "Tasks: " [:strong (:tasks-cnt @day-stats)] " created | "
+             [:strong (:done-tasks-cnt @day-stats)] " done | "
+             [:strong (:closed-tasks-cnt @day-stats)] " closed | Words: "
+             [:strong (or (:word-count @day-stats) 0)]]
+            [:div
+             (when (seq dur)
+               [:span
+                " Logged: " [:strong dur] " in " n " entries."])]]]]
+         [:div.comments
+          (for [comment (mapv :timestamp (:comments @briefing))]
+            ^{:key (str "c" comment)}
+            [e/journal-entry comment put-fn local-cfg])]]))))
+
+(defn briefing-column-view
+  [tab-group put-fn]
+  (let [query-cfg (subscribe [:query-cfg])
+        query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
+        story (reaction (get-in @query-cfg [:queries @query-id :story]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
+        local-cfg (reaction {:query-id    @query-id
+                             :search-text @search-text
+                             :tab-group   tab-group
+                             :story       @story})]
+    (fn briefing-column-view-render [tab-group put-fn]
+      [:div.briefing
+       [cal/rome-component put-fn]
+       [:div.tile-tabs
+        [:div.journal
+         [:div.journal-entries
+          [briefing-view put-fn @local-cfg]]]]])))

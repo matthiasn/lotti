@@ -3,6 +3,7 @@
             [meo.electron.renderer.ui.journal :as j]
             [clojure.string :as s]
             [moment]
+            [taoensso.timbre :refer [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.search :as search]
@@ -15,8 +16,7 @@
   (let [ts (:timestamp q)]
     (.format (moment (js/parseInt ts)) "YY-MM-DD HH:mm")))
 
-(defn tabs-header-view
-  [tab-group put-fn]
+(defn tabs-header-view [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])]
     (fn tabs-header-view2-render
       [tab-group put-fn]
@@ -76,25 +76,3 @@
          [search/search-field-view query-id put-fn])
        (when @query-id
          [j/journal-view @local-cfg put-fn])])))
-
-(defn briefing-column-view
-  [tab-group put-fn]
-  (let [query-cfg (subscribe [:query-cfg])
-        query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
-        story (reaction (get-in @query-cfg [:queries @query-id :story]))
-        gql-res (subscribe [:gql-res])
-        briefing (reaction (:briefing (:data (:briefing @gql-res))))
-        search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
-        local-cfg (reaction {:query-id    @query-id
-                             :search-text @search-text
-                             :tab-group   tab-group
-                             :story       @story})]
-    (fn briefing-column-view-render [tab-group put-fn]
-      [:div.briefing
-       [cal/rome-component put-fn]
-       [:div.tile-tabs
-        [:div.journal
-         [:div.journal-entries
-          [:div.entry-with-comments
-           [:div.entry
-            [b/briefing-view (:timestamp @briefing) put-fn @local-cfg]]]]]]])))

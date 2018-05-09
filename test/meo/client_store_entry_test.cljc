@@ -49,10 +49,10 @@
   "Test that local entry is properly attached to state."
   (with-redefs [cse/new-entries-ls (atom {})]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload test-entry}))
-          new-state2 (:new-state (cse/update-local-fn
+          new-state2 (:new-state (cse/update-local
                                    {:current-state new-state
                                     :msg-payload entry-update}))]
       (testing
@@ -71,7 +71,7 @@
   "Test that local entry is properly attached to state."
   (with-redefs [cse/new-entries-ls (atom {})]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload test-entry}))
           new-state2 (:new-state (cse/geo-enrich-fn
@@ -93,10 +93,10 @@
   "Test that local entry is properly removed from state after delete message."
   (with-redefs [cse/new-entries-ls (atom {})]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload test-entry}))
-          new-state2 (:new-state (cse/remove-local-fn
+          new-state2 (:new-state (cse/remove-local
                                    {:current-state new-state
                                     :msg-payload entry-update}))]
       (testing
@@ -114,10 +114,10 @@
   "New entry removed after backend confirms save."
   (with-redefs [cse/new-entries-ls (atom {})]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload test-entry}))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state new-state
                                    :msg-payload entry-update}))
           new-state2 (:new-state (cse/entry-saved-fn
@@ -148,10 +148,10 @@
       (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
             current-state (assoc-in current-state [:cfg :mute] false)
             current-state (assoc-in current-state [:cfg :ticking-clock] true)
-            new-state (:new-state (cse/update-local-fn
+            new-state (:new-state (cse/update-local
                                     {:current-state current-state
                                      :msg-payload test-entry}))
-            new-state1 (:new-state (cse/pomodoro-start-fn
+            new-state1 (:new-state (cse/pomodoro-start
                                      {:current-state new-state
                                       :msg-payload test-entry}))
             new-state2 (:new-state (cse/pomodoro-inc-fn
@@ -189,16 +189,16 @@
   (with-redefs [cse/new-entries-ls (atom {})
                 cse/play-audio (fn [_id])]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local-fn
+          new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload test-entry}))
-          new-state1 (:new-state (cse/pomodoro-start-fn
+          new-state1 (:new-state (cse/pomodoro-start
                                    {:current-state new-state
                                     :msg-payload test-entry}))
           new-state2 (:new-state (cse/pomodoro-inc-fn
                                    {:current-state new-state1
                                     :msg-payload pomodoro-inc-msg}))
-          new-state3 (:new-state (cse/pomodoro-start-fn
+          new-state3 (:new-state (cse/pomodoro-start
                                    {:current-state new-state2
                                     :msg-payload test-entry}))]
       (testing

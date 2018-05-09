@@ -90,7 +90,6 @@
 (def timestamp-required-spec (s/keys :req-un [:meo.entry/timestamp]))
 
 ;; the following message types expect a properly formed entry
-(s/def :entry/new entry-spec)
 (s/def :entry/update-local entry-spec)
 (s/def :entry/update entry-spec)
 (s/def :entry/briefing entry-spec)

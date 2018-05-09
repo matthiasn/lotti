@@ -80,7 +80,8 @@
        [:cmd/route {:from #{:renderer/router}
                     :to   :renderer/store}]
 
-       [:cmd/route {:from #{:renderer/screenshot}
+       [:cmd/route {:from #{:renderer/screenshot
+                            :renderer/ui-cmp}
                     :to   :renderer/scheduler}]
 
        [:cmd/route {:from :renderer/scheduler
