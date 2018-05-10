@@ -201,32 +201,14 @@
         new-query (update-in merged [:n] + 10)]
     {:send-to-self [:search/update new-query]}))
 
-(defn search-refresh
-  "Refreshes client-side state by sending all queries, plus
-   the stats and tags."
-  [{:keys [current-state msg-meta put-fn]}]
+(defn search-refresh [{:keys [current-state msg-meta]}]
   (let [new-state (-> current-state
                       (assoc-in [:query-cfg :last-update] {:last-update (st/now)
                                                            :meta        msg-meta})
-                      (assoc-in [:query-cfg :last-update-meta] msg-meta))
-        prev-hash (fn [q]
-                    (merge q {:prev-hash (get-in current-state
-                                                 [:gql-res (:id q) :res-hash])}))]
+                      (assoc-in [:query-cfg :last-update-meta] msg-meta))]
     (info "search-refresh")
-    (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (put-fn [:gql/query (prev-hash {:file "logged-by-day.gql"
-                                      :id   :logged-by-day
-                                      :args [ymd]})])
-      (put-fn [:gql/query (prev-hash {:file "briefing.gql"
-                                      :id   :briefing
-                                      :args [ymd]})]))
-    (doseq [[_ query] (:gql-queries current-state)]
-      (put-fn [:gql/query (prev-hash query)]))
     {:new-state new-state
-     :emit-msg  [[:state/search (u/search-from-cfg current-state)]
-                 [:gql/query (prev-hash {:file "count-stats.gql"
-                                         :id   :count-stats})]
-                 [:gql/query (prev-hash {:file "options.gql" :id :options})]]}))
+     :emit-msg  [[:state/search (u/search-from-cfg current-state)]]}))
 
 (defn search-res [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [type data]} msg-payload
@@ -235,13 +217,6 @@
     (doseq [ts data]
       (put-fn [:entry/find {:timestamp ts}]))
     {:new-state new-state}))
-
-(defn gql-query [{:keys [current-state msg-payload]}]
-  (let [{:keys [id register]} msg-payload
-        new-state (assoc-in current-state [:gql-queries id] msg-payload)]
-    (when register
-      (info "registering" (:gql-queries new-state))
-      {:new-state new-state})))
 
 (def search-handler-map
   {:search/update      update-query-fn
@@ -252,7 +227,6 @@
    :search/close-all   close-all
    :search/refresh     search-refresh
    :search/set-dragged set-dragged
-   :gql/query          gql-query
    :search/move-tab    move-tab
    :search/res         search-res
    :show/more          show-more

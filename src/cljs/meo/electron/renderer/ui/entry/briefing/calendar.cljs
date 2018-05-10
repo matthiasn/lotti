@@ -35,8 +35,7 @@
                                        :args [ymd]}])
                   (put-fn [:gql/query {:file "briefing.gql"
                                        :id   :briefing
-                                       :args [ymd]}])
-                  (put-fn [:search/refresh]))
+                                       :args [ymd]}]))
         opts (clj->js {:time             false
                        :initialValue     (:cal-day @cfg)
                        :monthsInCalendar 2})]

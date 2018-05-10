@@ -88,7 +88,6 @@
             briefing (merge briefing {:linked   linked
                                       :comments comments
                                       :day      d})]
-        (info briefing)
         (snake-xf briefing)))))
 
 (defn logged-time [context args value]
@@ -115,7 +114,6 @@
     (snake-xf stats)))
 
 (defn git-stats [context args value]
-  (info "git-stats" args)
   (let [{:keys [days]} args
         days (reverse (range days))
         now (stc/now)
@@ -126,7 +124,6 @@
     (snake-xf stats)))
 
 (defn questionnaires [context args value]
-  (info "git-stats" args)
   (let [{:keys [days tag k]} args
         newer-than (- (stc/now) (* d (or days 90)))
         stats (q/questionnaires-by-tag @st/state tag (keyword k))
@@ -145,7 +142,6 @@
         xf (fn [[k v]] (merge v {:date-string k}))
         sorted (assoc-in stats [:by-day] (mapv xf (sort-filter :by-day)))
         sorted (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))]
-    (info :stats sorted)
     (snake-xf sorted)))
 
 (defn started-tasks [context args value]
@@ -181,21 +177,35 @@
         habits (mapv #(update-in % [:story] snake-xf) habits)]
     habits))
 
-(defn run-query [{:keys [current-state msg-payload]}]
+(defn run-query [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)
-        {:keys [file args q id prev-hash]} msg-payload
+        {:keys [file args q id res-hash]} msg-payload
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))
-        res-hash (hash res)
-        new-data (not= prev-hash res-hash)
-        res (merge msg-payload simplified {:res-hash res-hash})]
+        new-hash (hash res)
+        new-data (not= new-hash res-hash)
+        res (merge msg-payload simplified {:res-hash res-hash :ts (stc/now)})
+        new-state (assoc-in current-state [:queries id] (with-meta res msg-meta))]
     (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
           (if new-data "new data" "same hash, omitting response")
           (str "- '" (or file query-string) "'"))
-    (when new-data {:emit-msg [:gql/res res]})))
+    (when new-data (put-fn [:gql/res res]))
+    {:new-state new-state}))
+
+(defn run-registered [{:keys [current-state msg-meta put-fn]}]
+  (let [queries (:queries current-state)]
+    (info "Scheduling execution of registered GraphQL queries")
+    (doseq [[id q] queries]
+      (let [query (dissoc q :data)
+            msg (with-meta [:gql/query query] msg-meta)]
+        (put-fn [:cmd/schedule-new {:timeout 10000
+                                    :message msg
+                                    :id      id
+                                    :initial true}]))))
+  {})
 
 (defn state-fn [_put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
@@ -240,4 +250,5 @@
    :state-fn    state-fn
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
-   :handler-map {:gql/query run-query}})
+   :handler-map {:gql/query          run-query
+                 :gql/run-registered run-registered}})

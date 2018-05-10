@@ -36,9 +36,19 @@
                      :cfg              cfg})]
     {:state state}))
 
-(defn initial-queries [{:keys [put-fn] :as m}]
+(defn initial-queries [{:keys [current-state put-fn] :as m}]
   (info "performing initial queries")
   (put-fn [:cfg/refresh])
+  (put-fn [:gql/query {:file "options.gql" :id :options}])
+  (put-fn [:gql/query {:file "count-stats.gql"
+                       :id   :count-stats}])
+  (when-let [ymd (get-in current-state [:cfg :cal-day])]
+    (put-fn [:gql/query {:file "logged-by-day.gql"
+                         :id   :logged-by-day
+                         :args [ymd]}])
+    (put-fn [:gql/query {:file "briefing.gql"
+                         :id   :briefing
+                         :args [ymd]}]))
   (s/search-refresh m))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
@@ -78,19 +88,19 @@
                  :out-chan [:buffer 100]}
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
-                       {:state/new         new-state-fn
-                        :cfg/save          c/save-cfg
-                        :gql/res           gql-res
-                        :startup/progress  progress
-                        :startup/query     initial-queries
-                        :ws/ping           ping
-                        :backend-cfg/new   save-backend-cfg
-                        :nav/to            nav-handler
-                        :blink/busy        blink-busy
-                        :cfg/show-qr       c/show-qr-code
-                        :cal/to-day        c/cal-to-day
-                        :cmd/toggle        c/toggle-set-fn
-                        :cmd/set-opt       c/set-conj-fn
-                        :cmd/set-dragged   c/set-currently-dragged
-                        :cmd/toggle-key    c/toggle-key-fn
-                        :cmd/assoc-in      c/assoc-in-state})})
+                       {:state/new        new-state-fn
+                        :cfg/save         c/save-cfg
+                        :gql/res          gql-res
+                        :startup/progress progress
+                        :startup/query    initial-queries
+                        :ws/ping          ping
+                        :backend-cfg/new  save-backend-cfg
+                        :nav/to           nav-handler
+                        :blink/busy       blink-busy
+                        :cfg/show-qr      c/show-qr-code
+                        :cal/to-day       c/cal-to-day
+                        :cmd/toggle       c/toggle-set-fn
+                        :cmd/set-opt      c/set-conj-fn
+                        :cmd/set-dragged  c/set-currently-dragged
+                        :cmd/toggle-key   c/toggle-key-fn
+                        :cmd/assoc-in     c/assoc-in-state})})

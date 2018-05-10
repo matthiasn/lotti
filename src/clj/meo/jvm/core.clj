@@ -62,16 +62,19 @@
 
      [:cmd/route {:from :backend/store
                   :to   #{:backend/ws
+                          :backend/graphql
                           :backend/ft}}]
 
      [:cmd/route {:from :backend/scheduler
                   :to   #{:backend/store
                           :backend/backup
                           :backend/imports
+                          :backend/graphql
                           :backend/upload
                           :backend/ws}}]
 
      [:cmd/route {:from #{:backend/store
+                          :backend/graphql
                           :backend/upload
                           :backend/backup
                           :backend/imports}

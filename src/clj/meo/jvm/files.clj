@@ -39,6 +39,7 @@
                        filename)
         serialized (str (pr-str entry) "\n")]
     (spit full-path serialized :append true)
+    #_
     (put-fn [:file/encrypt {:filename filename
                             :node-id  node-id}])))
 
@@ -112,7 +113,8 @@
                 (dissoc entry :last-saved :vclock))
       (append-daily-log cfg entry put-fn)
       (when-not (:silent msg-meta)
-        (put-fn (with-meta [:entry/saved entry] broadcast-meta)))
+        (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+        (put-fn [:gql/run-registered]))
       {:new-state    new-state
        :send-to-self (when-let [comment-for (:comment-for msg-payload)]
                        (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
