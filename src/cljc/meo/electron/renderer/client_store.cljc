@@ -25,25 +25,21 @@
 
 (defn initial-queries [{:keys [current-state put-fn] :as m}]
   (info "performing initial queries")
-  (put-fn [:cfg/refresh])
-  (put-fn [:gql/query {:file "options.gql"
-                       :id   :options
-                       :prio 10}])
-  (put-fn [:gql/query {:file "count-stats.gql"
-                       :id   :count-stats
-                       :prio 20}])
-  (s/gql-query put-fn)
-  (when-let [ymd (get-in current-state [:cfg :cal-day])]
-    (put-fn [:gql/query {:file "logged-by-day.gql"
-                         :id   :logged-by-day
-                         :prio 3
-                         :args [ymd]}])
-    (put-fn [:gql/query {:file "briefing.gql"
-                         :id   :briefing
-                         :prio 2
-                         :args [ymd]}]))
-  (put-fn [:startup/progress?])
-  {})
+  (let [run-query (fn [file id prio args]
+                    (put-fn [:gql/query {:file     file
+                                         :id       id
+                                         :res-hash nil
+                                         :prio     prio
+                                         :args     args}]))]
+    (put-fn [:cfg/refresh])
+    (run-query "options.gql" :options 10 nil)
+    (run-query "count-stats.gql" :count-stats 20 nil)
+    (when-let [ymd (get-in current-state [:cfg :cal-day])]
+      (run-query "logged-by-day.gql" :logged-by-day 3 [ymd])
+      (run-query "briefing.gql" :briefing 20 [ymd]))
+    (s/gql-query put-fn)
+    (put-fn [:startup/progress?])
+    {}))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:current-page] msg-payload)]
