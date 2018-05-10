@@ -166,6 +166,12 @@
    :args        {:query {:type String}}
    :resolve     :query/match-count}
 
+  :tab_search
+  {:type        (list :Entry)
+   :description "List of entries for given query."
+   :args        {:query {:type String}}
+   :resolve     :query/tab-search}
+
   :hashtags
   {:type        (list String)
    :description "List of all hashtags."

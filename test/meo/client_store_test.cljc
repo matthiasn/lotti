@@ -84,6 +84,7 @@
    :timestamp  1465059173965
    :md         ""})
 
+#_
 (deftest new-state-test
   (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
         new-state (:new-state (store/new-state-fn

@@ -493,27 +493,6 @@
     (let [res (get-filtered current-state query)]
       [query-id res])))
 
-(defn query-fn
-  "Runs all queries in request, sends back to client, with all entry maps
-   for the individual queries merged into one."
-  [{:keys [current-state msg-payload put-fn]}]
+(defn query-fn [{:keys [current-state put-fn]}]
   (put-fn [:startup/progress (:startup-progress current-state)])
-  (when (= 1 (:startup-progress current-state))
-    (let [queries (:queries msg-payload)
-          start-ts (System/nanoTime)
-          res-mapper (run-query current-state)
-          res (mapv res-mapper queries)
-          res (reduce (fn [acc [k v]]
-                        (-> acc
-                            (update-in [:entries-map] merge (:entries-map v))
-                            (assoc-in [:entries k] (:entries v))))
-                      {:entries-map {} :entries {}}
-                      res)
-          ms (/ (- (System/nanoTime) start-ts) 1000000)
-          story-predict (select-keys (:story-predictions current-state)
-                                     (keys (:entries-map res)))
-          res2 {:duration-ms   (pp/cl-format nil "~,2f ms" ms)
-                :story-predict story-predict}]
-      (debug queries)
-      (info "queries took" (:duration-ms res2))
-      {:emit-msg [:state/new (merge res res2)]})))
+  {})

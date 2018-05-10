@@ -8,19 +8,6 @@
             [meo.electron.renderer.client-store-cfg :as c]
             [meo.common.utils.misc :as u]))
 
-(defn new-state-fn [{:keys [current-state msg-payload msg-meta]}]
-  (let [store-meta (:renderer/store-cmp msg-meta)
-        {:keys [entries entries-map story-predict]} msg-payload
-        new-state (-> current-state
-                      (assoc-in [:results] entries)
-                      (update-in [:entries-map] merge entries-map)
-                      (update-in [:story-predict] merge story-predict)
-                      (assoc-in [:timing] {:query (:duration-ms msg-payload)
-                                           :rtt   (- (:in-ts store-meta)
-                                                     (:out-ts store-meta))
-                                           :count (count entries-map)}))]
-    {:new-state new-state}))
-
 (defn initial-state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
         state (atom {:entries          []
@@ -42,6 +29,7 @@
   (put-fn [:gql/query {:file "options.gql" :id :options}])
   (put-fn [:gql/query {:file "count-stats.gql"
                        :id   :count-stats}])
+  (s/gql-query put-fn)
   (when-let [ymd (get-in current-state [:cfg :cal-day])]
     (put-fn [:gql/query {:file "logged-by-day.gql"
                          :id   :logged-by-day
@@ -51,7 +39,8 @@
                          :id   :briefing
                          :prio 1
                          :args [ymd]}]))
-  (s/search-refresh m))
+  (put-fn [:startup/progress?])
+  {})
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:current-page] msg-payload)]
@@ -90,8 +79,7 @@
                  :out-chan [:buffer 100]}
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
-                       {:state/new        new-state-fn
-                        :cfg/save         c/save-cfg
+                       {:cfg/save         c/save-cfg
                         :gql/res          gql-res
                         :startup/progress progress
                         :startup/query    initial-queries

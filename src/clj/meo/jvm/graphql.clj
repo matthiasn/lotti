@@ -104,6 +104,13 @@
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
 
+(defn tab-search [context args value]
+  (let [{:keys [query n]} args
+        parsed (p/parse-search query)
+        res (gq/get-filtered @st/state parsed)
+        entries (:entries-list res)]
+    entries))
+
 (defn custom-field-stats [context args value]
   (let [{:keys [days tag]} args
         days (reverse (range days))
@@ -189,7 +196,7 @@
         simplified (transform-keys ->kebab-case-keyword (simplify res))
         new-hash (hash res)
         new-data (not= new-hash res-hash)
-        res (merge merged simplified {:res-hash res-hash
+        res (merge merged simplified {:res-hash new-hash
                                       :ts       (stc/now)
                                       :prio     (:prio merged 2)})
         new-state (assoc-in current-state [:queries id] (dissoc res :data))]
@@ -222,6 +229,7 @@
                       :query/mention-count      mention-count
                       :query/completed-count    completed-count
                       :query/match-count        match-count
+                      :query/tab-search         tab-search
                       :query/hashtags           hashtags
                       :query/pvt-hashtags       pvt-hashtags
                       :query/logged-time        logged-time

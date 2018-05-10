@@ -203,12 +203,6 @@
 (s/def :meo.search-result/stats search-stats-spec)
 (s/def :meo.search-result/duration-ms string?)
 
-(s/def :state/new
-  (s/keys :req-un [:meo.search-result/entries
-                   :meo.search-result/entries-map
-                   :meo.search-result/duration-ms]))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Spec for :state/publish-current
 (s/def :meo.ws/sente-uid string?)

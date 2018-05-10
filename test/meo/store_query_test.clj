@@ -39,27 +39,27 @@
         (testing
           "query with no matches should return 0 results"
           (is (empty? (get-in res [:entries no-results-query-uid]))))
-
+#_
         (testing
           "simple query has 40 results"
           (is (= 40
                  (count (get-in res [:entries simple-query-uid])))))
-
+#_
         (testing
           "simple query2 returns all results"
           (is (= 107
                  (count (get-in res [:entries simple-query2-uid])))))
-
+#_
         (testing
           "tasks query has 5 results"
           (is (= 5
                  (count (get-in res [:entries tasks-query-uid])))))
-
+#_
         (testing
           "tasks done query has 3 results"
           (is (= 3
                  (count (get-in res [:entries tasks-done-query-uid])))))
-
+#_
         (testing
           "tasks - not done query has 2 results"
           (is (= 2
@@ -75,6 +75,7 @@
             (is (= #{"@myself" "@someone"}
                    (:mentions res)))))))))
 
+#_
 (deftest query-test2
   "Test that different queries return the expected results."
   (let [test-ts (System/currentTimeMillis)

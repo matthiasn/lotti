@@ -18,7 +18,7 @@
 
 (defn tabs-header-view [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])]
-    (fn tabs-header-view2-render
+    (fn tabs-header-view-render
       [tab-group put-fn]
       (let [query-config @query-cfg
             queries (-> query-config :tab-groups tab-group :all)

@@ -35,3 +35,12 @@
         queries (filter identity (mapv qfn items))]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
+
+(defn tabs-query [queries]
+  (let [qfn (fn [[k q]]
+              {:query/data  [:tab_search {:query q}
+                             [:timestamp :text]]
+               :query/alias k})
+        queries (mapv qfn queries)]
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))

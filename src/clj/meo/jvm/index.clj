@@ -30,6 +30,6 @@
    :port          port
    :opts          {:in-chan  [:buffer 100]
                    :out-chan [:buffer 100]}
-   :relay-types   #{:entry/saved :entry/found :state/new :backend-cfg/new
+   :relay-types   #{:entry/saved :entry/found :backend-cfg/new
                     :cmd/toggle-key :search/refresh :cfg/show-qr :ws/ping
                     :startup/progress :file/encrypt :search/res :gql/res}})

@@ -138,20 +138,20 @@
    :opts        {:msgs-on-firehose true
                  :in-chan          [:buffer 100]
                  :out-chan         [:buffer 100]}
-   :handler-map {:entry/import     f/entry-import-fn
-                 :entry/find       gq/find-entry
-                 :entry/unlink     ga/unlink
-                 :entry/update     f/geo-entry-persist-fn
-                 :entry/sync       f/sync-fn
-                 :startup/read     read-entries
-                 :sync/entry       f/sync-receive
-                 :sync/done        sync-done
-                 :sync/initiate    sync-send
-                 :sync/next        sync-send
-                 :export/geojson   e/export-geojson
-                 :tf/learn-stories tf/learn-stories
-                 :entry/trash      f/trash-entry-fn
-                 :state/search     gq/query-fn
-                 :search/geo-photo geo/photos-within-bounds
-                 :cfg/refresh      refresh-cfg
-                 :backend-cfg/save fu/write-cfg}})
+   :handler-map {:entry/import      f/entry-import-fn
+                 :entry/find        gq/find-entry
+                 :entry/unlink      ga/unlink
+                 :entry/update      f/geo-entry-persist-fn
+                 :entry/sync        f/sync-fn
+                 :startup/read      read-entries
+                 :sync/entry        f/sync-receive
+                 :sync/done         sync-done
+                 :sync/initiate     sync-send
+                 :sync/next         sync-send
+                 :export/geojson    e/export-geojson
+                 :tf/learn-stories  tf/learn-stories
+                 :entry/trash       f/trash-entry-fn
+                 :startup/progress? gq/query-fn
+                 :search/geo-photo  geo/photos-within-bounds
+                 :cfg/refresh       refresh-cfg
+                 :backend-cfg/save  fu/write-cfg}})

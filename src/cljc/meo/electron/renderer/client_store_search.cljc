@@ -20,10 +20,30 @@
    :cljs (defonce query-cfg (sa/local-storage
                               (atom initial-query-cfg) "meo_query_cfg")))
 
+(defn gql-query [put-fn]
+  (let [query-cfg @query-cfg
+        query-for (fn [k]
+                    (let [a (get-in query-cfg [:tab-groups k :active])
+                          search-text (get-in query-cfg [:queries a :search-text])]
+                      (when (and a search-text)
+                        [k search-text])))
+        queries (filter identity (map query-for [:left :right]))
+        gql-query (when (seq queries) (gql/tabs-query queries))]
+    (when gql-query
+      (info gql-query)
+      (put-fn [:gql/query {:q        gql-query
+                           :id       :tabs-query
+                           :res-hash nil
+                           :prio     1}]))))
+
+(defn update-query-cfg [state put-fn]
+  (reset! query-cfg (:query-cfg state))
+  (gql-query put-fn))
+
 (defn update-query-fn
   "Update query in client state, with resetting the active entry in the linked
    entries view."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [query-id (or (:query-id msg-payload) (keyword (str (st/make-uuid))))
         query-path [:query-cfg :queries query-id]
         query-msg (merge msg-payload
@@ -32,8 +52,10 @@
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))
+      (gql-query put-fn)
       {:new-state new-state
-       :emit-msg  [:state/search (u/search-from-cfg new-state)]})))
+       ;:emit-msg  [:state/search (u/search-from-cfg new-state)]
+       })))
 
 ; TODO: linked filter belongs in query-cfg
 (defn set-linked-filter
@@ -45,7 +67,7 @@
 
 (defn set-active-query
   "Sets active query for specified tab group."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [query-id tab-group]} msg-payload
         path [:query-cfg :tab-groups tab-group :active]
         new-state (-> current-state
@@ -54,7 +76,7 @@
                                  #(conj (take 20 %1) %2)
                                  query-id))]
     (when (-> current-state :query-cfg :queries query-id)
-      (reset! query-cfg (:query-cfg new-state))
+      (update-query-cfg new-state put-fn)
       {:new-state new-state})))
 
 (defn find-existing
@@ -69,7 +91,7 @@
 (defn add-query
   "Adds query inside tab group specified in msg if none exists already with the
    same search-text. Otherwise opens the existing one."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [tab-group query]} msg-payload
         query-id (keyword (str (st/make-uuid)))
         active-path [:query-cfg :tab-groups tab-group :active]
@@ -77,7 +99,7 @@
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
       (let [query-id (:query-id existing)
             new-state (assoc-in current-state active-path query-id)]
-        (reset! query-cfg (:query-cfg new-state))
+        (update-query-cfg new-state put-fn)
         {:new-state new-state})
       (let [new-query (merge {:query-id query-id} (p/parse-search "") query)
             new-state (-> current-state
@@ -87,13 +109,13 @@
                           (update-in [:query-cfg :tab-groups tab-group :history]
                                      #(conj (take 20 %1) %2)
                                      query-id))]
-        (reset! query-cfg (:query-cfg new-state))
+        (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
 
 (defn update-query
   "Adds query inside tab group specified in msg if none exists already with the
    same search-text. Otherwise opens the existing one."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [tab-group query]} msg-payload
         query-id (keyword (str (st/make-uuid)))
         active-path [:query-cfg :tab-groups tab-group :active]
@@ -101,7 +123,7 @@
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
       (let [query-id (:query-id existing)
             new-state (assoc-in current-state active-path query-id)]
-        (reset! query-cfg (:query-cfg new-state))
+        (update-query-cfg new-state put-fn)
         {:new-state new-state})
       (let [new-query (merge {:query-id query-id} (p/parse-search "") query)
             new-state (-> current-state
@@ -111,7 +133,7 @@
                           (update-in [:query-cfg :tab-groups tab-group :history]
                                      #(conj (take 20 %1) %2)
                                      query-id))]
-        (reset! query-cfg (:query-cfg new-state))
+        (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
 
 (defn previously-active
@@ -131,7 +153,7 @@
 
 (defn remove-query
   "Remove query inside tab group specified in msg."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (if msg-payload
     (let [{:keys [query-id tab-group]} msg-payload
           all-path [:query-cfg :tab-groups tab-group :all]
@@ -141,7 +163,7 @@
                         (previously-active query-id tab-group)
                         (update-in query-path dissoc query-id)
                         (update-in [:results] dissoc query-id))]
-      (reset! query-cfg (:query-cfg new-state))
+      (update-query-cfg new-state put-fn)
       {:new-state new-state})
     {}))
 
@@ -158,7 +180,7 @@
 
 (defn close-all
   "Remove query inside tab group specified in msg."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [tab-group]} msg-payload
         all-path [:query-cfg :tab-groups tab-group :all]
         queries-in-grp (get-in current-state all-path)
@@ -167,7 +189,7 @@
                       (assoc-in all-path #{})
                       (assoc-in [:query-cfg :tab-groups tab-group :active] nil)
                       (update-in query-path #(apply dissoc % queries-in-grp)))]
-    (reset! query-cfg (:query-cfg new-state))
+    (update-query-cfg new-state put-fn)
     {:new-state new-state}))
 
 (defn set-dragged
@@ -179,7 +201,7 @@
 
 (defn move-tab
   "Moves query tab from one tab-group to another."
-  [{:keys [current-state msg-payload]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [dragged (:dragged msg-payload)
         q-id (:query-id dragged)
         from (:tab-group dragged)
@@ -189,7 +211,7 @@
                       (update-in [:query-cfg :tab-groups to :all] conj q-id)
                       (update-in [:query-cfg :tab-groups from :all] #(disj (set %) q-id))
                       (previously-active q-id from))]
-    (reset! query-cfg (:query-cfg new-state))
+    (update-query-cfg new-state put-fn)
     {:new-state new-state}))
 
 (defn show-more
@@ -200,15 +222,6 @@
         merged (merge (get-in current-state query-path) msg-payload)
         new-query (update-in merged [:n] + 10)]
     {:send-to-self [:search/update new-query]}))
-
-(defn search-refresh [{:keys [current-state msg-meta]}]
-  (let [new-state (-> current-state
-                      (assoc-in [:query-cfg :last-update] {:last-update (st/now)
-                                                           :meta        msg-meta})
-                      (assoc-in [:query-cfg :last-update-meta] msg-meta))]
-    (info "search-refresh")
-    {:new-state new-state
-     :emit-msg  [[:state/search (u/search-from-cfg current-state)]]}))
 
 (defn search-res [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [type data]} msg-payload
@@ -225,7 +238,6 @@
    :search/remove      remove-query
    :search/remove-all  remove-all
    :search/close-all   close-all
-   :search/refresh     search-refresh
    :search/set-dragged set-dragged
    :search/move-tab    move-tab
    :search/res         search-res

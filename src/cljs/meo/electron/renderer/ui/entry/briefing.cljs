@@ -8,7 +8,7 @@
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]
             [meo.electron.renderer.ui.entry.briefing.time :as time]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info]]
+            [taoensso.timbre :refer-macros [info debug]]
             [moment]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.actions :as a]
@@ -117,11 +117,10 @@
             n (count (:by-ts @day-stats))
             {:keys [entry entries-map]} (eu/entry-reaction ts)
             drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
-        (info (:comments @briefing))
+        (debug (:comments @briefing))
         (when ts (put-fn [:entry/find {:timestamp ts}]))
         (doseq [c (:comments @briefing)]
-          (do (info "find c" c)
-              (put-fn [:entry/find {:timestamp (:timestamp c)}])))
+          (put-fn [:entry/find {:timestamp (:timestamp c)}]))
         [:div.entry-with-comments
          [:div.entry
           [:div.briefing {:on-drop       drop-fn

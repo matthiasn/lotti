@@ -29,9 +29,9 @@
                          :import/photos :import/spotify :import/flight
                          :stats/pomo-day-get :import/screenshot :backend-cfg/save
                          :photos/gen-cache :export/geojson :search/geo-photo
-                         :import/movie :entry/unlink
+                         :import/movie :entry/unlink :startup/progress?
                          :import/listen :spotify/play
-                         :spotify/pause :state/search :cfg/refresh
+                         :spotify/pause :cfg/refresh
                          :sync/start-server :sync/stop-server
                          :tf/learn-stories :gql/query}}))
 
