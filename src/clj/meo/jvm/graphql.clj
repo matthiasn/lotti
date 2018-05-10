@@ -187,8 +187,10 @@
         simplified (transform-keys ->kebab-case-keyword (simplify res))
         new-hash (hash res)
         new-data (not= new-hash res-hash)
-        res (merge msg-payload simplified {:res-hash res-hash :ts (stc/now)})
-        new-state (assoc-in current-state [:queries id] (with-meta res msg-meta))]
+        res (merge msg-payload simplified {:res-hash res-hash
+                                           :ts       (stc/now)
+                                           :prio     (:prio msg-payload 2)})
+        new-state (assoc-in current-state [:queries id] (dissoc res :data))]
     (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
           (if new-data "new data" "same hash, omitting response")
           (str "- '" (or file query-string) "'"))
@@ -198,13 +200,13 @@
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]
   (let [queries (:queries current-state)]
     (info "Scheduling execution of registered GraphQL queries")
-    (doseq [[id q] queries]
-      (let [query (dissoc q :data)
-            msg (with-meta [:gql/query query] msg-meta)]
-        (put-fn [:cmd/schedule-new {:timeout 10000
+    (doseq [[id q] (sort-by #(:prio (second %)) queries)]
+      (let [msg (with-meta [:gql/query q] msg-meta)
+            t (if (= (:prio q) 1) 2000 5000)]
+        (put-fn [:cmd/schedule-new {:timeout t
                                     :message msg
                                     :id      id
-                                    :initial true}]))))
+                                    :initial (= (:prio q) 1)}]))))
   {})
 
 (defn state-fn [_put-fn]

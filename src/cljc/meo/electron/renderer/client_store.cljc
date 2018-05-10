@@ -45,9 +45,11 @@
   (when-let [ymd (get-in current-state [:cfg :cal-day])]
     (put-fn [:gql/query {:file "logged-by-day.gql"
                          :id   :logged-by-day
+                         :prio 1
                          :args [ymd]}])
     (put-fn [:gql/query {:file "briefing.gql"
                          :id   :briefing
+                         :prio 1
                          :args [ymd]}]))
   (s/search-refresh m))
 
