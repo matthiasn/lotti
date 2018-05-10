@@ -32,11 +32,11 @@
                   (put-fn [:cal/to-day {:day ymd}])
                   (put-fn [:gql/query {:file "logged-by-day.gql"
                                        :id   :logged-by-day
-                                       :prio 1
+                                       :prio 3
                                        :args [ymd]}])
                   (put-fn [:gql/query {:file "briefing.gql"
                                        :id   :briefing
-                                       :prio 1
+                                       :prio 2
                                        :args [ymd]}]))
         opts (clj->js {:time             false
                        :initialValue     (:cal-day @cfg)

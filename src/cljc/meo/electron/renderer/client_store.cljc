@@ -26,18 +26,21 @@
 (defn initial-queries [{:keys [current-state put-fn] :as m}]
   (info "performing initial queries")
   (put-fn [:cfg/refresh])
-  (put-fn [:gql/query {:file "options.gql" :id :options}])
+  (put-fn [:gql/query {:file "options.gql"
+                       :id   :options
+                       :prio 10}])
   (put-fn [:gql/query {:file "count-stats.gql"
-                       :id   :count-stats}])
+                       :id   :count-stats
+                       :prio 20}])
   (s/gql-query put-fn)
   (when-let [ymd (get-in current-state [:cfg :cal-day])]
     (put-fn [:gql/query {:file "logged-by-day.gql"
                          :id   :logged-by-day
-                         :prio 1
+                         :prio 3
                          :args [ymd]}])
     (put-fn [:gql/query {:file "briefing.gql"
                          :id   :briefing
-                         :prio 1
+                         :prio 2
                          :args [ymd]}]))
   (put-fn [:startup/progress?])
   {})

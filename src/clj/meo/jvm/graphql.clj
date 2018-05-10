@@ -198,7 +198,7 @@
         new-data (not= new-hash res-hash)
         res (merge merged simplified {:res-hash new-hash
                                       :ts       (stc/now)
-                                      :prio     (:prio merged 2)})
+                                      :prio     (:prio merged 100)})
         new-state (assoc-in current-state [:queries id] (dissoc res :data))]
     (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
           (if new-data "new data" "same hash, omitting response")
@@ -211,11 +211,12 @@
     (info "Scheduling execution of registered GraphQL queries")
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
       (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
-            t (if (= (:prio q) 1) 2000 5000)]
+            high-prio (< (:prio q) 10)
+            t (if high-prio 2000 5000)]
         (put-fn [:cmd/schedule-new {:timeout t
                                     :message msg
                                     :id      id
-                                    :initial (= (:prio q) 1)}]))))
+                                    :initial high-prio}]))))
   {})
 
 (defn state-fn [_put-fn]
