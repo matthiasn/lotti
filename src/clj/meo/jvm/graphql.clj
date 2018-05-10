@@ -177,19 +177,21 @@
         habits (mapv #(update-in % [:story] snake-xf) habits)]
     habits))
 
-(defn run-query [{:keys [current-state msg-payload msg-meta put-fn]}]
+(defn run-query [{:keys [current-state msg-payload put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)
-        {:keys [file args q id res-hash]} msg-payload
+        qid (:id msg-payload)
+        merged (merge (get-in current-state [:queries qid]) msg-payload)
+        {:keys [file args q id res-hash]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
         simplified (transform-keys ->kebab-case-keyword (simplify res))
         new-hash (hash res)
         new-data (not= new-hash res-hash)
-        res (merge msg-payload simplified {:res-hash res-hash
-                                           :ts       (stc/now)
-                                           :prio     (:prio msg-payload 2)})
+        res (merge merged simplified {:res-hash res-hash
+                                      :ts       (stc/now)
+                                      :prio     (:prio merged 2)})
         new-state (assoc-in current-state [:queries id] (dissoc res :data))]
     (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
           (if new-data "new data" "same hash, omitting response")
@@ -201,7 +203,7 @@
   (let [queries (:queries current-state)]
     (info "Scheduling execution of registered GraphQL queries")
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
-      (let [msg (with-meta [:gql/query q] msg-meta)
+      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
             t (if (= (:prio q) 1) 2000 5000)]
         (put-fn [:cmd/schedule-new {:timeout t
                                     :message msg
