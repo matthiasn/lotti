@@ -12,6 +12,23 @@
             [taoensso.timbre :refer-macros [info debug]]
             [matthiasn.systems-toolbox.component :as st]))
 
+(defn gql-query [charts-pos days put-fn]
+  (let [tags (->> (:charts @charts-pos)
+                  (filter #(= :barchart-row (:type %)))
+                  (mapv :tag))]
+    (when-let [query-string (gql/graphql-query (inc days) tags)]
+      (info "dashboard" query-string)
+      (put-fn [:gql/query {:q        query-string
+                           :res-hash nil
+                           :id       :dashboard}])))
+  (let [items (->> (:charts @charts-pos)
+                   (filter #(= :scores-chart (:type %))))]
+    (when-let [query-string (gql/dashboard-questionnaires days items)]
+      (info "dashboard" query-string)
+      (put-fn [:gql/query {:q        query-string
+                           :res-hash nil
+                           :id       :dashboard-questionnaires}]))))
+
 (defn dashboard [days put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])
         questionnaires (subscribe [:questionnaires])
@@ -39,21 +56,7 @@
                     :span     span
                     :days     days}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
-        (let [tags (->> (:charts @charts-pos)
-                        (filter #(= :barchart-row (:type %)))
-                        (mapv :tag))
-              query-string (gql/graphql-query (inc days) tags)]
-          (when query-string
-            (put-fn [:gql/query {:q        query-string
-                                 :register true
-                                 :id       :dashboard}])))
-        (let [items (->> (:charts @charts-pos)
-                         (filter #(= :scores-chart (:type %))))
-              query-string (gql/dashboard-questionnaires days items)]
-          (when query-string
-            (put-fn [:gql/query {:q        query-string
-                                 :register true
-                                 :id       :dashboard-questionnaires}])))
+        (gql-query charts-pos days put-fn)
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}

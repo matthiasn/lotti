@@ -155,8 +155,7 @@
                  (put-fn (with-meta [:entry/import file-info] msg-meta))))
              (catch Exception ex (error (str "Error while importing "
                                              filename) ex)))))
-    {:emit-msg [:cmd/schedule-new
-                {:timeout 3000 :message (with-meta [:search/refresh] msg-meta)}]}))
+    {}))
 
 (defn import-photos
   "Imports photos selected in UI. Expects message payload to be a vector with

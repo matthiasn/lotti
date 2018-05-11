@@ -193,5 +193,4 @@
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)
     {:new-state new-state
-     :emit-msg  [[:ft/remove {:timestamp entry-ts}]
-                 [:search/refresh]]}))
+     :emit-msg  [:ft/remove {:timestamp entry-ts}]}))

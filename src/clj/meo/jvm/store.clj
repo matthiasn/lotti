@@ -98,7 +98,6 @@
     (swap! cmp-state assoc-in [:startup-progress] 1)
     (broadcast [:startup/progress 1])
     (tf/import-predictions cmp-state)
-    (broadcast [:search/refresh])
     (put-fn [:cmd/schedule-new {:timeout (* 60 1000)
                                 :message [:import/git]
                                 :repeat  true

@@ -51,8 +51,8 @@
         new-state (update-in current-state [:new-entries ts] #(merge geo-info %))]
     (if local-entry
       (do (update-local-storage new-state)
-          {:new-state new-state
-           :emit-msg  [:geonames/lookup geo-info]})
+          ;(put-fn [:geonames/lookup geo-info])
+          {:new-state new-state})
       {:emit-msg [:entry/update geo-info]})))
 
 (defn entry-saved-fn
@@ -70,9 +70,7 @@
                     current-state)]
     (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
-    {:new-state    new-state
-     :emit-msg     [:cmd/schedule-new {:timeout 20
-                                       :message [:search/refresh]}]}))
+    {:new-state new-state}))
 
 (defn play-audio
   "Start playing audio element with provided DOM id."
@@ -158,18 +156,13 @@
 
 (defn update-local
   "Update locally stored new entry with changes from edit element."
-  [{:keys [current-state msg-payload put-fn]}]
+  [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
-        {:keys [latitude longitude geoname]} msg-payload
         saved (get-in current-state [:entries-map ts])
         relevant #(select-keys % [:md :questionnaires :custom-fields :task
                                   :habit :completed-time :starred :img-size
                                   :primary-story])
         changed? (not= (relevant saved) (relevant msg-payload))]
-    #_(when (and latitude longitude (not geoname))
-        (put-fn [:geonames/lookup {:timestamp ts
-                                   :latitude  latitude
-                                   :longitude longitude}]))
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])
             entry (u/deep-merge saved new-entry msg-payload)
