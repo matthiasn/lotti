@@ -85,6 +85,9 @@
       .current {
         background-color: lighten($hashtag-blue, 10%);
       }
+      .idx {
+        background-color: lighten($orange, 30%);
+      }
     }
 
     input {
