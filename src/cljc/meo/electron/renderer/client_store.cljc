@@ -32,12 +32,12 @@
                                          :prio     prio
                                          :args     args}]))]
     (put-fn [:cfg/refresh])
-    (run-query "options.gql" :options 10 nil)
-    (run-query "count-stats.gql" :count-stats 20 nil)
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (run-query "logged-by-day.gql" :logged-by-day 3 [ymd])
-      (run-query "briefing.gql" :briefing 20 [ymd]))
+      (run-query "briefing.gql" :briefing 2 [ymd])
+      (run-query "logged-by-day.gql" :logged-by-day 3 [ymd]))
+    (run-query "options.gql" :options 10 nil)
     (s/gql-query put-fn)
+    (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
     {}))
 
