@@ -71,6 +71,10 @@
            {:story (when story
                      (assoc-in story [:linked-saga] saga))})))
 
+(defn entry-w-comments [g entry]
+  (let [comments (mapv #(get-entry g %) (:comments entry))]
+    (assoc-in entry [:comments] comments)))
+
 (defn snake-xf [xs] (transform-keys ->snake_case xs))
 
 (def d (* 24 60 60 1000))
@@ -104,12 +108,31 @@
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
 
+(defn entries-w-logged [g entries]
+  (let [logged-t (fn [comment-ts]
+                   (or
+                     (when-let [c (get-entry g comment-ts)]
+                       (let [path [:custom-fields "#duration" :duration]]
+                         (+ (:completed-time c 0)
+                            (* 60 (get-in c path 0)))))
+                     0))
+        task-total-t (fn [t]
+                       (let [logged (apply + (map logged-t (:comments t)))]
+                         (assoc-in t [:task :completed-s] logged)))]
+    (mapv task-total-t entries)))
+
 (defn tab-search [context args value]
   (let [{:keys [query n]} args
-        parsed (p/parse-search query)
-        res (gq/get-filtered @st/state parsed)
-        entries (:entries-list res)]
-    entries))
+        current-state @st/state
+        g (:graph current-state)
+        parsed (update-in (p/parse-search query) [:n] #(or n %))
+        entries (gq/get-filtered2 current-state parsed)
+        res (mapv #(entry-w-story g %) entries)
+        res (entries-w-logged g res)
+        res (mapv #(entry-w-comments g %) res)
+        res (mapv #(assoc % :linked-cnt (count (:linked-entries-list %))) res)]
+    (info res)
+    (snake-xf res)))
 
 (defn custom-field-stats [context args value]
   (let [{:keys [days tag]} args
@@ -157,19 +180,9 @@
            :opts     #{":started"}
            :n        100}
         current-state @st/state
-        tasks (:entries-list (gq/get-filtered current-state q))
+        tasks (gq/get-filtered2 current-state q)
         g (:graph current-state)
-        logged-t (fn [comment-ts]
-                   (or
-                     (when-let [c (get-entry g comment-ts)]
-                       (let [path [:custom-fields "#duration" :duration]]
-                         (+ (:completed-time c 0)
-                            (* 60 (get-in c path 0)))))
-                     0))
-        task-total-t (fn [t]
-                       (let [logged (apply + (map logged-t (:comments t)))]
-                         (assoc-in t [:task :completed-s] logged)))
-        tasks (mapv task-total-t tasks)
+        tasks (entries-w-logged g tasks)
         tasks (mapv #(entry-w-story g %) tasks)]
     (snake-xf tasks)))
 
@@ -179,7 +192,7 @@
            :n    100}
         current-state @st/state
         g (:graph current-state)
-        habits (filter identity (:entries-list (gq/get-filtered current-state q)))
+        habits (filter identity (gq/get-filtered2 current-state q))
         habits (mapv #(entry-w-story g %) habits)
         habits (mapv #(update-in % [:story] snake-xf) habits)]
     habits))

@@ -475,7 +475,15 @@
                               (filter identity (mapv :timestamp entries))))]
     {:entries      timestamps
      :entries-map  (into {} (filter #(identity (first %)) entry-tuples))
-     :entries-list entries}))
+     :entries-list (mapv comments-linked entries)}))
+
+(defn get-filtered2 [current-state query]
+  (let [n (:n query 20)
+        g (:graph current-state)
+        entries (take n (filter (entries-filter-fn query g)
+                                (extract-sorted-entries current-state query)))
+        comments-linked (comments-linked-for-entry g false)]
+    (mapv comments-linked entries)))
 
 (defn find-entry
   "Find single entry."

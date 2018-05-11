@@ -27,6 +27,9 @@
                  :latitude       {:type Float}
                  :longitude      {:type Float}
                  :completed_time {:type Int}
+                 :linked_cnt     {:type Int}
+                 :linked         {:type (list :Entry)}
+                 :comments       {:type (list :Entry)}
                  :task           {:type :Task}}}
 
   :Saga
@@ -169,7 +172,8 @@
   :tab_search
   {:type        (list :Entry)
    :description "List of entries for given query."
-   :args        {:query {:type String}}
+   :args        {:query {:type String}
+                 :n     {:type Int}}
    :resolve     :query/tab-search}
 
   :hashtags
