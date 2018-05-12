@@ -127,7 +127,7 @@
           [a/entry-actions entry2 put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-name-field entry2 edit-mode? put-fn]
          [es/saga-name-field entry2 edit-mode? put-fn]
-         [d/entry-editor ts put-fn]
+         [d/entry-editor entry2 put-fn]
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
@@ -138,7 +138,7 @@
          [conflict-view entry2 put-fn]
          [c/custom-fields-div @entry put-fn edit-mode?]
          [git-commit entry put-fn]
-         [ws/wavesurfer @entry local-cfg put-fn]
+         [ws/wavesurfer entry2 local-cfg put-fn]
          (when @show-map?
            (if mapbox-token
              [:div.entry-mapbox
@@ -151,7 +151,7 @@
                               :mapbox-token    mapbox-token
                               :put-fn          put-fn}]]
              [l/leaflet-map entry2 @show-map? local-cfg put-fn]))
-         [m/imdb-view @entry put-fn]
+         [m/imdb-view entry put-fn]
          [m/spotify-view entry2 put-fn]
          [c/questionnaire-div @entry put-fn edit-mode?]]))))
 

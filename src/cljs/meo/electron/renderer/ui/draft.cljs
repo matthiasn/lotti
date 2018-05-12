@@ -74,8 +74,9 @@
                :stories     @stories
                :onChange    on-change}])))
 
-(defn draft-text-editor [ts update-cb save-fn start-fn small-img]
-  (let [editor (adapt-react-class "EntryTextEditor")
+(defn draft-text-editor [entry2 update-cb save-fn start-fn small-img]
+  (let [ts (:timestamp entry2)
+        editor (adapt-react-class "EntryTextEditor")
         {:keys [entry unsaved]} (eu/entry-reaction ts)
         md (reaction (:md @entry ""))
         cfg (subscribe [:cfg])
@@ -90,7 +91,7 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn draft-editor-render [ts update-cb save-fn start-fn small-img]
+    (fn draft-editor-render [entry2 update-cb save-fn start-fn small-img]
       (debug :draft-editor-render ts)
       [editor {:md       @md
                :ts       ts
@@ -102,8 +103,9 @@
                :smallImg small-img
                :onChange update-cb}])))
 
-(defn entry-editor [ts put-fn]
-  (let [{:keys [entry unsaved]} (eu/entry-reaction ts)
+(defn entry-editor [entry2 put-fn]
+  (let [ts (:timestamp entry2)
+        {:keys [entry unsaved]} (eu/entry-reaction ts)
         vclock (reaction (:vclock @entry))
         cb-atom (atom {:last-sent 0})
         update-local (fn []
@@ -158,8 +160,8 @@
                                  (< img-size 101)
                                  (:timestamp updated))
                         (put-fn [:entry/update-local updated]))))]
-    (fn [_ts _put-fn]
+    (fn [entry2 _put-fn]
       (debug :entry-editor-render ts)
       ^{:key @vclock}
       [:div {:class (when @unsaved "unsaved")}
-       [draft-text-editor ts change-cb save-fn start-fn small-img]])))
+       [draft-text-editor entry2 change-cb save-fn start-fn small-img]])))

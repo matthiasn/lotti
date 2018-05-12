@@ -39,6 +39,7 @@
                  :md                  {:type String}
                  :text                {:type String}
                  :img_file            {:type String}
+                 :audio_file          {:type String}
                  :story               {:type :Story}
                  :habit               {:type :Habit}
                  :latitude            {:type Float}
@@ -221,11 +222,10 @@
   :photos_by_location
   {:type        (list :Entry)
    :description "List of photo entries within geo bounds."
-   :args        {
-                 :ne_lat     {:type Float}
-                 :ne_lon     {:type Float}
-                 :sw_lat     {:type Float}
-                 :sw_lon     {:type Float}}
+   :args        {:ne_lat {:type Float}
+                 :ne_lon {:type Float}
+                 :sw_lat {:type Float}
+                 :sw_lon {:type Float}}
    :resolve     :query/geo-photos}
 
   :sagas

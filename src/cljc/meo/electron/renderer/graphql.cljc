@@ -42,7 +42,7 @@
               {:query/data  [:tab_search {:query q}
                              [:timestamp :text :md :latitude :longitude :starred
                               :linked_cnt :arrival_timestamp :departure_timestamp
-                              :img_file :last_saved
+                              :img_file :last_saved :audio_file
                               [:comments [:timestamp :md :latitude :longitude
                                           :img_file :comment_for]]
                               [:linked [:timestamp :md :latitude :longitude
