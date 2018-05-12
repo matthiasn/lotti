@@ -154,7 +154,7 @@
          ;[m/image-view entry]
          ;[m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]
-         [m/spotify-view @entry put-fn]
+         [m/spotify-view entry2 put-fn]
          [c/questionnaire-div @entry put-fn edit-mode?]]))))
 
 (defn entry-with-comments

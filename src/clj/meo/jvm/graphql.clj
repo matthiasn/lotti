@@ -72,26 +72,29 @@
            {:story (when story
                      (assoc-in story [:linked-saga] saga))})))
 
+(defn snake-xf [xs] (transform-keys ->snake_case xs))
+
+(def d (* 24 60 60 1000))
+
 (defn entry-w-comments [g entry]
   (let [comments (mapv #(get-entry g %) (:comments entry))]
     (assoc-in entry [:comments] comments)))
 
-(defn snake-xf [xs] (transform-keys ->snake_case xs))
-
-(def d (* 24 60 60 1000))
+(defn linked-for [g entry]
+  (let [ts (:timestamp entry)]
+    (assoc-in entry [:linked] (mapv #(entry-w-story g (get-entry g %))
+                                    (gq/get-linked-for-ts g ts)))))
 
 (defn briefing [context args value]
   (let [g (:graph @st/state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
     (when-let [briefing (get-entry g ts)]
-      (let [linked (gq/get-linked-for-ts g (:timestamp briefing))
-            linked (mapv #(entry-w-story g (get-entry g %)) linked)
+      (let [briefing (linked-for g briefing)
             comments (:comments (gq/get-comments briefing g ts))
             comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
                            comments)
-            briefing (merge briefing {:linked   linked
-                                      :comments comments
+            briefing (merge briefing {:comments comments
                                       :day      d})]
         (snake-xf briefing)))))
 
@@ -126,14 +129,15 @@
   (let [{:keys [query n]} args
         current-state @st/state
         g (:graph current-state)
-        parsed (update-in (p/parse-search query) [:n] #(or n %))
-        entries (gq/get-filtered2 current-state parsed)
-        res (filter #(not (:comment-for %)) entries)
-        res (mapv #(entry-w-story g %) res)
-        res (entries-w-logged g res)
-        res (mapv #(entry-w-comments g %) res)
-        res (mapv #(dissoc % :habit) res)
-        res (mapv #(assoc % :linked-cnt (count (:linked-entries-list %))) res)]
+        res (->> (update-in (p/parse-search query) [:n] #(or n %))
+                 (gq/get-filtered2 current-state)
+                 (filter #(not (:comment-for %)))
+                 (mapv (partial entry-w-story g))
+                 (entries-w-logged g)
+                 (mapv (partial entry-w-comments g))
+                 (mapv (partial linked-for g))
+                 (mapv #(dissoc % :habit))
+                 (mapv #(assoc % :linked-cnt (count (:linked-entries-list %)))))]
     (debug res)
     (snake-xf res)))
 

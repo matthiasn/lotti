@@ -45,6 +45,9 @@
                               :img_file :last_saved
                               [:comments [:timestamp :md :latitude :longitude
                                           :img_file :comment_for]]
+                              [:linked [:timestamp :md :latitude :longitude
+                                          :img_file]]
+                              [:spotify [:name :uri :image [:artists [:name]]]]
                               [:story [:timestamp :story_name
                                        [:linked_saga [:saga_name]]]]]]
                :query/alias k})

@@ -43,5 +43,8 @@
   (when-let [spotify (get-in entry [:spotify])]
     [:div.spotify {:on-click #(put-fn [:spotify/play {:uri (:uri spotify)}])}
      [:div.title (:name spotify)]
-     [:div.artist (:name (first (:artists spotify)))]
+     [:div.artist (->> (:artists spotify)
+                       (map :name)
+                       (interpose ", ")
+                       (apply str))]
      [:img {:src (:image spotify)}]]))
