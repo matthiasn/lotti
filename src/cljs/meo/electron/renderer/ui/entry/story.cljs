@@ -97,64 +97,59 @@
 
 (defn story-select [entry put-fn]
   (let [stories (subscribe [:stories])
-        ts (:timestamp @entry)
+        ts (:timestamp entry)
+        local (r/atom {:search "" :show false :idx 0})
         story-predict (subscribe [:story-predict])
-        predictions (reaction (get-in @story-predict [ts]))
-        linked-story (reaction (:primary-story @entry))
-        story-name (reaction (:story-name (get @stories @linked-story)))
-        local (r/atom {:search ""
-                       :show   false
-                       :idx    0})
-        input-fn (fn [ev]
-                   (let [s (-> ev .-nativeEvent .-target .-value)]
-                     (swap! local assoc-in [:idx] 0)
-                     (swap! local assoc-in [:search] s)))
-        indexed (reaction
-                  (let [story-tss (merged-stories @predictions (keys @stories))
-                        stories (map #(get @stories %) story-tss)
-                        s (:search @local)
-                        filter-fn #(h/str-contains-lc? (:story-name %) s)
-                        stories (vec (filter filter-fn stories))]
-                    (map-indexed (fn [i v] [i v]) (take 10 stories))))
-        assign-story (fn [story]
-                       (let [ts (:timestamp story)
-                             updated (assoc-in @entry [:primary-story] ts)]
-                         (swap! local assoc-in [:show] false)
-                         (put-fn [:entry/update-local updated])))
-        keydown (fn [ev]
-                  (let [key-code (.. ev -keyCode)
-                        idx-inc #(if (< % (dec (count @indexed))) (inc %) %)
-                        idx-dec #(if (pos? %) (dec %) %)]
-                    (info key-code)
-                    (when (= key-code 40)
-                      (swap! local update-in [:idx] idx-inc))
-                    (when (= key-code 38)
-                      (swap! local update-in [:idx] idx-dec))
-                    (when (= key-code 13)
-                      (assign-story (second (nth @indexed (:idx @local)))))
-                    (.stopPropagation ev)))
-        start-watch #(.addEventListener js/document "keydown" keydown)
-        stop-watch #(.removeEventListener js/document "keydown" keydown)
-        mouse-leave (fn [_]
-                      (let [t (js/setTimeout
-                                #(swap! local assoc-in [:show] false)
-                                1500)]
-                        (swap! local assoc-in [:timeout] t)
-                        (stop-watch)))
-        mouse-enter #(do (info :mouse-enter)
-                         (start-watch)
-                         (when-let [t (:timeout @local)] (js/clearTimeout t)))
-        toggle-visible (fn [_]
-                         (swap! local update-in [:show] not)
-                         (if (:show @local) (start-watch) (stop-watch)))
-        icon-cls (str (when (and (not (:primary-story @entry))
-                                 @predictions)
-                        "predicted ")
-                      (when (:show @local) "show"))]
+        predictions (reaction (get-in @story-predict [ts]))]
     (fn story-select-filter-render [entry put-fn]
-      (let [linked-story @linked-story]
-        (when-not (or (:comment-for @entry)
-                      (= (:entry-type @entry) :story))
+      (let [linked-story (get-in entry [:story :timestamp])
+            story-name (get-in entry [:story :story-name])
+            input-fn (fn [ev]
+                       (let [s (-> ev .-nativeEvent .-target .-value)]
+                         (swap! local assoc-in [:idx] 0)
+                         (swap! local assoc-in [:search] s)))
+            indexed (let [story-tss (merged-stories @predictions (keys @stories))
+                          stories (map #(get @stories %) story-tss)
+                          s (:search @local)
+                          filter-fn #(h/str-contains-lc? (:story-name %) s)
+                          stories (vec (filter filter-fn stories))]
+                      (map-indexed (fn [i v] [i v]) (take 10 stories)))
+            assign-story (fn [story]
+                           (let [ts (:timestamp story)
+                                 updated (assoc-in entry [:primary-story] ts)]
+                             (swap! local assoc-in [:show] false)
+                             (put-fn [:entry/update updated])))
+            keydown (fn [ev]
+                      (let [key-code (.. ev -keyCode)
+                            idx-inc #(if (< % (dec (count indexed))) (inc %) %)
+                            idx-dec #(if (pos? %) (dec %) %)]
+                        (when (= key-code 40)
+                          (swap! local update-in [:idx] idx-inc))
+                        (when (= key-code 38)
+                          (swap! local update-in [:idx] idx-dec))
+                        (when (= key-code 13)
+                          (assign-story (second (nth indexed (:idx @local)))))
+                        (.stopPropagation ev)))
+            start-watch #(.addEventListener js/document "keydown" keydown)
+            stop-watch #(.removeEventListener js/document "keydown" keydown)
+            mouse-leave (fn [_]
+                          (let [t (js/setTimeout
+                                    #(swap! local assoc-in [:show] false)
+                                    1500)]
+                            (swap! local assoc-in [:timeout] t)
+                            (stop-watch)))
+            mouse-enter #(do (info :mouse-enter)
+                             (start-watch)
+                             (when-let [t (:timeout @local)] (js/clearTimeout t)))
+            toggle-visible (fn [_]
+                             (swap! local update-in [:show] not)
+                             (if (:show @local) (start-watch) (stop-watch)))
+            icon-cls (str (when (and (not (:primary-story entry))
+                                     @predictions)
+                            "predicted ")
+                          (when (:show @local) "show"))]
+        (when-not (or (:comment-for entry)
+                      (= (:entry-type entry) :story))
           [:div.story-select
            (if (:show @local)
              (let [curr-idx (:idx @local)]
@@ -169,7 +164,7 @@
                           :value      (:search @local)}]]
                 [:table
                  [:tbody
-                  (for [[idx story] @indexed]
+                  (for [[idx story] indexed]
                     (let [active (= linked-story (:timestamp story))
                           cls (cond active "current"
                                     (= idx curr-idx) "idx"
@@ -180,4 +175,4 @@
                         (:story-name story)]]))]]])
              [:div.story
               [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
-              @story-name])])))))
+              story-name])])))))

@@ -15,21 +15,6 @@
        [:img {:style {:width (str (or (:img-size @entry) 100) "%")}
               :src   resized}]])))
 
-(defn audioplayer-view [entry put-fn]
-  (when-let [audio-file (:audio-file entry)]
-    [:audio {:id       audio-file
-             :controls true
-             :preload  "auto"}
-     (let [elem (js->clj (.getElementById js/document audio-file))
-           duration (when elem (.. elem -duration))
-           path [:custom-fields "#audio" :duration]]
-       (when (and duration (not (js/isNaN duration)))
-         (when-not (get-in entry path)
-           (let [updated (assoc-in entry path (js/parseInt duration))]
-             (put-fn [:entry/update-local updated])))))
-     [:source {:src  (str "http://" iww-host "/audio/" audio-file)
-               :type "audio/mp4"}]]))
-
 (defn videoplayer-view [entry]
   (when-let [video-file (:video-file entry)]
     [:video {:controls true :preload "none"}

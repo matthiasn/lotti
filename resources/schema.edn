@@ -19,18 +19,24 @@
 
   :Entry
   {:description "A task entry in meo."
-   :fields      {:timestamp      {:type (non-null ID)}
-                 :md             {:type String}
-                 :text           {:type String}
-                 :story          {:type :Story}
-                 :habit          {:type :Habit}
-                 :latitude       {:type Float}
-                 :longitude      {:type Float}
-                 :completed_time {:type Int}
-                 :linked_cnt     {:type Int}
-                 :linked         {:type (list :Entry)}
-                 :comments       {:type (list :Entry)}
-                 :task           {:type :Task}}}
+   :fields      {:timestamp           {:type (non-null ID)}
+                 :last_saved          {:type ID}
+                 :comment_for         {:type ID}
+                 :md                  {:type String}
+                 :text                {:type String}
+                 :img_file            {:type String}
+                 :story               {:type :Story}
+                 :habit               {:type :Habit}
+                 :latitude            {:type Float}
+                 :longitude           {:type Float}
+                 :starred             {:type Boolean}
+                 :completed_time      {:type Int}
+                 :linked_cnt          {:type Int}
+                 :arrival_timestamp   {:type Float}
+                 :departure_timestamp {:type Float}
+                 :linked              {:type (list :Entry)}
+                 :comments            {:type (list :Entry)}
+                 :task                {:type :Task}}}
 
   :Saga
   {:description "A saga in meo."

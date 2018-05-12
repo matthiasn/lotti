@@ -57,8 +57,7 @@
 (defn new-entry
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.
-   Caveat: the timezone detection currently only works in Chrome. TODO: check
-   "
+   Caveat: the timezone detection currently only works in Chrome. TODO: check"
   [put-fn opts run-fn]
   (fn [_ev]
     (let [ts (st/now)
@@ -67,7 +66,7 @@
                         :timezone   timezone
                         :utc-offset (.getTimezoneOffset (new js/Date))}
                        opts)]
-      (put-fn [:entry/new entry])
+      (put-fn [:entry/update entry])
       (send-w-geolocation entry put-fn)
       (when run-fn (run-fn))
       entry)))

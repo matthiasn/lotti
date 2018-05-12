@@ -33,7 +33,8 @@
                      (into {} (map (fn [[k v]]
                                      (if (and v
                                               (contains? #{:timestamp
-                                                           :comment_for}
+                                                           :comment_for
+                                                           :last_saved}
                                                          k))
                                        [k (Long/parseLong v)]
                                        [k v]))
@@ -127,11 +128,12 @@
         g (:graph current-state)
         parsed (update-in (p/parse-search query) [:n] #(or n %))
         entries (gq/get-filtered2 current-state parsed)
-        res (mapv #(entry-w-story g %) entries)
+        res (filter #(not (:comment-for %)) entries)
+        res (mapv #(entry-w-story g %) res)
         res (entries-w-logged g res)
         res (mapv #(entry-w-comments g %) res)
         res (mapv #(assoc % :linked-cnt (count (:linked-entries-list %))) res)]
-    (info res)
+    (debug res)
     (snake-xf res)))
 
 (defn custom-field-stats [context args value]

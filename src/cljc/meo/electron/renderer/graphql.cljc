@@ -1,8 +1,9 @@
 (ns meo.electron.renderer.graphql
-  (:require  [venia.core :as v]
-    #?(:clj  [taoensso.timbre :refer [info debug warn]]
+  (:require [venia.core :as v]
+    #?(:clj
+            [taoensso.timbre :refer [info debug warn]]
        :cljs [taoensso.timbre :refer-macros [info debug warn]])
-             [clojure.string :as s]))
+            [clojure.string :as s]))
 
 (defn graphql-query [days tags]
   (let [qfn (fn [t]
@@ -39,7 +40,13 @@
 (defn tabs-query [queries]
   (let [qfn (fn [[k q]]
               {:query/data  [:tab_search {:query q}
-                             [:timestamp :text]]
+                             [:timestamp :text :md :latitude :longitude :starred
+                              :linked_cnt :arrival_timestamp :departure_timestamp
+                              :img_file :last_saved
+                              [:comments [:timestamp :md :latitude :longitude
+                                          :img_file :comment_for]]
+                              [:story [:timestamp :story_name
+                                       [:linked_saga [:saga_name]]]]]]
                :query/alias k})
         queries (mapv qfn queries)]
     (when (seq queries)

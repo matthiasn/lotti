@@ -116,9 +116,9 @@
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
-  [ts put-fn edit-mode? toggle-edit local-cfg]
+  [entry put-fn edit-mode? toggle-edit local-cfg]
   (let [visible (r/atom false)
-        entry (:entry (eu/entry-reaction ts))
+        ts (:timestamp entry)
         hide-fn (fn [_ev] (.setTimeout js/window #(reset! visible false) 60000))
         query-id (:query-id local-cfg)
         tab-group (:tab-group local-cfg)
@@ -131,7 +131,7 @@
         show-comments #(show-hide-comments query-id)
         create-comment (h/new-entry put-fn {:comment-for ts} show-comments)
         screenshot #(put-fn [:screenshot/take {:comment-for ts}])
-        story (:primary-story entry)
+        story (get-in entry [:story :timestamp])
         create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
                                                  :primary-story  story
                                                  :linked-stories #{story}} nil)
@@ -140,26 +140,29 @@
                                                        (p/pomodoro-defaults ts)
                                                        show-comments)
                              new-entry (new-entry-fn)]
-                         (put-fn [:cmd/pomodoro-start new-entry])))
+                         (put-fn [:cmd/schedule-new
+                                  {:message [:cmd/pomodoro-start new-entry]
+                                   :timeout 1000}])))
         trash-entry (fn [_]
-                      (put-fn [:search/remove-all {:story       (:linked-story @entry)
-                                                   :search-text (str ts)}])
+                      (put-fn [:search/remove-all
+                               {:story       (get-in entry [:story :timestamp])
+                                :search-text (str ts)}])
                       (if edit-mode?
                         (put-fn [:entry/remove-local {:timestamp ts}])
-                        (put-fn [:entry/trash @entry])))
+                        (put-fn [:entry/trash entry])))
         open-external (up/add-search ts tab-group put-fn)
-        star-entry #(put-fn [:entry/update-local (update-in @entry [:starred] not)])
+        star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
         mouse-enter #(reset! visible true)]
-    (fn entry-actions-render [ts put-fn edit-mode? toggle-edit local-cfg]
-      (let [map? (:latitude @entry)
-            prev-saved? (or (:last-saved @entry) (< ts 1479563777132))
-            comment? (:comment-for @entry)
-            starred (:starred @entry)]
+    (fn entry-actions-render [entry put-fn edit-mode? toggle-edit local-cfg]
+      (let [map? (:latitude entry)
+            prev-saved? (or (:last-saved entry) (< ts 1479563777132))
+            comment? (:comment-for entry)
+            starred (:starred entry)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
-          (when prev-saved? [edit-icon toggle-edit edit-mode? @entry])
+          (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
@@ -167,8 +170,7 @@
             [:i.fa.fa-desktop.toggle {:on-click screenshot}])
           (when (and (not comment?) prev-saved?)
             [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
-          (when-not comment? [new-link @entry put-fn create-linked-entry])
-          ; [add-location @entry put-fn]
+          (when-not comment? [new-link entry put-fn create-linked-entry])
           [trash-icon trash-entry]]
          [:i.fa.toggle
           {:on-click star-entry
@@ -191,7 +193,6 @@
                                       put-fn (p/pomodoro-defaults ts) nil)
                              new-entry (create)]
                          (info "new-pomodoro" new-entry)
-                         (put-fn [:entry/update new-entry])
                          (put-fn [:cmd/schedule-new
                                   {:message [:cmd/pomodoro-start new-entry]
                                    :timeout 1000}])))]

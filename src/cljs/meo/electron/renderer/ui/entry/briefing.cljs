@@ -144,7 +144,7 @@
                [:span
                 " Logged: " [:strong dur] " in " n " entries."])]]]]
          [:div.comments
-          (for [comment (mapv :timestamp (:comments @briefing))]
+          (for [comment (:comments @briefing)]
             ^{:key (str "c" comment)}
             [e/journal-entry comment put-fn local-cfg])]]))))
 

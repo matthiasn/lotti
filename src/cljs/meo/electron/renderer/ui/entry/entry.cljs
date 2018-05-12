@@ -46,8 +46,8 @@
           hashtag])])))
 
 (defn linked-btn [entry local-cfg active put-fn]
-  (when (seq (:linked-entries-list @entry))
-    (let [ts (:timestamp @entry)
+  (when (pos? (:linked-cnt entry))
+    (let [ts (:timestamp entry)
           tab-group (:tab-group local-cfg)
           open-linked (up/add-search (str "l:" ts) tab-group put-fn)
           entry-active? (when-let [query-id (:query-id local-cfg)]
@@ -55,12 +55,12 @@
       [:div
        [:span.link-btn {:on-click open-linked
                         :class    (when entry-active? "active")}
-        (str " linked: " (count (:linked-entries-list @entry)))]])))
+        (str " linked: " (:linked-cnt entry))]])))
 
 (defn conflict-view [entry put-fn]
   (let []
     (fn [entry put-fn]
-      (when-let [conflict (:conflict @entry)]
+      (when-let [conflict (:conflict entry)]
         [:div.conflict
          [:div.warn [:span.fa.fa-exclamation] "Conflict"]
          [:pre [:code (with-out-str (pp/pprint conflict))]]]))))
@@ -89,9 +89,10 @@
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
    showing the warning that the entry is not saved yet."
-  [ts put-fn local-cfg]
-  (let [cfg (subscribe [:cfg])
-        {:keys [entry edit-mode entries-map]} (eu/entry-reaction ts)
+  [entry2 put-fn local-cfg]
+  (let [ts (:timestamp entry2)
+        cfg (subscribe [:cfg])
+        {:keys [entry edit-mode new-entry entries-map]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
@@ -102,8 +103,9 @@
         toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
                                     (put-fn [:entry/update-local @entry]))
         local (r/atom {:scroll-disabled true})]
-    (fn journal-entry-render [ts put-fn local-cfg]
-      (let [edit-mode? @edit-mode
+    (fn journal-entry-render [entry2 put-fn local-cfg]
+      (let [entry2 (merge entry2 @new-entry)
+            edit-mode? @edit-mode
             locale (:locale @cfg :en)
             formatted-time (h/localize-datetime (moment ts) locale)
             mapbox-token (:mapbox-token @backend-cfg)
@@ -114,17 +116,17 @@
                      :on-drag-enter h/prevent-default}
          [:div.header-1
           [:div
-           [es/story-select entry put-fn]
+           [es/story-select entry2 put-fn]
            [es/saga-select @entry put-fn edit-mode?]]
           [loc/geonames entry put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
-           [:time (u/visit-duration @entry)]]
-          [linked-btn entry local-cfg active put-fn]
-          [a/entry-actions ts put-fn edit-mode? toggle-edit local-cfg]]
-         [es/story-name-field @entry edit-mode? put-fn]
-         [es/saga-name-field @entry edit-mode? put-fn]
+           [:time (u/visit-duration entry2)]]
+          [linked-btn entry2 local-cfg active put-fn]
+          [a/entry-actions entry2 put-fn edit-mode? toggle-edit local-cfg]]
+         [es/story-name-field entry2 edit-mode? put-fn]
+         [es/saga-name-field entry2 edit-mode? put-fn]
          [d/entry-editor ts put-fn]
          [task/task-details @entry local-cfg put-fn edit-mode?]
          [habit/habit-details @entry local-cfg put-fn edit-mode?]
@@ -132,8 +134,8 @@
          [:div.footer
           [pomo/pomodoro-header entry edit-mode? put-fn]
           [hashtags-mentions-list ts tab-group put-fn]
-          [:div.word-count (u/count-words-formatted @entry)]]
-         [conflict-view entry put-fn]
+          [:div.word-count (u/count-words-formatted entry2)]]
+         [conflict-view entry2 put-fn]
          [c/custom-fields-div @entry put-fn edit-mode?]
          [git-commit entry put-fn]
          [ws/wavesurfer @entry local-cfg put-fn]
@@ -143,14 +145,14 @@
               {:on-click #(swap! local update-in [:scroll-disabled] not)}
               [mb/mapbox-cls {:local           local
                               :id              map-id
-                              :selected        @entry
+                              :selected        entry2
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
                               :mapbox-token    mapbox-token
                               :put-fn          put-fn}]]
-             [l/leaflet-map @entry @show-map? local-cfg put-fn]))
+             [l/leaflet-map entry2 @show-map? local-cfg put-fn]))
          ;[m/image-view entry]
-         [m/videoplayer-view @entry]
+         ;[m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]
          [m/spotify-view @entry put-fn]
          [c/questionnaire-div @entry put-fn edit-mode?]]))))
@@ -162,8 +164,9 @@
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
    showing the warning that the entry is not saved yet."
-  [ts put-fn local-cfg]
-  (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
+  [entry2 put-fn local-cfg]
+  (let [ts (:timestamp entry2)
+        {:keys [entry new-entries]} (eu/entry-reaction ts)
         all-comments-set (all-comments-set ts)
         cfg (subscribe [:cfg])
         options (subscribe [:options])
@@ -179,6 +182,7 @@
                                     comments
                                     (filter pvt-filter comments))]
                      (map :timestamp comments)))
+
         thumbnails? (reaction (and (not (contains? (:tags @entry) "#briefing"))
                                    (:thumbnails @cfg)))
         show-comments-for? (reaction (get-in @cfg [:show-comments-for ts]))
@@ -187,10 +191,11 @@
                                   {:path  [:cfg :show-comments-for ts]
                                    :value (when-not (= @show-comments-for? query-id)
                                             query-id)}])]
-    (fn entry-with-comments-render [ts put-fn local-cfg]
-      (let [comments @comments]
+    (fn entry-with-comments-render [entry2 put-fn local-cfg]
+      (let [comments (:comments entry2)]
+        ;(info comments)
         [:div.entry-with-comments
-         [journal-entry ts put-fn local-cfg]
+         [journal-entry entry2 put-fn local-cfg]
          (when @thumbnails? [carousel/gallery entry local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
@@ -207,28 +212,3 @@
               (let [n (count comments)]
                 [:span {:on-click toggle-comments}
                  (str "show " n " comment" (when (> n 1) "s"))])]))]))))
-
-
-
-
-
-(defn journal-entry2 [entry put-fn local-cfg]
-  (let [ts (:timestamp entry)
-        cfg (subscribe [:cfg])
-        q-date-string (.format (moment ts) "YYYY-MM-DD")
-        tab-group (:tab-group local-cfg)
-        add-search (up/add-search q-date-string tab-group put-fn)]
-    (fn journal-entry-render [entry put-fn local-cfg]
-      (let [locale (:locale @cfg :en)
-            formatted-time (h/localize-datetime (moment ts) locale)]
-        [:div.entry
-         [:div.header-1]
-         [:div.header
-          [:div
-           [:a [:time {:on-click add-search} formatted-time]]]]
-         [d/entry-editor ts put-fn]
-         [d/entry-editor ts put-fn]
-         [:div.footer
-          ;[pomo/pomodoro-header entry false put-fn]
-          [hashtags-mentions-list ts tab-group put-fn]
-          [:div.word-count (u/count-words-formatted entry)]]]))))
