@@ -96,23 +96,6 @@
           {:on-click #(do (create-linked-entry) (toggle-visible %))}
           [:i.fas.fa-plus-square] "add linked"])])))
 
-(defn add-location
-  "Renders context menu for adding location."
-  [entry put-fn]
-  (let [local (r/atom {:visible false})
-        toggle-visible #(swap! local update-in [:visible] not)]
-    (fn [entry put-fn]
-      (let [new-loc #(put-fn [:entry/update-local
-                              (assoc-in % [:location :type] :location)])]
-        (when-not (:location entry)
-          [:span.new-link-btn
-           [:i.fa.fa-map-marker.toggle
-            {:on-click toggle-visible}]
-           (when (:visible @local)
-             [:span.new-link
-              {:on-click #(do (toggle-visible) (new-loc entry))}
-              [:i.fa.fa-plus-square] "add location"])])))))
-
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
@@ -131,10 +114,6 @@
         show-comments #(show-hide-comments query-id)
         create-comment (h/new-entry put-fn {:comment-for ts} show-comments)
         screenshot #(put-fn [:screenshot/take {:comment-for ts}])
-        story (get-in entry [:story :timestamp])
-        create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
-                                                 :primary-story  story
-                                                 :linked-stories #{story}} nil)
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry put-fn
                                                        (p/pomodoro-defaults ts)
@@ -157,7 +136,17 @@
       (let [map? (:latitude entry)
             prev-saved? (or (:last-saved entry) (< ts 1479563777132))
             comment? (:comment-for entry)
-            starred (:starred entry)]
+            starred (:starred entry)
+            story (get-in entry [:story :timestamp])
+            open-new (fn [x]
+                       (put-fn [:search/add
+                                {:tab-group (if (= tab-group :left) :right :left)
+                                 :query     (up/parse-search (:timestamp x))}]))
+            create-linked (h/new-entry put-fn
+                                       {:linked-entries #{ts}
+                                        :primary-story  story
+                                        :linked-stories #{story}}
+                                       open-new)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
@@ -170,19 +159,22 @@
             [:i.fa.fa-desktop.toggle {:on-click screenshot}])
           (when (and (not comment?) prev-saved?)
             [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
-          (when-not comment? [new-link entry put-fn create-linked-entry])
+          (when-not comment? [new-link entry put-fn create-linked])
           [trash-icon trash-entry]]
          [:i.fa.toggle
           {:on-click star-entry
            :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
-
 (defn briefing-actions [ts put-fn]
-  (let [create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
+  (let [open-new (fn [x]
+                   (put-fn [:search/add
+                            {:tab-group :left
+                             :query     (up/parse-search (:timestamp x))}]))
+        create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
                                                  :starred        true
                                                  :perm-tags      #{"#task"}}
-                                         nil)
+                                         open-new)
         create-comment (fn [_ev]
                          (let [create (h/new-entry put-fn {:comment-for ts} nil)
                                new-entry (create)]

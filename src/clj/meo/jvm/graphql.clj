@@ -132,6 +132,7 @@
         res (mapv #(entry-w-story g %) res)
         res (entries-w-logged g res)
         res (mapv #(entry-w-comments g %) res)
+        res (mapv #(dissoc % :habit) res)
         res (mapv #(assoc % :linked-cnt (count (:linked-entries-list %))) res)]
     (debug res)
     (snake-xf res)))

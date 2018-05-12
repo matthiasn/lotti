@@ -189,6 +189,7 @@
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
                            :deleted   true}
                       put-fn)
+    (put-fn [:gql/run-registered])
     (move-attachment-to-trash cfg msg-payload "images" :img-file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)

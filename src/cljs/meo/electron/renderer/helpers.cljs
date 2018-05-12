@@ -68,7 +68,7 @@
                        opts)]
       (put-fn [:entry/update entry])
       (send-w-geolocation entry put-fn)
-      (when run-fn (run-fn))
+      (when run-fn (run-fn entry))
       entry)))
 
 (defn prevent-default [ev] (.preventDefault ev))

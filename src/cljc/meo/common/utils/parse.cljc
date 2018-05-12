@@ -1,6 +1,7 @@
 (ns meo.common.utils.parse
   "Parsing functions, tested in 'meo.jvm.parse-test' namespace."
   (:require [clojure.string :as s]
+            [taoensso.timbre :refer-macros [info]]
             [clojure.set :as set]))
 
 (def tag-char-cls "[\\w\\-\\u00C0-\\u017F]")
@@ -27,7 +28,7 @@
   [text]
   (let [no-codeblocks (s/replace text (re-pattern (str "```[^`]*```")) "")
         without-code (s/replace no-codeblocks (re-pattern (str "`[^`]*`")) "")
-        tags     (set (map s/trim (re-seq entry-tag-regex without-code)))]
+        tags (set (map s/trim (re-seq entry-tag-regex without-code)))]
     {:md       text
      :tags     tags
      :mentions (set (map s/trim (re-seq entry-mentions-regex without-code)))}))
@@ -56,18 +57,19 @@
      :linked      (second (re-find #"l:([0-9]{13})" text))
      :n           10}))
 
+
 (defn add-search
   "Adds search by sending a message that'll open the specified search in a new
    tab."
   [query-string tab-group put-fn]
   (fn [_ev]
-    (put-fn [:search/add
-             {:tab-group (case tab-group
-                           :off :off
-                           :briefing :left
-                           :left :right
-                           :left)
-              :query     (parse-search query-string)}])))
+    (let [msg [:search/add {:tab-group (case tab-group
+                                         :off :off
+                                         :briefing :left
+                                         :left :right
+                                         :left)
+                            :query     (parse-search query-string)}]]
+      (put-fn msg))))
 
 (defn autocomplete-tags
   "Determine autocomplete options for the partial tag (or mention) before the

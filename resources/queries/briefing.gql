@@ -34,6 +34,7 @@
   started_tasks {
     timestamp
     md
+    text
     story {
       timestamp
       story_name
