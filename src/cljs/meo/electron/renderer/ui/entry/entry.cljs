@@ -14,7 +14,7 @@
             [meo.electron.renderer.ui.entry.reward :as reward]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.electron.renderer.ui.entry.carousel :as carousel]
+            [meo.electron.renderer.ui.entry.carousel :as cl]
             [meo.electron.renderer.ui.entry.wavesurfer :as ws]
             [meo.common.utils.misc :as u]
             [meo.electron.renderer.helpers :as h]
@@ -151,8 +151,6 @@
                               :mapbox-token    mapbox-token
                               :put-fn          put-fn}]]
              [l/leaflet-map entry2 @show-map? local-cfg put-fn]))
-         ;[m/image-view entry]
-         ;[m/videoplayer-view @entry]
          [m/imdb-view @entry put-fn]
          [m/spotify-view entry2 put-fn]
          [c/questionnaire-div @entry put-fn edit-mode?]]))))
@@ -163,40 +161,24 @@
    the display of the edit mode or showing the map for an entry. The editable
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
-   showing the warning that the entry is not saved yet."
-  [entry2 put-fn local-cfg]
-  (let [ts (:timestamp entry2)
-        {:keys [entry new-entries]} (eu/entry-reaction ts)
-        all-comments-set (all-comments-set ts)
+   showing that the entry is not saved yet."
+  [entry put-fn local-cfg]
+  (let [ts (:timestamp entry)
         cfg (subscribe [:cfg])
-        options (subscribe [:options])
-        show-pvt? (reaction (:show-pvt @cfg))
-        entries-map (subscribe [:entries-map])
-        comments (reaction
-                   (let [comments (map (fn [ts]
-                                         (or (get @new-entries ts)
-                                             (get @entries-map ts)))
-                                       @all-comments-set)
-                         pvt-filter (u/pvt-filter @options @entries-map)
-                         comments (if @show-pvt?
-                                    comments
-                                    (filter pvt-filter comments))]
-                     (map :timestamp comments)))
-
-        thumbnails? (reaction (and (not (contains? (:tags @entry) "#briefing"))
-                                   (:thumbnails @cfg)))
         show-comments-for? (reaction (get-in @cfg [:show-comments-for ts]))
         query-id (:query-id local-cfg)
         toggle-comments #(put-fn [:cmd/assoc-in
                                   {:path  [:cfg :show-comments-for ts]
                                    :value (when-not (= @show-comments-for? query-id)
                                             query-id)}])]
-    (fn entry-with-comments-render [entry2 put-fn local-cfg]
-      (let [comments (:comments entry2)]
-        ;(info comments)
+    (fn entry-with-comments-render [entry put-fn local-cfg]
+      (let [comments (:comments entry)
+            thumbnails? (and (not (contains? (:tags entry) "#briefing"))
+                             (:thumbnails @cfg))]
         [:div.entry-with-comments
-         [journal-entry entry2 put-fn local-cfg]
-         (when @thumbnails? [carousel/gallery entry local-cfg put-fn])
+         [journal-entry entry put-fn local-cfg]
+         (when thumbnails?
+           [cl/gallery (cl/gallery-entries entry) local-cfg put-fn])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

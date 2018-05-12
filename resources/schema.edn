@@ -47,6 +47,7 @@
                  :completed_time      {:type Int}
                  :spotify             {:type :Spotify}
                  :linked_cnt          {:type Int}
+                 :stars               {:type Int}
                  :arrival_timestamp   {:type Float}
                  :departure_timestamp {:type Float}
                  :linked              {:type (list :Entry)}
@@ -216,6 +217,16 @@
   {:type        (list :Story)
    :description "List of all existing stories."
    :resolve     :query/stories}
+
+  :photos_by_location
+  {:type        (list :Entry)
+   :description "List of photo entries within geo bounds."
+   :args        {
+                 :ne_lat     {:type Float}
+                 :ne_lon     {:type Float}
+                 :sw_lat     {:type Float}
+                 :sw_lon     {:type Float}}
+   :resolve     :query/geo-photos}
 
   :sagas
   {:type        (list :Saga)

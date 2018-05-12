@@ -111,11 +111,11 @@
             external (str h/photos file)]
         [:div.info
          ;[l/leaflet-map selected true {} put-fn]
-         [mb/mapbox-cls {:local    local
-                         :id       (str ts)
-                         :selected selected
+         [mb/mapbox-cls {:local        local
+                         :id           (str ts)
+                         :selected     selected
                          :mapbox-token mapbox-token
-                         :put-fn   put-fn}]
+                         :put-fn       put-fn}]
          [:time (h/localize-datetime-full ts locale)]
          [stars-view ts put-fn]
          [:div.md {:dangerouslySetInnerHTML {:__html html}}]
@@ -155,34 +155,15 @@
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entry local-cfg put-fn]
-  (let [entries-map (subscribe [:combined-entries])
-        cfg (subscribe [:cfg])
-        options (subscribe [:options])
-        show-pvt? (reaction (:show-pvt @cfg))
-        local (r/atom {:filter #{}})
-        get-or-retrieve (u/find-missing-entry entries-map put-fn)
-        linked-comments-set (reaction
-                              (set/union
-                                (set (:linked-entries-list @entry))
-                                #{(:timestamp @entry)}
-                                (set (:comments @entry))))
-        with-imgs (reaction (filter :img-file
-                                    (map get-or-retrieve @linked-comments-set)))
+  [entries local-cfg put-fn]
+  (let [local (r/atom {:filter #{}})
         filter-by-stars (fn [entry]
                           (or (empty? (:filter @local))
                               (contains? (:filter @local)
-                                         (:stars (get @entries-map (:timestamp entry))))))
-        filtered (reaction
-                   (filter identity
-                           (if @show-pvt?
-                             @with-imgs
-                             (filter (u/pvt-filter @options @entries-map)
-                                     @with-imgs))))
+                                         (:stars entry))))
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
-        sorted (reaction (sort-by :timestamp @filtered))
-        avl-sort (fn [xs]
-                   (into (avl/sorted-set-by cmp) (filter filter-by-stars xs)))
+        sorted (reaction (sort-by :timestamp entries))
+        avl-sort (fn [xs] (into (avl/sorted-set-by cmp) (filter filter-by-stars xs)))
         selected (reaction (or (:selected @local)
                                (first (vec (avl-sort @sorted)))))
         next-click #(let [avl-sorted (avl-sort @sorted)
@@ -216,19 +197,22 @@
                     (.stopPropagation ev)))
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
-    (fn gallery-render [entry local-cfg put-fn]
-      (let [ts (:timestamp entry)
-            sorted-filtered (filter filter-by-stars @sorted)
+    (fn gallery-render [entries local-cfg put-fn]
+      (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery {:class          (when (:fullscreen @local) "fullscreen")
                        :on-mouse-enter start-watch
                        :on-mouse-over  start-watch
                        :on-mouse-leave stop-watch}
-         [carousel {:ts           ts
-                    :filtered     sorted-filtered
+         [carousel {:filtered     sorted-filtered
                     :local-cfg    local-cfg
                     :local        local
                     :selected-idx selected-idx
                     :next-click   next-click
                     :prev-click   prev-click
                     :put-fn       put-fn}]]))))
+
+(defn gallery-entries [entry]
+  (filter :img-file (concat [entry]
+                            (:comments entry)
+                            (:linked entry))))

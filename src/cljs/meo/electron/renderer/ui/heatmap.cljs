@@ -7,7 +7,8 @@
             [mapbox-gl]
             [meo.electron.renderer.ui.entry.carousel :as carousel]
             [meo.electron.renderer.helpers :as h]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.electron.renderer.graphql :as gql]))
 
 (def heatmap-data
   {:type "geojson"
@@ -76,55 +77,51 @@
 
 (defn heatmap [put-fn]
   (let [backend-cfg (subscribe [:backend-cfg])
-        geo-photos (subscribe [:geo-photos])
-        fake-entry (reaction {:comments (:data @geo-photos)})
-        local (r/atom {:gallery false})
-        hide-photos #(swap! local assoc-in [:gallery] false)
-        show-photos #(swap! local assoc-in [:gallery] true)
+        gql-res (subscribe [:gql-res])
+        local (r/atom {:gallery true})
+        toggle-photos #(swap! local update-in [:gallery] not)
         get-bounds #(let [mb-map (:mb-map @local)
                           bounds (.getBounds mb-map)
                           zoom (.getZoom mb-map)
                           ne (.-_ne bounds)
                           sw (.-_sw bounds)
                           center (.getCenter mb-map)
-                          coord {:center {:lat (.-lat center)
-                                          :lon (.-lng center)}
-                                 :ne     {:lat (.-lat ne)
-                                          :lon (.-lng ne)}
-                                 :sw     {:lat (.-lat sw)
-                                          :lon (.-lng sw)}}]
-                      (put-fn [:search/geo-photo coord])
-                      (hide-photos)
-                      (swap! local assoc-in [:last-res] (:ts @geo-photos))
-                      (info coord zoom))
+                          q (gql/gen-query
+                              [:photos_by_location {:ne_lat (.-lat ne)
+                                                    :ne_lon (.-lng ne)
+                                                    :sw_lat (.-lat sw)
+                                                    :sw_lon (.-lng sw)}
+                               [:timestamp :img_file :latitude :longitude
+                                :md :starred :stars :text]])]
+                      (info "heatmap gql" q zoom center)
+                      (put-fn [:gql/query {:q        q
+                                           :res-hash nil
+                                           :id       :heatmap}]))
+        entries (reaction (->> @gql-res
+                               :heatmap
+                               :data
+                               :photos-by-location
+                               (filter :img-file)))
         p0 #(let [mb-map (:mb-map @local)]
-              (hide-photos)
               (.flyTo mb-map (clj->js {:center [10.001872149129213
                                                 53.561938271672375]
                                        :zoom   1})))
         p1 #(let [mb-map (:mb-map @local)]
-              (hide-photos)
               (.flyTo mb-map (clj->js {:center [10.001872149129213
                                                 53.561938271672375]
                                        :speed  0.6
                                        :zoom   10})))
         p2 #(let [mb-map (:mb-map @local)]
-              (hide-photos)
               (.flyTo mb-map (clj->js {:center [17.113231048664147
                                                 48.14863673388942]
                                        :speed  0.8
                                        :zoom   13.815236381703615})))
         p3 #(let [mb-map (:mb-map @local)]
-              (hide-photos)
               (.flyTo mb-map (clj->js {:center [96.17530739999074
                                                 16.802089304852103]
-                                       :zoom   12.743812567839447})))
-        toggle-photos #(do (swap! local update-in [:gallery] not))]
+                                       :zoom   12.743812567839447})))]
     (fn [put-fn]
       (let [mapbox-token (:mapbox-token @backend-cfg)]
-        (when (not= (:last-res @local) (:ts @geo-photos))
-          (swap! local assoc-in [:last-res] (:ts @geo-photos))
-          (js/setTimeout show-photos 500))
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
           [:div.flex-container
@@ -137,13 +134,12 @@
              [:button {:on-click get-bounds} "search"]
              [:button {:on-click toggle-photos}
               (str (if (:gallery @local) "hide " "show ")
-                   (count (:data @geo-photos))
+                   (count @entries)
                    " photos")]]
             [heatmap-cls {:local local :put-fn put-fn}]
             (when (:gallery @local)
-              (info :show-gallery)
               [:div.fixed-gallery
-               [carousel/gallery fake-entry {} put-fn]])]]
+               [carousel/gallery @entries {} put-fn]])]]
           [:div.flex-container
            [:div.error
             [:h1

@@ -23,7 +23,8 @@
             [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.jvm.graph.stats.git :as g]
             [meo.jvm.graph.stats.questionnaires :as q]
-            [meo.jvm.graph.stats.awards :as aw])
+            [meo.jvm.graph.stats.awards :as aw]
+            [meo.jvm.graph.geo :as geo])
   (:import (clojure.lang IPersistentMap)))
 
 (defn simplify [m]
@@ -259,6 +260,7 @@
                       :query/mentions           mentions
                       :query/stories            stories
                       :query/sagas              sagas
+                      :query/geo-photos         geo/photos-within-bounds
                       :query/custom-field-stats custom-field-stats
                       :query/git-stats          git-stats
                       :query/briefings          briefings

@@ -5,9 +5,7 @@
             [taoensso.timbre :refer [info error]]
             [taoensso.timbre.profiling :refer [p profile]]
             [meo.jvm.graph.query :as gq]
-            [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.add :as ga]
-            [meo.jvm.graph.geo :as geo]
             [meo.jvm.learn :as tf]
             [meo.jvm.export :as e]
             [meo.common.specs]
@@ -151,6 +149,5 @@
                  :tf/learn-stories  tf/learn-stories
                  :entry/trash       f/trash-entry-fn
                  :startup/progress? gq/query-fn
-                 :search/geo-photo  geo/photos-within-bounds
                  :cfg/refresh       refresh-cfg
                  :backend-cfg/save  fu/write-cfg}})

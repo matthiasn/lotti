@@ -46,7 +46,7 @@
                               [:comments [:timestamp :md :latitude :longitude
                                           :img_file :comment_for]]
                               [:linked [:timestamp :md :latitude :longitude
-                                          :img_file]]
+                                        :img_file]]
                               [:spotify [:name :uri :image [:artists [:name]]]]
                               [:story [:timestamp :story_name
                                        [:linked_saga [:saga_name]]]]]]
@@ -54,3 +54,8 @@
         queries (mapv qfn queries)]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
+
+(defn gen-query [q]
+  (let [q [{:query/data q}]]
+    (when (seq q)
+      (v/graphql-query {:venia/queries q}))))
