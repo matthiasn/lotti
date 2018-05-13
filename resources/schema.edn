@@ -11,11 +11,16 @@
                                  :description "logged time in seconds"}
                  :completion_ts {:type String}}}
 
-  :Habit
+  :Habit1
   {:description "habit details"
    :fields      {:points   {:type Int}
                  :penalty  {:type Int}
                  :priority {:type String}}}
+
+  :Vclock
+  {:description "habit details"
+   :fields      {:node  {:type ID}
+                 :clock {:type Int}}}
 
   :Artist
   {:description "An artist from spotify"
@@ -38,10 +43,15 @@
                  :comment_for         {:type ID}
                  :md                  {:type String}
                  :text                {:type String}
+                 :tags                {:type (list String)}
+                 :mentions            {:type (list String)}
                  :img_file            {:type String}
                  :audio_file          {:type String}
                  :story               {:type :Story}
-                 :habit               {:type :Habit}
+                 :habit               {:type String}
+                 :custom_fields       {:type String}
+                 :questionnaires      {:type String}
+                 :vclock              {:type (list :Vclock)}
                  :latitude            {:type Float}
                  :longitude           {:type Float}
                  :starred             {:type Boolean}
@@ -58,12 +68,14 @@
   :Saga
   {:description "A saga"
    :fields      {:timestamp {:type (non-null ID)}
+                 :vclock    {:type (list :Vclock)}
                  :saga_name {:type String}}}
 
   :Story
   {:description "A story"
    :fields      {:timestamp   {:type (non-null ID)}
                  :story_name  {:type String}
+                 :vclock      {:type (list :Vclock)}
                  :linked_saga {:type        :Saga
                                :description "Saga that the story belongs to."}}}
 
@@ -71,6 +83,7 @@
   {:description "A briefing (plan for a specific day)"
    :fields      {:timestamp {:type (non-null ID)}
                  :day       {:type String}
+                 :vclock    {:type (list :Vclock)}
                  :linked    {:type (list :Entry)}
                  :comments  {:type (list :Entry)}}}
 

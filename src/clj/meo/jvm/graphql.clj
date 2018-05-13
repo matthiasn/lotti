@@ -12,6 +12,7 @@
             [clojure.walk :as walk]
             [clojure.edn :as edn]
             [meo.jvm.store :as st]
+            [meo.jvm.graphql.xforms :as xf]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
             [meo.common.utils.parse :as p]
@@ -24,25 +25,7 @@
             [meo.jvm.graph.stats.git :as g]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.geo :as geo])
-  (:import (clojure.lang IPersistentMap)))
-
-(defn simplify [m]
-  (walk/postwalk (fn [node]
-                   (cond
-                     (instance? IPersistentMap node)
-                     (into {} (map (fn [[k v]]
-                                     (if (and v
-                                              (contains? #{:timestamp
-                                                           :comment_for
-                                                           :last_saved}
-                                                         k))
-                                       [k (Long/parseLong v)]
-                                       [k v]))
-                                   node))
-                     (seq? node) (vec node)
-                     :else node))
-                 m))
+            [meo.jvm.graph.geo :as geo]))
 
 (defn entry-count [context args value] (count (:sorted-entries @st/state)))
 (defn hours-logged [context args value] (gs/hours-logged @st/state))
@@ -64,7 +47,7 @@
 
 (defn get-entry [g ts]
   (when (and ts (uc/has-node? g ts))
-    (uc/attrs g ts)))
+    (xf/vclock-xf (uc/attrs g ts))))
 
 (defn entry-w-story [g entry]
   (let [story (get-entry g (:primary-story entry))
@@ -72,8 +55,6 @@
     (merge entry
            {:story (when story
                      (assoc-in story [:linked-saga] saga))})))
-
-(defn snake-xf [xs] (transform-keys ->snake_case xs))
 
 (def d (* 24 60 60 1000))
 
@@ -97,7 +78,7 @@
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]
-        (snake-xf briefing)))))
+        (xf/snake-xf briefing)))))
 
 (defn logged-time [context args value]
   (let [day (:day args)
@@ -108,7 +89,7 @@
         day-nodes (gq/get-nodes-for-day g {:date-string day})
         day-nodes-attrs (map #(get-entry g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
-    (snake-xf day-stats)))
+    (xf/snake-xf day-stats)))
 
 (defn match-count [context args value]
   (gs/res-count @st/state (p/parse-search (:query args))))
@@ -135,12 +116,13 @@
                  (filter #(not (:comment-for %)))
                  (mapv (partial entry-w-story g))
                  (entries-w-logged g)
+                 (mapv xf/vclock-xf)
+                 (mapv xf/edn-xf)
                  (mapv (partial entry-w-comments g))
                  (mapv (partial linked-for g))
-                 (mapv #(dissoc % :habit))
                  (mapv #(assoc % :linked-cnt (count (:linked-entries-list %)))))]
     (debug res)
-    (snake-xf res)))
+    (xf/snake-xf res)))
 
 (defn custom-field-stats [context args value]
   (let [{:keys [days tag]} args
@@ -149,7 +131,7 @@
         custom-fields-mapper (cf/custom-fields-mapper @st/state tag)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv custom-fields-mapper day-strings)]
-    (snake-xf stats)))
+    (xf/snake-xf stats)))
 
 (defn git-stats [context args value]
   (let [{:keys [days]} args
@@ -159,7 +141,7 @@
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv git-mapper day-strings)]
     (debug stats)
-    (snake-xf stats)))
+    (xf/snake-xf stats)))
 
 (defn questionnaires [context args value]
   (let [{:keys [days tag k]} args
@@ -168,7 +150,7 @@
         stats (filter #(:score %) stats)
         stats (vec (filter #(> (:timestamp %) newer-than) stats))]
     (debug stats)
-    (snake-xf stats)))
+    (xf/snake-xf stats)))
 
 (defn award-points [context args value]
   (let [{:keys [days]} args
@@ -180,7 +162,7 @@
         xf (fn [[k v]] (merge v {:date-string k}))
         sorted (assoc-in stats [:by-day] (mapv xf (sort-filter :by-day)))
         sorted (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))]
-    (snake-xf sorted)))
+    (xf/snake-xf sorted)))
 
 (defn started-tasks [context args value]
   (let [q {:tags     #{"#task"}
@@ -192,7 +174,7 @@
         g (:graph current-state)
         tasks (entries-w-logged g tasks)
         tasks (mapv #(entry-w-story g %) tasks)]
-    (snake-xf tasks)))
+    (xf/snake-xf tasks)))
 
 (defn waiting-habits [context args value]
   (let [q {:tags #{"#habit"}
@@ -202,7 +184,7 @@
         g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
         habits (mapv #(entry-w-story g %) habits)
-        habits (mapv #(update-in % [:story] snake-xf) habits)]
+        habits (mapv #(update-in % [:story] xf/snake-xf) habits)]
     habits))
 
 (defn run-query [{:keys [current-state msg-payload put-fn]}]
@@ -214,12 +196,13 @@
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
         res (lacinia/execute schema query-string nil nil)
-        simplified (transform-keys ->kebab-case-keyword (simplify res))
         new-hash (hash res)
         new-data (not= new-hash res-hash)
-        res (merge merged simplified {:res-hash new-hash
-                                      :ts       (stc/now)
-                                      :prio     (:prio merged 100)})
+        res (merge merged
+                   (xf/simplify res)
+                   {:res-hash new-hash
+                    :ts       (stc/now)
+                    :prio     (:prio merged 100)})
         new-state (assoc-in current-state [:queries id] (dissoc res :data))]
     (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
           (if new-data "new data" "same hash, omitting response")

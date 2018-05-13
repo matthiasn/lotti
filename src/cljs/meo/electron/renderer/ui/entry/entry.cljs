@@ -136,7 +136,7 @@
           [hashtags-mentions-list ts tab-group put-fn]
           [:div.word-count (u/count-words-formatted entry2)]]
          [conflict-view entry2 put-fn]
-         [c/custom-fields-div @entry put-fn edit-mode?]
+         [c/custom-fields-div entry2 put-fn edit-mode?]
          [git-commit entry put-fn]
          [ws/wavesurfer entry2 local-cfg put-fn]
          (when @show-map?
@@ -153,7 +153,7 @@
              [l/leaflet-map entry2 @show-map? local-cfg put-fn]))
          [m/imdb-view entry put-fn]
          [m/spotify-view entry2 put-fn]
-         [c/questionnaire-div @entry put-fn edit-mode?]]))))
+         [c/questionnaire-div entry2 put-fn edit-mode?]]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

@@ -98,7 +98,8 @@
            [:div.right
             [g/tabs-view :right put-fn]])
          [f/footer put-fn]]]
-       [n/new-entries-view put-fn]])))
+       ;[n/new-entries-view put-fn]
+       ])))
 
 (defn charts-page [put-fn]
   [:div.flex-container

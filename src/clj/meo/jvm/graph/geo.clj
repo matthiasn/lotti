@@ -1,13 +1,10 @@
 (ns meo.jvm.graph.geo
   (:require [meo.jvm.graph.query :as gq]
+            [meo.jvm.graphql.xforms :as xf]
             [taoensso.timbre :refer [info error warn debug]]
-            [camel-snake-kebab.core :refer [->snake_case]]
-            [camel-snake-kebab.extras :refer [transform-keys]]
             [geo [spatial :as sp]]
             [meo.jvm.store :as st])
   (:import [org.locationtech.spatial4j.shape.impl RectangleImpl]))
-
-(defn snake-xf [xs] (transform-keys ->snake_case xs))
 
 (defn photos-within-bounds [context args value]
   (let [{:keys [ne_lat ne_lon sw_lat sw_lon]} args
@@ -21,5 +18,6 @@
                  (let [{:keys [latitude longitude img-file]} entry]
                    (when (and latitude longitude img-file)
                      (let [point (sp/point latitude longitude)]
-                       (sp/intersects? rect point)))))]
-    (snake-xf (filter nearby entries))))
+                       (sp/intersects? rect point)))))
+        res (mapv xf/vclock-xf (filter nearby entries))]
+    (xf/snake-xf res)))
