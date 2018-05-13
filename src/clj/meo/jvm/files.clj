@@ -39,9 +39,8 @@
                        filename)
         serialized (str (pr-str entry) "\n")]
     (spit full-path serialized :append true)
-    #_
-    (put-fn [:file/encrypt {:filename filename
-                            :node-id  node-id}])))
+    #_(put-fn [:file/encrypt {:filename filename
+                              :node-id  node-id}])))
 
 (defn entry-import-fn
   "Handler function for persisting an imported journal entry."
@@ -115,10 +114,8 @@
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
         (put-fn [:gql/run-registered]))
-      {:new-state    new-state
-       :send-to-self (when-let [comment-for (:comment-for msg-payload)]
-                       (with-meta [:entry/find {:timestamp comment-for}] msg-meta))
-       :emit-msg     [[:ft/add entry]]})))
+      {:new-state new-state
+       :emit-msg  [[:ft/add entry]]})))
 
 (defn sync-fn
   "Handler function for syncing journal entry."
@@ -140,12 +137,12 @@
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
               :emit-msg  [:ft/add entry]})
-      :concurrent  (let [with-conflict (assoc-in prev [:conflict] entry)
-                         new-state (ga/add-node current-state with-conflict)]
-                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
-                     ;(append-daily-log cfg entry put-fn)
-                     {:new-state new-state
-                      :emit-msg  [:ft/add entry]})
+      :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
+                        new-state (ga/add-node current-state with-conflict)]
+                    ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
+                    ;(append-daily-log cfg entry put-fn)
+                    {:new-state new-state
+                     :emit-msg  [:ft/add entry]})
       {})))
 
 (defn sync-receive

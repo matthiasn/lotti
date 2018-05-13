@@ -85,18 +85,6 @@
     {:arrival-ts   (double-ts-to-long (:arrival-timestamp entry))
      :departure-ts departure-ts}))
 
-(defn find-missing-entry
-  "Gets entry from entries-map for specified timestamp. Retrieves entry if it
-   doesn't exist locally."
-  [entries-map put-fn]
-  (fn [ts]
-    (when ts
-      (let [entry (get @entries-map ts)]
-        (or entry
-            (let [missing-entry {:timestamp ts}]
-              (put-fn [:entry/find missing-entry])
-              missing-entry))))))
-
 (defn count-words
   "Naive implementation of a wordcount function."
   [entry]

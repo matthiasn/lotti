@@ -14,8 +14,7 @@
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])
         entries-map (subscribe [:entries-map])
-        combined-entries (subscribe [:combined-entries])
-        entry (reaction (get-in @combined-entries [ts]))
+        entry (reaction (get-in @new-entries [ts]))
         new-entry (reaction (get-in @new-entries [ts]))
         edit-mode (reaction (contains? @new-entries ts))
         unsaved (reaction (and @edit-mode
@@ -25,7 +24,6 @@
     {:entry            entry
      :new-entry        new-entry
      :entries-map      entries-map
-     :combined-entries combined-entries
      :new-entries      new-entries
      :unsaved          unsaved
      :edit-mode        edit-mode}))

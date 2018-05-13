@@ -117,10 +117,6 @@
             n (count (:by-ts @day-stats))
             {:keys [entry entries-map]} (eu/entry-reaction ts)
             drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)]
-        (debug (:comments @briefing))
-        (when ts (put-fn [:entry/find {:timestamp ts}]))
-        (doseq [c (:comments @briefing)]
-          (put-fn [:entry/find {:timestamp (:timestamp c)}]))
         [:div.entry-with-comments
          [:div.entry
           [:div.briefing {:on-drop       drop-fn

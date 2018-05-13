@@ -227,8 +227,6 @@
   (let [{:keys [type data]} msg-payload
         new-state (assoc-in current-state [type] {:ts   (st/now)
                                                   :data data})]
-    (doseq [ts data]
-      (put-fn [:entry/find {:timestamp ts}]))
     {:new-state new-state}))
 
 (def search-handler-map
