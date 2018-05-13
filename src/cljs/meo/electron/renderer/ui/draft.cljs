@@ -9,7 +9,8 @@
             [draftjs-md-converter :as md-converter]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [cljs.pprint :as pp]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -77,8 +78,7 @@
 (defn draft-text-editor [entry2 update-cb save-fn start-fn small-img]
   (let [ts (:timestamp entry2)
         editor (adapt-react-class "EntryTextEditor")
-        {:keys [entry unsaved]} (eu/entry-reaction ts)
-        md (reaction (:md @entry ""))
+        {:keys [new-entry unsaved]} (eu/entry-reaction ts)
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -92,8 +92,7 @@
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
     (fn draft-editor-render [entry2 update-cb save-fn start-fn small-img]
-      (debug :draft-editor-render ts)
-      [editor {:md       @md
+      [editor {:md       (or (:md @new-entry) (:md entry2))
                :ts       ts
                :changed  @unsaved
                :mentions @mentions
@@ -105,8 +104,7 @@
 
 (defn entry-editor [entry2 put-fn]
   (let [ts (:timestamp entry2)
-        {:keys [entry unsaved]} (eu/entry-reaction ts)
-        vclock (reaction (:vclock @entry))
+        {:keys [entry new-entry unsaved]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
         update-local (fn []
                        (let [start (st/now)
@@ -115,7 +113,7 @@
                              plain (.getPlainText content)
                              raw-content (.convertToRaw Draft content)
                              md (.draftjsToMd md-converter raw-content md-dict)
-                             updated (merge @entry
+                             updated (merge entry2
                                             (p/parse-entry md)
                                             {:text         plain
                                              :edit-running true})]
@@ -161,7 +159,8 @@
                                  (:timestamp updated))
                         (put-fn [:entry/update-local updated]))))]
     (fn [entry2 _put-fn]
-      (debug :entry-editor-render ts)
-      ^{:key @vclock}
-      [:div {:class (when @unsaved "unsaved")}
-       [draft-text-editor entry2 change-cb save-fn start-fn small-img]])))
+      (let [unsaved (or (when @new-entry (not= (:md entry2) (:md @new-entry)))
+                        @unsaved)]
+        ^{:key (str (:vclock entry2))}
+        [:div {:class (when unsaved "unsaved")}
+         [draft-text-editor entry2 change-cb save-fn start-fn small-img]]))))

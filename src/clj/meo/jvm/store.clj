@@ -136,7 +136,6 @@
                  :in-chan          [:buffer 100]
                  :out-chan         [:buffer 100]}
    :handler-map {:entry/import      f/entry-import-fn
-                 :entry/find        gq/find-entry
                  :entry/unlink      ga/unlink
                  :entry/update      f/geo-entry-persist-fn
                  :entry/sync        f/sync-fn

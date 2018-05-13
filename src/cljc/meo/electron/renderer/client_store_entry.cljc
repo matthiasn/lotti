@@ -182,11 +182,6 @@
     (update-local-storage new-state)
     {:new-state new-state}))
 
-(defn found-entry-fn [{:keys [current-state msg-payload]}]
-  (let [ts (:timestamp msg-payload)
-        new-state (assoc-in current-state [:entries-map ts] msg-payload)]
-    {:new-state new-state}))
-
 (defn geo-res [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         geoname (:geoname msg-payload)
@@ -195,7 +190,6 @@
 
 (def entry-handler-map
   {:entry/new          new-entry-fn
-   :entry/found        found-entry-fn
    :entry/geo-enrich   geo-enrich-fn
    :entry/update-local update-local
    :entry/remove-local remove-local

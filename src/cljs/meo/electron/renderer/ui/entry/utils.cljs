@@ -8,7 +8,7 @@
 (defn compare-relevant [entry]
   (let [entry (dissoc (u/clean-entry entry)
                       :text :editor-state :vclock :last-saved :linked-entries
-                      :edit-running)]
+                      :edit-running :comments :linked)]
     (update-in entry [:md] #(when (string? %) (s/trim %)))))
 
 (defn entry-reaction [ts]
@@ -18,14 +18,10 @@
         entry (reaction (get-in @combined-entries [ts]))
         new-entry (reaction (get-in @new-entries [ts]))
         edit-mode (reaction (contains? @new-entries ts))
-        unsaved (reaction
-                  (let [from-new-entries (get-in @new-entries [ts])
-                        from-entries-map (get-in @entries-map [ts])]
-                    (debug "entry-reaction" from-new-entries from-entries-map)
-                    (and @edit-mode
-                         (:md from-new-entries)
-                         (not= (compare-relevant from-new-entries)
-                               (compare-relevant from-entries-map)))))]
+        unsaved (reaction (and @edit-mode
+                               (:md @new-entry)
+                               (not= (compare-relevant @new-entry)
+                                     (compare-relevant @entry))))]
     {:entry            entry
      :new-entry        new-entry
      :entries-map      entries-map

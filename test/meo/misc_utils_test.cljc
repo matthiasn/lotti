@@ -108,21 +108,6 @@
            (u/visit-timestamps (merge completed-entry
                                       {:departure-timestamp 64092211200}))))))
 
-(deftest find-missing-test
-  (let [entries-map (atom {1465059173965 test-entry
-                           1465059173966 test-entry2})]
-    (testing "properly maps existing entry"
-      (is (= (let [mapper-fn (u/find-missing-entry entries-map (fn [_msg]))]
-               (mapv mapper-fn [1465059173965 1465059173966]))
-             [test-entry test-entry2])))
-    (testing "calls put-fn for missing entry"
-      (let [sent-msg (atom [])
-            fake-put-fn (fn [msg] (reset! sent-msg msg))
-            mapper-fn (u/find-missing-entry entries-map fake-put-fn)
-            res (mapv mapper-fn [1465059173965 1465059173966 1465059173967])]
-        (is (= res [test-entry test-entry2 {:timestamp 1465059173967}]))
-        (is (= @sent-msg [:entry/find {:timestamp 1465059173967}]))))))
-
 (deftest deep-merge-test
   (testing "maps are merged properly"
     (is (= {:a {:b {:c 2

@@ -38,21 +38,23 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn tabs-query [queries]
-  (let [qfn (fn [[k q]]
-              {:query/data  [:tab_search {:query q}
-                             [:timestamp :text :md :latitude :longitude :starred
-                              :linked_cnt :arrival_timestamp :departure_timestamp
-                              :img_file :last_saved :audio_file :tags
-                              :habit :questionnaires :custom_fields
-                              [:comments [:timestamp :md :latitude :longitude
-                                          :img_file :comment_for]]
-                              [:linked [:timestamp :md :latitude :longitude
-                                        :img_file]]
-                              [:spotify [:name :uri :image [:artists [:name]]]]
-                              [:story [:timestamp :story_name
-                                       [:linked_saga [:saga_name]]]]]]
-               :query/alias k})
-        queries (mapv qfn queries)]
+  (let [f (fn [[k q]]
+            {:query/data  [:tab_search {:query q}
+                           [:timestamp :text :md :latitude :longitude :starred
+                            :linked_cnt :arrival_timestamp :departure_timestamp
+                            :img_file :last_saved :audio_file :tags
+                            :habit :questionnaires :custom_fields
+                            [:git_commit [:repo_name :refs :commit :subject
+                                          :abbreviated_commit]]
+                            [:comments [:timestamp :md :latitude :longitude
+                                        :img_file :comment_for]]
+                            [:linked [:timestamp :md :latitude :longitude
+                                      :img_file]]
+                            [:spotify [:name :uri :image [:artists [:name]]]]
+                            [:story [:timestamp :story_name
+                                     [:linked_saga [:saga_name]]]]]]
+             :query/alias k})
+        queries (mapv f queries)]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 

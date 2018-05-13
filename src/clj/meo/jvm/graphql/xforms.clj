@@ -7,17 +7,24 @@
             [clojure.tools.reader.edn :as edn])
   (:import (clojure.lang IPersistentMap)))
 
-(defn snake-xf [xs] (transform-keys ->snake_case xs))
 
-(defn kebab-or-number [k]
+(defn to-snake [k]
+  (cond
+    (number? k) k
+    :else (->snake_case k)))
+
+(defn snake-xf [xs] (transform-keys to-snake xs))
+
+(defn to-kebab [k]
   (cond
     (number? k) k
     (and (string? k) (= "#" (subs k 0 1))) k
+    (contains? #{:cfq11} k) k
     :else (->kebab-case-keyword k)))
 
 (defn simplify [m]
   (transform-keys
-    kebab-or-number
+    to-kebab
     (walk/postwalk (fn [node]
                      (cond
                        (instance? IPersistentMap node)

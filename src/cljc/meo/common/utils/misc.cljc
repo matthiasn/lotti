@@ -135,13 +135,12 @@
 (defn linked-filter-fn
   "Filter linked entries by search."
   [entries-map linked-filter put-fn]
-  (let [comments-mapper (find-missing-entry entries-map put-fn)]
-    (fn [entry]
-      (let [comments (mapv comments-mapper (:comments entry))
-            combined-tags (reduce #(set/union %1 (:tags %2)) (:tags entry) comments)]
-        (and (set/subset? (:tags linked-filter) combined-tags)
-             (empty? (set/intersection (:not-tags linked-filter)
-                                       combined-tags)))))))
+  (fn [entry]
+    (let [comments (:comments entry)
+          combined-tags (reduce #(set/union %1 (:tags %2)) (:tags entry) comments)]
+      (and (set/subset? (:tags linked-filter) combined-tags)
+           (empty? (set/intersection (:not-tags linked-filter)
+                                     combined-tags))))) )
 
 (defn search-from-cfg [state] (select-keys (:query-cfg state) #{:queries}))
 

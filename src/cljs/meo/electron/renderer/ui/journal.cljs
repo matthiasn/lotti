@@ -11,21 +11,18 @@
   [local-cfg put-fn]
   (let [cfg (subscribe [:cfg])
         options (subscribe [:options])
-        entries-map (subscribe [:entries-map])
         gql-res (subscribe [:gql-res])
         tab-group (:tab-group local-cfg)
         entries-list (reaction (get-in @gql-res [:tabs-query :data tab-group]))]
     (fn journal-view-render [local-cfg put-fn]
       (let [conf (merge @cfg @options)
             query-id (:query-id local-cfg)
-            get-or-retrieve (u/find-missing-entry entries-map put-fn)
             show-context? (:show-context conf)
             comments-w-entries? (not (:comments-standalone conf))
             with-comments? (fn [entry] (and (or (and comments-w-entries?
                                                      (not (:comment-for entry)))
                                                 (not comments-w-entries?))
                                             (or (:new-entry entry) show-context?)))]
-        (doseq [x @entries-list] (get-or-retrieve (:timestamp x)))
         [:div.journal
          [:div.journal-entries
           (for [entry @entries-list]

@@ -62,7 +62,7 @@
                  [:tr {:on-click (up/add-search ts tab-group put-fn)
                        :class    (when (= (str ts) search-text) "selected")}
                   [:td
-                   (when-let [prio (some-> entry :habit :priority (subs 1))]
+                   (when-let [prio (some-> entry :habit :priority (name))]
                      [:span.prio {:class prio} prio])]
                   [:td.award-points
                    (when-let [points (-> entry :habit :points)]

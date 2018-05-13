@@ -17,6 +17,25 @@
                  :penalty  {:type Int}
                  :priority {:type String}}}
 
+  :GitAuthor
+  {:description "git abbreviated-parent details"
+   :fields      {:name   {:type String}
+                 :email  {:type String}
+                 :date   {:type String}}}
+
+  :GitCommit
+  {:description "git commit details"
+   :fields      {:abbreviated_parent {:type String}
+                 :tree {:type String}
+                 :parent {:type String}
+                 :author {:type :GitAuthor}
+                 :refs {:type String}
+                 :repo_name {:type String}
+                 :abbreviated_tree {:type String}
+                 :commit {:type String}
+                 :abbreviated_commit {:type String}
+                 :subject {:type String}}}
+
   :Vclock
   {:description "habit details"
    :fields      {:node  {:type ID}
@@ -49,6 +68,7 @@
                  :audio_file          {:type String}
                  :story               {:type :Story}
                  :habit               {:type String}
+                 :git_commit          {:type :GitCommit}
                  :custom_fields       {:type String}
                  :questionnaires      {:type String}
                  :vclock              {:type (list :Vclock)}

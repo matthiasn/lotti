@@ -68,17 +68,14 @@
 (defn git-commit [_entry _put-fn]
   (let [repos (subscribe [:repos])]
     (fn [entry put-fn]
-      (when-let [git-commit (:git-commit @entry)]
-        (let [{:keys [repo-name refs commit subject]} git-commit
+      (when-let [gc (:git-commit entry)]
+        (let [{:keys [repo-name refs commit subject abbreviated-commit]} gc
               cfg (get-in @repos [repo-name])
               url (str
                     (:repo-url cfg) "/commit/" commit)]
           [:div.git-commit
            [:span.repo-name (str repo-name ":")]
-           "["
-           [:a {:href url :target "_blank"}
-            (:abbreviated-commit git-commit)]
-           "] "
+           "[" [:a {:href url :target "_blank"} abbreviated-commit] "] "
            (when (seq refs) (str "(" refs ") "))
            subject])))))
 
@@ -104,7 +101,7 @@
                                     (put-fn [:entry/update-local @entry]))
         local (r/atom {:scroll-disabled true})]
     (fn journal-entry-render [entry2 put-fn local-cfg]
-      (let [entry2 (merge entry2 @new-entry)
+      (let [merged (merge entry2 @new-entry)
             edit-mode? @edit-mode
             locale (:locale @cfg :en)
             formatted-time (h/localize-datetime (moment ts) locale)
@@ -116,44 +113,44 @@
                      :on-drag-enter h/prevent-default}
          [:div.header-1
           [:div
-           [es/story-select entry2 put-fn]
+           [es/story-select merged put-fn]
            [es/saga-select @entry put-fn edit-mode?]]
           [loc/geonames entry put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
-           [:time (u/visit-duration entry2)]]
-          [linked-btn entry2 local-cfg active put-fn]
-          [a/entry-actions entry2 put-fn edit-mode? toggle-edit local-cfg]]
-         [es/story-name-field entry2 edit-mode? put-fn]
-         [es/saga-name-field entry2 edit-mode? put-fn]
+           [:time (u/visit-duration merged)]]
+          [linked-btn merged local-cfg active put-fn]
+          [a/entry-actions merged put-fn edit-mode? toggle-edit local-cfg]]
+         [es/story-name-field merged edit-mode? put-fn]
+         [es/saga-name-field merged edit-mode? put-fn]
          [d/entry-editor entry2 put-fn]
-         [task/task-details @entry local-cfg put-fn edit-mode?]
-         [habit/habit-details @entry local-cfg put-fn edit-mode?]
+         [task/task-details merged local-cfg put-fn edit-mode?]
+         [habit/habit-details merged local-cfg put-fn edit-mode?]
          [reward/reward-details @entry put-fn]
          [:div.footer
           [pomo/pomodoro-header entry edit-mode? put-fn]
           [hashtags-mentions-list ts tab-group put-fn]
-          [:div.word-count (u/count-words-formatted entry2)]]
-         [conflict-view entry2 put-fn]
-         [c/custom-fields-div entry2 put-fn edit-mode?]
-         [git-commit entry put-fn]
-         [ws/wavesurfer entry2 local-cfg put-fn]
+          [:div.word-count (u/count-words-formatted merged)]]
+         [conflict-view merged put-fn]
+         [c/custom-fields-div merged put-fn edit-mode?]
+         [git-commit merged put-fn]
+         [ws/wavesurfer merged local-cfg put-fn]
          (when @show-map?
            (if mapbox-token
              [:div.entry-mapbox
               {:on-click #(swap! local update-in [:scroll-disabled] not)}
               [mb/mapbox-cls {:local           local
                               :id              map-id
-                              :selected        entry2
+                              :selected        merged
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
                               :mapbox-token    mapbox-token
                               :put-fn          put-fn}]]
-             [l/leaflet-map entry2 @show-map? local-cfg put-fn]))
-         [m/imdb-view entry put-fn]
-         [m/spotify-view entry2 put-fn]
-         [c/questionnaire-div entry2 put-fn edit-mode?]]))))
+             [l/leaflet-map merged @show-map? local-cfg put-fn]))
+         [m/imdb-view merged put-fn]
+         [m/spotify-view merged put-fn]
+         [c/questionnaire-div merged put-fn edit-mode?]]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

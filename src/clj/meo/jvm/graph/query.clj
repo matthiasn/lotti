@@ -485,17 +485,6 @@
         comments-linked (comments-linked-for-entry g false)]
     (mapv comments-linked entries)))
 
-(defn find-entry
-  "Find single entry."
-  [{:keys [current-state msg-payload]}]
-  (let [g (:graph current-state)
-        ts (:timestamp msg-payload)]
-    (if (uc/has-node? g ts)
-      (let [comments-linked-mapper (comments-linked-for-entry g false)
-            entry (comments-linked-mapper (uc/attrs g ts))]
-        {:emit-msg (when entry [:entry/found entry])})
-      (warn "cannot find node: " ts))))
-
 (defn run-query [current-state]
   (fn [[query-id query]]
     (let [res (get-filtered current-state query)]
