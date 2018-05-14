@@ -34,19 +34,20 @@
 
                                       (and v (contains? #{:timestamp
                                                           :comment_for
-                                                          :last_saved}
-                                                        k))
+                                                          :last_saved} k))
                                       [k (Long/parseLong v)]
 
                                       (and v (contains? #{:habit
                                                           :custom_fields
                                                           :entry_type
-                                                          :questionnaires}
-                                                        k))
+                                                          :priority
+                                                          :questionnaires} k))
                                       [k (edn/read-string (str v))]
 
                                       (and v (vector? v)
-                                           (contains? #{:tags :mentions} k))
+                                           (contains? #{:tags
+                                                        :perm_tags
+                                                        :mentions} k))
                                       [k (set v)]
 
                                       :else [k v]))

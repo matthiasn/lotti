@@ -172,6 +172,7 @@
             :mentions       #{}
             :planned-dur    1500
             :tags           #{"#PSS"}
+            :task           nil
             :text           "fixing the faulty implementation"
             :timestamp      1517589827814
             :timezone       "CET"

@@ -10,7 +10,8 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [clojure.walk :as walk]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -75,10 +76,35 @@
                :stories     @stories
                :onChange    on-change}])))
 
-(defn draft-text-editor [entry2 update-cb save-fn start-fn]
+(defn remove-nils
+  [m]
+  (let [f (fn [[k v]] (when v [k v]))]
+    (walk/postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
+
+(defn compare-entries [x y]
+  (let [x (remove-nils x)
+        y (remove-nils y)
+        y (assoc y :tags (set/union (:perm-tags y) (:tags y)))
+        ks (set/intersection (set (keys x))
+                             (set (keys y)))
+        x1 (u/clean-entry (select-keys x ks))
+        y1 (u/clean-entry (select-keys y ks))
+        eq (= x1 y1)
+        diff (clojure.data/diff x1 y1)]
+    (when-not eq
+      (info ks)
+      (info (first diff))
+      (info (second diff))
+      (info diff)
+      (info x1 y1))
+    (not eq)))
+
+(def editor (adapt-react-class "EntryTextEditor"))
+
+(defn entry-editor [entry2 put-fn]
   (let [ts (:timestamp entry2)
-        editor (adapt-react-class "EntryTextEditor")
         {:keys [new-entry]} (eu/entry-reaction ts)
+        cb-atom (atom {:last-sent 0})
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -90,22 +116,7 @@
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
-                     (map (fn [h] {:name h}) hashtags)))]
-    (fn draft-editor-render [entry2 update-cb save-fn start-fn]
-      (let [unsaved (when @new-entry (not= (:md entry2) (:md @new-entry)))]
-        [editor {:md       (or (:md @new-entry) (:md entry2))
-                 :ts       ts
-                 :changed  unsaved
-                 :mentions @mentions
-                 :hashtags @hashtags
-                 :saveFn   save-fn
-                 :startFn  start-fn
-                 :onChange update-cb}]))))
-
-(defn entry-editor [entry2 put-fn]
-  (let [ts (:timestamp entry2)
-        {:keys [new-entry]} (eu/entry-reaction ts)
-        cb-atom (atom {:last-sent 0})
+                     (map (fn [h] {:name h}) hashtags)))
         update-local (fn []
                        (let [start (st/now)
                              editor-state (:editor-state @cb-atom)
@@ -113,20 +124,23 @@
                              plain (.getPlainText content)
                              raw-content (.convertToRaw Draft content)
                              md (.draftjsToMd md-converter raw-content md-dict)
-                             updated (merge entry2
-                                            (p/parse-entry md)
-                                            {:text         plain
-                                             :edit-running true})]
+                             x (merge @new-entry
+                                      (p/parse-entry md)
+                                      {:text         plain
+                                       :timestamp    (:timestamp entry2)
+                                       :edit-running true})
+                             x (update-in x [:tags] set/union (:perm-tags entry2))]
                          (swap! cb-atom dissoc :timeout)
-                         (when (not= md (:md entry2))
-                           (when (:timestamp updated)
-                             (put-fn [:entry/update-local updated]))
-                           (debug "update-local" (:timestamp updated)
-                                  "-" (- (st/now) start) "ms"))))
+                         (when (and (not= md (:md entry2))
+                                    (or (not @new-entry)
+                                        (not= md (:md @new-entry))))
+                           (put-fn [:entry/update-local x])
+                           (info "update-local" (:timestamp x) md
+                                 "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
                     (when-not (:timeout @cb-atom)
-                      (let [timeout (.setTimeout js/window update-local 1000)]
+                      (let [timeout (js/setTimeout update-local 500)]
                         (swap! cb-atom assoc-in [:timeout] timeout))))
         save-fn (fn [md plain]
                   (let [cleaned (u/clean-entry entry2)
@@ -139,7 +153,7 @@
                                   (assoc-in updated [:pomodoro-running] false)
                                   updated)]
                     (when-let [timeout (:timeout @cb-atom)]
-                      (.clearTimeout js/window timeout)
+                      (js/clearTimeout timeout)
                       (swap! cb-atom dissoc :timeout))
                     (when (:pomodoro-running cleaned)
                       (put-fn [:window/progress {:v 0}])
@@ -151,7 +165,14 @@
                     (when (= (:entry-type latest-entry) :pomodoro)
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
-      (let [unsaved (when @new-entry (not= (:md entry2) (:md @new-entry)))]
+      (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
         ^{:key (str (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
-         [draft-text-editor entry2 change-cb save-fn start-fn]]))))
+         [editor {:md       (or (:md @new-entry) (:md entry2))
+                  :ts       ts
+                  :changed  unsaved
+                  :mentions @mentions
+                  :hashtags @hashtags
+                  :saveFn   save-fn
+                  :startFn  start-fn
+                  :onChange change-cb}]]))))

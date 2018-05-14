@@ -59,7 +59,7 @@
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)
                    :class    cls}
          [:td
-          (when-let [prio (some-> entry :task :priority (subs 1))]
+          (when-let [prio (some-> entry :task :priority (name))]
             [:span.prio {:class prio} prio])]
          [:td.award-points
           (when-let [points (-> entry :task :points)]
@@ -176,7 +176,7 @@
                               (filter current-filter)
                               (filter saga-filter)
                               (filter #(not (contains? started-tasks (:timestamp %))))
-                              (sort-by #(or (-> % :task :priority) ":X")))
+                              (sort-by #(or (-> % :task :priority) :X)))
             unlink (fn [entry ts]
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]

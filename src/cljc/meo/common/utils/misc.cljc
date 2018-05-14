@@ -116,6 +116,9 @@
   (-> entry
       (dissoc :comments)
       (dissoc :new-entry)
+      (dissoc :linked)
+      (update-in [:task] dissoc :completed-s)
+      (update-in [:task] dissoc :due)
       (dissoc :editor-state)
       (dissoc :pomodoro-running)
       (dissoc :linked-entries-list)))

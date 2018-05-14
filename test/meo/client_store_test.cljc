@@ -1,10 +1,10 @@
 (ns meo.client-store-test
   "Here, we test the handler functions of the server side store component."
-  (:require #?(:clj  [clojure.test :refer [deftest testing is]]
+  (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-            [meo.electron.renderer.client-store :as store]
-            [meo.electron.renderer.client-store-cfg :as c]
-            [meo.electron.renderer.client-store-search :as search]))
+                    [meo.electron.renderer.client-store :as store]
+                    [meo.electron.renderer.client-store-cfg :as c]
+                    [meo.electron.renderer.client-store-search :as search]))
 
 (def empty-query
   {:search-text ""
@@ -15,7 +15,7 @@
    :timestamp   nil
    :n           40
    :query-id    :query-1
-   :sort-asc nil})
+   :sort-asc    nil})
 
 (def open-tasks-query
   {:search-text "#task ~#done "
@@ -26,7 +26,7 @@
    :timestamp   nil
    :n           40
    :query-id    :query-1
-   :sort-asc nil})
+   :sort-asc    nil})
 
 (def test-entry
   {:mentions       #{}
@@ -48,26 +48,26 @@
    :query-id            :query-1})
 
 (def stats-tags-from-backend
-  {:hashtags            #{"#drama" "#hashtag" "#blah"}
-   :mentions            #{"@myself" "@me" "@I"}
-   :stats               {:entry-count 4118 :node-count 5636 :edge-count 28726}})
+  {:hashtags #{"#drama" "#hashtag" "#blah"}
+   :mentions #{"@myself" "@me" "@I"}
+   :stats    {:entry-count 4118 :node-count 5636 :edge-count 28726}})
 
 (def meta-from-backend
-  {:server/ws-cmp     {:out-ts 1467748026835
-                       :in-ts  1467748026845}
-   :sente-uid         "b1ea383d-f1b1-42fe-9125-f5953e605cd7"
-   :cmp-seq           [:client/search-cmp :client/store-cmp :client/ws-cmp
-                       :server/store-cmp :server/store-cmp :server/ws-cmp
-                       :client/store-cmp]
-   :server/store-cmp  {:in-ts  1467748026835
-                       :out-ts 1467748026845}
+  {:server/ws-cmp       {:out-ts 1467748026835
+                         :in-ts  1467748026845}
+   :sente-uid           "b1ea383d-f1b1-42fe-9125-f5953e605cd7"
+   :cmp-seq             [:client/search-cmp :client/store-cmp :client/ws-cmp
+                         :server/store-cmp :server/store-cmp :server/ws-cmp
+                         :client/store-cmp]
+   :server/store-cmp    {:in-ts  1467748026835
+                         :out-ts 1467748026845}
    :renderer/store-cmp  {:out-ts 1467748026813
-                       :in-ts  1467748026870}
+                         :in-ts  1467748026870}
    :renderer/search-cmp {:out-ts 1467748026684}
    :renderer/ws-cmp     {:in-ts  1467748026814
-                       :out-ts 1467748026869}
-   :tag               "5a5183de-ee04-4b2f-9dbf-aa4fe2c245f7"
-   :corr-id           "39476852-fdc1-474a-a933-76cc83a55b31"})
+                         :out-ts 1467748026869}
+   :tag                 "5a5183de-ee04-4b2f-9dbf-aa4fe2c245f7"
+   :corr-id             "39476852-fdc1-474a-a933-76cc83a55b31"})
 
 (def entry-update
   {:timestamp 1465059173965
@@ -84,24 +84,23 @@
    :timestamp  1465059173965
    :md         ""})
 
-#_
-(deftest new-state-test
-  (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-        new-state (:new-state (store/new-state-fn
-                                {:current-state current-state
-                                 :msg-payload   state-from-backend
-                                 :msg-meta      meta-from-backend}))]
-    (testing
-      "entries are on new state"
-      (is (= (get-in new-state [:results])
-             (:entries state-from-backend))))
-    (testing
-      "entries map is on new state"
-      (is (= (:entries-map new-state) (:entries-map state-from-backend))))
-    (testing
-      "query duration is on new state"
-      (is (= (:query (:timing new-state)) (:duration-ms state-from-backend)))
-      (is (= (:rtt (:timing new-state)) 57)))))
+#_(deftest new-state-test
+    (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
+          new-state (:new-state (store/new-state-fn
+                                  {:current-state current-state
+                                   :msg-payload   state-from-backend
+                                   :msg-meta      meta-from-backend}))]
+      (testing
+        "entries are on new state"
+        (is (= (get-in new-state [:results])
+               (:entries state-from-backend))))
+      (testing
+        "entries map is on new state"
+        (is (= (:entries-map new-state) (:entries-map state-from-backend))))
+      (testing
+        "query duration is on new state"
+        (is (= (:query (:timing new-state)) (:duration-ms state-from-backend)))
+        (is (= (:rtt (:timing new-state)) 57)))))
 
 (deftest toggle-key-test
   "toggle key messages flip boolean value"

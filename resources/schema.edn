@@ -68,6 +68,7 @@
                  :md                  {:type String}
                  :text                {:type String}
                  :tags                {:type (list String)}
+                 :perm_tags           {:type (list String)}
                  :mentions            {:type (list String)}
                  :img_file            {:type String}
                  :audio_file          {:type String}
