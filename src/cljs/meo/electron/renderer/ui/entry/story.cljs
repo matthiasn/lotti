@@ -123,12 +123,13 @@
                       (let [key-code (.. ev -keyCode)
                             idx-inc #(if (< % (dec (count indexed))) (inc %) %)
                             idx-dec #(if (pos? %) (dec %) %)]
-                        (when (= key-code 40)
-                          (swap! local update-in [:idx] idx-inc))
-                        (when (= key-code 38)
-                          (swap! local update-in [:idx] idx-dec))
-                        (when (= key-code 13)
-                          (assign-story (second (nth indexed (:idx @local)))))
+                        (when (:show @local)
+                          (when (= key-code 40)
+                            (swap! local update-in [:idx] idx-inc))
+                          (when (= key-code 38)
+                            (swap! local update-in [:idx] idx-dec))
+                          (when (= key-code 13)
+                            (assign-story (second (nth indexed (:idx @local))))))
                         (.stopPropagation ev)))
             start-watch #(.addEventListener js/document "keydown" keydown)
             stop-watch #(.removeEventListener js/document "keydown" keydown)
@@ -139,7 +140,6 @@
                             (swap! local assoc-in [:timeout] t)
                             (stop-watch)))
             mouse-enter #(do (info :mouse-enter)
-                             (start-watch)
                              (when-let [t (:timeout @local)] (js/clearTimeout t)))
             toggle-visible (fn [_]
                              (swap! local update-in [:show] not)
@@ -168,9 +168,10 @@
                     (let [active (= linked-story (:timestamp story))
                           cls (cond active "current"
                                     (= idx curr-idx) "idx"
-                                    :else "")]
+                                    :else "")
+                          click #(assign-story story)]
                       ^{:key (:timestamp story)}
-                      [:tr {:on-click #(assign-story story)}
+                      [:tr {:on-click click}
                        [:td {:class cls}
                         (:story-name story)]]))]]])
              [:div.story
