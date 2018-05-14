@@ -35,13 +35,13 @@
 
 (defn geonames [entry put-fn]
   (let [detail (r/atom false)
-        toggle-detail (fn [_] (swap! detail not))
-        remove #(put-fn [:entry/update-local (assoc-in @entry [:geoname] :removed)])]
+        toggle-detail (fn [_] (swap! detail not))]
     (fn location-details-render [entry put-fn]
-      (let [geoname (:geoname @entry)]
+      (let [geoname (:geoname entry)]
         (when (and geoname (not= :removed geoname))
           (let [{:keys [admin-4-name admin-3-name admin-2-name country-code]} geoname
                 loc-name (:name geoname)
+                remove #(put-fn [:entry/update-local (assoc-in entry [:geoname] :removed)])
                 flag (get (js->clj (.countryCode emoji-flags country-code)) "emoji")]
             [:div.geoname {:on-click toggle-detail}
              (when @detail [:div.loc [:span.fa.fa-trash.up {:on-click remove}]])

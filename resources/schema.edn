@@ -19,22 +19,22 @@
 
   :GitAuthor
   {:description "git abbreviated-parent details"
-   :fields      {:name   {:type String}
-                 :email  {:type String}
-                 :date   {:type String}}}
+   :fields      {:name  {:type String}
+                 :email {:type String}
+                 :date  {:type String}}}
 
   :GitCommit
   {:description "git commit details"
    :fields      {:abbreviated_parent {:type String}
-                 :tree {:type String}
-                 :parent {:type String}
-                 :author {:type :GitAuthor}
-                 :refs {:type String}
-                 :repo_name {:type String}
-                 :abbreviated_tree {:type String}
-                 :commit {:type String}
+                 :tree               {:type String}
+                 :parent             {:type String}
+                 :author             {:type :GitAuthor}
+                 :refs               {:type String}
+                 :repo_name          {:type String}
+                 :abbreviated_tree   {:type String}
+                 :commit             {:type String}
                  :abbreviated_commit {:type String}
-                 :subject {:type String}}}
+                 :subject            {:type String}}}
 
   :Vclock
   {:description "habit details"
@@ -55,6 +55,11 @@
                  :album_uri {:type String}
                  :artists   {:type (list :Artist)}}}
 
+  :Reward
+  {:fields {:points     {:type Int}
+            :claimed    {:type Boolean}
+            :claimed_ts {:type ID}}}
+
   :Entry
   {:description "A journal entry"
    :fields      {:timestamp           {:type (non-null ID)}
@@ -66,8 +71,10 @@
                  :mentions            {:type (list String)}
                  :img_file            {:type String}
                  :audio_file          {:type String}
+                 :entry_type          {:type String}
                  :story               {:type :Story}
                  :habit               {:type String}
+                 :reward              {:type :Reward}
                  :git_commit          {:type :GitCommit}
                  :custom_fields       {:type String}
                  :questionnaires      {:type String}

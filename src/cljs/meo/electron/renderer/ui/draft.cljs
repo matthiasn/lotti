@@ -75,10 +75,10 @@
                :stories     @stories
                :onChange    on-change}])))
 
-(defn draft-text-editor [entry2 update-cb save-fn start-fn small-img]
+(defn draft-text-editor [entry2 update-cb save-fn start-fn]
   (let [ts (:timestamp entry2)
         editor (adapt-react-class "EntryTextEditor")
-        {:keys [new-entry unsaved]} (eu/entry-reaction ts)
+        {:keys [new-entry]} (eu/entry-reaction ts)
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -91,20 +91,20 @@
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
                      (map (fn [h] {:name h}) hashtags)))]
-    (fn draft-editor-render [entry2 update-cb save-fn start-fn small-img]
-      [editor {:md       (or (:md @new-entry) (:md entry2))
-               :ts       ts
-               :changed  @unsaved
-               :mentions @mentions
-               :hashtags @hashtags
-               :saveFn   save-fn
-               :startFn  start-fn
-               :smallImg small-img
-               :onChange update-cb}])))
+    (fn draft-editor-render [entry2 update-cb save-fn start-fn]
+      (let [unsaved (when @new-entry (not= (:md entry2) (:md @new-entry)))]
+        [editor {:md       (or (:md @new-entry) (:md entry2))
+                 :ts       ts
+                 :changed  unsaved
+                 :mentions @mentions
+                 :hashtags @hashtags
+                 :saveFn   save-fn
+                 :startFn  start-fn
+                 :onChange update-cb}]))))
 
 (defn entry-editor [entry2 put-fn]
   (let [ts (:timestamp entry2)
-        {:keys [entry new-entry unsaved]} (eu/entry-reaction ts)
+        {:keys [new-entry]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
         update-local (fn []
                        (let [start (st/now)
@@ -118,7 +118,7 @@
                                             {:text         plain
                                              :edit-running true})]
                          (swap! cb-atom dissoc :timeout)
-                         (when (not= md (:md @entry))
+                         (when (not= md (:md entry2))
                            (when (:timestamp updated)
                              (put-fn [:entry/update-local updated]))
                            (debug "update-local" (:timestamp updated)
@@ -129,38 +129,29 @@
                       (let [timeout (.setTimeout js/window update-local 1000)]
                         (swap! cb-atom assoc-in [:timeout] timeout))))
         save-fn (fn [md plain]
-                  (let [latest-entry (dissoc @entry :comments)
-                        cleaned (u/clean-entry latest-entry)
+                  (let [cleaned (u/clean-entry entry2)
                         updated (merge (dissoc cleaned :edit-running)
+                                       @new-entry
                                        (p/parse-entry md)
                                        {:text plain})
                         updated (update-in updated [:tags] set/union (:perm-tags updated))
-                        updated (if (= (:entry-type latest-entry) :pomodoro)
+                        updated (if (= (:entry-type cleaned) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
                                   updated)]
                     (when-let [timeout (:timeout @cb-atom)]
                       (.clearTimeout js/window timeout)
                       (swap! cb-atom dissoc :timeout))
-                    (when (:pomodoro-running latest-entry)
+                    (when (:pomodoro-running cleaned)
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
                       (put-fn [:cmd/pomodoro-stop updated]))
-                    (put-fn [:entry/update-local updated])
                     (put-fn [:entry/update updated])))
-        start-fn #(let [latest-entry (dissoc @entry :comments)]
+        start-fn #(let [latest-entry (merge (dissoc entry2 :comments)
+                                            @new-entry)]
                     (when (= (:entry-type latest-entry) :pomodoro)
-                      (put-fn [:cmd/pomodoro-start latest-entry])))
-        small-img (fn [smaller]
-                    (let [img-size (:img-size @entry 50)
-                          img-size (if smaller (- img-size 10) (+ img-size 10))
-                          updated (assoc-in @entry [:img-size] img-size)]
-                      (when (and (pos? img-size)
-                                 (< img-size 101)
-                                 (:timestamp updated))
-                        (put-fn [:entry/update-local updated]))))]
+                      (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
-      (let [unsaved (or (when @new-entry (not= (:md entry2) (:md @new-entry)))
-                        @unsaved)]
+      (let [unsaved (when @new-entry (not= (:md entry2) (:md @new-entry)))]
         ^{:key (str (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
-         [draft-text-editor entry2 change-cb save-fn start-fn small-img]]))))
+         [draft-text-editor entry2 change-cb save-fn start-fn]]))))

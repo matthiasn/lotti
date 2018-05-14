@@ -40,9 +40,14 @@
 
                                       (and v (contains? #{:habit
                                                           :custom_fields
+                                                          :entry_type
                                                           :questionnaires}
                                                         k))
-                                      [k (edn/read-string v)]
+                                      [k (edn/read-string (str v))]
+
+                                      (and v (vector? v)
+                                           (contains? #{:tags :mentions} k))
+                                      [k (set v)]
 
                                       :else [k v]))
                                   node))

@@ -99,8 +99,8 @@
                    (or
                      (when-let [c (get-entry g comment-ts)]
                        (let [path [:custom-fields "#duration" :duration]]
-                         (+ (:completed-time c 0)
-                            (* 60 (get-in c path 0)))))
+                         (+ (or (:completed-time c) 0)
+                            (* 60 (or (get-in c path) 0)))))
                      0))
         task-total-t (fn [t]
                        (let [logged (apply + (map logged-t (:comments t)))]
@@ -170,10 +170,10 @@
            :opts     #{":started"}
            :n        100}
         current-state @st/state
-        tasks (gq/get-filtered2 current-state q)
         g (:graph current-state)
-        tasks (entries-w-logged g tasks)
-        tasks (mapv #(entry-w-story g %) tasks)]
+        tasks (->>  (gq/get-filtered2 current-state q)
+                    (entries-w-logged g)
+                    (mapv #(entry-w-story g %)))]
     (xf/snake-xf tasks)))
 
 (defn waiting-habits [context args value]

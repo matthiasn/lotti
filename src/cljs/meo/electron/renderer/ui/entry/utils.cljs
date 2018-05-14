@@ -5,28 +5,12 @@
             [clojure.string :as s]
             [meo.common.utils.misc :as u]))
 
-(defn compare-relevant [entry]
-  (let [entry (dissoc (u/clean-entry entry)
-                      :text :editor-state :vclock :last-saved :linked-entries
-                      :edit-running :comments :linked)]
-    (update-in entry [:md] #(when (string? %) (s/trim %)))))
-
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])
-        entries-map (subscribe [:entries-map])
-        entry (reaction (get-in @new-entries [ts]))
         new-entry (reaction (get-in @new-entries [ts]))
-        edit-mode (reaction (contains? @new-entries ts))
-        unsaved (reaction (and @edit-mode
-                               (:md @new-entry)
-                               (not= (compare-relevant @new-entry)
-                                     (compare-relevant @entry))))]
-    {:entry            entry
-     :new-entry        new-entry
-     :entries-map      entries-map
-     :new-entries      new-entries
-     :unsaved          unsaved
-     :edit-mode        edit-mode}))
+        edit-mode (reaction (contains? @new-entries ts))]
+    {:new-entry new-entry
+     :edit-mode edit-mode}))
 
 (defn first-line [entry]
   (let [text #(or (:text %) (:md %))]

@@ -25,25 +25,16 @@
             [clojure.pprint :as pp]
             [reagent.core :as r]))
 
-(defn all-comments-set [ts]
-  (let [{:keys [entry new-entries]} (eu/entry-reaction ts)
-        comments-filter (fn [[_ts c]] (= (:comment-for c) ts))
-        local-comments (reaction (into {} (filter comments-filter @new-entries)))]
-    (reaction (sort (set/union (set (:comments @entry))
-                               (set (keys @local-comments)))))))
-
-(defn hashtags-mentions-list [ts tab-group put-fn]
-  (let [entry (:entry (eu/entry-reaction ts))]
-    (fn hashtags-mentions-render [ts tab-group put-fn]
-      [:div.hashtags
-       (for [mention (:mentions @entry)]
-         ^{:key (str "tag-" mention)}
-         [:span.mention {:on-click (up/add-search mention tab-group put-fn)}
-          mention])
-       (for [hashtag (set/union (:tags @entry) (:perm-tags @entry))]
-         ^{:key (str "tag-" hashtag)}
-         [:span.hashtag {:on-click (up/add-search hashtag tab-group put-fn)}
-          hashtag])])))
+(defn hashtags-mentions-list [entry tab-group put-fn]
+  [:div.hashtags
+   (for [mention (:mentions entry)]
+     ^{:key (str "tag-" mention)}
+     [:span.mention {:on-click (up/add-search mention tab-group put-fn)}
+      mention])
+   (for [hashtag (set/union (:tags entry) (:perm-tags entry))]
+     ^{:key (str "tag-" hashtag)}
+     [:span.hashtag {:on-click (up/add-search hashtag tab-group put-fn)}
+      hashtag])])
 
 (defn linked-btn [entry local-cfg active put-fn]
   (when (pos? (:linked-cnt entry))
@@ -89,21 +80,21 @@
   [entry2 put-fn local-cfg]
   (let [ts (:timestamp entry2)
         cfg (subscribe [:cfg])
-        {:keys [entry edit-mode new-entry entries-map]} (eu/entry-reaction ts)
+        {:keys [edit-mode new-entry]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
         q-date-string (.format (moment ts) "YYYY-MM-DD")
         tab-group (:tab-group local-cfg)
         add-search (up/add-search q-date-string tab-group put-fn)
-        drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)
-        toggle-edit #(if @edit-mode (put-fn [:entry/remove-local @entry])
-                                    (put-fn [:entry/update-local @entry]))
+        drop-fn (a/drop-linked-fn entry2 cfg put-fn)
         local (r/atom {:scroll-disabled true})]
     (fn journal-entry-render [entry2 put-fn local-cfg]
       (let [merged (merge entry2 @new-entry)
             edit-mode? @edit-mode
             locale (:locale @cfg :en)
+            toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry2])
+                                        (put-fn [:entry/update-local entry2]))
             formatted-time (h/localize-datetime (moment ts) locale)
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
@@ -114,8 +105,8 @@
          [:div.header-1
           [:div
            [es/story-select merged put-fn]
-           [es/saga-select @entry put-fn edit-mode?]]
-          [loc/geonames entry put-fn]]
+           [es/saga-select entry2 put-fn edit-mode?]]
+          [loc/geonames entry2 put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
@@ -127,10 +118,10 @@
          [d/entry-editor entry2 put-fn]
          [task/task-details merged local-cfg put-fn edit-mode?]
          [habit/habit-details merged local-cfg put-fn edit-mode?]
-         [reward/reward-details @entry put-fn]
+         [reward/reward-details merged put-fn]
          [:div.footer
-          [pomo/pomodoro-header entry edit-mode? put-fn]
-          [hashtags-mentions-list ts tab-group put-fn]
+          [pomo/pomodoro-header merged edit-mode? put-fn]
+          [hashtags-mentions-list entry2 tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]
          [c/custom-fields-div merged put-fn edit-mode?]

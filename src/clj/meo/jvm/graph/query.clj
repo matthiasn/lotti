@@ -8,13 +8,11 @@
             [clojure.string :as s]
             [clojure.set :as set]
             [taoensso.timbre :refer [info error warn debug]]
-            [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [camel-snake-kebab.core :refer [->snake_case]]
-            [clj-time.core :as ct])
-  (:import (org.joda.time DateTimeZone)))
+            [clj-time.core :as ct]))
 
 ;; TODO: migrate existing audio entries to use a different keyword
 (defn summed-durations
@@ -484,11 +482,6 @@
                                 (extract-sorted-entries current-state query)))
         comments-linked (comments-linked-for-entry g false)]
     (mapv comments-linked entries)))
-
-(defn run-query [current-state]
-  (fn [[query-id query]]
-    (let [res (get-filtered current-state query)]
-      [query-id res])))
 
 (defn query-fn [{:keys [current-state put-fn]}]
   (put-fn [:startup/progress (:startup-progress current-state)])

@@ -43,13 +43,17 @@
                            [:timestamp :text :md :latitude :longitude :starred
                             :linked_cnt :arrival_timestamp :departure_timestamp
                             :img_file :last_saved :audio_file :tags
-                            :habit :questionnaires :custom_fields
+                            :habit :questionnaires :custom_fields :entry_type
+                            [:task [:completed_s :completion_ts :done :estimate_m
+                                    :on_hold :points :priority]]
                             [:git_commit [:repo_name :refs :commit :subject
                                           :abbreviated_commit]]
                             [:comments [:timestamp :md :latitude :longitude
-                                        :img_file :comment_for]]
+                                        :img_file :comment_for :entry_type
+                                        :completed_time]]
                             [:linked [:timestamp :md :latitude :longitude
                                       :img_file]]
+                            [:reward [:claimed :claimed_ts :points]]
                             [:spotify [:name :uri :image [:artists [:name]]]]
                             [:story [:timestamp :story_name
                                      [:linked_saga [:saga_name]]]]]]

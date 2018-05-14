@@ -154,10 +154,10 @@
             new-state1 (:new-state (cse/pomodoro-start
                                      {:current-state new-state
                                       :msg-payload test-entry}))
-            new-state2 (:new-state (cse/pomodoro-inc-fn
+            new-state2 (:new-state (cse/pomodoro-inc
                                      {:current-state new-state1
                                       :msg-payload pomodoro-inc-msg}))
-            new-state3 (:new-state (cse/pomodoro-inc-fn
+            new-state3 (:new-state (cse/pomodoro-inc
                                      {:current-state new-state2
                                       :msg-payload pomodoro-inc-msg}))]
         (testing
@@ -195,7 +195,7 @@
           new-state1 (:new-state (cse/pomodoro-start
                                    {:current-state new-state
                                     :msg-payload test-entry}))
-          new-state2 (:new-state (cse/pomodoro-inc-fn
+          new-state2 (:new-state (cse/pomodoro-inc
                                    {:current-state new-state1
                                     :msg-payload pomodoro-inc-msg}))
           new-state3 (:new-state (cse/pomodoro-start

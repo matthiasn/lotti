@@ -32,7 +32,7 @@
 
 (s/def :meo.entry/timezone (s/nilable string?))
 (s/def :meo.entry/utc-offset (number-in-range? -720 720))
-(s/def :meo.entry/entry-type #{:pomodoro :story :saga})
+(s/def :meo.entry/entry-type (s/nilable #{:pomodoro :story :saga}))
 (s/def :meo.entry/comment-for possible-timestamp?)
 
 (s/def :meo.entry/primary-story (s/nilable possible-timestamp?))
@@ -100,7 +100,7 @@
 (s/def :import/imdb-id string?)
 (s/def :import/movie (s/keys :req-un [:import/entry :import/imdb-id]))
 
-(s/def :cmd/set-dragged timestamp-required-spec)
+(s/def :cmd/set-dragged entry-spec)
 
 (s/def :ft/add entry-spec)
 (s/def :ft/remove timestamp-required-spec)

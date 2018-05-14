@@ -81,7 +81,7 @@
   #?(:cljs (js/parseInt n)
      :clj  n))
 
-(defn pomodoro-inc-fn
+(defn pomodoro-inc
   "Increments completed time for entry."
   [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
@@ -90,6 +90,7 @@
         dur (parse-int-js (+ completed-time
                              (/ (- (st/now) started) 1000)))
         new-state (assoc-in current-state [:new-entries ts :completed-time] dur)]
+    (info "pomodoro-inc-fn" msg-payload)
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
             completed (:completed-time new-entry)
@@ -195,6 +196,6 @@
    :entry/remove-local remove-local
    :entry/saved        entry-saved-fn
    :geonames/res       geo-res
-   :cmd/pomodoro-inc   pomodoro-inc-fn
+   :cmd/pomodoro-inc   pomodoro-inc
    :cmd/pomodoro-start pomodoro-start
    :cmd/pomodoro-stop  pomodoro-stop})

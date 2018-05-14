@@ -16,16 +16,15 @@
             [clojure.string :as str]
             [meo.electron.renderer.ui.mapbox :as mb]))
 
-(defn stars-view [ts put-fn]
-  (let [{:keys [entry]} (eu/entry-reaction ts)
-        star (fn [idx n]
+(defn stars-view [entry put-fn]
+  (let [star (fn [idx n]
                (let [click (fn [ev]
-                             (let [updated (assoc-in @entry [:stars] idx)]
+                             (let [updated (assoc-in entry [:stars] idx)]
                                (debug "stars click" updated)
                                (put-fn [:entry/update updated])))]
                  [:i.fa-star {:class    (if (<= idx n) "fas" "fal")
                               :on-click click}]))
-        stars (:stars @entry 0)]
+        stars (:stars entry 0)]
     [:span.stars
      [star 1 stars]
      [star 2 stars]
@@ -51,7 +50,7 @@
        (when-not fullscreen
          [:div.legend
           (h/localize-datetime-full ts locale)
-          [stars-view ts put-fn]
+          [stars-view entry put-fn]
           [:span {:on-click toggle-expanded}
            (if fullscreen
              [:i.fas.fa-compress]
@@ -117,7 +116,7 @@
                          :mapbox-token mapbox-token
                          :put-fn       put-fn}]
          [:time (h/localize-datetime-full ts locale)]
-         [stars-view ts put-fn]
+         [stars-view selected put-fn]
          [:div.md {:dangerouslySetInnerHTML {:__html html}}]
          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))))
 

@@ -77,7 +77,7 @@
   (let [g (:graph current-state)
         entries (map #(uber/attrs g %) (:sorted-entries current-state))
         seconds-logged (map (fn [entry]
-                              (let [completed (get entry :completed-time 0)
+                              (let [completed (or (get entry :completed-time) 0)
                                     manual (gq/summed-durations entry)
                                     summed (+ completed manual)]
                                 summed))

@@ -50,13 +50,13 @@
   "Creates handler function for drop event, which takes the timestamp of the
    currently dragged element and links that entry to the one onto which it is
    dropped."
-  [entry entries-map cfg put-fn]
+  [entry cfg put-fn]
   (fn [_ev]
-    (if (= :story (:entry-type @entry))
+    (if (= :story (:entry-type entry))
       ; assign story
-      (let [ts (:currently-dragged @cfg)
-            dropped (get @entries-map ts)
-            story (:timestamp @entry)
+      (let [dropped (:currently-dragged @cfg)
+            ts (:timestamp dropped)
+            story (:timestamp entry)
             updated (merge (-> dropped
                                (update-in [:linked-stories] #(set/union #{story} %))
                                (assoc-in [:primary-story] story))
@@ -64,8 +64,9 @@
         (when (and ts (not= ts story))
           (put-fn [:entry/update updated])))
       ; link two entries
-      (let [ts (:currently-dragged @cfg)
-            updated (update-in @entry [:linked-entries] #(set (conj % ts)))]
+      (let [dropped (:currently-dragged @cfg)
+            ts (:timestamp dropped)
+            updated (update-in entry [:linked-entries] #(set (conj % ts)))]
         (when (and ts (not= ts (:timestamp updated)))
           (put-fn [:entry/update (u/clean-entry updated)]))))))
 

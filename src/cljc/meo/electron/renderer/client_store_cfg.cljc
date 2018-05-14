@@ -44,8 +44,7 @@
                                               :reset-to false}]}]})
 
 (defn set-currently-dragged [{:keys [current-state msg-payload]}]
-  (let [ts (:timestamp msg-payload)
-        new-state (assoc-in current-state [:cfg :currently-dragged] ts)]
+  (let [new-state (assoc-in current-state [:cfg :currently-dragged] msg-payload)]
     {:new-state new-state}))
 
 (defn toggle-set-fn

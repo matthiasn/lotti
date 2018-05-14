@@ -50,8 +50,8 @@
                               story (or (:primary-story parent)
                                         (:primary-story entry)
                                         0)
-                              acc-time (get acc story 0)
-                              completed (get entry :completed-time 0)
+                              acc-time (or (get acc story) 0)
+                              completed (or (get entry :completed-time) 0)
                               manual (manually-logged entry date-string)
                               summed (+ acc-time completed manual)]
                           (if (pos? summed)
@@ -72,7 +72,7 @@
                                         (c/to-long dt)))
                              ts (or for-ts timestamp)
                              saga (get-in sagas [(:linked-saga story)])
-                             completed (get entry :completed-time 0)
+                             completed (or (get entry :completed-time) 0)
                              manual (manually-logged entry date-string)
                              summed (+ completed manual)]
                          (when (pos? summed)
