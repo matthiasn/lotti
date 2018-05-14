@@ -171,9 +171,9 @@
            :n        100}
         current-state @st/state
         g (:graph current-state)
-        tasks (->>  (gq/get-filtered2 current-state q)
-                    (entries-w-logged g)
-                    (mapv #(entry-w-story g %)))]
+        tasks (->> (gq/get-filtered2 current-state q)
+                   (entries-w-logged g)
+                   (mapv #(entry-w-story g %)))]
     (xf/snake-xf tasks)))
 
 (defn waiting-habits [context args value]
@@ -187,7 +187,8 @@
         habits (mapv #(update-in % [:story] xf/snake-xf) habits)]
     habits))
 
-(defn run-query [{:keys [current-state msg-payload put-fn]}]
+#_
+(defn run-query2 [{:keys [current-state msg-payload put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)
         qid (:id msg-payload)
@@ -209,6 +210,30 @@
           (str "- '" (or file query-string) "'"))
     (when new-data (put-fn [:gql/res res]))
     {:new-state new-state}))
+
+(defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
+  (future
+    (let [start (stc/now)
+          schema (:schema current-state)
+          qid (:id msg-payload)
+          merged (merge (get-in current-state [:queries qid]) msg-payload)
+          {:keys [file args q id res-hash]} merged
+          template (if file (slurp (io/resource (str "queries/" file))) q)
+          query-string (apply format template args)
+          res (lacinia/execute schema query-string nil nil)
+          new-hash (hash res)
+          new-data (not= new-hash res-hash)
+          res (merge merged
+                     (xf/simplify res)
+                     {:res-hash new-hash
+                      :ts       (stc/now)
+                      :prio     (:prio merged 100)})]
+      (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
+      (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
+            (if new-data "new data" "same hash, omitting response")
+            (str "- '" (or file query-string) "'"))
+      (when new-data (put-fn [:gql/res res]))))
+  {})
 
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]
   (let [queries (:queries current-state)]
