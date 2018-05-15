@@ -115,10 +115,7 @@
                           (apply +))
             dur (u/duration-string logged-s)
             n (count (:by-ts @day-stats))
-            ;{:keys [entry entries-map]} (eu/entry-reaction ts)
-            ;drop-fn (a/drop-linked-fn entry entries-map cfg put-fn)
-            drop-fn (a/drop-linked-fn @briefing cfg put-fn)
-            ]
+            drop-fn (a/drop-linked-fn @briefing cfg put-fn)]
         [:div.entry-with-comments
          [:div.entry
           [:div.briefing {:on-drop       drop-fn

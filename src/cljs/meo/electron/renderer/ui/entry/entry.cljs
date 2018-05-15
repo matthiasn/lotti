@@ -105,7 +105,7 @@
          [:div.header-1
           [:div
            [es/story-select entry2 put-fn]
-           [es/saga-select entry2 put-fn edit-mode?]]
+           [es/saga-select merged put-fn edit-mode?]]
           [loc/geonames entry2 put-fn]]
          [:div.header
           [:div

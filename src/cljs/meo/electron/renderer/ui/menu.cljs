@@ -43,10 +43,14 @@
     (.switchLanguage spellcheck-handler cc)))
 
 (defn new-import-view [put-fn]
-  (let [local (r/atom {:show false})]
-    (def ^:export new-entry (h/new-entry put-fn {} nil))
-    (def ^:export new-story (h/new-entry put-fn {:entry-type :story} nil))
-    (def ^:export new-saga (h/new-entry put-fn {:entry-type :saga} nil))
+  (let [local (r/atom {:show false})
+        open-new (fn [x]
+                   (put-fn [:search/add
+                            {:tab-group :left
+                             :query     (up/parse-search (:timestamp x))}]))]
+    (def ^:export new-entry (h/new-entry put-fn {} open-new))
+    (def ^:export new-story (h/new-entry put-fn {:entry-type :story} open-new))
+    (def ^:export new-saga (h/new-entry put-fn {:entry-type :saga} open-new))
     (def ^:export planning #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}]))
     (fn [put-fn]
       (when (:show @local)
@@ -66,24 +70,16 @@
 (defn cfg-view [put-fn]
   (let [cfg (subscribe [:cfg])
         planning-mode (subscribe [:planning-mode])
-        toggle-qr-code #(put-fn [:import/listen])
         ws-address (fn [_]
                      (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
                      (if (:ws-qr-code @cfg)
                        (put-fn [:sync/stop-server])
-                       (put-fn [:sync/start-server])))
-        ;screenshot #(put-fn [:screenshot/take])
-        ]
+                       (put-fn [:sync/start-server])))]
     (fn [put-fn]
       [:div
        (for [option (if @planning-mode all-options limited-options)]
          ^{:key (str "toggle" (:cls option))}
          [toggle-option-view option put-fn])
-       #_[:i.far.fa-desktop.toggle.inactive
-        {:on-click screenshot}]
-       #_[:i.far.fa-qrcode.toggle
-        {:on-click toggle-qr-code
-         :class    (when-not (:qr-code @cfg) "inactive")}]
        [:i.far.fa-qrcode.toggle
         {:on-click ws-address
          :class    (when-not (:ws-qr-code @cfg) "inactive")}]])))

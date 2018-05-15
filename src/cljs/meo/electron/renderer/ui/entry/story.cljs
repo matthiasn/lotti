@@ -54,23 +54,22 @@
         [:div.story
          [:label "Saga:"]
          [editable-field on-input-fn on-keydown-fn (:saga-name entry)]]
-        [:h2 "Saga: " (:saga-name entry)]))))
+        [:h2 "Saga: " (-> entry :story :linked-saga :saga-name)]))))
 
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
   [entry put-fn edit-mode?]
   (let [sagas (subscribe [:sagas])
-        ts (:timestamp entry)
-        new-entries (subscribe [:new-entries])
-        select-handler
-        (fn [ev]
-          (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
-                updated (-> (get-in @new-entries [ts])
-                            (assoc-in [:linked-saga] selected))]
-            (put-fn [:entry/update-local updated])))]
+        ts (:timestamp entry)]
     (fn story-select-render [entry put-fn edit-mode?]
       (let [linked-saga (:linked-saga entry)
-            entry-type (:entry-type entry)]
+            entry-type (:entry-type entry)
+            select-handler
+            (fn [ev]
+              (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
+                    updated (assoc-in entry [:linked-saga] selected)]
+                (info "saga-select" selected)
+                (put-fn [:entry/update-local updated])))]
         (when (= entry-type :story)
           (if edit-mode?
             (when-not (:comment-for entry)
