@@ -14,8 +14,7 @@
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
-            [taoensso.timbre :refer [info]]
-            [meo.jvm.graphql :as gql]))
+            [taoensso.timbre :refer [info]]))
 
 (defonce switchboard (sb/component :backend/switchboard))
 
@@ -24,7 +23,6 @@
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
-    (gql/cmp-map :backend/graphql)
     (bak/cmp-map :backend/backup)
     (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
@@ -44,16 +42,12 @@
 
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
-                          :backend/graphql
                           :backend/export
                           :backend/upload
                           :backend/imports}}]
 
      [:cmd/route {:from :backend/imports
                   :to   :backend/store}]
-
-     [:cmd/route {:from :backend/graphql
-                  :to   :backend/ws}]
 
      [:cmd/route {:from :backend/upload
                   :to   #{:backend/store
@@ -62,19 +56,16 @@
 
      [:cmd/route {:from :backend/store
                   :to   #{:backend/ws
-                          :backend/graphql
                           :backend/ft}}]
 
      [:cmd/route {:from :backend/scheduler
                   :to   #{:backend/store
                           :backend/backup
                           :backend/imports
-                          :backend/graphql
                           :backend/upload
                           :backend/ws}}]
 
      [:cmd/route {:from #{:backend/store
-                          :backend/graphql
                           :backend/upload
                           :backend/backup
                           :backend/imports}

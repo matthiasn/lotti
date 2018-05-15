@@ -2,14 +2,13 @@
   (:require [meo.jvm.graph.query :as gq]
             [meo.jvm.graphql.xforms :as xf]
             [taoensso.timbre :refer [info error warn debug]]
-            [geo [spatial :as sp]]
-            [meo.jvm.store :as st])
+            [geo [spatial :as sp]])
   (:import [org.locationtech.spatial4j.shape.impl RectangleImpl]))
 
-(defn photos-within-bounds [context args value]
+(defn photos-within-bounds [state context args value]
   (let [{:keys [ne_lat ne_lon sw_lat sw_lon]} args
         n Integer/MAX_VALUE
-        res (gq/get-filtered @st/state {:tags #{"#photo"} :n n})
+        res (gq/get-filtered @state {:tags #{"#photo"} :n n})
         entries (vals (:entries-map res))
         ne (sp/point ne_lat ne_lon)
         sw (sp/point sw_lat sw_lon)

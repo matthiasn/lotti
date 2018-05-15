@@ -14,7 +14,9 @@
             [ubergraph.core :as uber]
             [meo.jvm.file-utils :as fu]
             [meo.common.utils.vclock :as vc]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+    ;[meo.jvm.graphql :as gql]
+            [meo.jvm.graphql :as gql]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
@@ -131,7 +133,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    state-fn
+   :state-fn    (partial gql/state-fn state)
    :opts        {:msgs-on-firehose true
                  :in-chan          [:buffer 100]
                  :out-chan         [:buffer 100]}
@@ -149,4 +151,6 @@
                  :entry/trash       f/trash-entry-fn
                  :startup/progress? gq/query-fn
                  :cfg/refresh       refresh-cfg
-                 :backend-cfg/save  fu/write-cfg}})
+                 :backend-cfg/save  fu/write-cfg
+                 :gql/query          gql/run-query
+                 :gql/run-registered gql/run-registered}})

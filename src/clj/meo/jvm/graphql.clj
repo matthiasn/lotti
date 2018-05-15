@@ -11,7 +11,6 @@
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
-            [meo.jvm.store :as st]
             [meo.jvm.graphql.xforms :as xf]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
@@ -27,23 +26,23 @@
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.geo :as geo]))
 
-(defn entry-count [context args value] (count (:sorted-entries @st/state)))
-(defn hours-logged [context args value] (gs/hours-logged @st/state))
-(defn word-count [context args value] (gs/count-words @st/state))
-(defn tag-count [context args value] (count (gq/find-all-hashtags @st/state)))
-(defn mention-count [context args value] (count (gq/find-all-mentions @st/state)))
-(defn completed-count [context args value] (gs/completed-count @st/state))
+(defn entry-count [state context args value] (count (:sorted-entries @state)))
+(defn hours-logged [state context args value] (gs/hours-logged @state))
+(defn word-count [state context args value] (gs/count-words @state))
+(defn tag-count [state context args value] (count (gq/find-all-hashtags @state)))
+(defn mention-count [state context args value] (count (gq/find-all-mentions @state)))
+(defn completed-count [state context args value] (gs/completed-count @state))
 
-(defn hashtags [context args value] (gq/find-all-hashtags @st/state))
-(defn pvt-hashtags [context args value] (gq/find-all-pvt-hashtags @st/state))
-(defn mentions [context args value] (gq/find-all-mentions @st/state))
+(defn hashtags [state context args value] (gq/find-all-hashtags @state))
+(defn pvt-hashtags [state context args value] (gq/find-all-pvt-hashtags @state))
+(defn mentions [state context args value] (gq/find-all-mentions @state))
 
-(defn stories [context args value] (gq/find-all-stories2 @st/state))
-(defn sagas [context args value] (gq/find-all-sagas2 @st/state))
+(defn stories [state context args value] (gq/find-all-stories2 @state))
+(defn sagas [state context args value] (gq/find-all-sagas2 @state))
 
-(defn briefings [context args value]
+(defn briefings [state context args value]
   (map (fn [[k v]] {:day k :timestamp v})
-       (gq/find-all-briefings @st/state)))
+       (gq/find-all-briefings @state)))
 
 (defn get-entry [g ts]
   (when (and ts (uc/has-node? g ts))
@@ -67,8 +66,8 @@
     (assoc-in entry [:linked] (mapv #(entry-w-story g (get-entry g %))
                                     (gq/get-linked-for-ts g ts)))))
 
-(defn briefing [context args value]
-  (let [g (:graph @st/state)
+(defn briefing [state context args value]
+  (let [g (:graph @state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
     (when-let [briefing (get-entry g ts)]
@@ -80,9 +79,9 @@
                                       :day      d})]
         (xf/snake-xf briefing)))))
 
-(defn logged-time [context args value]
+(defn logged-time [state context args value]
   (let [day (:day args)
-        current-state @st/state
+        current-state @state
         g (:graph current-state)
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
@@ -91,8 +90,8 @@
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     (xf/snake-xf day-stats)))
 
-(defn match-count [context args value]
-  (gs/res-count @st/state (p/parse-search (:query args))))
+(defn match-count [state context args value]
+  (gs/res-count @state (p/parse-search (:query args))))
 
 (defn entries-w-logged [g entries]
   (let [logged-t (fn [comment-ts]
@@ -107,9 +106,9 @@
                          (assoc-in t [:task :completed-s] logged)))]
     (mapv task-total-t entries)))
 
-(defn tab-search [context args value]
+(defn tab-search [state context args value]
   (let [{:keys [query n]} args
-        current-state @st/state
+        current-state @state
         g (:graph current-state)
         res (->> (update-in (p/parse-search query) [:n] #(or n %))
                  (gq/get-filtered2 current-state)
@@ -124,38 +123,38 @@
     (debug res)
     (xf/snake-xf res)))
 
-(defn custom-field-stats [context args value]
+(defn custom-field-stats [state context args value]
   (let [{:keys [days tag]} args
         days (reverse (range days))
         now (stc/now)
-        custom-fields-mapper (cf/custom-fields-mapper @st/state tag)
+        custom-fields-mapper (cf/custom-fields-mapper @state tag)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv custom-fields-mapper day-strings)]
     (xf/snake-xf stats)))
 
-(defn git-stats [context args value]
+(defn git-stats [state context args value]
   (let [{:keys [days]} args
         days (reverse (range days))
         now (stc/now)
-        git-mapper (g/git-mapper @st/state)
+        git-mapper (g/git-mapper @state)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv git-mapper day-strings)]
     (debug stats)
     (xf/snake-xf stats)))
 
-(defn questionnaires [context args value]
+(defn questionnaires [state context args value]
   (let [{:keys [days tag k]} args
         newer-than (- (stc/now) (* d (or days 90)))
-        stats (q/questionnaires-by-tag @st/state tag (keyword k))
+        stats (q/questionnaires-by-tag @state tag (keyword k))
         stats (filter #(:score %) stats)
         stats (vec (filter #(> (:timestamp %) newer-than) stats))]
     (debug stats)
     (xf/snake-xf stats)))
 
-(defn award-points [context args value]
+(defn award-points [state context args value]
   (let [{:keys [days]} args
         newer-than (dt/ts-to-ymd (- (stc/now) (* d (or days 90))))
-        stats (aw/award-points @st/state)
+        stats (aw/award-points @state)
         sort-filter (fn [k]
                       (sort-by first (filter #(pos? (compare (first %) newer-than))
                                              (k stats))))
@@ -164,52 +163,28 @@
         sorted (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))]
     (xf/snake-xf sorted)))
 
-(defn started-tasks [context args value]
+(defn started-tasks [state context args value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
            :n        100}
-        current-state @st/state
+        current-state @state
         g (:graph current-state)
         tasks (->> (gq/get-filtered2 current-state q)
                    (entries-w-logged g)
                    (mapv #(entry-w-story g %)))]
     (xf/snake-xf tasks)))
 
-(defn waiting-habits [context args value]
+(defn waiting-habits [state context args value]
   (let [q {:tags #{"#habit"}
            :opts #{":waiting"}
            :n    100}
-        current-state @st/state
+        current-state @state
         g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
         habits (mapv #(entry-w-story g %) habits)
         habits (mapv #(update-in % [:story] xf/snake-xf) habits)]
     habits))
-
-#_
-(defn run-query2 [{:keys [current-state msg-payload put-fn]}]
-  (let [start (stc/now)
-        schema (:schema current-state)
-        qid (:id msg-payload)
-        merged (merge (get-in current-state [:queries qid]) msg-payload)
-        {:keys [file args q id res-hash]} merged
-        template (if file (slurp (io/resource (str "queries/" file))) q)
-        query-string (apply format template args)
-        res (lacinia/execute schema query-string nil nil)
-        new-hash (hash res)
-        new-data (not= new-hash res-hash)
-        res (merge merged
-                   (xf/simplify res)
-                   {:res-hash new-hash
-                    :ts       (stc/now)
-                    :prio     (:prio merged 100)})
-        new-state (assoc-in current-state [:queries id] (dissoc res :data))]
-    (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
-          (if new-data "new data" "same hash, omitting response")
-          (str "- '" (or file query-string) "'"))
-    (when new-data (put-fn [:gql/res res]))
-    {:new-state new-state}))
 
 (defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
   (future
@@ -248,50 +223,46 @@
                                     :initial high-prio}]))))
   {})
 
-(defn state-fn [_put-fn]
+(defn state-fn [state _put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
+        attach-state (fn [m] (into {} (map (fn [[k f]] [k (partial f state)]) m)))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
-                     {:query/entry-count        entry-count
-                      :query/hours-logged       hours-logged
-                      :query/word-count         word-count
-                      :query/tag-count          tag-count
-                      :query/mention-count      mention-count
-                      :query/completed-count    completed-count
-                      :query/match-count        match-count
-                      :query/tab-search         tab-search
-                      :query/hashtags           hashtags
-                      :query/pvt-hashtags       pvt-hashtags
-                      :query/logged-time        logged-time
-                      :query/started-tasks      started-tasks
-                      :query/waiting-habits     waiting-habits
-                      :query/mentions           mentions
-                      :query/stories            stories
-                      :query/sagas              sagas
-                      :query/geo-photos         geo/photos-within-bounds
-                      :query/custom-field-stats custom-field-stats
-                      :query/git-stats          git-stats
-                      :query/briefings          briefings
-                      :query/questionnaires     questionnaires
-                      :query/award-points       award-points
-                      :query/briefing           briefing})
+                     (attach-state
+                       {:query/entry-count        entry-count
+                        :query/hours-logged       hours-logged
+                        :query/word-count         word-count
+                        :query/tag-count          tag-count
+                        :query/mention-count      mention-count
+                        :query/completed-count    completed-count
+                        :query/match-count        match-count
+                        :query/tab-search         tab-search
+                        :query/hashtags           hashtags
+                        :query/pvt-hashtags       pvt-hashtags
+                        :query/logged-time        logged-time
+                        :query/started-tasks      started-tasks
+                        :query/waiting-habits     waiting-habits
+                        :query/mentions           mentions
+                        :query/stories            stories
+                        :query/sagas              sagas
+                        :query/geo-photos         geo/photos-within-bounds
+                        :query/custom-field-stats custom-field-stats
+                        :query/git-stats          git-stats
+                        :query/briefings          briefings
+                        :query/questionnaires     questionnaires
+                        :query/award-points       award-points
+                        :query/briefing           briefing}))
                    schema/compile)
         server (-> schema
                    (lp/service-map {:graphiql true
                                     :port     port})
+                   (assoc-in [::http/host] "localhost")
                    http/create-server
                    http/start)]
+    (swap! state assoc-in [:server] server)
+    (swap! state assoc-in [:schema] schema)
     (info "Started GraphQL component")
     (info "GraphQL server with GraphiQL data explorer listening on PORT" port)
-    {:state       (atom {:server server
-                         :schema schema})
+    {:state       state
      :shutdown-fn #(do (http/stop server)
                        (info "Stopped GraphQL server"))}))
-
-(defn cmp-map [cmp-id]
-  {:cmp-id      cmp-id
-   :state-fn    state-fn
-   :opts        {:in-chan  [:buffer 100]
-                 :out-chan [:buffer 100]}
-   :handler-map {:gql/query          run-query
-                 :gql/run-registered run-registered}})
