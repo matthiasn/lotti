@@ -117,6 +117,7 @@
       (dissoc :comments)
       (dissoc :new-entry)
       (dissoc :linked)
+      (dissoc :story)
       (update-in [:task] dissoc :completed-s)
       (update-in [:task] dissoc :due)
       (dissoc :editor-state)

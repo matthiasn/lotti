@@ -168,7 +168,7 @@
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
         ^{:key (str (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
-         [editor {:md       (or (:md @new-entry) (:md entry2))
+         [editor {:md       (or (:md @new-entry) (:md entry2) "")
                   :ts       ts
                   :changed  unsaved
                   :mentions @mentions

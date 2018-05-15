@@ -38,25 +38,71 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn tabs-query [queries]
-  (let [f (fn [[k q]]
-            {:query/data  [:tab_search {:query q}
-                           [:timestamp :text :md :latitude :longitude :starred
-                            :linked_cnt :arrival_timestamp :departure_timestamp
-                            :img_file :last_saved :audio_file :tags :perm_tags
-                            :habit :questionnaires :custom_fields :entry_type
-                            [:task [:completed_s :completion_ts :done :estimate_m
-                                    :on_hold :points :priority]]
-                            [:git_commit [:repo_name :refs :commit :subject
-                                          :abbreviated_commit]]
-                            [:comments [:timestamp :md :latitude :longitude
-                                        :img_file :comment_for :entry_type
-                                        :completed_time]]
-                            [:linked [:timestamp :md :latitude :longitude
-                                      :img_file]]
-                            [:reward [:claimed :claimed_ts :points]]
-                            [:spotify [:name :uri :image [:artists [:name]]]]
-                            [:story [:timestamp :story_name
-                                     [:linked_saga [:saga_name]]]]]]
+  (let [fields [:timestamp
+                :text
+                :md
+                :latitude
+                :longitude
+                :starred
+                :linked_cnt
+                :arrival_timestamp
+                :departure_timestamp
+                :img_file
+                :last_saved
+                :audio_file
+                :tags
+                :perm_tags
+                :habit
+                :stars
+                :for_day
+                :questionnaires
+                :custom_fields
+                :entry_type
+                [:task [:completed_s
+                        :completion_ts
+                        :done
+                        :estimate_m
+                        :on_hold
+                        :points
+                        :priority]]
+                [:git_commit [:repo_name
+                              :refs
+                              :commit
+                              :subject
+                              :abbreviated_commit]]
+                [:comments [:timestamp
+                            :md
+                            :tags
+                            :mentions
+                            :latitude
+                            :longitude
+                            :img_file
+                            :for_day
+                            :comment_for
+                            :entry_type
+                            :completed_time
+                            :custom_fields
+                            :questionnaires]]
+                [:linked [:timestamp
+                          :md
+                          :tags
+                          :mentions
+                          :stars
+                          :latitude
+                          :longitude
+                          :img_file]]
+                [:reward [:claimed
+                          :claimed_ts
+                          :points]]
+                [:spotify [:name
+                           :uri
+                           :image
+                           [:artists [:name]]]]
+                [:story [:timestamp
+                         :story_name
+                         [:linked_saga [:saga_name]]]]]
+        f (fn [[k q]]
+            {:query/data  [:tab_search {:query q} fields]
              :query/alias k})
         queries (mapv f queries)]
     (when (seq queries)
