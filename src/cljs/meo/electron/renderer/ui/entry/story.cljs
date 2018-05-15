@@ -100,7 +100,37 @@
         ts (:timestamp entry)
         local (r/atom {:search "" :show false :idx 0})
         story-predict (subscribe [:story-predict])
-        predictions (reaction (get-in @story-predict [ts]))]
+        predictions (reaction (get-in @story-predict [ts]))
+        indexed (reaction
+                  (let [story-tss (merged-stories @predictions (keys @stories))
+                        stories (map #(get @stories %) story-tss)
+                        s (:search @local)
+                        filter-fn #(h/str-contains-lc? (:story-name %) s)
+                        stories (vec (filter filter-fn stories))]
+                    (map-indexed (fn [i v] [i v]) (take 10 stories))))
+        assign-story (fn [story]
+                       (let [ts (:timestamp story)
+                             updated (assoc-in entry [:primary-story] ts)]
+                         (swap! local assoc-in [:show] false)
+                         (put-fn [:entry/update updated])))
+
+        keydown (fn [ev]
+                  (let [key-code (.. ev -keyCode)
+                        idx-inc #(if (< % (dec (count @indexed))) (inc %) %)
+                        idx-dec #(if (pos? %) (dec %) %)]
+                    (when (:show @local)
+                      (info key-code)
+                      (when (= key-code 27)
+                        (swap! local assoc-in [:show] false))
+                      (when (= key-code 40)
+                        (swap! local update-in [:idx] idx-inc))
+                      (when (= key-code 38)
+                        (swap! local update-in [:idx] idx-dec))
+                      (when (= key-code 13)
+                        (assign-story (second (nth @indexed (:idx @local))))))
+                    (.stopPropagation ev)))
+        start-watch #(.addEventListener js/document "keydown" keydown)
+        stop-watch #(.removeEventListener js/document "keydown" keydown)]
     (fn story-select-filter-render [entry put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story-name])
@@ -108,31 +138,6 @@
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)
                          (swap! local assoc-in [:search] s)))
-            indexed (let [story-tss (merged-stories @predictions (keys @stories))
-                          stories (map #(get @stories %) story-tss)
-                          s (:search @local)
-                          filter-fn #(h/str-contains-lc? (:story-name %) s)
-                          stories (vec (filter filter-fn stories))]
-                      (map-indexed (fn [i v] [i v]) (take 10 stories)))
-            assign-story (fn [story]
-                           (let [ts (:timestamp story)
-                                 updated (assoc-in entry [:primary-story] ts)]
-                             (swap! local assoc-in [:show] false)
-                             (put-fn [:entry/update updated])))
-            keydown (fn [ev]
-                      (let [key-code (.. ev -keyCode)
-                            idx-inc #(if (< % (dec (count indexed))) (inc %) %)
-                            idx-dec #(if (pos? %) (dec %) %)]
-                        (when (:show @local)
-                          (when (= key-code 40)
-                            (swap! local update-in [:idx] idx-inc))
-                          (when (= key-code 38)
-                            (swap! local update-in [:idx] idx-dec))
-                          (when (= key-code 13)
-                            (assign-story (second (nth indexed (:idx @local))))))
-                        (.stopPropagation ev)))
-            start-watch #(.addEventListener js/document "keydown" keydown)
-            stop-watch #(.removeEventListener js/document "keydown" keydown)
             mouse-leave (fn [_]
                           (let [t (js/setTimeout
                                     #(swap! local assoc-in [:show] false)
@@ -164,7 +169,7 @@
                           :value      (:search @local)}]]
                 [:table
                  [:tbody
-                  (for [[idx story] indexed]
+                  (for [[idx story] @indexed]
                     (let [active (= linked-story (:timestamp story))
                           cls (cond active "current"
                                     (= idx curr-idx) "idx"
