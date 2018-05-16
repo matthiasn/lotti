@@ -31,7 +31,7 @@
     }
   }
 
-  started_tasks {
+  started_tasks(pvt: %s) {
     timestamp
     md
     text
@@ -53,7 +53,7 @@
     }
   }
 
-   waiting_habits {
+   waiting_habits(pvt: %s) {
      text
      timestamp
      habit

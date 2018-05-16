@@ -27,7 +27,7 @@
          [:div.journal-entries
           (for [entry @entries-list]
             (when (with-comments? entry)
-              ^{:key (:timestamp entry)}
+              ^{:key (str (:vclock entry))}
               [e/entry-with-comments entry put-fn local-cfg]))
           (when (> (count @entries-list) 1)
             (let [show-more #(put-fn [:show/more {:query-id query-id}])]

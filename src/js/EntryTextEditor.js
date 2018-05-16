@@ -234,7 +234,7 @@ let EntryTextEditor = function (_Component) {
             // _this.state.mentions = nextProps.mentions;
             // _this.state.hashtags = nextProps.hashtags;
             //
-            // if (sinceUpdate > 1000) {
+            // if (sinceUpdate > 250) {
             //     let rawFromMd = _draftjsMdConverter.mdToDraftjs(nextProps.md);
             //     let content = _draftJs.convertFromRaw(rawFromMd);
             //     let newState = _draftJs.EditorState.createWithContent(content);

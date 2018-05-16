@@ -111,9 +111,13 @@
     (when (not= (dissoc prev :last-saved :vclock)
                 (dissoc entry :last-saved :vclock))
       (append-daily-log cfg entry put-fn)
+      (put-fn [:cmd/schedule-new {:timeout 5000
+                                  :message [:options/gen]
+                                  :id      :generate-opts}])
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
-        (put-fn [:gql/run-registered]))
+        (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
+                                    :timeout 10}]))
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
 
@@ -186,7 +190,8 @@
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
                            :deleted   true}
                       put-fn)
-    (put-fn [:gql/run-registered])
+    (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
+                                :timeout 10}])
     (move-attachment-to-trash cfg msg-payload "images" :img-file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)

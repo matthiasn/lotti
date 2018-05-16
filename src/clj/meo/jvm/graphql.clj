@@ -33,12 +33,11 @@
 (defn mention-count [state context args value] (count (gq/find-all-mentions @state)))
 (defn completed-count [state context args value] (gs/completed-count @state))
 
-(defn hashtags [state context args value] (gq/find-all-hashtags @state))
-(defn pvt-hashtags [state context args value] (gq/find-all-pvt-hashtags @state))
-(defn mentions [state context args value] (gq/find-all-mentions @state))
-
-(defn stories [state context args value] (gq/find-all-stories2 @state))
-(defn sagas [state context args value] (gq/find-all-sagas2 @state))
+(defn hashtags [state context args value] (-> @state :options :hashtags))
+(defn pvt-hashtags [state context args value] (-> @state :options :pvt-hashtags))
+(defn mentions [state context args value] (-> @state :options :mentions))
+(defn stories [state context args value] (-> @state :options :stories))
+(defn sagas [state context args value] (-> @state :options :sagas))
 
 (defn briefings [state context args value]
   (map (fn [[k v]] {:day k :timestamp v})
@@ -107,11 +106,12 @@
     (mapv task-total-t entries)))
 
 (defn tab-search [state context args value]
-  (let [{:keys [query n]} args
+  (let [{:keys [query n pvt]} args
         current-state @state
         g (:graph current-state)
-        res (->> (update-in (p/parse-search query) [:n] #(or n %))
-                 (gq/get-filtered2 current-state)
+        q (update-in (p/parse-search query) [:n] #(or n %))
+        q (assoc-in q [:pvt] pvt)
+        res (->> (gq/get-filtered2 current-state q)
                  (filter #(not (:comment-for %)))
                  (mapv (partial entry-w-story g))
                  (entries-w-logged g)
@@ -167,7 +167,8 @@
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
-           :n        100}
+           :n        100
+           :pvt (:pvt args)}
         current-state @state
         g (:graph current-state)
         tasks (->> (gq/get-filtered2 current-state q)
@@ -178,7 +179,8 @@
 (defn waiting-habits [state context args value]
   (let [q {:tags #{"#habit"}
            :opts #{":waiting"}
-           :n    100}
+           :n    100
+           :pvt  (:pvt args)}
         current-state @state
         g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
@@ -221,6 +223,16 @@
                                     :message msg
                                     :id      id
                                     :initial high-prio}]))))
+  {})
+
+(defn gen-options [{:keys [cmp-state]}]
+  (future
+    (let [opts {:hashtags     (gq/find-all-hashtags @cmp-state)
+                :pvt-hashtags (gq/find-all-pvt-hashtags @cmp-state)
+                :mentions     (gq/find-all-mentions @cmp-state)
+                :stories      (gq/find-all-stories2 @cmp-state)
+                :sagas        (gq/find-all-sagas2 @cmp-state)}]
+      (swap! cmp-state assoc-in [:options] opts)))
   {})
 
 (defn state-fn [state _put-fn]

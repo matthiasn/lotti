@@ -20,7 +20,7 @@
    :cljs (defonce query-cfg (sa/local-storage
                               (atom initial-query-cfg) "meo_query_cfg")))
 
-(defn gql-query [put-fn]
+(defn gql-query [current-state put-fn]
   (let [query-cfg @query-cfg
         query-for (fn [k]
                     (let [a (get-in query-cfg [:tab-groups k :active])
@@ -28,7 +28,8 @@
                       (when (and a search-text)
                         [k search-text])))
         queries (filter identity (map query-for [:left :right]))
-        gql-query (when (seq queries) (gql/tabs-query queries))]
+        pvt (:show-pvt (:cfg current-state))
+        gql-query (when (seq queries) (gql/tabs-query queries pvt))]
     (when gql-query
       (info gql-query)
       (put-fn [:gql/query {:q        gql-query
@@ -38,7 +39,7 @@
 
 (defn update-query-cfg [state put-fn]
   (reset! query-cfg (:query-cfg state))
-  (gql-query put-fn))
+  (gql-query state put-fn))
 
 (defn update-query-fn
   "Update query in client state, with resetting the active entry in the linked
@@ -52,10 +53,8 @@
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))
-      (gql-query put-fn)
-      {:new-state new-state
-       ;:emit-msg  [:state/search (u/search-from-cfg new-state)]
-       })))
+      (gql-query current-state put-fn)
+      {:new-state new-state})))
 
 ; TODO: linked filter belongs in query-cfg
 (defn set-linked-filter

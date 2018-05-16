@@ -85,13 +85,11 @@
 (defn started-tasks
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
-  (let [cfg (subscribe [:cfg])
-        gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res])
         started-tasks (reaction (-> @gql-res :briefing :data :started-tasks))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        options (subscribe [:options])
         on-hold-filter (fn [entry]
                          (let [on-hold (:on-hold (:task entry))]
                            (if (:on-hold @local)
@@ -107,16 +105,11 @@
                      [:span.filter {:class    (when (:on-hold @local) "current")
                                     :on-click #(swap! local update-in [:on-hold] not)}
                       (name fk)])
-        entries-list (reaction
-                       (let [entries (->> @started-tasks
-                                          (filter on-hold-filter)
-                                          (filter saga-filter)
-                                          (filter open-filter)
-                                          (sort task-sorter))
-                             conf (merge @cfg @options)]
-                         (if (:show-pvt @cfg)
-                           entries
-                           (filter (u/pvt-filter2 conf) entries))))]
+        entries-list (reaction  (->> @started-tasks
+                                     (filter on-hold-filter)
+                                     (filter saga-filter)
+                                     (filter open-filter)
+                                     (sort task-sorter)))]
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
@@ -143,9 +136,7 @@
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
   [ts local put-fn]
-  (let [cfg (subscribe [:cfg])
-        options (subscribe [:options])
-        gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res])
         started-tasks (reaction (-> @gql-res :briefing :data :started-tasks))
         briefing (reaction (-> @gql-res :briefing :data :briefing))
         query-cfg (subscribe [:query-cfg])
@@ -161,10 +152,6 @@
     (fn open-linked-tasks-render [ts local local-cfg put-fn]
       (let [{:keys [tab-group]} local-cfg
             linked-entries (:linked @briefing)
-            conf (merge @cfg @options)
-            linked-entries (if (:show-pvt conf)
-                             linked-entries
-                             (filter (u/pvt-filter2 conf) linked-entries))
             current-filter (get linked-filters (:filter @local))
             saga-filter (fn [entry]
                           (if-let [selected (:selected @local)]

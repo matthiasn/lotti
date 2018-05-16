@@ -37,7 +37,7 @@
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 
-(defn tabs-query [queries]
+(defn tabs-query [queries pvt]
   (let [fields [:timestamp
                 :text
                 :md
@@ -58,6 +58,7 @@
                 :questionnaires
                 :custom_fields
                 :entry_type
+                [:vclock [:node :clock]]
                 [:task [:completed_s
                         :completion_ts
                         :done
@@ -102,7 +103,8 @@
                          :story_name
                          [:linked_saga [:saga_name]]]]]
         f (fn [[k q]]
-            {:query/data  [:tab_search {:query q} fields]
+            {:query/data  [:tab_search {:query q
+                                        :pvt   pvt} fields]
              :query/alias k})
         queries (mapv f queries)]
     (when (seq queries)

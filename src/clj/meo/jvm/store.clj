@@ -15,7 +15,6 @@
             [meo.jvm.file-utils :as fu]
             [meo.common.utils.vclock :as vc]
             [matthiasn.systems-toolbox.component :as st]
-    ;[meo.jvm.graphql :as gql]
             [meo.jvm.graphql :as gql]))
 
 (defn process-line [parsed node-id state entries-to-index]
@@ -97,6 +96,9 @@
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)
     (broadcast [:startup/progress 1])
+    (put-fn [:cmd/schedule-new {:timeout 1000
+                                :message [:options/gen]
+                                :id :generate-opts}])
     (tf/import-predictions cmp-state)
     (put-fn [:cmd/schedule-new {:timeout (* 60 1000)
                                 :message [:import/git]
@@ -141,6 +143,7 @@
                  :entry/unlink      ga/unlink
                  :entry/update      f/geo-entry-persist-fn
                  :entry/sync        f/sync-fn
+                 :options/gen       gql/gen-options
                  :startup/read      read-entries
                  :sync/entry        f/sync-receive
                  :sync/done         sync-done

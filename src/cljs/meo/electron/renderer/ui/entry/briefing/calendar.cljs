@@ -10,12 +10,14 @@
             [reagent.ratom :refer-macros [reaction]]
             [react-big-calendar]
             [meo.electron.renderer.ui.charts.common :as cc]
-            [meo.common.utils.parse :as p]))
+            [meo.common.utils.parse :as p]
+            [meo.electron.renderer.graphql :as gql]))
 
 (defn rome-component [put-fn]
   (let [ref (atom nil)
         briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
+        pvt (subscribe [:show-pvt])
         data-fn (fn [ymd]
                   (when-not (get @briefings ymd)
                     (let [weekday (.format (moment. ymd) "dddd")
@@ -37,7 +39,7 @@
                   (put-fn [:gql/query {:file "briefing.gql"
                                        :id   :briefing
                                        :prio 2
-                                       :args [ymd]}]))
+                                       :args [ymd @pvt @pvt]}]))
         opts (clj->js {:time             false
                        :initialValue     (:cal-day @cfg)
                        :monthsInCalendar 2})]

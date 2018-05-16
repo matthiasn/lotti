@@ -39,9 +39,6 @@
                               (sort habit-sorter)))]
     (fn waiting-habits-list-render [local local-cfg put-fn]
       (let [habits @habits
-            habits (if (:show-pvt @cfg)
-                     habits
-                     (filter (u/pvt-filter2 (merge @cfg @options)) habits))
             habits (if (:expanded-habits @local) habits (take 12 habits))
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")

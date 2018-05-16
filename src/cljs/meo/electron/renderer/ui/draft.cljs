@@ -92,11 +92,8 @@
         eq (= x1 y1)
         diff (clojure.data/diff x1 y1)]
     (when-not eq
-      (info ks)
       (info (first diff))
-      (info (second diff))
-      (info diff)
-      (info x1 y1))
+      (info (second diff)))
     (not eq)))
 
 (def editor (adapt-react-class "EntryTextEditor"))
@@ -168,7 +165,7 @@
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
         ^{:key (str (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
-         [editor {:md       (or (:md @new-entry) (:md entry2) "")
+         [editor {:md       (or (or (:md @new-entry) (:md entry2)) "")
                   :ts       ts
                   :changed  unsaved
                   :mentions @mentions

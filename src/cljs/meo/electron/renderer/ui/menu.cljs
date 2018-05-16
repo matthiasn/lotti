@@ -14,7 +14,8 @@
   (let [cfg (subscribe [:cfg])]
     (fn toggle-option-render [{:keys [option cls]} put-fn]
       (let [show-option? (option @cfg)
-            toggle-option #(put-fn [:cmd/toggle-key {:path [:cfg option]}])]
+            toggle-option #(do (put-fn [:cmd/toggle-key {:path [:cfg option]}])
+                               (put-fn [:startup/query]))]
         [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))

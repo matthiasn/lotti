@@ -201,11 +201,13 @@
   :started_tasks
   {:type        (list :Entry)
    :description "List of started tasks."
+   :args        {:pvt {:type Boolean}}
    :resolve     :query/started-tasks}
 
   :waiting_habits
   {:type        (list :Entry)
    :description "List of started tasks."
+   :args        {:pvt {:type Boolean}}
    :resolve     :query/waiting-habits}
 
   :word_count
@@ -238,7 +240,8 @@
   {:type        (list :Entry)
    :description "List of entries for given query."
    :args        {:query {:type String}
-                 :n     {:type Int}}
+                 :n     {:type Int}
+                 :pvt   {:type Boolean}}
    :resolve     :query/tab-search}
 
   :hashtags

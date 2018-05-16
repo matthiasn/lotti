@@ -7,6 +7,7 @@
             [clj-time.format :as ctf]
             [clojure.string :as s]
             [clojure.set :as set]
+            [meo.common.utils.misc :as um]
             [taoensso.timbre :refer [info error warn debug]]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
@@ -477,11 +478,16 @@
 
 (defn get-filtered2 [current-state query]
   (let [n (:n query 20)
+        pvt (:pvt query)
         g (:graph current-state)
         entries (take n (filter (entries-filter-fn query g)
                                 (extract-sorted-entries current-state query)))
-        comments-linked (comments-linked-for-entry g false)]
-    (mapv comments-linked entries)))
+        comments-linked (comments-linked-for-entry g false)
+        pvt-filter (um/pvt-filter (:options current-state))
+        entries (mapv comments-linked entries)]
+    (if pvt
+      entries
+      (filter pvt-filter entries))))
 
 (defn query-fn [{:keys [current-state put-fn]}]
   (put-fn [:startup/progress (:startup-progress current-state)])

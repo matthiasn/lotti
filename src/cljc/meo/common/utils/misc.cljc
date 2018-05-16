@@ -29,22 +29,6 @@
 
 (defn pvt-filter
   "Filter for entries considered private."
-  [options entries-map]
-  (fn [entry]
-    (let [tags (set (map s/lower-case (:tags entry)))
-          private-tags (:pvt-hashtags options)
-          hashtags (:hashtags options)
-          only-pvt-tags (set/difference private-tags hashtags)
-          matched (set/intersection tags only-pvt-tags)
-          linked-ts (:linked-timestamp entry)
-          linked (get entries-map linked-ts)
-          linked-tags (set (map s/lower-case (:tags linked)))
-          linked-matched (set/intersection linked-tags only-pvt-tags)]
-      (and (empty? matched)
-           (empty? linked-matched)))))
-
-(defn pvt-filter2
-  "Filter for entries considered private."
   [options]
   (fn [entry]
     (let [tags (set (map s/lower-case (:tags entry)))
@@ -117,6 +101,9 @@
       (dissoc :comments)
       (dissoc :new-entry)
       (dissoc :linked)
+      (dissoc :linked-cnt)
+      (dissoc :last-saved)
+      (dissoc :vclock)
       (dissoc :story)
       (update-in [:task] dissoc :completed-s)
       (update-in [:task] dissoc :due)

@@ -183,6 +183,15 @@
     (update-local-storage new-state)
     {:new-state new-state}))
 
+(defn update-backend [{:keys [current-state msg-payload]}]
+  (let [ts (:timestamp msg-payload)
+        new-entry (get-in current-state [:new-entries ts])
+        new-state (-> current-state
+                      (update-in [:new-entries] dissoc ts)
+                      (assoc-in [:saving ts] new-entry))]
+    (update-local-storage new-state)
+    {:new-state new-state}))
+
 (defn geo-res [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         geoname (:geoname msg-payload)
@@ -192,6 +201,7 @@
 (def entry-handler-map
   {:entry/new          new-entry-fn
    :entry/geo-enrich   geo-enrich-fn
+   ;:entry/update       update-backend
    :entry/update-local update-local
    :entry/remove-local remove-local
    :entry/saved        entry-saved-fn

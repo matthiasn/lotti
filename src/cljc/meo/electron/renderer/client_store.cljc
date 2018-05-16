@@ -6,7 +6,8 @@
             [meo.electron.renderer.client-store-entry :as cse]
             [meo.electron.renderer.client-store-search :as s]
             [meo.electron.renderer.client-store-cfg :as c]
-            [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]
+            [meo.electron.renderer.graphql :as gql]))
 
 (defn initial-state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
@@ -30,13 +31,14 @@
                                          :id       id
                                          :res-hash nil
                                          :prio     prio
-                                         :args     args}]))]
+                                         :args     args}]))
+        pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (run-query "briefing.gql" :briefing 2 [ymd])
+      (run-query "briefing.gql" :briefing 2 [ymd pvt pvt])
       (run-query "logged-by-day.gql" :logged-by-day 3 [ymd]))
     (run-query "options.gql" :options 10 nil)
-    (s/gql-query put-fn)
+    (s/gql-query current-state put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
     {}))

@@ -16,57 +16,6 @@
     (is (= (u/duration-string 111111) "30h 51m 51s"))
     (is (= (u/duration-string 7931.999999999999) "2h 12m 11s"))))
 
-(def test-entry
-  {:mentions   #{}
-   :tags       #{}
-   :timezone   "Europe/Berlin"
-   :utc-offset -120
-   :timestamp  1465059173965
-   :md         ""})
-
-(def test-entry2
-  {:mentions   #{}
-   :tags       #{"#cljc"}
-   :timezone   "Europe/Berlin"
-   :utc-offset -120
-   :timestamp  1465059173966
-   :md         "Moving to #cljc"})
-
-(def pvt-entry
-  {:mentions   #{}
-   :tags       #{"#pvt"}
-   :timezone   "Europe/Berlin"
-   :utc-offset -120
-   :timestamp  1465059173965
-   :md         "Some #pvt entry"})
-
-(def pvt-entry2
-  {:mentions   #{}
-   :tags       #{"#private"}
-   :timezone   "Europe/Berlin"
-   :utc-offset -120
-   :timestamp  1465059173965
-   :md         "Some #private entry"})
-
-(def pvt-entry3
-  {:mentions   #{}
-   :tags       #{"#nsfw"}
-   :timezone   "Europe/Berlin"
-   :utc-offset -120
-   :timestamp  1465059173965
-   :md         "Something #nsfw"})
-
-(def pvt-test-conf {:pvt-hashtags #{"#pvt" "#private" "#nsfw" "#consumption"}})
-
-(deftest pvt-filter-test
-  (testing "properly detects privacy status of entries"
-    (let [pvt-filter-fn (u/pvt-filter pvt-test-conf {})]
-      (is (pvt-filter-fn test-entry))
-      (is (pvt-filter-fn test-entry2))
-      (is (not (pvt-filter-fn pvt-entry)))
-      (is (not (pvt-filter-fn pvt-entry2)))
-      (is (not (pvt-filter-fn pvt-entry3))))))
-
 (deftest double-ts-to-long-test
   (testing "correctly converts number"
     (is (= 100000 (u/double-ts-to-long 100))))
@@ -164,7 +113,6 @@
   (testing "expected keys are removed"
     (is (= {:comment-for    1517587606253
             :completed-time 2040
-            :last-saved     1517602023551
             :latitude       51.5
             :linked-stories #{}
             :longitude      12.3
@@ -176,6 +124,5 @@
             :text           "fixing the faulty implementation"
             :timestamp      1517589827814
             :timezone       "CET"
-            :utc-offset     -60
-            :vclock         {"edf3da73-f8e7-4076-8387-bfb35b7999e1" 77}}
+            :utc-offset     -60}
            (u/clean-entry clean-test-entry)))))

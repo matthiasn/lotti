@@ -113,8 +113,12 @@
             "handler emits saved message"
             (let [entry-saved-msg (first emit-msg)
                   saved-msg (second entry-saved-msg)]
-              (is (= :entry/saved (-> @test-atom ffirst)))
-              (is (= :gql/run-registered (-> @test-atom second first)))
+              (is (= [:cmd/schedule-new
+                      {:id      :generate-opts
+                       :message [:options/gen]
+                       :timeout 5000}]
+                     (-> @test-atom first)))
+              (is (= :entry/saved (-> @test-atom second first)))
               (is (= test-entry (dissoc saved-msg :id :task :last-saved :vclock))))))))))
 
 (defn geo-entry-update-assertions
@@ -188,8 +192,12 @@
             "handler emits updated message"
             (let [entry-saved-msg (first emit-msg)
                   saved-msg (second entry-saved-msg)]
-              (is (= :entry/saved (-> @test-atom ffirst)))
-              (is (= :gql/run-registered (-> @test-atom second first)))
+              (is (= [:cmd/schedule-new
+                      {:id      :generate-opts
+                       :message [:options/gen]
+                       :timeout 5000}]
+                     (-> @test-atom first)))
+              (is (= :entry/saved (-> @test-atom second first)))
               (is (= updated-test-entry
                      (dissoc saved-msg :id :task :last-saved :vclock)))))
 
