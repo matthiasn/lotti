@@ -107,6 +107,7 @@
 
        [:cmd/route {:from :renderer/screenshot
                     :to   #{:renderer/ipc-cmp
+                            :renderer/ws-cmp
                             :renderer/store}}]
 
        [:cmd/observe-state {:from :renderer/store
