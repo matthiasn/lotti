@@ -18,7 +18,9 @@
     (fn [entry edit-mode? _put-fn]
       (let [completed-time (:completed-time entry 0)
             formatted (h/s-to-hh-mm-ss completed-time)
-            logged-duration (h/s-to-hh-mm-ss (eu/logged-total new-entries entry))
+            logged-duration (eu/logged-total new-entries entry)
+            logged-duration (when (pos? logged-duration)
+                              (h/s-to-hh-mm-ss logged-duration))
             on-change (fn [ev]
                         (let [v (.. ev -target -value)
                               parsed (when (seq v)

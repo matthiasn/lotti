@@ -102,6 +102,7 @@
   (let [ts (:timestamp entry2)
         {:keys [new-entry]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
+        status (subscribe [:busy-status])
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -152,7 +153,8 @@
                     (when-let [timeout (:timeout @cb-atom)]
                       (js/clearTimeout timeout)
                       (swap! cb-atom dissoc :timeout))
-                    (when (:pomodoro-running cleaned)
+                    (info "(:active @status)" @status)
+                    (when (= (:comment-for cleaned) (:active @status))
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
                       (put-fn [:cmd/pomodoro-stop updated]))
