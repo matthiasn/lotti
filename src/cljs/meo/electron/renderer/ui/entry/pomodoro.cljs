@@ -5,21 +5,20 @@
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn pomodoro-header [entry _edit-mode? put-fn]
   (let [local (r/atom {:edit false})
         time-click #(swap! local assoc-in [:edit] true)
         planning-mode (subscribe [:planning-mode])
-        logged-time (subscribe [:entry-logged-time (:timestamp entry)])
         busy-status (subscribe [:busy-status])
+        new-entries (subscribe [:new-entries])
         running-pomodoro (subscribe [:running-pomodoro])]
     (fn [entry edit-mode? _put-fn]
       (let [completed-time (:completed-time entry 0)
             formatted (h/s-to-hh-mm-ss completed-time)
-            logged-duration (when-let [t @logged-time]
-                              (when (pos? t)
-                                (h/s-to-hh-mm-ss t)))
+            logged-duration (h/s-to-hh-mm-ss (eu/logged-total new-entries entry))
             on-change (fn [ev]
                         (let [v (.. ev -target -value)
                               parsed (when (seq v)

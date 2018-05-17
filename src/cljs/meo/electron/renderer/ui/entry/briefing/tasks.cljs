@@ -2,13 +2,11 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
-            [meo.common.utils.misc :as u]
-            [taoensso.timbre :as timbre :refer-macros [info debug]]
-            [meo.electron.renderer.ui.entry.actions :as a]
+            [taoensso.timbre :refer-macros [info debug]]
+            [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [clojure.string :as s]
-            [moment]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [moment]))
 
 (defn task-sorter
   "Sorts tasks."
@@ -42,7 +40,7 @@
 
 (defn task-line [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
-        logged-time (subscribe [:entry-logged-time ts])
+        new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
     (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
       (let [text (eu/first-line entry)
@@ -55,7 +53,8 @@
                   active-selected "active-timer-selected"
                   active "active-timer"
                   (= (str ts) search-text) "selected")
-            estimate (get-in entry [:task :estimate-m] 0)]
+            estimate (get-in entry [:task :estimate-m] 0)
+            logged-time (eu/logged-total new-entries entry)]
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)
                    :class    cls}
          [:td
@@ -71,7 +70,7 @@
          (when show-logged?
            [:td.estimate
             (let [actual (if (and active busy)
-                           @logged-time
+                           logged-time
                            (:completed-s (:task entry)))
                   seconds (* 60 estimate)
                   remaining (- seconds actual)
@@ -105,11 +104,11 @@
                      [:span.filter {:class    (when (:on-hold @local) "current")
                                     :on-click #(swap! local update-in [:on-hold] not)}
                       (name fk)])
-        entries-list (reaction  (->> @started-tasks
-                                     (filter on-hold-filter)
-                                     (filter saga-filter)
-                                     (filter open-filter)
-                                     (sort task-sorter)))]
+        entries-list (reaction (->> @started-tasks
+                                    (filter on-hold-filter)
+                                    (filter saga-filter)
+                                    (filter open-filter)
+                                    (sort task-sorter)))]
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)

@@ -8,14 +8,13 @@
 (programs scrot)
 
 (defn import-screenshot [{:keys [msg-payload]}]
-  (future
-    (let [filename (str fu/img-path (:filename msg-payload))
-          os (System/getProperty "os.name")]
-      (info "importing screenshot" filename)
-      (when (= os "Mac OS X")
-        (let-programs [screencapture "/usr/sbin/screencapture"]
-                      (screencapture filename)))
-      (when (= os "Linux")
-        (scrot filename))
-      (img/gen-thumbs (io/file filename))))
+  (let [filename (str fu/img-path (:filename msg-payload))
+        os (System/getProperty "os.name")]
+    (info "importing screenshot" filename)
+    (when (= os "Mac OS X")
+      (let-programs [screencapture "/usr/sbin/screencapture"]
+                    (screencapture filename)))
+    (when (= os "Linux")
+      (scrot filename))
+    (img/gen-thumbs (io/file filename)))
   {})

@@ -11,6 +11,7 @@
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
+            [clojure.core.async :as async]
             [meo.jvm.graphql.xforms :as xf]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
@@ -175,7 +176,8 @@
         g (:graph current-state)
         tasks (->> (gq/get-filtered2 current-state q)
                    (entries-w-logged g)
-                   (mapv #(entry-w-story g %)))]
+                   (mapv #(entry-w-story g %))
+                   (mapv (partial entry-w-comments g)))]
     (xf/snake-xf tasks)))
 
 (defn waiting-habits [state context args value]
@@ -191,7 +193,7 @@
     habits))
 
 (defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
-  (future
+  (async/go
     (let [start (stc/now)
           schema (:schema current-state)
           qid (:id msg-payload)
@@ -228,7 +230,7 @@
   {})
 
 (defn gen-options [{:keys [cmp-state]}]
-  (future
+  (async/go
     (let [opts {:hashtags     (gq/find-all-hashtags @cmp-state)
                 :pvt-hashtags (gq/find-all-pvt-hashtags @cmp-state)
                 :mentions     (gq/find-all-mentions @cmp-state)

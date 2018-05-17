@@ -65,16 +65,6 @@
 (reg-sub :timing (fn [db _] (:timing db)))
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))
 (reg-sub :chart-data (fn [db _] (select-keys db [:media-stats])))
-(reg-sub :entry-logged-time
-         (fn [db [_ ts]]
-           (let [combined (merge (:entries-map db) (:new-entries db))
-                 entry (get-in combined [ts])
-                 time-mapper (fn [c-ts]
-                               (let [p [c-ts :custom-fields "#duration" :duration]]
-                                 (+ (get-in combined [c-ts :completed-time] 0)
-                                    (* 60 (get-in combined p 0)))))
-                 logged (map time-mapper (:comments entry))]
-             (apply + logged))))
 
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])

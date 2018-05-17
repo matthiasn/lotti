@@ -51,6 +51,12 @@
       completed_s
       priority
     }
+
+    comments {
+      timestamp
+      completed_time
+      custom_fields
+    }
   }
 
    waiting_habits(pvt: %s) {

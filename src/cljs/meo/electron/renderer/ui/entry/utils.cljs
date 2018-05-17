@@ -24,3 +24,12 @@
             s/trim
             s/split-lines
             first)))
+
+(defn logged-total [new-entries entry]
+  (apply + (map (fn [x]
+                  (let [ts (:timestamp x)
+                        p [:custom-fields "#duration" :duration]]
+                    (+ (or (get-in @new-entries [ts :completed-time])
+                           (get-in x [:completed-time] 0))
+                       (* 60 (get-in x p 0)))))
+                (:comments entry))))
