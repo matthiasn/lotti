@@ -9,4 +9,5 @@
   backlog_count: match_count(query:"#task #backlog ~#done ~#closed")
   closed_count: match_count(query:"#task #closed")
   import_count: match_count(query:"#import")
+  active_threads
 }

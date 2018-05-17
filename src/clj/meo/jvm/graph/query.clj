@@ -492,3 +492,5 @@
 (defn query-fn [{:keys [current-state put-fn]}]
   (put-fn [:startup/progress (:startup-progress current-state)])
   {})
+
+(System/currentTimeMillis)

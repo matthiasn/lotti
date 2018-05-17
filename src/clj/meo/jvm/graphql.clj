@@ -39,6 +39,8 @@
 (defn stories [state context args value] (-> @state :options :stories))
 (defn sagas [state context args value] (-> @state :options :sagas))
 
+(defn thread-count [state context args value] (Thread/activeCount))
+
 (defn briefings [state context args value]
   (map (fn [[k v]] {:day k :timestamp v})
        (gq/find-all-briefings @state)))
@@ -248,6 +250,7 @@
                         :query/mention-count      mention-count
                         :query/completed-count    completed-count
                         :query/match-count        match-count
+                        :query/active-threads     thread-count
                         :query/tab-search         tab-search
                         :query/hashtags           hashtags
                         :query/pvt-hashtags       pvt-hashtags

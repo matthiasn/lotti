@@ -20,7 +20,8 @@
         (:backlog-count @stats) " backlog | "
         (:completed-count @stats) " done | "
         (:closed-count @stats) " closed | "
-        (:import-count @stats) " #import"]] )))
+        (:import-count @stats) " #import | "
+        (:active-threads @stats) " threads"]])))
 
 (defn stats-view [put-fn]
   [:div.stats.charts

@@ -230,6 +230,11 @@
    :description "Completed tasks count."
    :resolve     :query/completed-count}
 
+  :active_threads
+  {:type        Int
+   :description "Number of currently active threads."
+   :resolve     :query/active-threads}
+
   :match_count
   {:type        Int
    :description "Result count for given query."
