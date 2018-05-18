@@ -48,8 +48,8 @@
         opts {:detached false
               :cwd      user-data
               :env      {:PORT      PORT
-                         :GQL_PORT gql-port
-                         :APP_PATH app-path
+                         :GQL_PORT  gql-port
+                         :APP_PATH  app-path
                          :DATA_PATH data-path}}
         service (spawn-process java args opts)]
     (info "JVM: startup")

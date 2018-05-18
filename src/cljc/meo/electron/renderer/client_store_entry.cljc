@@ -90,7 +90,7 @@
         dur (parse-int-js (+ completed-time
                              (/ (- (st/now) started) 1000)))
         new-state (assoc-in current-state [:new-entries ts :completed-time] dur)]
-    (info "pomodoro-inc-fn" msg-payload)
+    (debug "pomodoro-inc-fn" msg-payload)
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
             completed (:completed-time new-entry)

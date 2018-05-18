@@ -92,8 +92,8 @@
         eq (= x1 y1)
         diff (clojure.data/diff x1 y1)]
     (when-not eq
-      (info (first diff))
-      (info (second diff)))
+      (debug (first diff))
+      (debug (second diff)))
     (not eq)))
 
 (def editor (adapt-react-class "EntryTextEditor"))

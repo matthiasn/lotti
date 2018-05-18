@@ -1,7 +1,7 @@
 (ns meo.electron.main.runtime
   (:require [path :refer [normalize join]]
             [electron :refer [app]]
-            [cljs.nodejs :as nodejs :refer [process]]
+            [cljs.nodejs :refer [process]]
             [clojure.string :as s]))
 
 (def runtime-info

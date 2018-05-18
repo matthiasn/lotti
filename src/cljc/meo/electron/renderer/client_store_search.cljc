@@ -31,7 +31,7 @@
         pvt (:show-pvt (:cfg current-state))
         gql-query (when (seq queries) (gql/tabs-query queries pvt))]
     (when gql-query
-      (info gql-query)
+      (debug gql-query)
       (put-fn [:gql/query {:q        gql-query
                            :id       :tabs-query
                            :res-hash nil

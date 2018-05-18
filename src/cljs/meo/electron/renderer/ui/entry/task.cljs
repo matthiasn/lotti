@@ -44,7 +44,6 @@
            [:fieldset
             [:div
              [:span " Priority: "]
-             (info "Priority " (keyword priority))
              [:select {:value     (keyword priority)
                        :on-change (prio-select entry)}
               [:option ""]

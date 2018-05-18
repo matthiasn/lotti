@@ -31,4 +31,5 @@
    :opts          {:in-chan  [:buffer 100]
                    :out-chan [:buffer 100]}
    :relay-types   #{:entry/saved :backend-cfg/new :cmd/toggle-key :cfg/show-qr
-                    :ws/ping :startup/progress :file/encrypt :search/res :gql/res}})
+                    :ws/ping :startup/progress :file/encrypt :search/res
+                    :gql/res}})

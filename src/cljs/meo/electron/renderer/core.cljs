@@ -5,13 +5,14 @@
             [meo.electron.renderer.ui.re-frame :as rf]
             [meo.electron.renderer.router :as router]
             [meo.electron.renderer.tensorflow :as tf]
+            [meo.electron.renderer.ws :as ws]
             [meo.electron.renderer.screenshot :as screenshot]
             [meo.electron.renderer.spellcheck :as spellcheck]
             [taoensso.timbre :refer-macros [info debug error]]
             [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
             [matthiasn.systems-toolbox-sente.client :as sente]
             [meo.electron.renderer.exec :as exec]
-            [cljs.nodejs :as nodejs :refer [process]]
+            [cljs.nodejs :refer [process]]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]))
 
@@ -56,7 +57,7 @@
   (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
                      (spellcheck/cmp-map :renderer/spellcheck)
                      (screenshot/cmp-map :renderer/screenshot)
-                     (sente/cmp-map :renderer/ws-cmp sente-cfg)
+                     (ws/cmp-map :renderer/ws-cmp sente-cfg)
                      (tf/cmp-map :renderer/tensorflow)
                      (when OBSERVER
                        (sente/cmp-map :renderer/ws-firehose sente-base-cfg))

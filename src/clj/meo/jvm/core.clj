@@ -10,6 +10,7 @@
             [clj-pid.core :as pid]
             [meo.jvm.log]
             [meo.jvm.store :as st]
+            [meo.jvm.ws :as ws]
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
@@ -18,8 +19,16 @@
 
 (defonce switchboard (sb/component :backend/switchboard))
 
+(def ws-map
+  {:opts          {:in-chan  [:buffer 100]
+                   :out-chan [:buffer 100]}
+   :relay-types   #{:entry/saved :backend-cfg/new :cmd/toggle-key :cfg/show-qr
+                    :ws/ping :startup/progress :file/encrypt :search/res
+                    :gql/res}})
+
 (def cmp-maps
-  #{(sente/cmp-map :backend/ws idx/sente-map)
+  #{(sente/cmp-map :backend/ws-old idx/sente-map)
+    (ws/cmp-map :backend/ws ws-map)
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)

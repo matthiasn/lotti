@@ -17,14 +17,14 @@
                   (filter #(= :barchart-row (:type %)))
                   (mapv :tag))]
     (when-let [query-string (gql/graphql-query (inc days) tags)]
-      (info "dashboard" query-string)
+      (debug "dashboard" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard}])))
   (let [items (->> (:charts @charts-pos)
                    (filter #(= :scores-chart (:type %))))]
     (when-let [query-string (gql/dashboard-questionnaires days items)]
-      (info "dashboard" query-string)
+      (debug "dashboard" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard-questionnaires}]))))
