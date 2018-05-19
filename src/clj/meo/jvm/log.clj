@@ -10,8 +10,7 @@
   (-> fltr enc/compile-ns-filter taoensso.encore/memoize_))
 
 (def namespace-log-levels
-  {;"taoensso.sente" :trace
-   :all             :info})
+  {:all :info})
 
 (defn middleware
   "From: https://github.com/yonatane/timbre-ns-pattern-level"
@@ -29,13 +28,13 @@
                  (taoensso.timbre/level>= level log-level))
         opts))))
 
+(def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "/tmp/meo-dev.log"))
+
 ; See https://github.com/ptaoussanis/timbre
 (def timbre-config
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
-   ;:middleware     [(middleware namespace-log-levels)]
-   :appenders      {:spit (appenders/spit-appender
-                            {:fname          "/tmp/meo.log"
-                             :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSSZ"}})}})
+   :appenders      {:spit   (appenders/spit-appender {:fname filename})
+                    :async? true}})
 
 (timbre/merge-config! timbre-config)
