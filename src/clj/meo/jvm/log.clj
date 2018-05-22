@@ -31,10 +31,14 @@
 (def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "/tmp/meo-dev.log"))
 
 ; See https://github.com/ptaoussanis/timbre
+(def appender
+  (merge
+    (appenders/spit-appender {:fname filename})
+    {:async? true}))
+
 (def timbre-config
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
-   :appenders      {:spit   (appenders/spit-appender {:fname filename})
-                    :async? true}})
+   :appenders      {:spit appender}})
 
 (timbre/merge-config! timbre-config)
