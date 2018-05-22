@@ -21,8 +21,14 @@
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
                  [org.clojure/data.csv "0.1.4"]
+
                  [com.walmartlabs/lacinia "0.26.0"]
                  [com.walmartlabs/lacinia-pedestal "0.7.0"]
+
+                 [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
+                 [org.eclipse.jetty.websocket/websocket-api "9.4.7.v20170914"]
+                 [org.eclipse.jetty.websocket/websocket-server "9.4.7.v20170914"]
+
                  [vincit/venia "0.2.5"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]

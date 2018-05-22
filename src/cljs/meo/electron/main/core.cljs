@@ -47,6 +47,7 @@
                 :import/screenshot
                 :import/photos
                 :import/listen
+                :import/git
                 :firehose/cmp-put
                 :firehose/cmp-recv})
 

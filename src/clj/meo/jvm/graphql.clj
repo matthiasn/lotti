@@ -239,6 +239,8 @@
       (swap! cmp-state assoc-in [:options] opts)))
   {})
 
+
+
 (defn state-fn [state _put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         attach-state (fn [m] (into {} (map (fn [[k f]] [k (partial f state)]) m)))

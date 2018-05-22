@@ -100,10 +100,7 @@
                                 :message [:options/gen]
                                 :id :generate-opts}])
     (tf/import-predictions cmp-state)
-    (put-fn [:cmd/schedule-new {:timeout (* 60 1000)
-                                :message [:import/git]
-                                :repeat  true
-                                :initial false}])
+    (put-fn [:import/git])
     (ft-index entries-to-index put-fn)
     {}))
 

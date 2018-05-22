@@ -44,9 +44,12 @@
                {:label       "Upload"
                 :accelerator "CmdOrCtrl+U"
                 :click       #(put-fn [:import/listen])}
-               {:label       "Import"
-                :accelerator "CmdOrCtrl+I"
-                :click       #(import-dialog put-fn)}
+               {:label   "Import"
+                :submenu [{:label       "Photos"
+                           :accelerator "CmdOrCtrl+I"
+                           :click       #(import-dialog put-fn)}
+                          {:label "Git repos"
+                           :click #(put-fn [:import/git])}]}
                {:label "Export"
                 :click #(put-fn [:export/geojson])}]}))
 
