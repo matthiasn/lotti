@@ -4,13 +4,13 @@
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/tools.logging "0.4.0"]
+                 [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
                  [org.clojure/data.avl "0.0.17"]
                  [org.clojure/test.check "0.10.0-alpha2"]
                  [clj-pid "0.1.2"]
-                 [clj-time "0.14.3"]
+                 [clj-time "0.14.4"]
                  [clj-http "3.9.0"]
                  [ring/ring-core "1.6.3"]
                  [enlive "1.1.6"]
@@ -31,7 +31,7 @@
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.34"]
-                 [matthiasn/systems-toolbox-sente "0.6.29"]
+                 [matthiasn/systems-toolbox-sente "0.6.30"]
                  [org.clojure/tools.reader "1.2.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
@@ -58,7 +58,7 @@
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.0-2"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.238"]
-                                           [reagent "0.8.0"
+                                           [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
                                            [cljsjs/moment "2.17.1-1"]
@@ -74,7 +74,7 @@
 
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
-            [lein-figwheel "0.5.15"]
+            [lein-figwheel "0.5.16"]
             [test2junit "1.4.0"]
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
