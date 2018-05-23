@@ -36,9 +36,7 @@
     (appenders/spit-appender {:fname filename})
     {:async? true}))
 
-(def timbre-config
+(timbre/set-config!
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
    :appenders      {:spit appender}})
-
-(timbre/merge-config! timbre-config)
