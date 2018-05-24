@@ -1,8 +1,8 @@
 language: clojure
 install:
   - sudo apt-get install libxkbfile-dev
-  - nvm install node
-  - nvm use node
+  - nvm install 8
+  - nvm use 8
   - npm install
 script: lein dist
 jdk:
