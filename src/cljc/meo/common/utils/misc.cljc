@@ -108,8 +108,6 @@
       (update-in [:task] dissoc :completed-s)
       (update-in [:task] dissoc :due)
       (update-in [:tags] set)
-      (update-in [:md] #(s/trim (str %)))
-      (update-in [:text] #(s/trim (str %)))
       (dissoc :editor-state)
       (dissoc :pomodoro-running)
       (dissoc :linked-entries-list)))

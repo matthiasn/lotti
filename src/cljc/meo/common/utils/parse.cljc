@@ -29,7 +29,7 @@
   (let [no-codeblocks (s/replace text (re-pattern (str "```[^`]*```")) "")
         without-code (s/replace no-codeblocks (re-pattern (str "`[^`]*`")) "")
         tags (set (map s/trim (re-seq entry-tag-regex without-code)))]
-    {:md       (s/trim text)
+    {:md       text
      :tags     tags
      :mentions (set (map s/trim (re-seq entry-mentions-regex without-code)))}))
 

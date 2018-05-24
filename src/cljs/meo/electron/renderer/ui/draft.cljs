@@ -149,7 +149,7 @@
                         updated (merge (dissoc cleaned :edit-running)
                                        @new-entry
                                        (p/parse-entry md)
-                                       {:text (s/trim plain)})
+                                       {:text plain})
                         updated (update-in updated [:tags] set/union (:perm-tags updated))
                         updated (if (= (:entry-type cleaned) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
