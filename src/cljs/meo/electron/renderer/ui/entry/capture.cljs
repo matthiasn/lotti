@@ -4,6 +4,7 @@
             [meo.electron.renderer.ui.questionnaires :as q]
             [meo.electron.renderer.helpers :as h]
             [moment]
+            [taoensso.timbre :refer-macros [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
             [matthiasn.systems-toolbox.component :as st]
             [reagent.core :as r]))
@@ -108,7 +109,7 @@
               pomo-q [:pomo1 (get-in questionnaires [:items :pomo1])]
               entry-questionnaires (map q-mapper q-tags)
               completed-pomodoro (and (>= (:completed-time entry)
-                                          (:planned-dur entry))
+                                          (:planned-dur entry 1500))
                                       (= (:entry-type entry) :pomodoro)
                                       (> ts 1505770346000))
               entry-questionnaires (into {} (if completed-pomodoro

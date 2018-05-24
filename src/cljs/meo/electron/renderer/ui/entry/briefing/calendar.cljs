@@ -81,7 +81,6 @@
                                   text)
                        open-ts (or comment-for timestamp)
                        click (up/add-search open-ts :left put-fn)]
-                   (info story)
                    {:title title
                     :click click
                     :color color
