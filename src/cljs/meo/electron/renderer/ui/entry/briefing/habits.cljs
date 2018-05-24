@@ -20,14 +20,13 @@
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
-  (let [cfg (subscribe [:cfg])
+  (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
         briefing (reaction (-> @gql-res :briefing :data :briefing))
         habits (reaction (-> @gql-res :briefing :data :waiting-habits))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        options (subscribe [:options])
         expand-fn #(swap! local update-in [:expanded-habits] not)
         saga-filter (fn [entry]
                       (if-let [selected (:selected @local)]
@@ -43,7 +42,9 @@
             tab-group (:tab-group local-cfg)
             today (.format (moment.) "YYYY-MM-DD")
             search-text @search-text]
-        (when (and (= today (:day @briefing)) (seq habits))
+        (when (and (= today (:day @briefing))
+                   (seq habits)
+                   (contains? (:capabilities @backend-cfg) :habits))
           [:div
            [:table.habits
             [:tbody

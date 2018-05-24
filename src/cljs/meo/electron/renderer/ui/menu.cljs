@@ -19,13 +19,7 @@
         [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))
-
-(def limited-options
-  [{:option :show-pvt :cls "fa-user-secret"}
-   {:option :single-column :cls "fa-columns"}
-   {:option :sort-asc :cls " fa-sort-asc"}
-   {:option :app-screenshot :cls "fa-window-minimize"}])
-
+#_
 (def all-options
   [{:option :show-pvt :cls "fa-user-secret"}
    ;{:option :comments-standalone :cls "fa-comments"}
@@ -52,7 +46,6 @@
     (def ^:export new-entry (h/new-entry put-fn {} open-new))
     (def ^:export new-story (h/new-entry put-fn {:entry-type :story} open-new))
     (def ^:export new-saga (h/new-entry put-fn {:entry-type :saga} open-new))
-    (def ^:export planning #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}]))
     (fn [put-fn]
       (when (:show @local)
         [:div.new-import
@@ -70,7 +63,7 @@
 
 (defn cfg-view [put-fn]
   (let [cfg (subscribe [:cfg])
-        planning-mode (subscribe [:planning-mode])
+        backend-cfg (subscribe [:backend-cfg])
         ws-address (fn [_]
                      (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
                      (if (:ws-qr-code @cfg)
@@ -78,12 +71,14 @@
                        (put-fn [:sync/start-server])))]
     (fn [put-fn]
       [:div
-       (for [option (if @planning-mode all-options limited-options)]
-         ^{:key (str "toggle" (:cls option))}
-         [toggle-option-view option put-fn])
-       [:i.far.fa-qrcode.toggle
-        {:on-click ws-address
-         :class    (when-not (:ws-qr-code @cfg) "inactive")}]])))
+       [toggle-option-view {:option :show-pvt :cls "fa-user-secret"} put-fn]
+       (when (contains? (:capabilities @backend-cfg) :dashboard-banner)
+         [toggle-option-view {:option :dashboard-banner
+                              :cls    "fa-chart-line"} put-fn])
+       (when (contains? (:capabilities @backend-cfg) :sync)
+         [:i.far.fa-qrcode.toggle
+          {:on-click ws-address
+           :class    (when-not (:ws-qr-code @cfg) "inactive")}])])))
 
 (defn upload-view []
   (let [cfg (subscribe [:cfg])
@@ -99,15 +94,13 @@
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])
-        planning-mode (subscribe [:planning-mode])
         click (fn [_]
                 (let [q (up/parse-search (str (:active @status)))]
                   (put-fn [:search/add {:tab-group :left :query q}])))]
     (fn busy-status-render [put-fn]
       (let [cls (name (or (:color @status) :green))]
-        (when @planning-mode
-          [:div.busy-status {:class cls
-                             :on-click click}])))))
+        [:div.busy-status {:class    cls
+                           :on-click click}]))))
 
 (defn menu-view [put-fn]
   (let [cal-day (subscribe [:cal-day])

@@ -11,7 +11,6 @@
 (defn pomodoro-header [entry _edit-mode? put-fn]
   (let [local (r/atom {:edit false})
         time-click #(swap! local assoc-in [:edit] true)
-        planning-mode (subscribe [:planning-mode])
         busy-status (subscribe [:busy-status])
         new-entries (subscribe [:new-entries])
         running-pomodoro (subscribe [:running-pomodoro])]
@@ -36,7 +35,7 @@
                             (put-fn [:cmd/pomodoro-stop entry])
                             (put-fn [:cmd/pomodoro-start entry])))]
         (when-not edit-mode? (swap! local assoc-in [:edit] false))
-        (if (and (= (:entry-type entry) :pomodoro) @planning-mode)
+        (if (= (:entry-type entry) :pomodoro)
           [:div.pomodoro
            (when edit-mode?
              [:span.btn.start-stop {:on-click start-stop

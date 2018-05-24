@@ -59,7 +59,6 @@
 (reg-sub :locale (fn [db _] (:locale (:cfg db) :en)))
 (reg-sub :backend-cfg (fn [db _] (:backend-cfg db)))
 (reg-sub :repos (fn [db _] (:repos (:backend-cfg db))))
-(reg-sub :planning-mode (fn [db _] (:planning-mode (:cfg db))))
 (reg-sub :stats (fn [db _] (:stats db)))
 (reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))
@@ -68,19 +67,15 @@
 
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
-        planning-mode (subscribe [:planning-mode])
-        show-calendar (reaction (:show-calendar @cfg))
         single-column (reaction (:single-column @cfg))]
     (fn [put-fn]
       [:div.flex-container
        [:div.grid
-        [:div.wrapper {:class (when @planning-mode "col-3")}
+        [:div.wrapper.col-3
          [menu/menu-view put-fn]
-         (when @show-calendar
-           [:div.cal
-            [cal/calendar-view put-fn]])
-         (when @planning-mode
-           [b/briefing-column-view :briefing put-fn])
+         [:div.cal
+          [cal/calendar-view put-fn]]
+         [b/briefing-column-view :briefing put-fn]
          [:div {:class (if @single-column "single" "left")}
           [g/tabs-view :left put-fn]]
          (when-not @single-column

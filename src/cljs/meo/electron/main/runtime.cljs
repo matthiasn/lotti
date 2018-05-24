@@ -2,7 +2,10 @@
   (:require [path :refer [normalize join]]
             [electron :refer [app]]
             [cljs.nodejs :refer [process]]
-            [clojure.string :as s]))
+            [taoensso.timbre :as timbre :refer-macros [info error debug]]
+            [fs :refer [existsSync renameSync readFileSync]]
+            [clojure.string :as s]
+            [clojure.tools.reader.edn :as edn]))
 
 (def runtime-info
   (let [user-data (.getPath app "userData")
@@ -14,6 +17,9 @@
         download-path (.getPath app "downloads")
         data-path (str user-data "/data")
         encrypted-path (str user-data "/encrypted")
+        ca-file (str (if repo-dir (str cwd "/data") data-path) "/capabilities.edn")
+        capabilities (when (existsSync ca-file)
+                       (edn/read-string (readFileSync ca-file "utf-8")))
         info {:platform        platform
               :download-path   download-path
               :electron-path   (first (.-argv process))
@@ -31,8 +37,9 @@
               :pid-file        (str user-data "/meo.pid")
               :resources-path  rp
               :app-path        app-path}]
-    (into {:repo-dir   repo-dir
-           :index-page (if repo-dir "electron/index-dev.html" "electron/index.html")
-           :port       (if repo-dir 8765 7788)
-           :gql-port   (if repo-dir 8766 7789)}
+    (into {:repo-dir     repo-dir
+           :index-page   (if repo-dir "electron/index-dev.html" "electron/index.html")
+           :port         (if repo-dir 8765 7788)
+           :capabilities (:capabilities capabilities)
+           :gql-port     (if repo-dir 8766 7789)}
           (map (fn [[k v]] [k (normalize v)]) info))))

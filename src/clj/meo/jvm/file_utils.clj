@@ -59,8 +59,13 @@
   (let [conf-path (str data-path "/conf.edn")
         questionnaires-path (str data-path "/questionnaires.edn")
         questionnaires (try (edn/read-string (slurp questionnaires-path))
-                            (catch Exception ex
+                            (catch Exception _
                               (do (warn "No questionnaires config found.")
+                                  {})))
+        ca-path (str data-path "/capabilities.edn")
+        capabilities (try (edn/read-string (slurp ca-path))
+                            (catch Exception _
+                              (do (warn "No capabilities config found.")
                                   {})))
         conf (try (edn/read-string (slurp conf-path))
                   (catch Exception ex
@@ -73,7 +78,9 @@
     (when-not (:node-id conf)
       (let [with-node-id (assoc-in conf [:node-id] (str (st/make-uuid)))]
         (write-conf with-node-id conf-path)))
-    (update-in conf [:questionnaires] #(merge-with merge questionnaires %))))
+    (-> conf
+        (update-in [:questionnaires] #(merge-with merge questionnaires %))
+        (assoc-in [:capabilities] (:capabilities capabilities)))))
 
 (defn read-secrets []
   (try

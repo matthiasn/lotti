@@ -1,7 +1,25 @@
 (ns meo.electron.main.menu
   (:require [taoensso.timbre :as timbre :refer-macros [info]]
             [electron :refer [app Menu dialog globalShortcut]]
-            [meo.electron.main.runtime :as rt]))
+            [meo.electron.main.runtime :as rt]
+            [clojure.walk :as walk]))
+
+(def capabilities (:capabilities rt/runtime-info))
+
+(info capabilities)
+
+(defn rm-filtered [m]
+  (walk/postwalk (fn [node]
+                   (if (map? node)
+                     (into {}
+                           (map (fn [[k v]]
+                                  (if
+                                    (and v (= :submenu k))
+                                    [k (filter identity v)]
+                                    [k v]))
+                                node))
+                     node))
+                 m))
 
 (defn app-menu [put-fn]
   (let [update-win {:url "electron/updater.html" :width 600 :height 300}
@@ -11,8 +29,9 @@
                 :selector "orderFrontStandardAboutPanel:"}
                {:label "Check for Updates..."
                 :click check-updates}
-               {:label "Start Spotify Service"
-                :click #(put-fn [:spotify/start])}
+               (when (contains? capabilities :spotify)
+                 {:label "Start Spotify Service"
+                  :click #(put-fn [:spotify/start])})
                {:label "Quit Background Service"
                 :click #(do (put-fn [:app/shutdown-jvm])
                             (put-fn [:app/shutdown]))}
@@ -41,15 +60,17 @@
                 :click       new-entry}
                {:label "New Story" :click new-story}
                {:label "New Saga" :click new-saga}
-               {:label       "Upload"
-                :accelerator "CmdOrCtrl+U"
-                :click       #(put-fn [:import/listen])}
+               (when (contains? capabilities :sync-swift)
+                 {:label       "Upload"
+                  :accelerator "CmdOrCtrl+U"
+                  :click       #(put-fn [:import/listen])})
                {:label   "Import"
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
-                          {:label "Git repos"
-                           :click #(put-fn [:import/git])}]}
+                          (when (contains? capabilities :git-import)
+                            {:label "Git repos"
+                             :click #(put-fn [:import/git])})]}
                {:label "Export"
                 :click #(put-fn [:export/geojson])}]}))
 
@@ -103,29 +124,33 @@
                 :click       new-window}
                {:label "Main View"
                 :click (open "")}
-               {:label "Charts"
-                :click (open "charts1")}
-               {:label "Config"
-                :click (open "config")}
-               {:label "Sync Config"
-                :click (open "sync")}
-               {:label "Countries"
-                :click (open "countries")}
-               {:label "Heatmap"
-                :click (open "heatmap")}
-               {:label "Dashboards"
-                :click (open "dashboards/dashboard-1")}
-               {:label "Scatter Matrix"
-                :click (open "correlation")}
+               (when (contains? capabilities :charts)
+                 {:label "Charts"
+                  :click (open "charts1")})
+               (when (contains? capabilities :config)
+                 {:label "Config"
+                  :click (open "config")})
+               (when (contains? capabilities :sync-cfg)
+                 {:label "Sync Config"
+                  :click (open "sync")})
+               (when (contains? capabilities :countries)
+                 {:label "Countries"
+                  :click (open "countries")})
+               (when (contains? capabilities :heatmap)
+                 {:label "Heatmap"
+                  :click (open "heatmap")})
+               (when (contains? capabilities :dashboards)
+                 {:label "Dashboards"
+                  :click (open "dashboards/dashboard-1")})
+               (when (contains? capabilities :scatter-matrix)
+                 {:label "Scatter Matrix"
+                  :click (open "correlation")})
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
-               {:label "Toggle Planning Mode"
-                :click #(put-fn [:cmd/toggle-key {:path [:cfg :planning-mode]}])}
-               {:label "Toggle Calendar"
-                :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-calendar]}])}
-               {:label "Toggle Charts"
-                :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
+               (when (contains? capabilities :dashboard-banner)
+                 {:label "Toggle Charts"
+                  :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}
@@ -162,7 +187,9 @@
                   (edit-menu put-fn)
                   (view-menu put-fn)
                   (capture-menu put-fn)
-                  (learn-menu put-fn)]
+                  (when (contains? capabilities :tensorflow)
+                    (learn-menu put-fn))]
+        menu-tpl (rm-filtered (filter identity menu-tpl))
         menu (.buildFromTemplate Menu (clj->js menu-tpl))
         activate #(put-fn [:window/activate])
         screenshot #(put-fn [:screenshot/take])]

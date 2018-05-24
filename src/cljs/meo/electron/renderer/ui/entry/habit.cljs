@@ -2,6 +2,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [moment]
             [re-frame.core :refer [subscribe]]
+            [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]))
 
 (defn next-habit-entry
@@ -28,7 +29,7 @@
         (dissoc :longitude))))
 
 (defn habit-details [entry local-cfg put-fn edit-mode?]
-  (let [planning-mode (subscribe [:planning-mode])
+  (let [backend-cfg (subscribe [:backend-cfg])
         active-from (fn [entry]
                       (fn [ev]
                         (let [dt (h/target-val ev)
@@ -104,7 +105,7 @@
                        :done        false}
                 updated (assoc-in entry [:habit] habit)]
             (put-fn [:entry/update-local updated])))
-        (when @planning-mode
+        (when (contains? (:capabilities @backend-cfg) :habits)
           [:form.habit-details
            [:fieldset
             [:legend "Habit details"]
