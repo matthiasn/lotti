@@ -38,6 +38,7 @@
       (run-query "briefing.gql" :briefing 2 [ymd pvt pvt])
       (run-query "logged-by-day.gql" :logged-by-day 3 [ymd]))
     (run-query "options.gql" :options 10 nil)
+    (run-query "day-stats.gql" :day-stats 5 [90])
     (s/gql-query current-state put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])

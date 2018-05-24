@@ -139,9 +139,6 @@
                (when (contains? capabilities :heatmap)
                  {:label "Heatmap"
                   :click (open "heatmap")})
-               (when (contains? capabilities :dashboards)
-                 {:label "Dashboards"
-                  :click (open "dashboards/dashboard-1")})
                (when (contains? capabilities :scatter-matrix)
                  {:label "Scatter Matrix"
                   :click (open "correlation")})

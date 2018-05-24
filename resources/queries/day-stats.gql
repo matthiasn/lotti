@@ -1,0 +1,24 @@
+{
+  day_stats(days: "%s") {
+    day
+    closed_tasks_cnt
+    done_tasks_cnt
+    entry_count
+    tasks_cnt
+    word_count
+    total_time
+    by_ts {
+      timestamp
+      comment_for
+      completed
+      manual
+      summed
+      story {
+        story_name
+        saga {
+          saga_name
+        }
+      }
+    }
+  }
+}

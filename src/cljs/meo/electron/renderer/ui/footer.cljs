@@ -3,7 +3,8 @@
             [meo.electron.renderer.ui.dashboard :as db]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [meo.electron.renderer.ui.charts.time.durations :as cd]))
 
 (defn footer [put-fn]
   (let [cfg (subscribe [:cfg])
@@ -23,7 +24,12 @@
                           (swap! local assoc-in [:height] h)))
         select-days (fn [ev]
                       (let [d (js/parseInt (-> ev .-nativeEvent .-target .-value))]
-                        (swap! local assoc-in [:days] d)))]
+                        (swap! local assoc-in [:days] d)
+                        (put-fn [:gql/query {:file     "day-stats.gql"
+                                             :id       :day-stats
+                                             :res-hash nil
+                                             :prio     5
+                                             :args     [d]}])))]
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
@@ -54,5 +60,6 @@
               [:option {:value 180} "180 days"]
               [:option {:value 270} "270 days"]
               [:option {:value 365} "1 year"]]])
+          [cd/durations-bar-chart 220 5 put-fn]
           [stats/stats-text]]
          [stats/stats-text])])))

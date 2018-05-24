@@ -89,18 +89,11 @@
   [:div.flex-container
    [:div.charts-grid
     [:div.wrapper
-     [cd/durations-bar-chart 200 5 put-fn]
-     [cf2/custom-fields-chart put-fn]
-     [aw/award-points put-fn]
-     [stats/stats-view put-fn]]]])
+     [cd/durations-bar-chart 200 5 put-fn]]]])
 
 (defn countries-page [put-fn]
   [:div.flex-container
    [loc/location-chart]])
-
-(defn dashboards [put-fn]
-  [:div.flex-container
-   [db/dashboard put-fn]])
 
 (defn cal [put-fn]
   [:div.flex-container
@@ -125,7 +118,6 @@
             startup-progress @startup-progress]
         (if (= 1 startup-progress)
           (case (:page current-page)
-            :dashboards [dashboards put-fn]
             :config [cfg/config put-fn]
             :sync [sync/sync put-fn]
             :charts-1 [charts-page put-fn]

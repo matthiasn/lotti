@@ -72,7 +72,7 @@
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
 
-  :repl-options {:init-ns user}
+  :repl-options {:init-ns meo.jvm.core}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 

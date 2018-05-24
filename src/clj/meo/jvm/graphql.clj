@@ -94,6 +94,21 @@
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     (xf/snake-xf day-stats)))
 
+(defn day-stats [state context args value]
+  (let [current-state @state
+        g (:graph current-state)
+        stories (gq/find-all-stories current-state)
+        sagas (gq/find-all-sagas current-state)
+        days (reverse (range (:days args 90)))
+        now (stc/now)
+        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+        f (fn [day]
+            (let [day-nodes (gq/get-nodes-for-day g {:date-string day})
+                  day-nodes-attrs (map #(get-entry g %) day-nodes)]
+              (gsd/day-stats g day-nodes-attrs stories sagas day)))
+        stats (mapv f day-strings)]
+    (xf/snake-xf stats)))
+
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))
 
@@ -261,6 +276,7 @@
                         :query/hashtags           hashtags
                         :query/pvt-hashtags       pvt-hashtags
                         :query/logged-time        logged-time
+                        :query/day-stats          day-stats
                         :query/started-tasks      started-tasks
                         :query/waiting-habits     waiting-habits
                         :query/mentions           mentions

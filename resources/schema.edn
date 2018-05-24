@@ -105,11 +105,11 @@
 
   :Story
   {:description "A story"
-   :fields      {:timestamp   {:type (non-null ID)}
-                 :story_name  {:type String}
-                 :vclock      {:type (list :Vclock)}
-                 :saga        {:type        :Saga
-                               :description "Saga that the story belongs to."}}}
+   :fields      {:timestamp  {:type (non-null ID)}
+                 :story_name {:type String}
+                 :vclock     {:type (list :Vclock)}
+                 :saga       {:type        :Saga
+                              :description "Saga that the story belongs to."}}}
 
   :Briefing
   {:description "A briefing (plan for a specific day)"
@@ -328,5 +328,10 @@
   {:type    :DayStats
    :args    {:day {:type String}}
    :resolve :query/logged-time}
+
+  :day_stats
+  {:type    (list :DayStats)
+   :args    {:days {:type (non-null Int)}}
+   :resolve :query/day-stats}
 
   }}
