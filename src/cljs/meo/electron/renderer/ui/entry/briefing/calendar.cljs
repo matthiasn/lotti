@@ -31,15 +31,7 @@
                                    :primary-story (-> @cfg :briefing :story)})]
                       (info "creating briefing" ymd)
                       (put-fn [:entry/update entry])))
-                  (put-fn [:cal/to-day {:day ymd}])
-                  (put-fn [:gql/query {:file "logged-by-day.gql"
-                                       :id   :logged-by-day
-                                       :prio 3
-                                       :args [ymd]}])
-                  (put-fn [:gql/query {:file "briefing.gql"
-                                       :id   :briefing
-                                       :prio 2
-                                       :args [ymd @pvt @pvt]}]))
+                  (h/to-day ymd pvt put-fn))
         opts (clj->js {:time             false
                        :initialValue     (:cal-day @cfg)
                        :monthsInCalendar 2})]

@@ -148,3 +148,14 @@
 (def thumbs-256 (str (if repo-dir ".." user-data) "/data/thumbs/256/"))
 (def thumbs-2048 (str (if repo-dir ".." user-data) "/data/thumbs/2048/"))
 (def export (str (if repo-dir ".." user-data) "/data/export/"))
+
+(defn to-day [ymd pvt put-fn]
+  (put-fn [:cal/to-day {:day ymd}])
+  (put-fn [:gql/query {:file "logged-by-day.gql"
+                       :id   :logged-by-day
+                       :prio 3
+                       :args [ymd]}])
+  (put-fn [:gql/query {:file "briefing.gql"
+                       :id   :briefing
+                       :prio 2
+                       :args [ymd @pvt @pvt]}]))

@@ -104,13 +104,16 @@
 
 (defn menu-view [put-fn]
   (let [cal-day (subscribe [:cal-day])
-        locale (subscribe [:locale])]
+        locale (subscribe [:locale])
+        pvt (subscribe [:show-pvt])]
     (fn [put-fn]
-      (let [day (or @cal-day (h/ymd (st/now)))]
+      (let [day (or @cal-day (h/ymd (st/now)))
+            today #(h/to-day (h/ymd (st/now)) pvt put-fn)]
         [:div.menu
          [:div.menu-header
           [new-import-view put-fn]
-          [:h1 (h/localize-date day @locale)]
+          [:h1 {:on-click today}
+           (h/localize-date day @locale)]
           [busy-status put-fn]
           [cfg-view put-fn]
           [upload-view]]]))))
