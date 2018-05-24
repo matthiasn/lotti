@@ -39,12 +39,12 @@
                        (let [updated (update-in entry [:task :on-hold] not)]
                          (put-fn [:entry/update updated]))))
               allocation (or (get-in entry [:task :estimate-m]) 0)
-              priority (get-in entry [:task :priority] "")]
+              priority (get-in entry [:task :priority])]
           [:form.task-details
            [:fieldset
             [:div
              [:span " Priority: "]
-             [:select {:value     (keyword priority)
+             [:select {:value     (if priority (keyword priority) "")
                        :on-change (prio-select entry)}
               [:option ""]
               [:option {:value :A} "A"]

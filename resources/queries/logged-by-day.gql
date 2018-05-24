@@ -23,7 +23,7 @@
 
       story {
         timestamp
-        linked_saga {
+        saga {
           timestamp
           saga_name
         }

@@ -11,7 +11,9 @@
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]
             [cljs.pprint :as pp]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [clojure.string :as str]
+            [clojure.string :as s]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -89,8 +91,10 @@
                              (set (keys y)))
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
-        eq (= x1 y1)
-        diff (clojure.data/diff x1 y1)]
+        x2 (update-in x1 [:md] s/replace " " "")
+        y2 (update-in y1 [:md] s/replace " " "")
+        eq (= x2 y2)
+        diff (clojure.data/diff x2 y2)]
     (when-not eq
       (debug (first diff))
       (debug (second diff)))
@@ -133,8 +137,8 @@
                                     (or (not @new-entry)
                                         (not= md (:md @new-entry))))
                            (put-fn [:entry/update-local x])
-                           (info "update-local" (:timestamp x) md
-                                 "-" (- (st/now) start) "ms"))))
+                           (debug "update-local" (:timestamp x) md
+                                  "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
                     (when-not (:timeout @cb-atom)
@@ -145,7 +149,7 @@
                         updated (merge (dissoc cleaned :edit-running)
                                        @new-entry
                                        (p/parse-entry md)
-                                       {:text plain})
+                                       {:text (s/trim plain)})
                         updated (update-in updated [:tags] set/union (:perm-tags updated))
                         updated (if (= (:entry-type cleaned) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
@@ -153,8 +157,8 @@
                     (when-let [timeout (:timeout @cb-atom)]
                       (js/clearTimeout timeout)
                       (swap! cb-atom dissoc :timeout))
-                    (info "(:active @status)" @status)
-                    (when (= (:comment-for cleaned) (:active @status))
+                    (when (and (= (:comment-for cleaned) (:active @status))
+                               (= ts (:current @status)))
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
                       (put-fn [:cmd/pomodoro-stop updated]))
@@ -165,7 +169,7 @@
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
-        ^{:key (str (:vclock entry2))}
+        ^{:key (str ts (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
          [editor {:md       (or (or (:md @new-entry) (:md entry2)) "")
                   :ts       ts

@@ -319,10 +319,15 @@
                                    :meo.gql/args]))
 
 (s/def :gql/res (s/keys :req-un [:meo.gql/id]
-                          :opt-un [:meo.gql/file
-                                   :meo.gql/args
-                                   :meo.gql/data
-                                   :meo.gql/error]))
+                        :opt-un [:meo.gql/file
+                                 :meo.gql/args
+                                 :meo.gql/data
+                                 :meo.gql/error]))
+
+(s/def :gql/run-registered nil?)
+(s/def :options/gen nil?)
+
+(s/def :backend-cfg/new map?)
 
 (s/def :meo.cal/day :meo.search/date-string)
 (s/def :cal/to-day (s/keys :req-un [:meo.cal/day]))

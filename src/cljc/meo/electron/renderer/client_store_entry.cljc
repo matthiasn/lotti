@@ -102,6 +102,7 @@
             new-state (-> new-state
                           (assoc-in [:busy-status :busy] (not time-up?))
                           (assoc-in [:busy-status :last] (st/now))
+                          (assoc-in [:busy-status :current] ts)
                           (assoc-in [:busy-status :active] comment-for))]
         (when (zero? (mod completed 30))
           (put-fn [:window/progress {:v progress}]))

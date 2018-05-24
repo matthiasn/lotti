@@ -88,6 +88,7 @@
                                   (dissoc :last-saved)
                                   (dissoc :vclock)
                                   (dissoc :id)
+                                  (dissoc :text)
                                   (dissoc :task)
                                   (dissoc :linked-entries-list)))))
 
@@ -107,7 +108,8 @@
               (with-open [reader (clojure.java.io/reader last-log)]
                 (let [last-line (last (line-seq reader))
                       parsed (clojure.edn/read-string last-line)]
-                  (is (= test-entry (dissoc parsed :id :task :last-saved :vclock)))))))
+                  (is (= test-entry
+                         (dissoc parsed :id :task :text :last-saved :vclock)))))))
 
           (testing
             "handler emits saved message"
@@ -119,7 +121,8 @@
                        :timeout 5000}]
                      (-> @test-atom first)))
               (is (= :entry/saved (-> @test-atom second first)))
-              (is (= test-entry (dissoc saved-msg :id :task :last-saved :vclock))))))))))
+              (is (= test-entry
+                     (dissoc saved-msg :id :task :text :last-saved :vclock))))))))))
 
 (defn geo-entry-update-assertions
   "Common assertions in geo-entry-update-test, can be used with both the initial in-memory graph
@@ -134,6 +137,7 @@
                           (dissoc :comments)
                           (dissoc :id)
                           (dissoc :task)
+                          (dissoc :text)
                           (dissoc :vclock)
                           (dissoc :last-saved)
                           (dissoc :linked-entries-list)))))
@@ -186,7 +190,7 @@
                 (let [last-line (last (line-seq reader))
                       parsed (clojure.edn/read-string last-line)]
                   (is (= updated-test-entry
-                         (dissoc parsed :id :task :last-saved :vclock)))))))
+                         (dissoc parsed :id :text :task :last-saved :vclock)))))))
 
           (testing
             "handler emits updated message"
@@ -199,7 +203,7 @@
                      (-> @test-atom first)))
               (is (= :entry/saved (-> @test-atom second first)))
               (is (= updated-test-entry
-                     (dissoc saved-msg :id :task :last-saved :vclock)))))
+                     (dissoc saved-msg :id :text :task :last-saved :vclock)))))
 
           ;; test with graph reconstructed from disk
           (geo-entry-update-assertions state-from-disk res-from-disk updated-test-entry))))))

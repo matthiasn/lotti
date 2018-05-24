@@ -7,7 +7,7 @@
       story {
         story_name
         timestamp
-        linked_saga {
+        saga {
           saga_name
           timestamp
         }
@@ -38,7 +38,7 @@
     story {
       timestamp
       story_name
-      linked_saga {
+      saga {
         timestamp
         saga_name
       }
@@ -66,7 +66,7 @@
      story {
        story_name
        timestamp
-       linked_saga {
+       saga {
          saga_name
          timestamp
        }

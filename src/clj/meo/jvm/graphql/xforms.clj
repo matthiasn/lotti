@@ -34,6 +34,7 @@
 
                                       (and v (contains? #{:timestamp
                                                           :comment_for
+                                                          :linked_saga
                                                           :last_saved} k))
                                       [k (Long/parseLong v)]
 

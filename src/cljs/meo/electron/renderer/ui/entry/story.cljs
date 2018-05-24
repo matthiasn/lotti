@@ -54,7 +54,7 @@
         [:div.story
          [:label "Saga:"]
          [editable-field on-input-fn on-keydown-fn (:saga-name entry)]]
-        [:h2 "Saga: " (-> entry :story :linked-saga :saga-name)]))))
+        [:h2 "Saga: " (:saga-name entry)]))))
 
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
@@ -153,7 +153,7 @@
                             "predicted ")
                           (when (:show @local) "show"))]
         (when-not (or (:comment-for entry)
-                      (= (:entry-type entry) :story))
+                      (contains? #{:story :saga} (:entry-type entry)))
           [:div.story-select
            (if (:show @local)
              (let [curr-idx (:idx @local)]

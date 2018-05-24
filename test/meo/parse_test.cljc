@@ -20,7 +20,7 @@
 (def test-entry2
   {:mentions #{"@myself"}
    :tags #{"#task" "#UI" "#pomodoros" "#interacting" "#events" "#pomodoro" "#timestamp"}
-   :md "New #task: count the time spent #interacting with the #UI when no #pomodoro is running. Mouse-over and key #events should be a good indicator for that. When nothing happens longer than x, don't extend the current period of activity but rather close the last one at the last #timestamp and create a new period of activity. I like that. Not all work can possibly happen in #pomodoros, and it would be a waste of data to not capture that time. @myself "})
+   :md "New #task: count the time spent #interacting with the #UI when no #pomodoro is running. Mouse-over and key #events should be a good indicator for that. When nothing happens longer than x, don't extend the current period of activity but rather close the last one at the last #timestamp and create a new period of activity. I like that. Not all work can possibly happen in #pomodoros, and it would be a waste of data to not capture that time. @myself"})
 
 (def test-entry3
   {:mentions   #{"@myself" "@JohnDoe"}
@@ -292,7 +292,7 @@
            ["@m" '("@me" "@myself")]))))
 
 (def codeblock-ignore-str
-  "some #detected `#not-detected #not-detected2` some \n```\ncode block @not-detected blah\n```\n some text @detected \n```\n@not-detected #not-detected blah\n```\n")
+  "some #detected `#not-detected #not-detected2` some \n```\ncode block @not-detected blah\n```\n some text @detected \n```\n@not-detected #not-detected blah\n```")
 
 (deftest codeblocks-ignored
   (testing "A codeblock that contains tags will not have the tags returned"

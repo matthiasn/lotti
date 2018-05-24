@@ -52,7 +52,7 @@ function suggestionsFilter(searchValue, suggestions) {
     });
     let length = size(filteredSuggestions) < 15 ? size(filteredSuggestions) : 15;
     let t1 = performance.now();
-    console.log("suggestionsFilter took " + (t1 - t0) + "ms.");
+    //console.log("suggestionsFilter took " + (t1 - t0) + "ms.");
     return filteredSuggestions.slice(0, length);
 }
 

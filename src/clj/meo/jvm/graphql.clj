@@ -65,8 +65,10 @@
 
 (defn linked-for [g entry]
   (let [ts (:timestamp entry)]
-    (assoc-in entry [:linked] (mapv #(entry-w-story g (get-entry g %))
-                                    (gq/get-linked-for-ts g ts)))))
+    (assoc-in entry [:linked] (->> (gq/get-linked-for-ts g ts)
+                                   (map #(entry-w-story g (get-entry g %)))
+                                   (filter :timestamp)
+                                   (vec)))))
 
 (defn briefing [state context args value]
   (let [g (:graph @state)
@@ -171,7 +173,7 @@
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
            :n        100
-           :pvt (:pvt args)}
+           :pvt      (:pvt args)}
         current-state @state
         g (:graph current-state)
         tasks (->> (gq/get-filtered2 current-state q)

@@ -53,6 +53,9 @@
                 :tags
                 :perm_tags
                 :habit
+                :story_name
+                :saga_name
+                :linked_saga
                 :stars
                 :for_day
                 :questionnaires
@@ -101,7 +104,7 @@
                            [:artists [:name]]]]
                 [:story [:timestamp
                          :story_name
-                         [:linked_saga [:saga_name]]]]]
+                         [:saga [:saga_name]]]]]
         f (fn [[k q]]
             {:query/data  [:tab_search {:query q
                                         :pvt   pvt} fields]

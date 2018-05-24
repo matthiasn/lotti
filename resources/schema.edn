@@ -75,6 +75,9 @@
                  :entry_type          {:type String}
                  :for_day             {:type String}
                  :story               {:type :Story}
+                 :linked_saga         {:type ID}
+                 :story_name          {:type String}
+                 :saga_name           {:type String}
                  :habit               {:type String}
                  :reward              {:type :Reward}
                  :git_commit          {:type :GitCommit}
@@ -105,7 +108,7 @@
    :fields      {:timestamp   {:type (non-null ID)}
                  :story_name  {:type String}
                  :vclock      {:type (list :Vclock)}
-                 :linked_saga {:type        :Saga
+                 :saga        {:type        :Saga
                                :description "Saga that the story belongs to."}}}
 
   :Briefing
