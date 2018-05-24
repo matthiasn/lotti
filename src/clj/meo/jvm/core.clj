@@ -9,6 +9,7 @@
             [meo.common.specs]
             [clj-pid.core :as pid]
             [meo.jvm.log]
+            [meo.jvm.firehose :as fh]
             [meo.jvm.store :as st]
             [meo.jvm.ws :as ws]
             [meo.jvm.fulltext-search :as ft]
@@ -36,6 +37,10 @@
     (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
 
+(defn make-observable [components]
+  (set (conj (mapv #(assoc-in % [:opts :msgs-on-firehose] true) components)
+             (fh/firehose-cmp :backend/firehose))))
+
 (defn restart!
   "Starts or restarts system by asking switchboard to fire up the ws-cmp for
    serving the client side application and providing bi-directional
@@ -47,7 +52,7 @@
   [switchboard cmp-maps opts]
   (sb/send-mult-cmd
     switchboard
-    [[:cmd/init-comp cmp-maps]
+    [[:cmd/init-comp (make-observable cmp-maps)]
 
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
@@ -80,8 +85,7 @@
                           :backend/imports}
                   :to   :backend/scheduler}]
 
-     (when (:inspect opts)
-       [:cmd/attach-to-firehose :backend/kafka-firehose])
+     [:cmd/attach-to-firehose :backend/firehose]
 
      (when (:read-logs opts)
        [:cmd/send {:to  :backend/store

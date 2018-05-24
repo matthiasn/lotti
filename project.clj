@@ -70,9 +70,7 @@
                                            [cljsjs/moment "2.17.1-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
-             :dev          {:dependencies [[matthiasn/systems-toolbox-kafka "0.6.16"]]
-                            :source-paths ["src/cljc" "src/clj/" "dev-resources"
-                                           "env/inspect"]}}
+             :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
 
   :repl-options {:init-ns user}
 

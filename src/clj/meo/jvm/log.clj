@@ -2,7 +2,8 @@
   (:require [taoensso.timbre :as timbre :refer [info]]
             [taoensso.timbre.appenders.core :as appenders]
             [taoensso.encore :as enc]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [clojure.pprint :as pp]))
 
 (defn ns-filter
   "From: https://github.com/yonatane/timbre-ns-pattern-level"
