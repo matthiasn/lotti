@@ -74,13 +74,14 @@
                              (+ timestamp (* completed 1000))
                              timestamp)
                        story-name (get-in story [:story-name])
-                       saga-name (get-in story [:linked-saga :saga-name]
+                       saga-name (get-in story [:saga :saga-name]
                                          "none")
                        color (cc/item-color saga-name)
                        title (str (when story-name (str story-name " - "))
                                   text)
                        open-ts (or comment-for timestamp)
                        click (up/add-search open-ts :left put-fn)]
+                   (info story)
                    {:title title
                     :click click
                     :color color

@@ -55,7 +55,7 @@
         saga (get-entry g (:linked-saga story))]
     (merge entry
            {:story (when story
-                     (assoc-in story [:linked-saga] saga))})))
+                     (assoc-in story [:saga] saga))})))
 
 (def d (* 24 60 60 1000))
 

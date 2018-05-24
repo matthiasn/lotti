@@ -71,13 +71,13 @@
                                       (let [dt (ctf/parse dt/dt-local-fmt for-day)]
                                         (c/to-long dt)))
                              ts (or for-ts timestamp)
-                             saga (get-in sagas [(:linked-saga story)])
+                             saga (get sagas (:linked-saga story))
                              completed (or (get entry :completed-time) 0)
                              manual (manually-logged entry date-string)
                              summed (+ completed manual)]
                          (when (pos? summed)
                            {:story       (when story
-                                           (assoc-in story [:linked-saga] saga))
+                                           (assoc-in story [:saga] saga))
                             :timestamp   ts
                             :md          md
                             :text        text
