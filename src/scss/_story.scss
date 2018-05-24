@@ -82,6 +82,10 @@
     tr {
       cursor: pointer;
 
+      td {
+        min-width: 115px;
+        padding-left: 2px;
+      }
       .current {
         background-color: lighten($hashtag-blue, 10%);
       }

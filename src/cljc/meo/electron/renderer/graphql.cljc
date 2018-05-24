@@ -38,7 +38,8 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn tabs-query [queries pvt]
-  (let [fields [:timestamp
+  (let [n 20
+        fields [:timestamp
                 :text
                 :md
                 :latitude
@@ -105,9 +106,10 @@
                 [:story [:timestamp
                          :story_name
                          [:saga [:saga_name]]]]]
-        f (fn [[k q]]
-            {:query/data  [:tab_search {:query q
-                                        :pvt   pvt} fields]
+        f (fn [[k {:keys [n search-text]}]]
+            {:query/data  [:tab_search {:query search-text
+                                        :pvt   pvt
+                                        :n     n} fields]
              :query/alias k})
         queries (mapv f queries)]
     (when (seq queries)

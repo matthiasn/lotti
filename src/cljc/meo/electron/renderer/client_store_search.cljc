@@ -24,9 +24,11 @@
   (let [query-cfg @query-cfg
         query-for (fn [k]
                     (let [a (get-in query-cfg [:tab-groups k :active])
-                          search-text (get-in query-cfg [:queries a :search-text])]
+                          search-text (get-in query-cfg [:queries a :search-text])
+                          n (get-in query-cfg [:queries a :n])]
                       (when (and a search-text)
-                        [k search-text])))
+                        [k {:search-text search-text
+                            :n n}])))
         queries (filter identity (map query-for [:left :right]))
         pvt (:show-pvt (:cfg current-state))
         gql-query (when (seq queries) (gql/tabs-query queries pvt))]
