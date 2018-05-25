@@ -98,7 +98,7 @@
     (broadcast [:startup/progress 1])
     (put-fn [:cmd/schedule-new {:timeout 1000
                                 :message [:options/gen]
-                                :id :generate-opts}])
+                                :id      :generate-opts}])
     (tf/import-predictions cmp-state)
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)
@@ -136,21 +136,22 @@
    :opts        {:msgs-on-firehose true
                  :in-chan          [:buffer 100]
                  :out-chan         [:buffer 100]}
-   :handler-map {:entry/import      f/entry-import-fn
-                 :entry/unlink      ga/unlink
-                 :entry/update      f/geo-entry-persist-fn
-                 :entry/sync        f/sync-fn
-                 :options/gen       gql/gen-options
-                 :startup/read      read-entries
-                 :sync/entry        f/sync-receive
-                 :sync/done         sync-done
-                 :sync/initiate     sync-send
-                 :sync/next         sync-send
-                 :export/geojson    e/export-geojson
-                 :tf/learn-stories  tf/learn-stories
-                 :entry/trash       f/trash-entry-fn
-                 :startup/progress? gq/query-fn
-                 :cfg/refresh       refresh-cfg
-                 :backend-cfg/save  fu/write-cfg
+   :handler-map {:entry/import       f/entry-import-fn
+                 :entry/unlink       ga/unlink
+                 :entry/update       f/geo-entry-persist-fn
+                 :entry/sync         f/sync-fn
+                 :options/gen        gql/gen-options
+                 :startup/read       read-entries
+                 :sync/entry         f/sync-receive
+                 :sync/done          sync-done
+                 :sync/initiate      sync-send
+                 :sync/next          sync-send
+                 :export/geojson     e/export-geojson
+                 :tf/learn-stories   tf/learn-stories
+                 :entry/trash        f/trash-entry-fn
+                 :startup/progress?  gq/query-fn
+                 :cfg/refresh        refresh-cfg
+                 :backend-cfg/save   fu/write-cfg
                  :gql/query          gql/run-query
+                 :gql/cmd            gql/start-stop
                  :gql/run-registered gql/run-registered}})

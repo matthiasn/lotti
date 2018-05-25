@@ -6,8 +6,6 @@
 
 (def capabilities (:capabilities rt/runtime-info))
 
-(info capabilities)
-
 (defn rm-filtered [m]
   (walk/postwalk (fn [node]
                    (if (map? node)
@@ -150,11 +148,7 @@
                   :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})
                {:type "separator"}
                {:role "zoomin"}
-               {:role "zoomout"}
-               {:type "separator"}
-               {:label       "Open Dev Tools"
-                :accelerator "CmdOrCtrl+Alt+I"
-                :click       #(put-fn [:window/dev-tools])}]}))
+               {:role "zoomout"}]}))
 
 (defn capture-menu [put-fn]
   (let [screenshot #(put-fn [:screenshot/take])]
@@ -175,6 +169,22 @@
                {:label "Export and Train"
                 :click export-learn}]}))
 
+(defn dev-menu [put-fn]
+  {:label   "Dev"
+   :submenu [{:label "Start GraphQL Endpoint"
+              :click #(put-fn [:gql/cmd {:cmd :start}])}
+             {:label "Stop GraphQL Endpoint"
+              :click #(put-fn [:gql/cmd {:cmd :stop}])}
+             {:type "separator"}
+             {:label "Start Firehose"
+              :click #(put-fn [:firehose/cmd {:cmd :start}])}
+             {:label "Stop Firehose"
+              :click #(put-fn [:firehose/cmd {:cmd :stop}])}
+             {:type "separator"}
+             {:label       "Open Dev Tools"
+              :accelerator "CmdOrCtrl+Alt+I"
+              :click       #(put-fn [:window/dev-tools])}]})
+
 (defn state-fn [put-fn]
   (let [put-fn (fn [msg]
                  (let [msg-meta (merge {:window-id :active} (meta msg))]
@@ -185,7 +195,9 @@
                   (view-menu put-fn)
                   (capture-menu put-fn)
                   (when (contains? capabilities :tensorflow)
-                    (learn-menu put-fn))]
+                    (learn-menu put-fn))
+                  (when (contains? capabilities :dev-menu)
+                    (dev-menu put-fn))]
         menu-tpl (rm-filtered (filter identity menu-tpl))
         menu (.buildFromTemplate Menu (clj->js menu-tpl))
         activate #(put-fn [:window/activate])

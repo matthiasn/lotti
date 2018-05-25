@@ -34,7 +34,8 @@
                          :import/listen :spotify/play
                          :spotify/pause :cfg/refresh
                          :sync/start-server :sync/stop-server
-                         :tf/learn-stories :gql/query}}))
+                         :tf/learn-stories :gql/query
+                         :gql/cmd :firehose/cmd}}))
 
 (def OBSERVER (.-OBSERVER js/window))
 

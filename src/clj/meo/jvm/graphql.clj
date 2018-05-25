@@ -256,7 +256,15 @@
       (swap! cmp-state assoc-in [:options] opts)))
   {})
 
-
+(defn start-stop [{:keys [current-state msg-payload]}]
+  (let [server (:server current-state)]
+    (if (= :start (:cmd msg-payload))
+      (let [port (:port current-state)]
+        (http/start server)
+        (info "GraphQL server with GraphiQL data explorer listening on PORT" port))
+      (do (http/stop server)
+          (info "Stopped GraphQL server")))
+    {}))
 
 (defn state-fn [state _put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
@@ -294,12 +302,11 @@
                    (lp/service-map {:graphiql true
                                     :port     port})
                    (assoc-in [::http/host] "localhost")
-                   http/create-server
-                   http/start)]
+                   http/create-server)]
     (swap! state assoc-in [:server] server)
+    (swap! state assoc-in [:port] port)
     (swap! state assoc-in [:schema] schema)
     (info "Started GraphQL component")
-    (info "GraphQL server with GraphiQL data explorer listening on PORT" port)
     {:state       state
      :shutdown-fn #(do (http/stop server)
                        (info "Stopped GraphQL server"))}))

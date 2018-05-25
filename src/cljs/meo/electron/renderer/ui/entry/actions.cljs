@@ -170,7 +170,7 @@
 (defn briefing-actions [ts put-fn]
   (let [open-new (fn [x]
                    (put-fn [:search/add
-                            {:tab-group :left
+                            {:tab-group :right
                              :query     (up/parse-search (:timestamp x))}]))
         create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
                                                  :starred        true

@@ -41,7 +41,7 @@
   (let [local (r/atom {:show false})
         open-new (fn [x]
                    (put-fn [:search/add
-                            {:tab-group :left
+                            {:tab-group :right
                              :query     (up/parse-search (:timestamp x))}]))]
     (def ^:export new-entry (h/new-entry put-fn {} open-new))
     (def ^:export new-story (h/new-entry put-fn {:entry-type :story} open-new))
