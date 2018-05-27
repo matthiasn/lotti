@@ -39,21 +39,6 @@
                  :text-anchor "middle"}
           v])])))
 
-(defn indexed-days [stats start days]
-  (let [d (* 24 60 60 1000)
-        rng (range (inc days))
-        indexed (map-indexed (fn [n v]
-                               (let [offset (* n d)
-                                     ts (+ start offset)
-                                     ymd (df ts ymd)
-                                     v (get-in stats [ymd :git-commits] 0)
-                                     weekday (df ts weekday)]
-                                 [n {:ymd     ymd
-                                     :v       v
-                                     :weekday weekday}]))
-                             rng)]
-    indexed))
-
 (defn row-label [label y h]
   [:text {:x           180
           :y           (+ y (+ 5 (/ h 2)))

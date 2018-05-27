@@ -5,6 +5,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
+            [meo.electron.renderer.ui.dashboard.earlybird :as eb]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
             [meo.electron.renderer.ui.dashboard.commits :as c]
             [reagent.core :as r]
@@ -73,6 +74,7 @@
             (let [chart-fn (case (:type chart-cfg)
                              :scores-chart ds/scores-chart
                              :commits-chart c/commits-chart
+                             :earlybird-chart eb/earlybird-chart
                              :bp-chart bp/bp-chart
                              :barchart-row dc/barchart-row
                              :points-by-day dc/points-by-day-chart

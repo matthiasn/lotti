@@ -60,6 +60,5 @@
               [:option {:value 180} "180 days"]
               [:option {:value 270} "270 days"]
               [:option {:value 365} "1 year"]]])
-          [cd/durations-bar-chart 220 5 put-fn]
           [stats/stats-text]]
          [stats/stats-text])])))
