@@ -29,7 +29,13 @@
                                              :id       :day-stats
                                              :res-hash nil
                                              :prio     5
-                                             :args     [d]}])))]
+                                             :args     [d]}])))
+        select-random (fn [_]
+                        (let [sel (rand-nth (keys @dashboards))]
+                          (put-fn [:cmd/assoc-in
+                                   {:path  [:cfg :dashboard :active]
+                                    :value sel}])))]
+    (js/setInterval select-random 60000)
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
@@ -45,6 +51,7 @@
              [:select {:value     (:height @local)
                        :on-change select-height}
               [:option {:value "20vh"} "20%"]
+              [:option {:value "25vh"} "25%"]
               [:option {:value "33vh"} "33%"]
               [:option {:value "50vh"} "50%"]
               [:option {:value "66vh"} "66%"]
