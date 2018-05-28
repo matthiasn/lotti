@@ -10,7 +10,7 @@
   (html5
     {:lang "en"}
     [:head [:title "test"]]
-    [:body "hello world"]))
+    [:body "hello world..."]))
 
 (def port 8765)
 

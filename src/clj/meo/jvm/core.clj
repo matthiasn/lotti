@@ -11,7 +11,6 @@
             [meo.jvm.log]
             [meo.jvm.firehose :as fh]
             [meo.jvm.store :as st]
-            [meo.jvm.ws :as ws]
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
@@ -29,7 +28,6 @@
 
 (def cmp-maps
   #{(sente/cmp-map :backend/ws idx/sente-map)
-    ;(ws/cmp-map :backend/ws ws-map)
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)

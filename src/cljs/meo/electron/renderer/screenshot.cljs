@@ -12,16 +12,16 @@
         screenshot-ts (st/now)
         filename (str screenshot-ts ".png")
         entry (merge {:img-file  filename
-                      :tags      #{"#screenshot"}
+                      :tags      #{"#screenshot" "#import"}
                       :perm-tags #{"#screenshot"}}
                      msg-payload)
         new-fn (h/new-entry put-fn entry nil)]
-    (js/setTimeout new-fn 1500)
+    (js/setTimeout new-fn 2000)
     (info "taking screenshot" entry)
     (when-not (:app-screenshot cfg)
       ;(put-fn [:window/hide])
       (put-fn [:cmd/schedule-new {:message [:window/show]
-                                  :timeout 1600}]))
+                                  :timeout 2500}]))
     {:emit-msg [:cmd/schedule-new
                 {:message [:import/screenshot {:filename filename}]
                  :timeout 10}]}))

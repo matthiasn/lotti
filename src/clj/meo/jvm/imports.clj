@@ -11,6 +11,7 @@
                  :out-chan [:buffer 100]}
    :handler-map {:import/photos     im/import-photos
                  :import/screenshot is/import-screenshot
+                 :import/thumbnails is/thumbnails
                  :import/movie      im/import-movie
                  :import/spotify    iss/import-spotify
                  :import/git        g/import-from-git

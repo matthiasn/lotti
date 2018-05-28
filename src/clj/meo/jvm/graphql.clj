@@ -209,7 +209,7 @@
         habits (mapv #(update-in % [:story] xf/snake-xf) habits)]
     habits))
 
-(defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
+(defn run-query [{:keys [cmp-state current-state msg-payload msg-meta put-fn]}]
   (async/go
     (let [start (stc/now)
           schema (:schema current-state)
@@ -221,6 +221,7 @@
           res (lacinia/execute schema query-string nil nil)
           new-hash (hash res)
           new-data (not= new-hash res-hash)
+          sente-uid (:sente-uid msg-meta)
           res (merge merged
                      (xf/simplify res)
                      {:res-hash new-hash
@@ -239,7 +240,7 @@
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
       (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
             high-prio (< (:prio q) 10)
-            t (if high-prio 2000 5000)]
+            t (if high-prio 500 2000)]
         (put-fn [:cmd/schedule-new {:timeout t
                                     :message msg
                                     :id      id
