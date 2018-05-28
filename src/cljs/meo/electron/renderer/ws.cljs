@@ -14,14 +14,14 @@
         ws (reconnectingwebsocket. host)
         state (atom {:ws   ws
                      :open false})
-        handler (fn [ev]
-                  (let [data (.-data ev)
-                        deserialized (edn/read-string data)]
-                    (debug "received" deserialized)
-                    (when (vector? deserialized)
-                      (let [msg (deserialize-meta deserialized)]
-                        (debug "received" msg)
-                        (put-fn msg)))))
+        on-msg (fn [ev]
+                 (let [data (.-data ev)
+                       deserialized (edn/read-string data)]
+                   (debug "received" deserialized)
+                   (when (vector? deserialized)
+                     (let [msg (deserialize-meta deserialized)]
+                       (debug "received" msg)
+                       (put-fn msg)))))
         open #(let [waiting (:waiting @state)
                     cnt (count waiting)]
                 (when (pos? cnt)
@@ -32,7 +32,7 @@
                   (swap! state assoc-in [:waiting] nil))
                 (swap! state assoc-in [:open] true))
         on-close #(info "connection closed - reconnecting")]
-    (aset ws "onmessage" handler)
+    (aset ws "onmessage" on-msg)
     (aset ws "onopen" open)
     (aset ws "onclose" on-close)
     {:state state}))

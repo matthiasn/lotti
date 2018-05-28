@@ -58,7 +58,7 @@
   (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
                      (spellcheck/cmp-map :renderer/spellcheck)
                      (screenshot/cmp-map :renderer/screenshot)
-                     (ws/cmp-map :renderer/ws-cmp sente-cfg)
+                     (sente/cmp-map :renderer/ws-cmp sente-cfg)
                      (tf/cmp-map :renderer/tensorflow)
                      (when OBSERVER
                        (sente/cmp-map :renderer/ws-firehose sente-base-cfg))

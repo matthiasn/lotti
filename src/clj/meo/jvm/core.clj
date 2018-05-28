@@ -28,8 +28,8 @@
                     :gql/res}})
 
 (def cmp-maps
-  #{(sente/cmp-map :backend/ws-old idx/sente-map)
-    (ws/cmp-map :backend/ws ws-map)
+  #{(sente/cmp-map :backend/ws idx/sente-map)
+    ;(ws/cmp-map :backend/ws ws-map)
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
