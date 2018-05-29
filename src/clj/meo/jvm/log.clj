@@ -29,7 +29,7 @@
 
 (def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "./log/meo.log"))
 
-(timbre/merge-config!
+(timbre/set-config!
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
    :appenders      {:rolling (tr/rolling-appender {:path filename})}})
