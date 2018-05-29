@@ -1,12 +1,8 @@
 (ns meo.electron.renderer.ui.search
-  (:require [meo.electron.renderer.helpers :as h]
-            [meo.common.utils.misc :as u]
-            [meo.common.utils.parse :as p]
+  (:require [meo.common.utils.parse :as p]
             [meo.electron.renderer.ui.draft :as d]
             [taoensso.timbre :refer-macros [info]]
             [reagent.ratom :refer-macros [reaction]]
-            [clojure.string :as s]
-            [clojure.set :as set]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
@@ -19,22 +15,21 @@
 
 (defn search-field-view
   "Renders search field for current tab."
-  [query-id put-fn]
+  [query-id _put-fn]
   (let [query-cfg (subscribe [:query-cfg])
-        query (reaction (when-let [qid @query-id] (qid (:queries @query-cfg))))
-        local (r/atom {:starred (:starred @query)})]
-    (fn [query-id put-fn]
+        query (reaction (when-let [qid @query-id] (qid (:queries @query-cfg))))]
+    (fn [_query-id put-fn]
       (let [search-send (fn [text editor-state]
-                          (let [story (first (d/entry-stories editor-state))
-                                s (merge @query
-                                         (p/parse-search text)
-                                         {:story        story
-                                          :editor-state editor-state})]
-                            (put-fn [:search/update s])))
+                          (when-not (empty? text)
+                            (let [story (first (d/entry-stories editor-state))
+                                  s (merge @query
+                                           (p/parse-search text)
+                                           {:story        story
+                                            :editor-state editor-state})]
+                              (put-fn [:search/update s]))))
             query @query
             starred (:starred query)
             star-fn #(put-fn [:search/update (update-in query [:starred] not)])]
-        (put-fn [:search/update query])
         (when-not (or (:briefing query)
                       (:timestamp query))
           [:div.search

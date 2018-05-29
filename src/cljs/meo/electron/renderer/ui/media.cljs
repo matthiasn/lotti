@@ -3,24 +3,6 @@
             [reagent.core :as r]
             [clojure.pprint :as pp]))
 
-(def iww-host (.-iwwHOST js/window))
-
-(defn image-view [entry query-params]
-  (when-let [file (:img-file @entry)]
-    (let [path (str "http://" iww-host "/photos/" file)
-          resized (if (s/includes? (s/lower-case path) ".jpg")
-                    (str "http://" iww-host "/photos2/" file query-params)
-                    path)]
-      [:a {:href path :target "_blank"}
-       [:img {:style {:width (str (or (:img-size @entry) 100) "%")}
-              :src   resized}]])))
-
-(defn videoplayer-view [entry]
-  (when-let [video-file (:video-file entry)]
-    [:video {:controls true :preload "none"}
-     [:source {:src  (str "http://" iww-host "/videos/" video-file)
-               :type "video/mp4"}]]))
-
 (defn imdb-view [entry put-fn]
   (when-let [imdb-id (get-in entry [:custom-fields "#imdb" :imdb-id])]
     (let [imdb (:imdb entry)

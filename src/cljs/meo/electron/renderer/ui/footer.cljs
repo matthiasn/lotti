@@ -36,7 +36,7 @@
                                    {:path  [:cfg :dashboard :active]
                                     :value sel}])))
         change-banner (fn [_]
-                        (let [interval (js/setInterval select-random 6000)]
+                        (let [interval (js/setInterval select-random 60000)]
                           (swap! local assoc-in [:interval] interval)))
         cancel-change (fn [_]
                         (js/clearInterval (:interval @local))

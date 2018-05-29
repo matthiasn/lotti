@@ -2,7 +2,6 @@
   (:require [hiccup.page :refer [html5 include-css include-js]]
             [compojure.route :as r]
             [meo.jvm.routes.upload-qr :as qr]
-            [meo.jvm.routes.images :as ir]
             [meo.jvm.routes.map-tile :as mt]
             [meo.jvm.file-utils :as fu]))
 
@@ -15,13 +14,10 @@
 (def port 8765)
 
 (defn routes-fn [_put-fn]
-  [(r/files "/photos" {:root fu/img-path})
-   (r/files "/audio" {:root (str fu/data-path "/audio/")})
-   (r/files "/videos" {:root (str fu/data-path "/videos/")})
+  [(r/files "/audio" {:root (str fu/data-path "/audio/")})
    qr/address-route
    qr/ws-address-route
    qr/secrets-route
-   ir/img-resized-route
    mt/map-tile-route])
 
 (def sente-map

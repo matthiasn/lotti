@@ -1,9 +1,7 @@
 (ns meo.jvm.log
   (:require [taoensso.timbre :as timbre :refer [info]]
-            [taoensso.timbre.appenders.core :as appenders]
-            [taoensso.encore :as enc]
-            [clojure.string :as s]
-            [clojure.pprint :as pp]))
+            [taoensso.timbre.appenders.3rd-party.rolling :as tr]
+            [taoensso.encore :as enc]))
 
 (defn ns-filter
   "From: https://github.com/yonatane/timbre-ns-pattern-level"
@@ -29,15 +27,9 @@
                  (taoensso.timbre/level>= level log-level))
         opts))))
 
-(def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "/tmp/meo-dev.log"))
+(def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "./log/meo.log"))
 
-; See https://github.com/ptaoussanis/timbre
-(def appender
-  (merge
-    (appenders/spit-appender {:fname filename})
-    {:async? true}))
-
-(timbre/set-config!
+(timbre/merge-config!
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
-   :appenders      {:spit appender}})
+   :appenders      {:rolling (tr/rolling-appender {:path filename})}})
