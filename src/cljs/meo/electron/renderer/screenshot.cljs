@@ -3,28 +3,21 @@
             [meo.electron.renderer.helpers :as h]
             [matthiasn.systems-toolbox.component :as st]))
 
-(defn state-fn [put-fn]
+(defn state-fn [_put-fn]
   (let [observed (atom {})]
     {:observed observed}))
 
 (defn screenshot [{:keys [observed put-fn msg-payload]}]
-  (let [cfg (:cfg @observed)
-        screenshot-ts (st/now)
+  (let [screenshot-ts (st/now)
         filename (str screenshot-ts ".png")
         entry (merge {:img-file  filename
                       :tags      #{"#screenshot" "#import"}
                       :perm-tags #{"#screenshot"}}
                      msg-payload)
         new-fn (h/new-entry put-fn entry nil)]
-    (js/setTimeout new-fn 2000)
-    (info "taking screenshot" entry)
-    (when-not (:app-screenshot cfg)
-      ;(put-fn [:window/hide])
-      (put-fn [:cmd/schedule-new {:message [:window/show]
-                                  :timeout 2500}]))
-    {:emit-msg [:cmd/schedule-new
-                {:message [:import/screenshot {:filename filename}]
-                 :timeout 10}]}))
+    (js/setTimeout new-fn 1000)
+    (info "initiating screenshot" entry)
+    {:emit-msg [:import/screenshot {:filename filename}]}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id

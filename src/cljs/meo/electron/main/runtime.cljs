@@ -9,10 +9,10 @@
             [clojure.set :as set]))
 
 (def runtime-info
-  (let [user-data (.getPath app "userData")
-        cwd (.cwd process)
+  (let [cwd (.cwd process)
         rp (.-resourcesPath process)
         repo-dir (s/includes? (s/lower-case rp) "electron")
+        user-data (if repo-dir cwd (.getPath app "userData"))
         app-path (if repo-dir cwd (str rp "/app"))
         platform (.-platform process)                       ; e.g. darwin, win32
         download-path (.getPath app "downloads")
@@ -33,6 +33,7 @@
               :daily-logs-path (str data-path "/daily-logs")
               :encrypted-path  encrypted-path
               :img-path        (str data-path "/images")
+              :thumbs-path     (str data-path "/thumbs")
               :cache           (str user-data "/data/cache.dat")
               :java            (str app-path "/bin/jlink/bin/java")
               :jar             (str app-path "/bin/jlink/meo.jar")

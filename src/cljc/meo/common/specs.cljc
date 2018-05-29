@@ -331,3 +331,7 @@
 
 (s/def :meo.cal/day :meo.search/date-string)
 (s/def :cal/to-day (s/keys :req-un [:meo.cal/day]))
+
+(s/def :window/show nil?)
+(s/def :screenshot/take nil?)
+(s/def :import/screenshot map?)

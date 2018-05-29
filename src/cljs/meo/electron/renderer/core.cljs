@@ -28,7 +28,7 @@
   (merge sente-base-cfg
          {:relay-types #{:entry/update :entry/trash :entry/sync
                          :import/photos :import/spotify :import/flight
-                         :import/screenshot :backend-cfg/save :import/git
+                         :backend-cfg/save :import/git
                          :photos/gen-cache :export/geojson
                          :import/movie :entry/unlink :startup/progress?
                          :import/listen :spotify/play
@@ -51,6 +51,7 @@
                        :window/show
                        :window/progress
                        :file/encrypt
+                       :import/screenshot
                        :blink/busy})
 
 (defn start []

@@ -34,8 +34,13 @@
                         (let [sel (rand-nth (keys @dashboards))]
                           (put-fn [:cmd/assoc-in
                                    {:path  [:cfg :dashboard :active]
-                                    :value sel}])))]
-    (js/setInterval select-random 60000)
+                                    :value sel}])))
+        change-banner (fn [_]
+                        (let [interval (js/setInterval select-random 6000)]
+                          (swap! local assoc-in [:interval] interval)))
+        cancel-change (fn [_]
+                        (js/clearInterval (:interval @local))
+                        (swap! local dissoc :interval))]
     (fn [put-fn]
       [:div.footer
        (if @dashboard-banner
@@ -66,6 +71,9 @@
               [:option {:value 150} "150 days"]
               [:option {:value 180} "180 days"]
               [:option {:value 270} "270 days"]
-              [:option {:value 365} "1 year"]]])
+              [:option {:value 365} "1 year"]]
+             (if (:interval @local)
+               [:span.fa.fas.fa-pause {:on-click cancel-change}]
+               [:span.fa.fas.fa-play {:on-click change-banner}])])
           [stats/stats-text]]
          [stats/stats-text])])))

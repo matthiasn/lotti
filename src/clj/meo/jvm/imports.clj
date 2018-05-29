@@ -1,6 +1,5 @@
 (ns meo.jvm.imports
-  (:require [meo.jvm.imports.screenshot :as is]
-            [meo.jvm.imports.spotify :as iss]
+  (:require [meo.jvm.imports.spotify :as iss]
             [meo.jvm.imports.flight :as fl]
             [meo.jvm.imports.git :as g]
             [meo.jvm.imports.media :as im]))
@@ -10,7 +9,6 @@
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:import/photos     im/import-photos
-                 :import/screenshot is/import-screenshot
                  :import/movie      im/import-movie
                  :import/spotify    iss/import-spotify
                  :import/git        g/import-from-git

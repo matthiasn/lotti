@@ -25,7 +25,8 @@
             [meo.jvm.graph.stats.git :as g]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.geo :as geo]))
+            [meo.jvm.graph.geo :as geo]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
 (defn hours-logged [state context args value] (gs/hours-logged @state))
@@ -210,7 +211,7 @@
     habits))
 
 (defn run-query [{:keys [cmp-state current-state msg-payload msg-meta put-fn]}]
-  (async/go
+  (future
     (let [start (stc/now)
           schema (:schema current-state)
           qid (:id msg-payload)
@@ -227,11 +228,13 @@
                      {:res-hash new-hash
                       :ts       (stc/now)
                       :prio     (:prio merged 100)})]
+      (doall res)
       (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
       (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
             (if new-data "new data" "same hash, omitting response")
             (str "- '" (or file query-string) "'"))
-      (when new-data (put-fn [:gql/res res]))))
+      (when new-data (put-fn (with-meta [:gql/res res]
+                                        {:sente-uid sente-uid})))))
   {})
 
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]
@@ -243,12 +246,12 @@
             t (if high-prio 500 2000)]
         (put-fn [:cmd/schedule-new {:timeout t
                                     :message msg
-                                    :id      id
-                                    :initial high-prio}]))))
+                                    :id      id}]))))
   {})
 
 (defn gen-options [{:keys [cmp-state]}]
-  (async/go
+  (future
+    (info "gen-options")
     (let [opts {:hashtags     (gq/find-all-hashtags @cmp-state)
                 :pvt-hashtags (gq/find-all-pvt-hashtags @cmp-state)
                 :mentions     (gq/find-all-mentions @cmp-state)
