@@ -17,11 +17,6 @@
                       (screencapture filename)))
       (when (= os "Linux")
         (scrot filename))
-      (put-fn [:cmd/schedule-new {:message [:import/thumbnails msg-payload]
-                                  :timeout 500}])))
-  {})
-
-(defn thumbnails [{:keys [msg-payload]}]
-  (let [filename (str fu/img-path (:filename msg-payload))]
-    (img/gen-thumbs (io/file filename)))
+      (Thread/sleep 500)
+      (img/gen-thumbs (io/file filename))))
   {})
