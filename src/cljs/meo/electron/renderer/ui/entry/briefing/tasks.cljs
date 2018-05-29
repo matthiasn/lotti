@@ -6,7 +6,8 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [clojure.string :as s]
-            [moment]))
+            [moment]
+            [clojure.set :as set]))
 
 (defn task-sorter
   "Sorts tasks."
@@ -158,7 +159,9 @@
                               (= selected (:timestamp (:linked-saga story))))
                             true))
             started-tasks (set (map :timestamp @started-tasks))
+            task-filter #(contains? (set/union (:perm-tags %) (:tags %)) "#task")
             linked-tasks (->> linked-entries
+                              (filter task-filter)
                               (filter current-filter)
                               (filter saga-filter)
                               (filter #(not (contains? started-tasks (:timestamp %))))

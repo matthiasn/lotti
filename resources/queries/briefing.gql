@@ -4,6 +4,8 @@
     timestamp
     linked {
       timestamp
+      tags
+      perm_tags
       story {
         story_name
         timestamp
