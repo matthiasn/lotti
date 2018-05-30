@@ -30,6 +30,7 @@
       latitude
       longitude
       completed_time
+      comment_for
     }
   }
 

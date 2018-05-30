@@ -67,8 +67,8 @@
   "Count total number of words."
   [current-state]
   (let [g (:graph current-state)
-        counts (pmap #(u/count-words (uber/attrs g %))
-                     (:sorted-entries current-state))]
+        counts (map #(u/count-words (uber/attrs g %))
+                    (:sorted-entries current-state))]
     (apply + counts)))
 
 (defn hours-logged
