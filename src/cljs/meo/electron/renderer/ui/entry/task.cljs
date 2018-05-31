@@ -7,7 +7,7 @@
             [clojure.set :as set]))
 
 (defn task-details [entry local-cfg put-fn edit-mode?]
-  (when (or (contains? (set (:perm-tags entry)) "#task")
+  (when (or (contains? (set (:perm_tags entry)) "#task")
             (contains? (set (:tags entry)) "#task"))
     (let [prio-select (fn [entry]
                         (fn [ev]
@@ -27,7 +27,7 @@
                                   set/union
                                   set/difference)
                          entry (-> entry
-                                   (update-in [:perm-tags] set-fn #{"#done"})
+                                   (update-in [:perm_tags] set-fn #{"#done"})
                                    (update-in [:tags] set-fn #{"#done"}))]
                      (put-fn [:entry/update entry])
                      (close-tab))))

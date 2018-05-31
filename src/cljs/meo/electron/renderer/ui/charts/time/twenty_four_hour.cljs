@@ -31,8 +31,8 @@
         [:g {:on-mouse-enter mouse-enter-fn
              :on-mouse-leave mouse-leave-fn}
          (for [[hh {:keys [summed manual story] :as data}] time-by-h]
-           (let [item-name (if (= item-name-k :story-name)
-                             (:story-name story)
+           (let [item-name (if (= item-name-k :story_name)
+                             (:story_name story)
                              (:saga-name (:saga story)))
                  item-color (cc/item-color item-name "dark")
                  h (* y-scale summed)

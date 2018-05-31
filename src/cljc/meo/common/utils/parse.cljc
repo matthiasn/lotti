@@ -51,7 +51,7 @@
      :country     (get (re-find cc-regex text) 2)
      :opts        (set (map second (re-seq search-opts-regex text)))
      :briefing    (second (re-find briefing-date-regex text))
-     :date-string (second (re-find date-regex text))
+     :date_string (second (re-find date-regex text))
      :id          (re-find id-regex text)
      :timestamp   (second (re-find #"(?:^|[^:])([0-9]{13})" text))
      :linked      (second (re-find #"l:([0-9]{13})" text))

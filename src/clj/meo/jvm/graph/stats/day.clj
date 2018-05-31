@@ -25,7 +25,7 @@
    referenced day. Otherwise returns zero."
   [entry date-string]
   (let [manual (gq/summed-durations entry)]
-    (if-let [for-day (:for-day entry)]
+    (if-let [for-day (:for_day entry)]
       (let [ymd (subs for-day 0 10)]
         (if (= date-string ymd) manual 0))
       manual)))
@@ -37,42 +37,42 @@
   (let [task-nodes (filter #(contains? (:tags %) "#task") entries)
         done-nodes (filter #(contains? (:tags %) "#done") entries)
         closed-nodes (filter #(contains? (:tags %) "#closed") entries)]
-    {:tasks-cnt        (count task-nodes)
-     :done-tasks-cnt   (count done-nodes)
-     :closed-tasks-cnt (count closed-nodes)}))
+    {:tasks_cnt        (count task-nodes)
+     :done_tasks_cnt   (count done-nodes)
+     :closed_tasks_cnt (count closed-nodes)}))
 
 (defn day-stats [g nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
-                        (let [comment-for (:comment-for entry)
+                        (let [comment-for (:comment_for entry)
                               parent (when (and comment-for
                                                 (uc/has-node? g comment-for))
                                        (uc/attrs g comment-for))
-                              story (or (:primary-story parent)
-                                        (:primary-story entry)
+                              story (or (:primary_story parent)
+                                        (:primary_story entry)
                                         0)
                               acc-time (or (get acc story) 0)
-                              completed (or (get entry :completed-time) 0)
+                              completed (or (get entry :completed_time) 0)
                               manual (manually-logged entry date-string)
                               summed (+ acc-time completed manual)]
                           (if (pos? summed)
                             (assoc-in acc [story] summed)
                             acc)))
         by-ts-mapper (fn [entry]
-                       (let [{:keys [timestamp comment-for primary-story md
-                                     text for-day]} entry
-                             parent (when (and comment-for
-                                               (uc/has-node? g comment-for))
-                                      (uc/attrs g comment-for))
-                             story-id (or (:primary-story parent)
-                                          primary-story
+                       (let [{:keys [timestamp comment_for primary_story md
+                                     text for_day]} entry
+                             parent (when (and comment_for
+                                               (uc/has-node? g comment_for))
+                                      (uc/attrs g comment_for))
+                             story-id (or (:primary_story parent)
+                                          primary_story
                                           :no-story)
                              story (get-in stories [story-id])
-                             for-ts (when for-day
-                                      (let [dt (ctf/parse dt/dt-local-fmt for-day)]
+                             for-ts (when for_day
+                                      (let [dt (ctf/parse dt/dt-local-fmt for_day)]
                                         (c/to-long dt)))
                              ts (or for-ts timestamp)
-                             saga (get sagas (:linked-saga story))
-                             completed (or (get entry :completed-time) 0)
+                             saga (get sagas (:linked_saga story))
+                             completed (or (get entry :completed_time) 0)
                              manual (manually-logged entry date-string)
                              summed (+ completed manual)]
                          (when (pos? summed)
@@ -81,7 +81,7 @@
                             :timestamp   ts
                             :md          md
                             :text        text
-                            :comment-for comment-for
+                            :comment_for comment_for
                             :completed   completed
                             :summed      summed
                             :manual      manual})))
@@ -90,15 +90,15 @@
         total (apply + (map second by-story))
         by-story (map (fn [[k v]]
                         (let [story (merge (get stories k) {:timestamp k})
-                              saga (get sagas (:linked-saga story))]
+                              saga (get sagas (:linked_saga story))]
                           {:logged v
-                           :story  (assoc-in story [:linked-saga] saga)}))
+                           :story  (assoc-in story [:linked_saga] saga)}))
                       by-story)]
     (merge
       (tasks nodes)
       {:day         date-string
-       :total-time  total
-       :word-count  (wordcount nodes)
-       :entry-count (count nodes)
-       :by-ts       by-ts
-       :by-story    by-story})))
+       :total_time  total
+       :word_count  (wordcount nodes)
+       :entry_count (count nodes)
+       :by_ts       by-ts
+       :by_story    by-story})))

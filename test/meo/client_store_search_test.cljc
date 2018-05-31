@@ -53,7 +53,7 @@
   "Tests finding existing queries in tab."
   (let [query-cfg {:queries    {:0f94cca4-160d-4220-8071-b794856b8f9c {:mentions        #{}
                                                                        :tags            #{"#briefing"}
-                                                                       :date-string     nil
+                                                                       :date_string     nil
                                                                        :n               20
                                                                        :query-id        :0f94cca4-160d-4220-8071-b794856b8f9c
                                                                        :opts            #{}
@@ -64,7 +64,7 @@
                                                                        :sort-asc        nil}
                                 :a760ca9a-7171-411b-9c55-7f5c66c7e3c3 {:mentions        #{}
                                                                        :tags            #{}
-                                                                       :date-string     nil
+                                                                       :date_string     nil
                                                                        :n               20
                                                                        :query-id        :a760ca9a-7171-411b-9c55-7f5c66c7e3c3
                                                                        :opts            #{}
@@ -75,7 +75,7 @@
                                                                        :sort-asc        nil}
                                 :e77973b3-59da-4f6f-ad0b-82d24ed1d82d {:mentions        #{}
                                                                        :tags            #{}
-                                                                       :date-string     nil
+                                                                       :date_string     nil
                                                                        :n               20
                                                                        :query-id        :e77973b3-59da-4f6f-ad0b-82d24ed1d82d
                                                                        :opts            #{}
@@ -86,7 +86,7 @@
                                                                        :sort-asc        nil}
                                 :56439d98-3f98-412a-a213-82137a1f8247 {:mentions        #{}
                                                                        :tags            #{}
-                                                                       :date-string     nil
+                                                                       :date_string     nil
                                                                        :n               20
                                                                        :query-id        :56439d98-3f98-412a-a213-82137a1f8247
                                                                        :opts            #{}
@@ -102,7 +102,7 @@
                                                   :e77973b3-59da-4f6f-ad0b-82d24ed1d82d
                                                   :56439d98-3f98-412a-a213-82137a1f8247}}}}]
     (testing "Finds existing query"
-      (is (= {:date-string     nil
+      (is (= {:date_string     nil
               :ft-search       nil
               :mentions        #{}
               :n               20

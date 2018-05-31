@@ -31,7 +31,7 @@
      ^{:key (str "tag-" mention)}
      [:span.mention {:on-click (up/add-search mention tab-group put-fn)}
       mention])
-   (for [hashtag (set/union (:tags entry) (:perm-tags entry))]
+   (for [hashtag (set/union (:tags entry) (:perm_tags entry))]
      ^{:key (str "tag-" hashtag)}
      [:span.hashtag {:on-click (up/add-search hashtag tab-group put-fn)}
       hashtag])])

@@ -15,7 +15,7 @@
 (defn add-to-index
   "Adds entry to Lucene index. Removes older version of the same entry first."
   [{:keys [msg-payload]}]
-  (let [indexable [:timestamp :md :story-name :saga-name :location :spotify :geoname]
+  (let [indexable [:timestamp :md :story_name :saga-name :location :spotify :geoname]
         entry (select-keys msg-payload indexable)]
     (remove-from-index {:msg-payload entry})
     (clucy/add index entry)))

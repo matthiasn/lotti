@@ -47,7 +47,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -62,7 +62,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -77,7 +77,7 @@
    :not-tags #{"#backlog" "#done" "#outdated"}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -92,7 +92,7 @@
    :not-tags #{"#backlog" "#done" "#outdated"}
    :mentions    #{}
    :opts        #{":started"}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -107,7 +107,7 @@
    :not-tags    #{}
    :mentions    #{"@myself"}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -122,7 +122,7 @@
    :not-tags    #{}
    :mentions    #{"@myself"}
    :opts        #{}
-   :date-string "2016-06-07"
+   :date_string "2016-06-07"
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -137,7 +137,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    "2016-06-07"
    :timestamp   nil
    :id          nil
@@ -152,7 +152,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   "1465325998053"
    :linked      nil
@@ -167,7 +167,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :linked      "1465325998053"
@@ -182,7 +182,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :linked      nil
@@ -197,7 +197,7 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
-   :date-string nil
+   :date_string nil
    :briefing    nil
    :timestamp   nil
    :linked      nil

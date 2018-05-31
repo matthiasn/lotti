@@ -44,18 +44,18 @@
                             {:tab-group :right
                              :query     (up/parse-search (:timestamp x))}]))]
     (def ^:export new-entry (h/new-entry put-fn {} open-new))
-    (def ^:export new-story (h/new-entry put-fn {:entry-type :story} open-new))
-    (def ^:export new-saga (h/new-entry put-fn {:entry-type :saga} open-new))
+    (def ^:export new-story (h/new-entry put-fn {:entry_type :story} open-new))
+    (def ^:export new-saga (h/new-entry put-fn {:entry_type :saga} open-new))
     (fn [put-fn]
       (when (:show @local)
         [:div.new-import
          [:button.menu-new {:on-click (h/new-entry put-fn {} nil)}
           [:span.fa.fa-plus-square] " new"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry-type :saga} nil)}
+          {:on-click (h/new-entry put-fn {:entry_type :saga} nil)}
           [:span.fa.fa-plus-square] " new saga"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry-type :story} nil)}
+          {:on-click (h/new-entry put-fn {:entry_type :story} nil)}
           [:span.fa.fa-plus-square] " new story"]
          [:button {:on-click #(do (put-fn [:import/photos])
                                   (put-fn [:import/spotify]))}

@@ -18,10 +18,10 @@
                           (= selected (:linked-saga story)))
                         true))
         story-name-mapper (fn [[k v]]
-                            (let [s (or (:story-name (get @stories k)) "none")]
+                            (let [s (or (:story_name (get @stories k)) "none")]
                               [k s v]))]
     (fn [day-stats local put-fn]
-      (let [date (:date-string day-stats)
+      (let [date (:date_string day-stats)
             time-by-story (->> day-stats
                                :time-by-story
                                (filter saga-filter)

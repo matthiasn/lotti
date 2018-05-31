@@ -72,7 +72,7 @@
            [:td.estimate
             (let [actual (if (and active busy)
                            logged-time
-                           (:completed-s (:task entry)))
+                           (:completed_s (:task entry)))
                   seconds (* 60 estimate)
                   remaining (- seconds actual)
                   cls (when (neg? remaining) "neg")]
@@ -86,18 +86,18 @@
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
   (let [gql-res (subscribe [:gql-res])
-        started-tasks (reaction (-> @gql-res :briefing :data :started-tasks))
+        started-tasks (reaction (-> @gql-res :briefing :data :started_tasks))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         on-hold-filter (fn [entry]
-                         (let [on-hold (:on-hold (:task entry))]
+                         (let [on-hold (:on_hold (:task entry))]
                            (if (:on-hold @local)
                              on-hold
                              (not on-hold))))
         saga-filter (fn [entry]
                       (if-let [selected (:selected @local)]
-                        (let [saga (get-in entry [:story :linked-saga :timestamp])]
+                        (let [saga (get-in entry [:story :linked_saga :timestamp])]
                           (= selected saga))
                         true))
         open-filter (fn [entry] (not (-> entry :task :done)))
@@ -159,7 +159,7 @@
                               (= selected (:timestamp (:linked-saga story))))
                             true))
             started-tasks (set (map :timestamp @started-tasks))
-            task-filter #(contains? (set/union (:perm-tags %) (:tags %)) "#task")
+            task-filter #(contains? (set/union (:perm_tags %) (:tags %)) "#task")
             linked-tasks (->> linked-entries
                               (filter task-filter)
                               (filter current-filter)

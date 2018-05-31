@@ -13,7 +13,7 @@
   {:mentions   #{"@SantaClaus"}
    :tags       #{"#test" "#xmas"}
    :timezone   "Europe/Berlin"
-   :utc-offset -120
+   :utc_offset -120
    :longitude  9.9999
    :latitude   53.112233
    :timestamp  1450998000000
@@ -25,7 +25,7 @@
   {:mentions   #{"@myself" "@someone"}
    :tags       #{"#test" "#new" "#entry" "#blah"}
    :timezone   "Europe/Berlin"
-   :utc-offset -120
+   :utc_offset -120
    :longitude  9.9999
    :latitude   53.112233
    :timestamp  test-ts
@@ -36,7 +36,7 @@
    :tags        #{}
    :not-tags    #{}
    :mentions    #{}
-   :date-string nil
+   :date_string nil
    :timestamp   nil
    :n           40})
 
@@ -85,12 +85,12 @@
             ;; which would be empty here
             (is (= test-entry (-> (get (:entries-map res) (:timestamp test-entry))
                                   (dissoc :comments)
-                                  (dissoc :last-saved)
+                                  (dissoc :last_saved)
                                   (dissoc :vclock)
                                   (dissoc :id)
                                   (dissoc :text)
                                   (dissoc :task)
-                                  (dissoc :linked-entries-list)))))
+                                  (dissoc :linked_entries_list)))))
 
           (testing
             "hashtag was created for entry"
@@ -109,7 +109,7 @@
                 (let [last-line (last (line-seq reader))
                       parsed (clojure.edn/read-string last-line)]
                   (is (= test-entry
-                         (dissoc parsed :id :task :text :last-saved :vclock)))))))
+                         (dissoc parsed :id :task :text :last_saved :vclock)))))))
 
           (testing
             "handler emits saved message"
@@ -122,7 +122,7 @@
                      (-> @test-atom first)))
               (is (= :entry/saved (-> @test-atom second first)))
               (is (= test-entry
-                     (dissoc saved-msg :id :task :text :last-saved :vclock))))))))))
+                     (dissoc saved-msg :id :task :text :last_saved :vclock))))))))))
 
 (defn geo-entry-update-assertions
   "Common assertions in geo-entry-update-test, can be used with both the initial in-memory graph
@@ -139,8 +139,8 @@
                           (dissoc :task)
                           (dissoc :text)
                           (dissoc :vclock)
-                          (dissoc :last-saved)
-                          (dissoc :linked-entries-list)))))
+                          (dissoc :last_saved)
+                          (dissoc :linked_entries_list)))))
 
   (testing
     "hashtag was created for entry"
@@ -190,7 +190,7 @@
                 (let [last-line (last (line-seq reader))
                       parsed (clojure.edn/read-string last-line)]
                   (is (= updated-test-entry
-                         (dissoc parsed :id :text :task :last-saved :vclock)))))))
+                         (dissoc parsed :id :text :task :last_saved :vclock)))))))
 
           (testing
             "handler emits updated message"
@@ -203,7 +203,7 @@
                      (-> @test-atom first)))
               (is (= :entry/saved (-> @test-atom second first)))
               (is (= updated-test-entry
-                     (dissoc saved-msg :id :text :task :last-saved :vclock)))))
+                     (dissoc saved-msg :id :text :task :last_saved :vclock)))))
 
           ;; test with graph reconstructed from disk
           (geo-entry-update-assertions state-from-disk res-from-disk updated-test-entry))))))

@@ -40,7 +40,7 @@
                      x (* 10 idx)
                      mouse-enter-fn (cc/mouse-enter-fn local v)
                      mouse-leave-fn (cc/mouse-leave-fn local v)]
-                 ^{:key (str "tbar" (:date-string v) idx)}
+                 ^{:key (str "tbar" (:date_string v) idx)}
                  [:g {:on-mouse-enter mouse-enter-fn
                       :on-mouse-leave mouse-leave-fn
                       :on-click       (cc/open-day-fn v put-fn)}
@@ -62,7 +62,7 @@
          (when (:mouse-over @local)
            (let [closed-cnt (:closed-cnt (:mouse-over @local))]
              [:div.mouse-over-info (cc/info-div-pos @local)
-              [:div (:date-string (:mouse-over @local))]
+              [:div (:date_string (:mouse-over @local))]
               [:div "Created: " (:tasks-cnt (:mouse-over @local))]
               [:div "Done: " (:done-cnt (:mouse-over @local))]
               (when (pos? closed-cnt) [:div "Closed: " closed-cnt])]))]))))

@@ -58,7 +58,7 @@
         gql-res (subscribe [:gql-res])]
     (fn scores-chart-render [{:keys [y k w h score-k start end mn mx color
                                      x-offset label]} put-fn]
-      (let [qid (->kebab-case (keyword (str (name k) "-" (name score-k))))
+      (let [qid (keyword (str (s/upper-case (name k)) "_" (name score-k)))
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
             span (- end start)

@@ -36,7 +36,7 @@
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
   [entry locale local put-fn]
-  (when-let [file (:img-file entry)]
+  (when-let [file (:img_file entry)]
     (let [resized-rotated (str h/thumbs-2048 file)
           ts (:timestamp entry)
           external (str h/photos file)
@@ -60,7 +60,7 @@
           [:div {:dangerouslySetInnerHTML {:__html html}}]])])))
 
 (defn thumb-view [entry selected local]
-  (when-let [file (:img-file entry)]
+  (when-let [file (:img_file entry)]
     (let [thumb (str h/thumbs-256 file)
           click (fn [_] (swap! local assoc-in [:selected] entry))]
       [:li.thumb
@@ -105,7 +105,7 @@
     (fn [selected locale put-fn]
       (let [ts (:timestamp selected)
             html (md/md->html (:md selected))
-            file (:img-file selected)
+            file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
             external (str h/photos file)]
         [:div.info
@@ -212,6 +212,6 @@
                     :put-fn       put-fn}]]))))
 
 (defn gallery-entries [entry]
-  (filter :img-file (concat [entry]
+  (filter :img_file (concat [entry]
                             (:comments entry)
                             (:linked entry))))

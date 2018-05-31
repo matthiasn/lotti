@@ -102,11 +102,11 @@
     {:timestamp timestamp
      :latitude  (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
      :longitude (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
-     :img-file  target-filename
+     :img_file  target-filename
      :img       {:orientation orientation}
      :md        ""
      :tags      #{"#import"}
-     :perm-tags #{"#photo"}}))
+     :perm_tags #{"#photo"}}))
 
 (defn import-video
   "Takes a video file (as a java.io.InputStream or java.io.File) and creates

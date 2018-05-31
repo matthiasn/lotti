@@ -101,7 +101,7 @@
                                :heatmap
                                :data
                                :photos-by-location
-                               (filter :img-file)))
+                               (filter :img_file)))
         p0 #(let [mb-map (:mb-map @local)]
               (.flyTo mb-map (clj->js {:center [10.001872149129213
                                                 53.561938271672375]

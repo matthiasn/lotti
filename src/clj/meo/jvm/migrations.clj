@@ -5,11 +5,21 @@
             [taoensso.timbre :refer [info error]]
             [clj-uuid :as uuid]
             [camel-snake-kebab.core :refer :all]
+            [camel-snake-kebab.extras :refer [transform-keys]]
             [cheshire.core :as cc]
             [clj-http.client :as hc]
             [clj-time.format :as ctf]
             [clj-time.core :as ct]
             [me.raynes.fs :as fs]))
+
+
+(defn to-snake [k]
+  (cond
+    (number? k) k
+    :else (->snake_case k)))
+
+(defn snake-xf [xs] (transform-keys to-snake xs))
+
 
 (defn add-tags-mentions
   "Parses entry for hashtags and mentions."
@@ -71,13 +81,13 @@
             (try
               (let [parsed (clojure.edn/read-string line)
                     entry (cond
-                            (= (:entry-type parsed) :book)
+                            (= (:entry_type parsed) :book)
                             (-> parsed
-                                (assoc-in [:entry-type] :saga)
+                                (assoc-in [:entry_type] :saga)
                                 (assoc-in [:saga-name] (:book-name parsed))
                                 (dissoc :book-name))
 
-                            (= (:entry-type parsed) :story)
+                            (= (:entry_type parsed) :story)
                             (-> parsed
                                 (dissoc :linked-book)
                                 (assoc-in [:linked-saga] (:linked-book parsed)))
@@ -215,6 +225,31 @@
                     id (:timestamp entry)
                     no-editor-state (dissoc entry :editor-state)
                     serialized (str (pr-str no-editor-state) "\n")]
+                (swap! ts-uuids conj id)
+                (spit (str out-path "/" filename) serialized :append true))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
+
+;(m/migrate-to-snake-case "./data/migrations/snake" "./data/migrations/snake-out")
+(defn migrate-to-snake-case [path out-path]
+  (let [files (file-seq (clojure.java.io/file path))
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)]
+    (fs/mkdirs out-path)
+    (doseq [f sorted-files]
+      (with-open [reader (clojure.java.io/reader f)]
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (swap! line-count inc)
+              (let [entry (clojure.edn/read-string line)
+                    snake (snake-xf entry)
+                    id (:timestamp entry)
+                    serialized (str (pr-str snake) "\n")]
                 (swap! ts-uuids conj id)
                 (spit (str out-path "/" filename) serialized :append true))
               (catch Exception ex

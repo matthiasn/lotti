@@ -10,9 +10,9 @@
 (defn screenshot [{:keys [observed put-fn msg-payload]}]
   (let [screenshot-ts (st/now)
         filename (str screenshot-ts ".png")
-        entry (merge {:img-file  filename
+        entry (merge {:img_file  filename
                       :tags      #{"#screenshot" "#import"}
-                      :perm-tags #{"#screenshot"}}
+                      :perm_tags #{"#screenshot"}}
                      msg-payload)
         new-fn (h/new-entry put-fn entry nil)]
     (js/setTimeout new-fn 1000)

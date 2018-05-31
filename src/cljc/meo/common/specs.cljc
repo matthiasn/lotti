@@ -141,7 +141,7 @@
 (s/def :meo.search/tags :meo.entry/tags)
 (s/def :meo.search/not-tags :meo.search/tags)
 (s/def :meo.search/mentions :meo.entry/mentions)
-(s/def :meo.search/date-string
+(s/def :meo.search/date_string
   (s/nilable #(re-find #"[0-9]{4}-[0-9]{2}-[0-9]{2}" %)))
 (s/def :meo.search/timestamp (s/nilable #(re-find #"[0-9]{13}" %)))
 (s/def :meo.search/n pos-int?)
@@ -151,7 +151,7 @@
 
 (s/def :meo.search/search
   (s/keys :req-un [:meo.search/search-text
-                   :meo.search/date-string
+                   :meo.search/date_string
                    :meo.search/n
                    :meo.search/tags
                    :meo.search/not-tags
@@ -329,7 +329,7 @@
 
 (s/def :backend-cfg/new map?)
 
-(s/def :meo.cal/day :meo.search/date-string)
+(s/def :meo.cal/day :meo.search/date_string)
 (s/def :cal/to-day (s/keys :req-un [:meo.cal/day]))
 
 (s/def :window/show nil?)

@@ -15,7 +15,7 @@
         new-entries (subscribe [:new-entries])
         running-pomodoro (subscribe [:running-pomodoro])]
     (fn [entry edit-mode? _put-fn]
-      (let [completed-time (:completed-time entry 0)
+      (let [completed-time (:completed_time entry 0)
             formatted (h/s-to-hh-mm-ss completed-time)
             logged-duration (eu/logged-total new-entries entry)
             logged-duration (when (pos? logged-duration)
@@ -24,7 +24,7 @@
                         (let [v (.. ev -target -value)
                               parsed (when (seq v)
                                        (* 60 (.asMinutes (.duration moment v))))
-                              updated (assoc-in entry [:completed-time] parsed)]
+                              updated (assoc-in entry [:completed_time] parsed)]
                           (put-fn [:entry/update-local updated])))
             running? (and (:pomodoro-running entry)
                           (= @running-pomodoro (:timestamp entry))
@@ -35,7 +35,7 @@
                             (put-fn [:cmd/pomodoro-stop entry])
                             (put-fn [:cmd/pomodoro-start entry])))]
         (when-not edit-mode? (swap! local assoc-in [:edit] false))
-        (if (= (:entry-type entry) :pomodoro)
+        (if (= (:entry_type entry) :pomodoro)
           [:div.pomodoro
            (when edit-mode?
              [:span.btn.start-stop {:on-click start-stop

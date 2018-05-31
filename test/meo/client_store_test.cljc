@@ -11,7 +11,7 @@
    :tags        #{}
    :not-tags    #{}
    :mentions    #{}
-   :date-string nil
+   :date_string nil
    :timestamp   nil
    :n           40
    :query-id    :query-1
@@ -22,7 +22,7 @@
    :tags        #{"#task"}
    :not-tags    #{"~#done"}
    :mentions    #{}
-   :date-string nil
+   :date_string nil
    :timestamp   nil
    :n           40
    :query-id    :query-1

@@ -11,17 +11,17 @@
         stats (reaction (:data (:count-stats @gql-res)))]
     (fn stats-text-render []
       [:div.stats-string
-       [:div (:entry-count @stats) " entries | "
-        (:tag-count @stats) " tags | "
-        (:mention-count @stats) " people | "
-        (:hours-logged @stats) " hours | "
-        (:word-count @stats) " words | "
-        (:open-tasks @stats) " open tasks | "
-        (:backlog-count @stats) " backlog | "
-        (:completed-count @stats) " done | "
-        (:closed-count @stats) " closed | "
-        (:import-count @stats) " #import | "
-        (:active-threads @stats) " threads"]])))
+       [:div (:entry_count @stats) " entries | "
+        (:tag_count @stats) " tags | "
+        (:mention_count @stats) " people | "
+        (:hours_logged @stats) " hours | "
+        (:word_count @stats) " words | "
+        (:open_tasks @stats) " open tasks | "
+        (:backlog_count @stats) " backlog | "
+        (:completed_count @stats) " done | "
+        (:closed_count @stats) " closed | "
+        (:import_count @stats) " #import | "
+        (:active_threads @stats) " threads"]])))
 
 (defn stats-view [put-fn]
   [:div.stats.charts

@@ -89,14 +89,15 @@
       [:select {:value     (:selected @local "")
                 :on-change saga-select}
        [:option ""]
-       (for [[ts saga] (sort-by #(s/lower-case (:saga-name (second %))) @sagas)]
+       (for [[ts saga] (sort-by #(s/lower-case (or (:saga_name (second %)) ""))
+                                @sagas)]
          ^{:key ts}
-         [:option {:value ts} (:saga-name saga)])])))
+         [:option {:value ts} (:saga_name saga)])])))
 
 (defn briefing-view [put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
-        day-stats (reaction (:logged-time (:data (:logged-by-day @gql-res))))
+        day-stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))
         cfg (subscribe [:cfg])
         local (r/atom {:filter                  :open
                        :outstanding-time-filter true
@@ -105,7 +106,7 @@
       (let [ts (:timestamp @briefing)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> @day-stats
-                          :by-ts
+                          :by_ts
                           (filter #(not (contains? excluded
                                                    (-> %
                                                        :story
@@ -114,7 +115,7 @@
                           (map :summed)
                           (apply +))
             dur (u/duration-string logged-s)
-            n (count (:by-ts @day-stats))
+            n (count (:by_ts @day-stats))
             drop-fn (a/drop-linked-fn @briefing cfg put-fn)]
         [:div.entry-with-comments
          [:div.entry
@@ -130,10 +131,10 @@
             [habits/waiting-habits local local-cfg put-fn]]
            [:div.summary
             [:div
-             "Tasks: " [:strong (:tasks-cnt @day-stats)] " created | "
-             [:strong (:done-tasks-cnt @day-stats)] " done | "
-             [:strong (:closed-tasks-cnt @day-stats)] " closed | Words: "
-             [:strong (or (:word-count @day-stats) 0)]]
+             "Tasks: " [:strong (:tasks_cnt @day-stats)] " created | "
+             [:strong (:done_tasks_cnt @day-stats)] " done | "
+             [:strong (:closed_tasks_cnt @day-stats)] " closed | Words: "
+             [:strong (or (:word_count @day-stats) 0)]]
             [:div
              (when (seq dur)
                [:span

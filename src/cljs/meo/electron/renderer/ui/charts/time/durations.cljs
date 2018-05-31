@@ -28,13 +28,13 @@
             time-by-story (sort-by #(str (first %)) (:time-by-story day-stats))
             stacked (reduce stacked-reducer {} time-by-story)
             time-by-story2 (reverse (sort-by #(str (first %)) (:items stacked)))
-            weekend? (cc/weekend? (:date-string day-stats))]
+            weekend? (cc/weekend? (:date_string day-stats))]
         [:g {:on-mouse-enter mouse-enter-fn
              :on-mouse-leave mouse-leave-fn}
          (for [[story {:keys [y v]}] time-by-story2]
            (let [h (* y-scale v)
                  y (- chart-h (+ h (* y-scale y)))
-                 story-name (or (:story-name (get stories story)) "No story")]
+                 story-name (or (:story_name (get stories story)) "No story")]
              ^{:key (str story)}
              [:rect {:on-click (cc/open-day-fn v put-fn)
                      :fill     (cc/item-color story-name)
@@ -80,7 +80,7 @@
             time-by-saga (sort-by #(str (first %)) (:time-by-saga day-stats))
             stacked (reduce stacked-reducer {} time-by-saga)
             time-by-saga (reverse (sort-by #(str (first %)) (:items stacked)))
-            weekend? (cc/weekend? (:date-string day-stats))]
+            weekend? (cc/weekend? (:date_string day-stats))]
         [:g
          {:on-mouse-enter mouse-enter-fn
           :on-mouse-leave mouse-leave-fn}
@@ -88,7 +88,7 @@
            (let [h (* y-scale v)
                  y (- chart-h (+ h (* y-scale y)))
                  saga-name (or (:saga-name (get sagas saga)) "No saga")
-                 weekday? (not (cc/weekend? (:date-string day-stats)))]
+                 weekday? (not (cc/weekend? (:date_string day-stats)))]
              ^{:key (str saga)}
              [:rect {:on-click (cc/open-day-fn v put-fn)
                      :fill     (cc/item-color saga-name)
@@ -122,7 +122,7 @@
       (let [stories @stories
             sagas @sagas
             dur (u/duration-string (:total-time day-stats))
-            date (:date-string day-stats)]
+            date (:date_string day-stats)]
         (when date
           [:div.story-time
            [:table
@@ -141,7 +141,7 @@
             [:tbody
              [:tr [:th ""] [:th "story"] [:th "total"]]
              (for [[story v] (:time-by-story day-stats)]
-               (let [story-name (or (:story-name (get stories story)) "none")
+               (let [story-name (or (:story_name (get stories story)) "none")
                      color (cc/item-color story-name)]
                  ^{:key story}
                  [:tr
@@ -171,7 +171,7 @@
                              (cd/past-7-days :time-by-saga)
                              (sort-by second >))
             dur (u/duration-string (:total-time day-stats))
-            fmt-date (.format (moment (:date-string day-stats)) "ddd YY-MM-DD")]
+            fmt-date (.format (moment (:date_string day-stats)) "ddd YY-MM-DD")]
         (h/keep-updated :stats/pomodoro 60 local @last-update put-fn)
         [:div
          [:div.times-by-day
@@ -218,5 +218,5 @@
             indexed (map-indexed idx-fn stats)]
         [:div.charts.durations
          [tfh/earlybird-nightowl indexed local :saga-name chart-h put-fn]
-         ;[tfh/earlybird-nightowl indexed local :story-name chart-h put-fn]
+         ;[tfh/earlybird-nightowl indexed local :story_name chart-h put-fn]
          ]))))

@@ -22,11 +22,11 @@
           custom-fields (:custom-fields (:cfg current-state))
           custom-field-stats-def (into {} (map (fn [[k v]] [k (:fields v)])
                                                (select-keys custom-fields [tag])))
-          day-nodes (gq/get-nodes-for-day g {:date-string date-string})
+          day-nodes (gq/get-nodes-for-day g {:date_string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-          nodes (filter :custom-fields day-nodes-attrs)
+          nodes (filter :custom_fields day-nodes-attrs)
           for-day-filter (fn [entry]
-                           (let [for-day (:for-day entry)]
+                           (let [for-day (:for_day entry)]
                              (or (not for-day)
                                  (= date-string (subs for-day 0 10)))))
           nodes (filter for-day-filter nodes)
@@ -34,9 +34,9 @@
           (fn [[k fields]]
             (let [field-mapper
                   (fn [[field v]]
-                    (let [path [:custom-fields k field]
+                    (let [path [:custom_fields k field]
                           val-mapper (fn [entry]
-                                       (let [ts (or (when-let [fd (:for-day entry)]
+                                       (let [ts (or (when-let [fd (:for_day entry)]
                                                       (c/to-long (parse fd)))
                                                     (:timestamp entry))]
                                          {:v  (get-in entry path)
@@ -56,7 +56,7 @@
                                res)]))]
               (into {} (mapv field-mapper fields))))]
       (apply merge
-             {:date-string date-string
+             {:date_string date-string
               :tag         tag
               :fields      (mapv (fn [[k v]]
                                    {:field (name k)

@@ -6,7 +6,7 @@
    :tags        #{}
    :not-tags    #{}
    :mentions    #{}
-   :date-string nil
+   :date_string nil
    :timestamp   nil
    :n           40
    :query-id    :query-1})
@@ -16,7 +16,7 @@
    :tags        #{"#not-existing-tag"}
    :not-tags    #{}
    :mentions    #{}
-   :date-string nil
+   :date_string nil
    :timestamp   nil
    :n           40})
 

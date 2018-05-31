@@ -30,7 +30,7 @@
                :y        (- y h)
                :width    w
                :height   h
-               :class    (cc/weekend-class cls {:date-string ymd})}]
+               :class    (cc/weekend-class cls {:date_string ymd})}]
        (when (:show-label @local)
          [:text {:x           (+ x 11)
                  :y           (- y 5)
@@ -52,7 +52,7 @@
         gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span start h y]} put-fn]
       (let [btm-y (+ y h)
-            data (get-in @gql-res [:dashboard :data :git-stats])
+            data (get-in @gql-res [:dashboard :data :git_stats])
             indexed (map-indexed (fn [i x] [i x]) data)
             mx (apply max (map #(:commits (second %)) indexed))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]

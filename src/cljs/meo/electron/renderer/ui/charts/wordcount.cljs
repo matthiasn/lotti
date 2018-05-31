@@ -37,7 +37,7 @@
                      mouse-leave-fn (cc/mouse-leave-fn local v)
                      cls (cc/weekend-class
                            (if (< cnt daily-target) "tasks" "done") v)]
-                 ^{:key (str "tbar" (:date-string v) idx)}
+                 ^{:key (str "tbar" (:date_string v) idx)}
                  [:g {:on-mouse-enter mouse-enter-fn
                       :on-mouse-leave mouse-leave-fn
                       :on-click       (cc/open-day-fn v put-fn)}
@@ -48,5 +48,5 @@
                           :class  cls}]])))]]
          (when (:mouse-over @local)
            [:div.mouse-over-info (cc/info-div-pos @local)
-            [:div (:date-string (:mouse-over @local))]
+            [:div (:date_string (:mouse-over @local))]
             [:div "Words: " (:word-count (:mouse-over @local))]])]))))

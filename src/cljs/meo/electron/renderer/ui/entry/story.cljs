@@ -34,20 +34,20 @@
   "Renders editable field for story name when the entry is of type :story.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
   [entry edit-mode? put-fn]
-  (when (= (:entry-type entry) :story)
-    (let [on-input-fn (input-fn entry :story-name put-fn)
-          on-keydown-fn (keydown-fn entry :story-name put-fn)]
+  (when (= (:entry_type entry) :story)
+    (let [on-input-fn (input-fn entry :story_name put-fn)
+          on-keydown-fn (keydown-fn entry :story_name put-fn)]
       (if edit-mode?
         [:div.story
          [:label "Story:"]
-         [editable-field on-input-fn on-keydown-fn (:story-name entry)]]
-        [:h2 "Story: " (:story-name entry)]))))
+         [editable-field on-input-fn on-keydown-fn (:story_name entry)]]
+        [:h2 "Story: " (:story_name entry)]))))
 
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
   [entry edit-mode? put-fn]
-  (when (= (:entry-type entry) :saga)
+  (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga-name put-fn)
           on-keydown-fn (keydown-fn entry :saga-name put-fn)]
       (if edit-mode?
@@ -63,7 +63,7 @@
         ts (:timestamp entry)]
     (fn story-select-render [entry put-fn edit-mode?]
       (let [linked-saga (:linked-saga entry)
-            entry-type (:entry-type entry)
+            entry-type (:entry_type entry)
             select-handler
             (fn [ev]
               (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
@@ -72,7 +72,7 @@
                 (put-fn [:entry/update-local updated])))]
         (when (= entry-type :story)
           (if edit-mode?
-            (when-not (:comment-for entry)
+            (when-not (:comment_for entry)
               [:div.story
                [:label "Saga:"]
                [:select {:value     (or linked-saga "")
@@ -104,12 +104,12 @@
                   (let [story-tss (merged-stories @predictions (keys @stories))
                         stories (map #(get @stories %) story-tss)
                         s (:search @local)
-                        filter-fn #(h/str-contains-lc? (:story-name %) s)
+                        filter-fn #(h/str-contains-lc? (:story_name %) s)
                         stories (vec (filter filter-fn stories))]
                     (map-indexed (fn [i v] [i v]) (take 10 stories))))
         assign-story (fn [story]
                        (let [ts (:timestamp story)
-                             updated (assoc-in entry [:primary-story] ts)]
+                             updated (assoc-in entry [:primary_story] ts)]
                          (swap! local assoc-in [:show] false)
                          (put-fn [:entry/update updated])))
 
@@ -132,7 +132,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
     (fn story-select-filter-render [entry put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
-            story-name (get-in entry [:story :story-name])
+            story-name (get-in entry [:story :story_name])
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)
@@ -148,12 +148,12 @@
             toggle-visible (fn [_]
                              (swap! local update-in [:show] not)
                              (if (:show @local) (start-watch) (stop-watch)))
-            icon-cls (str (when (and (not (:primary-story entry))
+            icon-cls (str (when (and (not (:primary_story entry))
                                      @predictions)
                             "predicted ")
                           (when (:show @local) "show"))]
-        (when-not (or (:comment-for entry)
-                      (contains? #{:story :saga} (:entry-type entry)))
+        (when-not (or (:comment_for entry)
+                      (contains? #{:story :saga} (:entry_type entry)))
           [:div.story-select
            (if (:show @local)
              (let [curr-idx (:idx @local)]
@@ -177,7 +177,7 @@
                       ^{:key (:timestamp story)}
                       [:tr {:on-click click}
                        [:td {:class cls}
-                        (:story-name story)]]))]]])
+                        (:story_name story)]]))]]])
              [:div.story
               [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
               story-name])])))))

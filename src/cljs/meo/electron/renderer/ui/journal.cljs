@@ -20,7 +20,7 @@
             show-context? (:show-context conf)
             comments-w-entries? (not (:comments-standalone conf))
             with-comments? (fn [entry] (and (or (and comments-w-entries?
-                                                     (not (:comment-for entry)))
+                                                     (not (:comment_for entry)))
                                                 (not comments-w-entries?))
                                             (or (:new-entry entry) show-context?)))]
         [:div.journal

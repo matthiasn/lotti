@@ -59,7 +59,7 @@
                        :md         md
                        :text       md
                        :mentions   #{}
-                       :perm-tags  #{"#git-commit"}
+                       :perm_tags  #{"#git-commit"}
                        :tags       #{"#git-commit" "#import"}}]
             (when (= (:email repo-cfg) (:email author))
               (put-fn (with-meta [:entry/update entry] {:silent true}))))))))

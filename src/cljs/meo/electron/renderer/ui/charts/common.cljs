@@ -23,7 +23,7 @@
 
 (defn weekend-class
   [cls v]
-  (str cls (when (weekend? (:date-string v)) "-weekend")))
+  (str cls (when (weekend? (:date_string v)) "-weekend")))
 
 (defn chart-title
   [title x]
@@ -85,7 +85,7 @@
   [v put-fn]
   (fn [_ev]
     (put-fn [:search/add {:tab-group :right
-                          :query     (up/parse-search (:date-string v))}])))
+                          :query     (up/parse-search (:date_string v))}])))
 
 (defn bg-bars
   "Renders invisible bars of maximum height. Allows mouse-over effect in entire
@@ -93,7 +93,7 @@
   [indexed local chart-h k]
   [:g
    (for [[idx v] indexed]
-     ^{:key (str "bgbar" (:date-string v) idx k)}
+     ^{:key (str "bgbar" (:date_string v) idx k)}
      [:g {:on-mouse-enter (mouse-enter-fn local v)
           :on-mouse-leave (mouse-leave-fn local v)}
       [:rect.bar-bg {:x      (* 10 idx)

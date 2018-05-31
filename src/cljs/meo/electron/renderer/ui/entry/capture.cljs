@@ -12,16 +12,16 @@
 (defn for-day
   [entry edit-mode? put-fn]
   (when (and (contains? (:tags entry) "#for-day")
-             (not (= (:entry-type entry) :pomodoro)))
+             (not (= (:entry_type entry) :pomodoro)))
     (let [input-fn (fn [entry]
                      (fn [ev]
                        (let [day (h/target-val ev)
-                             updated (assoc-in entry [:for-day] day)]
+                             updated (assoc-in entry [:for_day] day)]
                          (put-fn [:entry/update-local updated]))))
-          for-day (:for-day entry)]
+          for-day (:for_day entry)]
       (when-not for-day
         (put-fn [:entry/update-local
-                 (assoc-in entry [:for-day] (h/format-time (st/now)))]))
+                 (assoc-in entry [:for_day] (h/format-time (st/now)))]))
       [:fieldset
        [:legend "#for-day"]
        (if edit-mode?
@@ -44,9 +44,9 @@
                                  (map (fn [[k v]] (:default-story v)))
                                  (filter identity)
                                  first)]
-          (when (and edit-mode? default-story (not (:primary-story entry)))
+          (when (and edit-mode? default-story (not (:primary_story entry)))
             (put-fn [:entry/update-local (merge entry
-                                                {:primary-story  default-story
+                                                {:primary_story  default-story
                                                  :linked-stories #{default-story}})]))
           [:form.custom-fields
            [for-day entry edit-mode? put-fn]
@@ -57,7 +57,7 @@
               (for [[k field] (:fields conf)]
                 (let [input-cfg (:cfg field)
                       input-type (:type input-cfg)
-                      path [:custom-fields tag k]
+                      path [:custom_fields tag k]
                       value (get-in entry path)
                       value (if (and value (= :time input-type))
                               (h/m-to-hh-mm value)
@@ -108,9 +108,9 @@
               q-mapper (fn [[t k]] [k (get-in questionnaires [:items k])])
               pomo-q [:pomo1 (get-in questionnaires [:items :pomo1])]
               entry-questionnaires (map q-mapper q-tags)
-              completed-pomodoro (and (>= (:completed-time entry)
-                                          (:planned-dur entry 1500))
-                                      (= (:entry-type entry) :pomodoro)
+              completed-pomodoro (and (>= (:completed_time entry)
+                                          (:planned_dur entry 1500))
+                                      (= (:entry_type entry) :pomodoro)
                                       (> ts 1505770346000))
               entry-questionnaires (into {} (if completed-pomodoro
                                               (conj entry-questionnaires pomo-q)

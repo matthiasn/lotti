@@ -88,13 +88,13 @@
    :tags             #{"#PSS"},
    :linked-stories   #{}
    :timezone         "CET"
-   :utc-offset       -60
+   :utc_offset       -60
    :new-entry        true
    :pomodoro-running true
    :longitude        12.3
-   :planned-dur      1500
-   :comment-for      1517587606253
-   :last-saved       1517602023551
+   :planned_dur      1500
+   :comment_for      1517587606253
+   :last_saved       1517602023551
    :vclock           {"edf3da73-f8e7-4076-8387-bfb35b7999e1" 77}
    :latitude         51.5
    :editor-state     {:entityMap {}
@@ -104,25 +104,25 @@
                                    :depth        0 :inlineStyleRanges []
                                    :entityRanges []
                                    :data         {}}]}
-   :completed-time   2040
+   :completed_time   2040
    :timestamp        1517589827814
    :text             "fixing the faulty implementation"
    :md               "- fixing the faulty implementation"})
 
 (deftest clean-entry-test
   (testing "expected keys are removed"
-    (is (= {:comment-for    1517587606253
-            :completed-time 2040
+    (is (= {:comment_for    1517587606253
+            :completed_time 2040
             :latitude       51.5
             :linked-stories #{}
             :longitude      12.3
             :md             "- fixing the faulty implementation"
             :mentions       #{}
-            :planned-dur    1500
+            :planned_dur    1500
             :tags           #{"#PSS"}
             :task           nil
             :text           "fixing the faulty implementation"
             :timestamp      1517589827814
             :timezone       "CET"
-            :utc-offset     -60}
+            :utc_offset     -60}
            (u/clean-entry clean-test-entry)))))

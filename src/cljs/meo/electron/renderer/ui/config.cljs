@@ -24,7 +24,7 @@
                           sel (:selected @local)
                           path [:changes :custom-fields sel :default-story]]
                       (swap! local assoc-in path story)))
-        story-sort-fn #(lower-case (:story-name (second %)))
+        story-sort-fn #(lower-case (:story_name (second %)))
         valid-field-name #(re-find (re-pattern (str "^" p/tag-char-cls "+$")) %)
         new-field-input (fn [ev]
                           (let [text (h/target-val ev)]
@@ -54,7 +54,7 @@
              [:option ""]
              (for [[ts story] (sort-by story-sort-fn @stories)]
                ^{:key ts}
-               [:option {:value ts} (:story-name story)])]]
+               [:option {:value ts} (:story_name story)])]]
            (for [[field cfg] (:fields item)]
              (let [label-path (concat fields-path [field :label])
                    type-path (concat fields-path [field :cfg :type])
@@ -167,7 +167,7 @@
               (when (= sel tag)
                 [:span.fa.fa-trash-alt {:on-click del}])
               [:h3 tag (when-let [ds (:default-story cfg)]
-                         (str "   (" (get-in stories [ds :story-name]) ")"))]
+                         (str "   (" (get-in stories [ds :story_name]) ")"))]
               [:ul
                (for [[k v] (:fields cfg)]
                  ^{:key (str tag k)}

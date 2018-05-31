@@ -86,15 +86,15 @@
   [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         started (:started msg-payload)
-        completed-time (:completed-time msg-payload)
+        completed-time (:completed_time msg-payload)
         dur (parse-int-js (+ completed-time
                              (/ (- (st/now) started) 1000)))
-        new-state (assoc-in current-state [:new-entries ts :completed-time] dur)]
+        new-state (assoc-in current-state [:new-entries ts :completed_time] dur)]
     (debug "pomodoro-inc-fn" msg-payload)
     (when (get-in current-state [:new-entries ts])
       (let [new-entry (get-in new-state [:new-entries ts])
-            completed (:completed-time new-entry)
-            comment-for (:comment-for new-entry)
+            completed (:completed_time new-entry)
+            comment-for (:comment_for new-entry)
             planned (:planned-dur new-entry)
             time-up? (> completed planned)
             progress (min (/ completed planned) 1)
@@ -125,7 +125,7 @@
                            :id      (keyword (str "timer-") ts)
                            :message [:cmd/pomodoro-inc
                                      {:started        started
-                                      :completed-time completed-time
+                                      :completed_time completed-time
                                       :timestamp      ts}]}]]})
           {:new-state current-state})))))
 
@@ -145,7 +145,7 @@
      :emit-msg  [:cmd/schedule-new
                  {:message [:cmd/pomodoro-inc
                             {:started        (st/now)
-                             :completed-time (:completed-time new-entry)
+                             :completed_time (:completed_time new-entry)
                              :timestamp      ts}]
                   :timeout 1
                   :id      (keyword (str "timer-") ts)}]}))
@@ -161,9 +161,9 @@
   [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         saved (get-in current-state [:entries-map ts])
-        relevant #(select-keys % [:md :questionnaires :custom-fields :task
-                                  :habit :completed-time :starred :img-size
-                                  :primary-story])
+        relevant #(select-keys % [:md :questionnaires :custom_fields :task
+                                  :habit :completed_time :starred :img-size
+                                  :primary_story])
         changed? (not= (relevant saved) (relevant msg-payload))]
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])

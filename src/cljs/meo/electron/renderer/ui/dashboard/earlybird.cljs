@@ -39,7 +39,7 @@
         y-scale (/ chart-h 90000)
         midnight (* 24 60 60 y-scale)
         midnight-s (* 1 60 60 y-scale)
-        time-by-ts (:by-ts day-stats)
+        time-by-ts (:by_ts day-stats)
         time-by-h (map (fn [x]
                          (let [ts (:timestamp x)
                                h (/ (- ts day) 1000 60 60)]
@@ -47,9 +47,9 @@
     [:g {:on-mouse-enter mouse-enter-fn
          :on-mouse-leave mouse-leave-fn}
      (for [[hh {:keys [summed manual story] :as data}] time-by-h]
-       (let [item-name (if (= item-name-k :story-name)
-                         (:story-name story)
-                         (:saga-name (:saga story)))
+       (let [item-name (if (= item-name-k :story_name)
+                         (:story_name story)
+                         (:saga_name (:saga story)))
              item-color (cc/item-color item-name "dark")
              h (* y-scale summed)
              y (* y-scale (+ hh 2) 60 60)
@@ -95,7 +95,7 @@
         show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
         idx-fn (fn [idx v] [idx v])
-        stats (reaction (:day-stats (:data (:day-stats @gql-res))))]
+        stats (reaction (:day_stats (:data (:day-stats @gql-res))))]
     (fn barchart-row [{:keys [days span start h y]} put-fn]
       (let [btm-y (+ y h)
             indexed2 (map-indexed idx-fn @stats)
@@ -109,7 +109,7 @@
          [legend "12:00" 175 (+ y (* l 2.5))]
          [legend "18:00" 175 (+ y (* l 3.5))]
          [legend "24:00" 175 (+ y (* l 4.5))]
-         (for [[n {:keys [date-string weekday] :as item}] indexed2]
+         (for [[n {:keys [date_string weekday] :as item}] indexed2]
            (let [d (* 24 60 60 1000)
                  x-step (* 1800 (/ d span))]
              ^{:key (str :earlybird n)}
@@ -126,7 +126,7 @@
                           :stroke-width stroke-w
                           :stroke       "#666"}]))
               [ts-bars {:day-stats   item
-                        :item-name-k :saga-name
+                        :item-name-k :saga_name
                         :idx         (inc n)
                         :x-step      x-step
                         :chart-h     h

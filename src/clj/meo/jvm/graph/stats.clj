@@ -17,11 +17,11 @@
   [current-state]
   (fn [d]
     (let [g (:graph current-state)
-          date-string (:date-string d)
-          day-nodes (gq/get-nodes-for-day g {:date-string date-string})
+          date-string (:date_string d)
+          day-nodes (gq/get-nodes-for-day g {:date_string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-          day-stats {:date-string date-string
-                     :photo-cnt   (count (filter :img-file day-nodes-attrs))
+          day-stats {:date_string date-string
+                     :photo-cnt   (count (filter :img_file day-nodes-attrs))
                      :audio-cnt   (count (filter :audio-file day-nodes-attrs))
                      :video-cnt   (count (filter :video-file day-nodes-attrs))}]
       [date-string day-stats])))
@@ -59,7 +59,7 @@
    :pvt-displayed (:pvt-displayed (:cfg state))
    :mentions      (gq/find-all-mentions state)
    :stories       (map-w-names
-                    (gq/find-all-stories state) #{:story-name :linked-saga})
+                    (gq/find-all-stories state) #{:story_name :linked-saga})
    :sagas         (map-w-names (gq/find-all-sagas state) #{:saga-name})
    :cfg           (merge (:cfg state) {:pid (pid/current)})})
 
@@ -77,7 +77,7 @@
   (let [g (:graph current-state)
         entries (map #(uber/attrs g %) (:sorted-entries current-state))
         seconds-logged (map (fn [entry]
-                              (let [completed (or (get entry :completed-time) 0)
+                              (let [completed (or (get entry :completed_time) 0)
                                     manual (gq/summed-durations entry)
                                     summed (+ completed manual)]
                                 summed))

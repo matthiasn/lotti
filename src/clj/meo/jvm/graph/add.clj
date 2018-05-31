@@ -28,7 +28,7 @@
         tags (set (:tags entry))
         pvt-tags (set/union (:pvt-displayed cfg) (:pvt-tags cfg))
         pvt-entry? (seq (set/intersection tags pvt-tags))
-        comment-for (:comment-for entry)
+        comment-for (:comment_for entry)
         tag-add-fn
         (fn [g tag]
           (let [ltag (s/lower-case tag)
@@ -116,7 +116,7 @@
    When exists, does the same as in add-timeline-tree."
   [state entry]
   (let [g (:graph state)]
-    (if-let [for-day (:for-day entry)]
+    (if-let [for-day (:for_day entry)]
       (let [dt (ctf/parse dt/dt-local-fmt for-day)
             year (ct/year dt)
             month (ct/month dt)
@@ -134,7 +134,7 @@
       state)))
 
 (defn add-parent-ref [graph entry]
-  (if-let [comment-for (:comment-for entry)]
+  (if-let [comment-for (:comment_for entry)]
     (uc/add-edges graph
                   [(:timestamp entry) comment-for {:relationship :COMMENT}])
     graph))
@@ -144,7 +144,7 @@
    already, an edge to the existing node will be added, otherwise a new hashtag
    node will be created."
   [graph entry]
-  (let [linked-entries (:linked-entries entry)]
+  (let [linked-entries (:linked_entries entry)]
     (reduce (fn [acc linked-entry]
               (let [with-linked (if (uc/has-node? acc linked-entry)
                                   acc (uc/add-nodes acc linked-entry))]
@@ -164,7 +164,7 @@
     (if departure-ts
       (let [ts (:timestamp entry)
             ts-dt (c/from-long ts)
-            q {:date-string (ctf/unparse (ctf/formatters :year-month-day) ts-dt)}
+            q {:date_string (ctf/unparse (ctf/formatters :year-month-day) ts-dt)}
             same-day-entry-ids (gq/get-nodes-for-day g q)
             same-day-entries (mapv #(uc/attrs g %) same-day-entry-ids)
             filter-fn (fn [other-entry]
@@ -226,14 +226,14 @@
     graph))
 
 (defn add-story [graph entry]
-  (if (= (:entry-type entry) :story)
+  (if (= (:entry_type entry) :story)
     (-> graph
         (uc/add-nodes :stories)
         (uc/add-edges [:stories (:timestamp entry)]))
     graph))
 
 (defn add-saga [graph entry]
-  (if (= (:entry-type entry) :saga)
+  (if (= (:entry_type entry) :saga)
     (-> graph
         (uc/add-nodes :saga)
         (uc/add-edges [:sagas (:timestamp entry)]))
@@ -254,7 +254,7 @@
     graph))
 
 (defn add-story-set [current-state entry]
-  (if-let [linked-story (:primary-story entry)]
+  (if-let [linked-story (:primary_story entry)]
     (let [ts (:timestamp entry)
           path [:sorted-story-entries linked-story]
           entries-set (into (sorted-set) (get-in current-state path))]
@@ -283,7 +283,7 @@
                            (let [reducing-fn
                                  (fn [g ltag] (uc/remove-edges g [ts {k ltag}]))]
                              (reduce reducing-fn g (map s/lower-case tags))))
-        media-tags (set (filter identity [(when (:img-file entry) "#photo")
+        media-tags (set (filter identity [(when (:img_file entry) "#photo")
                                           (when (:audio-file entry) "#audio")
                                           (when (:video entry) "#video")]))
         new-entry (update-in merged [:tags] #(set/union (set %) media-tags))
@@ -301,13 +301,13 @@
                         (update-in [:graph] remove-unused-tags old-mentions :mention)
                         (update-in [:graph] add-mentions new-entry))
                     new-state)
-        new-state (if (not= (:linked-entries entry) (:linked-entries old-entry))
+        new-state (if (not= (:linked_entries entry) (:linked_entries old-entry))
                     (update-in new-state [:graph] add-linked new-entry)
                     new-state)
         new-state (if (not= (u/visit-timestamps entry) (u/visit-timestamps old-entry))
                     (update-in new-state [:graph] add-linked-visit new-entry)
                     new-state)
-        new-state (if (not= (:primary-story entry) (:primary-story old-entry))
+        new-state (if (not= (:primary_story entry) (:primary_story old-entry))
                     (add-story-set new-state new-entry)
                     new-state)
         new-state (if (not= (:task entry) (:task old-entry))

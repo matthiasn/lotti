@@ -52,8 +52,8 @@
     (xf/vclock-xf (uc/attrs g ts))))
 
 (defn entry-w-story [g entry]
-  (let [story (get-entry g (:primary-story entry))
-        saga (get-entry g (:linked-saga story))]
+  (let [story (get-entry g (:primary_story entry))
+        saga (get-entry g (:linked_saga story))]
     (merge entry
            {:story (when story
                      (assoc-in story [:saga] saga))})))
@@ -82,7 +82,7 @@
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]
-        (xf/snake-xf briefing)))))
+        briefing))))
 
 (defn logged-time [state context args value]
   (let [day (:day args)
@@ -90,10 +90,10 @@
         g (:graph current-state)
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
-        day-nodes (gq/get-nodes-for-day g {:date-string day})
+        day-nodes (gq/get-nodes-for-day g {:date_string day})
         day-nodes-attrs (map #(get-entry g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
-    (xf/snake-xf day-stats)))
+    day-stats))
 
 (defn day-stats [state context args value]
   (let [current-state @state
@@ -104,11 +104,11 @@
         now (stc/now)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         f (fn [day]
-            (let [day-nodes (gq/get-nodes-for-day g {:date-string day})
+            (let [day-nodes (gq/get-nodes-for-day g {:date_string day})
                   day-nodes-attrs (map #(get-entry g %) day-nodes)]
               (gsd/day-stats g day-nodes-attrs stories sagas day)))
         stats (mapv f day-strings)]
-    (xf/snake-xf stats)))
+    stats))
 
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))
@@ -117,13 +117,13 @@
   (let [logged-t (fn [comment-ts]
                    (or
                      (when-let [c (get-entry g comment-ts)]
-                       (let [path [:custom-fields "#duration" :duration]]
-                         (+ (or (:completed-time c) 0)
+                       (let [path [:custom_fields "#duration" :duration]]
+                         (+ (or (:completed_time c) 0)
                             (* 60 (or (get-in c path) 0)))))
                      0))
         task-total-t (fn [t]
                        (let [logged (apply + (map logged-t (:comments t)))]
-                         (assoc-in t [:task :completed-s] logged)))]
+                         (assoc-in t [:task :completed_s] logged)))]
     (mapv task-total-t entries)))
 
 (defn tab-search [state context args value]
@@ -133,16 +133,16 @@
         q (update-in (p/parse-search query) [:n] #(or n %))
         q (assoc-in q [:pvt] pvt)
         res (->> (gq/get-filtered2 current-state q)
-                 (filter #(not (:comment-for %)))
+                 (filter #(not (:comment_for %)))
                  (mapv (partial entry-w-story g))
                  (entries-w-logged g)
                  (mapv xf/vclock-xf)
                  (mapv xf/edn-xf)
                  (mapv (partial entry-w-comments g))
                  (mapv (partial linked-for g))
-                 (mapv #(assoc % :linked-cnt (count (:linked-entries-list %)))))]
+                 (mapv #(assoc % :linked_cnt (count (:linked-entries-list %)))))]
     (debug res)
-    (xf/snake-xf res)))
+    res))
 
 (defn custom-field-stats [state context args value]
   (let [{:keys [days tag]} args
@@ -151,7 +151,7 @@
         custom-fields-mapper (cf/custom-fields-mapper @state tag)
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv custom-fields-mapper day-strings)]
-    (xf/snake-xf stats)))
+    stats))
 
 (defn git-stats [state context args value]
   (let [{:keys [days]} args
@@ -161,7 +161,7 @@
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         stats (mapv git-mapper day-strings)]
     (debug stats)
-    (xf/snake-xf stats)))
+    stats))
 
 (defn questionnaires [state context args value]
   (let [{:keys [days tag k]} args
@@ -170,7 +170,7 @@
         stats (filter #(:score %) stats)
         stats (vec (filter #(> (:timestamp %) newer-than) stats))]
     (debug stats)
-    (xf/snake-xf stats)))
+    stats))
 
 (defn award-points [state context args value]
   (let [{:keys [days]} args
@@ -179,10 +179,9 @@
         sort-filter (fn [k]
                       (sort-by first (filter #(pos? (compare (first %) newer-than))
                                              (k stats))))
-        xf (fn [[k v]] (merge v {:date-string k}))
-        sorted (assoc-in stats [:by-day] (mapv xf (sort-filter :by-day)))
-        sorted (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))]
-    (xf/snake-xf sorted)))
+        xf (fn [[k v]] (merge v {:date_string k}))
+        sorted (assoc-in stats [:by-day] (mapv xf (sort-filter :by-day)))]
+    (assoc-in sorted [:by-day-skipped] (mapv xf (sort-filter :by-day-skipped)))))
 
 (defn started-tasks [state context args value]
   (let [q {:tags     #{"#task"}
@@ -196,7 +195,7 @@
                    (entries-w-logged g)
                    (mapv #(entry-w-story g %))
                    (mapv (partial entry-w-comments g)))]
-    (xf/snake-xf tasks)))
+    tasks))
 
 (defn waiting-habits [state context args value]
   (let [q {:tags #{"#habit"}
@@ -206,35 +205,36 @@
         current-state @state
         g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
-        habits (mapv #(entry-w-story g %) habits)
-        habits (mapv #(update-in % [:story] xf/snake-xf) habits)]
+        habits (mapv #(entry-w-story g %) habits)]
     habits))
 
 (defn run-query [{:keys [cmp-state current-state msg-payload msg-meta put-fn]}]
-  (future
-    (let [start (stc/now)
-          schema (:schema current-state)
-          qid (:id msg-payload)
-          merged (merge (get-in current-state [:queries qid]) msg-payload)
-          {:keys [file args q id res-hash]} merged
-          template (if file (slurp (io/resource (str "queries/" file))) q)
-          query-string (apply format template args)
-          res (lacinia/execute schema query-string nil nil)
-          new-hash (hash res)
-          new-data (not= new-hash res-hash)
-          sente-uid (:sente-uid msg-meta)
-          res (merge merged
-                     (xf/simplify res)
-                     {:res-hash new-hash
-                      :ts       (stc/now)
-                      :prio     (:prio merged 100)})]
-      (doall res)
-      (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
-      (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
-            (if new-data "new data" "same hash, omitting response")
-            (str "- '" (or file query-string) "'"))
-      (when new-data (put-fn (with-meta [:gql/res res]
-                                        {:sente-uid sente-uid})))))
+  (let [start (stc/now)
+        schema (:schema current-state)
+        qid (:id msg-payload)
+        _ (info :run-query qid :start (- (stc/now) start) "ms")
+        merged (merge (get-in current-state [:queries qid]) msg-payload)
+        {:keys [file args q id res-hash]} merged
+        template (if file (slurp (io/resource (str "queries/" file))) q)
+        query-string (apply format template args)
+        res (lacinia/execute schema query-string nil nil)
+        _ (info :run-query qid :post-exec (- (stc/now) start) "ms")
+        new-hash (hash res)
+        _ (info :run-query qid :post-hash (- (stc/now) start) "ms")
+        new-data (not= new-hash res-hash)
+        sente-uid (:sente-uid msg-meta)
+        res (merge merged
+                   (xf/simplify res)
+                   {:res-hash new-hash
+                    :ts       (stc/now)
+                    :prio     (:prio merged 100)})]
+    (info :run-query qid :post-simplify (- (stc/now) start) "ms")
+    (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
+    (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
+          (if new-data "new data" "same hash, omitting response")
+          (str "- '" (or file query-string) "'"))
+    (when new-data (put-fn (with-meta [:gql/res res]
+                                      {:sente-uid sente-uid}))))
   {})
 
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]

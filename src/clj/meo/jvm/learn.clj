@@ -41,7 +41,7 @@
 (def m (* 30 d))
 
 (def features [:timestamp :geohash40 :geohash35 :geohash30 :geohash25 :geohash20
-               :geohash15 :visit :starred :img-file
+               :geohash15 :visit :starred :img_file
                :audio-file :task :screenshot :md :weeks-ago :days-ago
                :quarter-day :half-quarter-day :hour :tags1 :mentions1])
 (def features-label (conj features :primary-story))
@@ -71,7 +71,7 @@
 (defn pascal [k] (s/join "" (map s/capitalize (s/split (name k) #"\-"))))
 
 (def xforms {:task             bool2int
-             :img-file         bool2int
+             :img_file         bool2int
              :audio-file       bool2int
              :md               word-count
              :days-ago         (t-ago d)
@@ -110,9 +110,9 @@
                        (and (every? identity (map #(get x %) required))
                             (not (contains? (:tags x) "#habit"))
                             (not (contains? (:tags x) "#briefing"))
-                            (not (= (:entry-type x) :story))
-                            (not (= (:entry-type x) :saga))
-                            (not (:comment-for x))))]
+                            (not (= (:entry_type x) :story))
+                            (not (= (:entry_type x) :saga))
+                            (not (:comment_for x))))]
     (filter has-required (vals entries-map))))
 
 (defn dict [k xs]

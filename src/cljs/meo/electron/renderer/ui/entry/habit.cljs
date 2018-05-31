@@ -23,7 +23,7 @@
         (assoc-in [:habit :active-from] next-active)
         (assoc-in [:habit :done] false)
         (dissoc :linked-entries-list)
-        (dissoc :last-saved)
+        (dissoc :last_saved)
         (dissoc :geoname)
         (dissoc :latitude)
         (dissoc :longitude))))

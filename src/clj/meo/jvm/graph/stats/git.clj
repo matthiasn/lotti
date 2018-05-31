@@ -11,10 +11,10 @@
   [current-state]
   (fn [date-string]
     (let [g (:graph current-state)
-          day-nodes (gq/get-nodes-for-day g {:date-string date-string})
+          day-nodes (gq/get-nodes-for-day g {:date_string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
-          nodes (filter :git-commit day-nodes-attrs)
-          day-stats {:date-string date-string
+          nodes (filter :git_commit day-nodes-attrs)
+          day-stats {:date_string date-string
                      :commits     (count nodes)}]
       (debug day-stats)
       day-stats)))

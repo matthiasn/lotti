@@ -52,14 +52,14 @@
    dropped."
   [entry cfg put-fn]
   (fn [_ev]
-    (if (= :story (:entry-type entry))
+    (if (= :story (:entry_type entry))
       ; assign story
       (let [dropped (:currently-dragged @cfg)
             ts (:timestamp dropped)
             story (:timestamp entry)
             updated (merge (-> dropped
                                (update-in [:linked-stories] #(set/union #{story} %))
-                               (assoc-in [:primary-story] story))
+                               (assoc-in [:primary_story] story))
                            (up/parse-entry (:md dropped)))]
         (when (and ts (not= ts story))
           (put-fn [:entry/update updated])))
@@ -113,8 +113,8 @@
                                      {:path  [:cfg :show-comments-for ts]
                                       :value %}])
         show-comments #(show-hide-comments query-id)
-        create-comment (h/new-entry put-fn {:comment-for ts} show-comments)
-        screenshot #(put-fn [:screenshot/take {:comment-for ts}])
+        create-comment (h/new-entry put-fn {:comment_for ts} show-comments)
+        screenshot #(put-fn [:screenshot/take {:comment_for ts}])
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry put-fn
                                                        (p/pomodoro-defaults ts)
@@ -135,8 +135,8 @@
         mouse-enter #(reset! visible true)]
     (fn entry-actions-render [entry put-fn edit-mode? toggle-edit local-cfg]
       (let [map? (:latitude entry)
-            prev-saved? (or (:last-saved entry) (< ts 1479563777132))
-            comment? (:comment-for entry)
+            prev-saved? (or (:last_saved entry) (< ts 1479563777132))
+            comment? (:comment_for entry)
             starred (:starred entry)
             story (get-in entry [:story :timestamp])
             open-new (fn [x]
@@ -144,9 +144,9 @@
                                 {:tab-group (if (= tab-group :left) :right :left)
                                  :query     (up/parse-search (:timestamp x))}]))
             create-linked (h/new-entry put-fn
-                                       {:linked-entries #{ts}
-                                        :primary-story  story
-                                        :linked-stories #{story}}
+                                       {:linked_entries #{ts}
+                                        :primary_story  story
+                                        :linked_stories #{story}}
                                        open-new)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
@@ -156,6 +156,7 @@
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
+          #_
           (when-not comment?
             [:i.fa.fa-desktop.toggle {:on-click screenshot}])
           (when (and (not comment?) prev-saved?)
@@ -172,12 +173,12 @@
                    (put-fn [:search/add
                             {:tab-group :right
                              :query     (up/parse-search (:timestamp x))}]))
-        create-linked-entry (h/new-entry put-fn {:linked-entries #{ts}
+        create-linked-entry (h/new-entry put-fn {:linked_entries #{ts}
                                                  :starred        true
-                                                 :perm-tags      #{"#task"}}
+                                                 :perm_tags      #{"#task"}}
                                          open-new)
         create-comment (fn [_ev]
-                         (let [create (h/new-entry put-fn {:comment-for ts} nil)
+                         (let [create (h/new-entry put-fn {:comment_for ts} nil)
                                new-entry (create)]
                            (info "created comment" new-entry)
                            (put-fn [:entry/update new-entry])))

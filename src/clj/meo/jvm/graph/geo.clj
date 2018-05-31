@@ -19,4 +19,4 @@
                      (let [point (sp/point latitude longitude)]
                        (sp/intersects? rect point)))))
         res (mapv xf/vclock-xf (filter nearby entries))]
-    (xf/snake-xf res)))
+    res))

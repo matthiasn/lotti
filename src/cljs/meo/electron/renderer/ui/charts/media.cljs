@@ -61,7 +61,7 @@
            :video-cnt "tasks" 50 150]]
          (when (:mouse-over @local)
            [:div.mouse-over-info (cc/info-div-pos @local)
-            [:div (:date-string (:mouse-over @local))]
+            [:div (:date_string (:mouse-over @local))]
             [:div "Photos: " (:photo-cnt (:mouse-over @local))]
             [:div "Audio notes: " (:audio-cnt (:mouse-over @local))]
             [:div "Videos: " (:video-cnt (:mouse-over @local))]])]))))

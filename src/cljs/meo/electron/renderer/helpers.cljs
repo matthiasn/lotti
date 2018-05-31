@@ -119,7 +119,7 @@
   [stats-key n m put-fn]
   (let [days (map n-days-ago-fmt (reverse (range n)))]
     (put-fn (with-meta
-              [:stats/get {:days (mapv (fn [d] {:date-string d}) days)
+              [:stats/get {:days (mapv (fn [d] {:date_string d}) days)
                            :type stats-key}]
               m))))
 

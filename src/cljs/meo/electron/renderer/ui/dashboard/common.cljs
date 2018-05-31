@@ -122,7 +122,7 @@
                :y        (- y h)
                :width    w
                :height   h
-               :class    (cc/weekend-class cls {:date-string ymd})}]
+               :class    (cc/weekend-class cls {:date_string ymd})}]
        (when (:show-label @local)
          [:text {:x           (+ x 11)
                  :y           (- y 5)
@@ -208,7 +208,7 @@
     (fn points-by-day-render [{:keys [y h label days span]}]
       (let [data (get-in @gql-res [:dashboard :data :award-points])
             btm-y (+ y h)
-            by-day (map (fn [m] [(:date-string m) m]) (:by-day data))
+            by-day (map (fn [m] [(:date_string m) m]) (:by-day data))
             daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)
             max-val (apply max daily-totals)
             w (dec (/ 1400 days))

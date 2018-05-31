@@ -24,7 +24,7 @@
     (.createWithContent Draft.EditorState content-from-raw)))
 
 (defn story-mapper [story]
-  (when-let [story-name (:story-name story)]
+  (when-let [story-name (:story_name story)]
     {:name story-name
      :id   (:timestamp story)}))
 
@@ -86,7 +86,7 @@
 (defn compare-entries [x y]
   (let [x (remove-nils x)
         y (remove-nils y)
-        y (assoc y :tags (set/union (:perm-tags y) (:tags y)))
+        y (assoc y :tags (set/union (:perm_tags y) (:tags y)))
         ks (set/intersection (set (keys x))
                              (set (keys y)))
         x1 (u/clean-entry (select-keys x ks))
@@ -131,7 +131,7 @@
                                       {:text         plain
                                        :timestamp    (:timestamp entry2)
                                        :edit-running true})
-                             x (update-in x [:tags] set/union (:perm-tags entry2))]
+                             x (update-in x [:tags] set/union (:perm_tags entry2))]
                          (swap! cb-atom dissoc :timeout)
                          (when (and (not= md (:md entry2))
                                     (or (not @new-entry)
@@ -150,14 +150,14 @@
                                        @new-entry
                                        (p/parse-entry md)
                                        {:text plain})
-                        updated (update-in updated [:tags] set/union (:perm-tags updated))
-                        updated (if (= (:entry-type cleaned) :pomodoro)
+                        updated (update-in updated [:tags] set/union (:perm_tags updated))
+                        updated (if (= (:entry_type cleaned) :pomodoro)
                                   (assoc-in updated [:pomodoro-running] false)
                                   updated)]
                     (when-let [timeout (:timeout @cb-atom)]
                       (js/clearTimeout timeout)
                       (swap! cb-atom dissoc :timeout))
-                    (when (and (= (:comment-for cleaned) (:active @status))
+                    (when (and (= (:comment_for cleaned) (:active @status))
                                (= ts (:current @status)))
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
@@ -165,7 +165,7 @@
                     (put-fn [:entry/update updated])))
         start-fn #(let [latest-entry (merge (dissoc entry2 :comments)
                                             @new-entry)]
-                    (when (= (:entry-type latest-entry) :pomodoro)
+                    (when (= (:entry_type latest-entry) :pomodoro)
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]

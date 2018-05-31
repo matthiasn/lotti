@@ -28,7 +28,7 @@
                                    :timestamp     (st/now)
                                    :timezone      h/timezone
                                    :utc-offset    (.getTimezoneOffset (new js/Date))
-                                   :primary-story (-> @cfg :briefing :story)})]
+                                   :primary_story (-> @cfg :briefing :story)})]
                       (info "creating briefing" ymd)
                       (put-fn [:entry/update entry])))
                   (h/to-day ymd pvt put-fn))
@@ -52,33 +52,33 @@
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         gql-res (subscribe [:gql-res])
-        stats (reaction (:logged-time (:data (:logged-by-day @gql-res))))]
+        stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
             day (or @cal-day today)
             xf (fn [entry]
                  (let [{:keys [completed manual story text
-                               comment-for timestamp]} entry
+                               comment_for timestamp]} entry
                        start (if (pos? completed)
                                timestamp
                                (- timestamp (* manual 1000)))
                        end (if (pos? completed)
                              (+ timestamp (* completed 1000))
                              timestamp)
-                       story-name (get-in story [:story-name])
-                       saga-name (get-in story [:saga :saga-name]
+                       story-name (get-in story [:story_name])
+                       saga-name (get-in story [:saga :saga_name]
                                          "none")
                        color (cc/item-color saga-name)
                        title (str (when story-name (str story-name " - "))
                                   text)
-                       open-ts (or comment-for timestamp)
+                       open-ts (or comment_for timestamp)
                        click (up/add-search open-ts :left put-fn)]
                    {:title title
                     :click click
                     :color color
                     :start (js/Date. start)
                     :end   (js/Date. end)}))
-            events (map xf (:by-ts @stats))
+            events (map xf (:by_ts @stats))
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         [:div.cal-container

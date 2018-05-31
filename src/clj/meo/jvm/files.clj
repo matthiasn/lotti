@@ -46,7 +46,7 @@
   "Handler function for persisting an imported journal entry."
   [{:keys [current-state msg-payload put-fn]}]
   (let [id (or (:id msg-payload) (uuid/v1))
-        entry (merge msg-payload {:last-saved (st/now) :id id})
+        entry (merge msg-payload {:last_saved (st/now) :id id})
         ts (:timestamp entry)
         graph (:graph current-state)
         cfg (:cfg current-state)
@@ -98,7 +98,7 @@
         entry (u/clean-entry msg-payload)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
         entry (merge prev entry)
-        entry (assoc-in entry [:last-saved] (st/now))
+        entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
         new-state (ga/add-node current-state entry)
@@ -108,8 +108,8 @@
         broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
     #_(when (System/getenv "CACHED_APPSTATE")
         (future (persist-state! new-state)))
-    (when (not= (dissoc prev :last-saved :vclock)
-                (dissoc entry :last-saved :vclock))
+    (when (not= (dissoc prev :last_saved :vclock)
+                (dissoc entry :last_saved :vclock))
       (append-daily-log cfg entry put-fn)
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
@@ -193,7 +193,7 @@
                       put-fn)
     (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
                                 :timeout 10}])
-    (move-attachment-to-trash cfg msg-payload "images" :img-file)
+    (move-attachment-to-trash cfg msg-payload "images" :img_file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)
     {:new-state new-state

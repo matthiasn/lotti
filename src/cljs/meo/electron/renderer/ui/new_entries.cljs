@@ -12,7 +12,7 @@
       (let [entries-map @entries-map
             new-entries @new-entries
             filtered-entries (filter #(and
-                                        (not (:comment-for %))
+                                        (not (:comment_for %))
                                         (:timestamp %)
                                         (not (contains? entries-map (:timestamp %))))
                                      (vals new-entries))]

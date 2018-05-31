@@ -11,15 +11,13 @@
             [taoensso.timbre :refer [info error warn debug]]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
-            [camel-snake-kebab.extras :refer [transform-keys]]
-            [camel-snake-kebab.core :refer [->snake_case]]
             [clj-time.core :as ct]))
 
 ;; TODO: migrate existing audio entries to use a different keyword
 (defn summed-durations
   "Calculate time spent as tracked in custom fields."
   [entry]
-  (let [custom-fields (:custom-fields entry)
+  (let [custom-fields (:custom_fields entry)
         duration-secs (filter identity (mapv (fn [[k v]]
                                                (let [dur (:duration v)]
                                                  (if (= k "#audio")
@@ -41,9 +39,9 @@
     (let [local-fmt (ctf/with-zone (ctf/formatters :year-month-day)
                                    (ct/default-time-zone))
           entry-day (ctf/unparse local-fmt (ctc/from-long (:timestamp entry)))
-          q-day (:date-string q)
+          q-day (:date_string q)
           day-match? (or (= q-day entry-day)
-                         (when-let [for-day (:for-day entry)]
+                         (when-let [for-day (:for_day entry)]
                            (= q-day (subs for-day 0 10))))
 
           q-timestamp (:timestamp q)
@@ -66,7 +64,7 @@
           mentions (set (mapv s/lower-case (set/union mentions entry-comments-mentions)))
 
           story-match? (if-let [story (:story q)]
-                         (or (= story (:primary-story entry))
+                         (or (= story (:primary_story entry))
                              (= story (:timestamp entry)))
                          true)
           starred-match? (if (:starred q) (:starred entry) true)
@@ -77,7 +75,7 @@
             (when (contains? tags "#task")
               (let [nodes (into [entry] entry-comments)
                     filter-fn (fn [n]
-                                (let [completed (:completed-time n)]
+                                (let [completed (:completed_time n)]
                                   (or (when completed (pos? completed))
                                       (pos? (summed-durations n)))))
                     started (filter filter-fn nodes)]
@@ -113,19 +111,19 @@
             (not (:due (:task entry)))
 
             (contains? opts ":story")
-            (= :story (:entry-type entry))
+            (= :story (:entry_type entry))
 
             (contains? opts ":no-story")
-            (not (:primary-story entry))
+            (not (:primary_story entry))
 
             (contains? opts ":predicted-stories")
-            (and (not (:primary-story entry))
+            (and (not (:primary_story entry))
                  (not (:briefing entry))
                  (not (contains? (:tags entry) "#briefing"))
-                 (not (= :saga (:entry-type entry))))
+                 (not (= :saga (:entry_type entry))))
 
             (contains? opts ":saga")
-            (= :saga (:entry-type entry))
+            (= :saga (:entry_type entry))
 
             :else true)
 
@@ -172,7 +170,7 @@
 (defn get-nodes-for-day
   "Extract matching timestamps for query."
   [g query]
-  (let [dt (ctf/parse (ctf/formatters :year-month-day) (:date-string query))]
+  (let [dt (ctf/parse (ctf/formatters :year-month-day) (:date_string query))]
     (set (mapv :dest (uc/find-edges g {:src          {:type  :timeline/day
                                                       :year  (ct/year dt)
                                                       :month (ct/month dt)
@@ -180,8 +178,7 @@
                                        :relationship :DATE})))))
 
 (defn get-linked-for-ts [g ts]
-  (let [
-        linked (->> (flatten (uc/find-edges g {:src ts :relationship :LINKED}))
+  (let [linked (->> (flatten (uc/find-edges g {:src ts :relationship :LINKED}))
                     (mapv :dest)
                     (sort))]
     (set linked)))
@@ -189,9 +186,7 @@
 (defn get-linked-nodes [g query]
   (get-linked-for-ts g (Long/parseLong (:linked query))))
 
-(defn get-briefing-for-day
-  "Extract matching timestamps for query."
-  [g query]
+(defn get-briefing-for-day [g query]
   (when-let [briefing-day (:briefing query)]
     (let [dt (ctf/parse (ctf/formatters :year-month-day) briefing-day)
           day-node {:type  :timeline/day
@@ -208,11 +203,11 @@
 
 (defn get-linked-entries
   "Extract all linked entries for entry, including their comments."
-  [entry g n sort-by-upvotes?]
+  [entry g n]
   (let [linked (->> (flatten (uc/find-edges g {:src n :relationship :LINKED}))
                     (mapv :dest)
                     (sort))]
-    (merge entry {:linked-entries-list (vec linked)})))
+    (merge entry {:linked_entries_list (vec linked)})))
 
 (defn extract-sorted-entries
   "Extracts nodes and their properties in descending timestamp order by looking
@@ -226,7 +221,7 @@
                     (if (uc/has-node? g n)
                       (-> (uc/attrs g n)
                           (get-comments g n)
-                          (get-linked-entries g n false))
+                          (get-linked-entries g n))
                       (debug "extract-sorted-entries can't find node: " n)))
         sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
         opts (:opts query)
@@ -248,7 +243,7 @@
                       #{(uuid/as-uuid (:id query))}
 
                       ; set with timestamps matching the day
-                      (:date-string query)
+                      (:date_string query)
                       (get-nodes-for-day g query)
 
                       ; set with starred entries
@@ -296,7 +291,7 @@
         matched-entries (mapv mapper-fn matched-ids)
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
-        parent-ids (filter identity (mapv :comment-for matched-entries))
+        parent-ids (filter identity (mapv :comment_for matched-entries))
         parents (mapv mapper-fn parent-ids)]
     (flatten [matched-entries parents])))
 
@@ -322,7 +317,7 @@
                       #{(uuid/as-uuid (:id query))}
 
                       ; set with timestamps matching the day
-                      (:date-string query)
+                      (:date_string query)
                       (get-nodes-for-day g query)
 
                       ; set with timestamps matching the day
@@ -418,9 +413,9 @@
         story-ids (mapv :dest (uc/find-edges g {:src :stories}))
         xf (fn [id]
              (let [story (uc/attrs g id)
-                   saga (get sagas (:linked-saga story))
-                   story (assoc-in story [:linked-saga] saga)]
-               (transform-keys ->snake_case story)))]
+                   saga (get sagas (:linked_saga story))
+                   story (assoc-in story [:linked_saga] saga)]
+               story))]
     (mapv xf story-ids)))
 
 (defn find-all-sagas2
@@ -428,7 +423,7 @@
   [current-state]
   (let [g (:graph current-state)
         story-ids (mapv :dest (uc/find-edges g {:src :sagas}))]
-    (mapv #(transform-keys ->snake_case (uc/attrs g %)) story-ids)))
+    (mapv #(uc/attrs g %) story-ids)))
 
 (defn find-all-briefings
   "Finds all briefings in graph and returns map with the day as key and the
@@ -445,13 +440,13 @@
 
 (defn comments-linked-for-entry
   "Enrich entry with comments and linked entries."
-  [graph sort-by-upvotes?]
+  [graph]
   (fn [entry]
     (let [ts (:timestamp entry)]
       (when ts
         (-> entry
             (get-comments graph ts)
-            (get-linked-entries graph ts sort-by-upvotes?))))))
+            (get-linked-entries graph ts))))))
 
 (defn get-filtered [current-state query]
   (let [n (:n query 20)
@@ -464,7 +459,7 @@
                                  (mapv #(set (:linked-entries-list %))
                                        entries))
         linked (mapv #(uc/attrs g %) linked-timestamps)
-        comments-linked (comments-linked-for-entry g false)
+        comments-linked (comments-linked-for-entry g)
         linked (mapv comments-linked linked)
         comments (mapv #(uc/attrs g %) comment-timestamps)
         entry-tuples (concat (mapv entry-mapper entries)
@@ -482,7 +477,7 @@
         g (:graph current-state)
         entries (take n (filter (entries-filter-fn query g)
                                 (extract-sorted-entries current-state query)))
-        comments-linked (comments-linked-for-entry g false)
+        comments-linked (comments-linked-for-entry g)
         pvt-filter (um/pvt-filter (:options current-state))
         entries (mapv comments-linked entries)]
     (if pvt
