@@ -222,8 +222,7 @@
   [exception]
   {:errors [(lu/as-error-map exception)]})
 
-(defn execute-async
-  [schema query variables context options]
+(defn execute-async [schema query variables context options on-deliver]
   {:pre [(string? query)]}
   (let [{:keys [operation-name]} options
         [parsed error-result] (try
@@ -231,8 +230,9 @@
                                 (catch ExceptionInfo e
                                   [nil (as-errors e)]))]
     (if (some? error-result)
-      error-result
-      (lacinia/execute-parsed-query-async parsed variables context))))
+      (error "GraphQL error" error-result)
+      (let [res (lacinia/execute-parsed-query-async parsed variables context)]
+        (resolve/on-deliver! res on-deliver)))))
 
 (def thread-pool (cp/threadpool 8))
 (alter-var-root #'resolve/*callback-executor* (constantly thread-pool))
@@ -258,8 +258,6 @@
         {:keys [file args q id res-hash]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
-        execution-result (execute-async schema query-string nil nil {})
-
         on-deliver
         (fn [res]
           (info "GraphQL on-deliver" qid (- (stc/now) start) "ms")
@@ -277,7 +275,7 @@
                   (str "- '" (or file query-string) "'"))
             (when new-data (put-fn (with-meta [:gql/res res]
                                               {:sente-uid sente-uid})))))]
-    (resolve/on-deliver! execution-result on-deliver)
+    (execute-async schema query-string nil nil {} on-deliver)
     (info "*callback-executor*" resolve/*callback-executor*))
   {})
 

@@ -34,7 +34,7 @@
     }
   }
 
-  started_tasks(pvt: %s, on_hold: flase) {
+  started_tasks(pvt: %s, on_hold: false) {
     timestamp
     md
     text
