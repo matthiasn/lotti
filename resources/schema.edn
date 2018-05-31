@@ -204,7 +204,8 @@
   :started_tasks
   {:type        (list :Entry)
    :description "List of started tasks."
-   :args        {:pvt {:type Boolean}}
+   :args        {:pvt     {:type Boolean}
+                 :on_hold {:type Boolean}}
    :resolve     :query/started-tasks}
 
   :waiting_habits

@@ -11,6 +11,8 @@
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.walk :as walk]
             [clojure.edn :as edn]
+            [com.climate.claypoole :as cp]
+            [com.walmartlabs.lacinia.util :as lu]
             [clojure.core.async :as async]
             [meo.jvm.graphql.xforms :as xf]
             [meo.jvm.graph.stats :as gs]
@@ -18,7 +20,6 @@
             [meo.common.utils.parse :as p]
             [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
-            [clojure.pprint :as pp]
             [meo.jvm.graph.stats.day :as gsd]
             [meo.jvm.datetime :as dt]
             [meo.jvm.graph.stats.custom-fields :as cf]
@@ -26,7 +27,10 @@
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.geo :as geo]
-            [matthiasn.systems-toolbox.component :as st]))
+            [com.walmartlabs.lacinia.parser :as parser]
+            [com.walmartlabs.lacinia.resolve :as resolve])
+  (:import [clojure.lang ExceptionInfo]
+           [java.util.concurrent Executors]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
 (defn hours-logged [state context args value] (gs/hours-logged @state))
@@ -74,14 +78,20 @@
 (defn briefing [state context args value]
   (let [g (:graph @state)
         d (:day args)
+        start (stc/now)
+        _ (info :briefing)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
+    (info :post-get-briefing (- (stc/now) start))
     (when-let [briefing (get-entry g ts)]
       (let [briefing (linked-for g briefing)
+            _ (info :post-linked-for (- (stc/now) start))
             comments (:comments (gq/get-comments briefing g ts))
+            _ (info :post-get-comments (- (stc/now) start))
             comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]
+        (info :finish (- (stc/now) start))
         briefing))))
 
 (defn logged-time [state context args value]
@@ -208,33 +218,67 @@
         habits (mapv #(entry-w-story g %) habits)]
     habits))
 
+(defn ^:private as-errors
+  [exception]
+  {:errors [(lu/as-error-map exception)]})
+
+(defn execute-async
+  [schema query variables context options]
+  {:pre [(string? query)]}
+  (let [{:keys [operation-name]} options
+        [parsed error-result] (try
+                                [(parser/parse-query schema query operation-name)]
+                                (catch ExceptionInfo e
+                                  [nil (as-errors e)]))]
+    (if (some? error-result)
+      error-result
+      (lacinia/execute-parsed-query-async parsed variables context))))
+
+(def thread-pool (cp/threadpool 8))
+(alter-var-root #'resolve/*callback-executor* (constantly thread-pool))
+
+(defn async-wrapper [f]
+  (fn [state context args value]
+    (let [result-promise (resolve/resolve-promise)]
+      (cp/future thread-pool
+                 (try
+                   (let [res (f state context args value)]
+                     (resolve/deliver! result-promise res))
+                   (catch Throwable t
+                     (resolve/deliver! result-promise nil
+                                       {:message (str "Exception: " (.getMessage t))}))))
+      result-promise)))
+
 (defn run-query [{:keys [cmp-state current-state msg-payload msg-meta put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)
         qid (:id msg-payload)
-        _ (info :run-query qid :start (- (stc/now) start) "ms")
+        _ (info "GraphQL query start" qid)
         merged (merge (get-in current-state [:queries qid]) msg-payload)
         {:keys [file args q id res-hash]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (apply format template args)
-        res (lacinia/execute schema query-string nil nil)
-        _ (info :run-query qid :post-exec (- (stc/now) start) "ms")
-        new-hash (hash res)
-        _ (info :run-query qid :post-hash (- (stc/now) start) "ms")
-        new-data (not= new-hash res-hash)
-        sente-uid (:sente-uid msg-meta)
-        res (merge merged
-                   (xf/simplify res)
-                   {:res-hash new-hash
-                    :ts       (stc/now)
-                    :prio     (:prio merged 100)})]
-    (info :run-query qid :post-simplify (- (stc/now) start) "ms")
-    (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
-    (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
-          (if new-data "new data" "same hash, omitting response")
-          (str "- '" (or file query-string) "'"))
-    (when new-data (put-fn (with-meta [:gql/res res]
-                                      {:sente-uid sente-uid}))))
+        execution-result (execute-async schema query-string nil nil {})
+
+        on-deliver
+        (fn [res]
+          (info "GraphQL on-deliver" qid (- (stc/now) start) "ms")
+          (let [new-hash (hash res)
+                new-data (not= new-hash res-hash)
+                sente-uid (:sente-uid msg-meta)
+                res (merge merged
+                           (xf/simplify res)
+                           {:res-hash new-hash
+                            :ts       (stc/now)
+                            :prio     (:prio merged 100)})]
+            (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
+            (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
+                  (if new-data "new data" "same hash, omitting response")
+                  (str "- '" (or file query-string) "'"))
+            (when new-data (put-fn (with-meta [:gql/res res]
+                                              {:sente-uid sente-uid})))))]
+    (resolve/on-deliver! execution-result on-deliver)
+    (info "*callback-executor*" resolve/*callback-executor*))
   {})
 
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]
@@ -249,15 +293,17 @@
                                     :id      id}]))))
   {})
 
-(defn gen-options [{:keys [cmp-state]}]
-  (future
+(defn gen-options [{:keys [current-state cmp-state]}]
+  (cp/future
+    thread-pool
     (info "gen-options")
-    (let [opts {:hashtags     (gq/find-all-hashtags @cmp-state)
-                :pvt-hashtags (gq/find-all-pvt-hashtags @cmp-state)
-                :mentions     (gq/find-all-mentions @cmp-state)
-                :stories      (gq/find-all-stories2 @cmp-state)
-                :sagas        (gq/find-all-sagas2 @cmp-state)}]
-      (swap! cmp-state assoc-in [:options] opts)))
+    (let [opts {:hashtags     (gq/find-all-hashtags current-state)
+                :pvt-hashtags (gq/find-all-pvt-hashtags current-state)
+                :mentions     (gq/find-all-mentions current-state)
+                :stories      (gq/find-all-stories2 current-state)
+                :sagas        (gq/find-all-sagas2 current-state)}]
+      (swap! cmp-state assoc-in [:options] opts)
+      (info "gen-options finished")))
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]
@@ -272,7 +318,10 @@
 
 (defn state-fn [state _put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
-        attach-state (fn [m] (into {} (map (fn [[k f]] [k (partial f state)]) m)))
+        attach-state (fn [m]
+                       (into {} (map (fn [[k f]]
+                                       [k (partial (async-wrapper f) state)])
+                                     m)))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      (attach-state

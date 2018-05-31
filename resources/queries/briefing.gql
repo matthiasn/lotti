@@ -34,7 +34,7 @@
     }
   }
 
-  started_tasks(pvt: %s) {
+  started_tasks(pvt: %s, on_hold: flase) {
     timestamp
     md
     text

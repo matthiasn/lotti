@@ -60,7 +60,6 @@
 (reg-sub :backend-cfg (fn [db _] (:backend-cfg db)))
 (reg-sub :repos (fn [db _] (:repos (:backend-cfg db))))
 (reg-sub :stats (fn [db _] (:stats db)))
-(reg-sub :waiting-habits (fn [db _] (:waiting-habits db)))
 (reg-sub :timing (fn [db _] (:timing db)))
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))
 (reg-sub :chart-data (fn [db _] (select-keys db [:media-stats])))

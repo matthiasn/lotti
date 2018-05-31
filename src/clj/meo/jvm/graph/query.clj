@@ -83,7 +83,7 @@
 
             (contains? opts ":waiting")
             (when (contains? tags "#habit")
-              (when-let [active-from (get-in entry [:habit :active-from])]
+              (when-let [active-from (get-in entry [:habit :active_from])]
                 (let [from (parse active-from)
                       now (ct/now)
                       today-at (ct/from-time-zone

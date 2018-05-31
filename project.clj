@@ -20,6 +20,7 @@
                  [progrock "0.1.2"]
                  [cheshire "5.8.0"]
                  [me.raynes/conch "0.8.0"]
+                 [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
 
                  [com.walmartlabs/lacinia "0.26.0"]

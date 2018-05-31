@@ -42,7 +42,7 @@
                                (let [rome-elem (rome. @ref opts)]
                                  (.on rome-elem "data" data-fn))
                                (info :component-did-mount @ref (js->clj props)))
-       :reagent-render       (fn [put-fn]
+       :reagent-render       (fn [_put-fn]
                                [:div.rome {:ref (fn [cmp] (reset! ref cmp))}])})))
 
 (defn calendar-view [put-fn]

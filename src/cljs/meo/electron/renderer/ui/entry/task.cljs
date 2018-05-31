@@ -33,7 +33,7 @@
                      (close-tab))))
           hold (fn [entry]
                  (fn [_ev]
-                   (let [updated (update-in entry [:task :on-hold] not)]
+                   (let [updated (update-in entry [:task :on_hold] not)]
                      (put-fn [:entry/update updated]))))
           allocation (or (get-in entry [:task :estimate-m]) 0)
           priority (get-in entry [:task :priority])]
@@ -56,7 +56,7 @@
                    :on-change (done entry)}]
           [:label "On hold? "]
           [:input {:type      :checkbox
-                   :checked   (get-in entry [:task :on-hold])
+                   :checked   (get-in entry [:task :on_hold])
                    :on-change (hold entry)}]]]
         [:span
          [:label "Reward points: "]

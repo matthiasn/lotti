@@ -103,7 +103,7 @@
         open-filter (fn [entry] (not (-> entry :task :done)))
         filter-btn (fn [fk]
                      [:span.filter {:class    (when (:on-hold @local) "current")
-                                    :on-click #(swap! local update-in [:on-hold] not)}
+                                    :on-click #(swap! local update-in [:on_hold] not)}
                       (name fk)])
         entries-list (reaction (->> @started-tasks
                                     (filter on-hold-filter)
@@ -126,7 +126,7 @@
               [:th
                [:div
                 "started tasks: "
-                [filter-btn :on-hold]]]]
+                [filter-btn :on_hold]]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
                [task-line entry put-fn {:tab-group    tab-group
