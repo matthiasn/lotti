@@ -27,7 +27,9 @@
                  (taoensso.timbre/level>= level log-level))
         opts))))
 
-(def filename (if (get (System/getenv) "PORT") "/tmp/meo.log" "./log/meo.log"))
+(def filename (if-let [logfile (get (System/getenv) "LOG_FILE")]
+                logfile
+                "./log/meo.log"))
 
 (timbre/set-config!
   {:level          :info

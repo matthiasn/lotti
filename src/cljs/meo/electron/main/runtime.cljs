@@ -25,24 +25,29 @@
         capabilities (if repo-dir
                        (set/union capabilities #{:dev-menu})
                        capabilities)
-        info {:platform        platform
-              :download-path   download-path
-              :electron-path   (first (.-argv process))
-              :node-path       "/usr/local/bin/node"
-              :data-path       data-path
-              :daily-logs-path (str data-path "/daily-logs")
-              :encrypted-path  encrypted-path
-              :img-path        (str data-path "/images")
-              :thumbs-path     (str data-path "/thumbs")
-              :cache           (str user-data "/data/cache.dat")
-              :java            (str app-path "/bin/jlink/bin/java")
-              :jar             (str app-path "/bin/jlink/meo.jar")
-              :blink           (str app-path "/bin/blink1-mac-cli")
-              :user-data       user-data
-              :cwd             cwd
-              :pid-file        (str user-data "/meo.pid")
-              :resources-path  rp
-              :app-path        app-path}]
+        temp-path (.getPath app "temp")
+        logfile-electron (str (if repo-dir "./log/" temp-path) "meo-electron.log")
+        info {:platform         platform
+              :download-path    download-path
+              :electron-path    (first (.-argv process))
+              :node-path        "/usr/local/bin/node"
+              :data-path        data-path
+              :daily-logs-path  (str data-path "/daily-logs")
+              :encrypted-path   encrypted-path
+              :logfile-electron logfile-electron
+              :logfile-jvm      (str temp-path "meo-jvm.log")
+              :logdir           (str temp-path "meo/logs/")
+              :img-path         (str data-path "/images")
+              :thumbs-path      (str data-path "/thumbs")
+              :cache            (str user-data "/data/cache.dat")
+              :java             (str app-path "/bin/jlink/bin/java")
+              :jar              (str app-path "/bin/jlink/meo.jar")
+              :blink            (str app-path "/bin/blink1-mac-cli")
+              :user-data        user-data
+              :cwd              cwd
+              :pid-file         (str user-data "/meo.pid")
+              :resources-path   rp
+              :app-path         app-path}]
     (into {:repo-dir     repo-dir
            :index-page   (if repo-dir "electron/index-dev.html" "electron/index.html")
            :port         (if repo-dir 8765 7788)

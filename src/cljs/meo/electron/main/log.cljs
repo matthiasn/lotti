@@ -2,13 +2,14 @@
   (:require [electron-log :as l]
             [cljs.nodejs :as nodejs]
             [taoensso.encore :as enc]
-            [taoensso.timbre :as timbre]))
+            [taoensso.timbre :as timbre]
+            [meo.electron.main.runtime :as rt]))
 
 (aset l "transports" "console" "level" "info")
 (aset l "transports" "console" "format" "{h}:{i}:{s}:{ms} {text}")
 (aset l "transports" "file" "level" "info")
 (aset l "transports" "file" "format" "{h}:{i}:{s}:{ms} {text}")
-(aset l "transports" "file" "file" "/tmp/meo-electron.log")
+(aset l "transports" "file" "file" (:logfile-electron rt/runtime-info))
 
 (nodejs/enable-util-print!)
 
@@ -19,7 +20,7 @@
 
 (def namespace-log-levels
   {;"matthiasn.systems-toolbox-electron.window-manager" :debug
-   :all                                                :info})
+   :all :info})
 
 (defn middleware
   "From: https://github.com/yonatane/timbre-ns-pattern-level"

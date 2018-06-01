@@ -148,7 +148,11 @@
                   :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})
                {:type "separator"}
                {:role "zoomin"}
-               {:role "zoomout"}]}))
+               {:role "zoomout"}
+               {:type "separator"}
+               {:label       "Open Dev Tools"
+                :accelerator "CmdOrCtrl+Alt+I"
+                :click       #(put-fn [:window/dev-tools])}]}))
 
 (defn capture-menu [put-fn]
   (let [screenshot #(put-fn [:screenshot/take])]

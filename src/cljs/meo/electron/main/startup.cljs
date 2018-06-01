@@ -49,6 +49,8 @@
               :cwd      user-data
               :env      {:PORT      PORT
                          :GQL_PORT  gql-port
+                         :LOG_FILE  (:logfile-jvm rt/runtime-info)
+                         :LOG_DIR   (:logdir rt/runtime-info)
                          :APP_PATH  app-path
                          :DATA_PATH data-path}}
         service (spawn-process java args opts)]
