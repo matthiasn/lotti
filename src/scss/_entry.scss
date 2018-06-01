@@ -457,6 +457,32 @@
 .task-details, .habit-details, .custom-fields {
   fieldset {
     border: $edit-menu-bg 1px dashed;
+    label {
+      display: inline-block;
+      width: 90px;
+    }
+  }
+
+  .overview {
+    position: relative;
+    left: auto;
+    right: 0;
+
+    .click {
+      padding: 3px;
+      cursor: pointer;
+      color: #AAA;
+
+      i {
+        font-size: 1.2em;
+      }
+      &.done {
+        color: $green;
+      }
+      &.hold {
+        color: $red;
+      }
+    }
   }
 }
 
@@ -549,6 +575,7 @@
   }
   input[type="checkbox"] {
     width: 15px;
+    margin-right: 10px;
   }
   input[type="date"] {
     width: 130px;
@@ -600,6 +627,15 @@
   div {
     display: flex;
   }
+
+  .checked {
+    padding-left: 1px;
+    color: $green;
+    i {
+      font-size: 1.2em;
+    }
+  }
+
 }
 
 u {

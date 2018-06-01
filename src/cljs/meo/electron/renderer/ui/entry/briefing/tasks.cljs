@@ -59,8 +59,11 @@
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)
                    :class    cls}
          [:td
-          (when-let [prio (some-> entry :task :priority (name))]
-            [:span.prio {:class prio} prio])]
+          (if (get-in entry [:task :done])
+            [:span.checked
+             [:i.fas.fa-check]]
+            (when-let [prio (some-> entry :task :priority (name))]
+              [:span.prio {:class prio} prio]))]
          [:td.award-points
           (when-let [points (-> entry :task :points)]
             points)]
