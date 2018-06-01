@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.5.103",
+  "version": "0.5.104",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -36,7 +36,6 @@
     "electron-context-menu": "0.9.1",
     "electron-fetch": "1.1.0",
     "electron-log": "2.2.14",
-    "electron-spellchecker": "1.1.2",
     "electron-updater": "2.21.10",
     "emoji-flags": "1.2.0",
     "globalize": "1.3.0",
