@@ -1,0 +1,15 @@
+{
+   waiting_habits(pvt: %s) {
+     text
+     timestamp
+     habit
+     story {
+       story_name
+       timestamp
+       saga {
+         saga_name
+         timestamp
+       }
+     }
+   }
+}

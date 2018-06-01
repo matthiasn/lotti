@@ -23,7 +23,7 @@
   (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
         briefing (reaction (-> @gql-res :briefing :data :briefing))
-        habits (reaction (-> @gql-res :briefing :data :waiting_habits))
+        habits (reaction (-> @gql-res :waiting-habits :data :waiting_habits))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))

@@ -35,8 +35,10 @@
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (run-query "briefing.gql" :briefing 2 [ymd pvt pvt])
+      (run-query "briefing.gql" :briefing 2 [ymd pvt])
       (run-query "logged-by-day.gql" :logged-by-day 3 [ymd]))
+    (run-query "started-tasks.gql" :started-tasks 4 [pvt false])
+    (run-query "waiting-habits.gql" :waiting-habits 5 [pvt false])
     (run-query "options.gql" :options 10 nil)
     (run-query "day-stats.gql" :day-stats 5 [90])
     (s/gql-query current-state put-fn)

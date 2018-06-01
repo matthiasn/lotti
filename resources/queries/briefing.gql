@@ -33,46 +33,4 @@
       comment_for
     }
   }
-
-  started_tasks(pvt: %s, on_hold: false) {
-    timestamp
-    md
-    text
-    story {
-      timestamp
-      story_name
-      saga {
-        timestamp
-        saga_name
-      }
-    }
-    task {
-      estimate_m
-      points
-      on_hold
-      done
-      completed_s
-      priority
-    }
-
-    comments {
-      timestamp
-      completed_time
-      custom_fields
-    }
-  }
-
-   waiting_habits(pvt: %s) {
-     text
-     timestamp
-     habit
-     story {
-       story_name
-       timestamp
-       saga {
-         saga_name
-         timestamp
-       }
-     }
-   }
 }

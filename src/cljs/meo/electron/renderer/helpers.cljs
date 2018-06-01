@@ -158,4 +158,4 @@
   (put-fn [:gql/query {:file "briefing.gql"
                        :id   :briefing
                        :prio 2
-                       :args [ymd @pvt @pvt]}]))
+                       :args [ymd @pvt]}]))

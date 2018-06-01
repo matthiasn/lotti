@@ -9,7 +9,7 @@
   "Generate next habit entry, as appropriate at the time of calling.
    Store this to actually create entry."
   [entry]
-  (let [next-hh-mm (-> entry :habit :active-from (moment) (h/hh-mm))
+  (let [next-hh-mm (-> entry :habit :active_from (moment) (h/hh-mm))
         active-days (filter identity (map (fn [[k v]] (when v k))
                                           (get-in entry [:habit :days])))
         active-days (concat active-days (map #(+ % 7) active-days))
@@ -20,7 +20,7 @@
         next-active (str next-day "T" next-hh-mm)]
     (-> entry
         (assoc-in [:timestamp] (st/now))
-        (assoc-in [:habit :active-from] next-active)
+        (assoc-in [:habit :active_from] next-active)
         (assoc-in [:habit :done] false)
         (dissoc :linked-entries-list)
         (dissoc :last_saved)
@@ -33,7 +33,7 @@
         active-from (fn [entry]
                       (fn [ev]
                         (let [dt (h/target-val ev)
-                              updated (assoc-in entry [:habit :active-from] dt)]
+                              updated (assoc-in entry [:habit :active_from] dt)]
                           (put-fn [:entry/update-local updated]))))
         day-select (fn [entry day]
                      (fn [_ev]
@@ -101,7 +101,7 @@
                        :priority    :B
                        :points      10
                        :penalty     10
-                       :active-from active-from
+                       :active_from active-from
                        :done        false}
                 updated (assoc-in entry [:habit] habit)]
             (put-fn [:entry/update-local updated])))
@@ -131,7 +131,7 @@
              [:label "Active: "]
              [:input {:type      :datetime-local
                       :on-change (active-from entry)
-                      :value     (get-in entry [:habit :active-from])}]]
+                      :value     (get-in entry [:habit :active_from])}]]
             [:div
              [:label [:span.fa.fa-gem.bonus]]
              [:input {:type      :number

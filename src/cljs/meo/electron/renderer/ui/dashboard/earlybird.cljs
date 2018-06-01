@@ -96,11 +96,9 @@
         gql-res (subscribe [:gql-res])
         idx-fn (fn [idx v] [idx v])
         stats (reaction (:day_stats (:data (:day-stats @gql-res))))]
-    (fn barchart-row [{:keys [days span start h y]} put-fn]
-      (let [btm-y (+ y h)
-            indexed2 (map-indexed idx-fn @stats)
+    (fn earlybird-chart-row [{:keys [days span start h y]} put-fn]
+      (let [indexed2 (map-indexed idx-fn @stats)
             l (/ h 5)]
-        (info span)
         [:g
          (when @show-pvt
            [row-label "24h Rhythm" y h])
@@ -109,20 +107,21 @@
          [legend "12:00" 175 (+ y (* l 2.5))]
          [legend "18:00" 175 (+ y (* l 3.5))]
          [legend "24:00" 175 (+ y (* l 4.5))]
-         (for [[n {:keys [date_string weekday] :as item}] indexed2]
+         (for [[n item] indexed2]
            (let [d (* 24 60 60 1000)
                  x-step (* 1800 (/ d span))]
              ^{:key (str :earlybird n)}
              [:g
+              #_
               (for [hi (range 28)]
-                (let [y (* h (/ hi 28))
+                (let [y2 (* h (/ hi 28))
                       stroke-w (if (zero? (mod (- hi 2) 6)) 1 0.5)
                       stroke-w (if (or (< hi 2) (> hi 26)) 0 stroke-w)]
-                  ^{:key h}
-                  [:line {:x1           17
-                          :x2           1600
-                          :y1           y
-                          :y2           y
+                  ^{:key hi}
+                  [:line {:x1           217
+                          :x2           2000
+                          :y1           (+ y y2)
+                          :y2           (+ y y2)
                           :stroke-width stroke-w
                           :stroke       "#666"}]))
               [ts-bars {:day-stats   item

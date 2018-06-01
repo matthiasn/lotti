@@ -14,8 +14,8 @@
   [x y]
   (let [c (compare (get-in x [:task :priority] :X)
                    (get-in y [:task :priority] :X))]
-    (if (not= c 0) c (compare (get-in x [:task :active-from])
-                              (get-in y [:task :active-from])))))
+    (if (not= c 0) c (compare (:timestamp x)
+                              (:timestamp y)))))
 
 (defn m-to-hhmm
   [minutes]
@@ -86,7 +86,7 @@
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
   (let [gql-res (subscribe [:gql-res])
-        started-tasks (reaction (-> @gql-res :briefing :data :started_tasks))
+        started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
