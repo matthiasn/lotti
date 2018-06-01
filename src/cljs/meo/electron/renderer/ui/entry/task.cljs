@@ -39,7 +39,7 @@
                      (fn [_ev]
                        (let [updated (update-in entry [:task :on_hold] not)]
                          (put-fn [:entry/update updated]))))
-              allocation (or (get-in entry [:task :estimate-m]) 0)
+              allocation (or (get-in entry [:task :estimate_m]) 0)
               priority (get-in entry [:task :priority])
               done-checked (get-in entry [:task :done])
               hold-checked (get-in entry [:task :on_hold])
@@ -85,7 +85,7 @@
                         :value     (get-in entry [:task :points] 0)}]]
               [:div
                [:label "Allocation: "]
-               [:input {:on-change (h/update-time entry [:task :estimate-m] put-fn)
+               [:input {:on-change (h/update-time entry [:task :estimate_m] put-fn)
                         :value     (when allocation
                                      (h/m-to-hh-mm allocation))
                         :type      :time}]]])])))))

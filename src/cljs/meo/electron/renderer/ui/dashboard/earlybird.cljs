@@ -60,6 +60,7 @@
                 h (if (< y midnight-s)
                     (- h (- midnight-s y))
                     h)
+                h (max h 0)
                 y (max midnight-s y)
                 y (+ y y-offset)]
 
