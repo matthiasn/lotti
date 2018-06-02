@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <property name="LOG_FILE" value="${LOG_DIR:-./log}${file.separator}meo."/>
+    <property name="LOG_FILE" value="${LOG_DIR:-./log}${file.separator}meo"/>
 
     <!-- Errors -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">

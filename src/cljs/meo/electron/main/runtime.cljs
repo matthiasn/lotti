@@ -26,7 +26,8 @@
                        (set/union capabilities #{:dev-menu})
                        capabilities)
         temp-path (.getPath app "temp")
-        logfile-electron (str (if repo-dir "./log/" temp-path) "meo-electron.log")
+        logfile-electron (str (if repo-dir "./log" temp-path) "/meo-electron.log")
+        logdir (str (if repo-dir "./log" temp-path) "/")
         info {:platform         platform
               :download-path    download-path
               :electron-path    (first (.-argv process))
@@ -35,8 +36,8 @@
               :daily-logs-path  (str data-path "/daily-logs")
               :encrypted-path   encrypted-path
               :logfile-electron logfile-electron
-              :logfile-jvm      (str temp-path "meo-jvm.log")
-              :logdir           (str temp-path "meo/logs/")
+              :logfile-jvm      (str temp-path "/meo-jvm.log")
+              :logdir           logdir
               :img-path         (str data-path "/images")
               :thumbs-path      (str data-path "/thumbs")
               :cache            (str user-data "/data/cache.dat")
