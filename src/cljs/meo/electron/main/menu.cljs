@@ -209,6 +209,7 @@
     (info "Starting Menu Component")
     (.on app "activate" activate)
     (.register globalShortcut "Command+Shift+3" screenshot)
+    (.register globalShortcut "PrintScreen" screenshot)
     (.setApplicationMenu Menu menu))
   {:state (atom {})})
 
