@@ -7,6 +7,7 @@
             [meo.electron.renderer.tensorflow :as tf]
             [meo.electron.renderer.ws :as ws]
             [meo.electron.renderer.screenshot :as screenshot]
+            [meo.electron.renderer.spellcheck :as spellcheck]
             [taoensso.timbre :refer-macros [info debug error]]
             [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
             [matthiasn.systems-toolbox-sente.client :as sente]
@@ -56,6 +57,7 @@
 (defn start []
   (info "Starting SYSTEM")
   (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
+                     (spellcheck/cmp-map :renderer/spellcheck)
                      (screenshot/cmp-map :renderer/screenshot)
                      (sente/cmp-map :renderer/ws-cmp sente-cfg)
                      (tf/cmp-map :renderer/tensorflow)
@@ -75,6 +77,7 @@
                     :to   #{:renderer/exec-cmp
                             :renderer/store
                             :renderer/screenshot
+                            :renderer/spellcheck
                             :renderer/ws-cmp}}]
 
        [:cmd/route {:from #{:renderer/router}
