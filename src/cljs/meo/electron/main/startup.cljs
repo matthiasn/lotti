@@ -43,8 +43,7 @@
 
 (defn start-jvm [{:keys [current-state]}]
   (let [{:keys [user-data java jar app-path data-path gql-port]} rt/runtime-info
-        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts"
-              "-Xlog:gc:/tmp/meo-gc.log" "-jar" jar]
+        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts" "-jar" jar]
         opts {:detached false
               :cwd      user-data
               :env      {:PORT      PORT

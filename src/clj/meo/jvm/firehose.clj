@@ -3,9 +3,9 @@
             [clj-time.core :as time]
             [clj-time.format :as tf]))
 
-(def filename (if (get (System/getenv) "PORT")
-                "/tmp/meo-"
-                "/tmp/meo-dev-"))
+(def filename (if-let [log-dir (get (System/getenv) "LOG_DIR")]
+                (str log-dir "meo-firehose-")
+                "./log/meo-firehose-"))
 
 (defn append-firehose-ev [{:keys [current-state msg-type msg-meta msg-payload]}]
   (when (:started current-state)
