@@ -58,7 +58,7 @@
             ts (:timestamp dropped)
             story (:timestamp entry)
             updated (merge (-> dropped
-                               (update-in [:linked-stories] #(set/union #{story} %))
+                               (update-in [:linked_stories] #(set/union #{story} %))
                                (assoc-in [:primary_story] story))
                            (up/parse-entry (:md dropped)))]
         (when (and ts (not= ts story))
@@ -66,7 +66,7 @@
       ; link two entries
       (let [dropped (:currently-dragged @cfg)
             ts (:timestamp dropped)
-            updated (update-in entry [:linked-entries] #(set (conj % ts)))]
+            updated (update-in entry [:linked_entries] #(set (conj % ts)))]
         (when (and ts (not= ts (:timestamp updated)))
           (put-fn [:entry/update (u/clean-entry updated)]))))))
 
@@ -114,7 +114,6 @@
                                       :value %}])
         show-comments #(show-hide-comments query-id)
         create-comment (h/new-entry put-fn {:comment_for ts} show-comments)
-        screenshot #(put-fn [:screenshot/take {:comment_for ts}])
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry put-fn
                                                        (p/pomodoro-defaults ts)
@@ -156,9 +155,6 @@
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
-          #_
-          (when-not comment?
-            [:i.fa.fa-desktop.toggle {:on-click screenshot}])
           (when (and (not comment?) prev-saved?)
             [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
           (when-not comment? [new-link entry put-fn create-linked])

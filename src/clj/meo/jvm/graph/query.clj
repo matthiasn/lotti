@@ -456,7 +456,7 @@
                                 (extract-sorted-entries current-state query)))
         comment-timestamps (set (apply concat (mapv :comments entries)))
         linked-timestamps (apply set/union
-                                 (mapv #(set (:linked-entries-list %))
+                                 (mapv #(set (:linked_entries_list %))
                                        entries))
         linked (mapv #(uc/attrs g %) linked-timestamps)
         comments-linked (comments-linked-for-entry g)

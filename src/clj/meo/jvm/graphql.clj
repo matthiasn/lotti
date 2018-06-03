@@ -150,7 +150,7 @@
                  (mapv xf/edn-xf)
                  (mapv (partial entry-w-comments g))
                  (mapv (partial linked-for g))
-                 (mapv #(assoc % :linked_cnt (count (:linked-entries-list %)))))]
+                 (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))]
     (debug res)
     res))
 

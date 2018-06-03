@@ -37,7 +37,7 @@
       hashtag])])
 
 (defn linked-btn [entry local-cfg active put-fn]
-  (when (pos? (:linked-cnt entry))
+  (when (pos? (:linked_cnt entry))
     (let [ts (:timestamp entry)
           tab-group (:tab-group local-cfg)
           open-linked (up/add-search (str "l:" ts) tab-group put-fn)
@@ -46,7 +46,7 @@
       [:div
        [:span.link-btn {:on-click open-linked
                         :class    (when entry-active? "active")}
-        (str " linked: " (:linked-cnt entry))]])))
+        (str " linked: " (:linked_cnt entry))]])))
 
 (defn conflict-view [entry put-fn]
   (let []
