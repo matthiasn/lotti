@@ -37,7 +37,7 @@
                         (up/parse-search date)
                         {:story (when-not (js/isNaN id) id)})
                     click-fn (fn [_]
-                               (put-fn [:search/add {:tab-group :right
+                               (put-fn [:search/add {:tab-group :left
                                                      :query     q}]))]
                 ^{:key story}
                 [:tr {:on-click click-fn}

@@ -55,7 +55,7 @@
             ^{:key (str active-dashboard p)}
             [:circle {:cx       (:x p)
                       :cy       (:y p)
-                      :on-click (up/add-search (:ts p) :right put-fn)
+                      :on-click (up/add-search (:ts p) :left put-fn)
                       :r        (if (:starred p) 5 2.5)
                       :fill     (if (:starred p) :white :none)
                       :style    {:stroke color}}])]]))))

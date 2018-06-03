@@ -84,7 +84,7 @@
    split view."
   [v put-fn]
   (fn [_ev]
-    (put-fn [:search/add {:tab-group :right
+    (put-fn [:search/add {:tab-group :left
                           :query     (up/parse-search (:date_string v))}])))
 
 (defn bg-bars
