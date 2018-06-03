@@ -454,13 +454,18 @@
   }
 }
 
-.task-details, .habit-details, .custom-fields {
+.task-details {
   fieldset {
-    border: $edit-menu-bg 1px dashed;
     label {
       display: inline-block;
       width: 90px;
     }
+  }
+}
+
+.task-details, .habit-details, .custom-fields {
+  fieldset {
+    border: $edit-menu-bg 1px dashed;
   }
 
   .overview {
@@ -575,7 +580,7 @@
   }
   input[type="checkbox"] {
     width: 15px;
-    margin-right: 10px;
+    margin-right: 7px;
   }
   input[type="date"] {
     width: 130px;
