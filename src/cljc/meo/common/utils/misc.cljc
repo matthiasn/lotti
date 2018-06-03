@@ -64,10 +64,10 @@
 (defn visit-timestamps
   "Parse arrival and departure timestamp as milliseconds since epoch."
   [entry]
-  (let [departure-ts (let [ms (double-ts-to-long (:departure-timestamp entry))]
+  (let [departure-ts (let [ms (double-ts-to-long (:departure_timestamp entry))]
                        (when (specs/possible-timestamp? ms) ms))]
-    {:arrival-ts   (double-ts-to-long (:arrival-timestamp entry))
-     :departure-ts departure-ts}))
+    {:arrival_ts   (double-ts-to-long (:arrival_timestamp entry))
+     :departure_ts departure-ts}))
 
 (defn count-words
   "Naive implementation of a wordcount function."
@@ -102,6 +102,7 @@
       (dissoc :new-entry)
       (dissoc :linked)
       (dissoc :linked-cnt)
+      (dissoc :linked_cnt)
       (dissoc :last_saved)
       (dissoc :vclock)
       (dissoc :story)
@@ -109,8 +110,11 @@
       (update-in [:task] dissoc :due)
       (update-in [:tags] set)
       (dissoc :editor-state)
+      (dissoc :editor_state)
       (dissoc :pomodoro-running)
-      (dissoc :linked-entries-list)))
+      (dissoc :pomodoro_running)
+      (dissoc :linked-entries-list)
+      (dissoc :linked_entries_list)))
 
 (defn linked-filter-fn
   "Filter linked entries by search."

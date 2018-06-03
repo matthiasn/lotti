@@ -11,15 +11,15 @@
   (try
     (let [lines (line-seq rdr)]
       (doseq [line lines]
-        (let [raw-visit (cc/parse-string line #(keyword (s/replace % "_" "-")))
-              {:keys [arrival-ts departure-ts]} (u/visit-timestamps raw-visit)
-              dur (when departure-ts
-                    (-> (- departure-ts arrival-ts)
+        (let [raw-visit (cc/parse-string line keyword)
+              {:keys [arrival_ts departure_ts]} (u/visit-timestamps raw-visit)
+              dur (when departure_ts
+                    (-> (- departure_ts arrival_ts)
                         (/ 6000)
                         (Math/floor)
                         (/ 10)))
               visit (merge raw-visit
-                           {:timestamp arrival-ts
+                           {:timestamp arrival_ts
                             :md        (if dur
                                          (str "Duration: " dur "m #visit")
                                          "No departure recorded #visit")
@@ -44,16 +44,16 @@
            (when (seq line)
              (let [set-linked
                    (fn [entry]
-                     (assoc-in entry [:linked-entries]
-                               (when-let [linked (:linked-timestamp entry)]
+                     (assoc-in entry [:linked_entries]
+                               (when-let [linked (:linked_timestamp entry)]
                                  #{linked})))
                    entry
-                   (-> (cc/parse-string line #(keyword (s/replace % "_" "-")))
+                   (-> (cc/parse-string line keyword)
                        (m/add-tags-mentions)
                        (update-audio-tag)
                        (update-in [:timestamp] u/double-ts-to-long)
-                       (update-in [:linked-timestamp] u/double-ts-to-long))
-                   entry (if (:linked-timestamp entry)
+                       (update-in [:linked_timestamp] u/double-ts-to-long))
+                   entry (if (:linked_timestamp entry)
                            (set-linked entry)
                            (update-in entry [:tags] conj "#import"))]
                (put-fn (with-meta [:entry/import entry] msg-meta))))))
