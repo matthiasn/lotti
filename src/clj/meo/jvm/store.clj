@@ -99,7 +99,7 @@
     (put-fn [:cmd/schedule-new {:timeout 1000
                                 :message [:options/gen]
                                 :id      :generate-opts}])
-    (tf/import-predictions cmp-state)
+    ;(tf/import-predictions cmp-state)
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)
     {}))

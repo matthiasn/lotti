@@ -30,8 +30,8 @@
   {:arrival-date        "2016-08-16 11:29:41 +0000"
    :departure-date      "2016-08-16 16:33:19 +0000"
    :tags                #{"#visit" "#import"}
-   :departure-timestamp 1.471365199000049E9
-   :arrival-timestamp   1.471346981391931E9
+   :departure_timestamp 1.471365199000049E9
+   :arrival_timestamp   1.471346981391931E9
    :horizontal-accuracy 29.1
    :type                "visit"
    :longitude           10.0
@@ -42,20 +42,20 @@
 
 (deftest visit-timestamps-test
   (testing "entry with completed visit parsed correctly"
-    (is (= {:arrival-ts   1471346981391
-            :departure-ts 1471365199000}
+    (is (= {:arrival_ts   1471346981391
+            :departure_ts 1471365199000}
            (u/visit-timestamps completed-entry))))
   (testing "entry without visit parsed correctly"
-    (is (= {:arrival-ts   nil
-            :departure-ts nil}
+    (is (= {:arrival_ts   nil
+            :departure_ts nil}
            (u/visit-timestamps (-> completed-entry
-                                   (dissoc :arrival-timestamp)
-                                   (dissoc :departure-timestamp))))))
+                                   (dissoc :arrival_timestamp)
+                                   (dissoc :departure_timestamp))))))
   (testing "entry with incomplete visit parsed correctly"
-    (is (= {:arrival-ts   1471346981391
-            :departure-ts nil}
+    (is (= {:arrival_ts   1471346981391
+            :departure_ts nil}
            (u/visit-timestamps (merge completed-entry
-                                      {:departure-timestamp 64092211200}))))))
+                                      {:departure_timestamp 64092211200}))))))
 
 (deftest deep-merge-test
   (testing "maps are merged properly"
