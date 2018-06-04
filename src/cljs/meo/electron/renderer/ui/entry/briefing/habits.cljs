@@ -30,7 +30,7 @@
         expand-fn #(swap! local update-in [:expanded-habits] not)
         saga-filter (fn [entry]
                       (if-let [selected (:selected @local)]
-                        (let [saga (-> entry :story :linked_saga :timestamp)]
+                        (let [saga (-> entry :story :saga :timestamp)]
                           (= selected saga))
                         true))
         habits (reaction (->> @habits

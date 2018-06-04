@@ -100,7 +100,7 @@
                              (not on-hold))))
         saga-filter (fn [entry]
                       (if-let [selected (:selected @local)]
-                        (let [saga (get-in entry [:story :linked_saga :timestamp])]
+                        (let [saga (get-in entry [:story :saga :timestamp])]
                           (= selected saga))
                         true))
         open-filter (fn [entry] (not (-> entry :task :done)))
@@ -159,7 +159,7 @@
             saga-filter (fn [entry]
                           (if-let [selected (:selected @local)]
                             (let [story (:story entry)]
-                              (= selected (:timestamp (:linked-saga story))))
+                              (= selected (:timestamp (:saga story))))
                             true))
             started-tasks (set (map :timestamp @started-tasks))
             task-filter #(contains? (set/union (:perm_tags %) (:tags %)) "#task")
