@@ -59,11 +59,10 @@
 (defn git-commit [_entry _put-fn]
   (let [repos (subscribe [:repos])]
     (fn [entry put-fn]
-      (when-let [gc (:git-commit entry)]
+      (when-let [gc (:git_commit entry)]
         (let [{:keys [repo-name refs commit subject abbreviated-commit]} gc
               cfg (get-in @repos [repo-name])
-              url (str
-                    (:repo-url cfg) "/commit/" commit)]
+              url (str (:repo-url cfg) "/commit/" commit)]
           [:div.git-commit
            [:span.repo-name (str repo-name ":")]
            "[" [:a {:href url :target "_blank"} abbreviated-commit] "] "
