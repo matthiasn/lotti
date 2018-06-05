@@ -35,7 +35,7 @@
         lines (s/split-lines res)
         mapper (fn [s]
                  (try
-                   (cc/parse-string s #(keyword (->kebab-case %)))
+                   (cc/parse-string s keyword)
                    (catch Exception e (error "Parsing git commit" e s))))
         commits (filter identity (map mapper lines))
         n (count commits)]
@@ -51,11 +51,11 @@
       (let [commits (read-repo repo-cfg (:last-read repos-cfg))]
         (doseq [commit commits]
           (let [ts (c/to-long (-> commit :author :date))
-                {:keys [abbreviated-commit author]} commit
+                {:keys [abbreviated_commit author]} commit
                 md ""
-                entry {:git-commit (assoc-in commit [:repo-name] repo-name)
+                entry {:git_commit (assoc-in commit [:repo_name] repo-name)
                        :timestamp  ts
-                       :id         abbreviated-commit
+                       :id         abbreviated_commit
                        :md         md
                        :text       md
                        :mentions   #{}

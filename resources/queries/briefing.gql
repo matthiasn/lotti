@@ -27,6 +27,7 @@
     comments {
       timestamp
       md
+      entry_type
       latitude
       longitude
       completed_time
