@@ -109,6 +109,7 @@
         f (fn [[k {:keys [n search-text]}]]
             {:query/data  [:tab_search {:query search-text
                                         :pvt   pvt
+                                        :prio  1
                                         :n     n} fields]
              :query/alias k})
         queries (mapv f queries)]

@@ -140,7 +140,7 @@
   "Show open tasks that are also linked with the briefing entry."
   [ts local put-fn]
   (let [gql-res (subscribe [:gql-res])
-        started-tasks (reaction (-> @gql-res :briefing :data :started-tasks))
+        started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
         briefing (reaction (-> @gql-res :briefing :data :briefing))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))

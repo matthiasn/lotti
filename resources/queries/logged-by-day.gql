@@ -1,5 +1,5 @@
 {
-  logged_time(day:"%s") {
+  logged_time(day:"%s", prio: 5) {
     day
     total_time
     entry_count

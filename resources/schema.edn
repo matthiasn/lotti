@@ -194,44 +194,52 @@
  {:entry_count
   {:type        Int
    :description "Number of entries."
+   :args        {:prio {:type Int}}
    :resolve     :query/entry-count}
 
   :hours_logged
   {:type        Int
    :description "Hours logged."
+   :args        {:prio {:type Int}}
    :resolve     :query/hours-logged}
 
   :started_tasks
   {:type        (list :Entry)
    :description "List of started tasks."
    :args        {:pvt     {:type Boolean}
+                 :prio    {:type Int}
                  :on_hold {:type Boolean}}
    :resolve     :query/started-tasks}
 
   :waiting_habits
   {:type        (list :Entry)
    :description "List of started tasks."
-   :args        {:pvt {:type Boolean}}
+   :args        {:pvt  {:type Boolean}
+                 :prio {:type Int}}
    :resolve     :query/waiting-habits}
 
   :word_count
   {:type        Int
    :description "Word count."
+   :args        {:prio {:type Int}}
    :resolve     :query/word-count}
 
   :tag_count
   {:type        Int
    :description "Tag count."
+   :args        {:prio {:type Int}}
    :resolve     :query/tag-count}
 
   :mention_count
   {:type        Int
    :description "People count."
+   :args        {:prio {:type Int}}
    :resolve     :query/mention-count}
 
   :completed_count
   {:type        Int
    :description "Completed tasks count."
+   :args        {:prio {:type Int}}
    :resolve     :query/completed-count}
 
   :active_threads
@@ -242,7 +250,8 @@
   :match_count
   {:type        Int
    :description "Result count for given query."
-   :args        {:query {:type String}}
+   :args        {:query {:type String}
+                 :prio  {:type Int}}
    :resolve     :query/match-count}
 
   :tab_search
@@ -250,27 +259,32 @@
    :description "List of entries for given query."
    :args        {:query {:type String}
                  :n     {:type Int}
+                 :prio  {:type Int}
                  :pvt   {:type Boolean}}
    :resolve     :query/tab-search}
 
   :hashtags
   {:type        (list String)
+   :args        {:prio {:type Int}}
    :description "List of all hashtags."
    :resolve     :query/hashtags}
 
   :pvt_hashtags
   {:type        (list String)
    :description "List of all private hashtags."
+   :args        {:prio {:type Int}}
    :resolve     :query/pvt-hashtags}
 
   :mentions
   {:type        (list String)
    :description "List of all mentions."
+   :args        {:prio {:type Int}}
    :resolve     :query/mentions}
 
   :stories
   {:type        (list :Story)
    :description "List of all existing stories."
+   :args        {:prio {:type Int}}
    :resolve     :query/stories}
 
   :photos_by_location
@@ -279,31 +293,36 @@
    :args        {:ne_lat {:type Float}
                  :ne_lon {:type Float}
                  :sw_lat {:type Float}
-                 :sw_lon {:type Float}}
+                 :sw_lon {:type Float}
+                 :prio   {:type Int}}
    :resolve     :query/geo-photos}
 
   :sagas
   {:type        (list :Saga)
    :description "List of all existing sagas."
+   :args        {:prio {:type Int}}
    :resolve     :query/sagas}
 
   :briefing
   {:type        :Briefing
    :description "Briefing for specified day."
-   :args        {:day {:type String}}
+   :args        {:day  {:type String}
+                 :prio {:type Int}}
    :resolve     :query/briefing}
 
   :custom_field_stats
   {:type        (list :CustomFieldStatsItem)
    :description "Custom field stats for tag and number of days"
    :args        {:days {:type Int}
-                 :tag  {:type String}}
+                 :tag  {:type String}
+                 :prio {:type Int}}
    :resolve     :query/custom-field-stats}
 
   :git_stats
   {:type        (list :GitStatsItem)
    :description "Git commit stats for number of days"
-   :args        {:days {:type Int}}
+   :args        {:days {:type Int}
+                 :prio {:type Int}}
    :resolve     :query/git-stats}
 
   :questionnaires
@@ -311,28 +330,33 @@
    :description "filled out questionnaires"
    :args        {:tag  {:type String}
                  :days {:type Int}
-                 :k    {:type String}}
+                 :k    {:type String}
+                 :prio {:type Int}}
    :resolve     :query/questionnaires}
 
   :award_points
   {:type        :AwardPoints
    :description "award points"
-   :args        {:days {:type Int}}
+   :args        {:days {:type Int}
+                 :prio {:type Int}}
    :resolve     :query/award-points}
 
   :briefings
   {:type        (list :Briefing)
    :description "List of all existing briefings."
+   :args        {:prio {:type Int}}
    :resolve     :query/briefings}
 
   :logged_time
   {:type    :DayStats
-   :args    {:day {:type String}}
+   :args    {:day  {:type String}
+             :prio {:type Int}}
    :resolve :query/logged-time}
 
   :day_stats
   {:type    (list :DayStats)
-   :args    {:days {:type (non-null Int)}}
+   :args    {:days {:type (non-null Int)}
+             :prio {:type Int}}
    :resolve :query/day-stats}
 
   }}

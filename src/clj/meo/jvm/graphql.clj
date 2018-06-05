@@ -78,20 +78,14 @@
 (defn briefing [state context args value]
   (let [g (:graph @state)
         d (:day args)
-        start (stc/now)
-        _ (info :briefing)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
-    (info :post-get-briefing (- (stc/now) start))
     (when-let [briefing (get-entry g ts)]
       (let [briefing (linked-for g briefing)
-            _ (info :post-linked-for (- (stc/now) start))
             comments (:comments (gq/get-comments briefing g ts))
-            _ (info :post-get-comments (- (stc/now) start))
             comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]
-        (info :finish (- (stc/now) start))
         briefing))))
 
 (defn logged-time [state context args value]
@@ -234,13 +228,19 @@
       (let [res (lacinia/execute-parsed-query-async parsed variables context)]
         (resolve/on-deliver! res on-deliver)))))
 
-(def thread-pool (cp/threadpool 8))
-(alter-var-root #'resolve/*callback-executor* (constantly thread-pool))
+(def executor-thread-pool (cp/threadpool 5))
+(def thread-pool (cp/priority-threadpool 2))
+(def prio-thread-pool (cp/priority-threadpool 5))
+(alter-var-root #'resolve/*callback-executor* (constantly executor-thread-pool))
 
 (defn async-wrapper [f]
   (fn [state context args value]
-    (let [result-promise (resolve/resolve-promise)]
-      (cp/future thread-pool
+    (let [result-promise (resolve/resolve-promise)
+          p (:prio args 100)
+          tp (if (< p 100)
+               prio-thread-pool
+               thread-pool)]
+      (cp/future (cp/with-priority tp p)
                  (try
                    (let [res (f state context args value)]
                      (resolve/deliver! result-promise res))
@@ -253,7 +253,6 @@
   (let [start (stc/now)
         schema (:schema current-state)
         qid (:id msg-payload)
-        _ (info "GraphQL query start" qid)
         merged (merge (get-in current-state [:queries qid]) msg-payload)
         {:keys [file args q id res-hash]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
@@ -275,33 +274,29 @@
                   (str "- '" (or file query-string) "'"))
             (when new-data (put-fn (with-meta [:gql/res res]
                                               {:sente-uid sente-uid})))))]
-    (execute-async schema query-string nil nil {} on-deliver)
-    (info "*callback-executor*" resolve/*callback-executor*))
+    (execute-async schema query-string nil nil {} on-deliver))
   {})
 
 (defn run-registered [{:keys [current-state msg-meta put-fn]}]
   (let [queries (:queries current-state)]
     (info "Scheduling execution of registered GraphQL queries")
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
-      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
-            high-prio (< (:prio q) 10)
-            t (if high-prio 500 2000)]
-        (put-fn [:cmd/schedule-new {:timeout t
-                                    :message msg
-                                    :id      id}]))))
+      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)]
+        (info "run-registered" id q)
+        (put-fn [:cmd/schedule-new {:timeout 1 :message msg :id id}]))))
   {})
 
 (defn gen-options [{:keys [current-state cmp-state]}]
   (cp/future
     thread-pool
-    (info "gen-options")
-    (let [opts {:hashtags     (gq/find-all-hashtags current-state)
+    (let [start (stc/now)
+          opts {:hashtags     (gq/find-all-hashtags current-state)
                 :pvt-hashtags (gq/find-all-pvt-hashtags current-state)
                 :mentions     (gq/find-all-mentions current-state)
                 :stories      (gq/find-all-stories2 current-state)
                 :sagas        (gq/find-all-sagas2 current-state)}]
       (swap! cmp-state assoc-in [:options] opts)
-      (info "gen-options finished")))
+      (info "gen-options finished in" (- (stc/now) start) "ms")))
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]
