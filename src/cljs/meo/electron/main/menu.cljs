@@ -2,7 +2,8 @@
   (:require [taoensso.timbre :as timbre :refer-macros [info]]
             [electron :refer [app Menu dialog globalShortcut]]
             [meo.electron.main.runtime :as rt]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [clojure.string :as s]))
 
 (def capabilities (:capabilities rt/runtime-info))
 
@@ -155,10 +156,13 @@
                 :click       #(put-fn [:window/dev-tools])}]}))
 
 (defn capture-menu [put-fn]
-  (let [screenshot #(put-fn [:screenshot/take])]
+  (let [screenshot #(put-fn [:screenshot/take])
+        accelerator (if (s/includes? (:platform rt/runtime-info) "win")
+                      "PrintScreen"
+                      "Command+Shift+3")]
     {:label   "Capture"
      :submenu [{:label       "New Screenshot"
-                :accelerator "Command+Shift+3"
+                :accelerator accelerator
                 :click       screenshot}]}))
 
 (defn learn-menu [put-fn]
@@ -200,16 +204,16 @@
                   (capture-menu put-fn)
                   (when (contains? capabilities :tensorflow)
                     (learn-menu put-fn))
-                  (when (contains? capabilities :dev-menu)
-                    (dev-menu put-fn))]
+                  (dev-menu put-fn)]
         menu-tpl (rm-filtered (filter identity menu-tpl))
         menu (.buildFromTemplate Menu (clj->js menu-tpl))
         activate #(put-fn [:window/activate])
         screenshot #(put-fn [:screenshot/take])]
     (info "Starting Menu Component")
     (.on app "activate" activate)
-    (.register globalShortcut "Command+Shift+3" screenshot)
-    (.register globalShortcut "Ctrl+PrintScreen" screenshot)
+    (if (s/includes? (:platform rt/runtime-info) "win")
+      (.register globalShortcut "PrintScreen" screenshot)
+      (.register globalShortcut "Command+Shift+3" screenshot))
     (.setApplicationMenu Menu menu))
   {:state (atom {})})
 
