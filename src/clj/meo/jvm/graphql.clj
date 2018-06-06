@@ -283,7 +283,7 @@
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
       (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
             high-prio (< (:prio q 100) 10)
-            t (if high-prio 100 1000)]
+            t (if high-prio 1 1000)]
         (info "run-registered" id q)
         (put-fn [:cmd/schedule-new {:timeout t :message msg :id id}]))))
   {})

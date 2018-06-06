@@ -3,20 +3,21 @@
              :refer [SpellCheckHandler ContextMenuListener ContextMenuBuilder]]
             [taoensso.timbre :refer-macros [info]]))
 
-(defn set-lang [{:keys [msg-payload]}]
+(defn set-lang [{:keys [msg-payload current-state]}]
   (let [cc msg-payload
-        spellcheck-handler (SpellCheckHandler.)
-        cm-builder (ContextMenuBuilder. spellcheck-handler)
-        cm-listener (ContextMenuListener. #(.showPopupMenu cm-builder %))]
+        spellcheck-handler (:spellcheck-handler current-state)]
     (info "Setting SpellChecker language:" cc)
-    (aset js/window "spellCheckHandler" spellcheck-handler)
-    (.attachToInput spellcheck-handler)
     (.switchLanguage spellcheck-handler cc)
     {}))
 
 (defn state-fn [put-fn]
-  (set-lang {:msg-payload "en-US"})
-  {:state (atom {})})
+  (let [spellcheck-handler (SpellCheckHandler.)
+        cm-builder (ContextMenuBuilder. spellcheck-handler)
+        cm-listener (ContextMenuListener. #(.showPopupMenu cm-builder %))]
+    (aset js/window "spellCheckHandler" spellcheck-handler)
+    (.attachToInput spellcheck-handler))
+  (info "SpellCheckhandler started in auto mode")
+  {:state (atom {:spellcheck-handler spellcheck-handler})})
 
 (defn spellcheck-off [{:keys []}]
   (info "SpellChecker OFF")
