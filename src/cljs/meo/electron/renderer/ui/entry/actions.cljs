@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.ui.entry.actions
   (:require [meo.electron.renderer.ui.pomodoro :as p]
+            [re-frame.core :refer [subscribe]]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
@@ -100,8 +101,9 @@
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
-  [entry put-fn edit-mode? toggle-edit local-cfg]
+  [entry local put-fn edit-mode? toggle-edit local-cfg]
   (let [visible (r/atom false)
+        backend-cfg (subscribe [:backend-cfg])
         ts (:timestamp entry)
         hide-fn (fn [_ev] (.setTimeout js/window #(reset! visible false) 60000))
         query-id (:query-id local-cfg)
@@ -131,8 +133,9 @@
                         (put-fn [:entry/trash entry])))
         open-external (up/add-search ts tab-group put-fn)
         star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
-        mouse-enter #(reset! visible true)]
-    (fn entry-actions-render [entry put-fn edit-mode? toggle-edit local-cfg]
+        mouse-enter #(reset! visible true)
+        toggle-debug #(swap! local assoc-in [:debug] not)]
+    (fn entry-actions-render [entry local put-fn edit-mode? toggle-edit local-cfg]
       (let [map? (:latitude entry)
             prev-saved? (or (:last_saved entry) (< ts 1479563777132))
             comment? (:comment_for entry)
@@ -158,14 +161,17 @@
           (when (and (not comment?) prev-saved?)
             [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
           (when-not comment? [new-link entry put-fn create-linked])
-          [trash-icon trash-entry]]
+          [trash-icon trash-entry]
+          (when (contains? (:capabilities @backend-cfg) :debug)
+            [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
          [:i.fa.toggle
           {:on-click star-entry
            :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
-(defn briefing-actions [ts put-fn]
-  (let [open-new (fn [x]
+(defn briefing-actions [ts local put-fn]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        open-new (fn [x]
                    (put-fn [:search/add
                             {:tab-group :left
                              :query     (up/parse-search (:timestamp x))}]))
@@ -185,10 +191,14 @@
                          (info "new-pomodoro" new-entry)
                          (put-fn [:cmd/schedule-new
                                   {:message [:cmd/pomodoro-start new-entry]
-                                   :timeout 1000}])))]
-    [:div.actions {}
-     [:div.items
-      [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
-      [:i.fa.fa-comment.toggle {:on-click create-comment}]
-      [:i.fa.fa-plus-square.toggle
-       {:on-click #(create-linked-entry)}]]]))
+                                   :timeout 1000}])))
+        toggle-debug #(swap! local assoc-in [:debug] not)]
+    (fn briefing-actions-render [ts local put-fn]
+      [:div.actions {}
+       [:div.items
+        [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
+        [:i.fa.fa-comment.toggle {:on-click create-comment}]
+        [:i.fa.fa-plus-square.toggle
+         {:on-click #(create-linked-entry)}]
+        (when (contains? (:capabilities @backend-cfg) :debug)
+          [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]])))

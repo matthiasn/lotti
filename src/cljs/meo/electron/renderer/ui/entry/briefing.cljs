@@ -124,7 +124,7 @@
                           :on-drag-enter h/prevent-default}
            [:div.header
             [sagas-filter local]
-            [a/briefing-actions ts put-fn]]
+            [a/briefing-actions ts local put-fn]]
            [:div.briefing-details
             [tasks/started-tasks local local-cfg put-fn]
             [tasks/open-linked-tasks ts local local-cfg put-fn]

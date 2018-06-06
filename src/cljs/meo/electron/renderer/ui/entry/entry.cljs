@@ -111,7 +111,7 @@
            [:a [:time {:on-click add-search} formatted-time]]
            [:time (u/visit-duration merged)]]
           [linked-btn merged local-cfg active put-fn]
-          [a/entry-actions merged put-fn edit-mode? toggle-edit local-cfg]]
+          [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-name-field merged edit-mode? put-fn]
          [es/saga-name-field merged edit-mode? put-fn]
          [d/entry-editor entry2 put-fn]
@@ -140,7 +140,14 @@
              [l/leaflet-map merged @show-map? local-cfg put-fn]))
          [m/imdb-view merged put-fn]
          [m/spotify-view merged put-fn]
-         [c/questionnaire-div merged put-fn edit-mode?]]))))
+         [c/questionnaire-div merged put-fn edit-mode?]
+         (when (:debug @local)
+           [:div
+            [:h3 "@new-entry"]
+            [:pre [:code (with-out-str (pp/pprint @new-entry))]]
+            [:h3 "merged"]
+            [:pre [:code (with-out-str (pp/pprint merged))]]])
+         ]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens
