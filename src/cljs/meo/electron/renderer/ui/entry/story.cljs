@@ -48,13 +48,13 @@
    Updates local entry on input, and saves the entry when CMD-S is pressed."
   [entry edit-mode? put-fn]
   (when (= (:entry_type entry) :saga)
-    (let [on-input-fn (input-fn entry :saga-name put-fn)
-          on-keydown-fn (keydown-fn entry :saga-name put-fn)]
+    (let [on-input-fn (input-fn entry :saga_name put-fn)
+          on-keydown-fn (keydown-fn entry :saga_name put-fn)]
       (if edit-mode?
         [:div.story
          [:label "Saga:"]
-         [editable-field on-input-fn on-keydown-fn (:saga-name entry)]]
-        [:h2 "Saga: " (:saga-name entry)]))))
+         [editable-field on-input-fn on-keydown-fn (:saga_name entry)]]
+        [:h2 "Saga: " (:saga_name entry)]))))
 
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
@@ -62,12 +62,12 @@
   (let [sagas (subscribe [:sagas])
         ts (:timestamp entry)]
     (fn story-select-render [entry put-fn edit-mode?]
-      (let [linked-saga (:linked-saga entry)
+      (let [linked-saga (:linked_saga entry)
             entry-type (:entry_type entry)
             select-handler
             (fn [ev]
               (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
-                    updated (assoc-in entry [:linked-saga] selected)]
+                    updated (assoc-in entry [:linked_saga] selected)]
                 (info "saga-select" selected)
                 (put-fn [:entry/update-local updated])))]
         (when (= entry-type :story)
@@ -78,12 +78,12 @@
                [:select {:value     (or linked-saga "")
                          :on-change select-handler}
                 [:option {:value ""} "no saga selected"]
-                (for [[id saga] (sort-by #(:saga-name (second %)) @sagas)]
-                  (let [saga-name (:saga-name saga)]
+                (for [[id saga] (sort-by #(:saga_name (second %)) @sagas)]
+                  (let [saga-name (:saga_name saga)]
                     ^{:key (str ts saga-name)}
                     [:option {:value id} saga-name]))]])
             (when linked-saga
-              [:div.story "Saga: " (:saga-name (get @sagas linked-saga))])))))))
+              [:div.story "Saga: " (:saga_name (get @sagas linked-saga))])))))))
 
 (defn merged-stories [predictions stories]
   (let [ranked (:ranked predictions)
