@@ -10,14 +10,14 @@
     (.switchLanguage spellcheck-handler cc)
     {}))
 
-(defn state-fn [put-fn]
+(defn state-fn [_put-fn]
   (let [spellcheck-handler (SpellCheckHandler.)
-        cm-builder (ContextMenuBuilder. spellcheck-handler)
-        cm-listener (ContextMenuListener. #(.showPopupMenu cm-builder %))]
+        cm-builder (ContextMenuBuilder. spellcheck-handler)]
+    (ContextMenuListener. #(.showPopupMenu cm-builder %))
     (aset js/window "spellCheckHandler" spellcheck-handler)
-    (.attachToInput spellcheck-handler))
-  (info "SpellCheckhandler started in auto mode")
-  {:state (atom {:spellcheck-handler spellcheck-handler})})
+    (.attachToInput spellcheck-handler)
+    (info "SpellCheckhandler started in auto mode")
+    {:state (atom {:spellcheck-handler spellcheck-handler})}))
 
 (defn spellcheck-off [{:keys []}]
   (info "SpellChecker OFF")

@@ -95,7 +95,7 @@
       (let [new-entry (get-in new-state [:new-entries ts])
             completed (:completed_time new-entry)
             comment-for (:comment_for new-entry)
-            planned (:planned-dur new-entry)
+            planned (:planned-dur new-entry 1500)
             time-up? (> completed planned)
             progress (min (/ completed planned) 1)
             cfg (:cfg current-state)
@@ -104,7 +104,8 @@
                           (assoc-in [:busy-status :last] (st/now))
                           (assoc-in [:busy-status :current] ts)
                           (assoc-in [:busy-status :active] comment-for))]
-        (when (zero? (mod completed 30))
+        (when (zero? (mod completed 3))
+          (info "setting progress" progress)
           (put-fn [:window/progress {:v progress}]))
         (if (and (:pomodoro-running new-entry)
                  (= (:running (:pomodoro current-state)) ts))
