@@ -15,7 +15,8 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.string :as s]
             [meo.electron.renderer.ui.entry.entry :as e]
-            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]))
+            [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
+            [cljs.pprint :as pp]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -124,7 +125,7 @@
                           :on-drag-enter h/prevent-default}
            [:div.header
             [sagas-filter local]
-            [a/briefing-actions ts local put-fn]]
+            [a/briefing-actions ts put-fn]]
            [:div.briefing-details
             [tasks/started-tasks local local-cfg put-fn]
             [tasks/open-linked-tasks ts local local-cfg put-fn]

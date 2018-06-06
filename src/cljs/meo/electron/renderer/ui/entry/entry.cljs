@@ -20,6 +20,7 @@
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.draft :as d]
             [clojure.set :as set]
+            [clojure.data :as cd]
             [moment]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
             [clojure.pprint :as pp]
@@ -142,12 +143,13 @@
          [m/spotify-view merged put-fn]
          [c/questionnaire-div merged put-fn edit-mode?]
          (when (:debug @local)
-           [:div
+           [:div.debug
             [:h3 "@new-entry"]
             [:pre [:code (with-out-str (pp/pprint @new-entry))]]
             [:h3 "merged"]
-            [:pre [:code (with-out-str (pp/pprint merged))]]])
-         ]))))
+            [:pre [:code (with-out-str (pp/pprint merged))]]
+            [:h3 "diff"]
+            [:pre [:code (with-out-str (pp/pprint (cd/diff @new-entry merged)))]]])]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

@@ -169,9 +169,8 @@
            :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
-(defn briefing-actions [ts local put-fn]
-  (let [backend-cfg (subscribe [:backend-cfg])
-        open-new (fn [x]
+(defn briefing-actions [ts put-fn]
+  (let [open-new (fn [x]
                    (put-fn [:search/add
                             {:tab-group :left
                              :query     (up/parse-search (:timestamp x))}]))
@@ -191,14 +190,10 @@
                          (info "new-pomodoro" new-entry)
                          (put-fn [:cmd/schedule-new
                                   {:message [:cmd/pomodoro-start new-entry]
-                                   :timeout 1000}])))
-        toggle-debug #(swap! local assoc-in [:debug] not)]
-    (fn briefing-actions-render [ts local put-fn]
-      [:div.actions {}
-       [:div.items
-        [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
-        [:i.fa.fa-comment.toggle {:on-click create-comment}]
-        [:i.fa.fa-plus-square.toggle
-         {:on-click #(create-linked-entry)}]
-        (when (contains? (:capabilities @backend-cfg) :debug)
-          [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]])))
+                                   :timeout 1000}])))]
+    [:div.actions {}
+     [:div.items
+      [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
+      [:i.fa.fa-comment.toggle {:on-click create-comment}]
+      [:i.fa.fa-plus-square.toggle
+       {:on-click #(create-linked-entry)}]]]))
