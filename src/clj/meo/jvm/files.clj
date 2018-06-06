@@ -117,7 +117,7 @@
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
         (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                    :timeout 1
+                                    :timeout 10
                                     :id      :saved-entry}]))
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))

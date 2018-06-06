@@ -273,7 +273,7 @@
                   (if new-data "new data" "same hash, omitting response")
                   (str "- '" (or file query-string) "'"))
             (when new-data (put-fn (with-meta [:gql/res res]
-                                              {:sente-uid sente-uid})))))]
+                                              {:sente-uid :broadcast})))))]
     (execute-async schema query-string nil nil {} on-deliver))
   {})
 
@@ -281,9 +281,11 @@
   (let [queries (:queries current-state)]
     (info "Scheduling execution of registered GraphQL queries")
     (doseq [[id q] (sort-by #(:prio (second %)) queries)]
-      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)]
+      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
+            high-prio (< (:prio q 100) 10)
+            t (if high-prio 100 1000)]
         (info "run-registered" id q)
-        (put-fn [:cmd/schedule-new {:timeout 1 :message msg :id id}]))))
+        (put-fn [:cmd/schedule-new {:timeout t :message msg :id id}]))))
   {})
 
 (defn gen-options [{:keys [current-state cmp-state]}]
