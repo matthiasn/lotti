@@ -9,11 +9,9 @@
             [io.pedestal.http :as http]
             [ubergraph.core :as uc]
             [matthiasn.systems-toolbox.component :as stc]
-            [clojure.walk :as walk]
             [clojure.edn :as edn]
             [com.climate.claypoole :as cp]
             [com.walmartlabs.lacinia.util :as lu]
-            [clojure.core.async :as async]
             [meo.jvm.graphql.xforms :as xf]
             [meo.jvm.graph.stats :as gs]
             [meo.jvm.graph.query :as gq]
@@ -29,8 +27,7 @@
             [meo.jvm.graph.geo :as geo]
             [com.walmartlabs.lacinia.parser :as parser]
             [com.walmartlabs.lacinia.resolve :as resolve])
-  (:import [clojure.lang ExceptionInfo]
-           [java.util.concurrent Executors]))
+  (:import [clojure.lang ExceptionInfo]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
 (defn hours-logged [state context args value] (gs/hours-logged @state))
@@ -249,7 +246,7 @@
                                        {:message (str "Exception: " (.getMessage t))}))))
       result-promise)))
 
-(defn run-query [{:keys [cmp-state current-state msg-payload msg-meta put-fn]}]
+(defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)
         qid (:id msg-payload)
@@ -262,7 +259,6 @@
           (info "GraphQL on-deliver" qid (- (stc/now) start) "ms")
           (let [new-hash (hash res)
                 new-data (not= new-hash res-hash)
-                sente-uid (:sente-uid msg-meta)
                 res (merge merged
                            (xf/simplify res)
                            {:res-hash new-hash
@@ -277,15 +273,11 @@
     (execute-async schema query-string nil nil {} on-deliver))
   {})
 
-(defn run-registered [{:keys [current-state msg-meta put-fn]}]
-  (let [queries (:queries current-state)]
-    (info "Scheduling execution of registered GraphQL queries")
-    (doseq [[id q] (sort-by #(:prio (second %)) queries)]
-      (let [msg (with-meta [:gql/query {:id (:id q)}] msg-meta)
-            high-prio (< (:prio q 100) 10)
-            t (if high-prio 1 1000)]
-        (info "run-registered" id q)
-        (put-fn [:cmd/schedule-new {:timeout t :message msg :id id}]))))
+(defn run-registered [{:keys [current-state msg-meta] :as m}]
+  (info "Running registered GraphQL queries")
+  (doseq [[id _q] (sort-by #(:prio (second %)) (:queries current-state))]
+    (run-query (merge m {:msg-payload {:id id}
+                         :msg-meta    msg-meta})))
   {})
 
 (defn gen-options [{:keys [current-state cmp-state]}]
