@@ -157,9 +157,9 @@
 
 (defn capture-menu [put-fn]
   (let [screenshot #(put-fn [:screenshot/take])
-        accelerator (if (s/includes? (:platform rt/runtime-info) "win")
-                      "PrintScreen"
-                      "Command+Shift+3")]
+        accelerator (if (s/includes? (:platform rt/runtime-info) "darwin")
+                      "Command+Shift+3"
+                      "PrintScreen")]
     {:label   "Capture"
      :submenu [{:label       "New Screenshot"
                 :accelerator accelerator
@@ -211,9 +211,9 @@
         screenshot #(put-fn [:screenshot/take])]
     (info "Starting Menu Component")
     (.on app "activate" activate)
-    (if (s/includes? (:platform rt/runtime-info) "win")
-      (.register globalShortcut "PrintScreen" screenshot)
-      (.register globalShortcut "Command+Shift+3" screenshot))
+    (if (s/includes? (:platform rt/runtime-info) "darwin")
+      (.register globalShortcut "Command+Shift+3" screenshot)
+      (.register globalShortcut "PrintScreen" screenshot))
     (.setApplicationMenu Menu menu))
   {:state (atom {})})
 
