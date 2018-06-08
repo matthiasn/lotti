@@ -35,12 +35,8 @@
      [:button {:on-click check-beta} "check for beta version"]]))
 
 (defn update-available [status-msg put-fn]
-  (let [download (fn [_]
-                   (info "Download button clicked")
-                   (put-fn [:update/download]))
-        check-beta (fn [_]
-                     (info "Check beta versions")
-                     (put-fn [:update/check-beta]))
+  (let [download (fn [_] (put-fn [:update/download]))
+        download-install (fn [_] (put-fn [:update/download :immediate]))
         {:keys [version releaseDate]} (:info status-msg)]
     [:div.updater
      [:h1 "New version of meo available."]
@@ -51,7 +47,7 @@
      " "
      [:button {:on-click download} "download"]
      " "
-     [:button {:on-click check-beta} "check for beta version"]]))
+     [:button {:on-click download-install} "download & install"]]))
 
 (defn downloading [status-msg put-fn]
   (let [{:keys [total percent bytesPerSecond transferred]} (:info status-msg)
