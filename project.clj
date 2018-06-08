@@ -38,7 +38,7 @@
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.34"]
-                 [matthiasn/systems-toolbox-sente "0.6.30"]
+                 [matthiasn/systems-toolbox-sente "0.6.30" :exclusions [http-kit]]
                  [org.clojure/tools.reader "1.2.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
@@ -87,7 +87,7 @@
             [lein-ancient "0.6.15"]]
 
   :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
-                  "java.management" "jdk.unsupported"]
+                  "java.management"]
 
   ;:global-vars {*assert* false}
 
