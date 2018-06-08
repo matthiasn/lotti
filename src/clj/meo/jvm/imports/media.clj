@@ -98,7 +98,7 @@
                     (.lastModified file))
         target-filename (str timestamp "-" filename)]
     (fs/copy rel-path (str fu/img-path target-filename))
-    (img/gen-thumbs file)
+    (img/gen-thumbs file target-filename)
     {:timestamp timestamp
      :latitude  (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
      :longitude (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
@@ -168,7 +168,6 @@
       (try (let [file-info (import-image file)]
              (when file-info
                (put-fn (with-meta [:entry/import file-info] msg-meta))))
-           (img/gen-thumbs file)
            (catch Exception ex (error (str "Error while importing "
                                            filename) ex)))))
   {:emit-msg [:cmd/schedule-new
@@ -184,7 +183,7 @@
       (doseq [file files]
         (let [filename (.getName file)]
           (try
-            (img/gen-thumbs file)
+            (img/gen-thumbs file filename)
             (swap! done inc)
             (info "generated thumbnails" @done "of" n "-" filename)
             ;(put-fn [:photos/gen-cache-progress {:n n :done @done}])

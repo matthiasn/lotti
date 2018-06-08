@@ -44,9 +44,8 @@
         new-filename (str fu/thumbs-path max-w-h "/" filename)]
     (as-file (resize img) new-filename :verbatim)))
 
-(defn gen-thumbs [file]
-  (let [rotated (rotate file)
-        filename (.getName file)]
+(defn gen-thumbs [file filename]
+  (let [rotated (rotate file)]
     (info "generating thumbs for" filename)
     (resize-save filename rotated 256)
     (resize-save filename rotated 512)

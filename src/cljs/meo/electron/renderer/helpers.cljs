@@ -3,6 +3,7 @@
             [meo.common.utils.parse :as p]
             [goog.dom.Range]
             [taoensso.timbre :refer-macros [info debug error]]
+            [path :refer [normalize]]
             [globalize :as globalize]
             [cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
@@ -145,8 +146,16 @@
 (def rp (.-resourcesPath process))
 (def repo-dir (s/includes? (s/lower-case rp) "electron"))
 (def photos (str (if repo-dir ".." user-data) "/data/images/"))
-(def thumbs-256 (str (if repo-dir ".." user-data) "/data/thumbs/256/"))
-(def thumbs-2048 (str (if repo-dir ".." user-data) "/data/thumbs/2048/"))
+
+(defn img-path [path file]
+  (normalize (str (if repo-dir
+                    (.cwd process)
+                    user-data)
+                  path file)))
+
+(defn thumbs-256 [file] (img-path  "/data/thumbs/256/" file))
+(defn thumbs-2048 [file] (img-path  "/data/thumbs/2048/" file))
+
 (def export (str (if repo-dir ".." user-data) "/data/export/"))
 
 (defn to-day [ymd pvt put-fn]

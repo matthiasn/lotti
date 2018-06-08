@@ -37,7 +37,7 @@
    when JPEG file requested."
   [entry locale local put-fn]
   (when-let [file (:img_file entry)]
-    (let [resized-rotated (str h/thumbs-2048 file)
+    (let [resized-rotated (h/thumbs-2048 file)
           ts (:timestamp entry)
           external (str h/photos file)
           fullscreen (:fullscreen @local)
@@ -61,7 +61,7 @@
 
 (defn thumb-view [entry selected local]
   (when-let [file (:img_file entry)]
-    (let [thumb (str h/thumbs-256 file)
+    (let [thumb (h/thumbs-256 file)
           click (fn [_] (swap! local assoc-in [:selected] entry))]
       [:li.thumb
        {:on-click click
