@@ -43,7 +43,7 @@
                         (swap! local dissoc :interval))]
     (fn [put-fn]
       [:div.footer
-       (if @dashboard-banner
+       (when @dashboard-banner
          [:div {:style {:max-height (:height @local)}}
           [db/dashboard (:days @local) put-fn]
           (when @show-pvt
@@ -74,6 +74,4 @@
               [:option {:value 365} "1 year"]]
              (if (:interval @local)
                [:span.fa.fas.fa-pause {:on-click cancel-change}]
-               [:span.fa.fas.fa-play {:on-click change-banner}])])
-          [stats/stats-text]]
-         [stats/stats-text])])))
+               [:span.fa.fas.fa-play {:on-click change-banner}])])])])))

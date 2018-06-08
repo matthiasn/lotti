@@ -15,7 +15,7 @@
 .grid {
   .wrapper {
     display: grid;
-    height: 100vh;
+    height: calc(100vh - 16px);
     grid-gap: 4px;
     grid-template-columns: fit-content(160px) 0 minmax(250px, 1fr) minmax(250px, 1fr);
     grid-template-rows: 44px minmax(0, 2fr) fit-content(95vh);

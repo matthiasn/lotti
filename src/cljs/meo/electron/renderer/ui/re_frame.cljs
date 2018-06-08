@@ -81,6 +81,8 @@
            [:div.right
             [g/tabs-view :right put-fn]])
          [f/footer put-fn]]]
+
+       [stats/stats-text]
        ;[n/new-entries-view put-fn]
        ])))
 

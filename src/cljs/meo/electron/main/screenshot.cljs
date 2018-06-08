@@ -11,7 +11,7 @@
         (.resize max-w-h)
         (.toFile new-filename (fn [err success]
                                 (when err (error err))
-                                (when success (info success)))))))
+                                (when success (info (js->clj success))))))))
 
 (defn take-screenshot [{:keys [put-fn msg-payload]}]
   (let [filename (:filename msg-payload)

@@ -8,11 +8,13 @@
 
 (defn stats-text []
   (let [gql-res (subscribe [:gql-res])
+        stories (subscribe [:stories])
         stats (reaction (:data (:count-stats @gql-res)))]
     (fn stats-text-render []
       [:div.stats-string
        [:div (:entry_count @stats) " entries | "
         (:tag_count @stats) " tags | "
+        (count @stories) " stories | "
         (:mention_count @stats) " people | "
         (:hours_logged @stats) " hours | "
         (:word_count @stats) " words | "
@@ -21,6 +23,7 @@
         (:completed_count @stats) " done | "
         (:closed_count @stats) " closed | "
         (:import_count @stats) " #import | "
+        (:screenshots @stats) " #screenshot | "
         (:active_threads @stats) " threads"]])))
 
 (defn stats-view [put-fn]

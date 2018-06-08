@@ -214,8 +214,11 @@ $backlog-weekend: lighten($backlog, 30);
   background-color: $stats-bg-color;
   color: $stats-color;
   font-size: 0.9em;
-  line-height: 1.4em;
-  padding: 2px 4px;
+  height: 16px;
+  padding: 2px 20px 1px 20px;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
 }
 
 .story-time {
