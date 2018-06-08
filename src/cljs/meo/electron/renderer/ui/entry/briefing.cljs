@@ -100,7 +100,7 @@
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
         day-stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))
         cfg (subscribe [:cfg])
-        local (r/atom {:filter                  :open
+        local (r/atom {:filter                  :all
                        :outstanding-time-filter true
                        :on-hold                 false})]
     (fn briefing-render [put-fn local-cfg]

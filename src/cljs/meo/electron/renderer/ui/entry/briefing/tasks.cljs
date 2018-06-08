@@ -5,17 +5,15 @@
             [taoensso.timbre :refer-macros [info debug]]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
-            [clojure.string :as s]
             [moment]
             [clojure.set :as set]))
 
-(defn task-sorter
-  "Sorts tasks."
-  [x y]
-  (let [c (compare (get-in x [:task :priority] :X)
-                   (get-in y [:task :priority] :X))]
-    (if (not= c 0) c (compare (:timestamp x)
-                              (:timestamp y)))))
+(defn task-sorter [x y]
+  (info x y)
+  (let [c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
+        c2 (compare (get-in x [:task :priority] :X) (get-in y [:task :priority] :X))
+        c3 (compare (:timestamp x) (:timestamp y))]
+    (if (not= c1 0) c1 (if (not= c2 0) c2 c3))))
 
 (defn m-to-hhmm
   [minutes]
@@ -168,7 +166,7 @@
                               (filter current-filter)
                               (filter saga-filter)
                               (filter #(not (contains? started-tasks (:timestamp %))))
-                              (sort-by #(or (-> % :task :priority) :X)))
+                              (sort task-sorter))
             unlink (fn [entry ts]
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]
@@ -176,9 +174,9 @@
             search-text @search-text]
         (when (seq linked-entries)
           [:div.linked-tasks
+           [filter-btn :all]
            [filter-btn :open]
            [filter-btn :done]
-           [filter-btn :all]
            [:table.tasks
             [:tbody
              [:tr
