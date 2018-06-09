@@ -71,9 +71,12 @@
   (.checkForUpdates autoUpdater)
   {})
 
-(defn download-updates [{:keys [current-state msg-payload]}]
+(defn download-updates [{:keys [current-state msg-payload put-fn]}]
   (info "UPDATE: download")
-  (.downloadUpdate autoUpdater)
+  (-> (.downloadUpdate autoUpdater)
+      (.then (fn [ev]
+               (info "Update downloaded")
+               (put-fn [:update/status {:status :update/downloaded}]))))
   {:new-state (assoc-in current-state [:immediate] msg-payload)})
 
 (defn install-updates [_]
