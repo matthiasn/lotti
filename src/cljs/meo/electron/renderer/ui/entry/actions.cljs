@@ -131,7 +131,11 @@
                       (if edit-mode?
                         (put-fn [:entry/remove-local {:timestamp ts}])
                         (put-fn [:entry/trash entry])))
-        open-external (up/add-search ts tab-group put-fn)
+        move-over (fn [_]
+                    (put-fn [:search/remove-all
+                             {:story       (get-in entry [:story :timestamp])
+                              :search-text (str ts)}])
+                    ((up/add-search ts tab-group put-fn)))
         star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
         mouse-enter #(reset! visible true)
         toggle-debug #(swap! local assoc-in [:debug] not)]
@@ -159,7 +163,11 @@
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
           (when (and (not comment?) prev-saved?)
-            [:i.fa.fa-external-link-alt.toggle {:on-click open-external}])
+            [:i.fa.toggle.far
+             {:class    (if (= tab-group :left)
+                          "fa-arrow-alt-from-left"
+                          "fa-arrow-alt-from-right")
+              :on-click move-over}])
           (when-not comment? [new-link entry put-fn create-linked])
           [trash-icon trash-entry]
           (when (contains? (:capabilities @backend-cfg) :debug)
