@@ -11,13 +11,14 @@ sudo apt-get install icnsutils
 sudo apt-get install graphicsmagick
 sudo apt-get install libx11-dev
 sudo apt-get install libxkbfile-dev
+sudo apt-get install libgconf-2-4
 
 wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
 source $HOME/.bashrc
 nvm install 8.9
 
 npm install -g electron
-npm install -g electron-builder
+npm install -g electron-builder@20.14.7
 npm install -g electron-cli
 npm install -g electron-build-env
 npm install -g electron-publisher-s3
