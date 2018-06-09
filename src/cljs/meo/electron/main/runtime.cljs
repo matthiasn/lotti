@@ -41,6 +41,7 @@
               :img-path         (str data-path "/images")
               :thumbs-path      (str data-path "/thumbs")
               :cache            (str user-data "/data/cache.dat")
+              :icon-path        (str app-path "/resources/icon.png")
               :java             (str app-path "/bin/jlink/bin/java")
               :jar              (str app-path "/bin/jlink/meo.jar")
               :blink            (str app-path "/bin/blink1-mac-cli")

@@ -14,7 +14,8 @@
 
 (defn jvm-up? [{:keys [put-fn current-state cmp-state]}]
   (info "JVM up?" (:attempt current-state))
-  (let [try-again
+  (let [icon (:icon-path rt/runtime-info)
+        try-again
         (fn [_]
           (info "- Nope, trying again")
           (when-not (:service @cmp-state)
@@ -22,6 +23,7 @@
           (put-fn [:window/new {:url       "electron/loading.html"
                                 :width     400
                                 :height    300
+                                :opts      {:icon icon}
                                 :window-id "loading"}])
           (put-fn [:cmd/schedule-new {:timeout 1000 :message [:jvm/loaded?]}]))
         res-handler
@@ -30,7 +32,8 @@
             (info "HTTP response: " status-code (= status-code 200))
             (if (= status-code 200)
               (do (put-fn [:window/new {:url  (:index-page rt/runtime-info)
-                                        :opts {:titleBarStyle "hidden"}}])
+                                        :opts {:titleBarStyle "hidden"
+                                               :icon          icon}}])
                   (put-fn (with-meta [:window/close] {:window-id "loading"})))
               (try-again res))))
         req (http/get (clj->js {:host "localhost" :port PORT}) res-handler)]
