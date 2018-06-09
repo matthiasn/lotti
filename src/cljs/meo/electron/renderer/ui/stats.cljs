@@ -15,7 +15,7 @@
     (fn stats-text-render []
       [:div.stats-string
        [:div
-        "meo " [:span.version version] " | "
+        "meo " [:span.highlight version] " | "
         (:entry_count @stats) " entries | "
         (:tag_count @stats) " tags | "
         (count @stories) " stories | "
@@ -28,7 +28,8 @@
         (:closed_count @stats) " closed | "
         (:import_count @stats) " #import | "
         (:screenshots @stats) " #screenshot | "
-        (:active_threads @stats) " threads"]])))
+        (:active_threads @stats) " threads | "
+        " © Matthias Nehlsen"]])))
 
 (defn stats-view [put-fn]
   [:div.stats.charts

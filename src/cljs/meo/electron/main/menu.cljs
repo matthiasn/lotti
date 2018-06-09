@@ -24,8 +24,9 @@
   (let [update-win {:url "electron/updater.html" :width 600 :height 300}
         check-updates #(put-fn [:window/new update-win])]
     {:label   "Application"
-     :submenu [{:label    "About meo"
-                :selector "orderFrontStandardAboutPanel:"}
+     :submenu [(when (= (:platform rt/runtime-info) "darwin")
+                 {:label    "About meo"
+                  :selector "orderFrontStandardAboutPanel:"})
                {:label "Check for Updates..."
                 :click check-updates}
                (when (contains? capabilities :spotify)
