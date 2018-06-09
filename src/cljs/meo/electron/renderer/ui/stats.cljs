@@ -4,15 +4,19 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
             [meo.electron.renderer.ui.charts.media :as m]
+            [electron :refer [remote]]
             [re-frame.core :refer [subscribe]]))
 
 (defn stats-text []
   (let [gql-res (subscribe [:gql-res])
         stories (subscribe [:stories])
-        stats (reaction (:data (:count-stats @gql-res)))]
+        stats (reaction (:data (:count-stats @gql-res)))
+        version (.getVersion (aget remote "app"))]
     (fn stats-text-render []
       [:div.stats-string
-       [:div (:entry_count @stats) " entries | "
+       [:div
+        "meo " [:span.version version] " | "
+        (:entry_count @stats) " entries | "
         (:tag_count @stats) " tags | "
         (count @stories) " stories | "
         (:mention_count @stats) " people | "
