@@ -82,6 +82,7 @@
                             :latitude
                             :longitude
                             :img_file
+                            :starred
                             :for_day
                             :comment_for
                             :entry_type

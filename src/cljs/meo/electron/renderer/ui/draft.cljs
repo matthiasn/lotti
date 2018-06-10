@@ -78,8 +78,7 @@
                :stories     @stories
                :onChange    on-change}])))
 
-(defn remove-nils
-  [m]
+(defn remove-nils [m]
   (let [f (fn [[k v]] (when v [k v]))]
     (walk/postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
 
@@ -89,6 +88,7 @@
         y (assoc y :tags (set/union (:perm_tags y) (:tags y)))
         ks (set/intersection (set (keys x))
                              (set (keys y)))
+        ks (conj ks :starred)
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
         x2 (update-in x1 [:md] s/replace " " "")

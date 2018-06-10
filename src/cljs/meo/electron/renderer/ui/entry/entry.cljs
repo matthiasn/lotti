@@ -77,8 +77,8 @@
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
    showing the warning that the entry is not saved yet."
-  [entry2 put-fn local-cfg]
-  (let [ts (:timestamp entry2)
+  [entry put-fn local-cfg]
+  (let [ts (:timestamp entry)
         cfg (subscribe [:cfg])
         {:keys [edit-mode new-entry]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
@@ -87,14 +87,14 @@
         q-date-string (.format (moment ts) "YYYY-MM-DD")
         tab-group (:tab-group local-cfg)
         add-search (up/add-search q-date-string tab-group put-fn)
-        drop-fn (a/drop-linked-fn entry2 cfg put-fn)
+        drop-fn (a/drop-linked-fn entry cfg put-fn)
         local (r/atom {:scroll-disabled true})]
-    (fn journal-entry-render [entry2 put-fn local-cfg]
-      (let [merged (merge entry2 @new-entry)
+    (fn journal-entry-render [entry put-fn local-cfg]
+      (let [merged (merge entry @new-entry)
             edit-mode? @edit-mode
             locale (:locale @cfg :en)
-            toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry2])
-                                        (put-fn [:entry/update-local entry2]))
+            toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry])
+                                        (put-fn [:entry/update-local entry]))
             formatted-time (h/localize-datetime (moment ts) locale)
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
@@ -104,9 +104,9 @@
                      :on-drag-enter h/prevent-default}
          [:div.header-1
           [:div
-           [es/story-select entry2 put-fn]
+           [es/story-select entry put-fn]
            [es/saga-select merged put-fn edit-mode?]]
-          [loc/geonames entry2 put-fn]]
+          [loc/geonames entry put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
@@ -115,13 +115,13 @@
           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-name-field merged edit-mode? put-fn]
          [es/saga-name-field merged edit-mode? put-fn]
-         [d/entry-editor entry2 put-fn]
+         [d/entry-editor entry put-fn]
          [task/task-details merged local-cfg put-fn edit-mode?]
          [habit/habit-details merged local-cfg put-fn edit-mode?]
          [reward/reward-details merged put-fn]
          [:div.footer
           [pomo/pomodoro-header merged edit-mode? put-fn]
-          [hashtags-mentions-list entry2 tab-group put-fn]
+          [hashtags-mentions-list entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]
          [c/custom-fields-div merged put-fn edit-mode?]
@@ -144,12 +144,12 @@
          [c/questionnaire-div merged put-fn edit-mode?]
          (when (:debug @local)
            [:div.debug
+            [:h3 "from backend"]
+            [:pre [:code (with-out-str (pp/pprint entry))]]
             [:h3 "@new-entry"]
             [:pre [:code (with-out-str (pp/pprint @new-entry))]]
-            [:h3 "merged"]
-            [:pre [:code (with-out-str (pp/pprint merged))]]
             [:h3 "diff"]
-            [:pre [:code (with-out-str (pp/pprint (cd/diff @new-entry merged)))]]])]))))
+            [:pre [:code (with-out-str (pp/pprint (cd/diff entry @new-entry)))]]])]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens
