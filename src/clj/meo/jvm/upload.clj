@@ -48,7 +48,7 @@
                            (io/make-parents file)
                            (info :backend/upload-cmp :binary req)
                            (io/copy (:body req) file)
-                           (img/gen-thumbs file filename))
+                           (img/gen-thumbs file (.getName file)))
                          "OK")
         app (routes
               (PUT "/upload/:dir/:file" [dir file :as r]

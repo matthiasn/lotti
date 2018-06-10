@@ -9,7 +9,6 @@
             [clojure.set :as set]))
 
 (defn task-sorter [x y]
-  (info x y)
   (let [c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
         c2 (compare (get-in x [:task :priority] :X) (get-in y [:task :priority] :X))
         c3 (compare (:timestamp x) (:timestamp y))]

@@ -285,9 +285,10 @@
     z-index: 1111;
 
     .filters {
+      background-color: #111;
 
       .stars-filter {
-        width: 120px;
+        width: 100px;
         margin-top: 40px;
         margin-left: 10px;
         line-height: 1.5em;
@@ -300,13 +301,16 @@
       }
     }
 
-    .info {
+    .info-drawer {
       background-color: #111;
       height: calc(100vh - 116px);
       color: #ccc;
+      width: 300px;
 
       .stars {
         margin: 7px;
+        display: inline-block;
+        width: 300px;
       }
 
       time {
@@ -327,36 +331,31 @@
         font-size: 1em;
       }
 
-      .map {
-        width: 200px;
-        height: 300px;
-      }
-
-      .mapbox {
+      .map, .mapbox {
         background-color: #333;
         height: 50vh;
-        width: 400px;
+        width: 300px;
       }
     }
 
     .carousel .slide img {
       height: calc(100vh - 116px);
-      width: calc(100vw - 550px);
+      width: calc(100vw - 400px);
       object-fit: contain;
       margin-left: 5px;
       margin-right: 5px;
     }
 
     .carousel .control-prev.control-arrow {
-      left: 135px;
+      left: 110px;
     }
 
     .carousel .control-next.control-arrow {
-      right: 400px;
+      right: 300px;
     }
 
     .carousel .carousel-status {
-      right: 450px;
+      right: 300px;
     }
   }
 

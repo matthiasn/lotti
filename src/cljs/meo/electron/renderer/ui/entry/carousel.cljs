@@ -107,14 +107,19 @@
             html (md/md->html (:md selected))
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
-            external (str h/photos file)]
-        [:div.info
-         ;[l/leaflet-map selected true {} put-fn]
-         [mb/mapbox-cls {:local        local
-                         :id           (str ts)
-                         :selected     selected
-                         :mapbox-token mapbox-token
-                         :put-fn       put-fn}]
+            external (str h/photos file)
+            {:keys [latitude longitude]} selected]
+        [:div.info-drawer
+         (when (and latitude longitude
+                    (not (and (zero? latitude)
+                              (zero? longitude))))
+           (if mapbox-token
+             [mb/mapbox-cls {:local        local
+                             :id           (str ts)
+                             :selected     selected
+                             :mapbox-token mapbox-token
+                             :put-fn       put-fn}]
+             [l/leaflet-map selected true {} put-fn]))
          [:time (h/localize-datetime-full ts locale)]
          [stars-view selected put-fn]
          [:div.md {:dangerouslySetInnerHTML {:__html html}}]
