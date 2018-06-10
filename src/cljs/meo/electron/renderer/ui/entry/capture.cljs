@@ -88,10 +88,12 @@
                             (put-fn [:entry/update-local updated]))))))
                   ^{:key (str "cf" ts tag k)}
                   [:div
-                   [:label (:label field) ":"]
+                   [:label (:label field)]
                    [:input (merge
                              input-cfg
                              {:on-change on-change-fn
+                              :class     (when (= input-type :time) "time")
+                              :type      (if (= input-type :time) :text input-type)
                               :value     value})]]))])])))))
 
 (defn questionnaire-div
