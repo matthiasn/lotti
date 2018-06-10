@@ -169,7 +169,6 @@
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
-        ^{:key (str ts (:vclock entry2))}
         [:div {:class (when unsaved "unsaved")}
          [editor {:md       (or (or (:md @new-entry) (:md entry2)) "")
                   :ts       ts
