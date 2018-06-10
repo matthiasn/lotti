@@ -23,11 +23,6 @@
           update-available (fn [info]
                              (let [info (js->clj info :keywordize-keys true)]
                                (info "Update available.")
-                               (when (:immediate @state)
-                                 (put-fn [:app/shutdown-jvm])
-                                 (put-fn [:cmd/schedule-new
-                                          {:timeout 1000
-                                           :message [:update/quit-install]}]))
                                (if (:open-window @state)
                                  (put-fn [:window/updater])
                                  (put-fn [:update/status {:status :update/available
@@ -37,6 +32,11 @@
                      (put-fn [:update/status {:status :update/checking}]))
           downloaded (fn [ev]
                        (info "Update downloaded")
+                       (when (:immediate @state)
+                         (put-fn [:app/shutdown-jvm])
+                         (put-fn [:cmd/schedule-new
+                                  {:timeout 1000
+                                   :message [:update/quit-install]}]))
                        (put-fn [:update/status {:status :update/downloaded}]))
           downloading (fn [progress]
                         (let [info (js->clj progress :keywordize-keys true)]

@@ -62,7 +62,7 @@
   :profiles {:uberjar      {:aot :all}
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
-                                           [cljsjs/create-react-class "15.6.0-2"]]}
+                                           [cljsjs/create-react-class "15.6.3-0"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.238"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
@@ -79,7 +79,7 @@
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.16"]
-            [test2junit "1.4.0"]
+            [test2junit "1.4.1"]
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
