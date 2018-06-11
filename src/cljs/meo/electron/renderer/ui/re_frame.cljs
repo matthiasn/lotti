@@ -117,7 +117,7 @@
     (fn [put-fn]
       (let [current-page @current-page
             startup-progress @startup-progress]
-        (if (or (zero? startup-progress) (= 1 startup-progress))
+        (if (= 1 startup-progress)
           (case (:page current-page)
             :config [cfg/config put-fn]
             :sync [sync/sync put-fn]

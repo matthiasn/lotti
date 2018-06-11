@@ -24,7 +24,7 @@ h1 {
 }
 
 .spinner > div {
-  background-color: $orange;
+  background-color: darken($orange, 15);
   height: 100%;
   width: 6px;
   display: inline-block;
