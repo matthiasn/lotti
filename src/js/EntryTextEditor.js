@@ -228,20 +228,20 @@ let EntryTextEditor = function (_Component) {
 
 
         _this.componentWillReceiveProps = function (nextProps) {
-            let t0 = performance.now();
-            let sinceUpdate = Date.now() - _this.state.lastUpdated;
-
-            _this.state.mentions = nextProps.mentions;
-            _this.state.hashtags = nextProps.hashtags;
-
-            if (sinceUpdate > 250) {
-                let rawFromMd = _draftjsMdConverter.mdToDraftjs(nextProps.md);
-                let content = _draftJs.convertFromRaw(rawFromMd);
-                let newState = _draftJs.EditorState.createWithContent(content);
-                _this.setState({editorState: newState});
-            }
-            let t1 = performance.now();
-            console.log("componentWillReceiveProps took " + (t1 - t0) + "ms.");
+            // let t0 = performance.now();
+            // let sinceUpdate = Date.now() - _this.state.lastUpdated;
+            //
+            // _this.state.mentions = nextProps.mentions;
+            // _this.state.hashtags = nextProps.hashtags;
+            //
+            // if (sinceUpdate > 250) {
+            //     let rawFromMd = _draftjsMdConverter.mdToDraftjs(nextProps.md);
+            //     let content = _draftJs.convertFromRaw(rawFromMd);
+            //     let newState = _draftJs.EditorState.createWithContent(content);
+            //     _this.setState({editorState: newState});
+            // }
+            // let t1 = performance.now();
+            // console.log("componentWillReceiveProps took " + (t1 - t0) + "ms.");
         };
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
