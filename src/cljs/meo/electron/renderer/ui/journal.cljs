@@ -23,6 +23,7 @@
                                                      (not (:comment_for entry)))
                                                 (not comments-w-entries?))
                                             (or (:new-entry entry) show-context?)))]
+        ^{:key (str query-id)}
         [:div.journal
          [:div.journal-entries
           (for [entry @entries-list]

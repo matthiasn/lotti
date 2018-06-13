@@ -44,9 +44,7 @@
                        [:input {:type      :checkbox
                                 :checked   (get-in entry [:habit :days day])
                                 :on-change (day-select entry day)}])
-        close-tab (fn []
-                    (when (= (str (:timestamp entry)) (:search-text local-cfg))
-                      (put-fn [:search/remove local-cfg])))
+        close-tab (fn [] (put-fn [:search/remove local-cfg]))
         done
         (fn [entry]
           (fn [ev]
