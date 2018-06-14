@@ -179,9 +179,12 @@
 
 (defn briefing-actions [ts put-fn]
   (let [open-new (fn [x]
-                   (put-fn [:search/add
-                            {:tab-group :left
-                             :query     (up/parse-search (:timestamp x))}]))
+                   (put-fn
+                     [:cmd/schedule-new
+                      {:message [:search/add
+                                 {:tab-group :left
+                                  :query     (up/parse-search (:timestamp x))}]
+                       :timeout 100}]))
         create-linked-entry (h/new-entry put-fn {:linked_entries #{ts}
                                                  :starred        true
                                                  :perm_tags      #{"#task"}}

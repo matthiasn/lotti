@@ -107,9 +107,10 @@
                 [:story [:timestamp
                          :story_name
                          [:saga [:saga_name]]]]]
-        f (fn [[k {:keys [n search-text]}]]
+        f (fn [[k {:keys [n search-text story]}]]
             {:query/data  [:tab_search {:query search-text
                                         :pvt   pvt
+                                        :story story
                                         :prio  1
                                         :n     n} fields]
              :query/alias k})

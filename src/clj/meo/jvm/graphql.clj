@@ -128,11 +128,12 @@
     (mapv task-total-t entries)))
 
 (defn tab-search [state context args value]
-  (let [{:keys [query n pvt]} args
+  (let [{:keys [query n pvt story]} args
         current-state @state
         g (:graph current-state)
-        q (update-in (p/parse-search query) [:n] #(or n %))
-        q (assoc-in q [:pvt] pvt)
+        q (merge (update-in (p/parse-search query) [:n] #(or n %))
+                 {:story (when story (Long/parseLong story))
+                  :pvt   pvt})
         res (->> (gq/get-filtered2 current-state q)
                  (filter #(not (:comment_for %)))
                  (mapv (partial entry-w-story g))

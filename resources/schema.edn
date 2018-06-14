@@ -260,6 +260,7 @@
    :args        {:query {:type String}
                  :n     {:type Int}
                  :prio  {:type Int}
+                 :story {:type ID}
                  :pvt   {:type Boolean}}
    :resolve     :query/tab-search}
 
