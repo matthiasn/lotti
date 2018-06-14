@@ -19,8 +19,8 @@
 (defn visit-duration
   "Formats duration string."
   [entry]
-  (let [arrival-ts (:arrival-timestamp entry)
-        depart-ts (:departure-timestamp entry)
+  (let [arrival-ts (:arrival_timestamp entry)
+        depart-ts (:departure_timestamp entry)
         secs (when (and arrival-ts depart-ts)
                (let [dur (- depart-ts arrival-ts)]
                  (if (int? dur) (/ dur 1000) dur)))]
