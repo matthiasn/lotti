@@ -17,9 +17,6 @@
                               (let [sel (keyword (h/target-val ev))
                                     updated (assoc-in entry [:task :priority] sel)]
                                 (put-fn [:entry/update-local updated]))))
-              close-tab (fn []
-                          (when (= (str (:timestamp entry)) (:search-text local-cfg))
-                            (put-fn [:search/remove local-cfg])))
               done (fn [entry]
                      (fn [_ev]
                        (let [completion-ts (.format (moment))
@@ -32,9 +29,7 @@
                              entry (-> entry
                                        (update-in [:perm_tags] set-fn #{"#done"})
                                        (update-in [:tags] set-fn #{"#done"}))]
-                         (put-fn [:entry/update entry])
-                         ;(close-tab)
-                         )))
+                         (put-fn [:entry/update entry]))))
               hold (fn [entry]
                      (fn [_ev]
                        (let [updated (update-in entry [:task :on_hold] not)]

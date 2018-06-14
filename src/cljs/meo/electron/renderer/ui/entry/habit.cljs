@@ -30,7 +30,8 @@
         (dissoc :longitude))))
 
 (defn habit-details [entry local-cfg put-fn edit-mode?]
-  (let [backend-cfg (subscribe [:backend-cfg])
+  (let [ts (:timestamp entry)
+        backend-cfg (subscribe [:backend-cfg])
         active-from (fn [entry]
                       (fn [ev]
                         (let [dt (h/target-val ev)
@@ -44,7 +45,7 @@
                        [:input {:type      :checkbox
                                 :checked   (get-in entry [:habit :days day])
                                 :on-change (day-select entry day)}])
-        close-tab (fn [] (put-fn [:search/remove local-cfg]))
+        close-tab #(put-fn [:search/remove-all {:search-text (str ts)}])
         done
         (fn [entry]
           (fn [ev]

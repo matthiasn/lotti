@@ -7,6 +7,17 @@ Here's how that currently looks like:
 ![screenshot](http://matthiasnehlsen.com/images/2018-03-08-meo-charts.png)
 
 
+# Installers
+
+Packaged binaries allow you to install the application without having to build it yourself:
+
+- [Mac](https://s3.eu-central-1.amazonaws.com/matthiasn-meo/meo-0.5.150.dmg)
+- [Linux](https://s3.eu-central-1.amazonaws.com/matthiasn-meo/meo-0.5.150-x86_64.AppImage)
+- [Windows](https://s3.eu-central-1.amazonaws.com/matthiasn-meo/meo+Setup+0.5.150.exe)
+
+All of these provide auto-update functionality, which can be accessed through "Check for Updates" in the application menu. In addition, checks for a newer version run once every 24 hours.
+
+
 ## Motivation
 
 See this [blog post](http://matthiasnehlsen.com/blog/2018/03/15/introducing-meo/) for the background. More blog posts to follow.
