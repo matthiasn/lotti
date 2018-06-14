@@ -58,6 +58,7 @@
                     :days     days}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         (gql-query charts-pos days put-fn)
+        ^{:key (dc/df now dc/month-day)}
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
