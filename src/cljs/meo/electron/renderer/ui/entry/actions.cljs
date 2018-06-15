@@ -153,10 +153,12 @@
                                        {:linked_entries #{ts}
                                         :primary_story  story
                                         :linked_stories #{story}}
-                                       open-new)]
+                                       open-new)
+            ;opacity (if (or edit-mode? @visible) 1 0)
+            opacity 1]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div.items {:style {:opacity (if (or edit-mode? @visible) 1 0)}}
+         [:div.items {:style {:opacity opacity}}
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])

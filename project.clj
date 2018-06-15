@@ -79,7 +79,7 @@
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.16"]
-            [test2junit "1.4.1"]
+            [test2junit "1.4.2"]
             [lein-cloverage "1.0.10"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
@@ -87,7 +87,7 @@
             [lein-ancient "0.6.15"]]
 
   :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
-                  "java.management"]
+                  "java.management" "jdk.unsupported"]
 
   ;:global-vars {*assert* false}
 

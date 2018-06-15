@@ -14,8 +14,8 @@
         sw (sp/point sw_lat sw_lon)
         rect (RectangleImpl. sw ne sp/earth)
         nearby (fn [entry]
-                 (let [{:keys [latitude longitude img-file]} entry]
-                   (when (and latitude longitude img-file)
+                 (let [{:keys [latitude longitude img_file]} entry]
+                   (when (and latitude longitude img_file)
                      (let [point (sp/point latitude longitude)]
                        (sp/intersects? rect point)))))
         res (mapv xf/vclock-xf (filter nearby entries))]
