@@ -335,3 +335,8 @@
 (s/def :window/show nil?)
 (s/def :screenshot/take nil?)
 (s/def :import/screenshot map?)
+
+(s/def :meo.photo/filename string?)
+(s/def :meo.photo/full-path string?)
+(s/def :import/gen-thumbs (s/keys :req-un [:meo.photo/filename
+                                           :meo.photo/full-path]))

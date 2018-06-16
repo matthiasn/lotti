@@ -31,7 +31,7 @@
                          :backend-cfg/save :import/git
                          :photos/gen-cache :export/geojson
                          :import/movie :entry/unlink :startup/progress?
-                         :import/listen :spotify/play
+                         :import/listen :spotify/play :import/gen-thumbs
                          :spotify/pause :cfg/refresh
                          :sync/start-server :sync/stop-server
                          :tf/learn-stories :gql/query

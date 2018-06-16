@@ -108,6 +108,11 @@
      :tags      #{"#import"}
      :perm_tags #{"#photo"}}))
 
+(defn gen-thumbs [{:keys [msg-payload]}]
+  (let [{:keys [filename full-path]} msg-payload]
+    (img/gen-thumbs (io/file full-path) filename))
+  {})
+
 (defn import-video
   "Takes a video file (as a java.io.InputStream or java.io.File) and creates
    entry from it."
@@ -137,25 +142,6 @@
      :audio-file target-filename
      :md         "some #audio"
      :tags       #{"#audio" "#import"}}))
-
-(defn import-media
-  "Imports photos from respective directory."
-  [{:keys [put-fn msg-meta]}]
-  (let [files (file-seq (io/file (str fu/data-path "/import")))]
-    (info "importing media files")
-    (doseq [file (f/filter-by-name files specs/media-file-regex)]
-      (let [filename (.getName file)]
-        (info "Trying to import " filename)
-        (try (let [[_ file-type] (re-find #"^.*\.([a-z0-9]{3})$" filename)
-                   file-info (case file-type
-                               "m4v" (import-video file)
-                               "m4a" (import-audio file)
-                               (import-image file))]
-               (when file-info
-                 (put-fn (with-meta [:entry/import file-info] msg-meta))))
-             (catch Exception ex (error (str "Error while importing "
-                                             filename) ex)))))
-    {}))
 
 (defn import-photos
   "Imports photos selected in UI. Expects message payload to be a vector with

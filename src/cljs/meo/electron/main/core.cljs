@@ -47,7 +47,7 @@
                 :tf/learn-stories
                 :spellcheck/lang
                 :spellcheck/off
-                :import/screenshot
+                :import/gen-thumbs
                 :import/photos
                 :import/listen
                 :import/git
@@ -105,6 +105,9 @@
                     :to   :electron/startup}]
 
        [:cmd/route {:from :electron/geocoder
+                    :to   :electron/window-manager}]
+
+       [:cmd/route {:from :electron/screenshot
                     :to   :electron/window-manager}]
 
        [:cmd/route {:from :electron/encryption

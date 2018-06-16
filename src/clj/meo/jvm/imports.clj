@@ -9,6 +9,7 @@
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:import/photos     im/import-photos
+                 :import/gen-thumbs im/gen-thumbs
                  :import/movie      im/import-movie
                  :import/spotify    iss/import-spotify
                  :import/git        g/import-from-git
