@@ -63,7 +63,7 @@
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.3-0"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.238"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.312"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
