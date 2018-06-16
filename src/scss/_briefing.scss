@@ -1,0 +1,101 @@
+@import "variables.scss";
+
+.briefing {
+  display: flex;
+  flex-direction: column;
+
+  .briefing-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px;
+
+    .actions {
+      padding-top: 2px;
+    }
+  }
+
+  .summary {
+    font-size: $font-size-small;
+    margin-bottom: 8px;
+  }
+
+  svg {
+    &.vertical-bar {
+      width: 100vw;
+      height: 300px;
+    }
+    &.planned-actual {
+      width: 300px;
+    }
+  }
+
+  form {
+    flex-grow: 1;
+  }
+
+  .stacked-bars {
+    width: 60px;
+    padding: 10px 0 0 10px;
+    display: flex;
+
+    div {
+      width: 14px;
+    }
+  }
+
+  .saga-filter {
+    position: relative;
+    user-select: none;
+    white-space: nowrap;
+
+    .toggle-visible {
+      font-weight: bold;
+      font-size: 1.2em;
+      cursor: pointer;
+      padding: 3px 5px;
+
+      i {
+        color: $green;
+        margin-left: 4px;
+      }
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px;
+
+      div {
+        color: black;
+        font-weight: bold;
+        font-size: 0.8em;
+        background-color: #EEE;
+        cursor: pointer;
+        padding: 2px 5px;
+        border-radius: 2px;
+        margin-bottom: 3px;
+      }
+    }
+
+    .items {
+      position: absolute;
+      background-color: white;
+      border: #aaa 1px solid;
+      border-radius: 5px;
+      box-shadow: 0 0 1px 1px #AAA;
+    }
+    .item {
+      padding: 3px 6px;
+      cursor: pointer;
+
+      &.selected {
+        background-color: lighten($orange, 30);
+      }
+    }
+    input {
+      margin-right: 7px;
+      cursor: pointer;
+    }
+
+  }
+}

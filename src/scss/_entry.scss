@@ -339,40 +339,6 @@
   margin-top: 0;
 }
 
-.briefing {
-  display: flex;
-  flex-direction: column;
-
-  .summary {
-    font-size: $font-size-small;
-    margin-bottom: 8px;
-  }
-
-  svg {
-    &.vertical-bar {
-      width: 100vw;
-      height: 300px;
-    }
-    &.planned-actual {
-      width: 300px;
-    }
-  }
-
-  form {
-    flex-grow: 1;
-  }
-
-  .stacked-bars {
-    width: 60px;
-    padding: 10px 0 0 10px;
-    display: flex;
-
-    div {
-      width: 14px;
-    }
-  }
-}
-
 .questionnaire {
   user-select: none;
   margin-top: 10px;

@@ -96,9 +96,9 @@
                              on-hold
                              (not on-hold))))
         saga-filter (fn [entry]
-                      (if-let [selected (:selected @local)]
+                      (if (seq (:selected-set @local))
                         (let [saga (get-in entry [:story :saga :timestamp])]
-                          (= selected saga))
+                          (contains? (:selected-set @local) saga))
                         true))
         open-filter (fn [entry] (not (-> entry :task :done)))
         filter-btn (fn [fk]
@@ -154,9 +154,9 @@
             linked-entries (:linked @briefing)
             current-filter (get linked-filters (:filter @local))
             saga-filter (fn [entry]
-                          (if-let [selected (:selected @local)]
-                            (let [story (:story entry)]
-                              (= selected (:timestamp (:saga story))))
+                          (if (seq (:selected-set @local))
+                            (let [saga (get-in entry [:story :saga :timestamp])]
+                              (contains? (:selected-set @local) saga))
                             true))
             started-tasks (set (map :timestamp @started-tasks))
             task-filter #(contains? (set/union (:perm_tags %) (:tags %)) "#task")

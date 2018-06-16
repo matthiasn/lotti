@@ -81,19 +81,34 @@
 
 (defn sagas-filter [local]
   (let [sagas (subscribe [:sagas])
-        saga-select (fn [ev]
-                      (let [v (js/parseInt (-> ev .-nativeEvent .-target .-value))
-                            selected (when (pos? v) v)]
-                        (swap! local assoc-in [:selected] selected)))]
+        all #(swap! local assoc-in [:selected-set] (set (keys @sagas)))
+        none #(swap! local assoc-in [:selected-set] #{})]
     (fn sagas-filter-render [local]
-      ^{:key (:selected @local)}
-      [:select {:value     (:selected @local "")
-                :on-change saga-select}
-       [:option ""]
-       (for [[ts saga] (sort-by #(s/lower-case (or (:saga_name (second %)) ""))
-                                @sagas)]
-         ^{:key ts}
-         [:option {:value ts} (:saga_name saga)])])))
+      (let [local-deref @local
+            sorted (sort-by #(s/lower-case (or (:saga_name (second %)) "")) @sagas)]
+        [:div.saga-filter
+         [:div.toggle-visible
+          {:on-click #(swap! local update-in [:show-filter] not)}
+          "filter"
+          [:i.fas {:class (if (:show-filter @local)
+                            "fa-chevron-square-up"
+                            "fa-chevron-square-down")}]]
+         (when (:show-filter @local)
+           [:div.items
+            [:div.controls
+             [:div {:on-click all} "select all"]
+             [:div {:on-click none} "clear"]]
+            (for [[ts saga] sorted]
+              (let [selected? (contains? (:selected-set local-deref) ts)
+                    toggle #(let [op (if selected? disj conj)]
+                              (swap! local update-in [:selected-set] op ts))]
+                ^{:key ts}
+                [:div.item
+                 {:on-click toggle
+                  :class    (when selected? "selected")}
+                 [:input {:type    :checkbox
+                          :checked selected?}]
+                 (s/trim (:saga_name saga))]))])]))))
 
 (defn briefing-view [put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
@@ -102,6 +117,8 @@
         cfg (subscribe [:cfg])
         local (r/atom {:filter                  :all
                        :outstanding-time-filter true
+                       :selected-set            #{}
+                       :show-filter             false
                        :on-hold                 false})]
     (fn briefing-render [put-fn local-cfg]
       (let [ts (:timestamp @briefing)
@@ -123,7 +140,7 @@
           [:div.briefing {:on-drop       drop-fn
                           :on-drag-over  h/prevent-default
                           :on-drag-enter h/prevent-default}
-           [:div.header
+           [:div.briefing-header
             [sagas-filter local]
             [a/briefing-actions ts put-fn]]
            [:div.briefing-details

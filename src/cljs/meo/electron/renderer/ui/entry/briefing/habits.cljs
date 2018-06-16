@@ -29,9 +29,9 @@
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         expand-fn #(swap! local update-in [:expanded-habits] not)
         saga-filter (fn [entry]
-                      (if-let [selected (:selected @local)]
-                        (let [saga (-> entry :story :saga :timestamp)]
-                          (= selected saga))
+                      (if (seq (:selected-set @local))
+                        (let [saga (get-in entry [:story :saga :timestamp])]
+                          (contains? (:selected-set @local) saga))
                         true))
         habits (reaction (->> @habits
                               (filter saga-filter)
