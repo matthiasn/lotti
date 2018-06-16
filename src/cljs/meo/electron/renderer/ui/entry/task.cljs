@@ -21,7 +21,7 @@
                      (fn [_ev]
                        (let [completion-ts (.format (moment))
                              entry (-> entry
-                                       (assoc-in [:task :completion-ts] completion-ts)
+                                       (assoc-in [:task :completion_ts] completion-ts)
                                        (update-in [:task :done] not))
                              set-fn (if (get-in entry [:task :done])
                                       set/union
@@ -36,21 +36,15 @@
                          (put-fn [:entry/update updated]))))
               allocation (or (get-in entry [:task :estimate_m]) 0)
               priority (get-in entry [:task :priority])
-              done-checked (get-in entry [:task :done])
-              hold-checked (get-in entry [:task :on_hold])
-              ]
+              done-checked (get-in entry [:task :done])]
           [:form.task-details
            [:div
             [:div.overview
              [:span.click {:class    (when done-checked "done")
                            :on-click (done entry)}
               [:i.fas.fa-check]]
-             #_[:span.click {:class    (when hold-checked "hold")
-                             :on-click (hold entry)}
-                [:i.fas.fa-ban]]
              [:span.click {:on-click #(swap! local update-in [:show] not)}
-              [:i.fas.fa-cog]]
-             ]]
+              [:i.fas.fa-cog]]]]
            (when (:show @local)
              [:fieldset
               [:div

@@ -154,11 +154,10 @@
                                         :primary_story  story
                                         :linked_stories #{story}}
                                        open-new)
-            ;opacity (if (or edit-mode? @visible) 1 0)
-            opacity 1]
+            opacity (if (or edit-mode? @visible) 1 0)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div.items {:style {:opacity opacity}}
+         [:div.items ;{:style {:opacity opacity}}
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
@@ -176,7 +175,7 @@
             [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
          [:i.fa.toggle
           {:on-click star-entry
-           :style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
+           ;:style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
 (defn briefing-actions [ts put-fn]

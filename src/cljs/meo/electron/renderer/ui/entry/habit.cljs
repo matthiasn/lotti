@@ -56,7 +56,7 @@
                     next-ts (:timestamp next-entry)
                     updated (-> entry
                                 (assoc-in [:habit :next-entry] next-ts)
-                                (assoc-in [:habit :completion-ts] completion-ts)
+                                (assoc-in [:habit :completion_ts] completion-ts)
                                 (update-in [:habit :done] not))]
                 (put-fn [:entry/update next-entry])
                 (put-fn [:entry/update updated])

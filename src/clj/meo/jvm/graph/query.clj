@@ -42,6 +42,8 @@
           q-day (:date_string q)
           day-match? (or (= q-day entry-day)
                          (when-let [for-day (:for_day entry)]
+                           (= q-day (subs for-day 0 10)))
+                         (when-let [for-day (:completion_ts (:task entry))]
                            (= q-day (subs for-day 0 10))))
 
           q-timestamp (:timestamp q)
@@ -167,15 +169,16 @@
         not-matched (apply set/union (filter seq (concat nt-matched ntp-matched)))]
     (set/difference matched not-matched)))
 
-(defn get-nodes-for-day
-  "Extract matching timestamps for query."
-  [g query]
+(defn get-nodes-for-day [g query]
   (let [dt (ctf/parse (ctf/formatters :year-month-day) (:date_string query))]
     (set (mapv :dest (uc/find-edges g {:src          {:type  :timeline/day
                                                       :year  (ct/year dt)
                                                       :month (ct/month dt)
                                                       :day   (ct/day dt)}
                                        :relationship :DATE})))))
+
+(defn get-done [g]
+  (set (mapv :dest (uc/find-edges g {:src :done}))))
 
 (defn get-linked-for-ts [g ts]
   (let [linked (->> (flatten (uc/find-edges g {:src ts :relationship :LINKED}))
@@ -196,9 +199,7 @@
       (set (mapv :dest (uc/find-edges g {:src          day-node
                                          :relationship :BRIEFING}))))))
 
-(defn get-connected-nodes
-  "Extract matching timestamps for query."
-  [g node]
+(defn get-connected-nodes [g node]
   (set (mapv :dest (uc/find-edges g {:src node}))))
 
 (defn get-linked-entries
@@ -302,7 +303,6 @@
    Warns when node not in graph. (debugging, should never happen)"
   [state query]
   (let [g (:graph state)
-        n (:n query 20)
         matched-ids (cond
                       ; full-text search
                       (:ft-search query)

@@ -26,7 +26,8 @@
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.geo :as geo]
             [com.walmartlabs.lacinia.parser :as parser]
-            [com.walmartlabs.lacinia.resolve :as resolve])
+            [com.walmartlabs.lacinia.resolve :as resolve]
+            [clojure.set :as set])
   (:import [clojure.lang ExceptionInfo]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
@@ -72,12 +73,21 @@
                                    (filter :timestamp)
                                    (vec)))))
 
+(defn completed-for-day [g day]
+  (let [entries (set/intersection (gq/get-nodes-for-day g {:date_string day})
+                                  (gq/get-done g))]
+    (->> entries
+         (map #(entry-w-story g (get-entry g %)))
+         (filter :timestamp)
+         (vec))))
+
 (defn briefing [state context args value]
   (let [g (:graph @state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
     (when-let [briefing (get-entry g ts)]
       (let [briefing (linked-for g briefing)
+            briefing (update-in briefing [:linked] concat (completed-for-day g d))
             comments (:comments (gq/get-comments briefing g ts))
             comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
                            comments)

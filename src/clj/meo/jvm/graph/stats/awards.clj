@@ -8,7 +8,7 @@
         skipped-entries (filter #(and (-> % k :skipped) (-> % k :points)) entries)
         by-day-fn (fn [acc entry]
                     (let [entity (k entry)
-                          completion (:completion-ts entity)
+                          completion (:completion_ts entity)
                           points (:points entity)]
                       (if (and (pos? points) (seq completion) (:done entity))
                         (let [completion-day (subs completion 0 10)

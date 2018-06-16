@@ -6,6 +6,7 @@
             [clj-time.format :as ctf]
             [clojure.string :as s]
             [clojure.set :as set]
+            [taoensso.timbre :refer [info error warn debug]]
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.datetime :as dt]
@@ -65,8 +66,8 @@
       graph
       mentions)))
 
-(defn local-dt [entry]
-  (-> (:timestamp entry)
+(defn local-dt [ts]
+  (-> ts
       (ctc/from-long)
       (ct/to-time-zone (ct/default-time-zone))))
 
@@ -76,7 +77,7 @@
    matching :timeline/day node."
   [state entry]
   (let [g (:graph state)
-        dt (local-dt entry)
+        dt (local-dt (:timestamp entry))
         year (ct/year dt)
         month (ct/month dt)
         year-node {:type :timeline/year :year year}
@@ -95,7 +96,7 @@
   (let [geoname (:geoname entry)]
     (if (and geoname (:latitude entry))
       (let [g (:graph state)
-            dt (local-dt entry)
+            dt (local-dt (:timestamp entry))
             year (ct/year dt)
             month (ct/month dt)
             country {:type :geoname/cc :country-code (:country-code geoname)}
@@ -246,12 +247,24 @@
         (uc/add-edges [:starred (:timestamp entry)]))
     graph))
 
-(defn add-done [graph entry]
+(defn add-completion [g entry]
+  (if-let [completion-ts (:completion_ts (:task entry))]
+    (let [dt (ctf/parse dt/dt-completion-fmt completion-ts)
+          day-node {:type  :timeline/day
+                    :year  (ct/year dt)
+                    :month (ct/month dt)
+                    :day   (ct/day dt)}]
+      (uc/add-edges g [day-node
+                       (:timestamp entry)
+                       {:relationship :DATE}]))
+    g))
+
+(defn add-done [g entry]
   (if (get-in entry [:task :done])
-    (-> graph
-        (uc/add-nodes :done)
-        (uc/add-edges [:done (:timestamp entry)]))
-    graph))
+    (let [g (uc/add-nodes g :done)
+          g (uc/add-edges g [:done (:timestamp entry)])]
+      (add-completion g entry))
+    g))
 
 (defn add-story-set [current-state entry]
   (if-let [linked-story (:primary_story entry)]
