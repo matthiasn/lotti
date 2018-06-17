@@ -47,6 +47,7 @@
     position: relative;
     user-select: none;
     white-space: nowrap;
+    z-index: 1002;
 
     .toggle-visible {
       font-weight: bold;

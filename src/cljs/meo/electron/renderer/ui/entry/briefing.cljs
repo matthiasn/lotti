@@ -94,6 +94,10 @@
                             "fa-chevron-square-up"
                             "fa-chevron-square-down")}]]
          (when (:show-filter @local)
+           (let [elem (r/dom-node (r/current-component))
+                 handler #(when-not (.contains elem (.-target %))
+                            (swap! local dissoc :show-filter))]
+             (.addEventListener js/document "click" handler))
            [:div.items
             [:div.controls
              [:div {:on-click all} "select all"]

@@ -20,6 +20,7 @@
         next-active (str next-day "T" next-hh-mm)]
     (-> entry
         (assoc-in [:timestamp] (st/now))
+        (assoc-in [:primary_story] (-> entry :story :timestamp))
         (assoc-in [:habit :active_from] next-active)
         (assoc-in [:habit :done] false)
         (dissoc :linked-entries-list)
@@ -49,13 +50,13 @@
         done
         (fn [entry]
           (fn [ev]
-            (if-not (-> entry :habit :next-entry)
+            (if-not (-> entry :habit :next_entry)
               ;; check off and create next habit entry
               (let [next-entry (next-habit-entry entry)
                     completion-ts (.format (moment))
                     next-ts (:timestamp next-entry)
                     updated (-> entry
-                                (assoc-in [:habit :next-entry] next-ts)
+                                (assoc-in [:habit :next_entry] next-ts)
                                 (assoc-in [:habit :completion_ts] completion-ts)
                                 (update-in [:habit :done] not))]
                 (put-fn [:entry/update next-entry])
@@ -67,12 +68,12 @@
         skipped
         (fn [entry]
           (fn [ev]
-            (if-not (-> entry :habit :next-entry)
+            (if-not (-> entry :habit :next_entry)
               ;; check off and create next habit entry
               (let [next-entry (next-habit-entry entry)
                     next-ts (:timestamp next-entry)
                     updated (-> entry
-                                (assoc-in [:habit :next-entry] next-ts)
+                                (assoc-in [:habit :next_entry] next-ts)
                                 (update-in [:habit :skipped] not))]
                 (put-fn [:entry/update next-entry])
                 (put-fn [:entry/update updated])
