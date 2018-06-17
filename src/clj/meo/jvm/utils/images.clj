@@ -17,11 +17,13 @@
   (into {} (map #(hash-map (.getTagName %) (.getDescription %)) tag)))
 
 (defn extract-exif [file]
-  (let [metadata (ImageMetadataReader/readMetadata file)
-        exif-directories (.getDirectories metadata)
-        tags (map #(.getTags %) exif-directories)
-        exif (into {} (map extract-from-tag tags))]
-    exif))
+  (try
+    (let [metadata (ImageMetadataReader/readMetadata file)
+          exif-directories (.getDirectories metadata)
+          tags (map #(.getTags %) exif-directories)
+          exif (into {} (map extract-from-tag tags))]
+      exif)
+    (catch Exception ex (do (warn "could not parse EXIF in" file) {}))))
 
 (defn rotate [file]
   (let [exif (extract-exif file)

@@ -81,7 +81,7 @@
   (let [filename (.getName file)
         rel-path (.getPath file)
         exif (img/extract-exif file)
-        orientation (get exif "Orientation")
+        orientation (get exif "Orientation" "")
         orientation (cond (s/includes? orientation "(Rotate 90 CW)")
                           :rotate-90-cw
                           (s/includes? orientation "(Rotate 180)")
