@@ -95,10 +95,11 @@
     (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)
+    (gql/gen-options {:cmp-state cmp-state})
+    (put-fn [:cmd/schedule-new {:timeout 1000
+                                :message [:gql/run-registered]
+                                :id      :run-registered}])
     (broadcast [:startup/progress 1])
-    (put-fn [:cmd/schedule-new {:timeout 1
-                                :message [:options/gen]
-                                :id      :generate-opts}])
     ;(tf/import-predictions cmp-state)
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)

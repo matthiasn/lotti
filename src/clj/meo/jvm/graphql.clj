@@ -291,22 +291,19 @@
                          :msg-meta    msg-meta})))
   {})
 
-(defn gen-options [{:keys [current-state cmp-state]}]
-  (cp/future thread-pool
-             (let [xs (gq/find-all-sagas2 current-state)]
-               (swap! cmp-state assoc-in [:options :sagas] xs)))
-  (cp/future thread-pool
-             (let [xs (gq/find-all-stories2 current-state)]
-               (swap! cmp-state assoc-in [:options :stories] xs)))
-  (cp/future thread-pool
-             (let [xs (gq/find-all-hashtags current-state)]
-               (swap! cmp-state assoc-in [:options :hashtags] xs)))
-  (cp/future thread-pool
-             (let [xs (gq/find-all-pvt-hashtags current-state)]
-               (swap! cmp-state assoc-in [:options :pvt-hashtags] xs)))
-  (cp/future thread-pool
-             (let [xs (gq/find-all-mentions current-state)]
-               (swap! cmp-state assoc-in [:options :mentions] xs)))
+(defn gen-opt [cmp-state f k]
+  (cp/future
+    thread-pool
+    (let [start (stc/now)]
+      (swap! cmp-state assoc-in [:options k] (f @cmp-state))
+      (info "options" k (- (stc/now) start) "ms"))))
+
+(defn gen-options [{:keys [cmp-state]}]
+  (gen-opt cmp-state gq/find-all-sagas2 :sagas)
+  (gen-opt cmp-state gq/find-all-stories2 :stories)
+  (gen-opt cmp-state gq/find-all-hashtags :hashtags)
+  (gen-opt cmp-state gq/find-all-mentions :mentions)
+  (gen-opt cmp-state gq/find-all-pvt-hashtags :pvt-hashtags)
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]
