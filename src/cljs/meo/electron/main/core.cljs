@@ -45,6 +45,7 @@
                 :gql/cmd
                 :firehose/cmd
                 :tf/learn-stories
+                :search/cmd
                 :spellcheck/lang
                 :spellcheck/off
                 :import/gen-thumbs

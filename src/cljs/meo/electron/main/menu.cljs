@@ -116,9 +116,12 @@
         open (fn [loc] #(let [js (str "window.location.hash = '" loc "'")]
                           (put-fn [:exec/js {:js js}])))]
     {:label   "View"
-     :submenu [{:label       "Close Window"
+     :submenu [{:label       "Close Tab"
                 :accelerator "CmdOrCtrl+W"
-                :click       #(put-fn [:window/close])}
+                :click       #(put-fn [:search/cmd {:t :close-tab}])}
+               {:label       "Next Tab"
+                :accelerator "Ctrl+Tab"
+                :click       #(put-fn [:search/cmd {:t :next-tab}])}
                {:label       "New Window"
                 :accelerator "CmdOrCtrl+Alt+N"
                 :click       new-window}
