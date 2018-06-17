@@ -237,7 +237,7 @@
         (resolve/on-deliver! res on-deliver)))))
 
 (def executor-thread-pool (cp/threadpool 5))
-(def thread-pool (cp/priority-threadpool 2))
+(def thread-pool (cp/priority-threadpool 3))
 (def prio-thread-pool (cp/priority-threadpool 5))
 (alter-var-root #'resolve/*callback-executor* (constantly executor-thread-pool))
 
@@ -292,16 +292,21 @@
   {})
 
 (defn gen-options [{:keys [current-state cmp-state]}]
-  (cp/future
-    thread-pool
-    (let [start (stc/now)
-          opts {:hashtags     (gq/find-all-hashtags current-state)
-                :pvt-hashtags (gq/find-all-pvt-hashtags current-state)
-                :mentions     (gq/find-all-mentions current-state)
-                :stories      (gq/find-all-stories2 current-state)
-                :sagas        (gq/find-all-sagas2 current-state)}]
-      (swap! cmp-state assoc-in [:options] opts)
-      (info "gen-options finished in" (- (stc/now) start) "ms")))
+  (cp/future thread-pool
+             (let [xs (gq/find-all-sagas2 current-state)]
+               (swap! cmp-state assoc-in [:options :sagas] xs)))
+  (cp/future thread-pool
+             (let [xs (gq/find-all-stories2 current-state)]
+               (swap! cmp-state assoc-in [:options :stories] xs)))
+  (cp/future thread-pool
+             (let [xs (gq/find-all-hashtags current-state)]
+               (swap! cmp-state assoc-in [:options :hashtags] xs)))
+  (cp/future thread-pool
+             (let [xs (gq/find-all-pvt-hashtags current-state)]
+               (swap! cmp-state assoc-in [:options :pvt-hashtags] xs)))
+  (cp/future thread-pool
+             (let [xs (gq/find-all-mentions current-state)]
+               (swap! cmp-state assoc-in [:options :mentions] xs)))
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]
