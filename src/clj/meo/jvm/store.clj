@@ -82,16 +82,18 @@
         entries-to-index (atom {})
         bar (pr/progress-bar cnt)]
     (doseq [[idx parsed] indexed]
-      (let [ts (:timestamp parsed)
-            progress (double (/ idx cnt))]
-        (process-line parsed node-id cmp-state entries-to-index)
-        (swap! cmp-state assoc-in [:startup-progress] progress)
-        (when (zero? (mod idx 5000))
-          (pr/print (pr/tick bar idx))
-          (broadcast [:startup/progress progress]))
-        (if (:deleted parsed)
-          (swap! entries dissoc ts)
-          (swap! entries update-in [ts] conj parsed))))
+      (try
+        (let [ts (:timestamp parsed)
+              progress (double (/ idx cnt))]
+          (process-line parsed node-id cmp-state entries-to-index)
+          (swap! cmp-state assoc-in [:startup-progress] progress)
+          (when (zero? (mod idx 5000))
+            (pr/print (pr/tick bar idx))
+            (broadcast [:startup/progress progress]))
+          (if (:deleted parsed)
+            (swap! entries dissoc ts)
+            (swap! entries update-in [ts] conj parsed)))
+        (catch Exception ex (error "reading line" ex parsed))))
     (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)

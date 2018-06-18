@@ -1,9 +1,8 @@
 (ns meo.electron.main.menu
-  (:require [taoensso.timbre :as timbre :refer-macros [info]]
+  (:require [taoensso.timbre :refer-macros [info]]
             [electron :refer [app Menu dialog globalShortcut]]
             [meo.electron.main.runtime :as rt]
-            [clojure.walk :as walk]
-            [clojure.string :as s]))
+            [clojure.walk :as walk]))
 
 (def capabilities (:capabilities rt/runtime-info))
 

@@ -160,7 +160,7 @@
     (fn barchart-row [{:keys [days span mx label tag k h y
                               cls threshold success-cls]} put-fn]
       (let [btm-y (+ y h)
-            qid (keyword (subs tag 1))
+            qid (keyword (s/replace (subs tag 1) "-" "_"))
             data (get-in @gql-res [:dashboard :data qid])
             indexed (map-indexed (fn [i x] [i x]) data)
             mx (or mx
