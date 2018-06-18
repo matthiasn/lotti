@@ -4,7 +4,6 @@
             [meo.electron.renderer.client-store :as store]
             [meo.electron.renderer.ui.re-frame :as rf]
             [meo.electron.renderer.router :as router]
-            [meo.electron.renderer.tensorflow :as tf]
             [meo.electron.renderer.ws :as ws]
             [meo.electron.renderer.screenshot :as screenshot]
             [meo.electron.renderer.spellcheck :as spellcheck]
@@ -60,7 +59,6 @@
                      (spellcheck/cmp-map :renderer/spellcheck)
                      (screenshot/cmp-map :renderer/screenshot)
                      (sente/cmp-map :renderer/ws-cmp sente-cfg)
-                     (tf/cmp-map :renderer/tensorflow)
                      (when OBSERVER
                        (sente/cmp-map :renderer/ws-firehose sente-base-cfg))
                      (router/cmp-map :renderer/router)
