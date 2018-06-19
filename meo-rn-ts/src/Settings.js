@@ -18,10 +18,60 @@ var react_2 = require("react");
 var react_native_1 = require("react-native");
 var react_native_settings_list_1 = __importDefault(require("react-native-settings-list"));
 var FontAwesome_1 = __importDefault(require("react-native-vector-icons/FontAwesome"));
+var rn_apple_healthkit_1 = __importDefault(require("rn-apple-healthkit"));
+var RNFS = require('react-native-fs');
 var bg = "#141414";
 var itemBg = "#272727";
 var textColor = "#D8D8D8";
-var myIcon = (react_1.default.createElement(FontAwesome_1.default, { name: "rocket", size: 30, color: "#900" }));
+var stepsToday = "0";
+var healthOptions = {
+    permissions: {
+        read: [
+            "Height", "Weight", "StepCount",
+            "FlightsClimbed",
+            "BloodPressureDiastolic", "BloodPressureSystolic", "HeartRate",
+            "DistanceWalkingRunning", "SleepAnalysis", "RespiratoryRate",
+            "DateOfBirth", "BodyMassIndex", "ActiveEnergyBurned"
+        ]
+    }
+};
+function readSteps() {
+    rn_apple_healthkit_1.default.initHealthKit(healthOptions, function (err, results) {
+        if (err) {
+            console.log("error initializing HealthKit: ", err);
+            react_native_1.Alert.alert(err);
+            return;
+        }
+        rn_apple_healthkit_1.default.getStepCount({ date: (new Date(2018, 5, 18)).toISOString() }, function (err, results) {
+            console.log(results);
+            if (err) {
+                return;
+            }
+            stepsToday = results.value.toString();
+            console.log("steps today", stepsToday);
+        });
+        var options = {
+            startDate: (new Date(2017, 1, 1)).toISOString(),
+            endDate: (new Date()).toISOString() // optional; default now
+        };
+        rn_apple_healthkit_1.default.getDailyStepCountSamples(options, function (err, results) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            var serialized = JSON.stringify(results);
+            var path = RNFS.DocumentDirectoryPath + '/steps.json';
+            RNFS.writeFile(path, serialized, 'utf8')
+                .then(function (success) {
+                console.log('FILE WRITTEN!');
+                react_native_1.Alert.alert("steps written");
+            })
+                .catch(function (err) {
+                console.log(err.message);
+            });
+        });
+    });
+}
 var settingsIcon = function (name) { return (react_1.default.createElement(FontAwesome_1.default, { name: name, size: 20, style: { paddingTop: 14, paddingLeft: 14 }, color: textColor })); };
 var Settings = /** @class */ (function (_super) {
     __extends(Settings, _super);
@@ -46,7 +96,7 @@ var Settings = /** @class */ (function (_super) {
                         switchOnValueChange: this.onValueChange, hasNavArrow: false, title: 'Dark Theme' }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("database"), title: 'Database', titleInfo: '91345', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Database Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("address-book"), title: 'Contacts', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Contacts Page'); } }),
-                    react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("heartbeat"), title: 'Health Data', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Health Page'); } }),
+                    react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, titleInfo: stepsToday.toString(), icon: settingsIcon("heartbeat"), title: 'Health Data', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return readSteps(); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("font"), title: 'Style', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Style Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("shield"), title: 'Security', onPress: function () { return react_native_1.Alert.alert('Route To Security Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("eye"), title: 'Dev', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route To Dev Page'); } }),

@@ -10,15 +10,69 @@ import {
 } from 'react-native';
 import SettingsList from 'react-native-settings-list';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import AppleHealthKit from 'rn-apple-healthkit';
+var RNFS = require('react-native-fs');
 
 const bg = "#141414";
 const itemBg = "#272727";
 const textColor = "#D8D8D8";
+let stepsToday = "0";
 
-const myIcon = (<Icon name="rocket" size={30} color="#900" />)
+let healthOptions = {
+  permissions: {
+    read: [
+      "Height", "Weight", "StepCount",
+      "FlightsClimbed",
+      "BloodPressureDiastolic", "BloodPressureSystolic", "HeartRate",
+      "DistanceWalkingRunning", "SleepAnalysis", "RespiratoryRate",
+      "DateOfBirth", "BodyMassIndex", "ActiveEnergyBurned"]
+  }
+};
+
+function readSteps() {
+  AppleHealthKit.initHealthKit(healthOptions, (err: string, results: Object) => {
+    if (err) {
+      console.log("error initializing HealthKit: ", err);
+      Alert.alert(err)
+      return;
+    }
+
+    AppleHealthKit.getStepCount({ date: (new Date(2018,5,18)).toISOString() },
+      (err: Object, results: Object) => {
+        console.log(results)
+        if (err) {
+          return;
+        }
+        stepsToday = results.value.toString()
+        console.log("steps today", stepsToday)
+      });
+
+    let options = {
+      startDate: (new Date(2017, 1, 1)).toISOString(), // required
+      endDate: (new Date()).toISOString() // optional; default now
+    };
+    AppleHealthKit.getDailyStepCountSamples(options, (err: Object, results: Array<Object>) => {
+      if (err) {
+        console.error(err)
+        return;
+      }
+      const serialized = JSON.stringify(results)
+      const path = RNFS.DocumentDirectoryPath + '/steps.json';
+
+      RNFS.writeFile(path, serialized, 'utf8')
+        .then((success) => {
+          console.log('FILE WRITTEN!');
+          Alert.alert("steps written")
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+    });
+  });
+}
 
 const settingsIcon = (name) => (
-  <Icon name={name} size={20} style={{paddingTop: 14, paddingLeft: 14}}  color={textColor} />
+  <Icon name={name} size={20} style={{ paddingTop: 14, paddingLeft: 14 }} color={textColor} />
 )
 
 export default class Settings extends Component<any> {
@@ -70,10 +124,11 @@ export default class Settings extends Component<any> {
             <SettingsList.Item
               backgroundColor={itemBg}
               titleStyle={styles.titleStyle}
+              titleInfo={stepsToday.toString()}
               icon={settingsIcon("heartbeat")}
               title='Health Data'
               titleInfoStyle={styles.titleInfoStyle}
-              onPress={() => Alert.alert('Route to Health Page')}
+              onPress={() => readSteps()}
             />
             <SettingsList.Item
               backgroundColor={itemBg}

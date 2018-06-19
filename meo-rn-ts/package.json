@@ -10,9 +10,11 @@
     "@types/react-native": "^0.55.22",
     "react": "^16.3.2",
     "react-native": "0.55.4",
+    "react-native-fs": "^2.10.14",
     "react-native-settings-list": "^1.8.0",
     "react-native-vector-icons": "^4.6.0",
-    "react-navigation": "^2.3.1"
+    "react-navigation": "^2.3.1",
+    "rn-apple-healthkit": "^0.6.3"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
