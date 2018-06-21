@@ -23,7 +23,6 @@ var RNFS = require('react-native-fs');
 var bg = "#141414";
 var itemBg = "#272727";
 var textColor = "#D8D8D8";
-var stepsToday = "0";
 var healthOptions = {
     permissions: {
         read: [
@@ -35,20 +34,24 @@ var healthOptions = {
         ]
     }
 };
-function readSteps() {
+function readSteps(that) {
     rn_apple_healthkit_1.default.initHealthKit(healthOptions, function (err, results) {
         if (err) {
             console.log("error initializing HealthKit: ", err);
             react_native_1.Alert.alert(err);
             return;
         }
-        rn_apple_healthkit_1.default.getStepCount({ date: (new Date(2018, 5, 18)).toISOString() }, function (err, results) {
+        rn_apple_healthkit_1.default.getStepCount({ date: (new Date()).toISOString() }, function (err, results) {
             console.log(results);
             if (err) {
                 return;
             }
-            stepsToday = results.value.toString();
-            console.log("steps today", stepsToday);
+            var steps = results.value;
+            that.setState(function (prevState) {
+                prevState.steps = steps;
+                return prevState;
+            });
+            console.log("steps today", steps);
         });
         var options = {
             startDate: (new Date(2017, 1, 1)).toISOString(),
@@ -81,11 +84,13 @@ var Settings = /** @class */ (function (_super) {
         _this.state = {
             switchValue: false,
             loggedIn: false,
+            steps: 111,
             toggleAuthView: function () { }
         };
         return _this;
     }
     Settings.prototype.render = function () {
+        var _this = this;
         return (react_1.default.createElement(react_native_1.View, { style: { backgroundColor: bg, flex: 1, width: "100%" } },
             react_1.default.createElement(react_native_1.View, { style: { backgroundColor: bg } },
                 react_1.default.createElement(react_native_1.Text, { style: { alignSelf: 'center', marginTop: 40, marginBottom: 10, fontWeight: 'bold', color: "white", fontSize: 16 } }, "meo")),
@@ -96,7 +101,7 @@ var Settings = /** @class */ (function (_super) {
                         switchOnValueChange: this.onValueChange, hasNavArrow: false, title: 'Dark Theme' }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("database"), title: 'Database', titleInfo: '91345', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Database Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("address-book"), title: 'Contacts', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Contacts Page'); } }),
-                    react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, titleInfo: stepsToday.toString(), icon: settingsIcon("heartbeat"), title: 'Health Data', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return readSteps(); } }),
+                    react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("heartbeat"), title: 'Health Data', titleInfo: this.state.steps.toString(), titleInfoStyle: styles.titleInfoStyle, onPress: function () { return readSteps(_this); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("font"), title: 'Style', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route to Style Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("shield"), title: 'Security', onPress: function () { return react_native_1.Alert.alert('Route To Security Page'); } }),
                     react_1.default.createElement(react_native_settings_list_1.default.Item, { backgroundColor: itemBg, titleStyle: styles.titleStyle, icon: settingsIcon("eye"), title: 'Dev', titleInfoStyle: styles.titleInfoStyle, onPress: function () { return react_native_1.Alert.alert('Route To Dev Page'); } }),

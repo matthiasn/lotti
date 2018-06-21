@@ -16,7 +16,6 @@ var RNFS = require('react-native-fs');
 const bg = "#141414";
 const itemBg = "#272727";
 const textColor = "#D8D8D8";
-let stepsToday = "0";
 
 let healthOptions = {
   permissions: {
@@ -29,7 +28,11 @@ let healthOptions = {
   }
 };
 
-function readSteps() {
+interface HealthKitResult {
+  value: number
+}
+
+function readSteps(that) {
   AppleHealthKit.initHealthKit(healthOptions, (err: string, results: Object) => {
     if (err) {
       console.log("error initializing HealthKit: ", err);
@@ -37,14 +40,18 @@ function readSteps() {
       return;
     }
 
-    AppleHealthKit.getStepCount({ date: (new Date(2018,5,18)).toISOString() },
-      (err: Object, results: Object) => {
+    AppleHealthKit.getStepCount({ date: (new Date()).toISOString() },
+      (err: Object, results: HealthKitResult) => {
         console.log(results)
         if (err) {
           return;
         }
-        stepsToday = results.value.toString()
-        console.log("steps today", stepsToday)
+        const steps = results.value
+        that.setState(prevState => {
+          prevState.steps = steps
+          return prevState
+        });
+        console.log("steps today", steps)
       });
 
     let options = {
@@ -83,6 +90,7 @@ export default class Settings extends Component<any> {
     this.state = {
       switchValue: false,
       loggedIn: false,
+      steps: 111,
       toggleAuthView: () => { }
     };
   }
@@ -124,11 +132,11 @@ export default class Settings extends Component<any> {
             <SettingsList.Item
               backgroundColor={itemBg}
               titleStyle={styles.titleStyle}
-              titleInfo={stepsToday.toString()}
               icon={settingsIcon("heartbeat")}
               title='Health Data'
+              titleInfo={this.state.steps.toString()}
               titleInfoStyle={styles.titleInfoStyle}
-              onPress={() => readSteps()}
+              onPress={() => readSteps(this)}
             />
             <SettingsList.Item
               backgroundColor={itemBg}
