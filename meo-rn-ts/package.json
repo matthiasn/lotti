@@ -7,20 +7,22 @@
     "test": "jest"
   },
   "dependencies": {
-    "@types/react-native": "^0.55.22",
-    "@types/react-navigation": "^2.0.6",
-    "react": "^16.3.2",
+    "react": "^16.4.1",
     "react-native": "0.55.4",
     "react-native-fs": "^2.10.14",
     "react-native-settings-list": "^1.8.0",
     "react-native-vector-icons": "^4.6.0",
-    "react-navigation": "^2.3.1",
+    "react-navigation": "2.5.1",
     "react-redux": "^5.0.7",
     "redux": "^4.0.0",
     "rn-apple-healthkit": "^0.6.3"
   },
   "devDependencies": {
     "@types/jest": "^22.2.2",
+    "@types/react-native": "^0.55.22",
+    "@types/react-native-fs": "^2.8.1",
+    "@types/react-native-settings-list": "^1.8.0",
+    "@types/react-navigation": "^2.0.7",
     "@types/react-test-renderer": "^16.0.1",
     "babel-jest": "22.4.3",
     "babel-preset-react-native": "4.0.0",

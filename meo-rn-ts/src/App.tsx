@@ -3,8 +3,7 @@
  * https://github.com/facebook/react-native
  */
 
-import React from 'react'
-import { Component } from 'react';
+import React, { Component } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   Platform,
@@ -24,7 +23,6 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
-type Props = {};
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -44,7 +42,14 @@ const styles = StyleSheet.create({
   },
 });
 
-class HomeScreen extends React.Component {
+interface Props {
+  navigation: {
+    addListener: Function,
+    navigate: Function
+  };
+}
+
+class HomeScreen extends Component<Props, any> {
   componentDidMount() {
     this.props.navigation.addListener('didFocus', () => {
       StatusBar.setBarStyle('dark-content');

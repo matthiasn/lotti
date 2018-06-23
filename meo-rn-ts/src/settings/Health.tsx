@@ -1,73 +1,21 @@
-import React from 'react';
-import { Text, View, ScrollView, StatusBar, Alert, Button } from 'react-native';
-import AppleHealthKit from 'rn-apple-healthkit';
-import RNFS from 'react-native-fs';
+import React, { Component } from 'react';
+import { Text, View, ScrollView, StatusBar, Button } from 'react-native';
+import { readSteps } from '../health/HealthKit'
 
-let healthOptions = {
-  permissions: {
-    read: [
-      "Height", "Weight", "StepCount",
-      "FlightsClimbed",
-      "BloodPressureDiastolic", "BloodPressureSystolic", "HeartRate",
-      "DistanceWalkingRunning", "SleepAnalysis", "RespiratoryRate",
-      "DateOfBirth", "BodyMassIndex", "ActiveEnergyBurned"]
-  }
-};
-
-interface HealthKitResult {
-  value: number
+interface Props {
+  navigation: {
+    addListener: Function,
+    navigate: Function,
+    goBack: Function
+  };
 }
 
-function readSteps(that) {
-  AppleHealthKit.initHealthKit(healthOptions, (err: string, results: Object) => {
-    if (err) {
-      console.log("error initializing HealthKit: ", err);
-      Alert.alert(err)
-      return;
-    }
-
-    AppleHealthKit.getStepCount({ date: (new Date()).toISOString() },
-      (err: Object, results: HealthKitResult) => {
-        console.log(results)
-        if (err) {
-          return;
-        }
-        const steps = results.value
-        that.setState(prevState => {
-          prevState.stepsToday = steps
-          return prevState
-        });
-        console.log("steps today", steps)
-      });
-
-    let options = {
-      startDate: (new Date(2016, 0, 1)).toISOString(), // required
-      endDate: (new Date()).toISOString() // optional; default now
-    };
-    AppleHealthKit.getDailyStepCountSamples(options, (err: Object, results: Array<Object>) => {
-      if (err) {
-        console.error(err)
-        return;
-      }
-      that.setState(prevState => {
-        prevState.steps = results
-        return prevState
-      });
-      const serialized = JSON.stringify(results)
-      const path = RNFS.DocumentDirectoryPath + '/steps.json';
-
-      RNFS.writeFile(path, serialized, 'utf8')
-        .then((success) => {
-          console.log('FILE WRITTEN!');
-        })
-        .catch((err) => {
-          console.log(err.message);
-        });
-    });
-  });
+interface State {
+  stepsToday: number;
+  steps: Array<any>;
 }
 
-export default class HealthModal extends React.Component {
+export default class HealthModal extends Component<Props, State> {
   state = {
     stepsToday: 0,
     steps: []
@@ -88,7 +36,7 @@ export default class HealthModal extends React.Component {
     const cnt = this.state.stepsToday
     const status = (cnt > 10000) ?
       { text: "good job", color: "green" } :
-      { text: "keep moving", color: "red"}
+      { text: "keep moving", color: "red" }
 
     return (
       <ScrollView style={{ marginTop: 100 }}>
@@ -96,7 +44,7 @@ export default class HealthModal extends React.Component {
           <Text style={{ fontSize: 30, marginBottom: 10 }}>
             {this.state.stepsToday} steps today
           </Text>
-          <Text style={{ fontSize: 30, fontWeight: "bold",  marginBottom: 10, color: status.color }}>
+          <Text style={{ fontSize: 30, fontWeight: "bold", marginBottom: 10, color: status.color }}>
             {status.text}
           </Text>
           <Button

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { createStackNavigator } from 'react-navigation'
-import { StyleSheet, Text, View, ScrollView, StatusBar, Alert, Button } from 'react-native';
+import { StyleSheet, Text, View, StatusBar, Alert } from 'react-native';
 import SettingsList from 'react-native-settings-list';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import HealthModal from './Health'
@@ -13,12 +13,21 @@ const settingsIcon = (name) => (
   <Icon name={name} size={20} style={{ paddingTop: 14, paddingLeft: 14 }} color={textColor} />
 )
 
-export default class Settings extends Component<any> {
-  state = {
-    switchValue: false,
-    stepsToday: 0,
-    steps: [],
-    toggleAuthView: () => { }
+interface State {
+  switchValue: Boolean;
+}
+
+interface Props {
+  navigation: {
+    addListener: Function,
+    navigate: Function,
+    goBack: Function
+  };
+}
+
+export default class Settings extends Component<Props, State> {
+  public state: State = {
+    switchValue: false
   };
   constructor(props: any) {
     super(props);
@@ -70,7 +79,6 @@ export default class Settings extends Component<any> {
               titleStyle={styles.titleStyle}
               icon={settingsIcon("heartbeat")}
               title='Health Data'
-              titleInfo={this.state.stepsToday.toString()}
               titleInfoStyle={styles.titleInfoStyle}
               onPress={() => {
                 this.props.navigation.navigate("Health")
@@ -112,11 +120,8 @@ export default class Settings extends Component<any> {
       </View>
     );
   }
-  toggleAuthView() {
-    //this.setState({toggleAuthView: !this.state.toggleAuthView});
-  }
-  onValueChange(value) {
-    this.setState({ switchValue: value });
+  onValueChange() {
+    this.setState({ switchValue: !this.state.switchValue });
   }
 }
 
