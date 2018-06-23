@@ -20,7 +20,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var react_1 = __importDefault(require("react"));
 var Ionicons_1 = __importDefault(require("react-native-vector-icons/Ionicons"));
 var react_native_1 = require("react-native");
-var Settings_1 = __importDefault(require("./src/Settings"));
+var Settings_1 = require("./src/Settings");
 var react_navigation_1 = require("react-navigation");
 var instructions = react_native_1.Platform.select({
     ios: 'Hello Matthias, press Cmd+R to reload,\n' +
@@ -51,6 +51,11 @@ var HomeScreen = /** @class */ (function (_super) {
     function HomeScreen() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    HomeScreen.prototype.componentDidMount = function () {
+        this.props.navigation.addListener('didFocus', function () {
+            react_native_1.StatusBar.setBarStyle('dark-content');
+        });
+    };
     HomeScreen.prototype.render = function () {
         return (react_1.default.createElement(react_native_1.View, { style: { flex: 1, alignItems: 'center', justifyContent: 'center' } },
             react_1.default.createElement(react_native_1.Text, null, "meo"),
@@ -64,7 +69,7 @@ var RootStack = react_navigation_1.createBottomTabNavigator({
     Journal: HomeScreen,
     Add: HomeScreen,
     Photos: HomeScreen,
-    Settings: Settings_1.default,
+    Settings: Settings_1.SettingsStack,
 }, {
     navigationOptions: function (_a) {
         var navigation = _a.navigation;

@@ -10,10 +10,11 @@ import {
   Platform,
   StyleSheet,
   Text,
-  View
+  View,
+  StatusBar
 } from 'react-native';
 
-import Settings from './src/Settings';
+import {SettingsStack} from './src/Settings';
 import { createBottomTabNavigator } from 'react-navigation';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -45,6 +46,11 @@ const styles = StyleSheet.create({
 });
 
 class HomeScreen extends React.Component {
+  componentDidMount() {
+    this.props.navigation.addListener('didFocus', () => {
+      StatusBar.setBarStyle('dark-content');
+    });
+  }
   render() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -63,7 +69,7 @@ const RootStack = createBottomTabNavigator(
     Journal: HomeScreen,
     Add: HomeScreen,
     Photos: HomeScreen,
-    Settings: Settings,
+    Settings: SettingsStack,
   },
   {
     navigationOptions: ({ navigation }) => ({

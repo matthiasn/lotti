@@ -1,13 +1,6 @@
-import React from 'react';
-import { Component } from 'react';
-import {
-  AppRegistry,
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  Alert
-} from 'react-native';
+import React, { Component } from 'react';
+import { createStackNavigator } from 'react-navigation'
+import { StyleSheet, Text, View, ScrollView, StatusBar, Alert, Button } from 'react-native';
 import SettingsList from 'react-native-settings-list';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AppleHealthKit from 'rn-apple-healthkit';
@@ -48,14 +41,14 @@ function readSteps(that) {
         }
         const steps = results.value
         that.setState(prevState => {
-          prevState.steps = steps
+          prevState.stepsToday = steps
           return prevState
         });
         console.log("steps today", steps)
       });
 
     let options = {
-      startDate: (new Date(2017, 1, 1)).toISOString(), // required
+      startDate: (new Date(2016, 0, 1)).toISOString(), // required
       endDate: (new Date()).toISOString() // optional; default now
     };
     AppleHealthKit.getDailyStepCountSamples(options, (err: Object, results: Array<Object>) => {
@@ -63,13 +56,16 @@ function readSteps(that) {
         console.error(err)
         return;
       }
+      that.setState(prevState => {
+        prevState.steps = results
+        return prevState
+      });
       const serialized = JSON.stringify(results)
       const path = RNFS.DocumentDirectoryPath + '/steps.json';
 
       RNFS.writeFile(path, serialized, 'utf8')
         .then((success) => {
           console.log('FILE WRITTEN!');
-          Alert.alert("steps written")
         })
         .catch((err) => {
           console.log(err.message);
@@ -83,16 +79,20 @@ const settingsIcon = (name) => (
 )
 
 export default class Settings extends Component<any> {
-
+  state = {
+    switchValue: false,
+    stepsToday: 0,
+    steps: [],
+    toggleAuthView: () => { }
+  };
   constructor(props: any) {
     super(props);
     this.onValueChange = this.onValueChange.bind(this);
-    this.state = {
-      switchValue: false,
-      loggedIn: false,
-      steps: 111,
-      toggleAuthView: () => { }
-    };
+  }
+  componentDidMount() {
+    this.props.navigation.addListener('didFocus', () => {
+      StatusBar.setBarStyle('light-content');
+    });
   }
   render() {
     return (
@@ -111,6 +111,7 @@ export default class Settings extends Component<any> {
               switchOnValueChange={this.onValueChange}
               hasNavArrow={false}
               title='Dark Theme'
+              onPress={() => this.props.navigation.navigate('Home')}
             />
             <SettingsList.Item
               backgroundColor={itemBg}
@@ -134,9 +135,11 @@ export default class Settings extends Component<any> {
               titleStyle={styles.titleStyle}
               icon={settingsIcon("heartbeat")}
               title='Health Data'
-              titleInfo={this.state.steps.toString()}
+              titleInfo={this.state.stepsToday.toString()}
               titleInfoStyle={styles.titleInfoStyle}
-              onPress={() => readSteps(this)}
+              onPress={() => {
+                this.props.navigation.navigate("Health")
+              }}
             />
             <SettingsList.Item
               backgroundColor={itemBg}
@@ -198,3 +201,61 @@ const styles = StyleSheet.create({
     fontSize: 16
   }
 });
+
+class HealthModal extends React.Component {
+  state = {
+    stepsToday: 0,
+    steps: []
+  }
+
+  componentDidMount() {
+    readSteps(this)
+    this.props.navigation.addListener('didFocus', () => {
+      StatusBar.setBarStyle('dark-content');
+    });
+  }
+
+  render() {
+    const listItems = this.state.steps.map(({ value, startDate }) =>
+      <Text style={{ fontFamily: "Courier", fontSize: 22 }} key={startDate}> {startDate.substring(0, 10)}:
+        &nbsp;&nbsp;&nbsp;
+      <Text style={{ fontWeight: "bold" }}>{parseInt(value)}</Text></Text>);
+
+    return (
+      <ScrollView style={{ marginTop: 100 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 30, marginBottom: 10 }}>
+            {this.state.stepsToday} steps today so far
+          </Text>
+          <Button
+            onPress={() => this.props.navigation.goBack()}
+            title="Dismiss"
+          />
+        </View>
+        <View style={{ marginLeft: 40, marginTop: 40 }}>
+          {listItems}
+        </View>
+      </ScrollView>
+    );
+  }
+}
+
+export const SettingsStack = createStackNavigator(
+  {
+    Main: {
+      screen: Settings,
+    },
+    Health: {
+      screen: HealthModal,
+    },
+  },
+  {
+    mode: 'modal',
+    headerMode: 'none',
+    transitionConfig: () => ({
+      transitionSpec: {
+        duration: 0
+      },
+    }),
+  }
+);
