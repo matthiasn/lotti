@@ -14,9 +14,8 @@ import {
   StatusBar
 } from 'react-native';
 
-import {SettingsStack} from './src/Settings';
+import {SettingsStack} from './settings/Settings';
 import { createBottomTabNavigator } from 'react-navigation';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 const instructions = Platform.select({
   ios: 'Hello Matthias, press Cmd+R to reload,\n' +
