@@ -34,7 +34,7 @@ export default class HealthModal extends Component<Props, State> {
         &nbsp;&nbsp;&nbsp;
       <Text style={{ fontWeight: "bold" }}>{parseInt(value)}</Text></Text>);
     const cnt = this.state.stepsToday
-    const status = (cnt > 10000) ?
+    const status = (cnt > 7500) ?
       { text: "good job", color: "green" } :
       { text: "keep moving", color: "red" }
 
@@ -49,7 +49,7 @@ export default class HealthModal extends Component<Props, State> {
           </Text>
           <Button
             onPress={() => this.props.navigation.goBack()}
-            title="Dismiss"
+            title="back"
           />
         </View>
         <View style={{ marginLeft: 40, marginTop: 40 }}>
