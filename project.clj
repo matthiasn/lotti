@@ -23,8 +23,8 @@
                  [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
 
-                 [com.walmartlabs/lacinia "0.27.0"]
-                 [com.walmartlabs/lacinia-pedestal "0.8.0"]
+                 [com.walmartlabs/lacinia "0.28.0"]
+                 [com.walmartlabs/lacinia-pedestal "0.9.0"]
 
                  [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
                  [org.eclipse.jetty.websocket/websocket-api "9.4.7.v20170914"]
@@ -63,7 +63,7 @@
              :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
                                            [cljsjs/react-dom "15.6.1-2"]
                                            [cljsjs/create-react-class "15.6.3-0"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.312"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]

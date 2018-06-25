@@ -2,7 +2,7 @@
   "This namespace contains the functions necessary to instantiate the store-cmp,
    which then holds the server side application state."
   (:require [meo.jvm.files :as f]
-            [taoensso.timbre :refer [info error]]
+            [taoensso.timbre :refer [info error warn]]
             [taoensso.timbre.profiling :refer [p profile]]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.add :as ga]
@@ -15,19 +15,24 @@
             [meo.jvm.file-utils :as fu]
             [meo.common.utils.vclock :as vc]
             [matthiasn.systems-toolbox.component :as st]
-            [meo.jvm.graphql :as gql]))
+            [meo.jvm.graphql :as gql]
+            [clojure.spec.alpha :as s]
+            [expound.alpha :as exp]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
         local-offset (get-in parsed [:vclock node-id])]
-    (if (:deleted parsed)
-      (do (swap! state ga/remove-node ts)
-          (swap! entries-to-index dissoc ts))
-      (do (swap! entries-to-index assoc-in [ts] parsed)
-          (swap! state ga/add-node parsed)))
-    (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
-    (when local-offset
-      (swap! state update-in [:vclock-map] assoc local-offset parsed))))
+    (if (s/valid? :meo.entry/spec parsed)
+      (do (if (:deleted parsed)
+            (do (swap! state ga/remove-node ts)
+                (swap! entries-to-index dissoc ts))
+            (do (swap! entries-to-index assoc-in [ts] parsed)
+                (swap! state ga/add-node parsed)))
+          (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
+          (when local-offset
+            (swap! state update-in [:vclock-map] assoc local-offset parsed)))
+      (do (warn "Invalid parsed entry:" parsed)
+          (warn (exp/expound-str :meo.entry/spec parsed))))))
 
 (defn read-lines []
   (let [path (:daily-logs-path (fu/paths))
@@ -85,8 +90,8 @@
       (try
         (let [ts (:timestamp parsed)
               progress (double (/ idx cnt))]
-          (process-line parsed node-id cmp-state entries-to-index)
           (swap! cmp-state assoc-in [:startup-progress] progress)
+          (process-line parsed node-id cmp-state entries-to-index)
           (when (zero? (mod idx 5000))
             (pr/print (pr/tick bar idx))
             (broadcast [:startup/progress progress]))

@@ -68,6 +68,7 @@
                    :meo.entry/latitude
                    :meo.entry/longitude
                    :meo.entry/md]))
+(s/def :meo.entry/spec entry-spec)
 
 (def entry-w-geo-spec
   "geodata-enriched entry, with timestamp, markdown text, latitude, longitude mandatory"
