@@ -67,28 +67,6 @@
          localstorage on client"
         (is (= (:new-entries new-state2) @cse/new-entries-ls))))))
 
-(deftest geo-enrich-test
-  "Test that local entry is properly attached to state."
-  (with-redefs [cse/new-entries-ls (atom {})]
-    (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local
-                                  {:current-state current-state
-                                   :msg-payload test-entry}))
-          new-state2 (:new-state (cse/geo-enrich-fn
-                                   {:current-state new-state
-                                    :msg-payload entry-geo-update}))]
-      (testing
-        "pomodoro test entry in new-entries"
-        (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
-      (testing
-        "entry update is merged with previous entry, thus allows omitting keys"
-        (is (= (merge entry-geo-update test-entry)
-               (get-in new-state2 [:new-entries 1465059173965]))))
-      (testing
-        "new entries atom properly updated - this would be backed by
-         localstorage on client"
-        (is (= (:new-entries new-state2) @cse/new-entries-ls))))))
-
 (deftest remove-local-test
   "Test that local entry is properly removed from state after delete message."
   (with-redefs [cse/new-entries-ls (atom {})]

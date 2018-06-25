@@ -88,7 +88,7 @@
         y (assoc y :tags (set/union (:perm_tags y) (:tags y)))
         ks (set/intersection (set (keys x))
                              (set (keys y)))
-        ks (conj ks :starred)
+        ks (conj ks :starred :latitude :longitude)
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
         x2 (update-in x1 [:md] s/replace " " "")
@@ -168,7 +168,8 @@
                     (when (= (:entry_type latest-entry) :pomodoro)
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
     (fn [entry2 _put-fn]
-      (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
+      (let [unsaved (when @new-entry (or (compare-entries entry2 @new-entry)
+                                         (not= ())))]
         [:div {:class (when unsaved "unsaved")}
          [editor {:md       (or (or (:md @new-entry) (:md entry2)) "")
                   :ts       ts

@@ -2,8 +2,7 @@
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
     [matthiasn.systems-toolbox.component :as st]
     [meo.common.utils.misc :as u]
-    #?(:clj
-    [taoensso.timbre :refer [info debug]]
+    #?(:clj [taoensso.timbre :refer [info debug]]
        :cljs [taoensso.timbre :refer-macros [info debug]])
     [meo.common.utils.parse :as p]))
 
@@ -40,20 +39,6 @@
         new-state (assoc-in current-state [:new-entries ts] msg-payload)]
     (update-local-storage new-state)
     {:new-state new-state}))
-
-(defn geo-enrich-fn
-  "Enrich locally stored new entry with geolocation once it becomes available.
-   Does nothing when entry is already saved in backend."
-  [{:keys [current-state msg-payload]}]
-  (let [ts (:timestamp msg-payload)
-        geo-info (select-keys msg-payload [:timestamp :latitude :longitude])
-        local-entry (get-in current-state [:new-entries ts])
-        new-state (update-in current-state [:new-entries ts] #(merge geo-info %))]
-    (if local-entry
-      (do (update-local-storage new-state)
-          ;(put-fn [:geonames/lookup geo-info])
-          {:new-state new-state})
-      {:emit-msg [:entry/update geo-info]})))
 
 (defn entry-saved-fn
   "Remove new entry from local when saving is confirmed by backend."
@@ -117,8 +102,8 @@
               (when (:pause-spotify cfg) (put-fn [:spotify/pause])))
             (when-not (:mute cfg)
               (if time-up? (play-audio "ringer")
-                        (when (:ticking-clock cfg)
-                          (play-audio "ticking-clock"))))
+                           (when (:ticking-clock cfg)
+                             (play-audio "ticking-clock"))))
             (update-local-storage new-state)
             {:new-state new-state
              :emit-msg  [[:cmd/schedule-new
@@ -202,8 +187,6 @@
 
 (def entry-handler-map
   {:entry/new          new-entry-fn
-   :entry/geo-enrich   geo-enrich-fn
-   ;:entry/update       update-backend
    :entry/update-local update-local
    :entry/remove-local remove-local
    :entry/saved        entry-saved-fn

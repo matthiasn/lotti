@@ -17,14 +17,15 @@
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the
   callback function"
-  [data put-fn]
+  [entry put-fn]
   (.getCurrentPosition
     (.-geolocation js/navigator)
     (fn [pos]
       (let [coords (.-coords pos)
-            updated (merge data {:latitude  (.-latitude coords)
-                                 :longitude (.-longitude coords)})]
-        (put-fn [:entry/geo-enrich updated])))
+            updated {:timestamp (:timestamp entry)
+                     :latitude  (.-latitude coords)
+                     :longitude (.-longitude coords)}]
+        (put-fn [:entry/update-local updated])))
     (fn [err] (prn err))))
 
 (def timezone
@@ -140,8 +141,6 @@
   (when (and (string? s) (string? substring))
     (s/includes? (s/lower-case s) (s/lower-case substring))))
 
-
-(def iww-host (.-iwwHOST js/window))
 (def user-data (.getPath (aget remote "app") "userData"))
 (def rp (.-resourcesPath process))
 (def repo-dir (s/includes? (s/lower-case rp) "electron"))
