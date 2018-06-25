@@ -11,4 +11,5 @@
   import_count: match_count(query:"#import")
   screenshots: match_count(query:"#screenshot")
   active_threads
+  pid
 }

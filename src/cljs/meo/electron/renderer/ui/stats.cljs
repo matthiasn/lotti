@@ -28,7 +28,8 @@
         (:closed_count @stats) " closed | "
         (:import_count @stats) " #import | "
         (:screenshots @stats) " #screenshot | "
-        (:active_threads @stats) " threads | "
+        (:active_threads @stats) " threads | PID "
+        (:pid @stats) " | "
         " © Matthias Nehlsen"]])))
 
 (defn stats-view [put-fn]

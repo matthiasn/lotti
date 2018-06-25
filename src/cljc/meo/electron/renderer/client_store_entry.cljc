@@ -90,7 +90,7 @@
                           (assoc-in [:busy-status :current] ts)
                           (assoc-in [:busy-status :active] comment-for))]
         (when (zero? (mod completed 3))
-          (info "setting progress" progress)
+          (debug "setting progress" progress)
           (put-fn [:window/progress {:v progress}]))
         (if (and (:pomodoro-running new-entry)
                  (= (:running (:pomodoro current-state)) ts))

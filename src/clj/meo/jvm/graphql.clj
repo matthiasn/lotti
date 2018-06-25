@@ -27,7 +27,8 @@
             [meo.jvm.graph.geo :as geo]
             [com.walmartlabs.lacinia.parser :as parser]
             [com.walmartlabs.lacinia.resolve :as resolve]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [clj-pid.core :as pid])
   (:import [clojure.lang ExceptionInfo]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
@@ -42,8 +43,8 @@
 (defn mentions [state context args value] (-> @state :options :mentions))
 (defn stories [state context args value] (-> @state :options :stories))
 (defn sagas [state context args value] (-> @state :options :sagas))
-
 (defn thread-count [state context args value] (Thread/activeCount))
+(defn pid [state context args value] (pid/current))
 
 (defn briefings [state context args value]
   (map (fn [[k v]] {:day k :timestamp v})
@@ -333,6 +334,7 @@
                         :query/completed-count    completed-count
                         :query/match-count        match-count
                         :query/active-threads     thread-count
+                        :query/pid                pid
                         :query/tab-search         tab-search
                         :query/hashtags           hashtags
                         :query/pvt-hashtags       pvt-hashtags

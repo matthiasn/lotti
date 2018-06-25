@@ -247,6 +247,11 @@
    :description "Number of currently active threads."
    :resolve     :query/active-threads}
 
+  :pid
+  {:type        Int
+   :description "PID of the backend process."
+   :resolve     :query/pid}
+
   :match_count
   {:type        Int
    :description "Result count for given query."

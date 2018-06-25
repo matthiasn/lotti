@@ -25,7 +25,7 @@
         capabilities (if repo-dir
                        (set/union capabilities #{:dev-menu})
                        capabilities)
-        temp-path (.getPath app "temp")
+        temp-path (if (= platform "win32") (.getPath app "temp") "/tmp")
         logfile-electron (str (if repo-dir "./log" temp-path) "/meo-electron.log")
         logdir (str (if repo-dir "./log" temp-path) "/")
         info {:platform         platform
