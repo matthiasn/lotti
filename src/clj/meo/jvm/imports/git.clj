@@ -48,19 +48,21 @@
   (let [repos-cfg (fu/load-repos)]
     (set-last-read)
     (doseq [[repo-name repo-cfg] (:repos repos-cfg)]
-      (let [commits (read-repo repo-cfg (:last-read repos-cfg))]
-        (doseq [commit commits]
-          (let [ts (c/to-long (-> commit :author :date))
-                {:keys [abbreviated_commit author]} commit
-                md ""
-                entry {:git_commit (assoc-in commit [:repo_name] repo-name)
-                       :timestamp  ts
-                       :id         abbreviated_commit
-                       :md         md
-                       :text       md
-                       :mentions   #{}
-                       :perm_tags  #{"#git-commit"}
-                       :tags       #{"#git-commit" "#import"}}]
-            (when (= (:email repo-cfg) (:email author))
-              (put-fn (with-meta [:entry/update entry] {:silent true}))))))))
+      (try
+        (let [commits (read-repo repo-cfg (:last-read repos-cfg))]
+          (doseq [commit commits]
+            (let [ts (c/to-long (-> commit :author :date))
+                  {:keys [abbreviated_commit author]} commit
+                  md ""
+                  entry {:git_commit (assoc-in commit [:repo_name] repo-name)
+                         :timestamp  ts
+                         :id         abbreviated_commit
+                         :md         md
+                         :text       md
+                         :mentions   #{}
+                         :perm_tags  #{"#git-commit"}
+                         :tags       #{"#git-commit" "#import"}}]
+              (when (= (:email repo-cfg) (:email author))
+                (put-fn (with-meta [:entry/update entry] {:silent true}))))))
+        (catch Exception ex (warn "Exception when reading" repo-name ex)))))
   {})

@@ -63,7 +63,8 @@
       (if access-token
         (get url rp-handler)
         (warn "incomplete spotify credentials")))
-    (catch UnknownHostException _ (error "Host api.spotify.com not found")))
+    (catch UnknownHostException _ (error "Host api.spotify.com not found"))
+    (catch Exception ex (warn ex)))
   {})
 
 (defn spotify-play [{:keys [msg-payload]}]
