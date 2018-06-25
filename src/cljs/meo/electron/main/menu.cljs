@@ -69,7 +69,10 @@
                            :click       #(import-dialog put-fn)}
                           (when (contains? capabilities :git-import)
                             {:label "Git repos"
-                             :click #(put-fn [:import/git])})]}
+                             :click #(put-fn [:import/git])})
+                          (when (contains? capabilities :spotify)
+                            {:label "Spotify"
+                             :click #(put-fn [:import/spotify])})]}
                {:label "Export"
                 :click #(put-fn [:export/geojson])}]}))
 

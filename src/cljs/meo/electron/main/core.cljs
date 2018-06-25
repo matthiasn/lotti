@@ -51,6 +51,7 @@
                 :import/gen-thumbs
                 :import/photos
                 :import/listen
+                :import/spotify
                 :import/git
                 :firehose/cmp-put
                 :firehose/cmp-recv})
