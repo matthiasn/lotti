@@ -138,7 +138,7 @@
                           (apply +))
             dur (u/duration-string logged-s)
             n (count (:by_ts @day-stats))
-            drop-fn (a/drop-linked-fn @briefing cfg put-fn)]
+            drop-fn (a/drop-on-briefing @briefing cfg put-fn)]
         [:div.entry-with-comments
          [:div.entry
           [:div.briefing {:on-drop       drop-fn
