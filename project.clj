@@ -60,8 +60,8 @@
   :main meo.jvm.core
 
   :profiles {:uberjar      {:aot :all}
-             :test-reagent {:dependencies [[cljsjs/react "15.6.1-2"]
-                                           [cljsjs/react-dom "15.6.1-2"]
+             :test-reagent {:dependencies [[cljsjs/react "16.4.0-0"]
+                                           [cljsjs/react-dom "16.4.0-0"]
                                            [cljsjs/create-react-class "15.6.3-0"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
                                            [reagent "0.8.1"
