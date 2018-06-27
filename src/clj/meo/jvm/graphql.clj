@@ -80,7 +80,7 @@
     (->> entries
          (map #(entry-w-story g (get-entry g %)))
          (filter :timestamp)
-         (vec))))
+         (set))))
 
 (defn briefing [state context args value]
   (let [g (:graph @state)
@@ -88,7 +88,8 @@
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
     (when-let [briefing (get-entry g ts)]
       (let [briefing (linked-for g briefing)
-            briefing (update-in briefing [:linked] concat (completed-for-day g d))
+            linked-completed (fn [xs] (vec (set/union (set xs) (completed-for-day g d))))
+            briefing (update-in briefing [:linked] linked-completed)
             comments (:comments (gq/get-comments briefing g ts))
             comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
                            comments)
