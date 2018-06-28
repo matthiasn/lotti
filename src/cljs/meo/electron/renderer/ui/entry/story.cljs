@@ -112,11 +112,11 @@
                              updated (assoc-in entry [:primary_story] ts)]
                          (swap! local assoc-in [:show] false)
                          (put-fn [:entry/update updated])))
-
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
-                        idx-inc #(if (< % (dec (count @indexed))) (inc %) %)
-                        idx-dec #(if (pos? %) (dec %) %)]
+                        n (count @indexed)
+                        idx-inc #(if (< % (dec n)) (inc %) 0)
+                        idx-dec #(if (pos? %) (dec %) (dec n))]
                     (when (:show @local)
                       (when (= key-code 27)
                         (swap! local assoc-in [:show] false))
