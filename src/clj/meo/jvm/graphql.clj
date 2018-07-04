@@ -266,7 +266,7 @@
         merged (merge (get-in current-state [:queries qid]) msg-payload)
         {:keys [file args q id res-hash]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
-        query-string (apply format template args)
+        query-string (when template (apply format template args))
         on-deliver
         (fn [res]
           (info "GraphQL on-deliver" qid (- (stc/now) start) "ms")
@@ -283,7 +283,10 @@
                   (str "- '" (or file query-string) "'"))
             (when new-data (put-fn (with-meta [:gql/res res]
                                               {:sente-uid :broadcast})))))]
-    (execute-async schema query-string nil nil {} on-deliver))
+    (swap! cmp-state assoc-in [:queries id] merged)
+    (if query-string
+      (execute-async schema query-string nil nil {} on-deliver)
+      (put-fn [:gql/res (merge msg-payload {:data {}})])))
   {})
 
 (defn run-registered [{:keys [current-state msg-meta] :as m}]

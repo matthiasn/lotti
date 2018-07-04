@@ -162,6 +162,9 @@
 (s/def :search/set-dragged (s/keys :req-un [:meo.search/query-id
                                             :meo.search/tab-group]))
 
+(s/def :meo.search/t #{:close-tab :next-tab :active-tab})
+(s/def :search/cmd (s/keys :req-un [:meo.search/t]))
+
 (s/def :meo.search-drag/dragged :search/set-dragged)
 (s/def :meo.search-drag/to :meo.search/tab-group)
 (s/def :search/move-tab (s/keys :req-un [:meo.search-drag/dragged

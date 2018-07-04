@@ -1,14 +1,14 @@
 (ns meo.electron.renderer.client-store-search
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
-    [meo.electron.renderer.client-store-cfg :as c]
-    #?(:clj
-    [taoensso.timbre :refer [info debug]]
-       :cljs [taoensso.timbre :refer-macros [info debug]])
-    [matthiasn.systems-toolbox.component :as st]
-    [meo.common.utils.parse :as p]
-    [meo.electron.renderer.graphql :as gql]
-    [clojure.set :as set]
-    [meo.common.utils.misc :as u]))
+            [meo.electron.renderer.client-store-cfg :as c]
+            #?(:clj
+                     [taoensso.timbre :refer [info debug]]
+               :cljs [taoensso.timbre :refer-macros [info debug]])
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.common.utils.parse :as p]
+            [meo.electron.renderer.graphql :as gql]
+            [clojure.set :as set]
+            [meo.common.utils.misc :as u]))
 
 (def initial-query-cfg
   {:queries     {}
@@ -34,12 +34,10 @@
         queries (filter identity (map query-for [:left :right]))
         pvt (:show-pvt (:cfg current-state))
         gql-query (when (seq queries) (gql/tabs-query queries pvt))]
-    (when gql-query
-      (debug gql-query)
-      (put-fn [:gql/query {:q        gql-query
-                           :id       :tabs-query
-                           :res-hash nil
-                           :prio     1}]))))
+    (put-fn [:gql/query {:q        gql-query
+                         :id       :tabs-query
+                         :res-hash nil
+                         :prio     1}])))
 
 (defn update-query-cfg [state put-fn]
   (reset! query-cfg (:query-cfg state))
@@ -145,8 +143,7 @@
           new-state (-> current-state
                         (update-in all-path #(disj (set %) query-id))
                         (previously-active query-id tab-group)
-                        (update-in query-path dissoc query-id)
-                        (update-in [:results] dissoc query-id))]
+                        (update-in query-path dissoc query-id))]
       (update-query-cfg new-state put-fn)
       {:new-state new-state})
     {}))
@@ -200,8 +197,7 @@
         new-state (-> current-state
                       (update-in all-path #(disj (set %) qid))
                       (previously-active qid tab-group)
-                      (update-in query-path dissoc qid)
-                      (update-in [:results] dissoc qid))]
+                      (update-in query-path dissoc qid))]
     (update-query-cfg new-state put-fn)
     {:new-state new-state}))
 
@@ -238,7 +234,7 @@
         new-query (update-in merged [:n] + 10)]
     {:send-to-self [:search/update new-query]}))
 
-(defn search-res [{:keys [current-state msg-payload put-fn]}]
+(defn search-res [{:keys [current-state msg-payload]}]
   (let [{:keys [type data]} msg-payload
         new-state (assoc-in current-state [type] {:ts   (st/now)
                                                   :data data})]

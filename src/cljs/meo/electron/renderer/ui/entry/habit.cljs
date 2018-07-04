@@ -46,7 +46,7 @@
                        [:input {:type      :checkbox
                                 :checked   (get-in entry [:habit :days day])
                                 :on-change (day-select entry day)}])
-        close-tab #(put-fn [:search/remove-all {:search-text (str ts)}])
+        close-tab #(put-fn [:search/cmd {:t :close-tab}])
         done
         (fn [entry]
           (fn [ev]
@@ -59,9 +59,9 @@
                                 (assoc-in [:habit :next_entry] next-ts)
                                 (assoc-in [:habit :completion_ts] completion-ts)
                                 (update-in [:habit :done] not))]
+                (close-tab)
                 (put-fn [:entry/update next-entry])
-                (put-fn [:entry/update updated])
-                (close-tab))
+                (put-fn [:entry/update updated]))
               ;; otherwise just toggle - follow-up is scheduled already
               (let [updated (update-in entry [:habit :done] not)]
                 (put-fn [:entry/update updated])))))
@@ -75,9 +75,9 @@
                     updated (-> entry
                                 (assoc-in [:habit :next_entry] next-ts)
                                 (update-in [:habit :skipped] not))]
+                (close-tab)
                 (put-fn [:entry/update next-entry])
-                (put-fn [:entry/update updated])
-                (close-tab))
+                (put-fn [:entry/update updated]))
               ;; otherwise just toggle - follow-up is scheduled already
               (let [updated (update-in entry [:habit :skipped] not)]
                 (put-fn [:entry/update updated])))))

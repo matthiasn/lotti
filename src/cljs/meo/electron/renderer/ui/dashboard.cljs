@@ -1,14 +1,13 @@
 (ns meo.electron.renderer.ui.dashboard
   (:require [moment]
             [re-frame.core :refer [subscribe]]
-            [meo.electron.renderer.helpers :as h]
+            [reagent.ratom :refer-macros [reaction]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
             [meo.electron.renderer.ui.dashboard.earlybird :as eb]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
             [meo.electron.renderer.ui.dashboard.commits :as c]
-            [reagent.core :as r]
             [meo.electron.renderer.graphql :as gql]
             [taoensso.timbre :refer-macros [info debug]]
             [matthiasn.systems-toolbox.component :as st]))
@@ -33,6 +32,8 @@
 (defn dashboard [days put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])
         questionnaires (subscribe [:questionnaires])
+        gql-res (subscribe [:gql-res])
+        res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
         charts-pos (reaction
                      (reduce
                        (fn [acc m]
@@ -58,7 +59,7 @@
                     :days     days}
             end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         (gql-query charts-pos days put-fn)
-        ^{:key (dc/df now dc/month-day)}
+        ^{:key @res-hash}
         [:div.questionnaires
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
