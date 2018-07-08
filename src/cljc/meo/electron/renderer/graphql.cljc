@@ -53,6 +53,7 @@
                 :audio_file
                 :tags
                 :perm_tags
+                :mentions
                 :habit
                 :story_name
                 :saga_name
