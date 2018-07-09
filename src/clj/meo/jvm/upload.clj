@@ -42,7 +42,7 @@
                       "visits.json" (ie/import-visits-fn rdr put-fn {} filename)
                       (info :backend/upload :text req))
                     "OK"))
-        binary-post-fn (fn [dir filename req]
+        image-post-fn (fn [dir filename req]
                          (let [filename (str fu/data-path "/" dir "/" filename)
                                file (java.io.File. filename)]
                            (io/make-parents file)
@@ -50,9 +50,18 @@
                            (io/copy (:body req) file)
                            (img/gen-thumbs file (.getName file)))
                          "OK")
+        audio-post-fn (fn [filename req]
+                         (let [filename (str fu/data-path "/audio/" filename)
+                               file (java.io.File. filename)]
+                           (io/make-parents file)
+                           (info :backend/upload-cmp :binary req)
+                           (io/copy (:body req) file))
+                         "OK")
         app (routes
+              (PUT "/upload/audio/:file" [file :as r]
+                (audio-post-fn file r))
               (PUT "/upload/:dir/:file" [dir file :as r]
-                (binary-post-fn dir file r))
+                (image-post-fn dir file r))
               (POST "/upload/:filename" [filename :as r]
                 (post-fn filename r put-fn)))
         server (j/run-jetty app {:port @upload-port :join? false})
