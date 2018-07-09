@@ -4,7 +4,6 @@
             [reagent.core :as r]
             [meo.electron.renderer.helpers :as h]))
 
-(def iww-host (.-iwwHOST js/window))
 (def intersection-observer (aget js/window "IntersectionObserver"))
 
 (defn wavesurfer-did-mount [props]
@@ -17,7 +16,7 @@
                                                  :normalize     true
                                                  :cursorWidth   2
                                                  :progressColor "#FF5F1A"}))
-          url (str "http://" iww-host "/audio/" audio-file)
+          url (h/audio-path audio-file)
           progress (fn [p]
                      (swap! local assoc-in [:progress] p)
                      (.setItem js/localStorage ts p))
@@ -29,7 +28,6 @@
       (.on waveform "ready" (fn []
                               (let [dur (.getDuration waveform)
                                     progress (.getItem js/localStorage ts)]
-                                (info :ready progress)
                                 (when progress (.skip waveform progress))
                                 (swap! local assoc-in [:duration] dur))))
       (.on waveform "audioprocess" progress)
@@ -94,7 +92,8 @@
                       (when (= key-code 32) (play-pause))
                       (when (= key-code 37) (skip-back))
                       (when (= key-code 39) (skip-fwd))
-                      (.stopPropagation ev)))
+                      (.stopPropagation ev)
+                      (.preventDefault ev)))
           start-watch #(.addEventListener js/document "keydown" keydown)
           stop-watch #(.removeEventListener js/document "keydown" keydown)]
       [:div {:on-mouse-enter start-watch

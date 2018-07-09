@@ -146,14 +146,16 @@
 (def repo-dir (s/includes? (s/lower-case rp) "electron"))
 (def photos (str (if repo-dir ".." user-data) "/data/images/"))
 
-(defn img-path [path file]
+(defn media-path [path file]
   (normalize (str (if repo-dir
                     (.cwd process)
                     user-data)
                   path file)))
 
-(defn thumbs-256 [file] (img-path  "/data/thumbs/256/" file))
-(defn thumbs-2048 [file] (img-path  "/data/thumbs/2048/" file))
+(defn thumbs-256 [file] (media-path  "/data/thumbs/256/" file))
+(defn thumbs-2048 [file] (media-path  "/data/thumbs/2048/" file))
+
+(defn audio-path [file] (media-path "/data/audio/" file))
 
 (def export (str (if repo-dir ".." user-data) "/data/export/"))
 
