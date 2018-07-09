@@ -3,7 +3,7 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.0-alpha6"]
                  [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
@@ -37,9 +37,9 @@
                  [ubergraph "0.5.0"]
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
-                 [matthiasn/systems-toolbox "0.6.36"]
-                 [matthiasn/systems-toolbox-sente "0.6.31" :exclusions [http-kit]]
-                 [org.clojure/tools.reader "1.2.2"]
+                 [matthiasn/systems-toolbox "0.6.37"]
+                 [matthiasn/systems-toolbox-sente "0.6.32"]
+                 [org.clojure/tools.reader "1.3.0"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
@@ -67,7 +67,7 @@
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.5"]
-                                           [cljsjs/moment "2.17.1-1"]
+                                           [cljsjs/moment "2.22.2-0"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
@@ -80,7 +80,7 @@
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.16"]
             [test2junit "1.4.2"]
-            [lein-cloverage "1.0.10"]
+            [lein-cloverage "1.0.11"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.0"]
