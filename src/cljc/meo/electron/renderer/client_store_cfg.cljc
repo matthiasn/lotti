@@ -10,6 +10,7 @@
    :show-context      true
    :show-maps-for     #{}
    :show-comments-for {}
+   :show-cal          true
    :show-pvt          true
    :mute              true
    :locale            :de

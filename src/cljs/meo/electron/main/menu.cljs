@@ -150,6 +150,8 @@
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
+               {:label "Toggle Calendar"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-cal]}])}
                (when (contains? capabilities :dashboard-banner)
                  {:label "Toggle Charts"
                   :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})

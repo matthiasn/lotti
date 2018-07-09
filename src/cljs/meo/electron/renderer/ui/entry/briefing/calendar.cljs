@@ -52,6 +52,8 @@
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         gql-res (subscribe [:gql-res])
+        cfg (subscribe [:cfg])
+        show-cal (reaction (:show-cal @cfg))
         stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
@@ -81,9 +83,10 @@
             events (map xf (:by_ts @stats))
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
-        [:div.cal-container
-         [:div.big-calendar {:class (when-not @show-pvt "pvt")}
-          [cal (merge {:events     events
-                       :date       (.toDate (moment. day))
-                       :onNavigate #(info :navigate %)}
-                      scroll-to)]]]))))
+        (when @show-cal
+          [:div.cal-container
+           [:div.big-calendar {:class (when-not @show-pvt "pvt")}
+            [cal (merge {:events     events
+                         :date       (.toDate (moment. day))
+                         :onNavigate #(info :navigate %)}
+                        scroll-to)]]])))))
