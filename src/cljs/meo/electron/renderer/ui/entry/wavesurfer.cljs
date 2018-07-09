@@ -78,7 +78,7 @@
 
 (defn wavesurfer [entry local-cfg put-fn]
   (when-let [audio-file (:audio_file entry)]
-    (let [id (str "wavesurfer" (hash (:vclock entry))
+    (let [id (str "wavesurfer" (:timestamp entry)
                   (when-let [tab-grp (:tab-group local-cfg)] (name tab-grp)))
           local (r/atom {:zoom 1})
           get-waveform #(:waveform @local)

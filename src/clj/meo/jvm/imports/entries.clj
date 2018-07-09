@@ -29,12 +29,9 @@
             (warn "negative timestamp?" visit)))))
     (catch Exception ex (error "Error while importing " filename ex))))
 
-(defn update-audio-tag
-  [entry]
-  (if (:audio-file entry)
-    (-> entry
-        (update-in [:tags] conj "#audio")
-        (update-in [:md] str " #audio"))
+(defn update-audio-tag [entry]
+  (if (:audio_file entry)
+    (assoc-in entry [:perm_tags] #{"#audio"})
     entry))
 
 (defn import-text-entries-fn
@@ -49,8 +46,8 @@
                                  #{linked})))
                    entry
                    (-> (cc/parse-string line keyword)
-                       (m/add-tags-mentions)
                        (update-audio-tag)
+                       (m/add-tags-mentions)
                        (update-in [:timestamp] u/double-ts-to-long)
                        (update-in [:linked_timestamp] u/double-ts-to-long))
                    entry (if (:linked_timestamp entry)
