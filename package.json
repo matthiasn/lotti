@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.5.186",
+  "version": "0.5.187",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -21,6 +21,8 @@
   "dependencies": {
     "@cljs-oss/module-deps": "1.1.1",
     "asar": "0.14.3",
+    "base-64": "^0.1.0",
+    "buildmail": "^4.0.1",
     "cldr-data": "32.0.1",
     "cookie-parser": "1.4.3",
     "create-react-class": "15.6.3",
@@ -43,6 +45,7 @@
     "imap": "^0.8.19",
     "immutable": "3.8.2",
     "install": "0.12.1",
+    "js-base64": "^2.4.6",
     "lato-font": "3.0.0",
     "leaflet": "1.3.1",
     "lodash": "4.17.10",

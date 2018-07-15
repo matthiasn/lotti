@@ -6,12 +6,18 @@
             [fs :refer [existsSync readFileSync mkdirSync writeFileSync statSync]]
             [crypto-js :refer [AES enc]]
             [child_process :refer [spawn]]
-            [cljs.tools.reader.edn :as edn]
             [webdav :as webdav]
             [imap :as imap]
-            [moment]))
+            [moment]
+            [js-base64 :refer [Base64]]
+            [buildmail :as BuildMail]
+            [matthiasn.systems-toolbox.component :as stc]
+            [clojure.string :as str]
+            [cljs.reader :as edn]))
 
 (def utf-8 (.-Utf8 enc))
+(info "ENC >>>" (js->clj enc))
+
 (def data-path (:data-path rt/runtime-info))
 (def repo-dir (:repo-dir rt/runtime-info))
 
@@ -138,17 +144,34 @@
             (.catch #(warn %)))))
     {}))
 
-(defn imap-open [open-mb-cb msg-map]
+(def default-imap-cfg
+  {:authTimeout 15000
+   :connTimeout 30000
+   :port        993
+   :autotls     true
+   :tls         true})
+
+(defn imap-open [open-mb-cb]
   (let [data-path (if repo-dir "./data" data-path)
         imap-cfg (str data-path "/imap.edn")]
     (when (existsSync imap-cfg)
-      (let [cfg (clj->js (edn/read-string (readFileSync imap-cfg "utf-8")))
+      (let [cfg (clj->js (merge default-imap-cfg (edn/read-string (readFileSync imap-cfg "utf-8"))))
             mb (imap. cfg)]
         (.once mb "ready" #(.openBox mb "meo" false (partial open-mb-cb mb)))
         (.once mb "error" #(error "IMAP connection" %))
         (.once mb "end" #(info "IMAP connection ended"))
         (.connect mb)
         {}))))
+
+(defn decrypt [base-64-cipher]
+  (debug "decrypt ciphertext\n" base-64-cipher)
+  (let [secret (read-secret)
+        ciphertext (.decode Base64 base-64-cipher)
+        bytes (.decrypt AES ciphertext secret)
+        s (.toString bytes utf-8)]
+    (debug "ciphertext utf8\n" ciphertext)
+    (info "decrypted" s)
+    (edn/read-string s)))
 
 (defn read-email [msg-map]
   (let [msg-cb (fn [msg seqn]
@@ -158,22 +181,39 @@
                                  (.on stream "data" #(do
                                                        (when (= "TEXT" (.-which stream-info))
                                                          (swap! buffer str (.toString % "UTF8")))
-                                                       (info "IMAP body data")))
-                                 (.once stream "end" #(info "IMAP body end" @buffer)))]
+                                                       (debug "IMAP body data")))
+                                 (.once stream "end" #(info "IMAP body" (decrypt @buffer))))]
                    (info "IMAP msg" seqn)
                    (.on msg "body" body-cb)
                    (.once msg "end" #(info "IMAP msg end"))))
-        open-mb-cb (fn [mb err box]
-                     (let [fetch (aget mb "seq" "fetch")
-                           f (fetch "1:3" (clj->js {:bodies ["HEADER.FIELDS (FROM TO SUBJECT DATE)" "TEXT"]
-                                                    :struct true}))]
-                       (.on f "message" msg-cb)
-                       (.once f "error" #(error "Fetch error" %))
-                       (.once f "end" (fn [] (info "IMAP msg fetch ended") (.end mb)))))]
-    (imap-open open-mb-cb msg-map)
+        mb-cb (fn [mb err box]
+                (let [fetch (aget mb "seq" "fetch")
+                      f (fetch "1:100" (clj->js {:bodies ["TEXT"]
+                                                 :struct true}))]
+                  (.on f "message" msg-cb)
+                  (.once f "error" #(error "Fetch error" %))
+                  (.once f "end" (fn [] (info "IMAP msg fetch ended") (.end mb)))))]
+    (imap-open mb-cb)
     {}))
 
-(defn state-fn [put-fn]
+(defn write-email [{:keys [msg-payload]}]
+  (imap-open
+    (fn [mb _err _box]
+      (let [secret (read-secret)
+            content (pr-str msg-payload)
+            ciphertext (.toString (.encrypt AES content secret))
+            base-64-enc (.encode Base64 ciphertext)
+            cb (fn [_err rfc-2822]
+                 (info "RFC2822\n" rfc-2822)
+                 (.append mb rfc-2822 #(if % (error "IMAP write" %)
+                                             (info "IMAP wrote message"))))]
+        (-> (BuildMail. "text/plain")
+            (.setContent base-64-enc)
+            (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
+            (.build cb)))))
+  {})
+
+(defn state-fn [_put-fn]
   (let [state (atom {})]
     (read-email {})
     {:state state}))
@@ -186,4 +226,4 @@
    :handler-map {:sync/scan-inbox  scan-inbox
                  :sync/scan-images scan-images
                  ;:file/encrypt     encrypt
-                 }})
+                 :sync/imap        write-email}})

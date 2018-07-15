@@ -50,6 +50,7 @@
                        :window/show
                        :window/progress
                        :file/encrypt
+                       :sync/imap
                        :import/screenshot
                        :blink/busy})
 

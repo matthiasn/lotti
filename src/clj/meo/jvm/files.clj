@@ -114,6 +114,7 @@
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
                                   :id      :generate-opts}])
+      (put-fn (with-meta [:sync/imap entry] broadcast-meta))
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
         (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
