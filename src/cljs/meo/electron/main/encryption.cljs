@@ -8,12 +8,15 @@
             [child_process :refer [spawn]]
             [cljs.tools.reader.edn :as edn]
             [webdav :as webdav]
+            [imap :as imap]
             [moment]))
 
 (def utf-8 (.-Utf8 enc))
+(def data-path (:data-path rt/runtime-info))
+(def repo-dir (:repo-dir rt/runtime-info))
 
 (defn copy-to-webdav [filename node-id]
-  (let [{:keys [encrypted-path repo-dir data-path]} rt/runtime-info
+  (let [{:keys [encrypted-path]} rt/runtime-info
         data-path (if repo-dir "./data" data-path)
         enc-path (str encrypted-path "/" filename)
         cred-path (str data-path "/webdav.edn")]
@@ -35,8 +38,7 @@
       (warn "No WebDAV credentials found - file upload ABORTED"))))
 
 (defn read-secret []
-  (let [{:keys [repo-dir data-path]} rt/runtime-info
-        secret-path (str (if repo-dir "./data" data-path) "/secret.txt")]
+  (let [secret-path (str (if repo-dir "./data" data-path) "/secret.txt")]
     (when (existsSync secret-path)
       (readFileSync secret-path "utf-8"))))
 
@@ -69,7 +71,6 @@
 
 (defn scan-inbox [{:keys [put-fn]}]
   (let [secret (read-secret)
-        {:keys [repo-dir data-path]} rt/runtime-info
         data-path (if repo-dir "./data" data-path)
         cred-path (str data-path "/webdav.edn")]
     (when (existsSync cred-path)
@@ -106,7 +107,7 @@
 
 (defn scan-images [{:keys [put-fn]}]
   (let [secret (read-secret)
-        {:keys [repo-dir data-path img-path]} rt/runtime-info
+        img-path (:img-path rt/runtime-info)
         data-path (if repo-dir "./data" data-path)
         cred-path (str data-path "/webdav.edn")]
     (when (existsSync cred-path)
@@ -137,8 +138,49 @@
             (.catch #(warn %)))))
     {}))
 
+(defn imap-open [open-mb-cb msg-map]
+  (let [data-path (if repo-dir "./data" data-path)
+        imap-cfg (str data-path "/imap.edn")]
+    (when (existsSync imap-cfg)
+      (let [cfg (clj->js (edn/read-string (readFileSync imap-cfg "utf-8")))
+            mb (imap. cfg)]
+        (.once mb "ready" #(.openBox mb "meo" false (partial open-mb-cb mb)))
+        (.once mb "error" #(error "IMAP connection" %))
+        (.once mb "end" #(info "IMAP connection ended"))
+        (.connect mb)
+        {}))))
+
+(defn read-email [msg-map]
+  (let [msg-cb (fn [msg seqn]
+                 (let [buffer (atom "")
+                       body-cb (fn [stream stream-info]
+                                 (info "IMAP body" (js->clj stream-info))
+                                 (.on stream "data" #(do
+                                                       (when (= "TEXT" (.-which stream-info))
+                                                         (swap! buffer str (.toString % "UTF8")))
+                                                       (info "IMAP body data")))
+                                 (.once stream "end" #(info "IMAP body end" @buffer)))]
+                   (info "IMAP msg" seqn)
+                   (.on msg "body" body-cb)
+                   (.once msg "end" #(info "IMAP msg end"))))
+        open-mb-cb (fn [mb err box]
+                     (let [fetch (aget mb "seq" "fetch")
+                           f (fetch "1:3" (clj->js {:bodies ["HEADER.FIELDS (FROM TO SUBJECT DATE)" "TEXT"]
+                                                    :struct true}))]
+                       (.on f "message" msg-cb)
+                       (.once f "error" #(error "Fetch error" %))
+                       (.once f "end" (fn [] (info "IMAP msg fetch ended") (.end mb)))))]
+    (imap-open open-mb-cb msg-map)
+    {}))
+
+(defn state-fn [put-fn]
+  (let [state (atom {})]
+    (read-email {})
+    {:state state}))
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
+   :state-fn    state-fn
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:sync/scan-inbox  scan-inbox

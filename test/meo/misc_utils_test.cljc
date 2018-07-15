@@ -2,9 +2,9 @@
   "Here, we test some helpter functions. These tests are written in cljc and
    can also run on the JVM, as we only have pure punctions in the target
    namespace."
-  (:require #?(:clj [clojure.test :refer [deftest testing is]]
+  (:require #?(:clj  [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-                    [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]))
 
 (deftest duration-string-test
   (testing "test output for some different durations"
