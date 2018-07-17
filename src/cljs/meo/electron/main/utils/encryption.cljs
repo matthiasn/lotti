@@ -25,15 +25,13 @@
 (defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8"  s))
 (defn extract-body [s] (s/replace s "=\r\n" ""))
 
-(defn encrypt-aes-hex [s]
-  (->> (read-secret)
-       (.encrypt AES s)
+(defn encrypt-aes-hex [s secret]
+  (->> (.encrypt AES s secret)
        (.toString)
        (utf8-to-hex)))
 
-(defn decrypt-aes-hex [hex-cipher]
-  (try (let [secret (read-secret)
-             ciphertext (hex-to-utf8 hex-cipher)
+(defn decrypt-aes-hex [hex-cipher secret]
+  (try (let [ciphertext (hex-to-utf8 hex-cipher)
              decrypted-bytes (.decrypt AES ciphertext secret)
              s (.toString decrypted-bytes utf-8)]
          (debug "decrypt-aes-hex" s)

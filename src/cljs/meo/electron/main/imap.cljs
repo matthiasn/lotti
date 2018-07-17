@@ -29,12 +29,14 @@
       {})))
 
 (defn read-email [{:keys [put-fn cmp-state]}]
-  (when-let [mb-name (first (:read (:sync (imap-cfg))))]
-    (let [body-cb (fn [buffer seqn stream stream-info]
+  (when-let [mb-tuple (first (:read (:sync (imap-cfg))))]
+    (let [mb (second mb-tuple)
+          secret (:secret mb)
+          body-cb (fn [buffer seqn stream stream-info]
                     (let [end-cb (fn []
                                    (let [hex-body (mue/extract-body (apply str @buffer))]
                                      (debug "end-cb buffer" seqn "- size" (count hex-body))
-                                     (when-let [decrypted (mue/decrypt-aes-hex hex-body)]
+                                     (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
                                        (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                        (put-fn [:entry/sync decrypted]))))]
                       (info "IMAP body stream-info" (js->clj stream-info))
@@ -62,16 +64,17 @@
                                    (.once f "error" #(error "Fetch error" %))
                                    (.once f "end" (fn [] (info "IMAP mb-cb2 fetch ended") (.end mb)))))))]
                     (.search mb s cb)))]
-      (imap-open mb-name mb-cb)
+      (imap-open (:mailbox mb) mb-cb)
       {})))
 
 (defn write-email [{:keys [msg-payload]}]
-  (when-let [mb-name (:write (:sync (imap-cfg)))]
+  (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (imap-open
-      mb-name
+      (:mailbox mb-cfg)
       (fn [mb _err _box]
-        (let [cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload))
-              decrypted (mue/decrypt-aes-hex cipher-hex)
+        (let [secret (:secret mb-cfg)
+              cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
+              decrypted (mue/decrypt-aes-hex cipher-hex secret)
               _ (when-not (= msg-payload decrypted)
                   (warn "not equal" (data/diff msg-payload decrypted)))
               cb (fn [_err rfc-2822]
