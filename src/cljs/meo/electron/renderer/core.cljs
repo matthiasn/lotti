@@ -51,6 +51,7 @@
                        :window/progress
                        :file/encrypt
                        :sync/imap
+                       :sync/start-imap
                        :import/screenshot
                        :blink/busy})
 

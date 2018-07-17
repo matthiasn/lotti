@@ -113,7 +113,8 @@
                     :to   :electron/window-manager}]
 
        [:cmd/route {:from :electron/encryption
-                    :to   :electron/window-manager}]
+                    :to   #{:electron/window-manager
+                            :electron/scheduler}}]
 
        [:cmd/route {:from :electron/updater
                     :to   #{:electron/scheduler
@@ -129,11 +130,6 @@
 
        [:cmd/send {:to  :electron/startup
                    :msg [:jvm/loaded?]}]
-
-       [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 60 1000)
-                                            :message [:sync/read-imap]
-                                            :repeat  true}]}]
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)

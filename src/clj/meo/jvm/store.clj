@@ -107,6 +107,7 @@
                                 :message [:gql/run-registered]
                                 :id      :run-registered}])
     (broadcast [:startup/progress 1])
+    (broadcast [:sync/start-imap])
     ;(tf/import-predictions cmp-state)
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)

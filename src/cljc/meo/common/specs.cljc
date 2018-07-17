@@ -98,6 +98,7 @@
 (s/def :entry/import entry-spec)
 (s/def :sync/imap entry-spec)
 (s/def :sync/read-imap nil?)
+(s/def :sync/start-imap nil?)
 
 (s/def :import/entry entry-spec)
 (s/def :entry/sync entry-spec)

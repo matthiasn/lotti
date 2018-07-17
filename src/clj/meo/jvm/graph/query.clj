@@ -485,7 +485,10 @@
       (filter pvt-filter entries))))
 
 (defn query-fn [{:keys [current-state put-fn]}]
-  (put-fn [:startup/progress (:startup-progress current-state)])
+  (let [progress (:startup-progress current-state)]
+    (put-fn [:startup/progress progress])
+    (when (= 1 progress)
+      (put-fn [:sync/start-imap])))
   {})
 
 (System/currentTimeMillis)

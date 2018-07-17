@@ -87,10 +87,19 @@
               (.build cb))))))
   {})
 
+(defn start-sync [{:keys [current-state put-fn]}]
+  (info "starting IMAP sync")
+  {:emit-msg [:cmd/schedule-new {:timeout (* 20 1000)
+                                 :id      :imap-schedule
+                                 :message [:sync/read-imap]
+                                 :initial true
+                                 :repeat  true}]})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    (fn [_put-fn] {:state (atom {:last-read 0})})
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
-   :handler-map {:sync/imap      write-email
-                 :sync/read-imap read-email}})
+   :handler-map {:sync/imap       write-email
+                 :sync/start-imap start-sync
+                 :sync/read-imap  read-email}})
