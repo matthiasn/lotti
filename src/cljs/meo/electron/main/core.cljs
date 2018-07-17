@@ -7,7 +7,7 @@
             [meo.electron.main.menu :as menu]
             [meo.electron.main.update :as upd]
             [meo.electron.main.blink :as bl]
-            [meo.electron.main.encryption :as enc]
+            [meo.electron.main.imap :as enc]
             [meo.electron.main.screenshot :as screen]
             [meo.electron.main.geocoder :as geocoder]
             [meo.electron.main.startup :as st]
@@ -134,23 +134,6 @@
                    :msg [:cmd/schedule-new {:timeout (* 30 1000)
                                             :message [:sync/read-imap]
                                             :repeat  true}]}]
-
-       #_
-       [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:message [:geocoder/start]
-                                            :timeout 2000}]}]
-#_
-       [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 10 1000)
-                                            :message [:sync/scan-inbox]
-                                            :repeat  true
-                                            :initial true}]}]
-#_
-       [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 10 1000)
-                                            :message [:sync/scan-images]
-                                            :repeat  true
-                                            :initial true}]}]
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
