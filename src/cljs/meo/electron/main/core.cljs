@@ -131,7 +131,7 @@
                    :msg [:jvm/loaded?]}]
 
        [:cmd/send {:to  :electron/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 30 1000)
+                   :msg [:cmd/schedule-new {:timeout (* 60 1000)
                                             :message [:sync/read-imap]
                                             :repeat  true}]}]
 

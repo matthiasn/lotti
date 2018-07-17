@@ -28,7 +28,7 @@
       (.connect mb)
       {})))
 
-(defn read-email [{:keys [put-fn]}]
+(defn read-email [{:keys [put-fn cmp-state]}]
   (when-let [mb-name (first (:read (:sync (imap-cfg))))]
     (let [body-cb (fn [buffer seqn stream stream-info]
                     (let [end-cb (fn []
@@ -46,14 +46,22 @@
           msg-cb (fn [msg seqn]
                    (let [buffer (atom [])]
                      (.on msg "body" (partial body-cb buffer seqn))
-                     (.once msg "end" #(info "IMAP msg end" seqn))))
+                     (.once msg "end" #(debug "IMAP msg end" seqn))))
           mb-cb (fn [mb err box]
-                  (let [fetch (aget mb "seq" "fetch")
-                        f (fetch "1:1000" (clj->js {:bodies ["TEXT"]
-                                                    :struct true}))]
-                    (.on f "message" msg-cb)
-                    (.once f "error" #(error "Fetch error" %))
-                    (.once f "end" (fn [] (info "IMAP msg fetch ended") (.end mb)))))]
+                  (let [uid (str (inc (:last-read @cmp-state)) ":*")
+                        s (clj->js ["UNDELETED" ["UID" uid]])
+                        cb (fn [err res]
+                             (let [parsed-res (js->clj res)]
+                               (when (and (seq parsed-res) (> (last parsed-res) (:last-read @cmp-state)))
+                                 (let [last-read (last parsed-res)
+                                       f (.fetch mb res (clj->js {:bodies ["TEXT"]
+                                                                  :struct true}))]
+                                   (info "search fetch" res)
+                                   (swap! cmp-state assoc :last-read last-read)
+                                   (.on f "message" msg-cb)
+                                   (.once f "error" #(error "Fetch error" %))
+                                   (.once f "end" (fn [] (info "IMAP mb-cb2 fetch ended") (.end mb)))))))]
+                    (.search mb s cb)))]
       (imap-open mb-name mb-cb)
       {})))
 
@@ -78,6 +86,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
+   :state-fn    (fn [_put-fn] {:state (atom {:last-read 0})})
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:sync/imap      write-email
