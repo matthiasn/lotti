@@ -130,6 +130,11 @@
        [:cmd/send {:to  :electron/startup
                    :msg [:jvm/loaded?]}]
 
+       [:cmd/send {:to  :electron/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 30 1000)
+                                            :message [:sync/read-imap]
+                                            :repeat  true}]}]
+
        #_
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:message [:geocoder/start]

@@ -99,6 +99,7 @@
 (s/def :sync/imap entry-spec)
 
 (s/def :import/entry entry-spec)
+(s/def :entry/sync entry-spec)
 (s/def :import/imdb-id string?)
 (s/def :import/movie (s/keys :req-un [:import/entry :import/imdb-id]))
 
