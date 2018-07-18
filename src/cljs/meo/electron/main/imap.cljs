@@ -20,13 +20,15 @@
 
 (defn imap-open [mailbox-name open-mb-cb]
   (when-let [cfg (imap-cfg)]
-    (info "imap-open" mailbox-name cfg)
-    (let [mb (imap. (clj->js (:server cfg)))]
-      (.once mb "ready" #(.openBox mb mailbox-name false (partial open-mb-cb mb)))
-      (.once mb "error" #(error "IMAP connection" %))
-      (.once mb "end" #(info "IMAP connection ended"))
-      (.connect mb)
-      {})))
+    (try
+      (info "imap-open" mailbox-name cfg)
+      (let [mb (imap. (clj->js (:server cfg)))]
+        (.once mb "ready" #(.openBox mb mailbox-name false (partial open-mb-cb mb)))
+        (.once mb "error" #(error "IMAP connection" %))
+        (.once mb "end" #(info "IMAP connection ended"))
+        (.connect mb))
+      (catch :default e (error e))))
+  {})
 
 (defn read-email [{:keys [put-fn cmp-state]}]
   (when-let [mb-tuple (first (:read (:sync (imap-cfg))))]
@@ -50,20 +52,22 @@
                      (.on msg "body" (partial body-cb buffer seqn))
                      (.once msg "end" #(debug "IMAP msg end" seqn))))
           mb-cb (fn [mb err box]
-                  (let [uid (str (inc (:last-read @cmp-state)) ":*")
-                        s (clj->js ["UNDELETED" ["UID" uid]])
-                        cb (fn [err res]
-                             (let [parsed-res (js->clj res)]
-                               (when (and (seq parsed-res) (> (last parsed-res) (:last-read @cmp-state)))
-                                 (let [last-read (last parsed-res)
-                                       f (.fetch mb res (clj->js {:bodies ["TEXT"]
-                                                                  :struct true}))]
-                                   (info "search fetch" res)
-                                   (swap! cmp-state assoc :last-read last-read)
-                                   (.on f "message" msg-cb)
-                                   (.once f "error" #(error "Fetch error" %))
-                                   (.once f "end" (fn [] (info "IMAP mb-cb2 fetch ended") (.end mb)))))))]
-                    (.search mb s cb)))]
+                  (try
+                    (let [uid (str (inc (:last-read @cmp-state)) ":*")
+                          s (clj->js ["UNDELETED" ["UID" uid]])
+                          cb (fn [err res]
+                               (let [parsed-res (js->clj res)]
+                                 (when (and (seq parsed-res) (> (last parsed-res) (:last-read @cmp-state)))
+                                   (let [last-read (last parsed-res)
+                                         f (.fetch mb res (clj->js {:bodies ["TEXT"]
+                                                                    :struct true}))]
+                                     (info "search fetch" res)
+                                     (swap! cmp-state assoc :last-read last-read)
+                                     (.on f "message" msg-cb)
+                                     (.once f "error" #(error "Fetch error" %))
+                                     (.once f "end" (fn [] (info "IMAP mb-cb2 fetch ended") (.end mb)))))))]
+                      (.search mb s cb))
+                    (catch :default e (error e))))]
       (imap-open (:mailbox mb) mb-cb)
       {})))
 
@@ -72,19 +76,21 @@
     (imap-open
       (:mailbox mb-cfg)
       (fn [mb _err _box]
-        (let [secret (:secret mb-cfg)
-              cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
-              decrypted (mue/decrypt-aes-hex cipher-hex secret)
-              _ (when-not (= msg-payload decrypted)
-                  (warn "not equal" (data/diff msg-payload decrypted)))
-              cb (fn [_err rfc-2822]
-                   (debug "RFC2822\n" rfc-2822)
-                   (.append mb rfc-2822 #(if % (error "IMAP write" %)
-                                               (info "IMAP wrote message"))))]
-          (-> (BuildMail. "text/plain")
-              (.setContent cipher-hex)
-              (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
-              (.build cb))))))
+        (.getBoxes mb (fn [err boxes] (.log js/console boxes)))
+        (try (let [secret (:secret mb-cfg)
+                   cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
+                   decrypted (mue/decrypt-aes-hex cipher-hex secret)
+                   _ (when-not (= msg-payload decrypted)
+                       (warn "not equal" (data/diff msg-payload decrypted)))
+                   cb (fn [_err rfc-2822]
+                        (debug "RFC2822\n" rfc-2822)
+                        (.append mb rfc-2822 #(if % (error "IMAP write" %)
+                                                    (info "IMAP wrote message"))))]
+               (-> (BuildMail. "text/plain")
+                   (.setContent cipher-hex)
+                   (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
+                   (.build cb)))
+             (catch :default e (error e))))))
   {})
 
 (defn start-sync [{:keys [current-state put-fn]}]
