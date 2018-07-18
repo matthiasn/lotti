@@ -8,15 +8,20 @@
             [imap :as imap]
             [clojure.data :as data]
             [buildmail :as BuildMail]
-            [cljs.reader :as edn]))
+            [cljs.reader :as edn]
+            [clojure.pprint :as pp]))
 
 (def data-path (:data-path rt/runtime-info))
 (def repo-dir (:repo-dir rt/runtime-info))
+(def cfg-path (str data-path "/imap.edn"))
+
+(defn pp-str [x]
+  (binding [pp/*print-right-margin* 100]
+    (with-out-str (pp/pprint x))))
 
 (defn imap-cfg []
-  (let [cfg-path (str data-path "/imap.edn")]
-    (when (existsSync cfg-path)
-      (edn/read-string (readFileSync cfg-path "utf-8")))))
+  (when (existsSync cfg-path)
+    (edn/read-string (readFileSync cfg-path "utf-8"))))
 
 (defn imap-open [mailbox-name open-mb-cb]
   (when-let [cfg (imap-cfg)]
@@ -31,7 +36,6 @@
   {})
 
 (defn read-mailbox [[k mb-cfg] cmp-state put-fn]
-  (info "read-mailbox" mb-cfg)
   (let [{:keys [secret mailbox]} mb-cfg
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
@@ -52,19 +56,27 @@
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
         mb-cb (fn [mb err box]
                 (try
-                  (let [uid (str (inc (:last-read @cmp-state)) ":*")
+                  (let [path [:sync :read k :last-read]
+                        last-read (get-in (imap-cfg) path 0)
+                        uid (str (inc last-read) ":*")
                         s (clj->js ["UNDELETED" ["UID" uid]])
                         cb (fn [err res]
                              (let [parsed-res (js->clj res)]
-                               (when (and (seq parsed-res) (> (last parsed-res) (:last-read @cmp-state)))
+                               (when (and (seq parsed-res) (> (last parsed-res) last-read))
                                  (let [last-read (last parsed-res)
                                        f (.fetch mb res (clj->js {:bodies ["TEXT"]
-                                                                  :struct true}))]
+                                                                  :struct true}))
+                                       cb (fn []
+                                            (let [cfg (assoc-in (imap-cfg) path last-read)
+                                                  s (pp-str cfg)]
+                                              (info "mb-cb fetch end, last-read" last-read)
+                                              (writeFileSync cfg-path s)
+                                              (.end mb)))]
                                    (info "search fetch" res)
-                                   (swap! cmp-state assoc :last-read last-read)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
-                                   (.once f "end" (fn [] (info "IMAP mb-cb fetch ended") (.end mb)))))))]
+                                   (.once f "end" cb)))))]
+                    (info "search" mailbox s)
                     (.search mb s cb))
                   (catch :default e (error e))))]
     (imap-open mailbox mb-cb)))
@@ -111,7 +123,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    (fn [_put-fn] {:state (atom {:last-read 0})})
+   :state-fn    (fn [_put-fn] {:state (atom {})})
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:sync/imap       write-email
