@@ -34,7 +34,7 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
-                 [ubergraph "0.5.0"]
+                 [ubergraph "0.5.1"]
                  [factual/geo "1.2.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.37"]
@@ -60,9 +60,9 @@
   :main meo.jvm.core
 
   :profiles {:uberjar      {:aot :all}
-             :test-reagent {:dependencies [[cljsjs/react "16.4.0-0"]
-                                           [cljsjs/react-dom "16.4.0-0"]
-                                           [cljsjs/create-react-class "15.6.3-0"]]}
+             :test-reagent {:dependencies [[cljsjs/react "16.4.1-0"]
+                                           [cljsjs/react-dom "16.4.1-0"]
+                                           [cljsjs/create-react-class "15.6.3-1"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]

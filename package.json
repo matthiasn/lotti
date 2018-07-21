@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.5.195",
+  "version": "0.5.196",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
