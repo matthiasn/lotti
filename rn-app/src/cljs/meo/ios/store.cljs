@@ -5,7 +5,8 @@
             [clojure.data.avl :as avl]
             [meo.ios.sync :as sync]
             [cljs.tools.reader.edn :as edn]
-            [cljs.core.async :refer [<!]]))
+            [cljs.core.async :refer [<!]]
+            [meo.ui.shared :as shared]))
 
 (defn persist [{:keys [current-state put-fn msg-payload]}]
   (let [{:keys [timestamp vclock id]} msg-payload
@@ -20,15 +21,14 @@
         entry (merge prev msg-payload {:last-saved (st/now)
                                        :id         (str id)
                                        :vclock     new-vclock})
-        all-ts-op (if (:deleted entry) disj conj)
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
-                      (update-in [:all-timestamps] all-ts-op timestamp)
+                      (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (sync/write-to-webdav (:secrets current-state) entry put-fn)
+    (sync/write-to-imap (:secrets current-state) entry put-fn)
+    ;(shared/alert (str entry))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
-      (put-fn [:entry/persisted entry])
       (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))
       (go (<! (as/set-item :timestamps (:all-timestamps new-state))))
@@ -77,7 +77,8 @@
   (go
     (try
       (let [secrets (second (<! (as/get-item :secrets)))]
-        (swap! cmp-state assoc-in [:secrets] secrets))
+        (when secrets
+          (swap! cmp-state assoc-in [:secrets] secrets)))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (go
@@ -122,7 +123,8 @@
 (defn state-fn [put-fn]
   (let [state (atom {:entries        (avl/sorted-map)
                      :active-theme   :light
-                     :all-timestamps (avl/sorted-set)
+                     ;:all-timestamps (avl/sorted-set)
+                     :all-timestamps #{}
                      :vclock-map     (avl/sorted-map)
                      :latest-synced  0})]
     (load-state {:cmp-state state

@@ -3,6 +3,7 @@ package com.meo;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.reactlibrary.RNMailCorePackage;
 import com.rnfs.RNFSPackage;
 import com.xebia.activityrecognition.RNActivityRecognitionPackage;
 import com.rt2zz.reactnativecontacts.ReactNativeContacts;
@@ -28,6 +29,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNMailCorePackage(),
             new RNFSPackage(),
             new RNActivityRecognitionPackage(),
             new ReactNativeContacts(),

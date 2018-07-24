@@ -1,6 +1,7 @@
 (ns meo.helpers
   (:require [matthiasn.systems-toolbox.component :as st]
             [goog.dom.Range]
+            [meo.ui.shared :as shared]
             [meo.utils.parse :as p]))
 
 (set! js/moment (js/require "moment"))
@@ -9,33 +10,33 @@
   "Calls geolocation, sends entry enriched by geo information inside the
   callback function"
   [ts put-fn]
-  (.getCurrentPosition
-    (.-geolocation js/navigator)
-    (fn [pos]
-      (let [loc (js->clj (.-coords pos) :keywordize-keys true)]
-        (put-fn [:entry/persist {:timestamp ts
-                                 :location  loc
-                                 :latitude  (:latitude loc)
-                                 :longitude (:longitude loc)}])))
-    (fn [err] (prn err))
-    (clj->js {:enableHighAccuracy true :maximumAge 60000})))
+  (try
+    (.getCurrentPosition
+      (.-geolocation js/navigator)
+      (fn [pos]
+        (let [loc (js->clj (.-coords pos) :keywordize-keys true)]
+          (put-fn [:entry/persist {:timestamp ts
+                                   :location  loc
+                                   :latitude  (:latitude loc)
+                                   :longitude (:longitude loc)}])))
+      (fn [err] (prn err))
+      (clj->js {:enableHighAccuracy true :maximumAge 60000}))
+    (catch :default _ (shared/alert "geolocation not available"))))
 
-(defn new-entry-fn [put-fn opts run-fn]
-  (fn [_ev]
-    (let [ts (st/now)
-          timezone (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
-                         (.-timeZone resolved))
-                       (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
-                         (.-timeZone resolved)))
-          entry (merge (p/parse-entry "")
-                       {:timestamp  ts
-                        :new-entry  true
-                        :timezone   timezone
-                        :utc-offset (.getTimezoneOffset (new js/Date))}
-                       opts)]
-      (put-fn [:entry/new entry])
-      (send-w-geolocation ts put-fn)
-      (when run-fn (run-fn)))))
+(defn new-entry-fn [put-fn opts]
+  (let [ts (st/now)
+        timezone (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
+                       (.-timeZone resolved))
+                     (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
+                       (.-timeZone resolved)))
+        entry (merge (p/parse-entry "")
+                     {:timestamp  ts
+                      :new-entry  true
+                      :timezone   timezone
+                      :utc-offset (.getTimezoneOffset (new js/Date))}
+                     opts)]
+    (put-fn [:entry/new entry])
+    (send-w-geolocation ts put-fn)))
 
 (defn prevent-default [ev] (.preventDefault ev))
 

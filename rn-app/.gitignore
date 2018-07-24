@@ -67,3 +67,5 @@ figwheel_server.log
 release.jsbundle
 release.jsbundle.tmp
 release.jsbundle.tmp.meta
+
+ios/Pods/

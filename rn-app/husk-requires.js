@@ -13,6 +13,7 @@ var modules = {
     'react-native-vector-icons/FontAwesome': require('react-native-vector-icons/FontAwesome'),
     'react-native-keyboard-aware-scroll-view': require('react-native-keyboard-aware-scroll-view'),
     'react-native-contacts': require('react-native-contacts'),
+    'react-native-mailcore': require('react-native-mailcore'),
     'react-navigation': require('react-navigation'),
     'react-native-settings-list': require('react-native-settings-list'),
     'react-native-swipeout': require('react-native-swipeout'),

@@ -29,15 +29,15 @@
                      end-date (get-in sample ["endDate"])]
                  (when v
                    (let [end-ts (- (.valueOf (moment end-date))
-                                   (* 30 60 1000))
+                                   (* 90 60 1000))
                          cnt (js/parseInt v)
                          entry {:timestamp      end-ts
                                 :md             (str cnt " " tag)
                                 :tags           #{tag}
                                 :sample         sample
-                                :linked-stories #{1475314976880}
-                                :primary-story  1475314976880
-                                :custom-fields  {tag {:cnt cnt}}}]
+                                :linked_stories #{1475314976880}
+                                :primary_story  1475314976880
+                                :custom_fields  {tag {:cnt cnt}}}]
                      (put-fn (with-meta [:entry/update entry] {:silent true}))
                      (put-fn [:entry/persist entry]))))))
         init-cb (fn [err res]
@@ -60,9 +60,9 @@
                                    :md             (str kg " #weight")
                                    :tags           #{"#weight"}
                                    :sample         sample
-                                   :custom-fields  {"#weight" {:weight kg}}
-                                   :linked-stories #{1475314976880}
-                                   :primary-story  1475314976880}]
+                                   :custom_fields  {"#weight" {:weight kg}}
+                                   :linked_stories #{1475314976880}
+                                   :primary_story  1475314976880}]
                         (put-fn (with-meta [:entry/update entry] {:silent true}))
                         (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
@@ -86,10 +86,10 @@
                                                     " mmHG #BP")
                                :tags           #{"#BP"}
                                :sample         sample
-                               :custom-fields  {"#BP" {:bp-systolic  bp-systolic
+                               :custom_fields  {"#BP" {:bp-systolic  bp-systolic
                                                        :bp-diastolic bp-diastolic}}
-                               :linked-stories #{1475314976880}
-                               :primary-story  1475314976880}]
+                               :linked_stories #{1475314976880}
+                               :primary_story  1475314976880}]
                     (put-fn (with-meta [:entry/update entry] {:silent true}))
                     (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]

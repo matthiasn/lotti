@@ -1,6 +1,7 @@
 (ns meo.ios.sync
   (:require [matthiasn.systems-toolbox.component :as st]
-            [meo.helpers :as h]))
+            [meo.helpers :as h]
+            [meo.ui.shared :as sh]))
 
 (def crypto-js (js/require "crypto-js"))
 (def aes (aget crypto-js "AES"))
@@ -8,8 +9,7 @@
 (def rn-fs (js/require "react-native-fs"))
 (def docs-path (aget rn-fs "DocumentDirectoryPath"))
 (def img-path (str docs-path "/images"))
-(def buffer (aget (js/require "buffer") "Buffer"))
-(aset js/window "Buffer" buffer)
+(def Buffer (aget (js/require "buffer") "Buffer"))
 
 (defn write-img-to-webdav [secrets filename base64 put-fn]
   (try
@@ -85,3 +85,31 @@
       (copy-img-asset entry secrets put-fn)
       (put-fn [:log/info (str "written: " filename)]))
     (catch js/Object e (put-fn [:log/error (str e)]))))
+
+
+(defn buffer-convert [from to s]
+  (let [buffer (.from Buffer s from)]
+    (.toString buffer to)))
+
+(defn utf8-to-hex [s] (buffer-convert "utf-8" "hex" s))
+(defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8"  s))
+
+(def MailCore (.-default (js/require "react-native-mailcore")))
+
+(defn write-to-imap [secrets entry _put-fn]
+  (try
+    (let [aes-secret (:secret secrets)
+          entry (update-in entry [:tags] conj "#import")
+          data (pr-str entry)
+          ciphertext (.toString (.encrypt aes data aes-secret))
+          mail (merge (:server secrets)
+                      {:from     {:addressWithDisplayName "fred"
+                                  :mailbox                "meo@nehlsen-edv.de"}
+                       :to       {:addressWithDisplayName "uschi"
+                                  :mailbox                "meo@nehlsen-edv.de"}
+                       :subject  "hello uschi"
+                       :htmlBody (utf8-to-hex ciphertext)})]
+      (-> (.sendMail MailCore (clj->js mail))
+          (.then #(.log js/console (str (js->clj %))))
+          (.catch #(.log js/console (str (js->clj %))))))
+    (catch :default e (sh/alert (str e)))))

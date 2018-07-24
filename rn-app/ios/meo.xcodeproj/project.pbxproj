@@ -5,6 +5,7 @@
 	};
 	objectVersion = 46;
 	objects = {
+
 /* Begin PBXBuildFile section */
 		00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302AC1ABCB8CE00DB3ED1 /* libRCTActionSheet.a */; };
 		00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302BA1ABCB90400DB3ED1 /* libRCTGeolocation.a */; };
@@ -24,9 +25,11 @@
 		146834051AC3E58100842450 /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		162BBF4EE16A443C9C60BAD2 /* Roboto_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5DB43ADBFAF64AECB4E3EB23 /* Roboto_medium.ttf */; };
 		1695C6996C5742B6896AE8F0 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6F14D398117144E88CB09BBA /* SimpleLineIcons.ttf */; };
+		1FCBEDF7157B54D43E33F05A /* libPods-meo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C58A1F51BF8A9B57E10E4316 /* libPods-meo.a */; };
 		318658B363AC44348D9D6947 /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6A8B9282C3E544E9A2822D60 /* Feather.ttf */; };
 		3A09A830240B4869B9BCFF3D /* Entypo.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 83EB7CA35A5044BE9A4A3825 /* Entypo.ttf */; };
 		44D49C3F12AE45E08BC1FD0D /* Ionicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 257D1CA8EB85437593F45A69 /* Ionicons.ttf */; };
+		54BD09BDB7F84043A19E949E /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 94133695E0EB48B48633AABD /* libRNMailCore.a */; };
 		589E1C2C4FF244C281E053CE /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 926AC50CC7FC4A82B50937BE /* MaterialCommunityIcons.ttf */; };
 		5CC66A2570AF40F69868EDC5 /* EvilIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 96868E775F5A43E9A998DF31 /* EvilIcons.ttf */; };
 		5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9060319A367947308DA06D40 /* libRNActivityRecognition.a */; };
@@ -39,6 +42,7 @@
 		832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 832341B51AAA6A8300B99B32 /* libRCTText.a */; };
 		9549BC67D4674510BD471B3E /* MaterialIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 45E4EC8CEC224D9FBEA8352D /* MaterialIcons.ttf */; };
 		980746871B4C44F89F581A28 /* MaterialIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B9CA048E6AFE44A0AA274E08 /* MaterialIcons.ttf */; };
+		A679BEF26BC89D1A79CD08B5 /* libPods-meoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1534BAF0CD7E3D5BAFD86889 /* libPods-meoTests.a */; };
 		A70B0FC63D8144F689A2EEEB /* rubicon-icon-font.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7E734E10A5E74E63AB448AEF /* rubicon-icon-font.ttf */; };
 		A88CA747225943F690735E96 /* Ionicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C3FDEAF22AB043ACB1E3931C /* Ionicons.ttf */; };
 		AB29C5F0EBF5489BB54C3768 /* Octicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4EB43E3DF80F4416B99386BD /* Octicons.ttf */; };
@@ -335,6 +339,13 @@
 			remoteGlobalIDString = 3774C88D1D2092F20000B3F3;
 			remoteInfo = RCTAppleHealthKit;
 		};
+		AD33D87E2106884D0079F165 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 134814201AA4EA6300B7C361;
+			remoteInfo = RNMailCore;
+		};
 		AD348EF02047648F00B58026 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AD348EEC2047648E00B58026 /* RCTMGL.xcodeproj */;
@@ -405,6 +416,7 @@
 		00E356F21AD99517003FC87E /* meoTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = meoTests.m; sourceTree = "<group>"; };
 		0323211E6FA242B9ADCA0374 /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/native-base/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
 		06578F0BBE824BDE8345070F /* RNFS.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNFS.xcodeproj; path = "../node_modules/react-native-fs/RNFS.xcodeproj"; sourceTree = "<group>"; };
+		07E28FBB733F38CB2B59E5D0 /* Pods-meoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-meoTests/Pods-meoTests.release.xcconfig"; sourceTree = "<group>"; };
 		09ED015F7B6A40F3B5FDC25D /* libRNVectorIcons.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNVectorIcons.a; sourceTree = "<group>"; };
 		139105B61AF99BAD00B5F7CC /* RCTSettings.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTSettings.xcodeproj; path = "../node_modules/react-native/Libraries/Settings/RCTSettings.xcodeproj"; sourceTree = "<group>"; };
 		139FDEE61B06529A00C62182 /* RCTWebSocket.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTWebSocket.xcodeproj; path = "../node_modules/react-native/Libraries/WebSocket/RCTWebSocket.xcodeproj"; sourceTree = "<group>"; };
@@ -416,6 +428,7 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = meo/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = meo/main.m; sourceTree = "<group>"; };
 		146833FF1AC3E56700842450 /* React.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = React.xcodeproj; path = "../node_modules/react-native/React/React.xcodeproj"; sourceTree = "<group>"; };
+		1534BAF0CD7E3D5BAFD86889 /* libPods-meoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		257D1CA8EB85437593F45A69 /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/native-base/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
 		2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNActivityRecognition.xcodeproj; path = "../node_modules/react-native-activity-recognition/ios/RNActivityRecognition.xcodeproj"; sourceTree = "<group>"; };
 		2B66FABF51F24CB4B0C229CF /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
@@ -428,6 +441,7 @@
 		5C8F14A5D74548B988910434 /* RCTContacts.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTContacts.xcodeproj; path = "../node_modules/react-native-contacts/ios/RCTContacts.xcodeproj"; sourceTree = "<group>"; };
 		5DB43ADBFAF64AECB4E3EB23 /* Roboto_medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Roboto_medium.ttf; path = "../node_modules/native-base/Fonts/Roboto_medium.ttf"; sourceTree = "<group>"; };
 		5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTAnimation.xcodeproj; path = "../node_modules/react-native/Libraries/NativeAnimation/RCTAnimation.xcodeproj"; sourceTree = "<group>"; };
+		63C745094F11B93F32E30509 /* Pods-meo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-meo/Pods-meo.debug.xcconfig"; sourceTree = "<group>"; };
 		6442446F2F694A9CBE4F8E9D /* libRNDeviceInfo-tvOS.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = "libRNDeviceInfo-tvOS.a"; sourceTree = "<group>"; };
 		6A8B9282C3E544E9A2822D60 /* Feather.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Feather.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Feather.ttf"; sourceTree = "<group>"; };
 		6B2581DAA48042A6A3537BA5 /* FontAwesome.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf"; sourceTree = "<group>"; };
@@ -444,6 +458,7 @@
 		9060319A367947308DA06D40 /* libRNActivityRecognition.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNActivityRecognition.a; sourceTree = "<group>"; };
 		91BE6FF3073A48768D8C7821 /* Octicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Octicons.ttf; path = "../node_modules/native-base/Fonts/Octicons.ttf"; sourceTree = "<group>"; };
 		926AC50CC7FC4A82B50937BE /* MaterialCommunityIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialCommunityIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"; sourceTree = "<group>"; };
+		94133695E0EB48B48633AABD /* libRNMailCore.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNMailCore.a; sourceTree = "<group>"; };
 		96868E775F5A43E9A998DF31 /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/native-base/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
 		A352D66E30A64DD5B1A2FD1D /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
 		AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTCameraRoll.xcodeproj; path = "../node_modules/react-native/Libraries/CameraRoll/RCTCameraRoll.xcodeproj"; sourceTree = "<group>"; };
@@ -455,9 +470,13 @@
 		B1CD8D54ED7848B99385C253 /* libRCTCamera.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTCamera.a; sourceTree = "<group>"; };
 		B9CA048E6AFE44A0AA274E08 /* MaterialIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialIcons.ttf"; sourceTree = "<group>"; };
 		C3FDEAF22AB043ACB1E3931C /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
+		C58A1F51BF8A9B57E10E4316 /* libPods-meo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA4C173329F04C7C9AAB06E6 /* libRNFS.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNFS.a; sourceTree = "<group>"; };
 		CE45E874A26A4C5F80D88EB9 /* Roboto.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Roboto.ttf; path = "../node_modules/native-base/Fonts/Roboto.ttf"; sourceTree = "<group>"; };
 		D999D3DB39464D2FA749562F /* RCTCamera.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTCamera.xcodeproj; path = "../node_modules/react-native-camera/ios/RCTCamera.xcodeproj"; sourceTree = "<group>"; };
+		DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNMailCore.xcodeproj; path = "../node_modules/react-native-mailcore/ios/RNMailCore.xcodeproj"; sourceTree = "<group>"; };
+		EAF43E3D0EED428BA9EFE2E0 /* Pods-meoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meoTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-meoTests/Pods-meoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		ECD02A809DDAA8818674777A /* Pods-meo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meo.release.xcconfig"; path = "Pods/Target Support Files/Pods-meo/Pods-meo.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -466,6 +485,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				140ED2AC1D01E1AD002B40FF /* libReact.a in Frameworks */,
+				A679BEF26BC89D1A79CD08B5 /* libPods-meoTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,6 +516,8 @@
 				B3F6ABFC9A01470CB548F0CE /* libRCTContacts.a in Frameworks */,
 				5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */,
 				6F61149A0854484BB842733E /* libRNFS.a in Frameworks */,
+				54BD09BDB7F84043A19E949E /* libRNMailCore.a in Frameworks */,
+				1FCBEDF7157B54D43E33F05A /* libPods-meo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -617,6 +639,17 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		3B59910124C4CC29726FAB6A /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				63C745094F11B93F32E30509 /* Pods-meo.debug.xcconfig */,
+				ECD02A809DDAA8818674777A /* Pods-meo.release.xcconfig */,
+				EAF43E3D0EED428BA9EFE2E0 /* Pods-meoTests.debug.xcconfig */,
+				07E28FBB733F38CB2B59E5D0 /* Pods-meoTests.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
 		404F814FDCB64A99909B77FF /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -687,6 +720,7 @@
 				5C8F14A5D74548B988910434 /* RCTContacts.xcodeproj */,
 				2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */,
 				06578F0BBE824BDE8345070F /* RNFS.xcodeproj */,
+				DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -711,6 +745,7 @@
 				AD28E8791FEC8373007812C2 /* Recovered References */,
 				AD4F81991FED7A0600F736B5 /* Frameworks */,
 				404F814FDCB64A99909B77FF /* Resources */,
+				3B59910124C4CC29726FAB6A /* Pods */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -760,6 +795,7 @@
 				42C203C11AED41C7BBAA796D /* libRCTContacts.a */,
 				9060319A367947308DA06D40 /* libRNActivityRecognition.a */,
 				CA4C173329F04C7C9AAB06E6 /* libRNFS.a */,
+				94133695E0EB48B48633AABD /* libRNMailCore.a */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -768,6 +804,14 @@
 			isa = PBXGroup;
 			children = (
 				AD28E8AF1FEC8375007812C2 /* libRCTAppleHealthKit.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD33D87B2106884D0079F165 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD33D87F2106884D0079F165 /* libRNMailCore.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -785,6 +829,8 @@
 			children = (
 				AD348EEC2047648E00B58026 /* RCTMGL.xcodeproj */,
 				AD4F819A1FED7A0600F736B5 /* HealthKit.framework */,
+				C58A1F51BF8A9B57E10E4316 /* libPods-meo.a */,
+				1534BAF0CD7E3D5BAFD86889 /* libPods-meoTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -830,6 +876,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "meoTests" */;
 			buildPhases = (
+				20F2E5D96E5D0B0719AA0B09 /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
 				00E356EB1AD99517003FC87E /* Frameworks */,
 				00E356EC1AD99517003FC87E /* Resources */,
@@ -848,6 +895,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "meo" */;
 			buildPhases = (
+				44C5FAEC8B1D69DDDC746154 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
@@ -980,6 +1028,10 @@
 				{
 					ProductGroup = AD6D8B5C204740BE00571C45 /* Products */;
 					ProjectRef = 06578F0BBE824BDE8345070F /* RNFS.xcodeproj */;
+				},
+				{
+					ProductGroup = AD33D87B2106884D0079F165 /* Products */;
+					ProjectRef = DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */;
 				},
 				{
 					ProductGroup = AD05906C2012A5BA00130A7B /* Products */;
@@ -1261,6 +1313,13 @@
 			remoteRef = AD28E8AE1FEC8375007812C2 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		AD33D87F2106884D0079F165 /* libRNMailCore.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRNMailCore.a;
+			remoteRef = AD33D87E2106884D0079F165 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		AD348EF12047648F00B58026 /* libRCTMGL.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1362,6 +1421,42 @@
 			shellPath = /bin/sh;
 			shellScript = "export NODE_BINARY=node\n../husk-react-native-xcode.sh";
 		};
+		20F2E5D96E5D0B0719AA0B09 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-meoTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		44C5FAEC8B1D69DDDC746154 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-meo-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -1407,6 +1502,7 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = EAF43E3D0EED428BA9EFE2E0 /* Pods-meoTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
@@ -1421,12 +1517,14 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-fs/**",
+					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
@@ -1444,6 +1542,7 @@
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 07E28FBB733F38CB2B59E5D0 /* Pods-meoTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
@@ -1455,12 +1554,14 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-fs/**",
+					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
@@ -1478,6 +1579,7 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 63C745094F11B93F32E30509 /* Pods-meo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meo/meo.entitlements;
@@ -1492,6 +1594,7 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-fs/**",
+					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1508,6 +1611,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = ECD02A809DDAA8818674777A /* Pods-meo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meo/meo.entitlements;
@@ -1522,6 +1626,7 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-fs/**",
+					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

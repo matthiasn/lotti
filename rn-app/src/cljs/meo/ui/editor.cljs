@@ -41,9 +41,8 @@
 
 (defn editor-tab [local put-fn theme]
   (let [local2 (r/atom {})
-        save-fn #(let [new-entry (p/parse-entry (:md @local))
-                       new-entry-fn (h/new-entry-fn put-fn new-entry nil)]
-                   (new-entry-fn)
+        save-fn #(let [new-entry (p/parse-entry (:md @local))]
+                   (h/new-entry-fn put-fn new-entry)
                    (swap! local assoc-in [:md] "")
                    (when-let [navigate (:navigate @local2)]
                      (navigate "journal")))

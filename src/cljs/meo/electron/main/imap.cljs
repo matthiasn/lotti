@@ -41,12 +41,13 @@
                   (let [end-cb (fn []
                                  (let [hex-body (mue/extract-body (apply str @buffer))]
                                    (debug "end-cb buffer" seqn "- size" (count hex-body))
+                                   (debug hex-body)
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
                                      (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                      (put-fn [:entry/sync decrypted]))))]
                     (info "IMAP body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
-                                          (when (= "TEXT" (.-which stream-info))
+                                          (when (= "2" (.-which stream-info))
                                             (swap! buffer conj s))
                                           (info "IMAP body data seqno" seqn "- size" (count s))))
                     (.once stream "end" end-cb)))
@@ -64,7 +65,7 @@
                              (let [parsed-res (js->clj res)]
                                (when (and (seq parsed-res) (> (last parsed-res) last-read))
                                  (let [last-read (last parsed-res)
-                                       f (.fetch mb res (clj->js {:bodies ["TEXT"]
+                                       f (.fetch mb res (clj->js {:bodies ["2"]
                                                                   :struct true}))
                                        cb (fn []
                                             (let [cfg (assoc-in (imap-cfg) path last-read)
