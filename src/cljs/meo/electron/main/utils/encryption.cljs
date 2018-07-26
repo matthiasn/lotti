@@ -19,6 +19,7 @@
 (defn extract-body [s]
   (-> s
       (s/replace "=\r\n" "")
+      (s/replace "\r\n" "")
       (s/replace "\n" "")))
 
 (defn encrypt-aes-hex [s secret]

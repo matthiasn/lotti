@@ -23,15 +23,16 @@
   (when (existsSync cfg-path)
     (edn/read-string (readFileSync cfg-path "utf-8"))))
 
-(defn imap-open [mailbox-name open-mb-cb]
+(defn imap-open [mailbox-name open-mb-cb cmp-state]
   (when-let [cfg (imap-cfg)]
     (try
-      (info "imap-open" mailbox-name)
-      (let [mb (imap. (clj->js (:server cfg)))]
-        (.once mb "ready" #(.openBox mb mailbox-name false (partial open-mb-cb mb)))
-        (.once mb "error" #(error "IMAP connection" %))
-        (.once mb "end" #(info "IMAP connection ended"))
-        (.connect mb))
+      (let [conn (imap. (clj->js (:server cfg)))]
+        (.once conn "ready" #(.openBox conn mailbox-name false (partial open-mb-cb conn)))
+        (.once conn "error" #(error "IMAP connection" %))
+        (.once conn "end" #(info "IMAP connection ended"))
+        (info "imap-open" mailbox-name)
+        (.connect conn)
+        (js/setTimeout #(.end conn) 60000))
       (catch :default e (error e))))
   {})
 
@@ -47,7 +48,7 @@
                                      (put-fn [:entry/sync decrypted]))))]
                     (info "IMAP body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
-                                          (when (= "2" (.-which stream-info))
+                                          (when (= "1" (.-which stream-info))
                                             (swap! buffer conj s))
                                           (info "IMAP body data seqno" seqn "- size" (count s))))
                     (.once stream "end" end-cb)))
@@ -55,7 +56,7 @@
                  (let [buffer (atom [])]
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
-        mb-cb (fn [mb err box]
+        mb-cb (fn [conn err box]
                 (try
                   (let [path [:sync :read k :last-read]
                         last-read (get-in (imap-cfg) path 0)
@@ -65,53 +66,54 @@
                              (let [parsed-res (js->clj res)]
                                (when (and (seq parsed-res) (> (last parsed-res) last-read))
                                  (let [last-read (last parsed-res)
-                                       f (.fetch mb res (clj->js {:bodies ["2"]
+                                       f (.fetch conn res (clj->js {:bodies ["1"]
                                                                   :struct true}))
                                        cb (fn []
                                             (let [cfg (assoc-in (imap-cfg) path last-read)
                                                   s (pp-str cfg)]
                                               (info "mb-cb fetch end, last-read" last-read)
                                               (writeFileSync cfg-path s)
-                                              (.end mb)))]
+                                              (.end conn)))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
                                    (.once f "end" cb)))))]
                     (info "search" mailbox s)
-                    (.search mb s cb))
+                    (.search conn s cb))
                   (catch :default e (error e))))]
-    (imap-open mailbox mb-cb)))
+    (imap-open mailbox mb-cb cmp-state)))
 
 (defn read-email [{:keys [put-fn cmp-state]}]
   (doseq [mb-tuple (:read (:sync (imap-cfg)))]
     (read-mailbox mb-tuple cmp-state put-fn))
   {})
 
-(defn write-email [{:keys [msg-payload]}]
+(defn write-email [{:keys [msg-payload cmp-state]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
-    (imap-open
-      (:mailbox mb-cfg)
-      (fn [mb _err _box]
-        ;(.getBoxes mb (fn [err boxes] (.log js/console boxes)))
-        (try (let [secret (:secret mb-cfg)
-                   cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
-                   decrypted (mue/decrypt-aes-hex cipher-hex secret)
-                   _ (when-not (= msg-payload decrypted)
-                       (warn "not equal" (data/diff msg-payload decrypted)))
-                   append-cb (fn [err]
-                               (if err
-                                 (error "IMAP write" err)
-                                 (info "IMAP wrote message"))
-                               (info "closing WRITE connection")
-                               (.end mb))
-                   cb (fn [_err rfc-2822]
-                        (debug "RFC2822\n" rfc-2822)
-                        (.append mb rfc-2822 append-cb))]
-               (-> (BuildMail. "text/plain")
-                   (.setContent cipher-hex)
-                   (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
-                   (.build cb)))
-             (catch :default e (error e))))))
+    (let [mailbox (:mailbox mb-cfg)
+          cb (fn [conn _err _box]
+               ;(.getBoxes mb (fn [err boxes] (.log js/console boxes)))
+               (try
+                 (let [secret (:secret mb-cfg)
+                       cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
+                       decrypted (mue/decrypt-aes-hex cipher-hex secret)
+                       _ (when-not (= msg-payload decrypted)
+                           (warn "not equal" (data/diff msg-payload decrypted)))
+                       append-cb (fn [err]
+                                   (if err
+                                     (error "IMAP write" err)
+                                     (info "IMAP wrote message"))
+                                   (info "closing WRITE connection")
+                                   (.end conn))
+                       cb (fn [_err rfc-2822]
+                            (debug "RFC2822\n" rfc-2822)
+                            (.append conn rfc-2822 append-cb))]
+                   (-> (BuildMail. "text/plain")
+                       (.setContent cipher-hex)
+                       (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
+                       (.build cb)))
+                 (catch :default e (error e))))]
+      (imap-open mailbox cb cmp-state)))
   {})
 
 (defn start-sync [{:keys [current-state put-fn]}]
