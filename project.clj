@@ -99,11 +99,10 @@
   :aliases {"cljs-main"         ["with-profile" "cljs" "cljsbuild" "once" "main"]
             "cljs-renderer"     ["with-profile" "cljs" "cljsbuild" "once" "renderer"]
             "cljs-updater"      ["with-profile" "cljs" "cljsbuild" "once" "updater"]
-
             "cljs-main-dev"     ["with-profile" "cljs" "cljsbuild" "auto" "main"]
             "cljs-renderer-dev" ["with-profile" "cljs" "cljsbuild" "auto" "renderer-dev"]
             "cljs-updater-dev"  ["with-profile" "cljs" "cljsbuild" "auto" "updater"]
-
+            "sass"              ["sass4clj" "once"]
             "dist"              ["do"
                                  ["clean"]
                                  ["test"]

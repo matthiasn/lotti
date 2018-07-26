@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/meo
+    docker:
+      - image: circleci/clojure:lein-2.8.1-node
+    environment:
+      LEIN_ROOT: nbd
+      JVM_OPTS: -Xmx3200m
+    steps:
+      - run: sudo apt-get update
+      - run: sudo apt-get install make ant g++
+      - checkout
+      - run: lein deps
+      - run: lein test2junit
+      #- run: npm install
+      #- run: npm install -g node-gyp
+      #- run: lein cljs-main
+      #- run: lein cljs-renderer
+      #- run: lein cljs-updater
+      - run: lein sass
+      - run: lein uberjar
+      - store_artifacts:
+          path: test2junit/xml
+          destination: reports
