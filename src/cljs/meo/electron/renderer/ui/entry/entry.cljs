@@ -26,16 +26,18 @@
             [clojure.pprint :as pp]
             [reagent.core :as r]))
 
-(defn hashtags-mentions-list [entry tab-group put-fn]
-  [:div.hashtags
-   (for [mention (:mentions entry)]
-     ^{:key (str "tag-" mention)}
-     [:span.mention {:on-click (up/add-search mention tab-group put-fn)}
-      mention])
-   (for [hashtag (set/union (:tags entry) (:perm_tags entry))]
-     ^{:key (str "tag-" hashtag)}
-     [:span.hashtag {:on-click (up/add-search hashtag tab-group put-fn)}
-      hashtag])])
+(defn hashtags-mentions [entry tab-group put-fn]
+  (let [clear-import #(put-fn [:entry/update (update entry :tags disj "#import")])
+        tags (set/union (:tags entry) (:perm_tags entry))]
+    [:div.hashtags
+     (when (contains? tags "#import")
+       [:span.hashtag {:on-click clear-import} "#import"])
+     (for [mention (:mentions entry)]
+       ^{:key (str "mention-" mention)}
+       [:span.mention {:on-click (up/add-search mention tab-group put-fn)} mention])
+     (for [tag (disj tags "#import")]
+       ^{:key (str "tag-" tag)}
+       [:span.hashtag {:on-click (up/add-search tag tab-group put-fn)} tag])]))
 
 (defn linked-btn [entry local-cfg active put-fn]
   (when (pos? (:linked_cnt entry))
@@ -121,7 +123,7 @@
          [reward/reward-details merged put-fn]
          [:div.footer
           [pomo/pomodoro-header merged edit-mode? put-fn]
-          [hashtags-mentions-list entry tab-group put-fn]
+          [hashtags-mentions entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]
          [c/custom-fields-div merged put-fn edit-mode?]

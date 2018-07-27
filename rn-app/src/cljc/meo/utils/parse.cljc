@@ -17,5 +17,5 @@
   (let [no-codeblocks (s/replace text (re-pattern (str "```[^`]*```")) "")
         without-code (s/replace no-codeblocks (re-pattern (str "`[^`]*`")) "")]
     {:md       text
-     :tags     (set (map s/trim (re-seq entry-tag-regex without-code)))
+     :tags     (conj (set (map s/trim (re-seq entry-tag-regex without-code))) "#import")
      :mentions (set (map s/trim (re-seq entry-mentions-regex without-code)))}))

@@ -99,7 +99,6 @@
 (defn write-to-imap [secrets entry _put-fn]
   (try
     (let [aes-secret (:secret secrets)
-          entry (update-in entry [:tags] conj "#import")
           data (pr-str entry)
           ciphertext (.toString (.encrypt aes data aes-secret))
           mail (merge (:server secrets)
