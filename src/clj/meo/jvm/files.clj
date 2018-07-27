@@ -136,13 +136,16 @@
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
                            :b>a)]
-    (info vclocks-compared)
+    (info "sync-fn" vclocks-compared)
     (case vclocks-compared
       :b>a (let [new-state (ga/add-node current-state entry)]
              ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
-              :emit-msg  [:ft/add entry]})
+              :emit-msg  [[:cmd/schedule-new {:timeout 10000
+                                              :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
+                                              :id      :sync-delayed-refresh}]
+                          [:ft/add entry]]})
       :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
                         new-state (ga/add-node current-state with-conflict)]
                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
