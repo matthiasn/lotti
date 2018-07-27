@@ -124,7 +124,7 @@
   (let [state (atom {:entries        (avl/sorted-map)
                      :active-theme   :light
                      ;:all-timestamps (avl/sorted-set)
-                     :all-timestamps #{}
+                     :all-timestamps (sorted-set)
                      :vclock-map     (avl/sorted-map)
                      :latest-synced  0})]
     (load-state {:cmp-state state
