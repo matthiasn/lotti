@@ -14,7 +14,6 @@ cd ..
 
 chmod -R +w bin/
 
-PLATFORMS=$1
 ELECTRON_BUILDER_COMPRESSION_LEVEL=3
 
 if [ "$1" == "release" ]; then
