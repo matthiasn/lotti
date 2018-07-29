@@ -2,7 +2,6 @@
   (:require [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
             [meo.electron.renderer.ui.dashboard.earlybird :as eb]
@@ -14,17 +13,18 @@
 
 (defn gql-query [charts-pos days put-fn]
   (let [tags (->> (:charts @charts-pos)
-                  (filter #(= :barchart-row (:type %)))
+                  (filter #(contains? #{:barchart-row
+                                        :bp-chart} (:type %)))
                   (mapv :tag))]
     (when-let [query-string (gql/graphql-query (inc days) tags)]
-      (debug "dashboard" query-string)
+      (info "dashboard tags" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard}])))
   (let [items (->> (:charts @charts-pos)
                    (filter #(= :scores-chart (:type %))))]
     (when-let [query-string (gql/dashboard-questionnaires days items)]
-      (debug "dashboard" query-string)
+      (info "dashboard" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard-questionnaires}]))))
@@ -52,7 +52,8 @@
             start (+ dc/tz-offset (- now within-day (* days d)))
             end (+ (- now within-day) d dc/tz-offset)
             span (- end start)
-            common {:start    start :end end
+            common {:start    start
+                    :end      end
                     :w        1800
                     :x-offset 200
                     :span     span

@@ -1,6 +1,7 @@
 (ns meo.electron.renderer.ui.dashboard.bp
   (:require [moment]
             [re-frame.core :refer [subscribe]]
+            [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]))
 
@@ -8,6 +9,7 @@
   (let [show-pvt (subscribe [:show-pvt])]
     (fn [{:keys [y k score-k h start span mn mx x-offset label
                  w tag stats]} put-fn]
+      (info :bp-chart stats)
       (let [rng (- mx mn)
             scale (/ h rng)
             btm-y (+ y h)
@@ -47,8 +49,8 @@
          [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 2]
          [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 2]
 
-         [dc/chart-line2 stats (mapper :bp-systolic) "red" put-fn]
-         [dc/chart-line2 stats (mapper :bp-diastolic) "blue" put-fn]
+         [dc/chart-line2 stats (mapper :bp_systolic) "red" put-fn]
+         [dc/chart-line2 stats (mapper :bp_diastolic) "blue" put-fn]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]
