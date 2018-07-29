@@ -1,36 +1,55 @@
+# OS detection adapted from: https://gist.github.com/sighingnow/deee806603ec9274fd47
+OSFLAG 	:=
+LEIN 	:=
+ifeq ($(OS),Windows_NT)
+	LEIN := lein.bat
+	OSFLAG := -w
+else
+	LEIN := lein
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		OSFLAG := -l
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		OSFLAG := -m
+	endif
+endif
+
 all: package
 
 clean:
-	lein clean
+	rm -rf ./bin
+	eval $(LEIN) clean
 
 deps: clean
-	lein deps
+	eval $(LEIN) deps
 
 npm-deps: clean
 	yarn install
 
 test: deps
-	lein test
+	eval $(LEIN) test
 
 sass:
-	lein sass4clj once
+	eval $(LEIN) sass4clj once
 
 cljs: deps npm-deps
 	@echo Building ClojureScript:
-	lein cljs-main
-	lein cljs-renderer
-	lein cljs-updater
+	eval $(LEIN) cljs-main
+	eval $(LEIN) cljs-renderer
+	eval $(LEIN) cljs-updater
 
 electron: clean deps test sass cljs
 
 directories:
 	@echo Preparing target directories:
 	mkdir -p bin
+	chmod -R +w bin/
 	rm -rf ./dist
 
 jlink: clean test directories
 	@echo Assembling UberJAR:
-	lein jlink assemble
+	eval $(LEIN) jlink assemble
 
 # replace symlinks, they lead to problems with electron-packager
 # from: https://superuser.com/questions/303559/replace-symbolic-links-with-files
@@ -38,14 +57,11 @@ symlinks: jlink
 	@echo Fixing symlinks:
 	./fix_symlinks.sh
 
-install: jlink electron directories
-	@echo Installing...
-	cp -r target/jlink bin/
-	chmod -R +w bin/
+install: jlink electron symlinks
 
 package: install
 	@echo Publishing beta...
-	./node_modules/.bin/electron-builder -m
+	./node_modules/.bin/electron-builder $(OSFLAG)
 
 beta: install
 	@echo Publishing beta - requires S3 credentials in ENV...
