@@ -44,6 +44,11 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
+			<key>staticmap.openstreetmap.de</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
 			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>

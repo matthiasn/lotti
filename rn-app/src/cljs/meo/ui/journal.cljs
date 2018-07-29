@@ -33,7 +33,7 @@
             entry (:entry @local)
             to-detail #(do (put-fn [:entry/detail {:timestamp ts}])
                            (navigate "entry"))
-            md (:md entry)
+            {:keys [latitude longitude md]} entry
             md (if (> (count md) 100)
                  (str (subs md 0 100) "...")
                  md)
@@ -57,10 +57,17 @@
              [image {:style  {:width  100
                               :height 100}
                      :source {:uri (-> media :image :uri)}}]
-             [icon {:name  "file-text-o"
-                    :size  50
-                    :color "#CCC"
-                    :style {:padding 25}}])]
+             (if latitude
+               [image {:style  {:width  100
+                                :height 100}
+                       :source {:uri   (str "http://staticmap.openstreetmap.de/staticmap.php?center="
+                                            latitude "," longitude
+                                            "&zoom=16&size=400x400&maptype=mapnik")
+                                :cache "force-cache"}}]
+               [icon {:name  "file-text-o"
+                      :size  50
+                      :color "#CCC"
+                      :style {:padding 25}}]))]
           [view {:style {:flex             1
                          :flex-direction   :column
                          :background-color text-bg
