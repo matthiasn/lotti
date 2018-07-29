@@ -90,8 +90,8 @@ package: install
 
 beta: install
 	@echo Publishing beta - requires S3 credentials in ENV...
-	./node_modules/.bin/electron-builder -c electron-builder-beta.yml --publish always -m
+	./node_modules/.bin/electron-builder -c electron-builder-beta.yml --publish always $(OSFLAG)
 
 release: install
 	@echo Publishing release - requires S3 credentials in ENV...
-	./node_modules/.bin/electron-builder --publish always -m
+	./node_modules/.bin/electron-builder --publish always $(OSFLAG)
