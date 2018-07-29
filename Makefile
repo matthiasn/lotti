@@ -18,49 +18,56 @@ endif
 all: package
 
 clean:
-	rm -rf ./bin
-	eval $(LEIN) clean
+	@echo Cleaning up...
+	@rm -rf ./bin
+	@eval $(LEIN) clean
 
 deps: clean
-	eval $(LEIN) deps
+	@echo Fetching Leiningen dependencies...
+	@eval $(LEIN) deps
 
 npm-deps: clean
-	yarn install
+	@echo Fetching NPM dependencies...
+	@yarn install
 
 test: deps
-	eval $(LEIN) test
+	@echo Running Clojure tests...
+	@eval $(LEIN) test
 
 sass:
-	eval $(LEIN) sass4clj once
+	@echo Building CSS...
+	@eval $(LEIN) sass4clj once
 
 cljs: deps npm-deps
-	@echo Building ClojureScript:
-	eval $(LEIN) cljs-main
-	eval $(LEIN) cljs-renderer
-	eval $(LEIN) cljs-updater
+	@echo Building ClojureScript for main electron process...
+	@eval $(LEIN) cljs-main
+	@echo Building ClojureScript for electron renderer process...
+	@eval $(LEIN) cljs-renderer
+	@echo Building ClojureScript for electron updater process...
+	@eval $(LEIN) cljs-updater
 
 electron: clean deps test sass cljs
 
 directories:
-	@echo Preparing target directories:
-	mkdir -p bin
-	chmod -R +w bin/
-	rm -rf ./dist
+	@echo Preparing target directories...
+	@mkdir -p bin
+	@chmod -R +w bin/
+	@rm -rf ./dist
 
 jlink: clean test directories
-	@echo Assembling UberJAR:
-	eval $(LEIN) jlink assemble
+	@echo Assembling UberJAR...
+	@eval $(LEIN) jlink assemble
 
 # replace symlinks, they lead to problems with electron-packager
 # from: https://superuser.com/questions/303559/replace-symbolic-links-with-files
 symlinks: jlink
-	@echo Fixing symlinks:
+	@echo Fixing symlinks...
 	./fix_symlinks.sh
 
 install: jlink electron symlinks
 
 package: install
-	@echo Publishing beta...
+	@echo Building executable...
 	./node_modules/.bin/electron-builder $(OSFLAG)
 
 beta: install
