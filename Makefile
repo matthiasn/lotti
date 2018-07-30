@@ -22,7 +22,7 @@ else
 	endif
 endif
 
-all: package
+package: install package-only
 
 build-deps:
 ifndef LEIN
@@ -84,7 +84,7 @@ symlinks: jlink
 
 install: jlink electron symlinks
 
-package: install
+package-only:
 	@echo Building executable...
 	./node_modules/.bin/electron-builder $(OSFLAG)
 
