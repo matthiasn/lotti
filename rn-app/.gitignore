@@ -69,3 +69,5 @@ release.jsbundle.tmp
 release.jsbundle.tmp.meta
 
 ios/Pods/
+!ios/Pods/mailcore2-ios/*
+rn-app/ios/Pods/mailcore2-ios/lib/libMailCore-ios.a

@@ -16,7 +16,6 @@
                          :padding-top      10
                          :background-color bg
                          :padding-bottom   10}}
-
          (for [photo (:edges (:photos @local))]
            (let [node (:node photo)
                  loc (:location node)
@@ -68,7 +67,7 @@
 
 (defn photos-tab [local put-fn theme]
   (let [get-fn #(let [params (clj->js {:first     50
-                                       :assetType "All"})
+                                       :assetType "Photos"})
                       photos-promise (.getPhotos cam-roll params)]
                   (.then photos-promise
                          (fn [r]

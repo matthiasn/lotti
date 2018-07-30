@@ -92,7 +92,7 @@
     (.toString buffer to)))
 
 (defn utf8-to-hex [s] (buffer-convert "utf-8" "hex" s))
-(defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8"  s))
+(defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8" s))
 
 (def MailCore (.-default (js/require "react-native-mailcore")))
 
@@ -101,13 +101,18 @@
     (let [aes-secret (:secret secrets)
           data (pr-str entry)
           ciphertext (.toString (.encrypt aes data aes-secret))
+          photo-uri (-> entry :media :image :uri)
+          filename (-> entry :media :image :filename)
           mail (merge (:server secrets)
                       {:from     {:addressWithDisplayName "fred"
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :to       {:addressWithDisplayName "uschi"
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :subject  "hello uschi"
-                       :htmlBody (utf8-to-hex ciphertext)})]
+                       :htmlBody (utf8-to-hex ciphertext)}
+                      (when filename
+                        {:attachmentUri photo-uri
+                         :filename      filename}))]
       (-> (.sendMail MailCore (clj->js mail))
           (.then #(.log js/console (str (js->clj %))))
           (.catch #(.log js/console (str (js->clj %))))))
