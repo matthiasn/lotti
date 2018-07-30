@@ -1,7 +1,7 @@
 (ns meo.ui.editor
   (:require [re-frame.core :refer [subscribe]]
             [meo.ui.shared :refer [view text text-input touchable-opacity btn
-                                   keyboard-avoiding-view icon]]
+                                   keyboard-avoiding-view icon keyboard]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [meo.helpers :as h]
             [meo.utils.parse :as p]
@@ -45,6 +45,7 @@
                    (h/new-entry-fn put-fn new-entry)
                    (swap! local assoc-in [:md] "")
                    (when-let [navigate (:navigate @local2)]
+                     (.dismiss keyboard)
                      (navigate "journal")))
         header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])

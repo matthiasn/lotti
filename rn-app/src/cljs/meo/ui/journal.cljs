@@ -16,8 +16,10 @@
             [clojure.pprint :as pp]
             [meo.utils.parse :as p]))
 
-(def swipeout-btns [#_{:text "star" :backgroundColor "orange"}
-                    {:text "delete" :backgroundColor "red"}])
+(defn map-url [latitude longitude]
+  (str "http://staticmap.openstreetmap.de/staticmap.php?center="
+       latitude "," longitude "&zoom=17&size=240x240&maptype=mapnik"
+       "&markers=" latitude "," longitude ",lightblues"))
 
 (defn list-item [ts navigate put-fn]
   (let [theme (subscribe [:active-theme])
@@ -38,62 +40,55 @@
                  (str (subs md 0 100) "...")
                  md)
             delete #(put-fn [:entry/persist
-                             (assoc-in (:entry @local) [:deleted] true)])
-            swipeout-btns [{:text            "delete"
-                            :backgroundColor "#CA3C3C"
-                            :onPress         delete}]]
-        [swipeout {:right swipeout-btns
-                   :style {:margin-top       10
-                           :background-color text-bg}}
+                             (assoc-in (:entry @local) [:deleted] true)])]
+        [view {:style {:flex             1
+                       :margin-top       8
+                       :flex-direction   :row
+                       :background-color text-bg
+                       :width            "100%"}}
+         [touchable-opacity {:on-press to-detail
+                             :style    {:width            120
+                                        :height           120
+                                        :background-color "#888"}}
+          (if-let [media (:media entry)]
+            [image {:style  {:width  120
+                             :height 120}
+                    :source {:uri (-> media :image :uri)}}]
+            (if latitude
+              [image {:style  {:width  120
+                               :height 120}
+                      :source {:uri   (map-url latitude longitude)
+                               :cache "force-cache"}}]
+              [icon {:name  "file-text-o"
+                     :size  40
+                     :color "#CCC"
+                     :style {:padding 40}}]))]
          [view {:style {:flex             1
-                        :flex-direction   :row
+                        :flex-direction   :column
                         :background-color text-bg
+                        :padding-top      8
+                        :padding-left     10
+                        :padding-right    10
+                        :padding-bottom   8
                         :width            "100%"}}
-          [touchable-opacity {:on-press to-detail
-                              :style    {:width            100
-                                         :height           100
-                                         :background-color "#151560"}}
-           (if-let [media (:media entry)]
-             [image {:style  {:width  100
-                              :height 100}
-                     :source {:uri (-> media :image :uri)}}]
-             (if latitude
-               [image {:style  {:width  100
-                                :height 100}
-                       :source {:uri   (str "http://staticmap.openstreetmap.de/staticmap.php?center="
-                                            latitude "," longitude
-                                            "&zoom=16&size=400x400&maptype=mapnik")
-                                :cache "force-cache"}}]
-               [icon {:name  "file-text-o"
-                      :size  50
-                      :color "#CCC"
-                      :style {:padding 25}}]))]
-          [view {:style {:flex             1
-                         :flex-direction   :column
-                         :background-color text-bg
-                         :padding-top      8
-                         :padding-left     10
-                         :padding-right    10
-                         :padding-bottom   8
-                         :width            "100%"}}
-           [view {:style {:padding-top    4
-                          :padding-left   12
-                          :padding-right  12
-                          :padding-bottom 2}}
-            [text {:style {:color       text-color
-                           :text-align  "left"
-                           :font-size   9
-                           :font-weight "100"
-                           :margin-top  5}}
-             (h/format-time ts)]]
-           [view {:style {:padding-top    4
-                          :padding-left   12
-                          :padding-right  12
-                          :padding-bottom 8}}
-            [text {:style {:color       text-color
-                           :text-align  "left"
-                           :font-weight "normal"}}
-             md]]]]]))))
+          [view {:style {:padding-top    4
+                         :padding-left   12
+                         :padding-right  12
+                         :padding-bottom 2}}
+           [text {:style {:color       text-color
+                          :text-align  "left"
+                          :font-size   9
+                          :font-weight "100"
+                          :margin-top  5}}
+            (h/format-time ts)]]
+          [view {:style {:padding-top    4
+                         :padding-left   12
+                         :padding-right  12
+                         :padding-bottom 8}}
+           [text {:style {:color       text-color
+                          :text-align  "left"
+                          :font-weight "normal"}}
+            md]]]]))))
 
 (defn render-item [put-fn navigate]
   (fn [item]

@@ -17,7 +17,7 @@
 (def local (r/atom {:cam       false
                     :contacts  (clj->js [])
                     :map-style :Street
-                    :md        (str "hello world")}))
+                    :md        ""}))
 
 (defn app-root []
   (let [theme (subscribe [:active-theme])]
