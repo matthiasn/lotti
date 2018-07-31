@@ -91,7 +91,7 @@
                   (let [end-cb (fn []
                                  (let [hex-body (mue/extract-body (apply str @buffer))]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
-                                   (info hex-body)
+                                   (debug hex-body)
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
                                      (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                      (info decrypted)
@@ -100,10 +100,7 @@
                     (.on stream "data" #(let [s (.toString % "UTF8")]
                                           (when (= body-part (.-which stream-info))
                                             (swap! buffer conj s))
-                                          (when (= (.-size stream-info) (count (apply str @buffer)))
-                                            (end-cb))
-                                          (info "IMAP body data seqno" seqn "- size" (.-size stream-info)
-                                                (count (apply str @buffer)))))
+                                          (info "IMAP body data seqno" seqn "- size" (.-size stream-info))))
                     (.once stream "end" end-cb)))
         msg-cb (fn [msg seqn]
                  (let [buffer (atom [])]
