@@ -8,7 +8,7 @@
             [cljs.core.async :refer [<!]]
             [meo.ui.shared :as shared]))
 
-(defn persist [{:keys [current-state put-fn msg-payload]}]
+(defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
@@ -26,7 +26,7 @@
                       (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (sync/write-to-imap (:secrets current-state) entry put-fn)
+    (sync/write-to-imap (:secrets current-state) entry msg-meta put-fn)
     ;(shared/alert (str entry))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item timestamp entry)))

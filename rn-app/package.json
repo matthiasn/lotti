@@ -1,6 +1,6 @@
 {
 	"name": "meo",
-	"version": "0.5.199",
+	"version": "0.5.208",
 	"private": true,
 	"scripts": {
 		"start": "node node_modules/react-native/local-cli/cli.js start",

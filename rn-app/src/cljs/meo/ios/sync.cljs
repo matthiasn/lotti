@@ -15,10 +15,12 @@
 
 (def MailCore (.-default (js/require "react-native-mailcore")))
 
-(defn write-to-imap [secrets entry _put-fn]
+(defn write-to-imap [secrets entry msg-meta _put-fn]
   (try
     (let [aes-secret (:secret secrets)
-          data (pr-str entry)
+          serializable [:entry/sync {:msg-payload entry
+                                     :msg-meta    msg-meta}]
+          data (pr-str serializable)
           ciphertext (.toString (.encrypt aes data aes-secret))
           photo-uri (-> entry :media :image :uri)
           filename (:img_file entry)

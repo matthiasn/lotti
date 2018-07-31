@@ -93,9 +93,12 @@
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
-                                     (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
-                                     (info decrypted)
-                                     (put-fn [:entry/sync decrypted]))))]
+                                     (let [msg-type (first decrypted)
+                                           {:keys [msg-payload msg-meta]} (second decrypted)
+                                           msg (with-meta [msg-type msg-payload] msg-meta)]
+                                       (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
+                                       (info decrypted)
+                                       (put-fn msg)))))]
                     (info "IMAP body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
                                           (when (= body-part (.-which stream-info))
@@ -154,14 +157,16 @@
     (read-mailbox mb-tuple put-fn))
   {})
 
-(defn write-email [{:keys [msg-payload]}]
+(defn write-email [{:keys [msg-payload msg-meta]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (let [mailbox (:mailbox mb-cfg)
           cb (fn [conn _err _box]
                ;(.getBoxes mb (fn [err boxes] (.log js/console boxes)))
                (try
                  (let [secret (:secret mb-cfg)
-                       cipher-hex (mue/encrypt-aes-hex (pr-str msg-payload) secret)
+                       serializable [:entry/sync {:msg-payload msg-payload
+                                                  :msg-meta    msg-meta}]
+                       cipher-hex (mue/encrypt-aes-hex (pr-str serializable) secret)
                        decrypted (mue/decrypt-aes-hex cipher-hex secret)
                        _ (when-not (= msg-payload decrypted)
                            (warn "not equal" (data/diff msg-payload decrypted)))
