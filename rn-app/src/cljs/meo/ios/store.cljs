@@ -3,12 +3,9 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
-            [meo.ios.sync :as sync]
-            [cljs.tools.reader.edn :as edn]
-            [cljs.core.async :refer [<!]]
-            [meo.ui.shared :as shared]))
+            [cljs.core.async :refer [<!]]))
 
-(defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
+(defn persist [{:keys [current-state put-fn msg-payload]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
@@ -26,8 +23,7 @@
                       (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (sync/write-to-imap (:secrets current-state) entry msg-meta put-fn)
-    ;(shared/alert (str entry))
+    (put-fn [:entry/sync entry])
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))

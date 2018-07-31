@@ -4,6 +4,7 @@
             [meo.ios.healthkit :as hk]
             [meo.ios.activity :as ac]
             [meo.ios.ws :as ws]
+            [meo.ios.sync :as sync]
             [meo.ios.store :as store]
             [meo.ui :as ui]
             [meo.ui.shared :refer [view text app-registry]]
@@ -37,10 +38,11 @@
 
 (defn init []
   (dispatch-sync [:initialize-db])
-  (let [components #{(ws/cmp-map :app/ws-cmp sente-cfg)
+  (let [components #{(ws/cmp-map :app/ws sente-cfg)
                      (hk/cmp-map :app/healthkit)
                      (ac/cmp-map :app/activity)
                      (store/cmp-map :app/store)
+                     (sync/cmp-map :app/sync)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
         components (make-observable components)]
@@ -49,13 +51,14 @@
       [[:cmd/init-comp components]
 
        [:cmd/route {:from :app/store
-                    :to   :app/ws-cmp}]
+                    :to   #{:app/ws
+                            :app/sync}}]
 
        [:cmd/route {:from :app/ui-cmp
-                    :to   :app/ws-cmp}]
+                    :to   :app/ws}]
 
        [:cmd/route {:from :app/healthkit
-                    :to   :app/ws-cmp}]
+                    :to   :app/ws}]
 
        [:cmd/route {:from :app/healthkit
                     :to   :app/store}]
@@ -63,7 +66,7 @@
        [:cmd/route {:from :app/activity
                     :to   :app/store}]
 
-       [:cmd/route {:from :app/ws-cmp
+       [:cmd/route {:from :app/ws
                     :to   :app/store}]
 
        [:cmd/route {:from :app/ui-cmp
@@ -79,10 +82,10 @@
                             :to   :app/ui-cmp}]
 
        (when OBSERVER
-         [:cmd/attach-to-firehose :app/ws-cmp])
+         [:cmd/attach-to-firehose :app/ws])
 
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store
-                            :app/ws-cmp}}]])
+                            :app/ws}}]])
     (.registerComponent
       app-registry "meo" #(r/reactify-component ui/app-root))))

@@ -1,5 +1,8 @@
 (ns meo.ios.sync
-  (:require [meo.ui.shared :as sh]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [meo.ui.shared :as sh]
+            [glittershark.core-async-storage :as as]
+            [cljs.core.async :refer [<!]]))
 
 (def crypto-js (js/require "crypto-js"))
 (def aes (aget crypto-js "AES"))
@@ -15,15 +18,16 @@
 
 (def MailCore (.-default (js/require "react-native-mailcore")))
 
-(defn write-to-imap [secrets entry msg-meta _put-fn]
+(defn sync-fn [{:keys [msg-type msg-payload msg-meta current-state]}]
   (try
-    (let [aes-secret (:secret secrets)
-          serializable [:entry/sync {:msg-payload entry
-                                     :msg-meta    msg-meta}]
+    (let [secrets (:secrets current-state)
+          aes-secret (:secret secrets)
+          serializable [msg-type {:msg-payload msg-payload
+                                  :msg-meta    msg-meta}]
           data (pr-str serializable)
           ciphertext (.toString (.encrypt aes data aes-secret))
-          photo-uri (-> entry :media :image :uri)
-          filename (:img_file entry)
+          photo-uri (-> msg-payload :media :image :uri)
+          filename (:img_file msg-payload)
           mail (merge (:server secrets)
                       {:from     {:addressWithDisplayName "fred"
                                   :mailbox                "meo@nehlsen-edv.de"}
@@ -31,10 +35,34 @@
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :subject  "hello uschi"
                        :htmlBody (utf8-to-hex ciphertext)}
-                      (when filename
+                      (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
                          :filename      filename}))]
       (-> (.sendMail MailCore (clj->js mail))
           (.then #(.log js/console (str (js->clj %))))
           (.catch #(.log js/console (str (js->clj %))))))
     (catch :default e (sh/alert (str e)))))
+
+(defn set-secrets [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:secrets] msg-payload)]
+    (go (<! (as/set-item :secrets msg-payload)))
+    {:new-state new-state}))
+
+(defn state-fn [put-fn]
+  (let [state (atom {})]
+    (go
+      (try
+        (let [secrets (second (<! (as/get-item :secrets)))]
+          (when secrets
+            (swap! state assoc-in [:secrets] secrets)))
+        (catch js/Object e
+          (put-fn [:debug/error {:msg e}]))))
+    {:state state}))
+
+(defn cmp-map [cmp-id]
+  {:cmp-id      cmp-id
+   :state-fn    state-fn
+   :handler-map {:entry/sync        sync-fn
+                 :firehose/cmp-recv sync-fn
+                 :firehose/cmp-put  sync-fn
+                 :secrets/set       set-secrets}})
