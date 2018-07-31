@@ -28,7 +28,8 @@
                                        :longitude lon
                                        :location  loc
                                        :md        ""
-                                       :tags      #{}
+                                       :tags      #{"#import"}
+                                       :perm_tags #{"#photo"}
                                        :mentions  #{}
                                        :media     (dissoc node :location)
                                        :img_file  filename
