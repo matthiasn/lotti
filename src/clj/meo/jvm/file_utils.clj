@@ -84,9 +84,7 @@
 
 (defn read-secrets []
   (try
-    (let [secrets (edn/read-string (slurp (str data-path "/webdav.edn")))
-          aes-secret (slurp (str data-path "/secret.txt"))]
-      (merge secrets {:aes-secret aes-secret}))
+    (edn/read-string (slurp (str data-path "/app.edn")))
     (catch Exception ex (warn "No secrets found." ex))))
 
 (defn write-cfg [{:keys [msg-payload]}]
