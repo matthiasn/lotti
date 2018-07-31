@@ -2,16 +2,18 @@
   "Component for encrypting and decrypting log files."
   (:require [taoensso.timbre :refer-macros [info debug error warn]]
             [meo.electron.main.runtime :as rt]
-            [fs :refer [existsSync readFileSync mkdirSync writeFileSync statSync]]
+            [fs :refer [existsSync readFileSync mkdirSync writeFile writeFileSync statSync]]
             [child_process :refer [spawn]]
             [meo.electron.main.utils.encryption :as mue]
             [imap :as imap]
             [clojure.data :as data]
             [buildmail :as BuildMail]
             [cljs.reader :as edn]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [clojure.string :as s]))
 
 (def data-path (:data-path rt/runtime-info))
+(def img-path (:img-path rt/runtime-info))
 (def repo-dir (:repo-dir rt/runtime-info))
 (def cfg-path (str data-path "/imap.edn"))
 
@@ -23,7 +25,7 @@
   (when (existsSync cfg-path)
     (edn/read-string (readFileSync cfg-path "utf-8"))))
 
-(defn imap-open [mailbox-name open-mb-cb cmp-state]
+(defn imap-open [mailbox-name open-mb-cb]
   (when-let [cfg (imap-cfg)]
     (try
       (let [conn (imap. (clj->js (:server cfg)))]
@@ -36,24 +38,91 @@
       (catch :default e (error e))))
   {})
 
-(defn read-mailbox [[k mb-cfg] cmp-state put-fn]
-  (let [{:keys [secret mailbox]} mb-cfg
-        body-cb (fn [buffer seqn stream stream-info]
+(defn buf-from-base64 [b64]
+  (.from js/Buffer b64 "base64"))
+
+(defn read-image [mailbox uid partID filename put-fn]
+  (let [body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
-                                 (let [hex-body (mue/extract-body (apply str @buffer))]
-                                   (debug "end-cb buffer" seqn "- size" (count hex-body))
-                                   (debug hex-body)
-                                   (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
-                                     (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
-                                     (put-fn [:entry/sync decrypted]))))]
-                    (info "IMAP body stream-info" (js->clj stream-info))
+                                 (let [base-64-img (apply str @buffer)
+                                       buf (buf-from-base64 base-64-img)
+                                       full-path (str img-path "/" filename)
+                                       write-cb (fn [err]
+                                                  (if err
+                                                    (error err)
+                                                    (do (info "wrote" full-path)
+                                                        (put-fn [:import/gen-thumbs
+                                                                 {:filename  filename
+                                                                  :full-path full-path}]))))]
+                                   (info "image" filename (count base-64-img))
+                                   (writeFile full-path buf "binary" write-cb)))]
+                    (info "image body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
-                                          (when (= "1" (.-which stream-info))
+                                          (when (= partID (.-which stream-info))
                                             (swap! buffer conj s))
-                                          (info "IMAP body data seqno" seqn "- size" (count s))))
+                                          (debug "image body data seqno" seqn "- size" (count s))))
                     (.once stream "end" end-cb)))
         msg-cb (fn [msg seqn]
                  (let [buffer (atom [])]
+                   (.on msg "body" (partial body-cb buffer seqn))
+                   (.once msg "end" #(debug "image msg end" seqn))))
+        mb-cb (fn [conn err box]
+                (try
+                  (let [s (clj->js ["UNDELETED" ["UID" uid]])
+                        cb (fn [err res]
+                             (let [
+                                   f (.fetch conn res (clj->js {:bodies [partID]
+                                                                :struct true}))
+                                   cb (fn []
+                                        (info "finished reading" filename)
+                                        (.end conn))]
+                               (info "search fetch" res)
+                               (.on f "message" msg-cb)
+                               (.once f "error" #(error "Fetch error" %))
+                               (.once f "end" cb)))]
+                    (info "search" mailbox s)
+                    (.search conn s cb))
+                  (catch :default e (error e))))]
+    (imap-open mailbox mb-cb)))
+
+(defn read-mailbox [[k mb-cfg] put-fn]
+  (let [{:keys [secret mailbox body-part]} mb-cfg
+        body-cb (fn [buffer seqn stream stream-info]
+                  (let [end-cb (fn []
+                                 (let [hex-body (mue/extract-body (apply str @buffer))]
+                                   (info "end-cb buffer" seqn "- size" (count hex-body))
+                                   (info hex-body)
+                                   (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
+                                     (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
+                                     (info decrypted)
+                                     (put-fn [:entry/sync decrypted]))))]
+                    (info "IMAP body stream-info" (js->clj stream-info))
+                    (.on stream "data" #(let [s (.toString % "UTF8")]
+                                          (when (= body-part (.-which stream-info))
+                                            (swap! buffer conj s))
+                                          (when (= (.-size stream-info) (count (apply str @buffer)))
+                                            (end-cb))
+                                          (info "IMAP body data seqno" seqn "- size" (.-size stream-info)
+                                                (count (apply str @buffer)))))
+                    (.once stream "end" end-cb)))
+        msg-cb (fn [msg seqn]
+                 (let [buffer (atom [])]
+                   (.once msg "attributes" (fn [attrs]
+                                             (let [uid (.-uid attrs)
+                                                   struct (js->clj (.-struct attrs) :keywordize-keys true)
+                                                   attachment (-> struct last last)]
+                                               (pp/pprint attachment)
+                                               (when (= "image" (:type attachment))
+                                                 (let [filename (-> attachment
+                                                                    :disposition
+                                                                    :params
+                                                                    :filename
+                                                                    (s/replace "=?utf-8?Q?" "")
+                                                                    (s/replace "?=" "")
+                                                                    (s/replace "=5F" "_"))
+                                                       partID (:partID attachment)]
+                                                   (read-image mailbox uid partID filename put-fn)
+                                                   (info "found attachment" filename uid partID))))))
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
         mb-cb (fn [conn err box]
@@ -66,14 +135,15 @@
                              (let [parsed-res (js->clj res)]
                                (when (and (seq parsed-res) (> (last parsed-res) last-read))
                                  (let [last-read (last parsed-res)
-                                       f (.fetch conn res (clj->js {:bodies ["1"]
-                                                                  :struct true}))
+                                       f (.fetch conn res (clj->js {:bodies [body-part]
+                                                                    :struct true}))
                                        cb (fn []
                                             (let [cfg (assoc-in (imap-cfg) path last-read)
                                                   s (pp-str cfg)]
                                               (info "mb-cb fetch end, last-read" last-read)
                                               (writeFileSync cfg-path s)
-                                              (.end conn)))]
+                                              ;(.end conn)
+                                              ))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
@@ -81,14 +151,14 @@
                     (info "search" mailbox s)
                     (.search conn s cb))
                   (catch :default e (error e))))]
-    (imap-open mailbox mb-cb cmp-state)))
+    (imap-open mailbox mb-cb)))
 
-(defn read-email [{:keys [put-fn cmp-state]}]
+(defn read-email [{:keys [put-fn]}]
   (doseq [mb-tuple (:read (:sync (imap-cfg)))]
-    (read-mailbox mb-tuple cmp-state put-fn))
+    (read-mailbox mb-tuple put-fn))
   {})
 
-(defn write-email [{:keys [msg-payload cmp-state]}]
+(defn write-email [{:keys [msg-payload]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (let [mailbox (:mailbox mb-cfg)
           cb (fn [conn _err _box]
@@ -113,7 +183,7 @@
                        (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
                        (.build cb)))
                  (catch :default e (error e))))]
-      (imap-open mailbox cb cmp-state)))
+      (imap-open mailbox cb)))
   {})
 
 (defn start-sync [{:keys [current-state put-fn]}]

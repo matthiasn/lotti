@@ -23,7 +23,7 @@
                  lon (:longitude loc)
                  img (:image node)
                  ts (.floor js/Math (* 1000 (:timestamp node)))
-                 save-fn #(let [filename (str (h/img-fnt ts) "_" (:filename img))
+                 save-fn #(let [filename (str (h/img-fmt ts) "_" (:filename img))
                                 entry {:latitude  lat
                                        :longitude lon
                                        :location  loc
@@ -31,7 +31,7 @@
                                        :tags      #{}
                                        :mentions  #{}
                                        :media     (dissoc node :location)
-                                       :img-file  filename
+                                       :img_file  filename
                                        :timestamp ts}]
                             (put-fn [:entry/new entry]))]
              ^{:key (:uri img)}

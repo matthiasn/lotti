@@ -102,7 +102,7 @@
           data (pr-str entry)
           ciphertext (.toString (.encrypt aes data aes-secret))
           photo-uri (-> entry :media :image :uri)
-          filename (-> entry :media :image :filename)
+          filename (:img_file entry)
           mail (merge (:server secrets)
                       {:from     {:addressWithDisplayName "fred"
                                   :mailbox                "meo@nehlsen-edv.de"}
