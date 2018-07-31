@@ -5,7 +5,6 @@
 	};
 	objectVersion = 46;
 	objects = {
-
 /* Begin PBXBuildFile section */
 		00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302AC1ABCB8CE00DB3ED1 /* libRCTActionSheet.a */; };
 		00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302BA1ABCB90400DB3ED1 /* libRCTGeolocation.a */; };
@@ -34,7 +33,6 @@
 		5CC66A2570AF40F69868EDC5 /* EvilIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 96868E775F5A43E9A998DF31 /* EvilIcons.ttf */; };
 		5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9060319A367947308DA06D40 /* libRNActivityRecognition.a */; };
 		699D3AE10BCD4C9DB8647B5D /* Roboto.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CE45E874A26A4C5F80D88EB9 /* Roboto.ttf */; };
-		6F61149A0854484BB842733E /* libRNFS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CA4C173329F04C7C9AAB06E6 /* libRNFS.a */; };
 		7107008D68AD4774AAED1BB1 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8306B98A8CBE4EDBBEB21176 /* SimpleLineIcons.ttf */; };
 		7515C1788E834D1FA9B3E6CE /* Foundation.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3D986E59C7AE445AADC3A964 /* Foundation.ttf */; };
 		7F317D6F98084C34AEC9F7B2 /* libRCTAppleHealthKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B518D66EB5F46EC82B69E15 /* libRCTAppleHealthKit.a */; };
@@ -354,20 +352,6 @@
 			remoteGlobalIDString = C4D1443D1F4E16F600396F26;
 			remoteInfo = RCTMGL;
 		};
-		AD6D8B60204740BE00571C45 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 06578F0BBE824BDE8345070F /* RNFS.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F12AFB9B1ADAF8F800E0535D;
-			remoteInfo = RNFS;
-		};
-		AD6D8B62204740BE00571C45 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 06578F0BBE824BDE8345070F /* RNFS.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 6456441F1EB8DA9100672408;
-			remoteInfo = "RNFS-tvOS";
-		};
 		AD7C04F72022037700DF98E2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */;
@@ -416,7 +400,6 @@
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00E356F21AD99517003FC87E /* meoTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = meoTests.m; sourceTree = "<group>"; };
 		0323211E6FA242B9ADCA0374 /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/native-base/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
-		06578F0BBE824BDE8345070F /* RNFS.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNFS.xcodeproj; path = "../node_modules/react-native-fs/RNFS.xcodeproj"; sourceTree = "<group>"; };
 		07E28FBB733F38CB2B59E5D0 /* Pods-meoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-meoTests/Pods-meoTests.release.xcconfig"; sourceTree = "<group>"; };
 		09ED015F7B6A40F3B5FDC25D /* libRNVectorIcons.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNVectorIcons.a; sourceTree = "<group>"; };
 		139105B61AF99BAD00B5F7CC /* RCTSettings.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTSettings.xcodeproj; path = "../node_modules/react-native/Libraries/Settings/RCTSettings.xcodeproj"; sourceTree = "<group>"; };
@@ -473,7 +456,6 @@
 		B9CA048E6AFE44A0AA274E08 /* MaterialIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialIcons.ttf"; sourceTree = "<group>"; };
 		C3FDEAF22AB043ACB1E3931C /* Ionicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Ionicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf"; sourceTree = "<group>"; };
 		C58A1F51BF8A9B57E10E4316 /* libPods-meo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CA4C173329F04C7C9AAB06E6 /* libRNFS.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNFS.a; sourceTree = "<group>"; };
 		CE45E874A26A4C5F80D88EB9 /* Roboto.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Roboto.ttf; path = "../node_modules/native-base/Fonts/Roboto.ttf"; sourceTree = "<group>"; };
 		D999D3DB39464D2FA749562F /* RCTCamera.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTCamera.xcodeproj; path = "../node_modules/react-native-camera/ios/RCTCamera.xcodeproj"; sourceTree = "<group>"; };
 		DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNMailCore.xcodeproj; path = "../node_modules/react-native-mailcore/ios/RNMailCore.xcodeproj"; sourceTree = "<group>"; };
@@ -518,7 +500,6 @@
 				CE4B8E74EEC14ACA93730AB5 /* libRNVectorIcons.a in Frameworks */,
 				B3F6ABFC9A01470CB548F0CE /* libRCTContacts.a in Frameworks */,
 				5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */,
-				6F61149A0854484BB842733E /* libRNFS.a in Frameworks */,
 				54BD09BDB7F84043A19E949E /* libRNMailCore.a in Frameworks */,
 				1FCBEDF7157B54D43E33F05A /* libPods-meo.a in Frameworks */,
 			);
@@ -722,7 +703,6 @@
 				719DB1B176DA4F6F98F5EF0C /* RNVectorIcons.xcodeproj */,
 				5C8F14A5D74548B988910434 /* RCTContacts.xcodeproj */,
 				2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */,
-				06578F0BBE824BDE8345070F /* RNFS.xcodeproj */,
 				DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */,
 			);
 			name = Libraries;
@@ -837,15 +817,6 @@
 				1534BAF0CD7E3D5BAFD86889 /* libPods-meoTests.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		AD6D8B5C204740BE00571C45 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				AD6D8B61204740BE00571C45 /* libRNFS.a */,
-				AD6D8B63204740BE00571C45 /* libRNFS.a */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		AD7C04F42022037700DF98E2 /* Products */ = {
@@ -1028,10 +999,6 @@
 				{
 					ProductGroup = AD7C04F42022037700DF98E2 /* Products */;
 					ProjectRef = 2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */;
-				},
-				{
-					ProductGroup = AD6D8B5C204740BE00571C45 /* Products */;
-					ProjectRef = 06578F0BBE824BDE8345070F /* RNFS.xcodeproj */;
 				},
 				{
 					ProductGroup = AD33D87B2106884D0079F165 /* Products */;
@@ -1331,20 +1298,6 @@
 			remoteRef = AD348EF02047648F00B58026 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		AD6D8B61204740BE00571C45 /* libRNFS.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libRNFS.a;
-			remoteRef = AD6D8B60204740BE00571C45 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		AD6D8B63204740BE00571C45 /* libRNFS.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libRNFS.a;
-			remoteRef = AD6D8B62204740BE00571C45 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		AD7C04F82022037700DF98E2 /* libRNActivityRecognition.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1520,7 +1473,6 @@
 					"$(SRCROOT)/../node_modules/react-native-vector-icons/RNVectorIconsManager",
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
-					"$(SRCROOT)/../node_modules/react-native-fs/**",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
@@ -1528,11 +1480,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1557,7 +1504,6 @@
 					"$(SRCROOT)/../node_modules/react-native-vector-icons/RNVectorIconsManager",
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
-					"$(SRCROOT)/../node_modules/react-native-fs/**",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
@@ -1565,11 +1511,6 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
-					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1597,7 +1538,6 @@
 					"$(SRCROOT)/../node_modules/react-native-vector-icons/RNVectorIconsManager",
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
-					"$(SRCROOT)/../node_modules/react-native-fs/**",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
@@ -1629,7 +1569,6 @@
 					"$(SRCROOT)/../node_modules/react-native-vector-icons/RNVectorIconsManager",
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
-					"$(SRCROOT)/../node_modules/react-native-fs/**",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
