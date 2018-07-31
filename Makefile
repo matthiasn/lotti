@@ -88,9 +88,11 @@ package-only:
 	@echo Building executable...
 	./node_modules/.bin/electron-builder $(OSFLAG)
 
-beta: install
+publish-beta:
 	@echo Publishing beta - requires S3 credentials in ENV...
 	./node_modules/.bin/electron-builder -c electron-builder-beta.yml --publish always $(OSFLAG)
+
+beta: install publish-beta
 
 release: install
 	@echo Publishing release - requires S3 credentials in ENV...
