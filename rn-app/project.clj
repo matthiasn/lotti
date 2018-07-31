@@ -10,7 +10,6 @@
                                                cljsjs/react-dom-server
                                                cljsjs/create-react-class]]
                  [matthiasn/systems-toolbox "0.6.37"]
-                 [matthiasn/systems-toolbox-sente "0.6.32"]
                  [cljs-react-navigation "0.1.3"]
                  [org.clojure/data.avl "0.0.17"]
                  [core-async-storage "0.3.1"]

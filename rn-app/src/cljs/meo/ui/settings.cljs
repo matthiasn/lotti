@@ -204,7 +204,7 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 180] (put-fn [:healthkit/steps n]))
+        steps-fn #(dotimes [n 10] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
         activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]

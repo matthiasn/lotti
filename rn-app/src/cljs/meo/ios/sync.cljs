@@ -33,7 +33,7 @@
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :to       {:addressWithDisplayName "uschi"
                                   :mailbox                "meo@nehlsen-edv.de"}
-                       :subject  "hello uschi"
+                       :subject  (str msg-type)
                        :htmlBody (utf8-to-hex ciphertext)}
                       (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
@@ -41,7 +41,7 @@
       (-> (.sendMail MailCore (clj->js mail))
           (.then #(.log js/console (str (js->clj %))))
           (.catch #(.log js/console (str (js->clj %))))))
-    (catch :default e (sh/alert (str e)))))
+    (catch :default e (.error js/console (str e)))))
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]

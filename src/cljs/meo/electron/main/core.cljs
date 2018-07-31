@@ -7,7 +7,7 @@
             [meo.electron.main.menu :as menu]
             [meo.electron.main.update :as upd]
             [meo.electron.main.blink :as bl]
-            [meo.electron.main.imap :as enc]
+            [meo.electron.main.imap :as imap]
             [meo.electron.main.screenshot :as screen]
             [meo.electron.main.geocoder :as geocoder]
             [meo.electron.main.startup :as st]
@@ -65,7 +65,7 @@
                      (ipc/cmp-map :electron/ipc-cmp)
                      (bl/cmp-map :electron/blink)
                      (screen/cmp-map :electron/screenshot)
-                     (enc/cmp-map :electron/encryption)
+                     (imap/cmp-map :electron/sync)
                      (upd/cmp-map :electron/updater)
                      (sched/cmp-map :electron/scheduler)
                      (menu/cmp-map :electron/menu-cmp)
@@ -86,7 +86,7 @@
                     :to   #{:electron/updater
                             :electron/window-manager
                             :electron/geocoder
-                            :electron/encryption
+                            :electron/sync
                             :electron/blink
                             :electron/startup}}]
 
@@ -96,7 +96,7 @@
                             :electron/geocoder
                             :electron/blink
                             :electron/screenshot
-                            :electron/encryption
+                            :electron/sync
                             :electron/scheduler
                             :electron/window-manager}}]
 
@@ -112,7 +112,7 @@
        [:cmd/route {:from :electron/screenshot
                     :to   :electron/window-manager}]
 
-       [:cmd/route {:from :electron/encryption
+       [:cmd/route {:from :electron/sync
                     :to   #{:electron/window-manager
                             :electron/scheduler}}]
 

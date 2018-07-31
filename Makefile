@@ -120,7 +120,9 @@ jlink: clean test directories
 symlinks:
 	@echo Fixing symlinks...
 	tar -hcf - target/jlink | tar xf - -C bin/
-	chmod -R ugo+w bin/
+	rm -rf bin/jlink
+	mv bin/target/jlink/ bin/
+	chmod -R ugo+w bin/jlink/legal/
 
 install: jlink electron symlinks
 

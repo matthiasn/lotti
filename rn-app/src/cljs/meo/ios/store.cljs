@@ -5,7 +5,7 @@
             [clojure.data.avl :as avl]
             [cljs.core.async :refer [<!]]))
 
-(defn persist [{:keys [current-state put-fn msg-payload]}]
+(defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
@@ -23,7 +23,7 @@
                       (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (put-fn [:entry/sync entry])
+    (put-fn (with-meta [:entry/sync entry] msg-meta))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))
