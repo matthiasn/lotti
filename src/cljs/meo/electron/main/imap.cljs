@@ -139,8 +139,7 @@
                                                   s (pp-str cfg)]
                                               (info "mb-cb fetch end, last-read" last-read)
                                               (writeFileSync cfg-path s)
-                                              ;(.end conn)
-                                              ))]
+                                              (.end conn)))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
