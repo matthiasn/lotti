@@ -95,6 +95,7 @@
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
                                      (let [msg-type (first decrypted)
                                            {:keys [msg-payload msg-meta]} (second decrypted)
+                                           msg-meta (merge msg-meta {:window-id :broadcast})
                                            msg (with-meta [msg-type msg-payload] msg-meta)]
                                        (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                        (info decrypted)
@@ -164,12 +165,11 @@
                ;(.getBoxes mb (fn [err boxes] (.log js/console boxes)))
                (try
                  (let [secret (:secret mb-cfg)
+                       ; actual meta-data too large, makes the encryption waste battery
+                       msg-meta {}
                        serializable [:entry/sync {:msg-payload msg-payload
                                                   :msg-meta    msg-meta}]
                        cipher-hex (mue/encrypt-aes-hex (pr-str serializable) secret)
-                       decrypted (mue/decrypt-aes-hex cipher-hex secret)
-                       _ (when-not (= msg-payload decrypted)
-                           (warn "not equal" (data/diff msg-payload decrypted)))
                        append-cb (fn [err]
                                    (if err
                                      (error "IMAP write" err)

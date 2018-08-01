@@ -1,7 +1,6 @@
 (ns meo.ios.sync
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [meo.ui.shared :as sh]
-            [glittershark.core-async-storage :as as]
+  (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]))
 
 (def crypto-js (js/require "crypto-js"))
@@ -22,6 +21,9 @@
   (try
     (let [secrets (:secrets current-state)
           aes-secret (:secret secrets)
+
+          ; actual meta-data too large, makes the encryption waste battery
+          msg-meta {}
           serializable [msg-type {:msg-payload msg-payload
                                   :msg-meta    msg-meta}]
           data (pr-str serializable)
