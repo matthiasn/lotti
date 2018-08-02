@@ -36,7 +36,7 @@
                        :to       {:addressWithDisplayName "uschi"
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :subject  (str msg-type)
-                       :htmlBody (utf8-to-hex ciphertext)}
+                       :textBody (utf8-to-hex ciphertext)}
                       (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
                          :filename      filename}))]
