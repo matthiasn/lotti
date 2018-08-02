@@ -1,7 +1,8 @@
 (ns meo.ios.sync
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [glittershark.core-async-storage :as as]
-            [cljs.core.async :refer [<!]]))
+            [cljs.core.async :refer [<!]]
+            [clojure.string :as s]))
 
 (def crypto-js (js/require "crypto-js"))
 (def aes (aget crypto-js "AES"))
@@ -40,7 +41,7 @@
                       (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
                          :filename      filename}))]
-      (-> (.sendMail MailCore (clj->js mail))
+      (-> (.saveImap MailCore (clj->js mail))
           (.then #(.log js/console (str (js->clj %))))
           (.catch #(.log js/console (str (js->clj %))))))
     (catch :default e (.error js/console (str e)))))
