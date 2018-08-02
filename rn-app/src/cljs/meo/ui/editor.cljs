@@ -47,6 +47,9 @@
                    (when-let [navigate (:navigate @local2)]
                      (.dismiss keyboard)
                      (navigate "journal")))
+        cancel-fn #(when-let [navigate (:navigate @local2)]
+                     (.dismiss keyboard)
+                     (navigate "journal"))
         header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
         header-right (fn [_]
@@ -59,8 +62,19 @@
                                        :text-align "center"
                                        :font-size  18}}
                          "save"]])
+        header-left (fn [_]
+                      [touchable-opacity {:on-press cancel-fn
+                                          :style    {:padding-top    8
+                                                     :padding-left   12
+                                                     :padding-right  12
+                                                     :padding-bottom 8}}
+                       [text {:style {:color      "#0078e7"
+                                      :text-align "center"
+                                      :font-size  18}}
+                        "cancel"]])
         opts {:title            "Add Entry"
               :headerRight      header-right
+              :headerLeft       header-left
               :headerTitleStyle {:color text-color}
               :headerStyle      {:backgroundColor header-bg}}]
     (stack-navigator

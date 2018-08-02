@@ -9,7 +9,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
                                    map-view mapbox-style-url point-annotation
-                                   icon image logo-img swipeout
+                                   icon image logo-img swipeout keyboard-avoiding-view
                                    touchable-opacity]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.string :as s]
@@ -104,11 +104,11 @@
         on-change-text #(swap! local assoc-in [:jrn-search] %)
         on-clear-text #(swap! local assoc-in [:jrn-search] "")]
     (fn [local put-fn navigate]
-      (let [entries (filter (fn [[k v]]
-                              (s/includes?
-                                (s/lower-case (:md v))
-                                (s/lower-case (str (:jrn-search @local)))))
-                            @entries)
+      (let [#_#_entries (filter (fn [[k v]]
+                                  (s/includes?
+                                    (s/lower-case (:md v))
+                                    (s/lower-case (str (:jrn-search @local)))))
+                                @entries)
             ;as-array (clj->js (reverse (map second entries)))
             as-array (clj->js (reverse (map (fn [ts] {:timestamp ts})
                                             @all-timestamps)))
@@ -150,13 +150,22 @@
             latitude (:latitude entry)
             longitude (:longitude entry)]
         (reset! nav navigation)
-        [scroll {:style {:flex-direction   "column"
-                         :padding-top      15
-                         :background-color bg
-                         :padding-bottom   10}}
-         [view {:style {:flex-direction   "column"
-                        :padding-top      5
-                        :background-color text-bg}}
+        [keyboard-avoiding-view {:behavior "padding"
+                                 :style    {:display          "flex"
+                                            :flex-direction   "column"
+                                            :justify-content  "space-between"
+                                            :background-color text-bg
+                                            :width            "100%"
+                                            :flex             1
+                                            :align-items      "center"}}
+         [scroll {:style {:flex-direction   "column"
+                          :background-color bg
+                          :width            "100%"
+                          :padding-bottom   10}}
+          (when-let [media (:media entry)]
+            [image {:style  {:width  "100%"
+                             :height 500}
+                    :source {:uri (-> media :image :uri)}}])
           [text {:style {:color          text-color
                          :text-align     "center"
                          :font-size      8
@@ -168,54 +177,45 @@
                                             :padding          16
                                             :font-size        24
                                             :max-height       400
+                                            :min-height       100
                                             :background-color text-bg
-                                            :margin-bottom    20
+                                            :margin-bottom    5
                                             :color            text-color
                                             :width            "100%"}
                        :multiline          true
-                       :default-value      (:md entry)
+                       :default-value      (:md entry "")
                        :keyboard-type      "twitter"
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
-                                             (swap! entry-local assoc-in [:md] text))}]]
-         (when-let [media (:media entry)]
-           [image {:style  {:width         "100%"
-                            :height        300
-                            :margin-bottom 20}
-                   :source {:uri (-> media :image :uri)}}])
-         (when latitude
-           [map-view {;:showUserLocation true
-                      :centerCoordinate [longitude latitude]
-                      :scrollEnabled    false
-                      :rotateEnabled    false
-                      :styleURL         (get mapbox-style-url (:map-style @cfg-map))
-                      :style            {:width  "100%"
-                                         :height 200}
-                      :zoomLevel        15}
-            [point-annotation {:coordinate [longitude latitude]}
-             [view {:style {:width           24
-                            :height          24
-                            :alignItems      "center"
-                            :justifyContent  "center"
-                            :backgroundColor "white"
-                            :borderRadius    12}}
+                                             (swap! entry-local assoc-in [:md] text))}]
+          (when latitude
+            [map-view {;:showUserLocation true
+                       :centerCoordinate [longitude latitude]
+                       :scrollEnabled    false
+                       :rotateEnabled    false
+                       :styleURL         (get mapbox-style-url (:map-style @cfg-map))
+                       :style            {:width         "100%"
+                                          :height        200
+                                          :margin-bottom 100}
+                       :zoomLevel        15}
+             [point-annotation {:coordinate [longitude latitude]}
               [view {:style {:width           24
                              :height          24
-                             :backgroundColor "orange"
-                             :borderRadius    12
-                             :transform       [{:scale 0.7}]}}]]]])
-         [text {:style {:margin-top  300
-                        :color       text-color
-                        :text-align  "center"
-                        :font-weight "bold"
-                        :padding     10}}
-          (:md @entry-local)]
-         [text {:style {:margin-top  20
-                        :margin-left 10
-                        :color       text-color
-                        :text-align  "left"
-                        :font-size   9}}
-          (with-out-str (pp/pprint entry))]]))))
+                             :alignItems      "center"
+                             :justifyContent  "center"
+                             :backgroundColor "white"
+                             :borderRadius    12}}
+               [view {:style {:width           24
+                              :height          24
+                              :backgroundColor "orange"
+                              :borderRadius    12
+                              :transform       [{:scale 0.7}]}}]]]])]
+         #_[text {:style {:margin-top  20
+                          :margin-left 10
+                          :color       text-color
+                          :text-align  "left"
+                          :font-size   9}}
+            (with-out-str (pp/pprint entry))]]))))
 
 (defn journal-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
@@ -223,11 +223,10 @@
         list-bg (get-in c/colors [:list-bg @theme])
         entry-local (r/atom {})
         nav (r/atom {})
-        detail-view-entry (subscribe [:entry-detail])
         save-fn #(let [updated (p/parse-entry (:md @entry-local))
                        go-back (:goBack @nav)]
+                   (put-fn [:entry/persist (merge (:entry @entry-local) updated)])
                    (reset! entry-local {})
-                   (put-fn [:entry/persist (merge @detail-view-entry updated)])
                    (go-back))
         header-right (fn [_]
                        [touchable-opacity {:on-press save-fn
