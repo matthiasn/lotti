@@ -1,6 +1,6 @@
 (ns meo.ui.photos
   (:require [meo.ui.shared :refer [view text touchable-opacity cam-roll
-                                   scroll image icon]]
+                                   scroll image icon swipeout]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.ui.colors :as c]
@@ -11,11 +11,10 @@
   (let [theme (subscribe [:active-theme])]
     (fn [local put-fn]
       (let [bg (get-in c/colors [:list-bg @theme])
+            text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
         [scroll {:style {:flex-direction   "column"
-                         :padding-top      10
-                         :background-color bg
-                         :padding-bottom   10}}
+                         :background-color bg}}
          (for [photo (:edges (:photos @local))]
            (let [node (:node photo)
                  loc (:location node)
@@ -34,32 +33,30 @@
                                        :media     (dissoc node :location)
                                        :img_file  filename
                                        :timestamp ts}]
-                            (put-fn [:entry/new entry]))]
+                            (put-fn [:entry/new entry]))
+                 hide-fn #()
+                 swipeout-btns [{:text            "hide"
+                                 :backgroundColor "#CA3C3C"
+                                 :onPress         hide-fn}
+                                {:text            "add"
+                                 :backgroundColor "#3CCA3C"
+                                 :onPress         save-fn}]]
              ^{:key (:uri img)}
-             [view {:style {:padding-top    10
-                            :padding-bottom 10
-                            :margin-bottom  10
-                            :width          "100%"
-                            :display        :flex
-                            :flex-direction :row}}
-              [image {:style  {:width      280
-                               :height     160
-                               :max-height 160}
-                      :source {:uri (:uri img)}}]
-              [touchable-opacity {:on-press save-fn
-                                  :style    {:padding-left   20
-                                             :padding-right  20
-                                             :padding-top    50
-                                             :padding-bottom 50}}
-               [icon {:name  "plus-square-o"
-                      :size  52
-                      :color text-color}]]]))
-
-         [text {:style {:color       "#777"
-                        :text-align  "center"
-                        :font-size   10
-                        :font-weight "bold"}}
-          (str (dissoc (:photos @local) :edges))]]))))
+             [swipeout {:right swipeout-btns
+                        :style {:margin-bottom    5
+                                :background-color text-bg}}
+              [view {:style {:width          "100%"
+                             :display        :flex
+                             :flex-direction :row}}
+               [image {:style  {:width      "100%"
+                                :height     160
+                                :max-height 160}
+                       :source {:uri (:uri img)}}]]]))
+         #_[text {:style {:color       "#777"
+                          :text-align  "center"
+                          :font-size   10
+                          :font-weight "bold"}}
+            (str (dissoc (:photos @local) :edges))]]))))
 
 (defn photos-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
@@ -86,7 +83,7 @@
                         [text {:style {:color      "#0078e7"
                                        :text-align "center"
                                        :font-size  18}}
-                         "show"]])
+                         "cam roll"]])
         opts {:title            "Photos"
               :headerRight      header-right
               :headerTitleStyle {:color text-color}
