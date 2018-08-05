@@ -83,7 +83,8 @@
   (try
     (let [secrets (:secrets current-state)
           folder (-> secrets :sync :read :folder)
-          min-uid (or (last (:not-fetched current-state)) (:uid current-state))
+          min-uid (or (last (:not-fetched current-state))
+                      (:last-uid-read current-state))
           mail (merge (:server secrets)
                       {:folder folder
                        :minUid min-uid
@@ -100,27 +101,31 @@
 
 (defn sync-read-msg [{:keys [put-fn cmp-state]}]
   (try
-    (when-let [uid (first (:not-fetched @cmp-state))]
-      (let [secrets (:secrets @cmp-state)
-            aes-secret (-> secrets :sync :read :secret)
-            folder (-> secrets :sync :read :folder)
-            mail (merge (:server secrets)
-                        {:folder folder
-                         :uid    uid})
-            fetch-cb (fn [data]
-                       (let [body (get (js->clj data) "body")
-                             decrypted (decrypt-body body aes-secret)
-                             msg-type (first decrypted)
-                             {:keys [msg-payload msg-meta]} (second decrypted)
-                             msg (with-meta [msg-type msg-payload] msg-meta)]
-                         (swap! cmp-state assoc-in [:uid] uid)
-                         (swap! cmp-state update-in [:not-fetched] disj uid)
-                         (schedule-read cmp-state put-fn)
-                         ;(shared/alert (with-out-str (pp/pprint msg)))
-                         (put-fn msg)))]
-        (-> (.fetchImapByUid MailCore (clj->js mail))
-            (.then fetch-cb)
-            (.catch #(.log js/console (str (js->clj %)))))))
+    (let [{:keys [fetched not-fetched]} @cmp-state
+          not-fetched (drop-while #(contains? fetched %) not-fetched)]
+      (when-let [uid (first not-fetched)]
+        (let [secrets (:secrets @cmp-state)
+              aes-secret (-> secrets :sync :read :secret)
+              folder (-> secrets :sync :read :folder)
+              mail (merge (:server secrets)
+                          {:folder folder
+                           :uid    uid})
+              fetch-cb (fn [data]
+                         (let [body (get (js->clj data) "body")
+                               decrypted (decrypt-body body aes-secret)
+                               msg-type (first decrypted)
+                               {:keys [msg-payload msg-meta]} (second decrypted)
+                               msg (with-meta [msg-type msg-payload] msg-meta)]
+                           (swap! cmp-state assoc-in [:last-uid-read] uid)
+                           (go (<! (as/set-item :last-uid-read uid)))
+                           (swap! cmp-state update-in [:not-fetched] disj uid)
+                           (swap! cmp-state update-in [:fetched] conj uid)
+                           (schedule-read cmp-state put-fn)
+                           ;(shared/alert (with-out-str (pp/pprint msg)))
+                           (put-fn msg)))]
+          (-> (.fetchImapByUid MailCore (clj->js mail))
+              (.then fetch-cb)
+              (.catch #(.log js/console (str (js->clj %))))))))
     (catch :default e (shared/alert (str e)))))
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
@@ -129,15 +134,21 @@
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {:uid         1
-                     :not-fetched (sorted-set)})]
-    (go
-      (try
-        (let [secrets (second (<! (as/get-item :secrets)))]
-          (when secrets
-            (swap! state assoc-in [:secrets] secrets)))
-        (catch js/Object e
-          (put-fn [:debug/error {:msg e}]))))
+  (let [state (atom {:last-uid-read 1
+                     :not-fetched   (sorted-set)
+                     :fetched       #{}})]
+    (go (try
+          (let [secrets (second (<! (as/get-item :secrets)))]
+            (when secrets
+              (swap! state assoc-in [:secrets] secrets)))
+          (catch js/Object e
+            (put-fn [:debug/error {:msg e}]))))
+    (go (try
+          (let [uid (second (<! (as/get-item :last-uid-read)))]
+            (when uid
+              (swap! state assoc-in [:last-uid-read] uid)))
+          (catch js/Object e
+            (put-fn [:debug/error {:msg e}]))))
     {:state state}))
 
 (defn cmp-map [cmp-id]
