@@ -148,6 +148,7 @@
                           [:ft/add entry]]})
       :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
                         new-state (ga/add-node current-state with-conflict)]
+                    (warn "conflict\n" prev "\n" entry)
                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
                     ;(append-daily-log cfg entry put-fn)
                     {:new-state new-state
