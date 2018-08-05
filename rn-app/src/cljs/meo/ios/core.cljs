@@ -38,7 +38,8 @@
       switchboard
       [[:cmd/init-comp components]
 
-       [:cmd/route {:from :app/store
+       [:cmd/route {:from #{:app/store
+                            :app/ui-cmp}
                     :to :app/sync}]
 
        [:cmd/route {:from :app/healthkit

@@ -115,7 +115,14 @@
             :titleStyle       {:color text-color}
             :icon             (settings-icon "shield" text-color)
             :on-press         #(navigate "security")
-            :title            "Security"}]]]))))
+            :title            "Security"}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
+            :icon             (settings-icon "refresh" text-color)
+            :on-press         #(put-fn [:sync/read])
+            :title            "Read IMAP"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
   (let [theme (subscribe [:active-theme])]
