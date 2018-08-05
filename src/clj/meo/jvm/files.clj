@@ -21,7 +21,8 @@
             [ubergraph.core :as uc]
             [meo.common.utils.vclock :as vc]
             [meo.common.utils.misc :as u]
-            [meo.jvm.graph.query :as gq])
+            [meo.jvm.graph.query :as gq]
+            [clojure.walk :as walk])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -87,6 +88,15 @@
     (info "Application state read from" file-path)
     {:state (atom state)}))
 
+;; from https://stackoverflow.com/a/34221816
+(defn remove-nils [m]
+  (let [f (fn [x]
+            (if (map? x)
+              (let [kvs (filter (comp not nil? second) x)]
+                (if (empty? kvs) nil (into {} kvs)))
+              x))]
+    (walk/postwalk f m)))
+
 (defn geo-entry-persist-fn
   "Handler function for persisting journal entry."
   [{:keys [current-state msg-payload msg-meta put-fn]}]
@@ -97,7 +107,7 @@
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
-        entry (merge prev entry)
+        entry (remove-nils (merge prev entry))
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
@@ -131,7 +141,7 @@
         rcv-vclock (:vclock entry)
         cfg (:cfg current-state)
         g (:graph current-state)
-        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        prev (when (uc/has-node? g ts) (remove-nils (uc/attrs g ts)))
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)

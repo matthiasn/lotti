@@ -3,21 +3,23 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
-            [cljs.core.async :refer [<!]]))
+            [cljs.core.async :refer [<!]]
+            [meo.helpers :as h]))
 
 (defn persist [{:keys [msg-type current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
-        new-vclock (update-in last-vclock [instance-id] #(inc (or % 0)))
-        new-vclock (merge vclock new-vclock)
-        offset (get-in new-vclock [instance-id])
+        offset (inc (or (get last-vclock instance-id) 0))
+        new-vclock {instance-id offset}
         id (or id (st/make-uuid))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)
+
         entry (merge prev msg-payload {:last-saved (st/now)
                                        :id         (str id)
-                                       :vclock     new-vclock})
+                                       :vclock     (merge vclock new-vclock)})
+        entry (h/remove-nils entry)
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
                       (update-in [:all-timestamps] conj timestamp)

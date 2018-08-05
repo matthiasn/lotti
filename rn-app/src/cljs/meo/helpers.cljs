@@ -2,7 +2,8 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [goog.dom.Range]
             [meo.ui.shared :as shared]
-            [meo.utils.parse :as p]))
+            [meo.utils.parse :as p]
+            [clojure.walk :as walk]))
 
 (set! js/moment (js/require "moment"))
 
@@ -70,19 +71,11 @@
                            :type stats-key}]
               m))))
 
-(defn keep-updated
-  [stats-key n local last-update put-fn]
-  (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
-        last-update (:last-update last-update)]
-    (when (> last-update last-fetched)
-      (swap! local assoc-in [:last-fetched stats-key] (st/now))
-      (get-stats stats-key n (:meta last-update {}) put-fn))))
-
-(defn keep-updated2
-  [stats-key day local last-update put-fn]
-  (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
-        last-update (:last-update last-update)]
-    (when (> last-update last-fetched)
-      (swap! local assoc-in [:last-fetched stats-key] (st/now))
-      (put-fn [:stats/get {:days [{:date-string day}] :type stats-key}]))))
-
+;; from https://stackoverflow.com/a/34221816
+(defn remove-nils [m]
+  (let [f (fn [x]
+            (if (map? x)
+              (let [kvs (filter (comp not nil? second) x)]
+                (if (empty? kvs) nil (into {} kvs)))
+              x))]
+    (walk/postwalk f m)))
