@@ -42,6 +42,9 @@
                             :app/ui-cmp}
                     :to :app/sync}]
 
+       [:cmd/route {:from :app/sync
+                    :to   :app/store}]
+
        [:cmd/route {:from :app/healthkit
                     :to   :app/store}]
 

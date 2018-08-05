@@ -44,7 +44,8 @@
 (defn sync-fn [{:keys [msg-type msg-payload msg-meta current-state]}]
   (try
     (let [secrets (:secrets current-state)
-          aes-secret (:secret secrets)
+          aes-secret (-> secrets :sync :write :secret)
+          folder (-> secrets :sync :write :folder)
 
           ; actual meta-data too large, makes the encryption waste battery
           msg-meta {}
@@ -54,12 +55,11 @@
           ciphertext (.toString (.encrypt AES data aes-secret))
           hex-cipher (utf8-to-hex ciphertext)
 
-          _ (decrypt-body hex-cipher aes-secret)
-
           photo-uri (-> msg-payload :media :image :uri)
           filename (:img_file msg-payload)
           mail (merge (:server secrets)
-                      {:from     {:addressWithDisplayName "fred"
+                      {:folder   folder
+                       :from     {:addressWithDisplayName "fred"
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :to       {:addressWithDisplayName "uschi"
                                   :mailbox                "meo@nehlsen-edv.de"}
@@ -73,24 +73,30 @@
           (.catch #(.log js/console (str (js->clj %))))))
     (catch :default e (.error js/console (str e)))))
 
-(defn read-fn [{:keys [msg-payload current-state]}]
+(defn read-fn [{:keys [put-fn current-state]}]
   (try
     (let [secrets (:secrets current-state)
-          aes-secret (:secret secrets)
+          aes-secret (-> secrets :sync :read :secret)
+          folder (-> secrets :sync :read :folder)
           mail (merge (:server secrets)
-                      {:uid 42})]
-      #_
-      (-> (.fetchImap MailCore (clj->js mail))
-          (.then #(.log js/console (str (js->clj %))))
-          (.catch #(.log js/console (str (js->clj %)))))
-
+                      {:folder folder
+                       :uid    2385})
+          fetch-cb (fn [data]
+                     (let [body (get (js->clj data) "body")
+                           decrypted (decrypt-body body aes-secret)
+                           msg-type (first decrypted)
+                           {:keys [msg-payload msg-meta]} (second decrypted)
+                           msg (with-meta [msg-type msg-payload] msg-meta)]
+                       (shared/alert (with-out-str (pp/pprint msg)))
+                       (put-fn msg)))]
+      #_(-> (.fetchImap MailCore (clj->js mail))
+            (.then #(.log js/console (str (js->clj %))))
+            (.catch #(.log js/console (str (js->clj %)))))
       (-> (.fetchImapByUid MailCore (clj->js mail))
           ;(.then #(shared/alert (str "FETCH_BY_UID" (js->clj %))))
-          (.then #(shared/alert (with-out-str
-                                  (pp/pprint
-                                    (decrypt-body (get (js->clj %) "body") aes-secret)))))
+          (.then fetch-cb)
           (.catch #(.log js/console (str (js->clj %))))))
-    (catch :default e (.error js/console (str e)))))
+    (catch :default e (shared/alert (str e)))))
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]

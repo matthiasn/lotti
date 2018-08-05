@@ -132,6 +132,7 @@
    :state-fn    state-fn
    :handler-map {:entry/persist    persist
                  :entry/new        persist
+                 :entry/sync       persist
                  :entry/detail     detail
                  :sync/initiate    sync-start
                  :sync/next        sync-start
