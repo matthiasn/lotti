@@ -41,7 +41,7 @@
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
-(defn sync-fn [{:keys [msg-type msg-payload msg-meta current-state]}]
+(defn sync-write [{:keys [msg-type msg-payload msg-meta current-state]}]
   (try
     (let [secrets (:secrets current-state)
           aes-secret (-> secrets :sync :write :secret)
@@ -73,29 +73,54 @@
           (.catch #(.log js/console (str (js->clj %))))))
     (catch :default e (.error js/console (str e)))))
 
-(defn read-fn [{:keys [put-fn current-state]}]
+(defn schedule-read [cmp-state put-fn]
+  (when (seq (:not-fetched @cmp-state))
+    (put-fn [:cmd/schedule-new
+             {:timeout 100
+              :message [:sync/read]}])))
+
+(defn sync-get-uids [{:keys [put-fn cmp-state current-state]}]
   (try
     (let [secrets (:secrets current-state)
-          aes-secret (-> secrets :sync :read :secret)
           folder (-> secrets :sync :read :folder)
+          min-uid (or (last (:not-fetched current-state)) (:uid current-state))
           mail (merge (:server secrets)
                       {:folder folder
-                       :uid    2385})
+                       :minUid min-uid
+                       :length 100})
           fetch-cb (fn [data]
-                     (let [body (get (js->clj data) "body")
-                           decrypted (decrypt-body body aes-secret)
-                           msg-type (first decrypted)
-                           {:keys [msg-payload msg-meta]} (second decrypted)
-                           msg (with-meta [msg-type msg-payload] msg-meta)]
-                       (shared/alert (with-out-str (pp/pprint msg)))
-                       (put-fn msg)))]
-      #_(-> (.fetchImap MailCore (clj->js mail))
-            (.then #(.log js/console (str (js->clj %))))
-            (.catch #(.log js/console (str (js->clj %)))))
-      (-> (.fetchImapByUid MailCore (clj->js mail))
-          ;(.then #(shared/alert (str "FETCH_BY_UID" (js->clj %))))
+                     (let [uids (edn/read-string (str "[" data "]"))]
+                       (swap! cmp-state update :not-fetched into uids)
+                       ;(shared/alert (:not-fetched @cmp-state))
+                       (schedule-read cmp-state put-fn)))]
+      (-> (.fetchImap MailCore (clj->js mail))
           (.then fetch-cb)
-          (.catch #(.log js/console (str (js->clj %))))))
+          (.catch #(shared/alert (str %)))))
+    (catch :default e (shared/alert (str e)))))
+
+(defn sync-read-msg [{:keys [put-fn cmp-state]}]
+  (try
+    (when-let [uid (first (:not-fetched @cmp-state))]
+      (let [secrets (:secrets @cmp-state)
+            aes-secret (-> secrets :sync :read :secret)
+            folder (-> secrets :sync :read :folder)
+            mail (merge (:server secrets)
+                        {:folder folder
+                         :uid    uid})
+            fetch-cb (fn [data]
+                       (let [body (get (js->clj data) "body")
+                             decrypted (decrypt-body body aes-secret)
+                             msg-type (first decrypted)
+                             {:keys [msg-payload msg-meta]} (second decrypted)
+                             msg (with-meta [msg-type msg-payload] msg-meta)]
+                         (swap! cmp-state assoc-in [:uid] uid)
+                         (swap! cmp-state update-in [:not-fetched] disj uid)
+                         (schedule-read cmp-state put-fn)
+                         ;(shared/alert (with-out-str (pp/pprint msg)))
+                         (put-fn msg)))]
+        (-> (.fetchImapByUid MailCore (clj->js mail))
+            (.then fetch-cb)
+            (.catch #(.log js/console (str (js->clj %)))))))
     (catch :default e (shared/alert (str e)))))
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
@@ -104,7 +129,8 @@
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {})]
+  (let [state (atom {:uid         1
+                     :not-fetched (sorted-set)})]
     (go
       (try
         (let [secrets (second (<! (as/get-item :secrets)))]
@@ -117,6 +143,7 @@
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
-   :handler-map {:entry/sync  sync-fn
-                 :sync/read   read-fn
+   :handler-map {:entry/sync  sync-write
+                 :sync/fetch  sync-get-uids
+                 :sync/read   sync-read-msg
                  :secrets/set set-secrets}})

@@ -43,7 +43,8 @@
                     :to :app/sync}]
 
        [:cmd/route {:from :app/sync
-                    :to   :app/store}]
+                    :to   #{:app/store
+                            :app/scheduler}}]
 
        [:cmd/route {:from :app/healthkit
                     :to   :app/store}]
@@ -67,6 +68,13 @@
          [:cmd/attach-to-firehose :app/sync])
 
        [:cmd/route {:from :app/scheduler
-                    :to   :app/store}]])
+                    :to   #{:app/store
+                            :app/sync}}]
+
+       [:cmd/send {:to  :app/scheduler
+                   :msg [:cmd/schedule-new {:timeout 10000
+                                            :message [:sync/fetch]
+                                            :repeat  true
+                                            :initial false}]}]])
     (.registerComponent
       app-registry "meo" #(r/reactify-component ui/app-root))))

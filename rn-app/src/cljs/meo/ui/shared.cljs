@@ -24,7 +24,7 @@
 (def vibration (.-Vibration react-native))
 (def cam-roll (.-CameraRoll react-native))
 
-(defn alert [title] (.alert (.-Alert react-native) title))
+(defn alert [title] (.alert (.-Alert react-native) (str title)))
 
 (def logo-img (js/require "./images/meo.png"))
 
