@@ -106,15 +106,15 @@
            {:hasNavArrow      true
             :background-color item-bg
             :titleStyle       {:color text-color}
-            :icon             (settings-icon "refresh" text-color)
+            :icon             (settings-icon "bug" text-color)
             :on-press         #(navigate "dev")
             :title            "Dev"}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg
             :titleStyle       {:color text-color}
-            :icon             (settings-icon "shield" text-color)
-            :on-press         #(navigate "security")
+            :icon             (settings-icon "refresh" text-color)
+            :on-press         #(navigate "sync")
             :title            "Security"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
@@ -303,7 +303,7 @@
                           :text-align  "center"}}
             (str barcode)])]))))
 
-(defn security-settings [local put-fn]
+(defn sync-settings [local put-fn]
   (let [theme (subscribe [:active-theme])
         on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
@@ -348,7 +348,6 @@
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             reset-state #(do (put-fn [:state/reset]) (goBack))
-            load-state #(do (put-fn [:state/load]) (goBack))
             bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
@@ -363,13 +362,7 @@
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :icon             (settings-icon "bolt" "#999")
-                               :on-press         reset-state}]
-          [settings-list-item {:title            "Load from database"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :icon             (settings-icon "spinner" "#999")
-                               :on-press         load-state}]]]))))
+                               :on-press         reset-state}]]]))))
 
 (defn settings-tab [local put-fn theme]
   (let [header-bg (get-in c/colors [:header-tab @theme])
@@ -394,7 +387,7 @@
        :db       {:screen (stack-screen (db-settings local put-fn)
                                         (opts "Database"))}
        :dev      {:screen (stack-screen (dev-settings local put-fn)
-                                        (opts "Sync"))}
-       :security {:screen (stack-screen (security-settings local put-fn)
-                                        (opts "Security"))}}
+                                        (opts "Dev"))}
+       :sync     {:screen (stack-screen (sync-settings local put-fn)
+                                        (opts "Sync"))}}
       {:cardStyle {:backgroundColor list-bg}})))

@@ -162,10 +162,6 @@
                           :background-color bg
                           :width            "100%"
                           :padding-bottom   10}}
-          (when-let [media (:media entry)]
-            [image {:style  {:width  "100%"
-                             :height 500}
-                    :source {:uri (-> media :image :uri)}}])
           [text {:style {:color          text-color
                          :text-align     "center"
                          :font-size      8
@@ -188,9 +184,12 @@
                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
                        :on-change-text     (fn [text]
                                              (swap! entry-local assoc-in [:md] text))}]
+          (when-let [media (:media entry)]
+            [image {:style  {:width  "100%"
+                             :height 500}
+                    :source {:uri (-> media :image :uri)}}])
           (when latitude
-            [map-view {;:showUserLocation true
-                       :centerCoordinate [longitude latitude]
+            [map-view {:centerCoordinate [longitude latitude]
                        :scrollEnabled    false
                        :rotateEnabled    false
                        :styleURL         (get mapbox-style-url (:map-style @cfg-map))

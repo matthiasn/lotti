@@ -91,9 +91,10 @@
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
                                  (st/make-uuid)))
-            timestamps (second (<! (as/get-item :timestamps)))]
+            timestamps (second (<! (as/get-item :timestamps)))
+            sorted (apply sorted-set timestamps)]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
-        (swap! cmp-state update-in [:all-timestamps] into timestamps)
+        (swap! cmp-state assoc-in [:all-timestamps] sorted)
         (<! (as/set-item :instance-id instance-id))
         #_
         (doseq [ts timestamps]
