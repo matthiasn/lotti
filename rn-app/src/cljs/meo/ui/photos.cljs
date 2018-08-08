@@ -5,24 +5,45 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.ui.colors :as c]
             [meo.helpers :as h]
-            [meo.utils.parse :as p]))
+            [meo.ui.shared :as sh]
+            [reagent.core :as r]))
+
+(def react-native-deck-swiper (js/require "react-native-deck-swiper"))
+(def deck-swiper (r/adapt-react-class (aget react-native-deck-swiper "default")))
+
+(defn card [photo]
+  (let [uri (-> photo :node :image :uri)]
+    [view {:style {:flex            1
+                   :width           "100%"
+                   :backgroundColor "black"
+                   :borderRadius    4
+                   :borderWidth     1}}
+     [image {:style  {:width      "100%"
+                      :resizeMode "contain"
+                      ;:height 400
+                      :height     "80%"}
+             :source {:uri uri}}]]))
+
+(defn render-card [item]
+  (let [item (js->clj item :keywordize-keys true)]
+    (r/as-element [card item])))
 
 (defn photos-page [local put-fn]
   (let [theme (subscribe [:active-theme])]
     (fn [local put-fn]
       (let [bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])]
-        [scroll {:style {:flex-direction   "column"
-                         :background-color bg}}
-         (for [photo (:edges (:photos @local))]
-           (let [node (:node photo)
-                 loc (:location node)
-                 lat (:latitude loc)
-                 lon (:longitude loc)
-                 img (:image node)
-                 ts (.floor js/Math (* 1000 (:timestamp node)))
-                 save-fn #(let [filename (str (h/img-fmt ts) "_" (:filename img))
+            text-color (get-in c/colors [:text @theme])
+            cards (->> @local :photos :edges vec)
+            swipe-right (fn [idx]
+                          (let [photo (nth cards idx)
+                                node (:node photo)
+                                loc (:location node)
+                                lat (:latitude loc)
+                                lon (:longitude loc)
+                                img (:image node)
+                                ts (.floor js/Math (* 1000 (:timestamp node)))
+                                filename (str (h/img-fmt ts) "_" (:filename img))
                                 entry {:latitude  lat
                                        :longitude lon
                                        :location  loc
@@ -33,30 +54,16 @@
                                        :media     (dissoc node :location)
                                        :img_file  filename
                                        :timestamp ts}]
-                            (put-fn [:entry/new entry]))
-                 hide-fn #()
-                 swipeout-btns [{:text            "hide"
-                                 :backgroundColor "#CA3C3C"
-                                 :onPress         hide-fn}
-                                {:text            "add"
-                                 :backgroundColor "#3CCA3C"
-                                 :onPress         save-fn}]]
-             ^{:key (:uri img)}
-             [swipeout {:right swipeout-btns
-                        :style {:margin-bottom    5
-                                :background-color text-bg}}
-              [view {:style {:width          "100%"
-                             :display        :flex
-                             :flex-direction :row}}
-               [image {:style  {:width      "100%"
-                                :height     160
-                                :max-height 160}
-                       :source {:uri (:uri img)}}]]]))
-         #_[text {:style {:color       "#777"
-                          :text-align  "center"
-                          :font-size   10
-                          :font-weight "bold"}}
-            (str (dissoc (:photos @local) :edges))]]))))
+                            (put-fn [:entry/new entry])))]
+        [deck-swiper
+         {:cards                cards
+          :onSwipedRight        swipe-right
+          :onSwipedAll          #(sh/alert (str :onSwipedAll %))
+          :cardIndex            0
+          :renderCard           render-card
+          :cardHorizontalMargin 0
+          :cardVerticalMargin   0
+          :backgroundColor      "black"}]))))
 
 (defn photos-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]
@@ -64,7 +71,7 @@
       [photos-page local put-fn])))
 
 (defn photos-tab [local put-fn theme]
-  (let [get-fn #(let [params (clj->js {:first     50
+  (let [get-fn #(let [params (clj->js {:first     100
                                        :assetType "Photos"})
                       photos-promise (.getPhotos cam-roll params)]
                   (.then photos-promise
@@ -73,7 +80,6 @@
                              (swap! local assoc-in [:photos] parsed)))))
         header-bg (get-in c/colors [:header-tab @theme])
         text-color (get-in c/colors [:text @theme])
-        list-bg (get-in c/colors [:list-bg @theme])
         header-right (fn [_]
                        [touchable-opacity {:on-press get-fn
                                            :style    {:padding-top    8
@@ -88,6 +94,7 @@
               :headerRight      header-right
               :headerTitleStyle {:color text-color}
               :headerStyle      {:backgroundColor header-bg}}]
+    (get-fn)
     (stack-navigator
-      {:photos {:screen (stack-screen (photos-wrapper local put-fn) opts)}}
-      {:cardStyle {:backgroundColor list-bg}})))
+      {:photos3 {:screen (stack-screen (photos-wrapper local put-fn) opts)}}
+      {:cardStyle {:backgroundColor "black"}})))

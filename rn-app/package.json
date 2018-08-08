@@ -24,6 +24,7 @@
 		"react-native-activity-recognition": "3.2.0",
 		"react-native-camera": "0.13.0",
 		"react-native-contacts": "2.2.2",
+		"react-native-deck-swiper": "^1.5.17",
 		"react-native-elements": "0.19.1",
 		"react-native-keyboard-aware-scroll-view": "0.4.3",
 		"react-native-mailcore": "^0.0.3",

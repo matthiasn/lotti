@@ -115,7 +115,7 @@
             :titleStyle       {:color text-color}
             :icon             (settings-icon "refresh" text-color)
             :on-press         #(navigate "sync")
-            :title            "Security"}]]]))))
+            :title            "Sync"}]]]))))
 
 (defn map-settings-wrapper [local put-fn]
   (let [theme (subscribe [:active-theme])]
