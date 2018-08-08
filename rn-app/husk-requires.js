@@ -16,6 +16,7 @@ var modules = {
     'react-navigation': require('react-navigation'),
     'react-native-settings-list': require('react-native-settings-list'),
     'react-native-swipeout': require('react-native-swipeout'),
+    'react-native-swipe-cards': require('react-native-swipe-cards'),
     'react-native-activity-recognition': require('react-native-activity-recognition'),
     'querystring': require('querystring'),
     'crypto-js': require('crypto-js'),

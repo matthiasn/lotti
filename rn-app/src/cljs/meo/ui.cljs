@@ -4,6 +4,7 @@
             [re-frame.db :as rdb]
             [meo.ui.editor :as edit]
             [meo.ui.photos :as photos]
+            [meo.ui.photos2 :as photos2]
             [meo.ui.shared :refer [view text text-input touchable-opacity btn
                                    tab-bar keyboard-avoiding-view vibration
                                    tab-bar-item app-registry icon safe-area-view]]
@@ -37,6 +38,11 @@
                                                                    :size  26
                                                                    :color tintColor}])}}
                :photos   {:screen            (photos/photos-tab local put-fn theme)
+                          :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
+                                                            [icon {:name  "film"
+                                                                   :size  22
+                                                                   :color tintColor}])}}
+               :photos2  {:screen            (photos2/photos-tab local put-fn theme)
                           :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
                                                             [icon {:name  "film"
                                                                    :size  22
