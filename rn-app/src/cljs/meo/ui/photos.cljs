@@ -6,7 +6,8 @@
             [meo.ui.colors :as c]
             [meo.helpers :as h]
             [meo.ui.shared :as sh]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [clojure.set :as set]))
 
 (def react-native-deck-swiper (js/require "react-native-deck-swiper"))
 (def deck-swiper (r/adapt-react-class (aget react-native-deck-swiper "default")))
@@ -29,12 +30,17 @@
     (r/as-element [card item])))
 
 (defn photos-page [local put-fn]
-  (let [theme (subscribe [:active-theme])]
+  (let [theme (subscribe [:active-theme])
+        all-timestamps (subscribe [:all-timestamps])
+        hide-timestamps (subscribe [:hide-timestamps])
+        show? #(not (contains?
+                      (set/union @all-timestamps @hide-timestamps)
+                      (.floor js/Math (* 1000 (:timestamp (:node %))))))]
     (fn [local put-fn]
       (let [bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])
-            cards (->> @local :photos :edges vec)
+            cards (->> @local :photos :edges (filter show?) vec)
             swipe-right (fn [idx]
                           (let [photo (nth cards idx)
                                 node (:node photo)
@@ -54,10 +60,18 @@
                                        :media     (dissoc node :location)
                                        :img_file  filename
                                        :timestamp ts}]
-                            (put-fn [:entry/new entry])))]
+                            (put-fn [:entry/new entry])))
+            swipe-left (fn [idx]
+                         (let [photo (nth cards idx)
+                               node (:node photo)
+                               ts (.floor js/Math (* 1000 (:timestamp node)))
+                               entry {:timestamp  ts
+                                      :entry-type :hide}]
+                           (put-fn [:entry/hide entry])))]
         [deck-swiper
          {:cards                cards
           :onSwipedRight        swipe-right
+          :onSwipedLeft         swipe-left
           :onSwipedAll          #(sh/alert (str :onSwipedAll %))
           :cardIndex            0
           :renderCard           render-card
@@ -71,7 +85,7 @@
       [photos-page local put-fn])))
 
 (defn photos-tab [local put-fn theme]
-  (let [get-fn #(let [params (clj->js {:first     100
+  (let [get-fn #(let [params (clj->js {:first     1000
                                        :assetType "Photos"})
                       photos-promise (.getPhotos cam-roll params)]
                   (.then photos-promise

@@ -15,7 +15,6 @@
         id (or id (st/make-uuid))
         prev (dissoc (get-in current-state [:entries timestamp])
                      :id :last-saved :vclock)
-
         entry (merge prev msg-payload {:last-saved (st/now)
                                        :id         (str id)
                                        :vclock     (merge vclock new-vclock)})
@@ -32,6 +31,12 @@
       (go (<! (as/set-item :global-vclock last-vclock)))
       (go (<! (as/set-item :timestamps (:all-timestamps new-state))))
       {:new-state new-state})))
+
+(defn hide [{:keys [current-state msg-payload]}]
+  (let [ts (:timestamp msg-payload)
+        new-state (update-in current-state [:hide-timestamps] conj ts)]
+    (go (<! (as/set-item :hide-timestamps (:hide-timestamps new-state))))
+    {:new-state new-state}))
 
 (defn detail [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:entry-detail] msg-payload)]
@@ -96,13 +101,19 @@
         (swap! cmp-state assoc-in [:instance-id] instance-id)
         (swap! cmp-state assoc-in [:all-timestamps] sorted)
         (<! (as/set-item :instance-id instance-id))
-        #_
-        (doseq [ts timestamps]
-          (let [entry (second (<! (as/get-item ts)))
-                offset (get-in entry [:vclock instance-id])]
-            (swap! cmp-state assoc-in [:entries ts] entry)
-            (when offset
-              (swap! cmp-state assoc-in [:vclock-map offset] entry)))))
+        #_(doseq [ts timestamps]
+            (let [entry (second (<! (as/get-item ts)))
+                  offset (get-in entry [:vclock instance-id])]
+              (swap! cmp-state assoc-in [:entries ts] entry)
+              (when offset
+                (swap! cmp-state assoc-in [:vclock-map offset] entry)))))
+      (catch js/Object e
+        (put-fn [:debug/error {:msg e}]))))
+  (go
+    (try
+      (let [hide-timestamps (second (<! (as/get-item :hide-timestamps)))]
+        (when hide-timestamps
+          (swap! cmp-state assoc-in [:hide-timestamps] hide-timestamps)))
       (catch js/Object e
         (put-fn [:debug/error {:msg e}]))))
   (put-fn [:debug/state-fn-complete])
@@ -121,12 +132,13 @@
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {:entries        (avl/sorted-map)
-                     :active-theme   :light
+  (let [state (atom {:entries         (avl/sorted-map)
+                     :active-theme    :light
                      ;:all-timestamps (avl/sorted-set)
-                     :all-timestamps (sorted-set)
-                     :vclock-map     (avl/sorted-map)
-                     :latest-synced  0})]
+                     :all-timestamps  (sorted-set)
+                     :hide-timestamps (sorted-set)
+                     :vclock-map      (avl/sorted-map)
+                     :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
     {:state state}))
@@ -136,6 +148,7 @@
    :state-fn    state-fn
    :handler-map {:entry/persist    persist
                  :entry/new        persist
+                 :entry/hide       hide
                  :entry/sync       persist
                  :entry/detail     detail
                  :sync/initiate    sync-start
