@@ -41,11 +41,12 @@
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
-(defn sync-write [{:keys [msg-type msg-payload msg-meta current-state]}]
+(defn sync-write [{:keys [msg-type msg-payload msg-meta cmp-state]}]
   (try
-    (let [secrets (:secrets current-state)
+    (let [secrets (:secrets @cmp-state)
           aes-secret (-> secrets :sync :write :secret)
           folder (-> secrets :sync :write :folder)
+          ts (:timestamp msg-payload)
 
           ; actual meta-data too large, makes the encryption waste battery
           msg-meta {}
@@ -67,11 +68,14 @@
                        :textBody hex-cipher}
                       (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
-                         :filename      filename}))]
+                         :filename      filename}))
+          success-cb #(swap! cmp-state update-in [:open-writes] disj msg-payload)]
+      (swap! cmp-state update-in [:open-writes] conj msg-payload)
       (-> (.saveImap MailCore (clj->js mail))
-          (.then #(.log js/console (str (js->clj %))))
+          (.then success-cb)
           (.catch #(.log js/console (str (js->clj %))))))
-    (catch :default e (.error js/console (str e)))))
+    (catch :default e (.error js/console (str e))))
+  {})
 
 (defn schedule-read [cmp-state put-fn]
   (when (seq (:not-fetched @cmp-state))
@@ -128,6 +132,13 @@
               (.catch #(.log js/console (str (js->clj %))))))))
     (catch :default e (shared/alert (str e)))))
 
+(defn retry-write [{:keys [cmp-state]}]
+  (for [x (:open-writes @cmp-state)]
+    (sync-write {:cmp-state   cmp-state
+                 :msg-type    :entry/sync
+                 :msg-payload x}))
+  {})
+
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]
     (go (<! (as/set-item :secrets msg-payload)))
@@ -136,11 +147,18 @@
 (defn state-fn [put-fn]
   (let [state (atom {:last-uid-read 1
                      :not-fetched   (sorted-set)
+                     :open-writes   #{}
                      :fetched       #{}})]
     (go (try
           (let [secrets (second (<! (as/get-item :secrets)))]
             (when secrets
               (swap! state assoc-in [:secrets] secrets)))
+          (catch js/Object e
+            (put-fn [:debug/error {:msg e}]))))
+    (go (try
+          (let [open-writes (second (<! (as/get-item :open-writes)))]
+            (when open-writes
+              (swap! state assoc-in [:open-writes] open-writes)))
           (catch js/Object e
             (put-fn [:debug/error {:msg e}]))))
     (go (try
@@ -156,5 +174,6 @@
    :state-fn    state-fn
    :handler-map {:entry/sync  sync-write
                  :sync/fetch  sync-get-uids
+                 :sync/retry  retry-write
                  :sync/read   sync-read-msg
                  :secrets/set set-secrets}})

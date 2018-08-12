@@ -75,6 +75,12 @@
                    :msg [:cmd/schedule-new {:timeout 10000
                                             :message [:sync/fetch]
                                             :repeat  true
+                                            :initial false}]}]
+
+       [:cmd/send {:to  :app/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 10 60 1000)
+                                            :message [:sync/retry]
+                                            :repeat  true
                                             :initial false}]}]])
     (.registerComponent
       app-registry "meo" #(r/reactify-component ui/app-root))))
