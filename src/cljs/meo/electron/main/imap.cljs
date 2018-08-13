@@ -87,9 +87,12 @@
 
 (defn read-mailbox [[k mb-cfg] put-fn]
   (let [{:keys [secret mailbox body-part]} mb-cfg
+        path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
-                                 (let [hex-body (mue/extract-body (apply str @buffer))]
+                                 (let [hex-body (mue/extract-body (apply str @buffer))
+                                       cfg (assoc-in (imap-cfg) path seqn)
+                                       s (pp-str cfg)]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
@@ -99,7 +102,9 @@
                                            msg (with-meta [msg-type msg-payload] msg-meta)]
                                        (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                        (info decrypted)
-                                       (put-fn msg)))))]
+                                       (put-fn msg)))
+                                   (info "body-cb last-read" seqn)
+                                   (writeFileSync cfg-path s)))]
                     (info "IMAP body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
                                           (when (= body-part (.-which stream-info))
@@ -128,8 +133,7 @@
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
         mb-cb (fn [conn err box]
                 (try
-                  (let [path [:sync :read k :last-read]
-                        last-read (get-in (imap-cfg) path 0)
+                  (let [last-read (get-in (imap-cfg) path 0)
                         uid (str (inc last-read) ":*")
                         s (clj->js ["UNDELETED" ["UID" uid]])
                         cb (fn [err res]
@@ -139,11 +143,8 @@
                                        f (.fetch conn res (clj->js {:bodies [body-part]
                                                                     :struct true}))
                                        cb (fn []
-                                            (let [cfg (assoc-in (imap-cfg) path last-read)
-                                                  s (pp-str cfg)]
-                                              (info "mb-cb fetch end, last-read" last-read)
-                                              (writeFileSync cfg-path s)
-                                              (.end conn)))]
+                                            (info "mb-cb fetch end, last-read" last-read)
+                                            (.end conn))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
@@ -189,7 +190,7 @@
 
 (defn start-sync [{:keys [current-state put-fn]}]
   (info "starting IMAP sync")
-  {:emit-msg [:cmd/schedule-new {:timeout (* 20 1000)
+  {:emit-msg [:cmd/schedule-new {:timeout (* 15 1000)
                                  :id      :imap-schedule
                                  :message [:sync/read-imap]
                                  :initial true

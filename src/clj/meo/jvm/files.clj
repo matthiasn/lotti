@@ -152,7 +152,7 @@
              ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
-              :emit-msg  [[:cmd/schedule-new {:timeout 10000
+              :emit-msg  [[:cmd/schedule-new {:timeout 2500
                                               :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
                                               :id      :sync-delayed-refresh}]
                           [:ft/add entry]]})
