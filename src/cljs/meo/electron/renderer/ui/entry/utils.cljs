@@ -28,7 +28,7 @@
 (defn logged-total [new-entries entry]
   (apply + (map (fn [x]
                   (let [ts (:timestamp x)
-                        p [:custom-fields "#duration" :duration]]
+                        p [:custom_fields "#duration" :duration]]
                     (+ (or (get-in @new-entries [ts :completed_time])
                            (get-in x [:completed_time] 0))
                        (* 60 (get-in x p 0)))))
