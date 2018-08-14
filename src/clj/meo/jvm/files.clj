@@ -22,7 +22,8 @@
             [meo.common.utils.vclock :as vc]
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
-            [clojure.walk :as walk])
+            [clojure.walk :as walk]
+            [meo.jvm.datetime :as dt])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -68,25 +69,32 @@
     {:new-state (ga/add-node current-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
-(defn persist-state! [state]
-  (try
-    (info "Persisting application state")
-    (let [file-path (:app-cache (fu/paths))
-          serializable (update-in state [:graph] uc/ubergraph->edn)]
-      (with-open [writer (io/output-stream file-path)]
-        (nippy/freeze-to-out! (DataOutputStream. writer) serializable))
-      (info "Application state saved to" file-path))
-    (catch Exception ex (error "Error persisting cache" ex))))
+(defn persist-state! [{:keys [current-state]}]
+  (let [relevant (select-keys current-state [:sorted-entries :graph :global-vclock :vclock-map :cfg])
+        w-date (assoc-in relevant [:persisted] (dt/ts-to-ymd (st/now)))]
+    (try
+      (info "Persisting application state as Nippy file")
+      (let [file-path (:app-cache (fu/paths))
+            serializable (update-in w-date [:graph] uc/ubergraph->edn)]
+        (with-open [writer (io/output-stream file-path)]
+          (nippy/freeze-to-out! (DataOutputStream. writer) serializable))
+        (info "Application state saved to nippy file" file-path (count (:sorted-entries relevant))))
+      (catch Exception ex (error "Error persisting cache" ex)))
+    {}))
 
 (defn state-from-file []
-  (let [file-path (:app-cache (fu/paths))
-        thawed (with-open [reader (io/input-stream file-path)]
-                 (nippy/thaw-from-in! (DataInputStream. reader)))
-        state (-> thawed
-                  (update-in [:sorted-entries] #(into (sorted-set-by >) %))
-                  (update-in [:graph] uc/edn->ubergraph))]
-    (info "Application state read from" file-path)
-    {:state (atom state)}))
+  (try
+    (info "reading cached state")
+    (let [file-path (:app-cache (fu/paths))
+          thawed (with-open [reader (io/input-stream file-path)]
+                   (nippy/thaw-from-in! (DataInputStream. reader)))
+          state (-> thawed
+                    (update-in [:sorted-entries] #(into (sorted-set-by >) %))
+                    (update-in [:graph] uc/edn->ubergraph))
+          n (count (:sorted-entries state))]
+      (info "Application state read from" file-path "-" n "entries")
+      (atom state))
+    (catch Exception ex (error ex))))
 
 ;; from https://stackoverflow.com/a/34221816
 (defn remove-nils [m]
@@ -124,6 +132,9 @@
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
                                   :id      :generate-opts}])
+      (put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
+                                  :message [:state/persist]
+                                  :id      :persist-state}])
       (put-fn (with-meta [:sync/imap entry] broadcast-meta))
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))

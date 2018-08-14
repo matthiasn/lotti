@@ -48,6 +48,7 @@
                 :search/cmd
                 :spellcheck/lang
                 :spellcheck/off
+                :state/persist
                 :import/gen-thumbs
                 :import/photos
                 :import/listen

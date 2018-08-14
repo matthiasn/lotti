@@ -31,7 +31,7 @@
                          :photos/gen-cache :export/geojson
                          :import/movie :entry/unlink :startup/progress?
                          :import/listen :spotify/play :import/gen-thumbs
-                         :spotify/pause :cfg/refresh
+                         :spotify/pause :cfg/refresh :state/persist
                          :sync/start-server :sync/stop-server
                          :tf/learn-stories :gql/query
                          :gql/cmd :firehose/cmd}}))

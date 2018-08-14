@@ -17,7 +17,8 @@
             [matthiasn.systems-toolbox.component :as st]
             [meo.jvm.graphql :as gql]
             [clojure.spec.alpha :as s]
-            [expound.alpha :as exp]))
+            [expound.alpha :as exp]
+            [clojure.string :as str]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
@@ -34,14 +35,20 @@
       (do (warn "Invalid parsed entry:" parsed)
           (warn (exp/expound-str :meo.entry/spec parsed))))))
 
-(defn read-lines []
-  (let [path (:daily-logs-path (fu/paths))
+(defn read-lines [cmp-state]
+  (let [read-from (:persisted @cmp-state)
+        path (:daily-logs-path (fu/paths))
         files (file-seq (clojure.java.io/file path))
         filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")
+        sorted (sort-by #(.getName %) filtered)
+        newer-than (if read-from
+                     (drop-while #(not (str/includes? (.getName %) read-from))
+                                 sorted)
+                     sorted)
         all-lines (atom [])
         start (st/now)]
-    (info "read entry log files")
-    (doseq [f (sort-by #(.getName %) filtered)]
+    (info "reading logs" read-from (vec newer-than))
+    (doseq [f newer-than]
       (with-open [reader (clojure.java.io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]
@@ -76,7 +83,7 @@
         (reset! entries-to-index [])))))
 
 (defn read-entries [{:keys [cmp-state put-fn]}]
-  (let [lines (read-lines)
+  (let [lines (read-lines cmp-state)
         parsed-lines (parse-lines lines)
         cnt (count parsed-lines)
         indexed (vec (map-indexed (fn [idx v] [idx v]) parsed-lines))
@@ -124,9 +131,6 @@
   (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))
   {:send-to-self [:sync/initiate 0]})
 
-(defn sync-send [{:keys [current-state msg-payload put-fn]}]
-  {})
-
 (defn make-state []
   (atom {:sorted-entries (sorted-set-by >)
          :graph          (uber/graph)
@@ -141,7 +145,7 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    (partial gql/state-fn state)
+   :state-fn    (partial gql/state-fn (or (f/state-from-file) state))
    :opts        {:msgs-on-firehose true
                  :in-chan          [:buffer 100]
                  :out-chan         [:buffer 100]}
@@ -153,12 +157,11 @@
                  :startup/read       read-entries
                  :sync/entry         f/sync-receive
                  :sync/done          sync-done
-                 :sync/initiate      sync-send
-                 :sync/next          sync-send
                  :export/geojson     e/export-geojson
                  :tf/learn-stories   tf/learn-stories
                  :entry/trash        f/trash-entry-fn
                  :startup/progress?  gq/query-fn
+                 :state/persist      f/persist-state!
                  :cfg/refresh        refresh-cfg
                  :backend-cfg/save   fu/write-cfg
                  :gql/query          gql/run-query

@@ -29,8 +29,8 @@
             new-state (reduce stc/persist-reducer new-state
                               (map st/mk-test-entry (range 100)))
 
-            _ (f/persist-state! new-state)
-            thawed-state (:state (f/state-from-file))
+            _ (f/persist-state! {:current-state new-state})
+            thawed-state (f/state-from-file)
 
             req-msg
             {:queries {simple-query-uid         stc/simple-query
@@ -85,8 +85,9 @@
 
 
 (defn delete-appstate [f]
-  (fs/delete "./test-data/cache.dat")
+  ;(fs/delete "./test-data/cache.dat")
   (f)
-  (fs/delete "./test-data/cache.dat"))
+  ;(fs/delete "./test-data/cache.dat")
+  )
 
 (use-fixtures :each delete-appstate)
