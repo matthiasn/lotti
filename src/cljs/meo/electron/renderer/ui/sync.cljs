@@ -17,11 +17,11 @@
 (defn set-local [local path ev]
   (swap! local assoc-in path (-> ev .-nativeEvent .-target .-value)))
 
-(defn settings-item [local t k label visible]
-  (let [input-cb #(partial set-local local [k])]
+(defn settings-item [local t path label visible]
+  (let [input-cb #(partial set-local local path)]
     [:tr {:class (when-not visible "invisible")}
      [:td label]
-     [:td [input t (k @local) (input-cb)]]]))
+     [:td [input t (get-in @local path) (input-cb)]]]))
 
 (def defaults {:authTimeout 15000
                :connTimeout 30000
@@ -31,11 +31,12 @@
 
 (defn sync [put-fn]
   (let [iww-host (.-iwwHOST js/window)
-        local (rc/atom defaults)
-        imap-status (subscribe [:imap-status])]
+        imap-status (subscribe [:imap-status])
+        imap-cfg (subscribe [:imap-cfg])
+        local (rc/atom (or @imap-cfg {}))]
     (fn config-render [put-fn]
       (let [connected (= (:status @imap-status) :read-mailboxes)
-            verify-account #(put-fn [:imap/get-status {:server @local}])]
+            verify-account #(put-fn [:imap/get-status @local])]
         [:div.flex-container
          [:div.grid
           [:div.wrapper
@@ -44,10 +45,10 @@
             [:div.settings
              [:table
               [:tbody
-               [settings-item local :text :host "Host:" true]
-               [settings-item local :number :port "Port:" true]
-               [settings-item local :text :user "User:" true]
-               [settings-item local :password :password "Password:" true]
+               [settings-item local :text [:server :host] "Host:" true]
+               [settings-item local :number [:server :port] "Port:" true]
+               [settings-item local :text [:server :user] "User:" true]
+               [settings-item local :password [:server :password] "Password:" true]
                [:tr.btn-check
                 [:td
                  [:button {:on-click verify-account}
@@ -56,10 +57,10 @@
                   [:td.success "connection successful" [:i.fas.fa-check]])
                 (when (= :error (:status @imap-status))
                   [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
-               [settings-item local :text :write-mailbox "Write Mailbox:" connected]
-               [settings-item local :password :write-secret "Write Secret:" connected]
-               [settings-item local :text :read-mailbox "Read Mailbox:" connected]
-               [settings-item local :password :read-secret "Read Secret:" connected]]]]
+               [settings-item local :text [:sync :write :mailbox] "Write Mailbox:" connected]
+               [settings-item local :password [:sync :write :secret] "Write Secret:" connected]
+               [settings-item local :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]
+               [settings-item local :password [:sync :read :fred :secret] "Read Secret:" connected]]]]
             [:div
              [:img {:src (str "http://" iww-host "/secrets/"
                               (stc/make-uuid) "/secrets.png")}]]]]

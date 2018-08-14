@@ -50,6 +50,7 @@
                 :spellcheck/off
                 :state/persist
                 :imap/status
+                :imap/cfg
                 :import/gen-thumbs
                 :import/photos
                 :import/listen

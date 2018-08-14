@@ -51,6 +51,7 @@
                        :window/progress
                        :file/encrypt
                        :imap/get-status
+                       :imap/get-cfg
                        :sync/imap
                        :sync/start-imap
                        :import/screenshot

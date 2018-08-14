@@ -216,6 +216,10 @@
                                  :initial true
                                  :repeat  true}]})
 
+(defn get-cfg [{:keys []}]
+  (info "get-cfg")
+  {:emit-msg [:imap/cfg (imap-cfg)]})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    (fn [_put-fn] {:state (atom {})})
@@ -223,5 +227,6 @@
                  :out-chan [:buffer 100]}
    :handler-map {:sync/imap       write-email
                  :imap/get-status read-mailboxes
+                 :imap/get-cfg    get-cfg
                  :sync/start-imap start-sync
                  :sync/read-imap  read-email}})

@@ -140,12 +140,15 @@
   justify-content: space-evenly;
   width: 100vw;
 
+  img {
+    margin-top: 60px;
+  }
   .settings {
 
     input {
       margin: 6px;
       padding: 6px;
-      width: 400px;
+      width: 500px;
       color: orange;
       font-weight: bold;
       font-family: monospace;
