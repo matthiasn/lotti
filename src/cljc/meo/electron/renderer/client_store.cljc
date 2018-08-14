@@ -71,6 +71,10 @@
         new-state (assoc-in current-state [:gql-res id] msg-payload)]
     {:new-state new-state}))
 
+(defn imap-status [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:imap-status] msg-payload)]
+    {:new-state new-state}))
+
 (defn ping [_]
   #?(:cljs (info :ping))
   {})
@@ -91,6 +95,7 @@
                         :backend-cfg/new  save-backend-cfg
                         :nav/to           nav-handler
                         :blink/busy       blink-busy
+                        :imap/status      imap-status
                         :cfg/show-qr      c/show-qr-code
                         :cal/to-day       c/cal-to-day
                         :cmd/toggle       c/toggle-set-fn

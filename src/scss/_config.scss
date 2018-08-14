@@ -133,3 +133,75 @@
     padding-right: 15px;
   }
 }
+
+.sync-cfg {
+  display: flex;
+  flex-flow: row;
+  justify-content: space-evenly;
+  width: 100vw;
+
+  .settings {
+
+    input {
+      margin: 6px;
+      padding: 6px;
+      width: 400px;
+      color: orange;
+      font-weight: bold;
+      font-family: monospace;
+      background-color: $body-background-color;
+      outline: none;
+      border-width: 0;
+    }
+
+    .fas {
+      padding: 0 20px;
+      font-weight: bold;
+      font-size: 2em;
+    }
+
+    table {
+      padding: 60px 40px 0 40px;
+      padding-right: 30px;
+
+      tr.spacer {
+        height: 20px;
+      }
+
+      .btn-check {
+        height: 30px
+      }
+
+      tr {
+        &.invisible {
+          opacity: 0;
+        }
+
+        button {
+          float: right;
+        }
+      }
+
+      td {
+        font-size: 1.4em;
+        text-align: right;
+        font-family: monospace;
+        margin-left: 20px;
+        color: orange;
+        font-weight: bold;
+        &.r {
+          align-content: right;
+        }
+
+        &.success {
+          color: $green;
+        }
+        &.fail {
+          color: $red;
+        }
+      }
+    }
+  }
+
+
+}

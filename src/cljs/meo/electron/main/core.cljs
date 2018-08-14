@@ -49,6 +49,7 @@
                 :spellcheck/lang
                 :spellcheck/off
                 :state/persist
+                :imap/status
                 :import/gen-thumbs
                 :import/photos
                 :import/listen

@@ -50,6 +50,7 @@
                        :window/show
                        :window/progress
                        :file/encrypt
+                       :imap/get-status
                        :sync/imap
                        :sync/start-imap
                        :import/screenshot

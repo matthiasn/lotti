@@ -188,6 +188,26 @@
       (imap-open mailbox cb)))
   {})
 
+(defn read-mailboxes [{:keys [put-fn msg-payload]}]
+  (info "read-mailboxes" msg-payload)
+  (when-let [cfg msg-payload]
+    (try
+      (let [cb (fn [conn _err mb]
+                 (try
+                   (.getBoxes conn (fn [err boxes]
+                                     (.log js/console boxes)
+                                     (put-fn [:imap/status {:status :read-mailboxes}])
+                                     (info "read mailboxes")))
+                   (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
+            conn (imap. (clj->js (:server cfg)))]
+        (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
+        (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))
+        (.once conn "end" #(info "IMAP connection ended"))
+        (.connect conn)
+        (js/setTimeout #(.end conn) 60000))
+      (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
+  {})
+
 (defn start-sync [{:keys [current-state put-fn]}]
   (info "starting IMAP sync")
   {:emit-msg [:cmd/schedule-new {:timeout (* 15 1000)
@@ -202,5 +222,6 @@
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:sync/imap       write-email
+                 :imap/get-status read-mailboxes
                  :sync/start-imap start-sync
                  :sync/read-imap  read-email}})

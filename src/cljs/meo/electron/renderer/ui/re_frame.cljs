@@ -37,6 +37,7 @@
                            (into {}))))
 
 (reg-sub :options (fn [db _] (:options db)))
+(reg-sub :imap-status (fn [db _] (:imap-status db)))
 (reg-sub :custom-field-stats (fn [db _] (:custom-field-stats db)))
 (reg-sub :git-stats (fn [db _] (:git-commits db)))
 (reg-sub :last-update (fn [db _] (:last-update (:query-cfg db))))
