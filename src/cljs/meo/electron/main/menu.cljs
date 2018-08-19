@@ -152,6 +152,8 @@
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
                {:label "Toggle Calendar"
                 :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-cal]}])}
+               {:label "Toggle Private Mode"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
                (when (contains? capabilities :dashboard-banner)
                  {:label "Toggle Charts"
                   :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})

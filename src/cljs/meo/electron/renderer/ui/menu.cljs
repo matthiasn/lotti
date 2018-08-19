@@ -61,25 +61,6 @@
                                   (put-fn [:import/spotify]))}
           [:span.fa.fa-map] " import"]]))))
 
-(defn cfg-view [put-fn]
-  (let [cfg (subscribe [:cfg])
-        backend-cfg (subscribe [:backend-cfg])
-        ws-address (fn [_]
-                     (put-fn [:cmd/toggle-key {:path [:cfg :ws-qr-code]}])
-                     (if (:ws-qr-code @cfg)
-                       (put-fn [:sync/stop-server])
-                       (put-fn [:sync/start-server])))]
-    (fn [put-fn]
-      [:div
-       [toggle-option-view {:option :show-pvt :cls "fa-user-secret"} put-fn]
-       (when (contains? (:capabilities @backend-cfg) :dashboard-banner)
-         [toggle-option-view {:option :dashboard-banner
-                              :cls    "fa-chart-line"} put-fn])
-       (when (contains? (:capabilities @backend-cfg) :sync)
-         [:i.far.fa-qrcode.toggle
-          {:on-click ws-address
-           :class    (when-not (:ws-qr-code @cfg) "inactive")}])])))
-
 (defn upload-view []
   (let [cfg (subscribe [:cfg])
         iww-host (.-iwwHOST js/window)]
@@ -87,9 +68,6 @@
       [:div
        (when (:qr-code @cfg)
          [:img {:src (str "http://" iww-host "/upload-address/"
-                          (stc/make-uuid) "/qrcode.png")}])
-       (when (:ws-qr-code @cfg)
-         [:img {:src (str "http://" iww-host "/ws-address/"
                           (stc/make-uuid) "/qrcode.png")}])])))
 
 (defn busy-status [put-fn]
@@ -97,12 +75,12 @@
         click (fn [_]
                 (let [q (up/parse-search (str (:active @status)))]
                   (put-fn [:search/add {:tab-group :left :query q}])))]
-    (fn busy-status-render [put-fn]
+    (fn busy-status-render [_]
       (let [cls (name (or (:color @status) :green))]
         [:div.busy-status {:class    cls
                            :on-click click}]))))
 
-(defn menu-view [put-fn]
+(defn menu-view [_put-fn]
   (let [cal-day (subscribe [:cal-day])
         locale (subscribe [:locale])
         pvt (subscribe [:show-pvt])]
@@ -115,5 +93,4 @@
           [:h1 {:on-click today}
            (h/localize-date day @locale)]
           [busy-status put-fn]
-          [cfg-view put-fn]
           [upload-view]]]))))

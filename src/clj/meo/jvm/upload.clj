@@ -77,46 +77,6 @@
   (.stop (:server current-state))
   {:new-state (assoc-in current-state [:server] nil)})
 
-(defn ws-opts [port]
-  {:mandatory-port port
-   :index-page-fn  (fn [_] "hello world")
-   :sente-opts     {:ws-kalive-ms 2000}
-   :host           "0.0.0.0"
-   :relay-types    #{:sync/start :sync/progress :sync/entry :ws/ping :sync/next}
-   :opts           {:reload-cmp       true
-                    :msgs-on-firehose true}})
-
-(defn start-ws-server [{:keys [current-state]}]
-  (let [switchboard (:switchboard current-state)
-        ws-port (get-free-port)
-        server-name :backend/sync-ws
-        opts (ws-opts ws-port)
-        new-state (assoc-in current-state [:ws-port] ws-port)
-        new-state (assoc-in new-state [:server-name] server-name)]
-    (reset! sync-ws-port ws-port)
-    (info "Starting" server-name)
-    (sb/send-mult-cmd
-      switchboard
-      [[:cmd/init-comp (sente/cmp-map server-name opts)]
-       [:cmd/route {:from server-name
-                    :to   #{:backend/store
-                            :backend/upload
-                            :backend/kafka-firehose}}]
-       [:cmd/route {:from :backend/store
-                    :to   server-name}]])
-    {:new-state new-state}))
-
-(defn stop-ws-server [{:keys [current-state msg-payload]}]
-  (let [switchboard (:switchboard current-state)
-        server-name (or msg-payload (:server-name current-state))
-        new-state (assoc-in current-state [:ws-port] nil)]
-    (when server-name
-      (info "Stopping" server-name)
-      (sb/send-mult-cmd
-        switchboard
-        [[:cmd/shutdown server-name]])
-      {:new-state new-state})))
-
 (defn state-fn [switchboard]
   (fn [put-fn]
     (info "Starting upload component")
@@ -126,7 +86,5 @@
   {:cmp-id      cmp-id
    :state-fn    (state-fn switchboard)
    :handler-map {:import/listen      start-server
-                 :import/stop-server stop-server
-                 :sync/start-server  start-ws-server
-                 :sync/stop-server   stop-ws-server}})
+                 :import/stop-server stop-server}})
 
