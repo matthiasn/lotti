@@ -1,22 +1,38 @@
 @import "variables.scss";
 
 .story-edit-field {
-  display: flex;
-  flex-grow: 1;
-  padding: 4px;
+  padding: 4px 6px;
   height: 2em;
   background-color: $search-field-color;
+  font-size: 12px;
+  font-family: $header-font-family;
+  display: inline-block;
+  min-width: 200px;
 }
 
 .story {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-weight: bold;
-
-  font-size: 0.6em;
+  font-family: $header-font-family;
+  font-size: 12px;
+  margin-top: 15px;
+  margin-bottom: 20px;
   color: #5d7186;
 
+  label {
+    display: inline-block;
+    width: 60px;
+  }
+
+  h3 {
+    font-size: 12px;
+  }
+
+  .saga {
+    select {
+      min-width: 200px;
+      margin-bottom: 20px;
+    }
+  }
   .name {
     padding-right: 1em;
   }

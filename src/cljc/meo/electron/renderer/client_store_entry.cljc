@@ -149,7 +149,7 @@
         saved (get-in current-state [:entries-map ts])
         relevant #(select-keys % [:md :questionnaires :custom_fields :task
                                   :habit :completed_time :starred :img-size
-                                  :primary_story])
+                                  :primary_story :story_name])
         changed? (not= (relevant saved) (relevant msg-payload))]
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])
