@@ -186,7 +186,7 @@
                                           updated (assoc-in selected [:stars] n)]
                                       (debug updated)
                                       (put-fn [:entry/update updated])))]
-                    (debug key-code meta-key)
+                    (info key-code meta-key)
                     (when (= key-code 27)
                       (swap! local assoc-in [:fullscreen] false))
                     (when (and meta-key (= key-code 70))
@@ -199,8 +199,8 @@
                     (when (and meta-key (= key-code 52)) (set-stars 4))
                     (when (and meta-key (= key-code 53)) (set-stars 5))
                     (.stopPropagation ev)))
-        start-watch #(.addEventListener js/document "keydown" keydown)
-        stop-watch #(.removeEventListener js/document "keydown" keydown)]
+        start-watch #(do (info "start-watch") (.addEventListener js/document "keydown" keydown))
+        stop-watch #(do (info "stop-watch") (.removeEventListener js/document "keydown" keydown))]
     (fn gallery-render [entries local-cfg put-fn]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]

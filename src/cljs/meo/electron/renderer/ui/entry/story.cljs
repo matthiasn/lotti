@@ -109,14 +109,17 @@
                     (map-indexed (fn [i v] [i v]) (take 10 stories))))
         assign-story (fn [story]
                        (let [ts (:timestamp story)
+                             stop-watch (:stop-watch @local)
                              updated (assoc-in entry [:primary_story] ts)]
                          (swap! local assoc-in [:show] false)
-                         (put-fn [:entry/update updated])))
+                         (put-fn [:entry/update updated])
+                         (stop-watch)))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         n (count @indexed)
                         idx-inc #(if (< % (dec n)) (inc %) 0)
                         idx-dec #(if (pos? %) (dec %) (dec n))]
+                    (info key-code)
                     (when (:show @local)
                       (when (= key-code 27)
                         (swap! local assoc-in [:show] false))
@@ -129,6 +132,7 @@
                     (.stopPropagation ev)))
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
+    (swap! local assoc-in [:stop-watch] stop-watch)
     (fn story-select-filter-render [entry put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story_name])
