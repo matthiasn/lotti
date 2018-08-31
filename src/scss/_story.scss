@@ -12,7 +12,6 @@
 }
 
 .story {
-  font-weight: bold;
   font-family: $header-font-family;
   font-size: 12px;
   color: #5d7186;
@@ -44,7 +43,7 @@
   .saga {
     select {
       min-width: 200px;
-      margin: 20px 0;
+      margin: 10px 0 20px 0;
     }
   }
   .name {

@@ -135,6 +135,7 @@
     (fn story-select-filter-render [entry tab-group put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story_name])
+            saga-name (get-in entry [:story :saga :saga_name])
             open-story (up/add-search linked-story tab-group put-fn)
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
@@ -183,4 +184,7 @@
                         (:story_name story)]]))]]])
              [:div.story.story-name
               [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
-              [:span {:on-click open-story} story-name]])])))))
+              [:span {:on-click open-story}
+               saga-name
+               (when-not (empty? saga-name) ": ")
+               story-name]])])))))
