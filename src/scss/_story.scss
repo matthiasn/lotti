@@ -8,15 +8,29 @@
   font-family: $header-font-family;
   display: inline-block;
   min-width: 200px;
+  margin-bottom: 20px;
 }
 
 .story {
   font-weight: bold;
   font-family: $header-font-family;
   font-size: 12px;
-  margin-top: 15px;
-  margin-bottom: 20px;
   color: #5d7186;
+
+  &.story-name {
+    font-size: 14px;
+    font-weight: normal;
+    display: flex;
+    cursor: pointer;
+    i {
+      margin-right: 6px;
+    }
+    span {
+      &:hover {
+        color: $link-color;
+      }
+    }
+  }
 
   label {
     display: inline-block;
@@ -30,7 +44,7 @@
   .saga {
     select {
       min-width: 200px;
-      margin-bottom: 20px;
+      margin: 20px 0;
     }
   }
   .name {
@@ -64,7 +78,6 @@
 
   i {
     margin-right: 3px;
-    opacity: 0.5;
     padding: 1px;
 
     &.show {
@@ -74,11 +87,8 @@
       background-color: lightgreen;
       color: black;
     }
-  }
-
-  &:hover {
-    i {
-      opacity: 1;
+    &:hover {
+      color: $link-color;
     }
   }
 

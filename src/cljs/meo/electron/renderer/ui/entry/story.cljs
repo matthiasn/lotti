@@ -4,10 +4,11 @@
             [reagent.core :as r]
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.helpers :as h]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.common.utils.parse :as up]))
 
-(defn editable-field [on-input-fn on-keydown-fn text]
-  (fn [_ _ _]
+(defn editable-field [_ _ text]
+  (fn [on-input-fn on-keydown-fn _]
     [:div.story-edit-field
      {:content-editable true
       :on-input         on-input-fn
@@ -32,7 +33,7 @@
 
 (declare saga-select)
 
-(defn story-name-field
+(defn story-form
   "Renders editable field for story name when the entry is of type :story.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
   [entry put-fn]
@@ -92,7 +93,7 @@
       (concat ranked without-predictions)
       stories)))
 
-(defn story-select [entry put-fn]
+(defn story-select [entry tab-group put-fn]
   (let [stories (subscribe [:stories])
         ts (:timestamp entry)
         local (r/atom {:search "" :show false :idx 0})
@@ -131,9 +132,10 @@
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
     (swap! local assoc-in [:stop-watch] stop-watch)
-    (fn story-select-filter-render [entry put-fn]
+    (fn story-select-filter-render [entry tab-group put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story_name])
+            open-story (up/add-search linked-story tab-group put-fn)
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)
@@ -179,6 +181,6 @@
                       [:tr {:on-click click}
                        [:td {:class cls}
                         (:story_name story)]]))]]])
-             [:div.story
+             [:div.story.story-name
               [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
-              story-name])])))))
+              [:span {:on-click open-story} story-name]])])))))

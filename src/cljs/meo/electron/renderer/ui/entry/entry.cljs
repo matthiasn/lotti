@@ -106,7 +106,7 @@
                      :on-drag-enter h/prevent-default}
          [:div.header-1
           [:div
-           [es/story-select entry put-fn]]
+           [es/story-select entry tab-group put-fn]]
           [loc/geonames entry put-fn]]
          [:div.header
           [:div
@@ -114,7 +114,7 @@
            [:time (u/visit-duration merged)]]
           [linked-btn merged local-cfg active put-fn]
           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
-         [es/story-name-field merged put-fn]
+         [es/story-form merged put-fn]
          [es/saga-name-field merged edit-mode? put-fn]
          [d/entry-editor entry put-fn]
          [task/task-details merged local-cfg put-fn edit-mode?]
