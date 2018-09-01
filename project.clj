@@ -80,7 +80,7 @@
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.16"]
             [test2junit "1.4.2"]
-            [lein-cloverage "1.0.11"]
+            [lein-cloverage "1.0.13"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.0"]
@@ -101,6 +101,7 @@
             "cljs-updater"      ["with-profile" "cljs" "cljsbuild" "once" "updater"]
             "cljs-main-dev"     ["with-profile" "cljs" "cljsbuild" "auto" "main"]
             "cljs-renderer-dev" ["with-profile" "cljs" "cljsbuild" "auto" "renderer-dev"]
+            "cljs-figwheel"     ["with-profile" "cljs" "figwheel"]
             "cljs-updater-dev"  ["with-profile" "cljs" "cljsbuild" "auto" "updater"]
             "sass"              ["sass4clj" "once"]
             "dist"              ["do"
@@ -111,6 +112,8 @@
                                  ["cljs-updater"]
                                  ["sass4clj" "once"]
                                  ["jlink" "assemble"]]}
+
+  :figwheel {:css-dirs ["resources/public/css"]}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"
@@ -139,15 +142,16 @@
                                               :output-to      "prod/renderer/renderer.js"
                                               :target         :nodejs
                                               :output-dir     "out/renderer"
-                                              :language-in    :es-2017
+                                              :language-in    :ecmascript6
                                               :optimizations  :simple
                                               :parallel-build true}}
                               {:id           "renderer-dev"
-                               :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           meo.electron.renderer.core
+                               :source-paths ["src/cljc" "src/cljs" "env"]
+                               :figwheel     true
+                               :compiler     {:main           meo.dev
                                               :output-to      "dev/renderer/renderer.js"
                                               :output-dir     "dev/renderer"
-                                              :language-in    :es-2017
+                                              :language-in    :ecmascript6
                                               :source-map     true
                                               :target         :nodejs
                                               :optimizations  :none

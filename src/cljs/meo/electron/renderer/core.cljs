@@ -58,7 +58,7 @@
                        :import/screenshot
                        :blink/busy})
 
-(defn start []
+(defn init []
   (info "Starting SYSTEM")
   (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
                      (spellcheck/cmp-map :renderer/spellcheck)
@@ -130,6 +130,6 @@
 
 (defn load-handler [ev]
   (info "RENDERER loaded")
-  (start))
+  (init))
 
 (.addEventListener js/window "load" load-handler)

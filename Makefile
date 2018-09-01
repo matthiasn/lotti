@@ -103,6 +103,9 @@ cljs: deps npm-deps
 	@echo Building ClojureScript for electron updater process...
 	@eval $(LEIN) cljs-updater
 
+figwheel:
+	@lein cljs-figwheel
+
 electron: clean deps test sass cljs
 
 directories:
