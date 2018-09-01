@@ -7,7 +7,8 @@
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.menu :as menu]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [clojure.pprint :as pp]))
 
 (defn input [t v cb]
   [:input {:value     v
@@ -33,7 +34,8 @@
   (let [iww-host (.-iwwHOST js/window)
         imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
-        local (rc/atom (or @imap-cfg {}))]
+        local (rc/atom (or @imap-cfg {}))
+        save (fn [_] (info "save") (put-fn [:imap/save-cfg @local]))]
     (fn config-render [put-fn]
       (let [connected (= (:status @imap-status) :read-mailboxes)
             verify-account #(put-fn [:imap/get-status @local])]
@@ -52,9 +54,14 @@
                [:tr.btn-check
                 [:td
                  [:button {:on-click verify-account}
-                  "verify account"]]
+                  "test account"]]
+                (when (= :saved (:status @imap-status))
+                  [:td.success (:detail @imap-status) [:i.fas.fa-check]])
                 (when connected
-                  [:td.success "connection successful" [:i.fas.fa-check]])
+                  [:td.success "connection successful" [:i.fas.fa-check]
+                   (when-not (= @local @imap-cfg)
+                     [:button.save {:on-click save}
+                      "save"])])
                 (when (= :error (:status @imap-status))
                   [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
                [settings-item local :text [:sync :write :mailbox] "Write Mailbox:" connected]

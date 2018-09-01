@@ -186,29 +186,32 @@
                        (.build cb)))
                  (catch :default e (error e))))]
       (imap-open mailbox cb)))
-  {})
+  {:emit-msg [:imap/cfg (imap-cfg)]})
+
+(defn read-mb [k d cfg put-fn]
+  (try
+    (let [cb (fn [conn _err mb]
+               (try
+                 (.getBoxes conn (fn [err boxes]
+                                   (.log js/console boxes)
+                                   (put-fn [:imap/status {:status k :detail d}])
+                                   (info "read mailboxes")))
+                 (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
+          conn (imap. (clj->js (:server cfg)))]
+      (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
+      (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))
+      (.once conn "end" #(info "IMAP connection ended"))
+      (.connect conn)
+      (js/setTimeout #(.end conn) 60000))
+    (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
 
 (defn read-mailboxes [{:keys [put-fn msg-payload]}]
   (info "read-mailboxes" msg-payload)
   (when-let [cfg msg-payload]
-    (try
-      (let [cb (fn [conn _err mb]
-                 (try
-                   (.getBoxes conn (fn [err boxes]
-                                     (.log js/console boxes)
-                                     (put-fn [:imap/status {:status :read-mailboxes}])
-                                     (info "read mailboxes")))
-                   (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
-            conn (imap. (clj->js (:server cfg)))]
-        (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
-        (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))
-        (.once conn "end" #(info "IMAP connection ended"))
-        (.connect conn)
-        (js/setTimeout #(.end conn) 60000))
-      (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
+    (read-mb :read-mailboxes "" cfg put-fn))
   {})
 
-(defn start-sync [{:keys [current-state put-fn]}]
+(defn start-sync [{:keys []}]
   (info "starting IMAP sync")
   {:emit-msg [:cmd/schedule-new {:timeout (* 15 1000)
                                  :id      :imap-schedule
@@ -220,6 +223,13 @@
   (info "get-cfg")
   {:emit-msg [:imap/cfg (imap-cfg)]})
 
+(defn save-cfg [{:keys [msg-payload put-fn]}]
+  (info "save-cfg" msg-payload)
+  (let [s (pp-str msg-payload)]
+    (when (read-mb :saved (str "saved: " cfg-path) msg-payload put-fn)
+      (writeFileSync cfg-path s)))
+  {:emit-msg [[:imap/cfg (imap-cfg)]]})
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    (fn [_put-fn] {:state (atom {})})
@@ -228,5 +238,6 @@
    :handler-map {:sync/imap       write-email
                  :imap/get-status read-mailboxes
                  :imap/get-cfg    get-cfg
+                 :imap/save-cfg   save-cfg
                  :sync/start-imap start-sync
                  :sync/read-imap  read-email}})

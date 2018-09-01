@@ -142,6 +142,7 @@
 
   img {
     margin-top: 60px;
+    margin-right: 30px;
   }
   .settings {
 
@@ -150,7 +151,7 @@
       padding: 6px;
       width: 500px;
       color: orange;
-      font-weight: bold;
+      font-size: 14px;
       font-family: monospace;
       background-color: $body-background-color;
       outline: none;
@@ -182,16 +183,19 @@
 
         button {
           float: right;
+          font-size: 14px;
+          &.save {
+            background-color: $red;
+          }
         }
       }
 
       td {
-        font-size: 1.4em;
+        font-size: 14px;
         text-align: right;
         font-family: monospace;
         margin-left: 20px;
         color: orange;
-        font-weight: bold;
         &.r {
           align-content: right;
         }
