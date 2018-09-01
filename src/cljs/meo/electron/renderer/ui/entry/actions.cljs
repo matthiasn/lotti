@@ -176,7 +176,7 @@
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
-          (when (and (not comment?) prev-saved?)
+          (when (not comment?)
             [:i.fa.toggle.far
              {:class    (if (= tab-group :left)
                           "fa-arrow-alt-from-left"
