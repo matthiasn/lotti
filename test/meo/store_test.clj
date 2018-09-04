@@ -120,8 +120,8 @@
                        :message [:options/gen]
                        :timeout 5000}]
                      (-> @test-atom first)))
-              (is (= :cmd/schedule-new (-> @test-atom second first)))
-              (is (= :sync/imap (-> @test-atom (get 2) first)))
+              (is (= :sync/imap (-> @test-atom second first)))
+              (is (= :entry/saved (-> @test-atom (get 2) first)))
               (is (= test-entry
                      (dissoc saved-msg :id :task :text :last_saved :vclock))))))))))
 
@@ -202,8 +202,8 @@
                        :message [:options/gen]
                        :timeout 5000}]
                      (-> @test-atom first)))
-              (is (= :cmd/schedule-new (-> @test-atom second first)))
-              (is (= :sync/imap (-> @test-atom (get 2) first)))
+              (is (= :sync/imap (-> @test-atom second first)))
+              (is (= :entry/saved (-> @test-atom (get 2) first)))
               (is (= updated-test-entry
                      (dissoc saved-msg :id :text :task :last_saved :vclock)))))
 
