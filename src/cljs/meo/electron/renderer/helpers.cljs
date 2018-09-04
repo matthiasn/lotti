@@ -153,6 +153,7 @@
                   path file)))
 
 (defn thumbs-256 [file] (media-path  "/data/thumbs/256/" file))
+(defn thumbs-512 [file] (media-path  "/data/thumbs/512/" file))
 (defn thumbs-2048 [file] (media-path  "/data/thumbs/2048/" file))
 
 (defn audio-path [file] (media-path "/data/audio/" file))

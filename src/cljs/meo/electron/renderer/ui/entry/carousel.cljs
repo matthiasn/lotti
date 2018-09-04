@@ -37,10 +37,10 @@
    when JPEG file requested."
   [entry locale local put-fn]
   (when-let [file (:img_file entry)]
-    (let [resized-rotated (h/thumbs-2048 file)
+    (let [fullscreen (:fullscreen @local)
+          resized-rotated (if fullscreen (h/thumbs-2048 file) (h/thumbs-512 file))
           ts (:timestamp entry)
           external (str h/photos file)
-          fullscreen (:fullscreen @local)
           md (:md entry)
           md (if fullscreen md (str (first (str/split-lines md))))
           html (md/md->html md)
@@ -199,8 +199,10 @@
                     (when (and meta-key (= key-code 52)) (set-stars 4))
                     (when (and meta-key (= key-code 53)) (set-stars 5))
                     (.stopPropagation ev)))
-        start-watch #(do (info "start-watch") (.addEventListener js/document "keydown" keydown))
-        stop-watch #(do (info "stop-watch") (.removeEventListener js/document "keydown" keydown))]
+        stop-watch #(do (info "stop-watch") (.removeEventListener js/document "keydown" keydown))
+        start-watch #(do (info "start-watch")
+                         (.addEventListener js/document "keydown" keydown)
+                         (js/setTimeout stop-watch 60000))]
     (fn gallery-render [entries local-cfg put-fn]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]

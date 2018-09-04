@@ -124,14 +124,13 @@
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
         broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
-    #_(when (System/getenv "CACHED_APPSTATE")
-        (future (persist-state! new-state)))
     (when (not= (dissoc prev :last_saved :vclock)
                 (dissoc entry :last_saved :vclock))
       (append-daily-log cfg entry put-fn)
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
                                   :id      :generate-opts}])
+      #_
       (put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
                                   :message [:state/persist]
                                   :id      :persist-state}])

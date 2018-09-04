@@ -66,7 +66,7 @@
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
-                                           [re-frame "0.10.5"]
+                                           [re-frame "0.10.6"]
                                            [cljsjs/moment "2.22.2-0"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
