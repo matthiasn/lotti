@@ -40,6 +40,11 @@
     font-size: 12px;
   }
 
+  &.saga {
+    label {
+      width: 30px;
+    }
+  }
   .saga {
     select {
       min-width: 200px;

@@ -52,11 +52,9 @@
   (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga_name put-fn)
           on-keydown-fn (keydown-fn entry :saga_name put-fn)]
-      (if edit-mode?
-        [:div.story
-         [:label "Saga:"]
-         [editable-field on-input-fn on-keydown-fn (:saga_name entry)]]
-        [:h2 "Saga: " (:saga_name entry)]))))
+      [:div.story.saga
+       [:label "Saga:"]
+       [editable-field on-input-fn on-keydown-fn (:saga_name entry)]])))
 
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."
