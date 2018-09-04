@@ -97,7 +97,9 @@
     z-index: 1002;
     padding: 4px 0 10px 6px;
     white-space: nowrap;
-    border: lighten($hashtag-blue, 20%) 1px solid;
+    border: #aaa 1px solid;
+    border-radius: 5px;
+    box-shadow: 0 0 1px 1px #AAA;
     font-size: 0.8em;
 
     tr:nth-child(even) {

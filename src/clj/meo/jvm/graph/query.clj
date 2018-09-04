@@ -414,7 +414,7 @@
         xf (fn [id]
              (let [story (uc/attrs g id)
                    saga (get sagas (:linked_saga story))
-                   story (assoc-in story [:linked_saga] saga)]
+                   story (assoc-in story [:saga] saga)]
                story))]
     (mapv xf story-ids)))
 

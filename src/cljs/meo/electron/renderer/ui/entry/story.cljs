@@ -177,11 +177,12 @@
                           cls (cond active "current"
                                     (= idx curr-idx) "idx"
                                     :else "")
-                          click #(assign-story story)]
+                          click #(assign-story story)
+                          saga-name (:saga_name (:saga story))]
                       ^{:key (:timestamp story)}
                       [:tr {:on-click click}
                        [:td {:class cls}
-                        (:story_name story)]]))]]])
+                        saga-name (when-not (empty? saga-name) ": ") (:story_name story)]]))]]])
              [:div.story.story-name
               [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
               [:span {:on-click open-story}
