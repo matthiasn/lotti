@@ -142,7 +142,7 @@
         change-cb (fn [editor-state]
                     (swap! cb-atom assoc-in [:editor-state] editor-state)
                     (when-not (:timeout @cb-atom)
-                      (let [timeout (js/setTimeout update-local 1000)]
+                      (let [timeout (js/setTimeout update-local 500)]
                         (swap! cb-atom assoc-in [:timeout] timeout))))
         save-fn (fn [md plain]
                   (let [cleaned (u/clean-entry entry2)

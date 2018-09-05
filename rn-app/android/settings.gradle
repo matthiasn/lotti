@@ -1,4 +1,6 @@
 rootProject.name = 'meo'
+include ':react-native-audio-recorder-player'
+project(':react-native-audio-recorder-player').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-audio-recorder-player/android')
 include ':react-native-mailcore'
 project(':react-native-mailcore').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-mailcore/android')
 include ':react-native-activity-recognition'

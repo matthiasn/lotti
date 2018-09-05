@@ -22,6 +22,7 @@
 		"react": "16.4.1",
 		"react-native": "0.50.3",
 		"react-native-activity-recognition": "3.2.0",
+		"react-native-audio-recorder-player": "^2.0.8",
 		"react-native-camera": "0.13.0",
 		"react-native-contacts": "2.2.2",
 		"react-native-deck-swiper": "^1.5.17",

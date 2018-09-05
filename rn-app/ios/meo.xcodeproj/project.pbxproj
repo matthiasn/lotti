@@ -5,6 +5,7 @@
 	};
 	objectVersion = 46;
 	objects = {
+
 /* Begin PBXBuildFile section */
 		00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302AC1ABCB8CE00DB3ED1 /* libRCTActionSheet.a */; };
 		00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302BA1ABCB90400DB3ED1 /* libRCTGeolocation.a */; };
@@ -32,6 +33,7 @@
 		589E1C2C4FF244C281E053CE /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 926AC50CC7FC4A82B50937BE /* MaterialCommunityIcons.ttf */; };
 		5CC66A2570AF40F69868EDC5 /* EvilIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 96868E775F5A43E9A998DF31 /* EvilIcons.ttf */; };
 		5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9060319A367947308DA06D40 /* libRNActivityRecognition.a */; };
+		67FCB589C137448EB75369E5 /* libRNAudioRecorderPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6488B7D747C244BFBF1A8B2E /* libRNAudioRecorderPlayer.a */; };
 		699D3AE10BCD4C9DB8647B5D /* Roboto.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CE45E874A26A4C5F80D88EB9 /* Roboto.ttf */; };
 		7107008D68AD4774AAED1BB1 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8306B98A8CBE4EDBBEB21176 /* SimpleLineIcons.ttf */; };
 		7515C1788E834D1FA9B3E6CE /* Foundation.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3D986E59C7AE445AADC3A964 /* Foundation.ttf */; };
@@ -366,6 +368,13 @@
 			remoteGlobalIDString = 358F4ED71D1E81A9004DF814;
 			remoteInfo = RCTBlob;
 		};
+		ADE41685213A1BE5002D523A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97792B24B7494378AC8DB22F /* RNAudioRecorderPlayer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 134814201AA4EA6300B7C361;
+			remoteInfo = RNAudioRecorderPlayer;
+		};
 		ADE7CD3F1FF2D72500643674 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D999D3DB39464D2FA749562F /* RCTCamera.xcodeproj */;
@@ -427,6 +436,7 @@
 		5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTAnimation.xcodeproj; path = "../node_modules/react-native/Libraries/NativeAnimation/RCTAnimation.xcodeproj"; sourceTree = "<group>"; };
 		63C745094F11B93F32E30509 /* Pods-meo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-meo/Pods-meo.debug.xcconfig"; sourceTree = "<group>"; };
 		6442446F2F694A9CBE4F8E9D /* libRNDeviceInfo-tvOS.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = "libRNDeviceInfo-tvOS.a"; sourceTree = "<group>"; };
+		6488B7D747C244BFBF1A8B2E /* libRNAudioRecorderPlayer.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNAudioRecorderPlayer.a; sourceTree = "<group>"; };
 		6A8B9282C3E544E9A2822D60 /* Feather.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Feather.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Feather.ttf"; sourceTree = "<group>"; };
 		6B2581DAA48042A6A3537BA5 /* FontAwesome.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf"; sourceTree = "<group>"; };
 		6EA9351E70B94F369A5F8246 /* Foundation.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Foundation.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Foundation.ttf"; sourceTree = "<group>"; };
@@ -444,6 +454,7 @@
 		926AC50CC7FC4A82B50937BE /* MaterialCommunityIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialCommunityIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"; sourceTree = "<group>"; };
 		94133695E0EB48B48633AABD /* libRNMailCore.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNMailCore.a; sourceTree = "<group>"; };
 		96868E775F5A43E9A998DF31 /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/native-base/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
+		97792B24B7494378AC8DB22F /* RNAudioRecorderPlayer.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNAudioRecorderPlayer.xcodeproj; path = "../node_modules/react-native-audio-recorder-player/ios/RNAudioRecorderPlayer.xcodeproj"; sourceTree = "<group>"; };
 		A352D66E30A64DD5B1A2FD1D /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
 		AD0590FD20153AB700130A7B /* RCTCameraRoll.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTCameraRoll.xcodeproj; path = "../node_modules/react-native/Libraries/CameraRoll/RCTCameraRoll.xcodeproj"; sourceTree = "<group>"; };
 		AD348EEC2047648E00B58026 /* RCTMGL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTMGL.xcodeproj; path = "../node_modules/@mapbox/react-native-mapbox-gl/ios/RCTMGL.xcodeproj"; sourceTree = "<group>"; };
@@ -502,6 +513,7 @@
 				5FDFE926E7CC49A3A00C7997 /* libRNActivityRecognition.a in Frameworks */,
 				54BD09BDB7F84043A19E949E /* libRNMailCore.a in Frameworks */,
 				1FCBEDF7157B54D43E33F05A /* libPods-meo.a in Frameworks */,
+				67FCB589C137448EB75369E5 /* libRNAudioRecorderPlayer.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -704,6 +716,7 @@
 				5C8F14A5D74548B988910434 /* RCTContacts.xcodeproj */,
 				2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */,
 				DA479EF41AE34328A02CA668 /* RNMailCore.xcodeproj */,
+				97792B24B7494378AC8DB22F /* RNAudioRecorderPlayer.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -777,8 +790,8 @@
 				09ED015F7B6A40F3B5FDC25D /* libRNVectorIcons.a */,
 				42C203C11AED41C7BBAA796D /* libRCTContacts.a */,
 				9060319A367947308DA06D40 /* libRNActivityRecognition.a */,
-				CA4C173329F04C7C9AAB06E6 /* libRNFS.a */,
 				94133695E0EB48B48633AABD /* libRNMailCore.a */,
+				6488B7D747C244BFBF1A8B2E /* libRNAudioRecorderPlayer.a */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -832,6 +845,14 @@
 			children = (
 				ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */,
 				AD28E8571FEC7750007812C2 /* libRCTBlob-tvOS.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		ADE41682213A1BE5002D523A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ADE41686213A1BE5002D523A /* libRNAudioRecorderPlayer.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -999,6 +1020,10 @@
 				{
 					ProductGroup = AD7C04F42022037700DF98E2 /* Products */;
 					ProjectRef = 2AF5A5EB6BD043DC81C6F7A4 /* RNActivityRecognition.xcodeproj */;
+				},
+				{
+					ProductGroup = ADE41682213A1BE5002D523A /* Products */;
+					ProjectRef = 97792B24B7494378AC8DB22F /* RNAudioRecorderPlayer.xcodeproj */;
 				},
 				{
 					ProductGroup = AD33D87B2106884D0079F165 /* Products */;
@@ -1312,6 +1337,13 @@
 			remoteRef = ADBDB9261DFEBF0700ED6528 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		ADE41686213A1BE5002D523A /* libRNAudioRecorderPlayer.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRNAudioRecorderPlayer.a;
+			remoteRef = ADE41685213A1BE5002D523A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		ADE7CD401FF2D72500643674 /* libRCTCamera.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1474,12 +1506,14 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1505,12 +1539,14 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = meoTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1539,6 +1575,7 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1570,6 +1607,7 @@
 					"$(SRCROOT)/../node_modules/react-native-contacts/ios/RCTContacts",
 					"$(SRCROOT)/../node_modules/react-native-activity-recognition/ios",
 					"$(SRCROOT)/../node_modules/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = meo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

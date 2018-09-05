@@ -57,6 +57,7 @@
 (defn format-time [m] (.format (js/moment m) "YYYY-MM-DD HH:mm"))
 (defn img-fmt [m] (.format (js/moment m) "YYYYMMDD_HHmmss_SSS"))
 (defn hh-mm [m] (.format (js/moment m) "HH:mm"))
+(defn mm-ss [m] (.format (js/moment m) "mm:ss"))
 (defn ymd [m] (.format (js/moment m) ymd-format))
 (defn m-to-hh-mm [m]
   (let [t (js/moment (* m 60 1000))]

@@ -14,6 +14,7 @@ var modules = {
     'react-native-contacts': require('react-native-contacts'),
     'react-native-mailcore': require('react-native-mailcore'),
     'react-navigation': require('react-navigation'),
+    'react-native-audio-recorder-player': require('react-native-audio-recorder-player'),
     'react-native-settings-list': require('react-native-settings-list'),
     'react-native-swipeout': require('react-native-swipeout'),
     'react-native-deck-swiper': require('react-native-deck-swiper'),

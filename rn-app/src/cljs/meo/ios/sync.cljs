@@ -58,6 +58,7 @@
 
           photo-uri (-> msg-payload :media :image :uri)
           filename (:img_file msg-payload)
+          audiofile (:audio_file msg-payload)
           mail (merge (:server secrets)
                       {:folder   folder
                        :from     {:addressWithDisplayName "fred"
@@ -66,6 +67,7 @@
                                   :mailbox                "meo@nehlsen-edv.de"}
                        :subject  (str msg-type)
                        :textBody hex-cipher}
+                      (when audiofile {:audiofile audiofile})
                       (when (and (= :entry/sync msg-type) filename)
                         {:attachmentUri photo-uri
                          :filename      filename}))
