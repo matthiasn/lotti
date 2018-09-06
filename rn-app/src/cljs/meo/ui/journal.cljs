@@ -6,11 +6,13 @@
             [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]
             [meo.ui.colors :as c]
+            [meo.ui.settings.common :refer [settings-icon]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.ui.shared :refer [view text text-input scroll search-bar flat-list
                                    map-view mapbox-style-url point-annotation
                                    icon image logo-img swipeout keyboard-avoiding-view
-                                   touchable-opacity]]
+                                   touchable-opacity settings-list settings-list-item
+                                   rn-audio-recorder-player]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.string :as s]
             [clojure.pprint :as pp]
@@ -133,7 +135,10 @@
 
 (defn entry-detail [cfg-map entry-local nav put-fn]
   (let [entry-detail (subscribe [:entry-detail])
-        theme (subscribe [:active-theme])]
+        theme (subscribe [:active-theme])
+        player-state (r/atom {:pos    0
+                              :status :paused})
+        recorder-player (rn-audio-recorder-player.)]
     (fn [{:keys [screenProps navigation] :as props}]
       (go (try
             (let [ts (:timestamp @entry-detail)
@@ -146,6 +151,7 @@
             entry (:entry @entry-local)
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])
             latitude (:latitude entry)
             longitude (:longitude entry)]
@@ -195,7 +201,7 @@
                        :styleURL         (get mapbox-style-url (:map-style @cfg-map))
                        :style            {:width         "100%"
                                           :height        200
-                                          :margin-bottom 100}
+                                          :margin-bottom 30}
                        :zoomLevel        15}
              [point-annotation {:coordinate [longitude latitude]}
               [view {:style {:width           24
@@ -208,7 +214,40 @@
                               :height          24
                               :backgroundColor "orange"
                               :borderRadius    12
-                              :transform       [{:scale 0.7}]}}]]]])]
+                              :transform       [{:scale 0.7}]}}]]]])
+          (when-let [audio-file (:audio_file entry)]
+            (let [status (:status @player-state)
+                  pos (h/mm-ss (.floor js/Math (:pos @player-state)))
+                  play (fn [_]
+                         (.startPlayer recorder-player audio-file)
+                         (.addPlayBackListener
+                           recorder-player
+                           #(swap! player-state assoc-in [:pos] (.-current_position %)))
+                         (swap! player-state assoc-in [:status] :play))
+                  stop (fn [_]
+                         (.stopPlayer recorder-player)
+                         (.removePlayBackListener recorder-player)
+                         (swap! player-state assoc-in [:status] :paused))]
+              [touchable-opacity {:on-press (if (= :play status) stop play)
+                                  :style    {:margin         10
+                                             :display        "flex"
+                                             :flex-direction "row"}}
+               [icon {:name  "microphone"
+                      :size  30
+                      :style {:color       (if (= :play status) "#66F" "#999")
+                              :margin-left 25}}]
+               [text {:style {:color       "#0078e7"
+                              :font-size   30
+                              :margin-left 25
+                              :font-family  "Courier"}}
+                (if (= :play status) "Stop" "Play")]
+               [text {:style {:font-size    30
+                              :color        "#888"
+                              :font-weight  "100"
+                              :margin-left  50
+                              :margin-right 25
+                              :font-family  "Courier"}}
+                pos]]))]
          #_[text {:style {:margin-top  20
                           :margin-left 10
                           :color       text-color
