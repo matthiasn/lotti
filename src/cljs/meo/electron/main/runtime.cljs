@@ -38,6 +38,7 @@
               :logfile-electron logfile-electron
               :logfile-jvm      (str temp-path "/meo-jvm.log")
               :logdir           logdir
+              :audio-path       (str data-path "/audio")
               :img-path         (str data-path "/images")
               :thumbs-path      (str data-path "/thumbs")
               :cache            (str user-data "/data/cache.dat")

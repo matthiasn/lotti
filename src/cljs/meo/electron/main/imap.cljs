@@ -14,6 +14,7 @@
 
 (def data-path (:data-path rt/runtime-info))
 (def img-path (:img-path rt/runtime-info))
+(def audio-path (:audio-path rt/runtime-info))
 (def repo-dir (:repo-dir rt/runtime-info))
 (def cfg-path (str data-path "/imap.edn"))
 
@@ -85,6 +86,44 @@
                   (catch :default e (error e))))]
     (imap-open mailbox mb-cb)))
 
+(defn read-audio [mailbox uid partID filename put-fn]
+  (let [body-cb (fn [buffer seqn stream stream-info]
+                  (let [end-cb (fn []
+                                 (let [base-64-img (apply str @buffer)
+                                       buf (buf-from-base64 base-64-img)
+                                       full-path (str audio-path "/" filename)
+                                       write-cb (fn [err])]
+                                   (info "audio" filename (count base-64-img))
+                                   (writeFile full-path buf "binary" write-cb)))]
+                    (info "audio body stream-info" (js->clj stream-info))
+                    (.on stream "data" #(let [s (.toString % "UTF8")]
+                                          (when (= partID (.-which stream-info))
+                                            (swap! buffer conj s))
+                                          (debug "audio body data seqno" seqn "- size" (count s))))
+                    (.once stream "end" end-cb)))
+        msg-cb (fn [msg seqn]
+                 (let [buffer (atom [])]
+                   (.on msg "body" (partial body-cb buffer seqn))
+                   (.once msg "end" #(debug "audio msg end" seqn))))
+        mb-cb (fn [conn err box]
+                (try
+                  (let [s (clj->js ["UNDELETED" ["UID" uid]])
+                        cb (fn [err res]
+                             (let [
+                                   f (.fetch conn res (clj->js {:bodies [partID]
+                                                                :struct true}))
+                                   cb (fn []
+                                        (info "finished reading" filename)
+                                        (.end conn))]
+                               (info "search fetch" res)
+                               (.on f "message" msg-cb)
+                               (.once f "error" #(error "Fetch error" %))
+                               (.once f "end" cb)))]
+                    (info "search" mailbox s)
+                    (.search conn s cb))
+                  (catch :default e (error e))))]
+    (imap-open mailbox mb-cb)))
+
 (defn read-mailbox [[k mb-cfg] put-fn]
   (let [{:keys [secret mailbox body-part]} mb-cfg
         path [:sync :read k :last-read]
@@ -128,6 +167,14 @@
                                                                     (s/replace "=5F" "_"))
                                                        partID (:partID attachment)]
                                                    (read-image mailbox uid partID filename put-fn)
+                                                   (info "found attachment" filename uid partID)))
+                                               (when (= "audio" (:type attachment))
+                                                 (let [filename (-> attachment
+                                                                    :disposition
+                                                                    :params
+                                                                    :filename)
+                                                       partID (:partID attachment)]
+                                                   (read-audio mailbox uid partID filename put-fn)
                                                    (info "found attachment" filename uid partID))))))
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
