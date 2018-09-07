@@ -10,7 +10,8 @@
 
 (defn task-sorter [x y]
   (let [c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
-        c2 (compare (get-in x [:task :priority] :X) (get-in y [:task :priority] :X))
+        c2 (compare (or (get-in x [:task :priority]) :X)
+                    (or (get-in y [:task :priority]) :X))
         c3 (compare (:timestamp x) (:timestamp y))]
     (if (not= c1 0) c1 (if (not= c2 0) c2 c3))))
 

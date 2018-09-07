@@ -1,32 +1,48 @@
 (ns meo.electron.renderer.ui.entry.briefing.habits
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
-            [meo.common.utils.misc :as u]
-            [meo.common.utils.parse :as up]
-            [clojure.string :as s]
-            [moment]
             [taoensso.timbre :refer-macros [info]]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [meo.common.utils.parse :as up]
+            [moment]))
 
 (defn habit-sorter
-  "Sorts tasks."
+  "Sorts habits."
   [x y]
-  (let [c (compare (get-in x [:habit :priority] :X)
-                   (get-in y [:habit :priority] :X))]
+  (let [c (compare (or (get-in x [:habit :priority]) :X)
+                   (or (get-in y [:habit :priority]) :X))]
     (if (not= c 0) c (compare (get-in y [:habit :points])
                               (get-in x [:habit :points])))))
 
+(defn habit-line [_entry _tab-group _put-fn]
+  (let [query-cfg (subscribe [:query-cfg])
+        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))]
+    (fn habit-line-render [entry tab-group put-fn]
+      (let [ts (:timestamp entry)
+            text (eu/first-line entry)]
+        (info ts)
+        [:tr {:key      ts
+              :on-click (up/add-search ts tab-group put-fn)
+              :class    (when (= (str ts) search-text) "selected")}
+         [:td
+          (when-let [prio (some-> entry :habit :priority (name))]
+            [:span.prio {:class prio} prio])]
+         [:td.award-points
+          (when-let [points (-> entry :habit :points)]
+            points)]
+         [:td.award-points
+          (when-let [penalty (-> entry :habit :penalty)]
+            penalty)]
+         [:td.habit text]]))))
+
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
-  [local local-cfg put-fn]
+  [local _local-cfg _put-fn]
   (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
         briefing (reaction (-> @gql-res :briefing :data :briefing))
         habits (reaction (-> @gql-res :waiting-habits :data :waiting_habits))
-        query-cfg (subscribe [:query-cfg])
-        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
-        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         expand-fn #(swap! local update-in [:expanded-habits] not)
         saga-filter (fn [entry]
                       (if (seq (:selected-set @local))
@@ -40,8 +56,7 @@
       (let [habits @habits
             habits (if (:expanded-habits @local) habits (take 12 habits))
             tab-group (:tab-group local-cfg)
-            today (.format (moment.) "YYYY-MM-DD")
-            search-text @search-text]
+            today (.format (moment.) "YYYY-MM-DD")]
         (when (and (= today (:day @briefing))
                    (seq habits)
                    (contains? (:capabilities @backend-cfg) :habits))
@@ -54,18 +69,5 @@
               [:th [:span.fa.fa-diamond.penalty]]
               [:th "waiting habit"]]
              (for [entry habits]
-               (let [ts (:timestamp entry)
-                     text (eu/first-line entry)]
-                 ^{:key ts}
-                 [:tr {:on-click (up/add-search ts tab-group put-fn)
-                       :class    (when (= (str ts) search-text) "selected")}
-                  [:td
-                   (when-let [prio (some-> entry :habit :priority (name))]
-                     [:span.prio {:class prio} prio])]
-                  [:td.award-points
-                   (when-let [points (-> entry :habit :points)]
-                     points)]
-                  [:td.award-points
-                   (when-let [penalty (-> entry :habit :penalty)]
-                     penalty)]
-                  [:td.habit text]]))]]])))))
+               ^{:key (:timestamp entry)}
+               [habit-line entry tab-group put-fn])]]])))))
