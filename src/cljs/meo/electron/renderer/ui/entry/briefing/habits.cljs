@@ -21,7 +21,6 @@
     (fn habit-line-render [entry tab-group put-fn]
       (let [ts (:timestamp entry)
             text (eu/first-line entry)]
-        (info ts)
         [:tr {:key      ts
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}

@@ -31,6 +31,49 @@
                    :value     for-day}]]
          [:div for-day])])))
 
+(defn field-input []
+  (let []
+    (fn field-input-render [entry edit-mode? field tag k put-fn]
+      (let [input-cfg (:cfg field)
+            input-type (:type input-cfg)
+            path [:custom_fields tag k]
+            value (get-in entry path)
+            value (if (and value (= :time input-type))
+                    (h/m-to-hh-mm value)
+                    value)
+            on-change-fn
+            (fn [ev]
+              (let [v (.. ev -target -value)
+                    parsed (case input-type
+                             :number (when (seq v) (js/parseFloat v))
+                             :time (when (seq v)
+                                     (.asMinutes (.duration moment v)))
+                             v)
+                    updated (assoc-in entry path parsed)]
+                (put-fn [:entry/update-local updated])))]
+        (when-not value
+          (when (and (= input-type :number) edit-mode?)
+            (let [p1 (-> (:md entry) (s/split tag) first)
+                  last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
+              (when last-n
+                (let [updated (assoc-in entry path (js/parseFloat last-n))]
+                  (put-fn [:entry/update-local updated])))))
+          (when (and (= input-type :time) edit-mode?)
+            (let [p1 (-> (:md entry) (s/split tag) first)
+                  v (last (re-seq #"\d+:\d{2}" p1))]
+              (when v
+                (let [m (.asMinutes (.duration moment v))
+                      updated (assoc-in entry path m)]
+                  (put-fn [:entry/update-local updated]))))))
+        [:div
+         [:label (:label field)]
+         [:input (merge
+                   input-cfg
+                   {:on-change on-change-fn
+                    :class     (when (= input-type :time) "time")
+                    :type      (if (= input-type :time) :text input-type)
+                    :value     value})]]))))
+
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
   [entry put-fn edit-mode?]
@@ -55,46 +98,8 @@
              [:fieldset
               [:legend tag]
               (for [[k field] (:fields conf)]
-                (let [input-cfg (:cfg field)
-                      input-type (:type input-cfg)
-                      path [:custom_fields tag k]
-                      value (get-in entry path)
-                      value (if (and value (= :time input-type))
-                              (h/m-to-hh-mm value)
-                              value)
-                      on-change-fn
-                      (fn [ev]
-                        (let [v (.. ev -target -value)
-                              parsed (case input-type
-                                       :number (when (seq v) (js/parseFloat v))
-                                       :time (when (seq v)
-                                               (.asMinutes (.duration moment v)))
-                                       v)
-                              updated (assoc-in entry path parsed)]
-                          (put-fn [:entry/update-local updated])))]
-                  (when-not value
-                    (when (and (= input-type :number) edit-mode?)
-                      (let [p1 (-> (:md entry) (s/split tag) first)
-                            last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
-                        (when last-n
-                          (let [updated (assoc-in entry path (js/parseFloat last-n))]
-                            (put-fn [:entry/update-local updated])))))
-                    (when (and (= input-type :time) edit-mode?)
-                      (let [p1 (-> (:md entry) (s/split tag) first)
-                            v (last (re-seq #"\d+:\d{2}" p1))]
-                        (when v
-                          (let [m (.asMinutes (.duration moment v))
-                                updated (assoc-in entry path m)]
-                            (put-fn [:entry/update-local updated]))))))
-                  ^{:key (str "cf" ts tag k)}
-                  [:div
-                   [:label (:label field)]
-                   [:input (merge
-                             input-cfg
-                             {:on-change on-change-fn
-                              :class     (when (= input-type :time) "time")
-                              :type      (if (= input-type :time) :text input-type)
-                              :value     value})]]))])])))))
+                ^{:key (str "cf" ts tag k)}
+                [field-input entry edit-mode? field tag k put-fn])])])))))
 
 (defn questionnaire-div
   "In edit mode, allow editing of questionnaire, otherwise show a summary."
