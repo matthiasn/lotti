@@ -31,7 +31,8 @@
 (defn debounce-factory
   "Return a function that will always store a future call into the
   same atom. If recalled before the time is elapsed, the call is
-  replaced without being executed." []
+  replaced without being executed."
+  []
   (let [f (atom nil)]
     (fn [func ttime]
       (when @f

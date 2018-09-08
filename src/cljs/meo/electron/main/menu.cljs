@@ -202,6 +202,10 @@
              {:label "Persist State"
               :click #(put-fn [:state/persist])}
              {:type "separator"}
+             {:label       "Toggle Data Explorer"
+              :accelerator "CmdOrCtrl+D"
+              :click       #(put-fn [:cmd/toggle-key {:path [:cfg :data-explorer]}])}
+             {:type "separator"}
              {:label       "Open Dev Tools"
               :accelerator "CmdOrCtrl+Alt+I"
               :click       #(put-fn [:window/dev-tools])}]})

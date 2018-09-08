@@ -3,6 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.helpers :as h]
             [matthiasn.systems-toolbox.switchboard.helpers :as sh]
+            [meo.electron.renderer.ui.data-explorer :as dex]
             [re-frame.core :refer [subscribe]]))
 
 (defn scatter-plot [combined xk yk x-off y-off]
@@ -104,8 +105,8 @@
                                  @combined)))
         combined-vals (reaction (vals @combined2))
         last-update (subscribe [:last-update])
-        ks [:panas-pos :panas-neg :sleep :cfq11 :steps :coffee :beer :word-count
-            :entry-count]
+        ks [:panas_pos :panas-neg :sleep :cfq11 :steps :coffee :beer :word_count
+            :entry_count]
         matrix (partition (count ks) (sh/cartesian-product ks ks))
         idx (fn [idx v] [idx v])]
     (fn scatter-matrix-render [put-fn]

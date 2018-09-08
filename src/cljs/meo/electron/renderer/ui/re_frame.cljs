@@ -18,10 +18,12 @@
             [meo.electron.renderer.ui.charts.location :as loc]
             [meo.electron.renderer.ui.charts.time.durations :as cd]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [meo.electron.renderer.ui.entry.briefing :as b]))
+            [meo.electron.renderer.ui.entry.briefing :as b]
+            [meo.electron.renderer.ui.data-explorer :as dex]))
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
+(reg-sub :db (fn [db _] db))
 (reg-sub :stories (fn [db _]
                     (->> (get-in db [:gql-res :options :data :stories])
                          (map (fn [x] [(:timestamp x) x]))
@@ -83,10 +85,7 @@
            [:div.right
             [g/tabs-view :right put-fn]])
          [f/footer put-fn]]]
-
-       [stats/stats-text]
-       ;[n/new-entries-view put-fn]
-       ])))
+       [stats/stats-text]])))
 
 (defn charts-page [put-fn]
   [:div.flex-container
@@ -115,21 +114,26 @@
 
 (defn re-frame-ui [put-fn]
   (let [current-page (subscribe [:current-page])
-        startup-progress (subscribe [:startup-progress])]
+        startup-progress (subscribe [:startup-progress])
+        cfg (subscribe [:cfg])
+        data-explorer (reaction (:data-explorer @cfg))]
     (fn [put-fn]
       (let [current-page @current-page
             startup-progress @startup-progress]
         (if (= 1 startup-progress)
-          (case (:page current-page)
-            :config [cfg/config put-fn]
-            :sync [sync/sync put-fn]
-            :charts-1 [charts-page put-fn]
-            :countries [countries-page put-fn]
-            :calendar [cal put-fn]
-            :correlation [corr/scatter-matrix put-fn]
-            :heatmap [hm/heatmap put-fn]
-            :empty [:div.flex-container]
-            [main-page put-fn])
+          [:div
+           (case (:page current-page)
+             :config [cfg/config put-fn]
+             :sync [sync/sync put-fn]
+             :charts-1 [charts-page put-fn]
+             :countries [countries-page put-fn]
+             :calendar [cal put-fn]
+             :correlation [corr/scatter-matrix put-fn]
+             :heatmap [hm/heatmap put-fn]
+             :empty [:div.flex-container]
+             [main-page put-fn])
+           (when @data-explorer
+             [dex/data-explorer])]
           [load-progress put-fn])))))
 
 (defn state-fn [put-fn]

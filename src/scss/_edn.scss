@@ -1,0 +1,117 @@
+// Slightly modified from https://github.com/kamituel/systems-toolbox-chrome
+
+.edn-tree {
+  .map     { &:before, &:after { color: #eeee22; }}
+  .vector  { &:before, &:after { color: #22ee22; }}
+  .seq     { &:before, &:after { color: purple; }}
+  .string  { color: #33ffff; }
+  .number  { color: #cc66ff; }
+  .keyword { color: #ff8888; }
+  .nil     { color: red; }
+  .boolean { color: #ff00ff; }
+}
+
+.edn-tree.light {
+  .map     { &:before, &:after { color: #555500; }}
+  .vector  { &:before, &:after { color: #228822; }}
+  .seq     { &:before, &:after { color: purple; }}
+  .string  { color: #339999; }
+  .number  { color: #7700aa; }
+  .keyword { color: #770000; }
+  .nil     { color: red; }
+  .boolean { color: #990099; }
+}
+
+
+/* Layout */
+.edn-tree {
+  background-color: white;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 800px;
+  padding: 25px 40px;
+
+  h2 {
+    margin-top : 0;
+  }
+
+  .map {
+    display: block;
+    float: left;
+
+    .key-val {
+      display: block;
+      float: left;
+
+      &:not(:first-child) {
+        display: block;
+        clear: both;
+        padding-left: 4px;
+      }
+
+      /* Map key */
+      &> div:nth-child(1) {
+        display: block;
+        float: left;
+        padding: 0 5px 0 5px;
+      }
+
+      /* Map value */
+      &> div:nth-child(2) {
+        display: inline-block;
+      }
+    }
+
+    &:before { content: "{"; }
+    &:after { content: "}"; }
+    &:before, &:after {
+      display: inline-flex;
+      float: left;
+    }
+  }
+
+  .vector {
+    &> div {
+      display: inline-flex;
+      float: left;
+      clear: both;
+    }
+
+    &:before { content: "["; }
+    &:after { content: "]"; }
+    &:before, &:after {
+      display: inline-flex;
+      float: left;
+    }
+  }
+
+  .seq {
+    &:before { content: "("; }
+    &:after { content: ")"; }
+    &:before, &:after {
+      display: inline-flex;
+      float: left;
+    }
+  }
+
+  span {
+    &.string {&:before, &:after {content: "\"";}}
+  }
+
+  .collapsed {
+    cursor: pointer;
+
+    &>.vector:before { content: "[..."; };
+    &>.map:before { content: "{..."; };
+    &>.seq:before { content: "(..."; };
+  }
+
+  .collapsed:hover {
+    &>.vector:before, &>.vector:after,
+    &>.map:before, &>.map:before,
+    &>.seq:before, &>.seq:before {
+      text-decoration: underline;
+    }
+  }
+}
