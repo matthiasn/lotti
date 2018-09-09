@@ -1,6 +1,7 @@
 (ns meo.electron.renderer.ui.charts.correlation
   (:require [reagent.core :as r]
             [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info debug]]
             [meo.electron.renderer.helpers :as h]
             [matthiasn.systems-toolbox.switchboard.helpers :as sh]
             [meo.electron.renderer.ui.data-explorer :as dex]
@@ -58,68 +59,83 @@
       (name yk)]]))
 
 (defn scatter-matrix [put-fn]
-  (let [local (r/atom {})
-        stats (subscribe [:stats])
-        chart-data (subscribe [:chart-data])
-        wordcount-stats (reaction (:wordcount-stats @chart-data))
+  (let [gql-res (subscribe [:gql-res])
+        dashboard-data (reaction (get-in @gql-res [:dashboard :data]))
+        questionnaire-data (reaction (get-in @gql-res [:dashboard-questionnaires :data]))
+        day-stats (reaction (get-in @gql-res [:day-stats :data :day_stats]))
         panas-stats (reaction
-                      (->> @stats
-                           :questionnaires
-                           :panas
-                           (map (fn [[k v]]
-                                  (when (seq v)
-                                    [(h/ymd k) v])))
+                      (->> @questionnaire-data
+                           :PANAS_pos
+                           (map (fn [{:keys [timestamp score]}]
+                                  (when score
+                                    [(h/ymd timestamp) score])))
                            (filter identity)
                            (reduce (fn [acc [k v]]
-                                     (-> acc
-                                         (update-in [k :panas-pos] conj (:pos v))
-                                         (update-in [k :panas-neg] conj (:neg v))))
+                                     (update-in acc [k :panas-pos] conj v))
                                    {})))
-        cfq11-stats (reaction
-                      (->> @stats
-                           :questionnaires
-                           :cfq11
-                           (map (fn [[k v]]
-                                  (when v
-                                    [(h/ymd k) v])))
+        panas-stats2 (reaction
+                      (->> @questionnaire-data
+                           :PANAS_neg
+                           (map (fn [{:keys [timestamp score]}]
+                                  (when score
+                                    [(h/ymd timestamp) score])))
                            (filter identity)
                            (reduce (fn [acc [k v]]
-                                     (update-in acc [k :cfq11] conj (:total v)))
+                                     (update-in acc [k :panas-neg] conj v))
                                    @panas-stats)))
-        custom-field-stats (subscribe [:custom-field-stats])
+        cfq11-stats (reaction
+                      (->> @questionnaire-data
+                           :CFQ11_total
+                           (map (fn [{:keys [timestamp score]}]
+                                  (when score
+                                    [(h/ymd timestamp) score])))
+                           (filter identity)
+                           (reduce (fn [acc [k v]]
+                                     (update-in acc [k :cfq11] conj v))
+                                   @panas-stats2)))
         combined (reaction
-                   (->> @wordcount-stats
-                        (reduce (fn [acc [k v]]
-                                  (-> acc
-                                      (assoc-in [k :word-count] (:word-count v))
-                                      (assoc-in [k :entry-count] (:entry-count v))))
-                                @cfq11-stats)))
+                   (reduce (fn [acc {:keys [day entry_count word_count done_tasks_cnt]}]
+                             (-> acc
+                                 (assoc-in [day :word-count] word_count)
+                                 (assoc-in [day :entry-count] entry_count)
+                                 (assoc-in [day :completed-tasks] done_tasks_cnt)))
+                           @cfq11-stats
+                           @day-stats))
         combined2 (reaction
-                    (->> @custom-field-stats
-                         (reduce (fn [acc [k v]]
+                    (->> @dashboard-data
+                         :sleep
+                         (reduce (fn [acc {:keys [date_string fields]}]
                                    (-> acc
-                                       (assoc-in [k :sleep] (get-in v ["#sleep" :duration]))
-                                       (assoc-in [k :beer] (get-in v ["#beer" :vol]))
-                                       (assoc-in [k :coffee] (get-in v ["#coffee" :cnt]))
-                                       (assoc-in [k :steps] (or (get-in v ["#steps" :cnt]) 0))))
+                                       (assoc-in [date_string :sleep] (get-in fields [0 :value]))))
                                  @combined)))
-        combined-vals (reaction (vals @combined2))
-        last-update (subscribe [:last-update])
-        ks [:panas_pos :panas-neg :sleep :cfq11 :steps :coffee :beer :word_count
-            :entry_count]
+        combined3 (reaction
+                    (->> @dashboard-data
+                         :coffee
+                         (reduce (fn [acc {:keys [date_string fields]}]
+                                   (-> acc
+                                       (assoc-in [date_string :coffee] (get-in fields [0 :value]))))
+                                 @combined2)))
+        combined4 (reaction
+                    (->> @dashboard-data
+                         :steps
+                         (reduce (fn [acc {:keys [date_string fields]}]
+                                   (-> acc
+                                       (assoc-in [date_string :steps] (get-in fields [0 :value]))))
+                                 @combined3)))
+        combined-vals (reaction (vals @combined4))
+        ks [:panas-pos :panas-neg :sleep :cfq11 :steps :coffee :word-count
+            :entry-count :completed-tasks]
         matrix (partition (count ks) (sh/cartesian-product ks ks))
         idx (fn [idx v] [idx v])]
     (fn scatter-matrix-render [put-fn]
-      (let [n 120]
-        (h/keep-updated :stats/wordcount n local @last-update put-fn)
-        [:div.flex-container
-         [:div.stats
-          [:svg
-           {:viewBox (str "0 0 1200 1200")}
-           (for [[ri row] (map-indexed idx matrix)]
-             (for [[ci itm] (map-indexed idx row)]
-               (let [xk (first itm)
-                     yk (second itm)
-                     x-off (+ 20 (* ci 120))
-                     y-off (+ 20 (* ri 120))]
-                 [scatter-plot combined-vals xk yk x-off y-off])))]]]))))
+      [:div.flex-container
+       [:div.stats
+        [:svg
+         {:viewBox (str "0 0 1200 1200")}
+         (for [[ri row] (map-indexed idx matrix)]
+           (for [[ci itm] (map-indexed idx row)]
+             (let [xk (first itm)
+                   yk (second itm)
+                   x-off (+ 20 (* ci 120))
+                   y-off (+ 20 (* ri 120))]
+               [scatter-plot combined-vals xk yk x-off y-off])))]]])))
