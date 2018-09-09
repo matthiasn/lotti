@@ -115,8 +115,7 @@
 (defn view-menu [put-fn]
   (let [index-page (:index-page rt/runtime-info)
         new-window #(put-fn [:window/new {:url index-page}])
-        open (fn [loc] #(let [js (str "window.location.hash = '" loc "'")]
-                          (put-fn [:exec/js {:js js}])))]
+        open (fn [page] (put-fn [:nav/to {:page page}]))]
     {:label   "View"
      :submenu [{:label       "Close Tab"
                 :accelerator "CmdOrCtrl+W"
@@ -128,25 +127,25 @@
                 :accelerator "CmdOrCtrl+Alt+N"
                 :click       new-window}
                {:label "Main View"
-                :click (open "")}
+                :click #(open :main)}
                (when (contains? capabilities :charts)
                  {:label "Charts"
-                  :click (open "charts1")})
+                  :click #(open :charts-1)})
                (when (contains? capabilities :config)
                  {:label "Config"
-                  :click (open "config")})
+                  :click #(open :config)})
                (when (contains? capabilities :sync-cfg)
                  {:label "Sync Config"
-                  :click (open "sync")})
+                  :click #(open :sync)})
                (when (contains? capabilities :countries)
                  {:label "Countries"
-                  :click (open "countries")})
+                  :click #(open :countries)})
                (when (contains? capabilities :heatmap)
                  {:label "Heatmap"
-                  :click (open "heatmap")})
+                  :click #(open :heatmap)})
                (when (contains? capabilities :scatter-matrix)
                  {:label "Scatter Matrix"
-                  :click (open "correlation")})
+                  :click #(open :correlation)})
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}

@@ -56,6 +56,7 @@
                 :import/listen
                 :import/spotify
                 :import/git
+                :nav/to
                 :firehose/cmp-put
                 :firehose/cmp-recv})
 
