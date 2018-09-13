@@ -65,6 +65,7 @@
                       (reset! local path)))]
     (js/setTimeout #(.scrollTo js/window 0 300) 100)
     (fn data-explorer-render [data]
+      (aset js/document "body" "style" "overflow" "scroll")
       [:div.edn-tree.light
        [:h2 "Data Explorer"]
        (data->hiccup (or data @db) @local expand-fn)])))

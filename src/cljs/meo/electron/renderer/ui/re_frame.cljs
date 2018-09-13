@@ -120,6 +120,8 @@
     (fn [put-fn]
       (let [current-page @current-page
             startup-progress @startup-progress]
+        (when-not @data-explorer
+          (aset js/document "body" "style" "overflow" "hidden"))
         (if (= 1 startup-progress)
           [:div
            (case (:page current-page)
