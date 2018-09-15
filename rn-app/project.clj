@@ -3,7 +3,7 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.0-alpha7"]
+  :dependencies [[org.clojure/clojure "1.10.0-alpha8"]
                  [org.clojure/clojurescript "1.10.339"]
                  [reagent "0.8.1" :exclusions [cljsjs/react
                                                cljsjs/react-dom
@@ -13,7 +13,7 @@
                  [cljs-react-navigation "0.1.3"]
                  [org.clojure/data.avl "0.0.17"]
                  [core-async-storage "0.3.1"]
-                 [re-frame "0.10.5"]]
+                 [re-frame "0.10.6"]]
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-figwheel "0.5.16"]]
   :clean-targets ["target/" "index.ios.js" "index.android.js" #_($PLATFORM_CLEAN$)]

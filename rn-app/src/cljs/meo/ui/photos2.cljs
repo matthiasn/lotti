@@ -52,7 +52,7 @@
                          :style    {:margin         10
                                     :display        "flex"
                                     :flex-direction "row"}}
-      [text {:style {:color       "#0078e7"
+      [text {:style {:color       "green"
                      :font-size   30
                      :margin-left 25}}
        "import"]]]))
@@ -105,7 +105,7 @@
           :itemWidth       vw
           :renderItem      render-item
           :data            data
-          :backgroundColor "#222"}]))))
+          :backgroundColor "black"}]))))
 
 (defn photos-wrapper [local put-fn]
   (fn [{:keys [screenProps navigation] :as props}]

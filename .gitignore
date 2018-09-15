@@ -39,7 +39,7 @@ package-lock.json
 
 prod/
 dist/
-dev/
+dev/renderer
 __pycache__/
 
 SPOTIFY_SECRET

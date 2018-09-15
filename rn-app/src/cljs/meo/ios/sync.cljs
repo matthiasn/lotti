@@ -11,7 +11,8 @@
 (def AES (aget crypto-js "AES"))
 (def utf-8 (aget crypto-js "enc" "Utf8"))
 
-(def Buffer (aget (js/require "buffer") "Buffer"))
+(def buffer (js/require "buffer"))
+(def Buffer (aget buffer "Buffer"))
 
 (defn buffer-convert [from to s]
   (let [buffer (.from Buffer s from)]
@@ -103,7 +104,8 @@
       (-> (.fetchImap MailCore (clj->js mail))
           (.then fetch-cb)
           (.catch #(shared/alert (str %)))))
-    (catch :default e (shared/alert (str e)))))
+    (catch :default e (shared/alert (str e))))
+  {})
 
 (defn sync-read-msg [{:keys [put-fn cmp-state]}]
   (try
@@ -132,7 +134,8 @@
           (-> (.fetchImapByUid MailCore (clj->js mail))
               (.then fetch-cb)
               (.catch #(.log js/console (str (js->clj %))))))))
-    (catch :default e (shared/alert (str e)))))
+    (catch :default e (shared/alert (str e))))
+  {})
 
 (defn retry-write [{:keys [cmp-state]}]
   (for [x (:open-writes @cmp-state)]

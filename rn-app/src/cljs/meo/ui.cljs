@@ -5,19 +5,33 @@
             [meo.ui.editor :as edit]
             [meo.ui.photos2 :as photos]
             [meo.ui.shared :refer [view text text-input touchable-opacity btn
-                                   tab-bar keyboard-avoiding-view vibration
+                                   tab-bar keyboard-avoiding-view vibration alert
                                    tab-bar-item app-registry icon safe-area-view]]
             [meo.ui.journal :as jrn]
             [cljs-react-navigation.reagent :refer [tab-navigator]]
             [meo.ui.settings :as ts]
-            [meo.ui.colors :as c]))
+            [meo.ui.colors :as c]
+            [clojure.pprint :as pp]))
 
 (def put-fn-atom (r/atom nil))
 
 (def local (r/atom {:cam       false
                     :contacts  (clj->js [])
                     :map-style :Street
+                    :active    "journal"
                     :md        ""}))
+
+(defn nav-options [icon-name size]
+  {:tabBarOnPress (fn [ev]
+                    (let [ev (js->clj ev :keywordize-keys true)
+                          jumpToIndex (:jumpToIndex ev)]
+                      ;(alert (with-out-str (pp/pprint (:scene ev))))
+                      (swap! local assoc :active (-> ev :scene :route :routeName))
+                      (jumpToIndex (-> ev :scene :index))))
+   :tabBarIcon    (fn [{:keys [tintColor]}]
+                    [icon {:name  icon-name
+                           :size  size
+                           :color tintColor}])})
 
 (defn app-root []
   (let [theme (subscribe [:active-theme])]
@@ -26,27 +40,16 @@
             bg (get-in c/colors [:header-tab @theme])]
         [:> (tab-navigator
               {:journal  {:screen            (jrn/journal-tab local put-fn theme)
-                          :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
-                                                            [icon {:name  "list"
-                                                                   :size  22
-                                                                   :color tintColor}])}}
+                          :navigationOptions (nav-options "list" 22)}
                :add      {:screen            (edit/editor-tab local put-fn theme)
-                          :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
-                                                            [icon {:name  "plus-square-o"
-                                                                   :size  26
-                                                                   :color tintColor}])}}
+                          :navigationOptions (nav-options "plus-square-o" 26)}
                :photos   {:screen            (photos/photos-tab local put-fn theme)
-                          :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
-                                                            [icon {:name  "film"
-                                                                   :size  22
-                                                                   :color tintColor}])}}
+                          :navigationOptions (nav-options "film" 22)}
                :settings {:screen            (ts/settings-tab local put-fn theme)
-                          :navigationOptions {:tabBarIcon (fn [{:keys [tintColor]}]
-                                                            [icon {:name  "cogs"
-                                                                   :size  22
-                                                                   :color tintColor}])}}}
+                          :navigationOptions (nav-options "cogs" 22)}}
               {:swipeEnabled     false
                :animationEnabled false
+               ;:initialRouteName (:active @local) ; not working properly, flickers
                :tabBarOptions    {:activeTintColor         "#0078e7"
                                   :activeBackgroundColor   bg
                                   :inactiveBackgroundColor bg
