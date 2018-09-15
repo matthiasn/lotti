@@ -3,6 +3,7 @@
 
 (def react-native (js/require "react-native"))
 
+(def dimensions (.-Dimensions react-native))
 (def keyboard (.-Keyboard react-native))
 (def app-registry (.-AppRegistry react-native))
 (def view (r/adapt-react-class (.-View react-native)))

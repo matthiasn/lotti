@@ -16,6 +16,7 @@ var modules = {
     'react-navigation': require('react-navigation'),
     'react-native-audio-recorder-player': require('react-native-audio-recorder-player'),
     'react-native-settings-list': require('react-native-settings-list'),
+    'react-native-snap-carousel': require('react-native-snap-carousel'),
     'react-native-swipeout': require('react-native-swipeout'),
     'react-native-deck-swiper': require('react-native-deck-swiper'),
     'react-native-activity-recognition': require('react-native-activity-recognition'),
