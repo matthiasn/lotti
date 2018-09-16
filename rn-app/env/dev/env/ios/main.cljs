@@ -16,8 +16,7 @@
 
 (defn force-reload! []
   (clear-subscription-cache!)
-  (swap! cnt inc)
-  )
+  (swap! cnt inc))
 
 (fw/start {
            :websocket-url    (:ios conf/figwheel-urls)

@@ -50,6 +50,7 @@
               {:swipeEnabled     false
                :animationEnabled false
                ;:initialRouteName (:active @local) ; not working properly, flickers
+               :initialRouteName "photos"
                :tabBarOptions    {:activeTintColor         "#0078e7"
                                   :activeBackgroundColor   bg
                                   :inactiveBackgroundColor bg
