@@ -83,8 +83,7 @@
           [g/tabs-view :left put-fn]]
          (when-not @single-column
            [:div.right
-            [g/tabs-view-virtualized :right put-fn]
-            #_[g/tabs-view :right put-fn]])
+            [g/tabs-view :right put-fn]])
          [f/footer put-fn]]]
        [stats/stats-text]])))
 
