@@ -1,6 +1,8 @@
 (ns meo.electron.renderer.ui.grid
   (:require [reagent.core :as rc]
             [meo.electron.renderer.ui.journal :as j]
+    ;[meo.electron.renderer.ui.virtualized :as virt]
+            [meo.electron.renderer.ui.react-list :as rl]
             [clojure.string :as s]
             [moment]
             [taoensso.timbre :refer [info error debug]]
@@ -76,3 +78,25 @@
          [search/search-field-view query-id put-fn])
        (when @query-id
          [j/journal-view @local-cfg put-fn])])))
+
+(defn tabs-view-virtualized
+  [tab-group put-fn]
+  (let [query-cfg (subscribe [:query-cfg])
+        query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
+        story (reaction (get-in @query-cfg [:queries @query-id :story]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
+        local-cfg (reaction {:query-id    @query-id
+                             :search-text @search-text
+                             :tab-group   tab-group
+                             :story       @story})]
+    (fn tabs-render [tab-group put-fn]
+      [:div.tile-tabs
+       [tabs-header-view tab-group put-fn]
+       (when @query-id
+         ^{:key @query-id}
+         [search/search-field-view query-id put-fn])
+       #_
+       (when @query-id
+         [virt/journal-view @local-cfg put-fn])
+       (when @query-id
+         [rl/journal-view @local-cfg put-fn])])))

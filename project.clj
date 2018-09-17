@@ -146,11 +146,21 @@
                                               :optimizations  :simple
                                               :parallel-build true}}
                               {:id           "renderer-dev"
+                               :source-paths ["src/cljc" "src/cljs"]
+                               :compiler     {:main           meo.electron.renderer.core
+                                              :output-to      "dev/renderer/renderer.js"
+                                              :output-dir     "dev/renderer"
+                                              :language-in    :ecmascript6
+                                              :source-map     true
+                                              :target         :nodejs
+                                              :optimizations  :none
+                                              :parallel-build true}}
+                              {:id           "renderer-figwheel"
                                :source-paths ["src/cljc" "src/cljs" "env"]
                                :figwheel     true
                                :compiler     {:main           meo.dev
-                                              :output-to      "dev/renderer/renderer.js"
-                                              :output-dir     "dev/renderer"
+                                              :output-to      "dev/renderer-figwheel/renderer.js"
+                                              :output-dir     "dev/renderer-figwheel"
                                               :language-in    :ecmascript6
                                               :source-map     true
                                               :target         :nodejs
