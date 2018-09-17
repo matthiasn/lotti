@@ -1,7 +1,6 @@
 (ns meo.electron.renderer.ui.grid
   (:require [reagent.core :as rc]
             [meo.electron.renderer.ui.journal :as j]
-            [meo.electron.renderer.ui.react-list :as rl]
             [clojure.string :as s]
             [moment]
             [taoensso.timbre :refer [info error debug]]
@@ -75,4 +74,4 @@
          ^{:key @query-id}
          [search/search-field-view query-id put-fn])
        (when @query-id
-         [rl/journal-view @local-cfg put-fn])])))
+         [j/journal-view @local-cfg put-fn])])))

@@ -67,6 +67,7 @@
                 [:task [:completed_s
                         :completion_ts
                         :done
+                        :rejected
                         :estimate_m
                         :on_hold
                         :points

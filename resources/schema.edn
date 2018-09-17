@@ -5,6 +5,7 @@
    :fields      {:estimate_m    {:type Int}
                  :points        {:type Int}
                  :done          {:type Boolean}
+                 :rejected      {:type Boolean}
                  :on_hold       {:type Boolean}
                  :priority      {:type String}
                  :completed_s   {:type        Int

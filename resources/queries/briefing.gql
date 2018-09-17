@@ -20,6 +20,7 @@
         estimate_m
         points
         on_hold
+        rejected
         done
         priority
       }
