@@ -607,10 +607,13 @@
   }
 
   .checked {
-    padding-left: 1px;
+    padding-left: 3px;
     color: $green;
     i {
       font-size: 1.2em;
+    }
+    .fa-times {
+      color: $red;
     }
   }
 

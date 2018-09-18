@@ -7,9 +7,7 @@
                        "#push-ups" {:fields {:cnt {:label "Completed:" :cfg {:type :number :step 1}}}}
                        "#squats"   {:fields {:cnt {:label "Completed:" :cfg {:type :number :step 1}}}}
                        "#lunges"   {:fields {:cnt {:label "Completed:" :cfg {:type :number :step 1}}}}
-                       "#sleep"    {:fields {:duration      {:label "Duration:" :cfg {:type :time}}
-                                             :interruptions {:label "Interruptions:" :cfg {:type :number :step 1}}
-                                             :restedness    {:label "Feeling rested? (1 poor - 10 very):" :cfg {:type :number :step 1} :agg :mean}}}
+                       "#sleep"    {:fields {:duration {:label "Duration:" :cfg {:type :time}}}}
                        "#running"  {:fields {:distance       {:label "Distance:" :cfg {:type :number :step 0.1}}
                                              :duration       {:label "Minutes:" :cfg {:type :number :step 1}}
                                              :calories       {:label "Calories:" :cfg {:type :number :step 1}}

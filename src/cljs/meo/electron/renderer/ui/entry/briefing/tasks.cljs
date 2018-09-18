@@ -53,13 +53,16 @@
                   active "active-timer"
                   (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)
-            logged-time (eu/logged-total new-entries entry)]
+            logged-time (eu/logged-total new-entries entry)
+            done (get-in entry [:task :done])
+            closed (get-in entry [:task :closed])]
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)
                    :class    cls}
          [:td
-          (if (get-in entry [:task :done])
+          (if (or done closed)
             [:span.checked
-             [:i.fas.fa-check]]
+             (when done [:i.fas.fa-check])
+             (when closed [:i.fas.fa-times])]
             (when-let [prio (some-> entry :task :priority (name))]
               [:span.prio {:class prio} prio]))]
          [:td.award-points
@@ -143,9 +146,11 @@
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        linked-filters {:all  identity
-                        :open #(not (-> % :task :done))
-                        :done #(-> % :task :done)}
+        linked-filters {:all    identity
+                        :open   #(and (not (-> % :task :done))
+                                      (not (-> % :task :closed)))
+                        :done   #(-> % :task :done)
+                        :closed #(-> % :task :closed)}
         filter-btn (fn [fk text]
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
@@ -177,6 +182,7 @@
            [filter-btn :all]
            [filter-btn :open]
            [filter-btn :done]
+           [filter-btn :closed]
            [:table.tasks
             [:tbody
              [:tr
