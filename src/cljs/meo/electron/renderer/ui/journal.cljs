@@ -4,7 +4,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
             [react-list :as rl]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (def react-list (r/adapt-react-class rl))
 
@@ -27,16 +28,20 @@
    entry."
   [local-cfg _put-fn]
   (let [gql-res (subscribe [:gql-res])
+        last-fetch (r/atom 0)
         tab-group (:tab-group local-cfg)
         entries-list (reaction (get-in @gql-res [:tabs-query :data tab-group]))]
     (fn journal-view-render [local-cfg put-fn]
       (let [query-id (:query-id local-cfg)
             tg (:tab-group local-cfg)
+            cnt (count @entries-list)
             on-scroll (fn [ev]
                         (let [elem (-> ev .-nativeEvent .-srcElement)
                               sh (.-scrollHeight elem)
                               st (.-scrollTop elem)]
-                          (when (< (- sh st) 1000)
+                          (when (and (not= cnt @last-fetch)
+                                     (< (- sh st) 1000))
+                            (reset! last-fetch cnt)
                             (put-fn [:show/more {:query-id query-id}]))))
             on-mouse-enter #(put-fn [:search/cmd {:t         :active-tab
                                                   :tab-group tg}])]
