@@ -47,7 +47,7 @@
                                     :put-fn        (fn [_])
                                     :msg-payload   {:query-id :query-1}})
           updated-query (second send-to-self)
-          expected-query (update-in st/open-tasks-query [:n] + 10)]
+          expected-query (update-in st/open-tasks-query [:n] + 25)]
       (testing
         "send properly updated query, with increased number of results"
         (is (= updated-query
