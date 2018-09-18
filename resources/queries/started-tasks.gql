@@ -16,7 +16,7 @@
       points
       on_hold
       done
-      rejected
+      closed
       completed_s
       priority
     }
