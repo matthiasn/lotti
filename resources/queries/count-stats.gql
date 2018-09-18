@@ -5,7 +5,7 @@
   tag_count
   mention_count
   completed_count
-  open_tasks: match_count(query:"#task ~#done ~#backlog ~#closed ~#rejected")
+  open_tasks: match_count(query:"#task ~#done ~#backlog ~#closed")
   backlog_count: match_count(query:"#task #backlog ~#done ~#closed")
   closed_count: match_count(query:"#task #closed")
   import_count: match_count(query:"#import")
