@@ -107,7 +107,8 @@
          [:div.header-1
           [:div
            [es/story-select entry tab-group put-fn]]
-          [loc/geonames entry put-fn]]
+          ;[loc/geonames entry put-fn]
+          ]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]

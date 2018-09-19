@@ -11,11 +11,16 @@
 
 (defn entry-wrapper [idx local-cfg _put-fn]
   (let [tab-group (:tab-group local-cfg)
-        gql-res (subscribe [:gql-res])
-        entry (reaction (get-in @gql-res [:tabs-query :data tab-group idx]))]
+        gql-res (subscribe [:gql-res2])
+        entry (reaction (-> @gql-res
+                            (get tab-group)
+                            vals
+                            (nth idx)))]
     (fn entry-wrapper-render [_idx local-cfg put-fn]
       ^{:key (str (:timestamp @entry) (:vclock @entry))}
-      [e/entry-with-comments @entry put-fn local-cfg])))
+      [:div
+       (when @entry
+         [e/entry-with-comments @entry put-fn local-cfg])])))
 
 (defn item [local-cfg put-fn]
   (fn [idx]
@@ -27,10 +32,10 @@
   "Renders journal div, one entry per item, with map if geo data exists in the
    entry."
   [local-cfg _put-fn]
-  (let [gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res2])
         last-fetch (r/atom 0)
         tab-group (:tab-group local-cfg)
-        entries-list (reaction (get-in @gql-res [:tabs-query :data tab-group]))]
+        entries-list (reaction (vals (get-in @gql-res [tab-group])))]
     (fn journal-view-render [local-cfg put-fn]
       (let [query-id (:query-id local-cfg)
             tg (:tab-group local-cfg)

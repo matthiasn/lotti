@@ -23,6 +23,7 @@
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
+(reg-sub :gql-res2 (fn [db _] (:gql-res2 db)))
 (reg-sub :db (fn [db _] db))
 (reg-sub :stories (fn [db _]
                     (->> (get-in db [:gql-res :options :data :stories])

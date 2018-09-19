@@ -1,7 +1,7 @@
 (ns meo.electron.renderer.client-store
   (:require #?(:cljs [reagent.core :refer [atom]])
-    #?(:clj [taoensso.timbre :refer [info debug]]
-       :cljs [taoensso.timbre :refer-macros [info debug]])
+            #?(:clj  [taoensso.timbre :refer [info debug]]
+               :cljs [taoensso.timbre :refer-macros [info debug]])
             [matthiasn.systems-toolbox.component :as st]
             [meo.electron.renderer.client-store-entry :as cse]
             [meo.electron.renderer.client-store-search :as s]
@@ -20,6 +20,8 @@
                      :pomodoro-stats   (sorted-map)
                      :task-stats       (sorted-map)
                      :wordcount-stats  (sorted-map)
+                     :gql-res2         {:left  (sorted-map-by >)
+                                        :right (sorted-map-by >)}
                      :options          {:pvt-hashtags #{"#pvt"}}
                      :cfg              cfg})]
     (put-fn [:imap/get-cfg])
@@ -72,6 +74,17 @@
         new-state (assoc-in current-state [:gql-res id] msg-payload)]
     {:new-state new-state}))
 
+(defn gql-res2 [{:keys [current-state msg-payload]}]
+  (let [{:keys [tab res del]} msg-payload
+        prev (get-in current-state [:gql-res2 tab])
+        cleaned (apply dissoc prev del)
+        res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
+        ;res-map (merge cleaned res-map)
+        ;res-map (into {} (map (fn [entry] [(:timestamp entry) entry]) res))
+        ;res-map (merge cleaned res-map)
+        new-state (assoc-in current-state [:gql-res2 tab] res-map)]
+    {:new-state new-state}))
+
 (defn imap-status [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:imap-status] msg-payload)]
     {:new-state new-state}))
@@ -94,6 +107,7 @@
                        s/search-handler-map
                        {:cfg/save         c/save-cfg
                         :gql/res          gql-res
+                        :gql/res2         gql-res2
                         :startup/progress progress
                         :startup/query    initial-queries
                         :ws/ping          ping

@@ -115,6 +115,7 @@
                                         :pvt   pvt
                                         :story story
                                         :prio  1
+                                        :tab   (name k)
                                         :n     n} fields]
              :query/alias k})
         queries (mapv f queries)]

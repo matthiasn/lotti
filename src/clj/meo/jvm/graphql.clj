@@ -28,7 +28,8 @@
             [com.walmartlabs.lacinia.parser :as parser]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [clojure.set :as set]
-            [clj-pid.core :as pid])
+            [clj-pid.core :as pid]
+            [clojure.pprint :as pp])
   (:import [clojure.lang ExceptionInfo]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
@@ -139,24 +140,42 @@
                          (assoc-in t [:task :completed_s] logged)))]
     (mapv task-total-t entries)))
 
-(defn tab-search [state context args value]
-  (let [{:keys [query n pvt story]} args
-        current-state @state
-        g (:graph current-state)
-        q (merge (update-in (p/parse-search query) [:n] #(or n %))
-                 {:story (when story (Long/parseLong story))
-                  :pvt   pvt})
-        res (->> (gq/get-filtered2 current-state q)
-                 (filter #(not (:comment_for %)))
-                 (mapv (partial entry-w-story g))
-                 (entries-w-logged g)
-                 (mapv xf/vclock-xf)
-                 (mapv xf/edn-xf)
-                 (mapv (partial entry-w-comments g))
-                 (mapv (partial linked-for g))
-                 (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))]
-    (debug res)
-    res))
+(defn res-diff [prev res]
+  (let [prev (set prev)
+        res (set res)
+        diff (set/difference res prev)
+        only-in-prev (set/difference prev res)
+        del-ts (set (map :timestamp only-in-prev))]
+    {:res diff
+     :del del-ts}))
+
+(defn tab-search [put-fn]
+  (fn [state context args value]
+    (let [{:keys [query n pvt story tab]} args
+          current-state @state
+          tab (keyword tab)
+          prev (get-in current-state [:prev tab])
+          g (:graph current-state)
+          q (merge (update-in (p/parse-search query) [:n] #(or n %))
+                   {:story (when story (Long/parseLong story))
+                    :pvt   pvt})
+          res (->> (gq/get-filtered2 current-state q)
+                   (filter #(not (:comment_for %)))
+                   (mapv (partial entry-w-story g))
+                   (entries-w-logged g)
+                   (mapv xf/vclock-xf)
+                   (mapv xf/edn-xf)
+                   (mapv (partial entry-w-comments g))
+                   (mapv (partial linked-for g))
+                   (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))
+          diff (res-diff prev res)
+          diff-res (merge diff {:tab tab :query query :n n})]
+      (swap! state assoc-in [:prev tab] res)
+      (info args)
+      (debug res)
+      (when (seq (set/union (:res diff) (:del diff)))
+        (put-fn (with-meta [:gql/res2 diff-res] {:sente-uid :broadcast})))
+      [])))
 
 (defn custom-field-stats [state context args value]
   (let [{:keys [days tag]} args
@@ -321,7 +340,7 @@
           (info "Stopped GraphQL server")))
     {}))
 
-(defn state-fn [state _put-fn]
+(defn state-fn [state put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         attach-state (fn [m]
                        (into {} (map (fn [[k f]]
@@ -339,7 +358,7 @@
                         :query/match-count        match-count
                         :query/active-threads     thread-count
                         :query/pid                pid
-                        :query/tab-search         tab-search
+                        :query/tab-search         (tab-search put-fn)
                         :query/hashtags           hashtags
                         :query/pvt-hashtags       pvt-hashtags
                         :query/logged-time        logged-time

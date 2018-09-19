@@ -231,7 +231,7 @@
 (defn show-more [{:keys [current-state msg-payload]}]
   (let [query-path [:query-cfg :queries (:query-id msg-payload)]
         merged (merge (get-in current-state query-path) msg-payload)
-        new-query (update-in merged [:n] + 25)]
+        new-query (update-in merged [:n] + 15)]
     {:send-to-self [:search/update new-query]}))
 
 (defn search-res [{:keys [current-state msg-payload]}]

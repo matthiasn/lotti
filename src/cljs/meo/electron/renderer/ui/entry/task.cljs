@@ -32,7 +32,7 @@
                                        clear
                                        (assoc-in [:task :completion_ts] completion-ts)
                                        (assoc-in [:task :done] (not checked)))
-                             set-fn (if checked
+                             set-fn (if (get-in entry [:task :done])
                                       set/union
                                       set/difference)
                              entry (-> entry
@@ -47,7 +47,7 @@
                                          clear
                                          (assoc-in [:task :closed_ts] rejection-ts)
                                          (assoc-in [:task :closed] (not checked)))
-                               set-fn (if checked
+                               set-fn (if (get-in entry [:task :closed])
                                         set/union
                                         set/difference)
                                entry (-> entry
