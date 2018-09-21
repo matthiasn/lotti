@@ -247,8 +247,8 @@
         (uc/add-edges [:starred (:timestamp entry)]))
     graph))
 
-(defn add-completion [g entry]
-  (if-let [completion-ts (:completion_ts (:task entry))]
+(defn add-completion [g entry tsk]
+  (if-let [completion-ts (tsk (:task entry))]
     (let [dt (ctf/parse dt/dt-completion-fmt completion-ts)
           day-node {:type  :timeline/day
                     :year  (ct/year dt)
@@ -259,11 +259,11 @@
                        {:relationship :DATE}]))
     g))
 
-(defn add-done [g entry]
-  (if (get-in entry [:task :done])
-    (let [g (uc/add-nodes g :done)
-          g (uc/add-edges g [:done (:timestamp entry)])]
-      (add-completion g entry))
+(defn add-done [g k tsk entry]
+  (if (get-in entry [:task k])
+    (let [g (uc/add-nodes g k)
+          g (uc/add-edges g [k (:timestamp entry)])]
+      (add-completion g entry tsk))
     g))
 
 (defn add-story-set [current-state entry]
@@ -336,7 +336,8 @@
         (update-in [:graph] add-story new-entry)
         (update-in [:graph] add-saga new-entry)
         (update-in [:graph] add-starred new-entry)
-        (update-in [:graph] add-done new-entry)
+        (update-in [:graph] add-done :done :completion_ts new-entry)
+        (update-in [:graph] add-done :closed :closed_ts new-entry)
         (update-in [:graph] add-location new-entry)
         (update-in [:graph] add-briefing new-entry)
         (update-in [:sorted-entries] conj ts))))

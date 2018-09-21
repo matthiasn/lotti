@@ -21,6 +21,7 @@
         points
         on_hold
         closed
+        closed_ts
         done
         priority
       }

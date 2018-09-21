@@ -177,8 +177,8 @@
                                                       :day   (ct/day dt)}
                                        :relationship :DATE})))))
 
-(defn get-done [g]
-  (set (mapv :dest (uc/find-edges g {:src :done}))))
+(defn get-done [g k]
+  (set (mapv :dest (uc/find-edges g {:src k}))))
 
 (defn get-linked-for-ts [g ts]
   (let [linked (->> (flatten (uc/find-edges g {:src ts :relationship :LINKED}))

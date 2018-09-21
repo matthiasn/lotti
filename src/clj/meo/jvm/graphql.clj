@@ -76,8 +76,11 @@
                                    (vec)))))
 
 (defn completed-for-day [g day]
-  (let [entries (set/intersection (gq/get-nodes-for-day g {:date_string day})
-                                  (gq/get-done g))]
+  (let [entries (set/intersection
+                  (gq/get-nodes-for-day g {:date_string day})
+                  (set/union
+                    (gq/get-done g :done)
+                    (gq/get-done g :closed)))]
     (->> entries
          (map #(entry-w-story g (get-entry g %)))
          (filter :timestamp)
