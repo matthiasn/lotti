@@ -227,7 +227,8 @@
            :pvt      (:pvt args)}
         current-state @state
         g (:graph current-state)
-        tasks (->> (gq/get-filtered2 current-state q)
+        res (gq/get-filtered2 current-state q)
+        tasks (->> res
                    (entries-w-logged g)
                    (mapv #(entry-w-story g %))
                    (mapv (partial entry-w-comments g)))]

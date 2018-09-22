@@ -17,14 +17,15 @@
 (defn summed-durations
   "Calculate time spent as tracked in custom fields."
   [entry]
-  (let [custom-fields (:custom_fields entry)
-        duration-secs (filter identity (mapv (fn [[k v]]
-                                               (let [dur (:duration v)]
-                                                 (if (= k "#audio")
-                                                   0
-                                                   (* 60 (or dur 0)))))
-                                             custom-fields))]
-    (apply + duration-secs)))
+  (let [custom-fields (:custom_fields entry)]
+    (if (map? custom-fields)
+      (apply + (filter identity (mapv (fn [[k v]]
+                                        (let [dur (:duration v)]
+                                          (if (= k "#audio")
+                                            0
+                                            (* 60 (or dur 0)))))
+                                      custom-fields)))
+      0)))
 
 (def dtz (ct/default-time-zone))
 (def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))

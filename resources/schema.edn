@@ -215,7 +215,7 @@
 
   :waiting_habits
   {:type        (list :Entry)
-   :description "List of started tasks."
+   :description "List of waiting habits."
    :args        {:pvt  {:type Boolean}
                  :prio {:type Int}}
    :resolve     :query/waiting-habits}
