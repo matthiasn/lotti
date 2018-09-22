@@ -5,7 +5,7 @@
   flex: 2;
   font-size: $font-size-cal;
   height: 100%;
-  width: 160px;
+  width: 130px;
 }
 
 .rbc-btn {
@@ -32,7 +32,7 @@ button.rbc-input::-moz-focus-inner {
 .rbc-calendar {
   box-sizing: border-box;
   height: 100%;
-  min-width: 160px;
+  min-width: 100px;
   display: flex;
   flex-direction: column;
   align-items: stretch;

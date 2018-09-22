@@ -178,7 +178,6 @@
                              :story       @story})]
     (fn briefing-column-view-render [tab-group put-fn]
       [:div.briefing
-       [cal/rome-component put-fn]
        [:div.tile-tabs
         [:div.journal
          [:div.journal-entries

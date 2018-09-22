@@ -77,6 +77,8 @@
        [:div.grid
         [:div.wrapper.col-3
          [menu/menu-view put-fn]
+         [:div.inf-cal
+          [cal/infinite-cal put-fn]]
          [:div.cal
           [cal/calendar-view put-fn]]
          [b/briefing-column-view :briefing put-fn]

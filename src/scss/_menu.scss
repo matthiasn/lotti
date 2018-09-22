@@ -2,6 +2,7 @@
 
 .menu-header {
   -webkit-app-region: drag;
+  width: 100%;
   user-select: none;
   flex: 0 0 auto;
   display: flex;
@@ -9,7 +10,7 @@
   flex-flow: row;
   align-items: center;
   justify-content: space-between;
-
+  height: 32px;
   background-color: $menu-bg;
   padding: 0 100px 0 0;
 
@@ -30,7 +31,6 @@
 
   h1 {
     padding-left: 100px;
-    color:white;
     font-size: $font-size-meo-header;
   }
 
@@ -45,11 +45,14 @@
   }
 
   .busy-status {
-    height: 28px;
-    width: 28px;
-    border-radius: 14px;
-    margin: 0 auto 0 14px;
+    height: 24px;
+    width: 24px;
+    border-radius: 12px;
+    margin: 0 auto 0 12px;
     cursor: pointer;
+    position: fixed;
+    top: 5px;
+    right: 10px;
 
     &.red {
       background-color: $red;

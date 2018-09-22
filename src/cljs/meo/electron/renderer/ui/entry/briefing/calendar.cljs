@@ -6,18 +6,27 @@
             [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.helpers :as h]
             [moment :as moment]
-            [rome :as rome]
             [reagent.ratom :refer-macros [reaction]]
             [react-big-calendar]
+            [react-infinite-calendar :as ric]
             [meo.electron.renderer.ui.charts.common :as cc]
-            [meo.common.utils.parse :as p]
-            [meo.electron.renderer.graphql :as gql]))
+            [meo.common.utils.parse :as p]))
 
-(defn rome-component [put-fn]
-  (let [ref (atom nil)
-        briefings (subscribe [:briefings])
+(def ric-adapted (r/adapt-react-class (aget ric "default")))
+
+(defn infinite-cal-wrapper [props]
+  (let [m (-> (fn [props] [ric-adapted props])
+              r/reactify-component
+              ric/withKeyboardSupport
+              ric/withDateSelection
+              r/adapt-react-class)]
+    [m props]))
+
+(defn infinite-cal [put-fn]
+  (let [briefings (subscribe [:briefings])
         cfg (subscribe [:cfg])
         pvt (subscribe [:show-pvt])
+        cal-day (subscribe [:cal-day])
         data-fn (fn [ymd]
                   (when-not (get @briefings ymd)
                     (let [weekday (.format (moment. ymd) "dddd")
@@ -32,18 +41,19 @@
                       (info "creating briefing" ymd)
                       (put-fn [:entry/update entry])))
                   (h/to-day ymd pvt put-fn))
-        opts (clj->js {:time             false
-                       :initialValue     (:cal-day @cfg)
-                       :monthsInCalendar 2})]
-    (r/create-class
-      {:display-name         "rome-cal"
-       :component-did-update (fn [] (some-> @ref .focus))
-       :component-did-mount  (fn [props]
-                               (let [rome-elem (rome. @ref opts)]
-                                 (.on rome-elem "data" data-fn))
-                               (info :component-did-mount @ref (js->clj props)))
-       :reagent-render       (fn [_put-fn]
-                               [:div.rome {:ref (fn [cmp] (reset! ref cmp))}])})))
+        onSelect (fn [ev] (data-fn (h/ymd ev)))]
+    (fn [put-fn]
+      (let [h (- (aget js/window "innerHeight") 202)]
+        [:div.infinite-cal
+         [infinite-cal-wrapper
+          {:width           "100%"
+           :height          h
+           :showHeader      false
+           :onSelect        onSelect
+           :autoFocus       true
+           :keyboardSupport true
+           :rowHeight       45
+           :selected        @cal-day}]]))))
 
 (defn calendar-view [put-fn]
   (let [rbc (aget js/window "deps" "BigCalendar")
