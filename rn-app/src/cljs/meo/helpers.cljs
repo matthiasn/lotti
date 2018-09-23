@@ -62,6 +62,9 @@
 (defn m-to-hh-mm [m]
   (let [t (js/moment (* m 60 1000))]
     (.format (.utc t) "HH:mm")))
+(defn s-to-hh-mm [s]
+  (let [t (moment (* s 1000))]
+    (.format (.utc t) "HH:mm")))
 
 (defn get-stats
   "Retrieves stats for the last n days."

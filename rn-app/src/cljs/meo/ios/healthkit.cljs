@@ -1,6 +1,7 @@
 (ns meo.ios.healthkit
   (:require [clojure.pprint :as pp]
             [meo.utils.misc :as um]
+            [meo.helpers :as h]
             [matthiasn.systems-toolbox.component :as st]))
 
 (enable-console-print!)
@@ -109,7 +110,7 @@
                            end-ts (.valueOf (moment end-date))
                            seconds (/ (- end-ts start-ts) 1000)
                            minutes (js/parseInt (/ seconds 60))
-                           text (str (um/duration-string seconds) " " tag)
+                           text (str (h/s-to-hh-mm seconds) " " tag)
                            entry {:timestamp      end-ts
                                   :sample         sample
                                   :md             text

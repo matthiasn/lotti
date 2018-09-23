@@ -104,8 +104,8 @@
   (let [t (moment (* m 60 1000))]
     (.format (.utc t) "HH:mm")))
 
-(defn s-to-hh-mm [m]
-  (let [t (moment (* m 1000))]
+(defn s-to-hh-mm [s]
+  (let [t (moment (* s 1000))]
     (.format (.utc t) "HH:mm")))
 
 (defn s-to-hh-mm-ss [s]
