@@ -43,41 +43,41 @@
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
 (defn sync-write [{:keys [msg-type msg-payload msg-meta cmp-state]}]
-  (try
-    (let [secrets (:secrets @cmp-state)
-          aes-secret (-> secrets :sync :write :secret)
-          folder (-> secrets :sync :write :folder)
-          ts (:timestamp msg-payload)
+  (when-let [secrets (:secrets @cmp-state)]
+    (try
+      (let [aes-secret (-> secrets :sync :write :secret)
+            folder (-> secrets :sync :write :folder)
+            ts (:timestamp msg-payload)
 
-          ; actual meta-data too large, makes the encryption waste battery
-          msg-meta {}
-          serializable [msg-type {:msg-payload msg-payload
-                                  :msg-meta    msg-meta}]
-          data (pr-str serializable)
-          ciphertext (.toString (.encrypt AES data aes-secret))
-          hex-cipher (utf8-to-hex ciphertext)
+            ; actual meta-data too large, makes the encryption waste battery
+            msg-meta {}
+            serializable [msg-type {:msg-payload msg-payload
+                                    :msg-meta    msg-meta}]
+            data (pr-str serializable)
+            ciphertext (.toString (.encrypt AES data aes-secret))
+            hex-cipher (utf8-to-hex ciphertext)
 
-          photo-uri (-> msg-payload :media :image :uri)
-          filename (:img_file msg-payload)
-          audiofile (:audio_file msg-payload)
-          mail (merge (:server secrets)
-                      {:folder   folder
-                       :from     {:addressWithDisplayName "fred"
-                                  :mailbox                "meo@nehlsen-edv.de"}
-                       :to       {:addressWithDisplayName "uschi"
-                                  :mailbox                "meo@nehlsen-edv.de"}
-                       :subject  (str msg-type)
-                       :textBody hex-cipher}
-                      (when audiofile {:audiofile audiofile})
-                      (when (and (= :entry/sync msg-type) filename)
-                        {:attachmentUri photo-uri
-                         :filename      filename}))
-          success-cb #(swap! cmp-state update-in [:open-writes] disj msg-payload)]
-      (swap! cmp-state update-in [:open-writes] conj msg-payload)
-      (-> (.saveImap MailCore (clj->js mail))
-          (.then success-cb)
-          (.catch #(.log js/console (str (js->clj %))))))
-    (catch :default e (.error js/console (str e))))
+            photo-uri (-> msg-payload :media :image :uri)
+            filename (:img_file msg-payload)
+            audiofile (:audio_file msg-payload)
+            mail (merge (:server secrets)
+                        {:folder   folder
+                         :from     {:addressWithDisplayName "fred"
+                                    :mailbox                "meo@nehlsen-edv.de"}
+                         :to       {:addressWithDisplayName "uschi"
+                                    :mailbox                "meo@nehlsen-edv.de"}
+                         :subject  (str msg-type)
+                         :textBody hex-cipher}
+                        (when audiofile {:audiofile audiofile})
+                        (when (and (= :entry/sync msg-type) filename)
+                          {:attachmentUri photo-uri
+                           :filename      filename}))
+            success-cb #(swap! cmp-state update-in [:open-writes] disj msg-payload)]
+        (swap! cmp-state update-in [:open-writes] conj msg-payload)
+        (-> (.saveImap MailCore (clj->js mail))
+            (.then success-cb)
+            (.catch #(.log js/console (str (js->clj %))))))
+      (catch :default e (.error js/console (str e)))))
   {})
 
 (defn schedule-read [cmp-state put-fn]
@@ -87,54 +87,54 @@
               :message [:sync/read]}])))
 
 (defn sync-get-uids [{:keys [put-fn cmp-state current-state]}]
-  (try
-    (let [secrets (:secrets current-state)
-          folder (-> secrets :sync :read :folder)
-          min-uid (or (last (:not-fetched current-state))
-                      (:last-uid-read current-state))
-          mail (merge (:server secrets)
-                      {:folder folder
-                       :minUid min-uid
-                       :length 100})
-          fetch-cb (fn [data]
-                     (let [uids (edn/read-string (str "[" data "]"))]
-                       (swap! cmp-state update :not-fetched into uids)
-                       ;(shared/alert (:not-fetched @cmp-state))
-                       (schedule-read cmp-state put-fn)))]
-      (-> (.fetchImap MailCore (clj->js mail))
-          (.then fetch-cb)
-          (.catch #(shared/alert (str %)))))
-    (catch :default e (shared/alert (str e))))
+  (when-let [secrets (:secrets @cmp-state)]
+    (try
+      (let [folder (-> secrets :sync :read :folder)
+            min-uid (or (last (:not-fetched current-state))
+                        (:last-uid-read current-state))
+            mail (merge (:server secrets)
+                        {:folder folder
+                         :minUid min-uid
+                         :length 100})
+            fetch-cb (fn [data]
+                       (let [uids (edn/read-string (str "[" data "]"))]
+                         (swap! cmp-state update :not-fetched into uids)
+                         ;(shared/alert (:not-fetched @cmp-state))
+                         (schedule-read cmp-state put-fn)))]
+        (-> (.fetchImap MailCore (clj->js mail))
+            (.then fetch-cb)
+            (.catch #(shared/alert (str %)))))
+      (catch :default e (shared/alert (str e)))))
   {})
 
 (defn sync-read-msg [{:keys [put-fn cmp-state]}]
-  (try
-    (let [{:keys [fetched not-fetched]} @cmp-state
-          not-fetched (drop-while #(contains? fetched %) not-fetched)]
-      (when-let [uid (first not-fetched)]
-        (let [secrets (:secrets @cmp-state)
-              aes-secret (-> secrets :sync :read :secret)
-              folder (-> secrets :sync :read :folder)
-              mail (merge (:server secrets)
-                          {:folder folder
-                           :uid    uid})
-              fetch-cb (fn [data]
-                         (let [body (get (js->clj data) "body")
-                               decrypted (decrypt-body body aes-secret)
-                               msg-type (first decrypted)
-                               {:keys [msg-payload msg-meta]} (second decrypted)
-                               msg (with-meta [msg-type msg-payload] msg-meta)]
-                           (swap! cmp-state assoc-in [:last-uid-read] uid)
-                           (go (<! (as/set-item :last-uid-read uid)))
-                           (swap! cmp-state update-in [:not-fetched] disj uid)
-                           (swap! cmp-state update-in [:fetched] conj uid)
-                           (schedule-read cmp-state put-fn)
-                           ;(shared/alert (with-out-str (pp/pprint msg)))
-                           (put-fn msg)))]
-          (-> (.fetchImapByUid MailCore (clj->js mail))
-              (.then fetch-cb)
-              (.catch #(.log js/console (str (js->clj %))))))))
-    (catch :default e (shared/alert (str e))))
+  (when-let [secrets (:secrets @cmp-state)]
+    (try
+      (let [{:keys [fetched not-fetched]} @cmp-state
+            not-fetched (drop-while #(contains? fetched %) not-fetched)]
+        (when-let [uid (first not-fetched)]
+          (let [aes-secret (-> secrets :sync :read :secret)
+                folder (-> secrets :sync :read :folder)
+                mail (merge (:server secrets)
+                            {:folder folder
+                             :uid    uid})
+                fetch-cb (fn [data]
+                           (let [body (get (js->clj data) "body")
+                                 decrypted (decrypt-body body aes-secret)
+                                 msg-type (first decrypted)
+                                 {:keys [msg-payload msg-meta]} (second decrypted)
+                                 msg (with-meta [msg-type msg-payload] msg-meta)]
+                             (swap! cmp-state assoc-in [:last-uid-read] uid)
+                             (go (<! (as/set-item :last-uid-read uid)))
+                             (swap! cmp-state update-in [:not-fetched] disj uid)
+                             (swap! cmp-state update-in [:fetched] conj uid)
+                             (schedule-read cmp-state put-fn)
+                             ;(shared/alert (with-out-str (pp/pprint msg)))
+                             (put-fn msg)))]
+            (-> (.fetchImapByUid MailCore (clj->js mail))
+                (.then fetch-cb)
+                (.catch #(.log js/console (str (js->clj %))))))))
+      (catch :default e (shared/alert (str e)))))
   {})
 
 (defn retry-write [{:keys [cmp-state]}]

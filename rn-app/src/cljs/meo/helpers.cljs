@@ -63,7 +63,7 @@
   (let [t (js/moment (* m 60 1000))]
     (.format (.utc t) "HH:mm")))
 (defn s-to-hh-mm [s]
-  (let [t (moment (* s 1000))]
+  (let [t (js/moment (* s 1000))]
     (.format (.utc t) "HH:mm")))
 
 (defn get-stats

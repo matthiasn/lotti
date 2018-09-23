@@ -17,11 +17,11 @@
     display: grid;
     height: calc(100vh - 16px);
     grid-gap: 4px;
-    grid-template-columns: 300px fit-content(160px) 0 minmax(250px, 1fr) minmax(250px, 1fr);
+    grid-template-columns: 210px fit-content(110px) 300px minmax(250px, 1fr);
     grid-template-rows: 32px minmax(0, 2fr) fit-content(95vh);
   }
   .col-3 {
-    grid-template-columns: 240px 130px 280px minmax(250px, 1fr) minmax(250px, 1fr)!important;
+    grid-template-columns: 210px fit-content(110px) 300px minmax(250px, 1fr) minmax(250px, 1fr)!important;
   }
 
   .menu {

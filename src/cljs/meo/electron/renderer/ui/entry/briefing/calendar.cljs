@@ -43,7 +43,7 @@
                   (h/to-day ymd pvt put-fn))
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn [put-fn]
-      (let [h (- (aget js/window "innerHeight") 170)]
+      (let [h (- (aget js/window "innerHeight") 175)]
         [:div.infinite-cal
          [infinite-cal-wrapper
           {:width           "100%"

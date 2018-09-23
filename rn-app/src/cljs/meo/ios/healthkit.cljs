@@ -87,8 +87,8 @@
                                                     " mmHG #BP")
                                :tags           #{"#BP"}
                                :sample         sample
-                               :custom_fields  {"#BP" {:bp-systolic  bp-systolic
-                                                       :bp-diastolic bp-diastolic}}
+                               :custom_fields  {"#BP" {:bp_systolic  bp-systolic
+                                                       :bp_diastolic bp-diastolic}}
                                :linked_stories #{1475314976880}
                                :primary_story  1475314976880}]
                     (put-fn (with-meta [:entry/update entry] {:silent true}))
