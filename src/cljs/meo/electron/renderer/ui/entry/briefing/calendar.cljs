@@ -52,6 +52,8 @@
            :onSelect        onSelect
            :autoFocus       true
            :keyboardSupport true
+           :theme           {:weekdayColor "#666"
+                             :headerColor  "#888"}
            :rowHeight       45
            :selected        @cal-day}]]))))
 

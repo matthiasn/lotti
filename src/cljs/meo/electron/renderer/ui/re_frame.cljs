@@ -77,6 +77,7 @@
        [:div.grid
         [:div.wrapper.col-3
          [menu/menu-view put-fn]
+         [menu/busy-status put-fn]
          [:div.inf-cal
           [cal/infinite-cal put-fn]]
          [:div.cal

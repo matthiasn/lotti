@@ -77,7 +77,7 @@
                   (put-fn [:search/add {:tab-group :left :query q}])))]
     (fn busy-status-render [_]
       (let [cls (name (or (:color @status) :green))]
-        [:div.busy-status {:class    cls
+        [:div.busy-status.rec-indicator {:class    cls
                            :on-click click}]))))
 
 (defn menu-view [_put-fn]
@@ -91,5 +91,4 @@
          [:div.menu-header
           [new-import-view put-fn]
           ;[:h1 {:on-click today} (h/localize-date day @locale)]
-          [busy-status put-fn]
           [upload-view]]]))))

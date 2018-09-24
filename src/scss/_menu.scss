@@ -43,25 +43,20 @@
   i {
     font-size: $font-size-large;
   }
+}
 
-  .busy-status {
-    height: 24px;
-    width: 24px;
-    border-radius: 12px;
-    margin: 0 auto 0 12px;
-    cursor: pointer;
-    position: fixed;
-    top: 5px;
-    right: 10px;
+.busy-status {
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
 
-    &.red {
-      background-color: $red;
-    }
-    &.green {
-      background-color: $green;
-    }
-    &.orange {
-      background-color: $orange;
-    }
+  &.red {
+    background-color: $red;
+  }
+  &.green {
+    background-color: $green;
+  }
+  &.orange {
+    background-color: $orange;
   }
 }
