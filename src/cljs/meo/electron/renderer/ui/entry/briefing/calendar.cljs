@@ -10,7 +10,8 @@
             [react-big-calendar]
             [react-infinite-calendar :as ric]
             [meo.electron.renderer.ui.charts.common :as cc]
-            [meo.common.utils.parse :as p]))
+            [meo.common.utils.parse :as p]
+            [meo.electron.renderer.ui.entry.briefing.habits :as habits]))
 
 (def ric-adapted (r/adapt-react-class (aget ric "default")))
 
@@ -41,13 +42,18 @@
                       (info "creating briefing" ymd)
                       (put-fn [:entry/update entry])))
                   (h/to-day ymd pvt put-fn))
+        local (r/atom {:filter                  :all
+                       :outstanding-time-filter true
+                       :selected-set            #{}
+                       :show-filter             false
+                       :on-hold                 false})
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn [put-fn]
       (let [h (- (aget js/window "innerHeight") 175)]
         [:div.infinite-cal
          [infinite-cal-wrapper
           {:width           "100%"
-           :height          h
+           :height          300
            :showHeader      false
            :onSelect        onSelect
            :autoFocus       true
@@ -55,7 +61,9 @@
            :theme           {:weekdayColor "#666"
                              :headerColor  "#888"}
            :rowHeight       45
-           :selected        @cal-day}]]))))
+           :selected        @cal-day}]
+         [:div.habit-details
+          [habits/waiting-habits local put-fn]]]))))
 
 (defn calendar-view [put-fn]
   (let [rbc (aget js/window "deps" "BigCalendar")

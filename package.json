@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.5.262",
+  "version": "0.5.263",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -34,7 +34,7 @@
     "draft-js-mention-plugin": "3.1.2",
     "draft-js-plugins-editor": "2.1.1",
     "draftjs-md-converter": "1.1.1",
-    "electron-context-menu": "0.10.0",
+    "electron-context-menu": "^0.10.0",
     "electron-fetch": "1.2.1",
     "electron-log": "2.2.17",
     "electron-spellchecker": "1.1.2",

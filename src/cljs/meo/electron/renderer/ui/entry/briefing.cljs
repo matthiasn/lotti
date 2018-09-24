@@ -149,8 +149,7 @@
             [a/briefing-actions ts put-fn]]
            [:div.briefing-details
             [tasks/started-tasks local local-cfg put-fn]
-            [tasks/open-linked-tasks ts local local-cfg put-fn]
-            [habits/waiting-habits local local-cfg put-fn]]
+            [tasks/open-linked-tasks ts local local-cfg put-fn]]
            [:div.summary
             [:div
              "Tasks: " [:strong (:tasks_cnt @day-stats)] " created | "

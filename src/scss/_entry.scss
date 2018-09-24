@@ -464,6 +464,7 @@
 .custom-fields, .briefing-details, .task-details, .habit-details {
   font-size: $font-size-medium;
   margin: 0.5em 0;
+  background-color: white;
 
   table {
     border-collapse: collapse;
@@ -576,9 +577,6 @@
 }
 
 .task-details, .habit-details {
-  div {
-    margin: 3px 0;
-  }
   input[type="number"] {
     width: 45px !important;
     margin-right: 8px;
@@ -773,5 +771,24 @@ u {
 
   a, .repo-name {
     font-weight: bold;
+  }
+}
+
+.infinite-cal {
+  display: flex;
+  flex-flow: column;
+
+  .habit-details {
+    flex: 1;
+    height: 400px;
+    overflow: auto;
+
+    .award-points {
+      padding-left: 10px;
+    }
+    .waiting-habits {
+    }
+    table {
+    }
   }
 }

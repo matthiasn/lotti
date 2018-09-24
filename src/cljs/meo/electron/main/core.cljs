@@ -1,6 +1,7 @@
 (ns meo.electron.main.core
   (:require [meo.electron.main.log]
             [meo.common.specs]
+            [electron-context-menu :as ecm]
             [taoensso.timbre :refer-macros [info]]
             [matthiasn.systems-toolbox-electron.ipc-main :as ipc]
             [matthiasn.systems-toolbox-electron.window-manager :as wm]
@@ -33,6 +34,8 @@
     (let [mapper #(assoc-in % [:opts :msgs-on-firehose] true)]
       (set (mapv mapper components)))
     components))
+
+(ecm (clj->js {:showCopyImageAddress true}))
 
 (def wm-relay #{:exec/js
                 :cmd/toggle-key

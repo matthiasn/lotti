@@ -24,20 +24,19 @@
         [:tr {:key      ts
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
-         [:td
-          (when-let [prio (some-> entry :habit :priority (name))]
-            [:span.prio {:class prio} prio])]
          [:td.award-points
           (when-let [points (-> entry :habit :points)]
             points)]
+         #_
          [:td.award-points
           (when-let [penalty (-> entry :habit :penalty)]
             penalty)]
          [:td.habit text]]))))
 
+
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
-  [local _local-cfg _put-fn]
+  [local _put-fn]
   (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
         briefing (reaction (-> @gql-res :briefing :data :briefing))
@@ -51,22 +50,18 @@
         habits (reaction (->> @habits
                               (filter saga-filter)
                               (sort habit-sorter)))]
-    (fn waiting-habits-list-render [local local-cfg put-fn]
+    (fn waiting-habits-list-render [local put-fn]
       (let [habits @habits
-            habits (if (:expanded-habits @local) habits (take 12 habits))
-            tab-group (:tab-group local-cfg)
-            today (.format (moment.) "YYYY-MM-DD")]
-        (when (and (= today (:day @briefing))
-                   (seq habits)
+            tab-group :briefing]
+        (when (and (seq habits)
                    (contains? (:capabilities @backend-cfg) :habits))
-          [:div
+          [:div.waiting-habits
            [:table.habits
             [:tbody
              [:tr {:on-click expand-fn}
-              [:th.xs [:span.fa.fa-exclamation-triangle]]
-              [:th [:span.fa.fa-diamond]]
-              [:th [:span.fa.fa-diamond.penalty]]
-              [:th "waiting habit"]]
+              [:th [:span.fa.fa-diamond.award-points]]
+              ;[:th [:span.fa.fa-diamond.penalty]]
+              [:th "Stuff I said I'd do."]]
              (for [entry habits]
                ^{:key (:timestamp entry)}
                [habit-line entry tab-group put-fn])]]])))))

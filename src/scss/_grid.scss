@@ -35,6 +35,8 @@
   .inf-cal {
     grid-column: 2;
     grid-row: 2/3;
+    height: calc(100vh - 52px);
+    overflow: hidden;
   }
   .cal {
     grid-column: 3;
