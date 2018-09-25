@@ -181,8 +181,7 @@
         entries-list (reaction (->> @open-tasks
                                     (filter on-hold-filter)
                                     (filter saga-filter)
-                                    (filter open-filter)
-                                    (sort task-sorter)))]
+                                    (filter open-filter)))]
     (fn open-tasks-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
