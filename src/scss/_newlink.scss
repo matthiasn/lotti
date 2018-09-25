@@ -4,6 +4,15 @@
   position: relative;
   display: inline-block;
 
+  background-color: transparent;
+
+  i {
+    border-radius: 4px;
+    background-color: transparent;
+    padding-bottom: 4px!important;
+    position: relative;
+  }
+
   .new-link {
     position: absolute;
     z-index: 1002;

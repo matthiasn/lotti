@@ -234,6 +234,20 @@
                    (mapv (partial entry-w-comments g)))]
     tasks))
 
+(defn open-tasks [state context args value]
+  (let [q {:tags     #{"#task"}
+           :not-tags #{"#done" "#backlog" "#closed"}
+           :n        Integer/MAX_VALUE
+           :pvt      (:pvt args)}
+        current-state @state
+        g (:graph current-state)
+        res (gq/get-filtered2 current-state q)
+        tasks (->> res
+                   (entries-w-logged g)
+                   (mapv #(entry-w-story g %))
+                   (mapv (partial entry-w-comments g)))]
+    tasks))
+
 (defn waiting-habits [state context args value]
   (let [q {:tags #{"#habit"}
            :opts #{":waiting"}
@@ -368,6 +382,7 @@
                         :query/logged-time        logged-time
                         :query/day-stats          day-stats
                         :query/started-tasks      started-tasks
+                        :query/open-tasks         open-tasks
                         :query/waiting-habits     waiting-habits
                         :query/mentions           mentions
                         :query/stories            stories

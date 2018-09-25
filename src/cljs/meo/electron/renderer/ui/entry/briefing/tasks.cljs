@@ -37,7 +37,7 @@
         fmt (.format utc "HH:mm")]
     fmt))
 
-(defn task-line [entry _put-fn _cfg]
+(defn task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
@@ -83,6 +83,28 @@
               [:span {:class cls}
                (s-to-hhmmss actual)])])
          [:td.text text]
+         (when unlink
+           [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
+
+(defn task-row2 [entry _put-fn _cfg]
+  (let [ts (:timestamp entry)]
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
+      (let [text (str (eu/first-line entry))
+            cls (when (= (str ts) search-text) "selected")
+            estimate (get-in entry [:task :estimate_m] 0)]
+        [:tr.task {:on-click (up/add-search ts tab-group put-fn)
+                   :class    cls}
+         [:td (when-let [prio (some-> entry :task :priority (name))]
+                [:span.prio {:class prio} prio])]
+         [:td.award-points
+          (when-let [points (-> entry :task :points)]
+            points)]
+         [:td.estimate
+          (let [seconds (* 60 estimate)]
+            [:span {:class cls}
+             (s-to-hhmm (.abs js/Math seconds))])]
+         [:td.text
+          (subs text 0 50)]
          (when unlink
            [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
 
@@ -133,7 +155,50 @@
                 [filter-btn :on_hold]]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-line entry put-fn {:tab-group    tab-group
+               [task-row entry put-fn {:tab-group    tab-group
+                                       :search-text  search-text
+                                       :show-logged? true}])]]])))))
+
+(defn open-tasks
+  "Renders table with open entries, such as started tasks and open habits."
+  [local local-cfg put-fn]
+  (let [gql-res (subscribe [:gql-res])
+        open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))
+        query-cfg (subscribe [:query-cfg])
+        query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
+        on-hold-filter (fn [entry]
+                         (let [on-hold (:on_hold (:task entry))]
+                           (if (:on-hold @local)
+                             on-hold
+                             (not on-hold))))
+        saga-filter (fn [entry]
+                      (if (seq (:selected-set @local))
+                        (let [saga (get-in entry [:story :saga :timestamp])]
+                          (contains? (:selected-set @local) saga))
+                        true))
+        open-filter (fn [entry] (not (-> entry :task :done)))
+        entries-list (reaction (->> @open-tasks
+                                    (filter on-hold-filter)
+                                    (filter saga-filter)
+                                    (filter open-filter)
+                                    (sort task-sorter)))]
+    (fn open-tasks-render [local local-cfg put-fn]
+      (let [entries-list @entries-list
+            tab-group (:tab-group local-cfg)
+            search-text @search-text]
+        (when (seq entries-list)
+          [:div.linked-tasks.open-tasks
+           [:table.tasks
+            [:tbody
+             [:tr
+              [:th.xs [:i.far.fa-exclamation-triangle]]
+              [:th [:i.fa.far.fa-gem]]
+              [:th [:i.fal.fa-bell]]
+              [:th "open tasks"]]
+             (for [entry entries-list]
+               ^{:key (:timestamp entry)}
+               [task-row2 entry put-fn {:tab-group    tab-group
                                         :search-text  search-text
                                         :show-logged? true}])]]])))))
 
@@ -193,6 +258,6 @@
               [:th.xs [:i.fa.far.fa-link]]]
              (for [entry linked-tasks]
                ^{:key (:timestamp entry)}
-               [task-line entry put-fn {:tab-group   tab-group
-                                        :search-text search-text
-                                        :unlink      unlink}])]]])))))
+               [task-row entry put-fn {:tab-group   tab-group
+                                       :search-text search-text
+                                       :unlink      unlink}])]]])))))

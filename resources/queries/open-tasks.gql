@@ -1,0 +1,19 @@
+{
+  open_tasks(pvt: %s) {
+    timestamp
+    md
+    story {
+      timestamp
+      story_name
+      saga {
+        timestamp
+        saga_name
+      }
+    }
+    task {
+      estimate_m
+      points
+      priority
+    }
+  }
+}

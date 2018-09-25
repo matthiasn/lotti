@@ -213,6 +213,13 @@
                  :on_hold {:type Boolean}}
    :resolve     :query/started-tasks}
 
+  :open_tasks
+  {:type        (list :Entry)
+   :description "List of open tasks."
+   :args        {:pvt     {:type Boolean}
+                 :prio    {:type Int}}
+   :resolve     :query/open-tasks}
+
   :waiting_habits
   {:type        (list :Entry)
    :description "List of waiting habits."

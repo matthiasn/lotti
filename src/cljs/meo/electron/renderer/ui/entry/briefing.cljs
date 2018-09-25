@@ -163,7 +163,11 @@
          [:div.comments
           (for [comment (:comments @briefing)]
             ^{:key (str "c" comment)}
-            [e/journal-entry comment put-fn local-cfg])]]))))
+            [e/journal-entry comment put-fn local-cfg])]
+         [:div.entry
+          [:div.briefing
+           [:div.briefing-details
+            [tasks/open-tasks local local-cfg put-fn]]]]]))))
 
 (defn briefing-column-view
   [tab-group put-fn]
