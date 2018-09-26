@@ -461,7 +461,7 @@
   }
 }
 
-.custom-fields, .briefing-details, .task-details, .habit-details {
+.habit-details {
   font-size: $font-size-medium;
   margin: 0.5em 0;
   background-color: white;
@@ -786,13 +786,5 @@ u {
     .award-points {
       padding-left: 10px;
     }
-    .waiting-habits {
-    }
-    table {
-    }
   }
-}
-
-.open-tasks {
-  word-wrap: break-word;
 }

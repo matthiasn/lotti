@@ -139,17 +139,16 @@
             dur (u/duration-string logged-s)
             n (count (:by_ts @day-stats))
             drop-fn (a/drop-on-briefing @briefing cfg put-fn)]
-        [:div.entry-with-comments
-         [:div.entry
-          [:div.briefing {:on-drop       drop-fn
-                          :on-drag-over  h/prevent-default
-                          :on-drag-enter h/prevent-default}
-           [:div.briefing-header
-            [sagas-filter local]
-            [a/briefing-actions ts put-fn]]
-           [:div.briefing-details
-            [tasks/started-tasks local local-cfg put-fn]
-            [tasks/open-linked-tasks ts local local-cfg put-fn]]
+        [:div.briefing {:on-drop       drop-fn
+                        :on-drag-over  h/prevent-default
+                        :on-drag-enter h/prevent-default}
+         [:div.briefing-header
+          [sagas-filter local]
+          [a/briefing-actions ts put-fn]]
+         [tasks/started-tasks local local-cfg put-fn]
+         [tasks/open-linked-tasks ts local local-cfg put-fn]
+         [:div.entry-with-comments
+          [:div.entr
            [:div.summary
             [:div
              "Tasks: " [:strong (:tasks_cnt @day-stats)] " created | "
@@ -159,15 +158,12 @@
             [:div
              (when (seq dur)
                [:span
-                " Logged: " [:strong dur] " in " n " entries."])]]]]
-         [:div.comments
-          (for [comment (:comments @briefing)]
-            ^{:key (str "c" comment)}
-            [e/journal-entry comment put-fn local-cfg])]
-         [:div.entry
-          [:div.briefing
-           [:div.briefing-details
-            [tasks/open-tasks local local-cfg put-fn]]]]]))))
+                " Logged: " [:strong dur] " in " n " entries."])]]]
+          [:div.comments
+           (for [comment (:comments @briefing)]
+             ^{:key (str "c" comment)}
+             [e/journal-entry comment put-fn local-cfg])]]
+         [tasks/open-tasks local local-cfg put-fn]]))))
 
 (defn briefing-column-view
   [tab-group put-fn]

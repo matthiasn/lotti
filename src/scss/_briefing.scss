@@ -3,14 +3,31 @@
 .briefing {
   display: flex;
   flex-direction: column;
+  background-color: lightsteelblue;
 
   .briefing-header {
     display: flex;
-    justify-content: space-between;
+    flex-flow: row;
     padding: 1px;
+    min-height: 28px;
 
     .actions {
       padding-top: 2px;
+      flex: 2;
+      align-items: flex-end;
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+
+      .items {
+        white-space: nowrap;
+      }
+
+      .fa {
+        margin: 0;
+        padding: 2px 2px 8px 3px;
+        font-size: 11px;
+      }
     }
   }
 
@@ -106,4 +123,81 @@
     }
 
   }
+
+  .open-tasks, .started-tasks, .linked-tasks {
+    font-size: $font-size-medium;
+    margin: 0;
+    background-color: white;
+    line-height: 1.4em;
+
+    table {
+      border-collapse: collapse;
+      margin-bottom: 4px;
+
+      .prio {
+        min-width: 12px;
+        text-align: center;
+        display: inline-block;
+        color: white;
+        font-weight: bold;
+        background-color: #BBB;
+        padding: 0 2px;
+      }
+      .A {
+        background-color: $red;
+      }
+      .B {
+        background-color: $link-color;
+      }
+
+      th {
+        background-color: $edit-menu-bg;
+      }
+
+      tr {
+        cursor: pointer;
+        height: 1.3em;
+
+        &:hover {
+          background-color: antiquewhite;
+        }
+        &.selected {
+          background-color: desaturate(lighten($hashtag-blue, 30), 15);
+        }
+        &.active-timer {
+          background-color: desaturate(lighten($green, 40), 15);
+        }
+        &.active-timer-selected {
+          background-color: desaturate(lighten($green, 30), 10);
+        }
+        &.active-timer-selected-busy {
+          background-color: desaturate(lighten($red, 35), 10);
+        }
+        &.active-timer-busy {
+          background-color: desaturate(lighten($red, 40), 15);
+        }
+      }
+
+      td {
+        padding-right: 6px;
+        .legend {
+          height: 1.3em;
+          width: 12px;
+        }
+
+        &.left {
+          text-align: left;
+        }
+
+        &.time {
+          text-align: center;
+          min-width: 50px;
+        }
+      }
+    }
+  }
+  .open-tasks {
+    margin-top: 25px;
+  }
+
 }

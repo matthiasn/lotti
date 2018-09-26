@@ -141,7 +141,7 @@
             tab-group (:tab-group local-cfg)
             search-text @search-text]
         (when (seq entries-list)
-          [:div.linked-tasks
+          [:div.started-tasks
            [:table.tasks
             [:tbody
              [:tr
@@ -151,8 +151,9 @@
               [:th [:i.far.fa-stopwatch]]
               [:th
                [:div
-                "started tasks: "
-                [filter-btn :on_hold]]]]
+                "Started Tasks"
+                ;[filter-btn :on_hold]
+                ]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
                [task-row entry put-fn {:tab-group    tab-group
@@ -187,14 +188,14 @@
             tab-group (:tab-group local-cfg)
             search-text @search-text]
         (when (seq entries-list)
-          [:div.linked-tasks.open-tasks
+          [:div.open-tasks
            [:table.tasks
             [:tbody
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
               [:th [:i.fal.fa-bell]]
-              [:th "open tasks"]]
+              [:th "Open Tasks"]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
                [task-row2 entry put-fn {:tab-group    tab-group
@@ -253,7 +254,7 @@
               [:th.xs [:i.far.fa-exclamation-triangle]]
               [:th [:i.fa.far.fa-gem]]
               [:th [:i.fa.far.fa-stopwatch]]
-              [:th [:strong "tasks"]]
+              [:th [:strong "Linked Tasks"]]
               [:th.xs [:i.fa.far.fa-link]]]
              (for [entry linked-tasks]
                ^{:key (:timestamp entry)}
