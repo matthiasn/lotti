@@ -16,7 +16,8 @@
             [clojure.string :as s]
             [meo.electron.renderer.ui.entry.entry :as e]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [meo.common.utils.parse :as up]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -114,6 +115,26 @@
                           :checked selected?}]
                  (s/trim (:saga_name saga))]))])]))))
 
+(defn add-task [ts put-fn]
+  (let [open-new (fn [x]
+                   (put-fn
+                     [:cmd/schedule-new
+                      {:message [:search/add
+                                 {:tab-group :left
+                                  :query     (up/parse-search (:timestamp x))}]
+                       :timeout 100}]))
+        new-task (h/new-entry put-fn {:linked_entries #{ts}
+                                      :starred        true
+                                      :perm_tags      #{"#task"}}
+                              open-new)]
+    (fn add-task-render [ts put-fn]
+      (let []
+        [:div.add-task
+         [:div.toggle-visible
+          {:on-click #(new-task)}
+          "task"
+          [:i.fas.fa-plus-square]]]))))
+
 (defn briefing-view [put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
@@ -143,6 +164,7 @@
                         :on-drag-over  h/prevent-default
                         :on-drag-enter h/prevent-default}
          [:div.briefing-header
+          [add-task ts put-fn]
           [sagas-filter local]
           [a/briefing-actions ts put-fn]]
          [tasks/started-tasks local local-cfg put-fn]

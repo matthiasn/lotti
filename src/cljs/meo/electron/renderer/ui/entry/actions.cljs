@@ -192,18 +192,7 @@
            :class    (if starred "fa-star starred" "fa-star")}]]))))
 
 (defn briefing-actions [ts put-fn]
-  (let [open-new (fn [x]
-                   (put-fn
-                     [:cmd/schedule-new
-                      {:message [:search/add
-                                 {:tab-group :left
-                                  :query     (up/parse-search (:timestamp x))}]
-                       :timeout 100}]))
-        create-linked-entry (h/new-entry put-fn {:linked_entries #{ts}
-                                                 :starred        true
-                                                 :perm_tags      #{"#task"}}
-                                         open-new)
-        create-comment (fn [_ev]
+  (let [create-comment (fn [_ev]
                          (let [create (h/new-entry put-fn {:comment_for ts} nil)
                                new-entry (create)]
                            (info "created comment" new-entry)
@@ -219,6 +208,4 @@
     [:div.actions {}
      [:div.items
       [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
-      [:i.fa.fa-comment.toggle {:on-click create-comment}]
-      [:i.fa.fa-plus-square.toggle
-       {:on-click #(create-linked-entry)}]]]))
+      [:i.fa.fa-comment.toggle {:on-click create-comment}]]]))

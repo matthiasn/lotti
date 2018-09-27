@@ -3,7 +3,7 @@
 .briefing {
   display: flex;
   flex-direction: column;
-  background-color: lightsteelblue;
+  background-color: $briefing-bg;
 
   .briefing-header {
     display: flex;
@@ -67,17 +67,32 @@
     }
   }
 
-  .saga-filter {
+  .saga-filter, .add-task {
     position: relative;
     user-select: none;
     white-space: nowrap;
     z-index: 1002;
+
+    &.add-task {
+      margin-right: 20px;
+
+      :hover {
+        background-color: #eee;
+      }
+      :active {
+        background-color: $green;
+        color: white;
+      }
+    }
 
     .toggle-visible {
       font-weight: bold;
       font-size: 1.2em;
       cursor: pointer;
       padding: 3px 5px;
+      border-radius: 5px;
+      margin-top: 2px;
+      margin-left: 2px;
 
       i {
         color: $green;

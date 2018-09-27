@@ -127,7 +127,7 @@ button.rbc-input::-moz-focus-inner {
   background-image: none;
   border: 1px solid #ccc;
   //padding: .375rem 1rem;
-  border-radius: 5px;
+  border-radius: 3px;
   line-height: normal;
   white-space: nowrap;
 }
@@ -177,19 +177,19 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-rtl .rbc-btn-group > button:first-child:not(:last-child) {
-  border-radius: 5px;
+  border-radius: 3px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
 .rbc-rtl .rbc-btn-group > button:last-child:not(:first-child) {
-  border-radius: 5px;
+  border-radius: 3px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
 
 .rbc-btn-group > button:not(:first-child):not(:last-child) {
-  border-radius: 5px;
+  border-radius: 3px;
 }
 
 .rbc-btn-group button + button {
@@ -209,7 +209,7 @@ button.rbc-input::-moz-focus-inner {
 .rbc-event {
   cursor: pointer;
   padding: 2px 5px 0 5px;
-  border-radius: 5px;
+  border-radius: 3px;
   color: #fff;
 }
 
