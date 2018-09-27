@@ -52,16 +52,15 @@
                               (sort habit-sorter)))]
     (fn waiting-habits-list-render [local put-fn]
       (let [habits @habits
-            tab-group :briefing]
-        (when (and (seq habits)
-                   (contains? (:capabilities @backend-cfg) :habits))
-          [:div.waiting-habits
-           [:table.habits
-            [:tbody
-             [:tr {:on-click expand-fn}
-              [:th [:span.fa.fa-diamond.award-points]]
-              ;[:th [:span.fa.fa-diamond.penalty]]
-              [:th "Stuff I said I'd do."]]
-             (for [entry habits]
-               ^{:key (:timestamp entry)}
-               [habit-line entry tab-group put-fn])]]])))))
+            tab-group :briefing
+            show? (contains? (:capabilities @backend-cfg) :habits)]
+        [:div.waiting-habits
+         [:table.habits
+          [:tbody
+           [:tr {:on-click expand-fn}
+            [:th [:span.fa.fa-diamond.award-points]]
+            ;[:th [:span.fa.fa-diamond.penalty]]
+            [:th "Stuff I said I'd do."]]
+           (for [entry habits]
+             ^{:key (:timestamp entry)}
+             [habit-line entry tab-group put-fn])]]]))))
