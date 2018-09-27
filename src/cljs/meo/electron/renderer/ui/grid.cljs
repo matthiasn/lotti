@@ -30,8 +30,12 @@
         [:div.tabs-header {:on-drop       on-drop
                            :on-drag-over  h/prevent-default
                            :on-drag-enter h/prevent-default}
-         [:div.tab-item.add
-          {:on-click #(put-fn [:search/add {:tab-group tab-group}])}
+         [:div.tab-item.add-tab
+          {:on-click #(put-fn [:search/add {:tab-group tab-group}])
+           :class    (when (zero? (count queries))
+                       "full")}
+          (when (zero? (count queries))
+            "add tab")
           [:span.fa.fa-plus]]
          (when (> (count queries) 2)
            [:div.tab-item.close-all

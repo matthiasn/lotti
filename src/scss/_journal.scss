@@ -11,7 +11,6 @@
   display: flex;
   flex: 0 0 auto;
   margin-bottom: 3px;
-  background-color: $body-background-color;
 
   .tab-items {
     display: flex;
@@ -21,19 +20,38 @@
   .tab-item {
     display: flex;
     background-color: white;
-    padding: 0.3em 0.4em;
+    padding: 3px;
     margin: 0 2px 0 0;
     cursor: pointer;
     font-size: 0.8em;
     font-family: $header-font-family;
     font-weight: 300;
     white-space: nowrap;
+    border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
 
-    &.add {
+    &.full {
+      border-radius: 3px;
+      padding: 8px 16px;
+      font-size: $font-size-large;
+      margin: 6px;
+
+      .fa-plus {
+        margin-left: 6px!important;
+      }
+    }
+
+    &.add-tab {
       background-color: lighten($green, 30);
       font-weight: bold;
-      font-family: monospace;
+      color: #889;
+
+      .fa-plus {
+        margin-left: 2px;
+        margin-right: 2px;
+      }
     }
+
     &.close-all {
       background-color: lighten($red, 30);
       font-weight: bold;
@@ -42,7 +60,7 @@
     }
 
     .fa {
-      color: #999;
+      color: #889;
       padding-top: 1px;
     }
 

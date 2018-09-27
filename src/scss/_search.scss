@@ -15,6 +15,7 @@
 .search-row {
   display: flex;
   background-color: $search-field-color;
+  border-radius: 5px;
 
   i {
     font-size: 16px;

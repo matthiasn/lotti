@@ -143,16 +143,21 @@ a .toggle {
 
 .linked-tasks {
   .filter {
-    background-color: #DDD;
+    background-color: #DDE;
     color: #AAA;
-    font-size: 0.8em;
+    font-size: $font-size-small;
     padding: 1px 5px;
     margin: 0 2px 0 3px;
+    border-bottom: #ddd 1px solid;
     cursor: pointer;
+    border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
+    font-family: $header-font-family;
   }
 
   .current {
     background-color: $show-more;
     color: whitesmoke;
+    border-bottom: #00a699 1px solid;
   }
 }

@@ -5,6 +5,7 @@
   background: $entry-bg;
   height: inherit;
   flex-shrink: 0;
+  border-radius: $entry-border-radius;
 }
 
 .entry {
@@ -465,6 +466,7 @@
   font-size: $font-size-medium;
   margin: 0.5em 0;
   background-color: white;
+  border-radius: $entry-border-radius;
 
   table {
     border-collapse: collapse;

@@ -4,6 +4,7 @@
   display: flex;
   flex-direction: column;
   background-color: $briefing-bg;
+  border-radius: $entry-border-radius;
 
   .briefing-header {
     display: flex;
@@ -72,13 +73,15 @@
     user-select: none;
     white-space: nowrap;
     z-index: 1002;
+    font-family: $header-font-family;
+
+    :hover {
+      background-color: #dde;
+    }
 
     &.add-task {
       margin-right: 20px;
 
-      :hover {
-        background-color: #eee;
-      }
       :active {
         background-color: $green;
         color: white;
@@ -167,6 +170,7 @@
 
       th {
         background-color: $edit-menu-bg;
+        font-family: $header-font-family;
       }
 
       tr {
@@ -212,7 +216,7 @@
     }
   }
   .open-tasks {
-    margin-top: 25px;
+    margin-top: 15px;
   }
 
 }

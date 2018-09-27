@@ -20,7 +20,6 @@ $backlog: darkorange;
 $backlog-weekend: lighten($backlog, 30);
 
 .questionnaires {
-  margin-top: 5px;
   overflow-y: auto;
 
   .done {
