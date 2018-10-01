@@ -20,7 +20,7 @@
    :cljs (defonce query-cfg (sa/local-storage
                               (atom initial-query-cfg) "meo_query_cfg")))
 
-(defn gql-query [current-state put-fn]
+(defn gql-query [current-state incremental put-fn]
   (let [query-cfg @query-cfg
         query-for (fn [k]
                     (let [a (get-in query-cfg [:tab-groups k :active])
@@ -33,7 +33,7 @@
                             :n           n}])))
         queries (filter identity (map query-for [:left :right]))
         pvt (:show-pvt (:cfg current-state))
-        gql-query (when (seq queries) (gql/tabs-query queries pvt))]
+        gql-query (when (seq queries) (gql/tabs-query queries incremental pvt))]
     (put-fn [:gql/query {:q        gql-query
                          :id       :tabs-query
                          :res-hash nil
@@ -41,7 +41,7 @@
 
 (defn update-query-cfg [state put-fn]
   (reset! query-cfg (:query-cfg state))
-  (gql-query state put-fn))
+  (gql-query state true put-fn))
 
 (defn update-query-fn [{:keys [current-state msg-payload put-fn]}]
   (let [query-id (or (:query-id msg-payload) (keyword (str (st/make-uuid))))
@@ -52,7 +52,7 @@
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))
-      (gql-query current-state put-fn)
+      (gql-query current-state true put-fn)
       {:new-state new-state})))
 
 ; TODO: linked filter belongs in query-cfg

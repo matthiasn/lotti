@@ -154,7 +154,7 @@
 
 (defn tab-search [put-fn]
   (fn [state context args value]
-    (let [{:keys [query n pvt story tab]} args
+    (let [{:keys [query n pvt story tab incremental]} args
           current-state @state
           tab (keyword tab)
           prev (get-in current-state [:prev tab])
@@ -170,14 +170,18 @@
                    ;(mapv xf/edn-xf)
                    (mapv (partial entry-w-comments g))
                    (mapv (partial linked-for g))
-                   (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))
-          diff (res-diff prev res)
-          diff-res (merge diff {:tab tab :query query :n n})]
+                   (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))]
       (swap! state assoc-in [:prev tab] res)
       (info args)
       (debug res)
-      (when (seq (set/union (:res diff) (:del diff)))
-        (put-fn (with-meta [:gql/res2 diff-res] {:sente-uid :broadcast})))
+      (if incremental
+        (let [diff (res-diff prev res)
+              diff-res (merge diff {:tab tab :query query :n n})]
+          (when (seq (set/union (:res diff) (:del diff)))
+            (put-fn (with-meta [:gql/res2 diff-res] {:sente-uid :broadcast}))))
+        (when (seq res)
+          (let [res {:res res :del #{} :tab tab :query query :n n}]
+            (put-fn (with-meta [:gql/res2 res] {:sente-uid :broadcast})))))
       [])))
 
 (defn custom-field-stats [state context args value]

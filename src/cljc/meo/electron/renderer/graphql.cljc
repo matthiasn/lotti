@@ -1,8 +1,8 @@
 (ns meo.electron.renderer.graphql
   (:require [venia.core :as v]
-    #?(:clj
-            [taoensso.timbre :refer [info debug warn]]
-       :cljs [taoensso.timbre :refer-macros [info debug warn]])
+            #?(:clj
+                     [taoensso.timbre :refer [info debug warn]]
+               :cljs [taoensso.timbre :refer-macros [info debug warn]])
             [clojure.string :as s]))
 
 (defn graphql-query [days tags]
@@ -37,7 +37,7 @@
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 
-(defn tabs-query [queries pvt]
+(defn tabs-query [queries incremental pvt]
   (let [n 20
         fields [:timestamp
                 :text
@@ -111,12 +111,13 @@
                          :story_name
                          [:saga [:saga_name]]]]]
         f (fn [[k {:keys [n search-text story]}]]
-            {:query/data  [:tab_search {:query search-text
-                                        :pvt   pvt
-                                        :story story
-                                        :prio  1
-                                        :tab   (name k)
-                                        :n     n} fields]
+            {:query/data  [:tab_search {:query       search-text
+                                        :pvt         pvt
+                                        :incremental incremental
+                                        :story       story
+                                        :prio        1
+                                        :tab         (name k)
+                                        :n           n} fields]
              :query/alias k})
         queries (mapv f queries)]
     (when (seq queries)
