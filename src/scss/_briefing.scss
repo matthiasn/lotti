@@ -17,7 +17,7 @@
       flex: 2;
       align-items: flex-end;
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       flex-wrap: nowrap;
 
       .items {
@@ -80,8 +80,6 @@
     }
 
     &.add-task {
-      margin-right: 20px;
-
       :active {
         background-color: $green;
         color: white;
@@ -95,7 +93,6 @@
       padding: 3px 5px;
       border-radius: 5px;
       margin-top: 2px;
-      margin-left: 2px;
 
       i {
         color: $green;
@@ -146,7 +143,7 @@
     font-size: $font-size-medium;
     margin: 0;
     background-color: white;
-    line-height: 1.4em;
+    line-height: 1.3em;
 
     table {
       border-collapse: collapse;
@@ -175,7 +172,6 @@
 
       tr {
         cursor: pointer;
-        height: 1.3em;
 
         &:hover {
           background-color: antiquewhite;
@@ -198,7 +194,7 @@
       }
 
       td {
-        padding-right: 6px;
+        padding: 0 3px 0 1px;
         .legend {
           height: 1.3em;
           width: 12px;

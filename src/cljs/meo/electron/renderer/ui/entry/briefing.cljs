@@ -90,10 +90,12 @@
         [:div.saga-filter
          [:div.toggle-visible
           {:on-click #(swap! local update-in [:show-filter] not)}
-          "filter"
-          [:i.fas {:class (if (:show-filter @local)
+          [:i.fas {:style {:margin-left 0
+                           :margin-right 4}
+                   :class (if (:show-filter @local)
                             "fa-chevron-square-up"
-                            "fa-chevron-square-down")}]]
+                            "fa-chevron-square-down")}]
+          "filter"]
          (when (:show-filter @local)
            (let [elem (r/dom-node (r/current-component))
                  handler #(when-not (.contains elem (.-target %))
@@ -164,9 +166,9 @@
                         :on-drag-over  h/prevent-default
                         :on-drag-enter h/prevent-default}
          [:div.briefing-header
-          [add-task ts put-fn]
           [sagas-filter local]
-          [a/briefing-actions ts put-fn]]
+          [a/briefing-actions ts put-fn]
+          [add-task ts put-fn]]
          [tasks/started-tasks local local-cfg put-fn]
          [tasks/open-linked-tasks ts local local-cfg put-fn]
          [:div.entry-with-comments
