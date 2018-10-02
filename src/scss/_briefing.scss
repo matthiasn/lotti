@@ -20,16 +20,17 @@
       justify-content: center;
       flex-wrap: nowrap;
 
-      .items {
-        white-space: nowrap;
-      }
-
       .fa {
         margin: 0;
         padding: 2px 2px 8px 3px;
         font-size: 11px;
       }
     }
+  }
+
+  .scroll {
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .summary {
@@ -143,7 +144,7 @@
     font-size: $font-size-medium;
     margin: 0;
     background-color: white;
-    line-height: 1.3em;
+    line-height: 1.35em;
 
     table {
       border-collapse: collapse;
@@ -207,6 +208,10 @@
         &.time {
           text-align: center;
           min-width: 50px;
+        }
+        &.text {
+          word-break: break-word;
+          line-height: 1em;
         }
       }
     }

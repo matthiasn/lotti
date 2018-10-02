@@ -169,25 +169,26 @@
           [sagas-filter local]
           [a/briefing-actions ts put-fn]
           [add-task ts put-fn]]
-         [tasks/started-tasks local local-cfg put-fn]
-         [tasks/open-linked-tasks ts local local-cfg put-fn]
-         [:div.entry-with-comments
-          [:div.entr
-           [:div.summary
-            [:div
-             "Tasks: " [:strong (:tasks_cnt @day-stats)] " created | "
-             [:strong (:done_tasks_cnt @day-stats)] " done | "
-             [:strong (:closed_tasks_cnt @day-stats)] " closed | Words: "
-             [:strong (or (:word_count @day-stats) 0)]]
-            [:div
-             (when (seq dur)
-               [:span
-                " Logged: " [:strong dur] " in " n " entries."])]]]
-          [:div.comments
-           (for [comment (:comments @briefing)]
-             ^{:key (str "c" comment)}
-             [e/journal-entry comment put-fn local-cfg])]]
-         [tasks/open-tasks local local-cfg put-fn]]))))
+         [:div.scroll
+          [tasks/started-tasks local local-cfg put-fn]
+          [tasks/open-linked-tasks ts local local-cfg put-fn]
+          [:div.entry-with-comments
+           [:div.entry
+            [:div.summary
+             [:div
+              "Tasks: " [:strong (:tasks_cnt @day-stats)] " created | "
+              [:strong (:done_tasks_cnt @day-stats)] " done | "
+              [:strong (:closed_tasks_cnt @day-stats)] " closed | Words: "
+              [:strong (or (:word_count @day-stats) 0)]]
+             [:div
+              (when (seq dur)
+                [:span
+                 " Logged: " [:strong dur] " in " n " entries."])]]]
+           [:div.comments
+            (for [comment (:comments @briefing)]
+              ^{:key (str "c" comment)}
+              [e/journal-entry comment put-fn local-cfg])]]
+          [tasks/open-tasks local local-cfg put-fn]]]))))
 
 (defn briefing-column-view
   [tab-group put-fn]
