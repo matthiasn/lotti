@@ -15,16 +15,17 @@
 
 (defn search-field-view
   "Renders search field for current tab."
-  [query-id _put-fn]
+  [_tab-group query-id _put-fn]
   (let [query-cfg (subscribe [:query-cfg])
         query (reaction (when-let [qid @query-id] (qid (:queries @query-cfg))))]
-    (fn [_query-id put-fn]
+    (fn [tab-group _query-id put-fn]
       (let [search-send (fn [text editor-state]
-                          (when-not (empty? text)
+                          (when text
                             (let [story (first (d/entry-stories editor-state))
                                   s (merge @query
                                            (p/parse-search text)
                                            {:story        story
+                                            :tab-group    tab-group
                                             :editor-state editor-state})]
                               (put-fn [:search/update s]))))
             query @query

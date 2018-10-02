@@ -76,6 +76,6 @@
        [tabs-header-view tab-group put-fn]
        (when @query-id
          ^{:key @query-id}
-         [search/search-field-view query-id put-fn])
+         [search/search-field-view tab-group query-id put-fn])
        (when @query-id
          [j/journal-view @local-cfg put-fn])])))

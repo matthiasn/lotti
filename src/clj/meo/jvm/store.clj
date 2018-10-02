@@ -148,7 +148,8 @@
    :state-fn    (partial gql/state-fn (or (f/state-from-file) state))
    :opts        {:msgs-on-firehose true
                  :in-chan          [:buffer 100]
-                 :out-chan         [:buffer 100]}
+                 :out-chan         [:buffer 100]
+                 :validate-out     false}
    :handler-map {:entry/import       f/entry-import-fn
                  :entry/unlink       ga/unlink
                  :entry/update       f/geo-entry-persist-fn

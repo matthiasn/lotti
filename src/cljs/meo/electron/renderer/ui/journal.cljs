@@ -47,7 +47,8 @@
                           (when (and (not= cnt @last-fetch)
                                      (< (- sh st) 1000))
                             (reset! last-fetch cnt)
-                            (put-fn [:show/more {:query-id query-id}]))))
+                            (put-fn [:show/more {:query-id query-id
+                                                 :tab-group tg}]))))
             on-mouse-enter #(put-fn [:search/cmd {:t         :active-tab
                                                   :tab-group tg}])]
         ^{:key (str query-id)}

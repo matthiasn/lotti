@@ -20,7 +20,7 @@
    :cljs (defonce query-cfg (sa/local-storage
                               (atom initial-query-cfg) "meo_query_cfg")))
 
-(defn gql-query [current-state incremental put-fn]
+(defn gql-query [tab-group current-state incremental put-fn]
   (let [query-cfg @query-cfg
         query-for (fn [k]
                     (let [a (get-in query-cfg [:tab-groups k :active])
@@ -31,28 +31,31 @@
                         [k {:search-text search-text
                             :story       story
                             :n           n}])))
-        queries (filter identity (map query-for [:left :right]))
+        queries (filter identity (map query-for [tab-group]))
         pvt (:show-pvt (:cfg current-state))
         gql-query (when (seq queries) (gql/tabs-query queries incremental pvt))]
     (put-fn [:gql/query {:q        gql-query
-                         :id       :tabs-query
+                         :id       tab-group
                          :res-hash nil
                          :prio     1}])))
 
 (defn update-query-cfg [state put-fn]
   (reset! query-cfg (:query-cfg state))
-  (gql-query state true put-fn))
+  (gql-query :left state true put-fn)
+  (gql-query :right state true put-fn))
 
 (defn update-query-fn [{:keys [current-state msg-payload put-fn]}]
   (let [query-id (or (:query-id msg-payload) (keyword (str (st/make-uuid))))
         query-path [:query-cfg :queries query-id]
         query-msg (merge msg-payload
                          {:sort-asc (:sort-asc (:cfg current-state))})
-        new-state (assoc-in current-state query-path query-msg)]
+        new-state (assoc-in current-state query-path query-msg)
+        tab-group (:tab-group msg-payload)]
+    (info msg-payload)
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))
-      (gql-query current-state true put-fn)
+      (gql-query tab-group current-state true put-fn)
       {:new-state new-state})))
 
 ; TODO: linked filter belongs in query-cfg

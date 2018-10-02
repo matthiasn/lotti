@@ -45,7 +45,8 @@
     (run-query "waiting-habits.gql" :waiting-habits 5 [pvt false])
     (run-query "options.gql" :options 10 nil)
     (run-query "day-stats.gql" :day-stats 5 [90])
-    (s/gql-query current-state false put-fn)
+    (s/gql-query :left current-state false put-fn)
+    (s/gql-query :right current-state false put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
     {}))
@@ -102,8 +103,9 @@
   {:cmp-id      cmp-id
    :state-fn    initial-state-fn
    :state-spec  :state/client-store-spec
-   :opts        {:in-chan  [:buffer 100]
-                 :out-chan [:buffer 100]}
+   :opts        {:in-chan        [:buffer 100]
+                 :out-chan       [:buffer 100]
+                 :validate-state false}
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
                        {:cfg/save         c/save-cfg
