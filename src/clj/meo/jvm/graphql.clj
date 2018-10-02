@@ -141,7 +141,7 @@
         task-total-t (fn [t]
                        (let [logged (apply + (map logged-t (:comments t)))]
                          (assoc-in t [:task :completed_s] logged)))]
-    (mapv task-total-t entries)))
+    (map task-total-t entries)))
 
 (defn res-diff [prev res]
   (let [prev (set prev)
@@ -157,23 +157,26 @@
     (let [{:keys [query n pvt story tab incremental]} args
           current-state @state
           tab (keyword tab)
-          prev (get-in current-state [:prev tab])
+          prev (get-in current-state [:prev tab :res])
+          prev-lazy-res (get-in current-state [:prev tab :lazy-res])
+          prev-query (get-in current-state [:prev tab :query])
           g (:graph current-state)
           q (merge (update-in (p/parse-search query) [:n] #(or n %))
                    {:story (when story (Long/parseLong story))
                     :pvt   pvt})
-          res (->> (gq/get-filtered2 current-state q)
-                   (filter #(not (:comment_for %)))
-                   (mapv (partial entry-w-story g))
-                   (entries-w-logged g)
-                   ;(mapv xf/vclock-xf)
-                   ;(mapv xf/edn-xf)
-                   (mapv (partial entry-w-comments g))
-                   (mapv (partial linked-for g))
-                   (mapv #(assoc % :linked_cnt (count (:linked_entries_list %)))))]
-      (swap! state assoc-in [:prev tab] res)
-      (info args)
-      (debug res)
+          lazy-res (if (and incremental prev-lazy-res (= prev-query query))
+                     prev-lazy-res
+                     (->> (gq/get-filtered-lazy current-state q)
+                          (filter #(not (:comment_for %)))
+                          (map (partial entry-w-story g))
+                          (entries-w-logged g)
+                          (map (partial entry-w-comments g))
+                          (map (partial linked-for g))
+                          (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
+          res (take (or n 20) lazy-res)]
+      (swap! state assoc-in [:prev tab] {:res      res
+                                         :lazy-res lazy-res
+                                         :query    query})
       (if incremental
         (let [diff (res-diff prev res)
               diff-res (merge diff {:tab tab :query query :n n})]
