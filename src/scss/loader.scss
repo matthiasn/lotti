@@ -1,7 +1,6 @@
 @import "variables.scss";
 
 body {
-  color: $font-color;
   background-color: $tab-bg;
   font-size: 12px;
   font-weight: 300;
@@ -11,6 +10,7 @@ body {
 
 h1 {
   text-align: center;
+  color: #DDD;
 }
 
 // from http://tobiasahlin.com/spinkit/

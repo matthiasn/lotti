@@ -196,11 +196,12 @@
               [:th [:i.fa.far.fa-gem]]
               [:th [:i.fal.fa-bell]]
               [:th "Open Tasks"]]
-             (for [entry entries-list]
-               ^{:key (:timestamp entry)}
-               [task-row2 entry put-fn {:tab-group    tab-group
-                                        :search-text  search-text
-                                        :show-logged? true}])]]])))))
+             (doall
+               (for [entry entries-list]
+                 ^{:key (:timestamp entry)}
+                 [task-row2 entry put-fn {:tab-group    tab-group
+                                          :search-text  search-text
+                                          :show-logged? true}]))]]])))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."

@@ -5,7 +5,7 @@
                      [matthiasn.systems-toolbox.component :as stc]
                      [meo.common.utils.parse :as p]))
 
-(def n 10)
+(def n 100)
 
 (def empty-entry
   {:mentions   #{}

@@ -44,9 +44,10 @@
             on-scroll (fn [ev]
                         (let [elem (-> ev .-nativeEvent .-srcElement)
                               sh (.-scrollHeight elem)
-                              st (.-scrollTop elem)]
+                              st (.-scrollTop elem)
+                              th (+ 1000 (* sh 0.2))]
                           (when (and (not= cnt (:last-cnt @local))
-                                     (< (- sh st) 1000)
+                                     (< (- sh st) th)
                                      (> (- (st/now) (:last-fetch @local)) 1000))
                             (reset! local {:last-cnt cnt
                                            :last-fetch (st/now)})
