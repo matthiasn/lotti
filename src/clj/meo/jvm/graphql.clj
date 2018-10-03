@@ -156,15 +156,20 @@
   (fn [state context args value]
     (let [{:keys [query n pvt story tab incremental]} args
           current-state @state
+          state-hash (hash current-state)
           tab (keyword tab)
           prev (get-in current-state [:prev tab :res])
           prev-lazy-res (get-in current-state [:prev tab :lazy-res])
           prev-query (get-in current-state [:prev tab :query])
+          prev-hash (get-in current-state [:prev tab :state-hash])
           g (:graph current-state)
           q (merge (update-in (p/parse-search query) [:n] #(or n %))
                    {:story (when story (Long/parseLong story))
                     :pvt   pvt})
-          lazy-res (if (and incremental prev-lazy-res (= prev-query query))
+          lazy-res (if (and incremental
+                            prev-lazy-res
+                            (= prev-query query)
+                            (= state-hash prev-hash))
                      prev-lazy-res
                      (->> (gq/get-filtered-lazy current-state q)
                           (filter #(not (:comment_for %)))
@@ -174,9 +179,10 @@
                           (map (partial linked-for g))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
           res (take (or n 20) lazy-res)]
-      (swap! state assoc-in [:prev tab] {:res      res
-                                         :lazy-res lazy-res
-                                         :query    query})
+      (swap! state assoc-in [:prev tab] {:res        res
+                                         :lazy-res   lazy-res
+                                         :state-hash state-hash
+                                         :query      query})
       (if incremental
         (let [diff (res-diff prev res)
               diff-res (merge diff {:tab tab :query query :n n})]

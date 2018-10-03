@@ -51,7 +51,6 @@
                          {:sort-asc (:sort-asc (:cfg current-state))})
         new-state (assoc-in current-state query-path query-msg)
         tab-group (:tab-group msg-payload)]
-    (info msg-payload)
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))

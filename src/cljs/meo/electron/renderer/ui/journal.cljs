@@ -33,7 +33,8 @@
    entry."
   [local-cfg _put-fn]
   (let [gql-res (subscribe [:gql-res2])
-        last-fetch (r/atom 0)
+        local (r/atom {:last-cnt 0
+                       :last-fetch 0})
         tab-group (:tab-group local-cfg)
         entries-list (reaction (vals (get-in @gql-res [tab-group])))]
     (fn journal-view-render [local-cfg put-fn]
@@ -44,9 +45,11 @@
                         (let [elem (-> ev .-nativeEvent .-srcElement)
                               sh (.-scrollHeight elem)
                               st (.-scrollTop elem)]
-                          (when (and (not= cnt @last-fetch)
-                                     (< (- sh st) 1000))
-                            (reset! last-fetch cnt)
+                          (when (and (not= cnt (:last-cnt @local))
+                                     (< (- sh st) 1000)
+                                     (> (- (st/now) (:last-fetch @local)) 1000))
+                            (reset! local {:last-cnt cnt
+                                           :last-fetch (st/now)})
                             (put-fn [:show/more {:query-id query-id
                                                  :tab-group tg}]))))
             on-mouse-enter #(put-fn [:search/cmd {:t         :active-tab

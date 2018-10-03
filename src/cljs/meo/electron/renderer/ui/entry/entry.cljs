@@ -117,7 +117,8 @@
           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-form merged put-fn]
          [es/saga-name-field merged edit-mode? put-fn]
-         [d/entry-editor entry put-fn]
+         (when-not (:spotify entry)
+           [d/entry-editor entry put-fn])
          [task/task-details merged local-cfg put-fn edit-mode?]
          [habit/habit-details merged local-cfg put-fn edit-mode?]
          [reward/reward-details merged put-fn]
