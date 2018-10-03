@@ -38,8 +38,7 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn tabs-query [queries incremental pvt]
-  (let [n 20
-        fields [:timestamp
+  (let [fields [:timestamp
                 :text
                 :md
                 :latitude
@@ -110,10 +109,12 @@
                 [:story [:timestamp
                          :story_name
                          [:saga [:saga_name]]]]]
-        f (fn [[k {:keys [n search-text story]}]]
+        f (fn [[k {:keys [n search-text story flagged starred]}]]
             {:query/data  [:tab_search {:query       search-text
                                         :pvt         pvt
                                         :incremental incremental
+                                        :starred     starred
+                                        :flagged     flagged
                                         :story       story
                                         :prio        1
                                         :tab         (name k)

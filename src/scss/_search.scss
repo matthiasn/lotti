@@ -25,8 +25,23 @@
   .star {
     cursor: pointer;
 
+    i {
+      padding-right: 4px;
+    }
+
     .starred {
       color: gold;
+    }
+  }
+  .flag {
+    cursor: pointer;
+
+    i {
+      padding-left: 0;
+    }
+
+    .flagged {
+      color: $red;
     }
   }
 }

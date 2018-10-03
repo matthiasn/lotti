@@ -30,7 +30,9 @@
                               (put-fn [:search/update s]))))
             query @query
             starred (:starred query)
-            star-fn #(put-fn [:search/update (update-in query [:starred] not)])]
+            star-fn #(put-fn [:search/update (update-in query [:starred] not)])
+            flagged (:flagged query)
+            flag-fn #(put-fn [:search/update (update-in query [:flagged] not)])]
         (when-not (or (:briefing query)
                       (:timestamp query))
           [:div.search
@@ -41,4 +43,9 @@
              [:i {:class    (if starred
                               "fas fa-star starred"
                               "fal fa-star")
-                  :on-click star-fn}]]]])))))
+                  :on-click star-fn}]]
+            [:div.flag
+             [:i {:class    (if flagged
+                              "fas fa-flag flagged"
+                              "fal fa-flag")
+                  :on-click flag-fn}]]]])))))

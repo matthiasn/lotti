@@ -11,7 +11,8 @@
             [taoensso.timbre :refer [info error warn debug]]
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
-            [clj-time.core :as ct]))
+            [clj-time.core :as ct]
+            [clojure.pprint :as pp]))
 
 ;; TODO: migrate existing audio entries to use a different keyword
 (defn summed-durations
@@ -71,6 +72,7 @@
                              (= story (:timestamp entry)))
                          true)
           starred-match? (if (:starred q) (:starred entry) true)
+          flagged-match? (if (:flagged q) (:flagged entry) true)
           opts (:opts q)
           opts-match?
           (cond
@@ -139,6 +141,7 @@
                       (or q-ts-match? (empty? q-timestamp))
                       story-match?
                       starred-match?
+                      flagged-match?
                       opts-match?)]
       match?)))
 
@@ -201,13 +204,13 @@
                                          :relationship :BRIEFING}))))))
 
 (defn get-connected-nodes [g node]
-  (set (mapv :dest (uc/find-edges g {:src node}))))
+  (set (map :dest (uc/find-edges g {:src node}))))
 
 (defn get-linked-entries
   "Extract all linked entries for entry, including their comments."
   [entry g n]
   (let [linked (->> (flatten (uc/find-edges g {:src n :relationship :LINKED}))
-                    (mapv :dest)
+                    (map :dest)
                     (sort))]
     (merge entry {:linked_entries_list (vec linked)})))
 
@@ -251,6 +254,10 @@
                       ; set with starred entries
                       (:starred query)
                       (get-connected-nodes g :starred)
+
+                      ; set with flagged entries
+                      (:flagged query)
+                      (get-connected-nodes g :flagged)
 
                       ; set with timestamps matching the day
                       (:briefing query)

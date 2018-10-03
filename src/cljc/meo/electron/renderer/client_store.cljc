@@ -77,8 +77,8 @@
     {:new-state new-state}))
 
 (defn gql-res2 [{:keys [current-state msg-payload]}]
-  (let [{:keys [tab res del]} msg-payload
-        prev (get-in current-state [:gql-res2 tab])
+  (let [{:keys [tab res del incremental]} msg-payload
+        prev (if incremental (get-in current-state [:gql-res2 tab]) {})
         cleaned (apply dissoc prev del)
         res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
         ;res-map (merge cleaned res-map)

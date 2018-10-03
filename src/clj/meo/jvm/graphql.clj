@@ -154,7 +154,8 @@
 
 (defn tab-search [put-fn]
   (fn [state context args value]
-    (let [{:keys [query n pvt story tab incremental]} args
+    (debug args)
+    (let [{:keys [query n pvt story tab incremental starred flagged]} args
           current-state @state
           state-hash (hash current-state)
           tab (keyword tab)
@@ -164,11 +165,13 @@
           prev-hash (get-in current-state [:prev tab :state-hash])
           g (:graph current-state)
           q (merge (update-in (p/parse-search query) [:n] #(or n %))
-                   {:story (when story (Long/parseLong story))
-                    :pvt   pvt})
+                   {:story   (when story (Long/parseLong story))
+                    :starred starred
+                    :flagged flagged
+                    :pvt     pvt})
           lazy-res (if (and incremental
                             prev-lazy-res
-                            (= prev-query query)
+                            (= prev-query (dissoc q :n))
                             (= state-hash prev-hash))
                      prev-lazy-res
                      (->> (gq/get-filtered-lazy current-state q)
@@ -182,14 +185,14 @@
       (swap! state assoc-in [:prev tab] {:res        res
                                          :lazy-res   lazy-res
                                          :state-hash state-hash
-                                         :query      query})
+                                         :query      (dissoc q :n)})
       (if incremental
         (let [diff (res-diff prev res)
-              diff-res (merge diff {:tab tab :query query :n n})]
+              diff-res (merge diff {:tab tab :query query :n n :incremental true})]
           (when (seq (set/union (:res diff) (:del diff)))
             (put-fn (with-meta [:gql/res2 diff-res] {:sente-uid :broadcast}))))
         (when (seq res)
-          (let [res {:res res :del #{} :tab tab :query query :n n}]
+          (let [res {:res res :del #{} :tab tab :query query :n n :incremental false}]
             (put-fn (with-meta [:gql/res2 res] {:sente-uid :broadcast})))))
       [])))
 

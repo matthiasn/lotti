@@ -196,6 +196,10 @@
       color: gold;
       font-weight: 900;
     }
+    .flagged {
+      color: $red;
+      font-weight: 900;
+    }
 
     .actions {
       flex: 2;
@@ -210,7 +214,7 @@
 
       .fa {
         margin: 0;
-        padding: 2px 2px 8px 3px;
+        padding: 1px 0 5px 3px;
         font-size: 11px;
       }
     }
@@ -262,9 +266,6 @@
         margin-right: 0.3em;
         font-size: 0.8em;
         font-weight: bold;
-      }
-      .fa {
-        margin-right: 0.1em;
       }
     }
 

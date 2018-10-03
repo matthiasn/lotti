@@ -245,7 +245,14 @@
     (-> graph
         (uc/add-nodes :starred)
         (uc/add-edges [:starred (:timestamp entry)]))
-    graph))
+    (uc/remove-edges graph [(:timestamp entry) :starred])))
+
+(defn add-flagged [graph entry]
+  (if (:flagged entry)
+    (-> graph
+        (uc/add-nodes :flagged)
+        (uc/add-edges [:flagged (:timestamp entry)]))
+    (uc/remove-edges graph [(:timestamp entry) :flagged])))
 
 (defn add-completion [g entry tsk]
   (if-let [completion-ts (tsk (:task entry))]
@@ -336,6 +343,7 @@
         (update-in [:graph] add-story new-entry)
         (update-in [:graph] add-saga new-entry)
         (update-in [:graph] add-starred new-entry)
+        (update-in [:graph] add-flagged new-entry)
         (update-in [:graph] add-done :done :completion_ts new-entry)
         (update-in [:graph] add-done :closed :closed_ts new-entry)
         (update-in [:graph] add-location new-entry)

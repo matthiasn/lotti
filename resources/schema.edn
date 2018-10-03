@@ -277,6 +277,8 @@
                  :story       {:type ID}
                  :tab         {:type String}
                  :pvt         {:type Boolean}
+                 :starred     {:type Boolean}
+                 :flagged     {:type Boolean}
                  :incremental {:type Boolean}}
    :resolve     :query/tab-search}
 

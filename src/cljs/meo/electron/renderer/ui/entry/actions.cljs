@@ -149,14 +149,16 @@
                              {:story       (get-in entry [:story :timestamp])
                               :search-text (str ts)}])
                     ((up/add-search ts tab-group put-fn)))
-        star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
         mouse-enter #(reset! visible true)
         toggle-debug #(swap! local update-in [:debug] not)]
     (fn entry-actions-render [entry local put-fn edit-mode? toggle-edit local-cfg]
       (let [map? (:latitude entry)
             prev-saved? (or (:last_saved entry) (< ts 1479563777132))
             comment? (:comment_for entry)
+            star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
+            flag-entry #(put-fn [:entry/update-local (update-in entry [:flagged] not)])
             starred (:starred entry)
+            flagged (:flagged entry)
             story (get-in entry [:story :timestamp])
             open-new (fn [x]
                        (put-fn [:search/add
@@ -166,8 +168,7 @@
                                        {:linked_entries #{ts}
                                         :primary_story  story
                                         :linked_stories #{story}}
-                                       open-new)
-            opacity (if (or edit-mode? @visible) 1 0)]
+                                       open-new)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items ;{:style {:opacity opacity}}
@@ -188,8 +189,10 @@
             [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
          [:i.fa.toggle
           {:on-click star-entry
-           ;:style    {:opacity (if (or starred edit-mode? @visible) 1 0)}
-           :class    (if starred "fa-star starred" "fa-star")}]]))))
+           :class    (if starred "fa-star starred" "fa-star")}]
+         [:i.fa.toggle
+          {:on-click flag-entry
+           :class    (if flagged "fa-flag flagged" "fa-flag")}]]))))
 
 (defn briefing-actions [ts put-fn]
   (let [create-comment (fn [_ev]
