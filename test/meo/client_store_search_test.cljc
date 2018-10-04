@@ -47,7 +47,7 @@
                                     :put-fn        (fn [_])
                                     :msg-payload   {:query-id :query-1}})
           updated-query (second send-to-self)
-          expected-query (assoc-in (update-in st/open-tasks-query [:n] + 25) [:incremental] true)]
+          expected-query (assoc-in (update-in st/open-tasks-query [:n] + 50) [:incremental] true)]
       (testing
         "send properly updated query, with increased number of results"
         (is (= updated-query

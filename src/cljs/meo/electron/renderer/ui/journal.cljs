@@ -46,8 +46,8 @@
                               sh (.-scrollHeight elem)
                               st (.-scrollTop elem)
                               th (+ 1000 (* sh 0.2))]
-                          (when (and (not= cnt (:last-cnt @local))
-                                     (< (- sh st) th)
+                          (when (and (or (< (- sh st) th)
+                                         (< (- sh st) (* 0.2 sh)))
                                      (> (- (st/now) (:last-fetch @local)) 1000))
                             (reset! local {:last-cnt cnt
                                            :last-fetch (st/now)})
@@ -57,6 +57,23 @@
                                                   :tab-group tg}])]
         ^{:key (str query-id)}
         [:div.journal {:on-mouse-enter on-mouse-enter}
-         [:div.journal-entries {:on-scroll on-scroll}
+         [:div.journal-entries {:on-scroll on-scroll
+                                :id (name tab-group)}
           [react-list {:length       (count @entries-list)
                        :itemRenderer (item local-cfg put-fn)}]]]))))
+
+(def interval (atom nil))
+(defn scroll-down [id h]
+  (let [elem (.getElementById js/document id)
+        st (.-scrollTop elem)]
+    (aset elem "scrollTop" (+ st h))))
+
+(defn playback [id h]
+  (reset! interval (js/setInterval #(scroll-down id h) 16)))
+
+(defn stop-playback []
+  (when @interval
+    (js/clearInterval @interval)))
+
+(def ^:export scrollStart playback)
+(def ^:export scrollStop stop-playback)
