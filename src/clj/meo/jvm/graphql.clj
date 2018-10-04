@@ -157,12 +157,12 @@
     (debug args)
     (let [{:keys [query n pvt story tab incremental starred flagged]} args
           current-state @state
-          state-hash (hash current-state)
+          global-vclock (:global-vclock current-state)
           tab (keyword tab)
           prev (get-in current-state [:prev tab :res])
           prev-lazy-res (get-in current-state [:prev tab :lazy-res])
           prev-query (get-in current-state [:prev tab :query])
-          prev-hash (get-in current-state [:prev tab :state-hash])
+          prev-vclock (get-in current-state [:prev tab :global-vclock])
           g (:graph current-state)
           q (merge (update-in (p/parse-search query) [:n] #(or n %))
                    {:story   (when story (Long/parseLong story))
@@ -172,7 +172,7 @@
           lazy-res (if (and incremental
                             prev-lazy-res
                             (= prev-query (dissoc q :n))
-                            (= state-hash prev-hash))
+                            (= global-vclock prev-vclock))
                      prev-lazy-res
                      (->> (gq/get-filtered-lazy current-state q)
                           (filter #(not (:comment_for %)))
@@ -182,10 +182,10 @@
                           (map (partial linked-for g))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
           res (take (or n 20) lazy-res)]
-      (swap! state assoc-in [:prev tab] {:res        res
-                                         :lazy-res   lazy-res
-                                         :state-hash state-hash
-                                         :query      (dissoc q :n)})
+      (swap! state assoc-in [:prev tab] {:res         res
+                                         :lazy-res    lazy-res
+                                         :prev-vclock global-vclock
+                                         :query       (dissoc q :n)})
       (if incremental
         (let [diff (res-diff prev res)
               diff-res (merge diff {:tab tab :query query :n n :incremental true})]
@@ -296,11 +296,11 @@
 (def prio-thread-pool (cp/priority-threadpool 5))
 (alter-var-root #'resolve/*callback-executor* (constantly executor-thread-pool))
 
-(defn async-wrapper [f]
+(defn async-wrapper [k f]
   (fn [state context args value]
     (let [result-promise (resolve/resolve-promise)
-          p (:prio args 100)
-          tp (if (< p 100)
+          p (:prio args 10)
+          tp (if (< p 10)
                prio-thread-pool
                thread-pool)]
       (cp/future (cp/with-priority tp p)
@@ -322,7 +322,6 @@
         query-string (when template (apply format template args))
         on-deliver
         (fn [res]
-          (info "GraphQL on-deliver" qid (- (stc/now) start) "ms")
           (let [new-hash (hash res)
                 new-data (not= new-hash res-hash)
                 res (merge merged
@@ -343,10 +342,11 @@
   {})
 
 (defn run-registered [{:keys [current-state msg-meta] :as m}]
-  (info "Running registered GraphQL queries")
-  (doseq [[id _q] (sort-by #(:prio (second %)) (:queries current-state))]
-    (run-query (merge m {:msg-payload {:id id}
-                         :msg-meta    msg-meta})))
+  (let [queries (sort-by #(:prio (second %)) (:queries current-state))]
+    (info "Running registered GraphQL queries" queries)
+    (doseq [[id _q] queries]
+      (run-query (merge m {:msg-payload {:id id}
+                           :msg-meta    msg-meta}))))
   {})
 
 (defn gen-opt [cmp-state f k]
@@ -378,7 +378,7 @@
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         attach-state (fn [m]
                        (into {} (map (fn [[k f]]
-                                       [k (partial (async-wrapper f) state)])
+                                       [k (partial (async-wrapper k f) state)])
                                      m)))
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers

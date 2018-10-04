@@ -1,5 +1,5 @@
 {
-  briefing(day: "%s", prio: 2) {
+  briefing(day: "%s", prio: 12) {
     day
     timestamp
     linked {

@@ -1,5 +1,5 @@
 {
-  day_stats(days: "%s", prio: 5) {
+  day_stats(days: "%s", prio: 15) {
     day
     closed_tasks_cnt
     done_tasks_cnt

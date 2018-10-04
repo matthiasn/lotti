@@ -38,13 +38,13 @@
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (run-query "briefing.gql" :briefing 2 [ymd pvt])
-      (run-query "logged-by-day.gql" :logged-by-day 3 [ymd]))
-    (run-query "started-tasks.gql" :started-tasks 4 [pvt false])
-    (run-query "open-tasks.gql" :open-tasks 4 [pvt])
-    (run-query "waiting-habits.gql" :waiting-habits 5 [pvt false])
+      (run-query "briefing.gql" :briefing 12 [ymd pvt])
+      (run-query "logged-by-day.gql" :logged-by-day 13 [ymd]))
+    (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
+    (run-query "open-tasks.gql" :open-tasks 14 [pvt])
+    (run-query "waiting-habits.gql" :waiting-habits 15 [pvt false])
     (run-query "options.gql" :options 10 nil)
-    (run-query "day-stats.gql" :day-stats 5 [90])
+    (run-query "day-stats.gql" :day-stats 15 [90])
     (s/gql-query :left current-state false put-fn)
     (s/gql-query :right current-state false put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
@@ -78,7 +78,7 @@
 
 (defn gql-res2 [{:keys [current-state msg-payload]}]
   (let [{:keys [tab res del incremental]} msg-payload
-        prev (if incremental (get-in current-state [:gql-res2 tab]) {})
+        prev (if incremental (get-in current-state [:gql-res2 tab]) (sorted-map-by >))
         cleaned (apply dissoc prev del)
         res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
         ;res-map (merge cleaned res-map)

@@ -199,9 +199,8 @@
                     (when (and meta-key (= key-code 52)) (set-stars 4))
                     (when (and meta-key (= key-code 53)) (set-stars 5))
                     (.stopPropagation ev)))
-        stop-watch #(do (info "stop-watch") (.removeEventListener js/document "keydown" keydown))
-        start-watch #(do (info "start-watch")
-                         (.addEventListener js/document "keydown" keydown)
+        stop-watch #(.removeEventListener js/document "keydown" keydown)
+        start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
     (fn gallery-render [entries local-cfg put-fn]
       (let [sorted-filtered (filter filter-by-stars @sorted)

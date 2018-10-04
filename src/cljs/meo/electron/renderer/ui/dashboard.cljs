@@ -20,14 +20,16 @@
       (info "dashboard tags" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
-                           :id       :dashboard}])))
+                           :id       :dashboard
+                           :prio     15}])))
   (let [items (->> (:charts @charts-pos)
                    (filter #(= :scores-chart (:type %))))]
     (when-let [query-string (gql/dashboard-questionnaires days items)]
       (info "dashboard" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
-                           :id       :dashboard-questionnaires}]))))
+                           :id       :dashboard-questionnaires
+                           :prio     15}]))))
 
 (defn dashboard [days put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])

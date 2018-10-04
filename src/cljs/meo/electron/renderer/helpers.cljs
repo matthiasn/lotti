@@ -164,9 +164,9 @@
   (put-fn [:cal/to-day {:day ymd}])
   (put-fn [:gql/query {:file "logged-by-day.gql"
                        :id   :logged-by-day
-                       :prio 3
+                       :prio 13
                        :args [ymd]}])
   (put-fn [:gql/query {:file "briefing.gql"
                        :id   :briefing
-                       :prio 2
+                       :prio 12
                        :args [ymd @pvt]}]))

@@ -151,7 +151,7 @@
   (let [edges (uc/find-edges g {:dest ts :relationship :COMMENT})
         comment-ids (->> (flatten edges)
                          (remove :mirror?)
-                         (mapv :src)
+                         (map :src)
                          (sort))]
     (merge entry {:comments (vec comment-ids)})))
 
@@ -297,11 +297,11 @@
         matched-ids (if (contains? opts ":predicted-stories")
                       matched-ids
                       (sort-fn matched-ids))
-        matched-entries (mapv mapper-fn matched-ids)
+        matched-entries (map mapper-fn matched-ids)
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
         parent-ids (filter identity (mapv :comment_for matched-entries))
-        parents (mapv mapper-fn parent-ids)]
+        parents (map mapper-fn parent-ids)]
     (flatten [matched-entries parents])))
 
 (defn extract-sorted2
@@ -496,7 +496,7 @@
   (let [pvt (:pvt query)
         g (:graph current-state)
         entries (filter (entries-filter-fn query g)
-                        (extract-sorted-entries current-state query))
+                        (lazy-seq (extract-sorted-entries current-state query)))
         comments-linked (comments-linked-for-entry g)
         pvt-filter (um/pvt-filter (:options current-state))
         entries (map comments-linked entries)]
