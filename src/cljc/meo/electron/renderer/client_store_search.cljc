@@ -156,19 +156,24 @@
                         (update-in all-path #(disj (set %) query-id))
                         (previously-active query-id tab-group)
                         (update-in query-path dissoc query-id))
-          new-state (assoc-in new-state [:gql-res2 tab-group] (sorted-map-by >))]
+          new-state (if query-id
+                      (assoc-in new-state [:gql-res2 tab-group] (sorted-map-by >))
+                      new-state)]
       (update-query-cfg new-state put-fn)
       {:new-state new-state})
     {}))
 
-(defn remove-all [{:keys [current-state msg-payload]}]
+(defn remove-all [{:keys [current-state msg-payload put-fn]}]
   (let [query-cfg (:query-cfg current-state)
         left (find-existing query-cfg :left msg-payload)
-        right (find-existing query-cfg :right msg-payload)]
-    {:send-to-self [[:search/remove {:tab-group :left
-                                     :query-id  (:query-id left)}]
-                    [:search/remove {:tab-group :right
-                                     :query-id  (:query-id right)}]]}))
+        right (find-existing query-cfg :right msg-payload)
+        ml [:search/remove {:tab-group :left
+                            :query-id  (:query-id left)}]
+        mr [:search/remove {:tab-group :right
+                            :query-id  (:query-id right)}]]
+    (put-fn ml)
+    (put-fn mr)
+    {:send-to-self [ml mr]}))
 
 (defn close-all [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [tab-group]} msg-payload
