@@ -312,6 +312,11 @@
                                        {:message (str "Exception: " (.getMessage t))}))))
       result-promise)))
 
+(defn search-remove [{:keys [current-state msg-payload]}]
+  (let [tab-group (:tab-group msg-payload)
+        new-state (assoc-in current-state [:prev tab-group] {})]
+    {:new-state new-state}))
+
 (defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
   (let [start (stc/now)
         schema (:schema current-state)

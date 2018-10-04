@@ -165,6 +165,7 @@
                  :state/persist      f/persist-state!
                  :cfg/refresh        refresh-cfg
                  :backend-cfg/save   fu/write-cfg
+                 :search/remove      gql/search-remove
                  :gql/query          gql/run-query
                  :gql/cmd            gql/start-stop
                  :gql/run-registered gql/run-registered}})

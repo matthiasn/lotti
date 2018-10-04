@@ -33,7 +33,7 @@
                          :import/listen :spotify/play :import/gen-thumbs
                          :spotify/pause :cfg/refresh :state/persist
                          :sync/start-server :sync/stop-server
-                         :tf/learn-stories :gql/query
+                         :tf/learn-stories :gql/query :search/remove
                          :gql/cmd :firehose/cmd}}))
 
 (def OBSERVER (.-OBSERVER js/window))

@@ -182,7 +182,8 @@
 (s/def :search/add (s/keys :req-un [:meo.search/tab-group]))
 (s/def :search/set-active (s/keys :req-un [:meo.search/tab-group
                                            :meo.search/query-id]))
-(s/def :search/remove (s/nilable :search/set-active))
+(s/def :search/remove (s/keys :req-un [:meo.search/tab-group]
+                                  :opt-un [:meo.search/query-id]))
 (s/def :search/remove-all (s/keys :req-un [:meo.search/search-text]
                                   :opt-un [:meo.search/story]))
 
