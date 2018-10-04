@@ -28,12 +28,16 @@
                           story (get-in query-cfg [:queries a :story])
                           flagged (get-in query-cfg [:queries a :flagged])
                           starred (get-in query-cfg [:queries a :starred])
+                          from (get-in query-cfg [:queries a :from])
+                          to (get-in query-cfg [:queries a :to])
                           n (get-in query-cfg [:queries a :n])]
                       (when (and a search-text)
                         [k {:search-text search-text
                             :story       story
                             :flagged     flagged
                             :starred     starred
+                            :from        from
+                            :to          to
                             :n           n}])))
         queries (filter identity (map query-for [tab-group]))
         pvt (:show-pvt (:cfg current-state))

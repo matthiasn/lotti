@@ -15,3 +15,4 @@
 
 (def ymd-fmt (ctf/formatter "yyyy-MM-dd" (ct/default-time-zone)))
 (defn ts-to-ymd [ts] (ctf/unparse ymd-fmt (c/from-long ts)))
+(defn ymd-to-ts [s] (c/to-long (ctf/parse ymd-fmt s)))

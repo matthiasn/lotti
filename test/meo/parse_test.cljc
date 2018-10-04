@@ -2,30 +2,30 @@
   "Here, we test the parsing functions."
   (:require #?(:clj  [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-                     [matthiasn.systems-toolbox.component :as stc]
-                     [meo.common.utils.parse :as p]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [meo.common.utils.parse :as p]))
 
 (def n 100)
 
 (def empty-entry
-  {:mentions   #{}
-   :tags       #{}
-   :md         ""})
+  {:mentions #{}
+   :tags     #{}
+   :md       ""})
 
 (def test-entry
-  {:mentions   #{}
-   :tags       #{"#cljc"}
-   :md         "Moving to #cljc"})
+  {:mentions #{}
+   :tags     #{"#cljc"}
+   :md       "Moving to #cljc"})
 
 (def test-entry2
   {:mentions #{"@myself"}
-   :tags #{"#task" "#UI" "#pomodoros" "#interacting" "#events" "#pomodoro" "#timestamp"}
-   :md "New #task: count the time spent #interacting with the #UI when no #pomodoro is running. Mouse-over and key #events should be a good indicator for that. When nothing happens longer than x, don't extend the current period of activity but rather close the last one at the last #timestamp and create a new period of activity. I like that. Not all work can possibly happen in #pomodoros, and it would be a waste of data to not capture that time. @myself"})
+   :tags     #{"#task" "#UI" "#pomodoros" "#interacting" "#events" "#pomodoro" "#timestamp"}
+   :md       "New #task: count the time spent #interacting with the #UI when no #pomodoro is running. Mouse-over and key #events should be a good indicator for that. When nothing happens longer than x, don't extend the current period of activity but rather close the last one at the last #timestamp and create a new period of activity. I like that. Not all work can possibly happen in #pomodoros, and it would be a waste of data to not capture that time. @myself"})
 
 (def test-entry3
-  {:mentions   #{"@myself" "@JohnDoe"}
-   :tags       #{"#tag2" "#tag3"}
-   :md         "#tag1 #tag2 #tag3 @JohnDoe @myself"})
+  {:mentions #{"@myself" "@JohnDoe"}
+   :tags     #{"#tag2" "#tag3"}
+   :md       "#tag1 #tag2 #tag3 @JohnDoe @myself"})
 
 (deftest parse-entry-test
   (testing "empty entry is parsed correctly"
@@ -47,6 +47,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -62,6 +64,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -74,9 +78,11 @@
    :ft-search   nil
    :country     nil
    :tags        #{"#task"}
-   :not-tags #{"#backlog" "#done" "#outdated"}
+   :not-tags    #{"#backlog" "#done" "#outdated"}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -89,9 +95,11 @@
    :ft-search   nil
    :country     nil
    :tags        #{"#task"}
-   :not-tags #{"#backlog" "#done" "#outdated"}
+   :not-tags    #{"#backlog" "#done" "#outdated"}
    :mentions    #{}
    :opts        #{":started"}
+   :from nil
+   :to nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -107,6 +115,8 @@
    :not-tags    #{}
    :mentions    #{"@myself"}
    :opts        #{}
+   :from nil
+   :to nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -123,6 +133,25 @@
    :mentions    #{"@myself"}
    :opts        #{}
    :date_string "2016-06-07"
+   :from        nil
+   :to          nil
+   :briefing    nil
+   :timestamp   nil
+   :id          nil
+   :linked      nil
+   :n           n})
+
+(def from-to-search
+  {:search-text "f:2016-06-07 t:2018-06-07 #task #done @JohnDoe"
+   :ft-search   nil
+   :country     nil
+   :tags        #{"#task" "#done"}
+   :not-tags    #{}
+   :mentions    #{"@JohnDoe"}
+   :opts        #{}
+   :date_string nil
+   :from        "2016-06-07"
+   :to          "2018-06-07"
    :briefing    nil
    :timestamp   nil
    :id          nil
@@ -137,6 +166,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    "2016-06-07"
    :timestamp   nil
@@ -152,6 +183,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   "1465325998053"
@@ -167,6 +200,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -182,6 +217,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -197,6 +234,8 @@
    :not-tags    #{}
    :mentions    #{}
    :opts        #{}
+   :from        nil
+   :to          nil
    :date_string nil
    :briefing    nil
    :timestamp   nil
@@ -234,6 +273,11 @@
     "day query is parsed correctly"
     (is (= (p/parse-search (:search-text day-search))
            day-search)))
+
+  (testing
+    "from to interval query is parsed correctly"
+    (is (= (p/parse-search (:search-text from-to-search))
+           from-to-search)))
 
   (testing
     "briefing for day query is parsed correctly"

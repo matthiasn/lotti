@@ -273,6 +273,8 @@
    :description "List of entries for given query."
    :args        {:query       {:type String}
                  :n           {:type Int}
+                 :from        {:type String}
+                 :to          {:type String}
                  :prio        {:type Int}
                  :story       {:type ID}
                  :tab         {:type String}

@@ -16,6 +16,8 @@
 (def entry-mentions-regex
   (re-pattern (str "(?m) ?@" tag-char-cls "+(?!" tag-char-cls ")")))
 (def date-regex #"(?m)(?:^|[^:])([0-9]{4}-[0-9]{2}-[0-9]{2})")
+(def from-regex #"(?m)(f:)([0-9]{4}-[0-9]{2}-[0-9]{2})")
+(def to-regex #"(?m)(t:)([0-9]{4}-[0-9]{2}-[0-9]{2})")
 (def id-regex #"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 (def linked-regex #"l:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 (def briefing-date-regex #"(?m)(?:b:)([0-9]{4}-[0-9]{2}-[0-9]{2})")
@@ -52,6 +54,8 @@
      :opts        (set (map second (re-seq search-opts-regex text)))
      :briefing    (second (re-find briefing-date-regex text))
      :date_string (second (re-find date-regex text))
+     :from        (last (re-find from-regex text))
+     :to          (last (re-find to-regex text))
      :id          (re-find id-regex text)
      :timestamp   (second (re-find #"(?:^|[^:])([0-9]{13})" text))
      :linked      (second (re-find #"l:([0-9]{13})" text))

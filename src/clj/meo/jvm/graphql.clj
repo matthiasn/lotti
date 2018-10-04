@@ -154,9 +154,10 @@
 
 (defn tab-search [put-fn]
   (fn [state context args value]
-    (debug args)
-    (let [{:keys [query n pvt story tab incremental starred flagged]} args
+    (let [{:keys [query n pvt story tab incremental starred flagged from to]} args
           current-state @state
+          from (if from (dt/ymd-to-ts from) 0)
+          to (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)
           global-vclock (:global-vclock current-state)
           tab (keyword tab)
           prev (get-in current-state [:prev tab :res])
@@ -181,7 +182,10 @@
                           (map (partial entry-w-comments g))
                           (map (partial linked-for g))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
-          res (take (or n 20) lazy-res)]
+          res (->> lazy-res
+                   (filter #(< (:timestamp %) to))
+                   (filter #(> (:timestamp %) from))
+                   (take (or n 100)))]
       (swap! state assoc-in [:prev tab] {:res         res
                                          :lazy-res    lazy-res
                                          :prev-vclock global-vclock

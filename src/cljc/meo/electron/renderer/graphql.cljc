@@ -109,8 +109,10 @@
                 [:story [:timestamp
                          :story_name
                          [:saga [:saga_name]]]]]
-        f (fn [[k {:keys [n search-text story flagged starred]}]]
+        f (fn [[k {:keys [n search-text story flagged starred from to]}]]
             {:query/data  [:tab_search {:query       search-text
+                                        :from        from
+                                        :to          to
                                         :pvt         pvt
                                         :incremental incremental
                                         :starred     starred
