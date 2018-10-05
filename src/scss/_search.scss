@@ -12,13 +12,66 @@
   }
 }
 
+.infinite-cal-search {
+
+  .Cal__Header__root {
+    padding: 0 16px;
+    min-height: 40px;
+    display: block;
+
+  }
+  .Cal__Container__listWrapper {
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+  }
+  .Cal__Weekdays__day {
+    padding: 3px 0;
+  }
+
+  .Cal__Header__dateWrapper {
+
+    &.Cal__Header__year {
+      height: 10px;
+      font-size: $font-size-small;
+    }
+    &.Cal__Header__day {
+      //height: 16px;
+      font-size: $font-size-large;
+    }
+  }
+  .Cal__Weekdays__root {
+    font-size: $font-size-small;
+  }
+
+  .Cal__Today__root {
+    height: 22px;
+    font-size: $font-size-medium;
+  }
+
+  .Cal__Day__range {
+  }
+
+  .Cal__Day__end {
+    color: green;
+    height: 36px;
+  }
+
+  .Cal__Day__selection {
+  }
+}
+
 .search-row {
   display: flex;
   background-color: $search-field-color;
   border-radius: 5px;
 
+  &.cal-open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
   i {
-    font-size: 16px;
+    font-size: 14px;
     padding: 6px;
   }
 
@@ -31,6 +84,11 @@
 
     .starred {
       color: gold;
+    }
+  }
+  .cal {
+    i {
+      padding-left: 0;
     }
   }
   .flag {

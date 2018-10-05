@@ -13,15 +13,14 @@
             [meo.common.utils.parse :as p]
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]))
 
-(def ric-adapted (r/adapt-react-class (aget ric "default")))
 
-(defn infinite-cal-wrapper [props]
-  (let [m (-> (fn [props] [ric-adapted props])
-              r/reactify-component
-              ric/withKeyboardSupport
-              ric/withDateSelection
-              r/adapt-react-class)]
-    [m props]))
+(def infinite-cal-adapted
+  (r/adapt-react-class (->> ric/Calendar
+                            ric/withKeyboardSupport
+                            ric/withDateSelection)))
+
+(def infinite-cal-range-adapted
+  (r/adapt-react-class (ric/withRange ric/Calendar)))
 
 (defn infinite-cal [put-fn]
   (let [briefings (subscribe [:briefings])
@@ -51,7 +50,7 @@
     (fn [put-fn]
       (let [h (- (aget js/window "innerHeight") 175)]
         [:div.infinite-cal
-         [infinite-cal-wrapper
+         [infinite-cal-adapted
           {:width           "100%"
            :height          300
            :showHeader      false

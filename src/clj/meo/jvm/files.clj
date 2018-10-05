@@ -138,7 +138,7 @@
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
         (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                    :timeout 1
+                                    :timeout 10
                                     :id      :saved-entry}]))
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
@@ -217,7 +217,7 @@
                            :deleted   true}
                       put-fn)
     (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                :timeout 1}])
+                                :timeout 10}])
     (move-attachment-to-trash cfg msg-payload "images" :img_file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)
