@@ -52,13 +52,13 @@
         [:div.infinite-cal
          [infinite-cal-adapted
           {:width           "100%"
-           :height          300
+           :height          240
            :showHeader      false
            :onSelect        onSelect
            :autoFocus       true
            :keyboardSupport true
            :theme           {:weekdayColor "#666"
-                             :headerColor  "#888"}
+                             :headerColor  "#778"}
            :rowHeight       45
            :selected        @cal-day}]
          [:div.habit-details
