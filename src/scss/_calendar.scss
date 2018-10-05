@@ -111,12 +111,6 @@ button.rbc-input::-moz-focus-inner {
   font-size: $font-size-large;
 }
 
-.rbc-toolbar .rbc-toolbar-label {
-  width: 100%;
-  padding: 0 10px;
-  text-align: center;
-}
-
 .rbc-toolbar button {
   color: #373a3c;
   display: inline-block;
@@ -208,7 +202,7 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-event {
   cursor: pointer;
-  padding: 2px 5px 0 5px;
+  padding: 2px 4px 0 4px;
   border-radius: 3px;
   color: #fff;
 }
@@ -257,11 +251,6 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-selected-cell {
   background-color: rgba(0, 0, 0, 0.1);
-}
-
-.rbc-date-cell {
-  padding-right: 5px;
-  text-align: right;
 }
 
 .rbc-date-cell.rbc-now {
@@ -333,7 +322,7 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-label {
-  padding: 3px 5px;
+  padding: 0 3px;
   font-size: $font-size-small;
 }
 
@@ -342,7 +331,7 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-day-slot .rbc-event {
-  //border: 1px solid #265985;
+  box-shadow: 0 0 1px 1px #AAA;
   display: flex;
   max-height: 100%;
   flex-flow: column wrap;

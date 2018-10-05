@@ -52,7 +52,7 @@
         [:div.infinite-cal
          [infinite-cal-adapted
           {:width           "100%"
-           :height          240
+           :height          270
            :showHeader      false
            :onSelect        onSelect
            :autoFocus       true
