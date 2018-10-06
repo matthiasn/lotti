@@ -469,6 +469,33 @@
   background-color: white;
   border-radius: $entry-border-radius;
 
+  .header {
+    font-weight: bold;
+  }
+
+  .days {
+    padding-bottom: 5px;
+  }
+  .day-toggle {
+    background-color: #EEEEEE;
+    margin-right: 2px;
+    border-radius: 2px;
+    margin-bottom: 3px;
+    font-weight: bold;
+    color: #999;
+    display: inline-block;
+    width: 32px;
+    text-align: center;
+    font-size: $font-size-small;
+    cursor: pointer;
+    user-select: none;
+
+    &.selected {
+      background-color: $hashtag-blue;
+      color: white;
+    }
+  }
+
   table {
     border-collapse: collapse;
     margin-bottom: 4px;

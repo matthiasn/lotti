@@ -31,21 +31,21 @@
         (dissoc :longitude))))
 
 (defn habit-details [entry local-cfg put-fn edit-mode?]
-  (let [ts (:timestamp entry)
-        backend-cfg (subscribe [:backend-cfg])
+  (let [backend-cfg (subscribe [:backend-cfg])
         active-from (fn [entry]
                       (fn [ev]
                         (let [dt (h/target-val ev)
                               updated (assoc-in entry [:habit :active_from] dt)]
                           (put-fn [:entry/update-local updated]))))
-        day-select (fn [entry day]
+        day-select (fn [entry day-idx]
                      (fn [_ev]
-                       (let [updated (update-in entry [:habit :days day] not)]
+                       (let [updated (update-in entry [:habit :days day-idx] not)]
                          (put-fn [:entry/update-local updated]))))
-        day-checkbox (fn [entry day]
-                       [:input {:type      :checkbox
-                                :checked   (get-in entry [:habit :days day])
-                                :on-change (day-select entry day)}])
+        day-checkbox (fn [entry day-idx day]
+                       [:span.day-toggle
+                        {:class    (when (get-in entry [:habit :days day-idx]) "selected")
+                         :on-click (day-select entry day-idx)}
+                        day])
         close-tab #(put-fn [:search/cmd {:t :close-tab}])
         done
         (fn [entry]
@@ -109,15 +109,15 @@
         (when (contains? (:capabilities @backend-cfg) :habits)
           [:form.habit-details
            [:fieldset
-            [:legend "Habit details"]
-            [:div
-             [:label "Sun"] [day-checkbox entry 0]
-             [:label "Mon"] [day-checkbox entry 1]
-             [:label "Tue"] [day-checkbox entry 2]
-             [:label "Wed"] [day-checkbox entry 3]
-             [:label "Thu"] [day-checkbox entry 4]
-             [:label "Fri"] [day-checkbox entry 5]
-             [:label "Sat"] [day-checkbox entry 6]]
+            [:legend.header "Habit details"]
+            [:div.days
+             [day-checkbox entry 0 "Sun"]
+             [day-checkbox entry 1 "Mon"]
+             [day-checkbox entry 2 "Tue"]
+             [day-checkbox entry 3 "Wed"]
+             [day-checkbox entry 4 "Thu"]
+             [day-checkbox entry 5 "Fri"]
+             [day-checkbox entry 6 "Sat"]]
             [:div
              [:span " Priority: "]
              [:select {:value     (get-in entry [:habit :priority] "")
