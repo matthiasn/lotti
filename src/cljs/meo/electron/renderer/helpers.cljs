@@ -2,6 +2,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [meo.common.utils.parse :as p]
             [goog.dom.Range]
+            [reagent.core :as rc]
             [taoensso.timbre :refer-macros [info debug error]]
             [path :refer [normalize]]
             [globalize :as globalize]
@@ -170,3 +171,18 @@
                        :id   :briefing
                        :prio 12
                        :args [ymd @pvt]}]))
+
+(defn error-boundary
+  "Error boundary for isolating React components. From:
+  https://github.com/reagent-project/reagent/blob/master/test/reagenttest/testreagent.cljs#L1035
+  Also see: https://reactjs.org/blog/2017/07/26/error-handling-in-react-16.html"
+  [comp]
+  (let [err (atom nil)]
+    (rc/create-class
+      {:component-did-catch (fn [this e info]
+                              (reset! err e))
+       :reagent-render      (fn [comp]
+                              (if @err
+                                (do (error @err)
+                                    [:div "Something went wrong."])
+                                comp))})))

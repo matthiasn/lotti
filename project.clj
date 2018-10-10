@@ -3,28 +3,28 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.10.0-alpha7"]
+  :dependencies [[org.clojure/clojure "1.10.0-beta2"]
                  [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
-                 [org.clojure/data.avl "0.0.17"]
-                 [org.clojure/test.check "0.10.0-alpha2"]
+                 [org.clojure/data.avl "0.0.18"]
+                 [org.clojure/test.check "0.10.0-alpha3"]
                  [clj-pid "0.1.2"]
-                 [clj-time "0.14.4"]
+                 [clj-time "0.14.5"]
                  [clj-http "3.9.1"]
                  [ring/ring-core "1.7.0"]
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "3.0.0"]
                  [me.raynes/fs "1.4.6"]
-                 [markdown-clj "1.0.2"]
+                 [markdown-clj "1.0.3"]
                  [progrock "0.1.2"]
-                 [cheshire "5.8.0"]
+                 [cheshire "5.8.1"]
                  [me.raynes/conch "0.8.0"]
                  [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
 
-                 [com.walmartlabs/lacinia "0.28.0"]
-                 [com.walmartlabs/lacinia-pedestal "0.9.0"]
+                 [com.walmartlabs/lacinia "0.30.0"]
+                 [com.walmartlabs/lacinia-pedestal "0.10.0"]
 
                  [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
                  [org.eclipse.jetty.websocket/websocket-api "9.4.7.v20170914"]
@@ -34,8 +34,8 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
-                 [ubergraph "0.5.1"]
-                 [factual/geo "2.1.0"]
+                 [ubergraph "0.5.2"]
+                 [factual/geo "2.1.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.37"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
@@ -60,14 +60,14 @@
   :main meo.jvm.core
 
   :profiles {:uberjar      {:aot :all}
-             :test-reagent {:dependencies [[cljsjs/react "16.4.1-0"]
-                                           [cljsjs/react-dom "16.4.1-0"]
+             :test-reagent {:dependencies [[cljsjs/react "16.5.2-0"]
+                                           [cljsjs/react-dom "16.5.2-0"]
                                            [cljsjs/create-react-class "15.6.3-1"]]}
              :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
-                                           [cljsjs/moment "2.22.2-0"]
+                                           [cljsjs/moment "2.22.2-1"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}

@@ -3,6 +3,7 @@
   (:require [reagent.core :as rc]
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
+            [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.ui.menu :as menu]
             [meo.electron.renderer.ui.heatmap :as hm]
             [meo.electron.renderer.ui.grid :as g]
@@ -19,7 +20,8 @@
             [meo.electron.renderer.ui.charts.time.durations :as cd]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meo.electron.renderer.ui.entry.briefing :as b]
-            [meo.electron.renderer.ui.data-explorer :as dex]))
+            [meo.electron.renderer.ui.data-explorer :as dex]
+            [meo.electron.renderer.helpers :as h]))
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
@@ -76,20 +78,20 @@
       [:div.flex-container
        [:div.grid
         [:div.wrapper.col-3
-         [menu/menu-view put-fn]
-         [menu/busy-status put-fn]
-         [:div.inf-cal
-          [cal/infinite-cal put-fn]]
-         [:div.cal
-          [cal/calendar-view put-fn]]
-         [b/briefing-column-view :briefing put-fn]
+         [h/error-boundary [menu/menu-view put-fn]]
+         [h/error-boundary [menu/busy-status put-fn]]
+         [h/error-boundary [cal/infinite-cal put-fn]]
+         [h/error-boundary [cal/calendar-view put-fn]]
+         [h/error-boundary [b/briefing-column-view :briefing put-fn]]
          [:div {:class (if @single-column "single" "left")}
-          [g/tabs-view :left put-fn]]
+          [h/error-boundary [g/tabs-view :left put-fn]]]
          (when-not @single-column
            [:div.right
-            [g/tabs-view :right put-fn]])
-         [f/footer put-fn]]]
-       [stats/stats-text]])))
+            [h/error-boundary [g/tabs-view :right put-fn]]])
+         [h/error-boundary
+          [f/footer put-fn]]]]
+       [h/error-boundary
+        [stats/stats-text]]])))
 
 (defn charts-page [put-fn]
   [:div.flex-container

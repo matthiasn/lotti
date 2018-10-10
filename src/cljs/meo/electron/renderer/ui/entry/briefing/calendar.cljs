@@ -49,20 +49,21 @@
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn [put-fn]
       (let [h (- (aget js/window "innerHeight") 175)]
-        [:div.infinite-cal
-         [infinite-cal-adapted
-          {:width           "100%"
-           :height          270
-           :showHeader      false
-           :onSelect        onSelect
-           :autoFocus       true
-           :keyboardSupport true
-           :theme           {:weekdayColor "#666"
-                             :headerColor  "#778"}
-           :rowHeight       45
-           :selected        @cal-day}]
-         [:div.habit-details
-          [habits/waiting-habits local put-fn]]]))))
+        [:div.inf-cal
+         [:div.infinite-cal
+          [infinite-cal-adapted
+           {:width           "100%"
+            :height          270
+            :showHeader      false
+            :onSelect        onSelect
+            :autoFocus       true
+            :keyboardSupport true
+            :theme           {:weekdayColor "#666"
+                              :headerColor  "#778"}
+            :rowHeight       45
+            :selected        @cal-day}]
+          [:div.habit-details
+           [habits/waiting-habits local put-fn]]]]))))
 
 (defn calendar-view [put-fn]
   (let [rbc (aget js/window "deps" "BigCalendar")
@@ -103,9 +104,10 @@
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
         (when @show-cal
-          [:div.cal-container
-           [:div.big-calendar {:class (when-not @show-pvt "pvt")}
-            [cal (merge {:events     events
-                         :date       (.toDate (moment. day))
-                         :onNavigate #(info :navigate %)}
-                        scroll-to)]]])))))
+          [:div.cal
+           [:div.cal-container
+            [:div.big-calendar {:class (when-not @show-pvt "pvt")}
+             [cal (merge {:events     events
+                          :date       (.toDate (moment. day))
+                          :onNavigate #(info :navigate %)}
+                         scroll-to)]]]])))))

@@ -41,7 +41,7 @@
         cancel-change (fn [_]
                         (js/clearInterval (:interval @local))
                         (swap! local dissoc :interval))]
-    (fn [put-fn]
+    (fn footer-render [put-fn]
       [:div.footer
        (when @dashboard-banner
          [:div {:style {:max-height (:height @local)}}
