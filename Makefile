@@ -27,7 +27,7 @@ package: install package-only
 install-mac:
 	curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
 	source $HOME/.bashrc
-	nvm install 8.9
+	nvm install 10.2
 	npm install -g electron
 	npm install -g electron-builder
 	npm install -g electron-cli
@@ -53,7 +53,7 @@ install-ubuntu:
 	sudo apt-get install libgconf-2-4
 	wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
 	source $HOME/.bashrc
-	nvm install 8.9
+	nvm install 10.2
 	npm install -g electron
 	npm install -g electron-builder@20.14.7
 	npm install -g electron-cli

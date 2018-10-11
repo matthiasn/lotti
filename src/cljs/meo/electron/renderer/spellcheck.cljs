@@ -1,5 +1,5 @@
 (ns meo.electron.renderer.spellcheck
-  (:require [electron-spellchecker
+  (:require #_[electron-spellchecker
              :refer [SpellCheckHandler ContextMenuListener ContextMenuBuilder]]
             [taoensso.timbre :refer-macros [info]]))
 
@@ -7,9 +7,10 @@
   (let [cc msg-payload
         spellcheck-handler (:spellcheck-handler current-state)]
     (info "Setting SpellChecker language:" cc)
-    (.switchLanguage spellcheck-handler cc)
+    ;(.switchLanguage spellcheck-handler cc)
     {}))
 
+#_
 (defn state-fn [_put-fn]
   (let [spellcheck-handler (SpellCheckHandler.)
         cm-builder (ContextMenuBuilder. spellcheck-handler)]
@@ -26,6 +27,6 @@
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    state-fn
+   ;:state-fn    state-fn
    :handler-map {:spellcheck/lang set-lang
                  :spellcheck/off  spellcheck-off}})
