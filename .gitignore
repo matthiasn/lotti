@@ -2,6 +2,7 @@ data/.gitignore
 data/import
 data/geo-import/
 data/
+playground-data/
 test-data/
 /target
 /classes

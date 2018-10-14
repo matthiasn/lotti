@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>meo</title>
+    <script src="http://localhost:8097"></script>
+    <link rel="stylesheet" type="text/css" href="../node_modules/normalize.css/normalize.css">
+    <link rel="stylesheet" type="text/css" href="../node_modules/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" type="text/css" href="../node_modules/lato-font/css/lato-font.css">
+    <link rel="stylesheet" type="text/css" href="./fa5/css/fontawesome-all.min.css">
+    <link rel="stylesheet" type="text/css" href="../resources/public/css/meo.css">
+</head>
+
+<body style="width:100%; height:100%; margin: 0; padding: 0; background-color: #323232">
+<div id="reframe"></div>
+<audio id="ringer">
+    <source src="../resources/public/mp3/old-clock-ringing-short.mp3"
+            type="audio/mp4">
+</audio>
+<audio id="ticking-clock">
+    <source src="../resources/public/mp3/tick.ogg" type="audio/ogg">
+</audio>
+</body>
+
+<script>
+    window.OBSERVER = true;
+    window.PLAYGROUND = true;
+    window.iwwHOST = "localhost:8764";
+    window.deps = {};
+    window.React = require ('../node_modules/react');
+    window.Draft = require ('../node_modules/draft-js/dist/Draft');
+    window.deps.SearchFieldEditor = require ('../src/js/SearchFieldEditor.js');
+    window.deps.EntryTextEditor = require ('../src/js/EntryTextEditor.js');
+    window.deps.BigCalendar = require ('../src/js/BigCalendar.js');
+    require('../dev/renderer/renderer.js');
+</script>
+
+</html>

@@ -1,0 +1,195 @@
+{:pvt-tags #{},
+ :pvt-displayed #{"#pvt" "#nsfw"},
+ :custom-fields
+ {"#pull-ups"
+  {:fields
+   {:cnt {:label "Completed:", :cfg {:type :number, :step 1}}}},
+  "#duration"
+  {:fields {:duration {:label "Duration:", :cfg {:type :time}}}},
+  "#sit-ups"
+  {:fields
+   {:cnt {:label "Completed:", :cfg {:type :number, :step 1}},
+    :comment {:label "Comment:", :agg :none}}},
+  "#walking"
+  {:fields
+   {:duration {:label "Minutes:", :cfg {:type :number, :step 1}}}},
+  "#beer"
+  {:fields {:vol {:label "Beer/ml:", :cfg {:type :number, :step 1}}}},
+  "#flight"
+  {:fields
+   {:aircraft {:label "Aircraft:", :cfg {:type :string}},
+    :takeoff-time {:label "Takeoff time:", :cfg {:type :string}},
+    :landing-time {:label "Landing time:", :cfg {:type :string}},
+    :fare {:label "Fare:", :cfg {:type :string}},
+    :duration {:label "Minutes:", :cfg {:type :number, :step 1}},
+    :flight-no {:label "Flight number:", :cfg {:type :string}},
+    :origin {:label "Origin:", :cfg {:type :string}},
+    :distance
+    {:label "Distance (Miles):", :cfg {:type :number, :step 1}},
+    :delay {:label "Delay (min):", :cfg {:type :number, :step 1}},
+    :destination {:label "Destination:", :cfg {:type :string}},
+    :seat {:label "Seat:", :cfg {:type :string}}}},
+  "#running"
+  {:fields
+   {:distance {:label "Distance:", :cfg {:type :number, :step 0.1}},
+    :duration {:label "Minutes:", :cfg {:type :number, :step 1}},
+    :calories {:label "Calories:", :cfg {:type :number, :step 1}},
+    :elevation-gain
+    {:label "Elevation gain:", :cfg {:type :number, :step 1}}}},
+  "#sleep"
+  {:fields
+   {:duration {:label "Duration:", :cfg {:type :time}},
+    :interruptions
+    {:label "Interruptions:", :cfg {:type :number, :step 1}},
+    :restedness
+    {:label "Feeling rested? (1 poor - 10 very):",
+     :cfg {:type :number, :step 1},
+     :agg :mean}}},
+  "#mood-map"
+  {:fields
+   {:energy {:label "Energy? (1-10)", :cfg {:type :number, :step 0.1}},
+    :neg-pos
+    {:label "Negative to positive? (1-10)",
+     :cfg {:type :number, :step 0.1}}}},
+  "#cycling"
+  {:fields
+   {:distance {:label "Distance:", :cfg {:type :number, :step 0.1}},
+    :duration {:label "Minutes:", :cfg {:type :number, :step 1}},
+    :calories {:label "Calories:", :cfg {:type :number, :step 1}},
+    :elevation-gain
+    {:label "Elevation gain:", :cfg {:type :number, :step 1}}}},
+  "#imdb" {:fields {:imdb-id {:label "IMDb ID:", :cfg {:type :imdb}}}},
+  "#water"
+  {:fields {:vol {:label "Water/ml:", :cfg {:type :number, :step 1}}}},
+  "#squats"
+  {:fields
+   {:cnt {:label "Completed:", :cfg {:type :number, :step 1}}}},
+  "#coffee"
+  {:fields
+   {:vol {:label "Coffee/ml:", :cfg {:type :number, :step 1}}}},
+  "#swimming"
+  {:fields
+   {:duration {:label "Minutes:", :cfg {:type :number, :step 1}}}},
+  "#push-ups"
+  {:fields
+   {:cnt {:label "Completed:", :cfg {:type :number, :step 1}}}},
+  "#girth"
+  {:fields
+   {:abdominal
+    {:label "Abdominal:", :cfg {:type :number, :step 0.1}, :agg :min},
+    :chest
+    {:label "Chest:", :cfg {:type :number, :step 0.1}, :agg :min},
+    :arm-flexed
+    {:label "Arm flexed:",
+     :cfg {:type :number, :step 0.1},
+     :agg :max}}},
+  "#lunges"
+  {:fields
+   {:cnt {:label "Completed:", :cfg {:type :number, :step 1}}}},
+  "#weight"
+  {:fields
+   {:weight
+    {:label "Weight/kg:",
+     :cfg {:type :number, :step 0.1},
+     :agg :min}}}},
+ :custom-field-charts
+ [{:label "#pull-ups",
+   :path ["#pull-ups" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 4,
+   :threshold-type :above}
+  {:label "#squats",
+   :path ["#squats" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 20,
+   :threshold-type :above}
+  {:label "#lunges",
+   :path ["#lunges" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 20,
+   :threshold-type :above}
+  {:label "#push-ups",
+   :path ["#push-ups" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 20,
+   :threshold-type :above}
+  {:label "#sit-ups",
+   :path ["#sit-ups" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 25,
+   :threshold-type :above}
+  {:label "#plank",
+   :path ["#plank" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 25,
+   :threshold-type :above,
+   :space-after 15}
+  {:label "#running",
+   :path ["#running" :duration],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 10,
+   :threshold-type :above}
+  {:label "#cycling",
+   :path ["#cycling" :duration],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 10,
+   :threshold-type :above}
+  {:label "#crosstrainer",
+   :path ["#crosstrainer" :duration],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 10,
+   :threshold-type :above}
+  {:label "#stairsteps",
+   :path ["#stairsteps" :cnt],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 10,
+   :threshold-type :above,
+   :space-after 15}
+  {:label "#beer",
+   :path ["#beer" :vol],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 700,
+   :threshold-type :below}
+  {:label "#coffee",
+   :path ["#coffee" :vol],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 600,
+   :threshold-type :below}
+  {:label "#water",
+   :path ["#water" :vol],
+   :type :barchart,
+   :chart-h 35,
+   :threshold 2,
+   :threshold-type :above,
+   :space-after 15}
+  {:label "#weight",
+   :path ["#weight" :weight],
+   :type :linechart,
+   :cls "line",
+   :chart-h 50,
+   :space-after 15}
+  {:label "#girth abd",
+   :path ["#girth" :abdominal],
+   :type :linechart,
+   :cls "line",
+   :chart-h 20}
+  {:label "#girth chest",
+   :path ["#girth" :chest],
+   :type :linechart,
+   :cls "line",
+   :chart-h 20,
+   :space-after 15}],
+ :repos {},
+ :node-id "eba17079-4273-42a0-9619-3391cc7a5855"}

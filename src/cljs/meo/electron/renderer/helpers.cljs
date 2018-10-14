@@ -16,8 +16,7 @@
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 
 (defn send-w-geolocation
-  "Calls geolocation, sends entry enriched by geo information inside the
-  callback function"
+  "Calls geolocation, sends entry enriched by geo information inside the callback function"
   [entry put-fn]
   (.getCurrentPosition
     (.-geolocation js/navigator)

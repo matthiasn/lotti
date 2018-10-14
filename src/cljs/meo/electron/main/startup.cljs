@@ -7,36 +7,44 @@
             [path :refer [join normalize]]
             [meo.electron.main.runtime :as rt]
             [fs :refer [existsSync renameSync readFileSync]]
-            [clojure.pprint :as pp]
             [clojure.string :as str]))
 
 (def PORT (:port rt/runtime-info))
 
-(defn jvm-up? [{:keys [put-fn current-state cmp-state]}]
-  (info "JVM up?" (:attempt current-state))
+(defn jvm-up? [{:keys [put-fn current-state cmp-state msg-payload]}]
+  (info "JVM up?" (:attempt current-state) msg-payload)
   (let [icon (:icon-path rt/runtime-info)
+        environment (:environment msg-payload)
+        port (if (= environment :live) PORT (:pg-port rt/runtime-info))
+        index-page (if (= environment :live)
+                     (:index-page rt/runtime-info)
+                     (:index-page-pg rt/runtime-info))
+        loading-page (if (= environment :live)
+                       "electron/loading.html"
+                       "electron/loading-playground.html")
         try-again
         (fn [_]
           (info "- Nope, trying again")
-          (when-not (:service @cmp-state)
-            (put-fn [:cmd/schedule-new {:timeout 10 :message [:jvm/start]}]))
-          (put-fn [:window/new {:url       "electron/loading.html"
+          (when-not (-> @cmp-state :service environment)
+            (put-fn [:cmd/schedule-new {:timeout 10 :message [:jvm/start msg-payload]}]))
+          (put-fn [:window/new {:url       loading-page
                                 :width     400
                                 :height    300
                                 :opts      {:icon icon}
-                                :window-id "loading"}])
-          (put-fn [:cmd/schedule-new {:timeout 1000 :message [:jvm/loaded?]}]))
+                                :window-id loading-page}])
+          (put-fn [:cmd/schedule-new {:timeout 1000 :message [:jvm/loaded? msg-payload]}]))
         res-handler
         (fn [res]
           (let [status-code (.-statusCode res)]
             (info "HTTP response: " status-code (= status-code 200))
             (if (= status-code 200)
-              (do (put-fn [:window/new {:url  (:index-page rt/runtime-info)
+              (do (put-fn [:window/new {:url  index-page
                                         :opts {:titleBarStyle "hidden"
                                                :icon          icon}}])
-                  (put-fn (with-meta [:window/close] {:window-id "loading"})))
+                  (put-fn (with-meta [:window/close] {:window-id loading-page})))
               (try-again res))))
-        req (http/get (clj->js {:host "localhost" :port PORT}) res-handler)]
+        req (http/get (clj->js {:host "localhost"
+                                :port port}) res-handler)]
     (.on req "error" try-again)
     {:new-state (update-in current-state [:attempt] #(inc (or % 0)))}))
 
@@ -44,24 +52,28 @@
   (info "STARTUP: spawning" cmd args opts)
   (spawn cmd (clj->js args) (clj->js opts)))
 
-(defn start-jvm [{:keys [current-state]}]
-  (let [{:keys [user-data java jar app-path data-path gql-port]} rt/runtime-info
+(defn start-jvm [{:keys [current-state msg-payload]}]
+  (let [{:keys [user-data java jar app-path data-path
+                gql-port logdir playground-path]} rt/runtime-info
         args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts" "-jar" jar]
+        environment (:environment msg-payload)
+        port (if (= environment :live) PORT (:pg-port rt/runtime-info))
+        data-path (if (= environment :live) data-path playground-path)
         opts {:detached true
               :cwd      user-data
-              :env      {:PORT      PORT
+              :env      {:PORT      port
                          :GQL_PORT  gql-port
                          :LOG_FILE  (:logfile-jvm rt/runtime-info)
-                         :LOG_DIR   (:logdir rt/runtime-info)
+                         :LOG_DIR   logdir
                          :APP_PATH  app-path
                          :DATA_PATH data-path}}
         service (spawn-process java args opts)]
-    (info "JVM: startup")
-    {:new-state (assoc-in current-state [:service] service)}))
+    (info "JVM: startup" environment)
+    {:new-state (assoc-in current-state [:service environment] service)}))
 
 (defn start-spotify [_]
   (info "STARTUP: start spotify")
-  (let [{:keys [user-data app-path cwd node-path]} rt/runtime-info
+  (let [{:keys [user-data app-path node-path]} rt/runtime-info
         spotify (spawn-process node-path
                                [(str app-path "/electron/spotify.js")]
                                {:detached true
@@ -91,13 +103,19 @@
                 (.openItem shell path)))))
   {})
 
-(defn shutdown-jvm [{:keys [current-state]}]
-  (let [pid (readFileSync (:pid-file rt/runtime-info) "utf-8")]
-    (info "Shutting down JVM service" pid)
-    (when pid
-      (if (= (:platform rt/runtime-info) "win32")
-        (spawn-process "TaskKill" ["-F" "/PID" pid] {})
-        (spawn-process "/bin/kill" ["-KILL" pid] {}))))
+(defn kill [pid]
+  (info "Killing PID" pid)
+  (when pid
+    (if (= (:platform rt/runtime-info) "win32")
+      (spawn-process "TaskKill" ["-F" "/PID" pid] {})
+      (spawn-process "/bin/kill" ["-KILL" pid] {}))))
+
+(defn shutdown-jvm [{:keys []}]
+  (let [{:keys [pid-file pg-pid-file]} rt/runtime-info
+        pid (readFileSync pid-file "utf-8")
+        pg-pid (readFileSync pg-pid-file "utf-8")]
+    (kill pid)
+    (kill pg-pid))
   {})
 
 (defn clear-cache [{:keys []}]

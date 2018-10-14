@@ -8,6 +8,7 @@
 
 (def app-path (or (System/getenv "APP_PATH") "."))
 (def data-path (or (System/getenv "DATA_PATH") "./data"))
+(def pid-file (str data-path "/meo.pid"))
 (def daily-logs-path (str data-path "/daily-logs/"))
 (def bak-path (str data-path "/backup/"))
 (def app-cache-file (str data-path "/cache.dat"))

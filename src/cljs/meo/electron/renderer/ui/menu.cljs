@@ -91,4 +91,6 @@
          [:div.menu-header
           [new-import-view put-fn]
           ;[:h1 {:on-click today} (h/localize-date day @locale)]
+          (when (.-PLAYGROUND js/window)
+            [:h1.playground "Playground"])
           [upload-view]]]))))

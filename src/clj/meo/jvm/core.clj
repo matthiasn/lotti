@@ -6,8 +6,6 @@
             [matthiasn.systems-toolbox-sente.server :as sente]
             [matthiasn.systems-toolbox.scheduler :as sched]
             [meo.jvm.index :as idx]
-            [meo.common.specs]
-            [clj-pid.core :as pid]
             [meo.jvm.log]
             [meo.jvm.firehose :as fh]
             [meo.jvm.store :as st]
@@ -15,7 +13,10 @@
             [meo.jvm.upload :as up]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
-            [taoensso.timbre :refer [info]]))
+            [meo.common.specs]
+            [clj-pid.core :as pid]
+            [taoensso.timbre :refer [info]]
+            [meo.jvm.file-utils :as fu]))
 
 (defonce switchboard (sb/component :backend/switchboard))
 
@@ -94,8 +95,8 @@
    thread pool. Since we don't want the application to exit when the current
    thread is out of work, we just put it to sleep."
   [& _args]
-  (pid/save "meo.pid")
-  (pid/delete-on-shutdown! "meo.pid")
+  (pid/save fu/pid-file)
+  (pid/delete-on-shutdown! fu/pid-file)
   (info "meo started, PID" (pid/current))
   (restart! switchboard cmp-maps {:read-logs true})
   (Thread/sleep Long/MAX_VALUE))

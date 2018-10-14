@@ -2,7 +2,7 @@
   (:require [path :refer [normalize join]]
             [electron :refer [app]]
             [cljs.nodejs :refer [process]]
-            [taoensso.timbre :as timbre :refer-macros [info error debug]]
+            [taoensso.timbre :refer-macros [info error debug]]
             [fs :refer [existsSync renameSync readFileSync]]
             [clojure.string :as s]
             [clojure.tools.reader.edn :as edn]
@@ -17,6 +17,7 @@
         platform (.-platform process)                       ; e.g. darwin, win32
         download-path (.getPath app "downloads")
         data-path (str user-data "/data")
+        playground-path (str user-data "/playground-data")
         encrypted-path (str user-data "/encrypted")
         ca-file (str (if repo-dir (str cwd "/data") data-path) "/capabilities.edn")
         capabilities (when (existsSync ca-file)
@@ -33,6 +34,7 @@
               :electron-path    (first (.-argv process))
               :node-path        "/usr/local/bin/node"
               :data-path        data-path
+              :playground-path  playground-path
               :daily-logs-path  (str data-path "/daily-logs")
               :encrypted-path   encrypted-path
               :logfile-electron logfile-electron
@@ -48,12 +50,15 @@
               :blink            (str app-path "/bin/blink1-mac-cli")
               :user-data        user-data
               :cwd              cwd
-              :pid-file         (str user-data "/meo.pid")
+              :pid-file         (str data-path "/meo.pid")
+              :pg-pid-file      (str playground-path "/meo.pid")
               :resources-path   rp
               :app-path         app-path}]
-    (into {:repo-dir     repo-dir
-           :index-page   (if repo-dir "electron/index-dev.html" "electron/index.html")
-           :port         (if repo-dir 8765 7788)
-           :capabilities capabilities
-           :gql-port     (if repo-dir 8766 7789)}
+    (into {:repo-dir      repo-dir
+           :index-page    (if repo-dir "electron/index-dev.html" "electron/index.html")
+           :index-page-pg (if repo-dir "electron/index-pg-dev.html" "electron/index-pg.html")
+           :port          (if repo-dir 8765 7788)
+           :pg-port       (if repo-dir 8764 7787)
+           :capabilities  capabilities
+           :gql-port      (if repo-dir 8766 7789)}
           (map (fn [[k v]] [k (normalize v)]) info))))

@@ -155,6 +155,8 @@
 (defn tab-search [put-fn]
   (fn [state context args value]
     (let [{:keys [query n pvt story tab incremental starred flagged from to]} args
+          msg-meta (:msg-meta context)
+          _ (info :msg-meta msg-meta (keys context))
           current-state @state
           from (if from (dt/ymd-to-ts from) 0)
           to (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)
@@ -194,10 +196,9 @@
         (let [diff (res-diff prev res)
               diff-res (merge diff {:tab tab :query query :n n :incremental true})]
           (when (seq (set/union (:res diff) (:del diff)))
-            (put-fn (with-meta [:gql/res2 diff-res] {:sente-uid :broadcast}))))
-        (when (seq res)
-          (let [res {:res res :del #{} :tab tab :query query :n n :incremental false}]
-            (put-fn (with-meta [:gql/res2 res] {:sente-uid :broadcast})))))
+            (put-fn (with-meta [:gql/res2 diff-res] msg-meta))))
+        (let [res {:res res :del #{} :tab tab :query query :n n :incremental false}]
+          (put-fn (with-meta [:gql/res2 res] msg-meta))))
       [])))
 
 (defn custom-field-stats [state context args value]
@@ -321,7 +322,7 @@
         new-state (assoc-in current-state [:prev tab-group] {})]
     {:new-state new-state}))
 
-(defn run-query [{:keys [cmp-state current-state msg-payload put-fn]}]
+(defn run-query [{:keys [cmp-state current-state msg-payload put-fn] :as m}]
   (let [start (stc/now)
         schema (:schema current-state)
         qid (:id msg-payload)
@@ -346,7 +347,7 @@
                                               {:sente-uid :broadcast})))))]
     (swap! cmp-state assoc-in [:queries id] merged)
     (if query-string
-      (execute-async schema query-string nil nil {} on-deliver)
+      (execute-async schema query-string nil m {} on-deliver)
       (put-fn [:gql/res (merge msg-payload {:data {}})])))
   {})
 
