@@ -136,7 +136,6 @@
          [:cmd/attach-to-firehose :electron/window-manager])
 
        [:cmd/send {:to :electron/startup :msg [:jvm/loaded? {:environment :live}]}]
-       [:cmd/send {:to :electron/startup :msg [:jvm/loaded? {:environment :playground}]}]
 
        [:cmd/send {:to  :electron/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)

@@ -32,7 +32,7 @@
                  {:label "Start Spotify Service"
                   :click #(put-fn [:spotify/start])})
                {:label "Quit Background Service"
-                :click #(do (put-fn [:app/shutdown-jvm])
+                :click #(do (put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])
                             (put-fn [:app/shutdown]))}
                {:label       "Quit"
                 :accelerator "CmdOrCtrl+Q"
@@ -186,6 +186,25 @@
                {:label "Export and Train"
                 :click export-learn}]}))
 
+(defn playground-menu [put-fn]
+  (let [index-page (:index-page-pg rt/runtime-info)
+        icon (:icon-path rt/runtime-info)
+        new-window #(put-fn [:window/new {:url       index-page
+                                          :window-id index-page
+                                          :opts      {:titleBarStyle "hidden"
+                                                      :icon          icon}}])
+        start #(put-fn [:jvm/loaded? {:environment :playground}])
+        kill-jvm #(do (put-fn [:app/shutdown-jvm {:environments #{:playground}}])
+                      (put-fn (with-meta [:window/close] {:window-id index-page})))]
+    {:label   "Playground"
+     :submenu [{:label "Start Playground Environment"
+                :click start}
+               {:label "Stop Playground Environment"
+                :click kill-jvm}
+               {:type "separator"}
+               {:label "New Playground Window"
+                :click new-window}]}))
+
 (defn dev-menu [put-fn]
   {:label   "Dev"
    :submenu [{:label "Start GraphQL Endpoint"
@@ -220,6 +239,7 @@
                   (capture-menu put-fn)
                   (when (contains? capabilities :tensorflow)
                     (learn-menu put-fn))
+                  (playground-menu put-fn)
                   (dev-menu put-fn)]
         menu-tpl (rm-filtered (filter identity menu-tpl))
         menu (.buildFromTemplate Menu (clj->js menu-tpl))

@@ -35,12 +35,16 @@
           (put-fn [:cmd/schedule-new {:timeout 1000 :message [:jvm/loaded? msg-payload]}]))
         res-handler
         (fn [res]
-          (let [status-code (.-statusCode res)]
+          (let [status-code (.-statusCode res)
+                msg (merge
+                      {:url  index-page
+                       :opts {:titleBarStyle "hidden"
+                              :icon          icon}}
+                      (when (= environment :playground)
+                        {:window-id index-page}))]
             (info "HTTP response: " status-code (= status-code 200))
             (if (= status-code 200)
-              (do (put-fn [:window/new {:url  index-page
-                                        :opts {:titleBarStyle "hidden"
-                                               :icon          icon}}])
+              (do (put-fn [:window/new msg])
                   (put-fn (with-meta [:window/close] {:window-id loading-page})))
               (try-again res))))
         req (http/get (clj->js {:host "localhost"
@@ -110,12 +114,15 @@
       (spawn-process "TaskKill" ["-F" "/PID" pid] {})
       (spawn-process "/bin/kill" ["-KILL" pid] {}))))
 
-(defn shutdown-jvm [{:keys []}]
-  (let [{:keys [pid-file pg-pid-file]} rt/runtime-info
+(defn shutdown-jvm [{:keys [msg-payload]}]
+  (let [environments (:environments msg-payload)
+        {:keys [pid-file pg-pid-file]} rt/runtime-info
         pid (readFileSync pid-file "utf-8")
         pg-pid (readFileSync pg-pid-file "utf-8")]
-    (kill pid)
-    (kill pg-pid))
+    (when (contains? environments :live)
+      (kill pid))
+    (when (contains? environments :playground)
+      (kill pg-pid)))
   {})
 
 (defn clear-cache [{:keys []}]

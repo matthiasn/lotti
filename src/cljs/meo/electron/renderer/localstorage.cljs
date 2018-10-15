@@ -119,7 +119,8 @@ discarded an only the new one is committed."
 
 (defn local-storage
   [atom k]
-  (html-storage atom js/localStorage k))
+  (let [k (str (when (.-PLAYGROUND js/window) "playground_") k)]
+    (html-storage atom js/localStorage k)))
 
 (defn session-storage
   [atom k]
