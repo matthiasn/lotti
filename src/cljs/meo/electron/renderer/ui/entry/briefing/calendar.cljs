@@ -48,12 +48,12 @@
                        :on-hold                 false})
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn [put-fn]
-      (let [h (- (aget js/window "innerHeight") 175)]
+      (let [h (* (- (aget js/window "innerHeight") 52) 0.45)]
         [:div.inf-cal
          [:div.infinite-cal
           [infinite-cal-adapted
            {:width           "100%"
-            :height          270
+            :height          h
             :showHeader      false
             :onSelect        onSelect
             :autoFocus       true

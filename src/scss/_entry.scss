@@ -805,11 +805,12 @@ u {
 
 .infinite-cal {
   display: flex;
+  justify-content: space-between;
   flex-flow: column;
+  height: calc(100vh - 52px);
 
   .habit-details {
-    flex: 1;
-    height: 400px;
+    max-height: calc(50vh - 26px);
     overflow: auto;
 
     .award-points {
