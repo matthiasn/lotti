@@ -23,7 +23,8 @@
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
             [clojure.walk :as walk]
-            [meo.jvm.datetime :as dt])
+            [meo.jvm.datetime :as dt]
+            [clojure.string :as s])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -134,7 +135,8 @@
       (put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
                                   :message [:state/persist]
                                   :id      :persist-state}])
-      (put-fn (with-meta [:sync/imap entry] broadcast-meta))
+      (when-not (s/includes? fu/data-path "playground")
+        (put-fn (with-meta [:sync/imap entry] broadcast-meta)))
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
         (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
