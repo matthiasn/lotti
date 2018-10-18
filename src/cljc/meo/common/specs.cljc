@@ -346,3 +346,5 @@
 (s/def :meo.photo/full-path string?)
 (s/def :import/gen-thumbs (s/keys :req-un [:meo.photo/filename
                                            :meo.photo/full-path]))
+
+(s/def :playground/gen nil?)

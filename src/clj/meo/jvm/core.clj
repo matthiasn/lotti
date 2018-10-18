@@ -11,12 +11,14 @@
             [meo.jvm.store :as st]
             [meo.jvm.fulltext-search :as ft]
             [meo.jvm.upload :as up]
+            [meo.jvm.playground :as pg]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
             [meo.common.specs]
             [clj-pid.core :as pid]
             [taoensso.timbre :refer [info]]
-            [meo.jvm.file-utils :as fu]))
+            [meo.jvm.file-utils :as fu]
+            [clojure.string :as s]))
 
 (defonce switchboard (sb/component :backend/switchboard))
 
@@ -25,6 +27,7 @@
     (sched/cmp-map :backend/scheduler)
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
+    (pg/cmp-map :backend/playground)
     (bak/cmp-map :backend/backup)
     (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
@@ -50,9 +53,11 @@
                   :to   #{:backend/store
                           :backend/export
                           :backend/upload
+                          :backend/playground
                           :backend/imports}}]
 
-     [:cmd/route {:from :backend/imports
+     [:cmd/route {:from #{:backend/imports
+                          :backend/playground}
                   :to   :backend/store}]
 
      [:cmd/route {:from :backend/upload
@@ -83,11 +88,12 @@
        [:cmd/send {:to  :backend/store
                    :msg [:startup/read]}])
 
-     [:cmd/send {:to  :backend/scheduler
-                 :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
-                                          :message [:import/spotify]
-                                          :repeat  true
-                                          :initial false}]}]]))
+     (when-not (s/includes? fu/data-path "playground")
+       [:cmd/send {:to  :backend/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
+                                            :message [:import/spotify]
+                                            :repeat  true
+                                            :initial false}]}])]))
 
 (defn -main
   "Starts the application from command line, saves and logs process ID. The

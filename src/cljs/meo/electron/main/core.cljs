@@ -60,6 +60,7 @@
                 :import/spotify
                 :import/git
                 :nav/to
+                :playground/gen
                 :firehose/cmp-put
                 :firehose/cmp-recv})
 

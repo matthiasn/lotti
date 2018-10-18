@@ -293,7 +293,7 @@
                       (get-tags-mentions-matches g query)
 
                       ; set with all timestamps
-                      :else (take (+ n 100) (:sorted-entries state)))
+                      :else (:sorted-entries state))
         matched-ids (if (contains? opts ":predicted-stories")
                       matched-ids
                       (sort-fn matched-ids))

@@ -195,12 +195,15 @@
                                                       :icon          icon}}])
         start #(put-fn [:jvm/loaded? {:environment :playground}])
         kill-jvm #(do (put-fn [:app/shutdown-jvm {:environments #{:playground}}])
-                      (put-fn (with-meta [:window/close] {:window-id index-page})))]
+                      (put-fn (with-meta [:window/close] {:window-id index-page})))
+        gen-entries #(put-fn [:playground/gen])]
     {:label   "Playground"
      :submenu [{:label "Start Playground Environment"
                 :click start}
                {:label "Stop Playground Environment"
                 :click kill-jvm}
+               {:label "Generate Playground Entries"
+                :click gen-entries}
                {:type "separator"}
                {:label "New Playground Window"
                 :click new-window}]}))

@@ -34,7 +34,7 @@
                          :spotify/pause :cfg/refresh :state/persist
                          :sync/start-server :sync/stop-server
                          :tf/learn-stories :gql/query :search/remove
-                         :gql/cmd :firehose/cmd}}))
+                         :gql/cmd :firehose/cmd :playground/gen}}))
 
 (def OBSERVER (.-OBSERVER js/window))
 

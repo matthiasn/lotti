@@ -18,7 +18,9 @@
             [meo.jvm.graphql :as gql]
             [clojure.spec.alpha :as s]
             [expound.alpha :as exp]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.java.io :as io]
+            [clojure.edn :as edn]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
@@ -38,7 +40,7 @@
 (defn read-lines [cmp-state]
   (let [read-from (:persisted @cmp-state)
         path (:daily-logs-path (fu/paths))
-        files (file-seq (clojure.java.io/file path))
+        files (file-seq (io/file path))
         filtered (f/filter-by-name files #"\d{4}-\d{2}-\d{2}.jrn")
         sorted (sort-by #(.getName %) filtered)
         newer-than (if read-from
@@ -49,7 +51,7 @@
         start (st/now)]
     (info "reading logs" read-from (vec newer-than))
     (doseq [f newer-than]
-      (with-open [reader (clojure.java.io/reader f)]
+      (with-open [reader (io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]
             (swap! all-lines conj line)))))
@@ -58,7 +60,7 @@
 
 (defn parse-line [s]
   (try
-    (clojure.edn/read-string s)
+    (edn/read-string s)
     (catch Exception ex
       (error "Exception" ex "when parsing line:\n" s))))
 
@@ -70,7 +72,7 @@
 
 (defn ft-index [entries-to-index put-fn]
   (let [path (:clucy-path (fu/paths))
-        files (file-seq (clojure.java.io/file path))
+        files (file-seq (io/file path))
         clucy-dir-empty? (empty? (filter #(.isFile %) files))]
     (when clucy-dir-empty?
       (future
