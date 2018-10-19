@@ -14,7 +14,7 @@
                       :tags      #{"#screenshot" "#import"}
                       :perm_tags #{"#screenshot"}}
                      msg-payload)
-        new-fn (h/new-entry put-fn entry nil)]
+        new-fn (h/new-entry put-fn entry)]
     (js/setTimeout new-fn 2000)
     (info "initiating screenshot" entry)
     {:emit-msg [:import/screenshot {:filename filename}]}))

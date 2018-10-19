@@ -4,7 +4,8 @@
             [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
-            [moment]))
+            [moment]
+            [meo.electron.renderer.helpers :as h]))
 
 (defn habit-sorter
   "Sorts habits."
@@ -27,10 +28,9 @@
          [:td.award-points
           (when-let [points (-> entry :habit :points)]
             points)]
-         #_
-         [:td.award-points
-          (when-let [penalty (-> entry :habit :penalty)]
-            penalty)]
+         #_[:td.award-points
+            (when-let [penalty (-> entry :habit :penalty)]
+              penalty)]
          [:td.habit text]]))))
 
 
@@ -53,14 +53,26 @@
     (fn waiting-habits-list-render [local put-fn]
       (let [habits @habits
             tab-group :briefing
-            show? (contains? (:capabilities @backend-cfg) :habits)]
+            show? (contains? (:capabilities @backend-cfg) :habits)
+            open-new (fn [x]
+                       (put-fn [:search/add
+                                {:tab-group :left
+                                 :query     (up/parse-search (:timestamp x))}]))
+            habit-default {:entry-type :habit
+                           :starred    true
+                           :perm_tags  #{"#habit"}}
+            new-habit (h/new-entry put-fn habit-default
+                                   open-new)]
         [:div.waiting-habits
          [:table.habits
           [:tbody
            [:tr {:on-click expand-fn}
             [:th [:span.fa.fa-diamond.award-points]]
             ;[:th [:span.fa.fa-diamond.penalty]]
-            [:th "Stuff I said I'd do."]]
+            [:th "Stuff I said I'd do."]
+            [:th
+             [:div.add-habit {:on-click new-habit}
+              [:i.fas.fa-plus]]]]
            (for [entry habits]
              ^{:key (:timestamp entry)}
              [habit-line entry tab-group put-fn])]]]))))

@@ -119,16 +119,24 @@
          [es/saga-name-field merged edit-mode? put-fn]
          (when-not (:spotify entry)
            [d/entry-editor entry put-fn])
-         [task/task-details merged local-cfg put-fn edit-mode?]
-         [habit/habit-details merged local-cfg put-fn edit-mode?]
-         [reward/reward-details merged put-fn]
+         (when (or (contains? (set (:perm_tags entry)) "#task")
+                   (contains? (set (:tags entry)) "#task"))
+           [task/task-details merged local-cfg put-fn edit-mode?])
+         (when (contains? (:tags entry) "#habit")
+           [habit/habit-details merged local-cfg put-fn edit-mode?])
+         (when (= :habit (:entry-type merged))
+           [habit/habit-details2 merged local-cfg put-fn edit-mode?])
+         (when (contains? (set (:tags entry)) "#reward")
+           [reward/reward-details merged put-fn])
          [:div.footer
           [pomo/pomodoro-header merged edit-mode? put-fn]
           [hashtags-mentions entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]
-         [c/custom-fields-div merged put-fn edit-mode?]
-         [git-commit merged put-fn]
+         (when (:custom_fields entry)
+           [c/custom-fields-div merged put-fn edit-mode?])
+         (when (:git_commit entry)
+           [git-commit merged put-fn])
          [ws/wavesurfer merged local-cfg put-fn]
          (when @show-map?
            (if mapbox-token

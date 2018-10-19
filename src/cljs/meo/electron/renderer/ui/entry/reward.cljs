@@ -20,18 +20,17 @@
                              updated (assoc-in entry [:reward :points] parsed)]
                          (when parsed
                            (put-fn [:entry/update-local updated])))))]
-    (when (contains? (set (:tags entry)) "#reward")
-      (info "reward-details" entry)
-      [:form.task-details
-       [:fieldset
-        [:legend "Reward details"]
-        [:div
-         [:label "Reward points: "]
-         [:input {:type      :number
-                  :on-change (set-points entry)
-                  :value     (get-in entry [:reward :points] 0)}]]
-        [:div
-         [:label "Claimed? "]
-         [:input {:type      :checkbox
-                  :checked   (get-in entry [:reward :claimed])
-                  :on-change (claimed entry)}]]]])))
+    (info "reward-details" entry)
+    [:form.task-details
+     [:fieldset
+      [:legend "Reward details"]
+      [:div
+       [:label "Reward points: "]
+       [:input {:type      :number
+                :on-change (set-points entry)
+                :value     (get-in entry [:reward :points] 0)}]]
+      [:div
+       [:label "Claimed? "]
+       [:input {:type      :checkbox
+                :checked   (get-in entry [:reward :claimed])
+                :on-change (claimed entry)}]]]]))

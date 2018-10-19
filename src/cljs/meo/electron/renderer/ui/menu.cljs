@@ -49,13 +49,13 @@
     (fn [put-fn]
       (when (:show @local)
         [:div.new-import
-         [:button.menu-new {:on-click (h/new-entry put-fn {} nil)}
+         [:button.menu-new {:on-click (h/new-entry put-fn {})}
           [:span.fa.fa-plus-square] " new"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry_type :saga} nil)}
+          {:on-click (h/new-entry put-fn {:entry_type :saga})}
           [:span.fa.fa-plus-square] " new saga"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry_type :story} nil)}
+          {:on-click (h/new-entry put-fn {:entry_type :story})}
           [:span.fa.fa-plus-square] " new story"]
          [:button {:on-click #(do (put-fn [:import/photos])
                                   (put-fn [:import/spotify]))}

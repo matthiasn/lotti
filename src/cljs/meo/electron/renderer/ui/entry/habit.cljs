@@ -95,7 +95,7 @@
                   updated (assoc-in entry [:habit :priority] sel)]
               (put-fn [:entry/update-local updated]))))]
     (fn [entry local-cfg put-fn edit-mode?]
-      (when (contains? (:tags entry) "#habit")
+      (when (not= :habit (:entry-type entry))
         (when (and edit-mode? (not (:habit entry)))
           (let [active-from (h/format-time (st/now))
                 habit {:days        (zipmap (range 7) (repeat true))
@@ -151,3 +151,47 @@
              [:input {:type      :checkbox
                       :checked   (get-in entry [:habit :skipped])
                       :on-change (skipped entry)}]]]])))))
+
+(defn habit-details2 [entry local-cfg put-fn edit-mode?]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        active (fn [entry] #(put-fn [:entry/update (update-in entry [:habit :active] not)]))
+        schedule-select (fn [entry]
+                          (fn [ev]
+                            (let [sel (keyword (h/target-val ev))
+                                  updated (assoc-in entry [:habit :schedule] sel)]
+                              (put-fn [:entry/update-local updated]))))
+        type-select (fn [entry]
+                      (fn [ev]
+                        (let [sel (keyword (h/target-val ev))
+                              updated (assoc-in entry [:habit :type] sel)]
+                          (put-fn [:entry/update-local updated]))))]
+    (fn [entry local-cfg put-fn edit-mode?]
+      (when (contains? (:capabilities @backend-cfg) :habits)
+        (let [habit-type (get-in entry [:habit :type])]
+          [:form.habit-details
+           [:fieldset
+            [:legend.header "Habit details"]
+            [:div.row
+             [:label "Active? "]
+             [:input {:type      :checkbox
+                      :checked   (get-in entry [:habit :active])
+                      :on-change (active entry)}]]
+            [:div.row
+             [:label "Schedule:"]
+             [:select {:value     (get-in entry [:habit :schedule] "")
+                       :on-change (schedule-select entry)}
+              [:option ""]
+              [:option {:value :daily} "per day"]
+              [:option {:value :weekly} "per week"]]]
+            [:div.row
+             [:label "Habit Type:"]
+             [:select {:value     habit-type
+                       :on-change (type-select entry)}
+              [:option ""]
+              [:option {:value :min-max} "min/max sum"]
+              [:option {:value :min-max} "min/max time"]
+              [:option {:value :checked-off} "checked off"]
+              [:option {:value :questionnaire} "questionnaire"]]]
+            (when (= :questionnaire habit-type)
+              [:div.row "q"]
+              )]])))))

@@ -196,13 +196,12 @@
 
 (defn briefing-actions [ts put-fn]
   (let [create-comment (fn [_ev]
-                         (let [create (h/new-entry put-fn {:comment_for ts} nil)
+                         (let [create (h/new-entry put-fn {:comment_for ts})
                                new-entry (create)]
                            (info "created comment" new-entry)
                            (put-fn [:entry/update new-entry])))
         new-pomodoro (fn [_ev]
-                       (let [create (h/new-entry
-                                      put-fn (p/pomodoro-defaults ts) nil)
+                       (let [create (h/new-entry put-fn (p/pomodoro-defaults ts) )
                              new-entry (create)]
                          (info "new-pomodoro" new-entry)
                          (put-fn [:cmd/schedule-new

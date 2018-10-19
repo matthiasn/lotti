@@ -32,7 +32,7 @@
 
 (s/def :meo.entry/timezone (s/nilable string?))
 (s/def :meo.entry/utc-offset (number-in-range? -720 720))
-(s/def :meo.entry/entry-type (s/nilable #{:pomodoro :story :saga}))
+(s/def :meo.entry/entry-type (s/nilable #{:pomodoro :story :saga :habit}))
 (s/def :meo.entry/comment-for possible-timestamp?)
 
 (s/def :meo.entry/primary-story (s/nilable possible-timestamp?))

@@ -56,22 +56,30 @@
   (when-let [locale (get locales locale)]
     (.formatDate locale (.toDate (moment. s)) (clj->js {:skeleton "yMMMEdHm"}))))
 
+(defn create-entry [put-fn opts]
+  (let [ts (st/now)
+        entry (merge (p/parse-entry "")
+                     {:timestamp  ts
+                      :timezone   timezone
+                      :utc-offset (.getTimezoneOffset (new js/Date))}
+                     opts)]
+    (put-fn [:entry/update entry])
+    (send-w-geolocation entry put-fn)
+    entry))
+
 (defn new-entry
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.
    Caveat: the timezone detection currently only works in Chrome. TODO: check"
-  [put-fn opts run-fn]
-  (fn [_ev]
-    (let [ts (st/now)
-          entry (merge (p/parse-entry "")
-                       {:timestamp  ts
-                        :timezone   timezone
-                        :utc-offset (.getTimezoneOffset (new js/Date))}
-                       opts)]
-      (put-fn [:entry/update entry])
-      (send-w-geolocation entry put-fn)
-      (when run-fn (run-fn entry))
-      entry)))
+  ([put-fn]
+    (new-entry put-fn {} nil))
+  ([put-fn opts]
+    (new-entry put-fn opts nil))
+  ([put-fn opts run-fn]
+   (fn [_ev]
+     (let [entry (create-entry put-fn opts)]
+       (when run-fn (run-fn entry))
+       entry))))
 
 (defn prevent-default [ev] (.preventDefault ev))
 

@@ -484,7 +484,7 @@
     font-weight: bold;
     color: #999;
     display: inline-block;
-    width: 32px;
+    width: 30px;
     text-align: center;
     font-size: $font-size-small;
     cursor: pointer;
@@ -562,8 +562,14 @@
     }
   }
 
+  .row {
+    margin-bottom: 5px;
+  }
+
   label {
     white-space: nowrap;
+    width: 60px;
+    display: inline-block;
   }
   input {
     width: 90px;
