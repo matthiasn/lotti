@@ -152,9 +152,52 @@
                       :checked   (get-in entry [:habit :skipped])
                       :on-change (skipped entry)}]]]])))))
 
+(defn select [{:keys [options entry value on-change]}]
+  (let [options (if (map? options)
+                  options
+                  (zipmap options options))]
+    [:select {:value value
+              :on-change (on-change entry)}
+     [:option ""]
+     (for [[v t] options]
+       ^{:key v}
+       [:option {:value v} t])]))
+
+#_(defn min-max-sum [criterion]
+    (let []
+      [:div.row
+       [:label "Tag:"]
+
+
+       [:select {:value     q-type
+                 :on-change (questionnaire-select entry)}
+        [:option ""]
+        (for [[qt qk] q-tags]
+          [:option {:value qt} qt])]
+       [:label "Key:"]
+       [:select {:value     q-type
+                 :on-change (questionnaire-select entry)}
+        [:option ""]
+        (for [[qt qk] q-tags]
+          [:option {:value qt} qt])]]))
+
+(defn criterion [entry idx put-fn]
+  (let [habit-type nil
+        type-select #()]
+    [:div
+     [:div.row
+      [:label "Habit Type:"]
+      [select {:value     habit-type
+               :on-change type-select
+               :entry     entry
+               :options   {:min-max-sum   "min/max sum"
+                           :min-max-time  "min/max time"
+                           :checked-off   "checked off"
+                           :questionnaire "questionnaire"}}]]]))
+
 (defn habit-details2 [entry local-cfg put-fn edit-mode?]
   (let [backend-cfg (subscribe [:backend-cfg])
-        active (fn [entry] #(put-fn [:entry/update (update-in entry [:habit :active] not)]))
+        toggle-active (fn [entry] #(put-fn [:entry/update (update-in entry [:habit :active] not)]))
         schedule-select (fn [entry]
                           (fn [ev]
                             (let [sel (keyword (h/target-val ev))
@@ -164,34 +207,98 @@
                       (fn [ev]
                         (let [sel (keyword (h/target-val ev))
                               updated (assoc-in entry [:habit :type] sel)]
-                          (put-fn [:entry/update-local updated]))))]
+                          (put-fn [:entry/update-local updated]))))
+        questionnaire-select (fn [entry]
+                               (fn [ev]
+                                 (let [sel (keyword (h/target-val ev))
+                                       updated (assoc-in entry [:habit :type] sel)]
+                                   (put-fn [:entry/update-local updated]))))]
     (fn [entry local-cfg put-fn edit-mode?]
       (when (contains? (:capabilities @backend-cfg) :habits)
-        (let [habit-type (get-in entry [:habit :type])]
-          [:form.habit-details
-           [:fieldset
-            [:legend.header "Habit details"]
-            [:div.row
-             [:label "Active? "]
-             [:input {:type      :checkbox
-                      :checked   (get-in entry [:habit :active])
-                      :on-change (active entry)}]]
-            [:div.row
-             [:label "Schedule:"]
-             [:select {:value     (get-in entry [:habit :schedule] "")
-                       :on-change (schedule-select entry)}
-              [:option ""]
-              [:option {:value :daily} "per day"]
-              [:option {:value :weekly} "per week"]]]
-            [:div.row
-             [:label "Habit Type:"]
-             [:select {:value     habit-type
-                       :on-change (type-select entry)}
-              [:option ""]
-              [:option {:value :min-max} "min/max sum"]
-              [:option {:value :min-max} "min/max time"]
-              [:option {:value :checked-off} "checked off"]
-              [:option {:value :questionnaire} "questionnaire"]]]
-            (when (= :questionnaire habit-type)
-              [:div.row "q"]
-              )]])))))
+        (let [habit-type (get-in entry [:habit :type])
+              criteria (get-in entry [:habit :criteria])
+              q-type (get-in entry [:habit :questionnaire :type])
+              q-tags (-> @backend-cfg :questionnaires :mapping)
+              active (get-in entry [:habit :active])]
+          [:div.habit-details
+           [:h3.header "Habit details"]
+           [:div.row
+            [:label "Active? "]
+            [:div.on-off {:on-click (toggle-active entry)}
+             [:div {:class (when-not active "inactive")} "off"]
+             [:div {:class (when active "active")} "on"]]]
+           [:div.row
+            [:label "Schedule:"]
+            [:select {:value     (get-in entry [:habit :schedule] "")
+                      :on-change (schedule-select entry)}
+             [:option ""]
+             [:option {:value :daily} "per day"]
+             [:option {:value :weekly} "per week"]]]
+
+           [:div.row
+            [:label "Habit Type:"]
+            [select {:value     habit-type
+                     :on-change type-select
+                     :entry     entry
+                     :options   {:min-max-sum   "min/max sum"
+                                 :min-max-time  "min/max time"
+                                 :checked-off   "checked off"
+                                 :questionnaire "questionnaire"}}]]
+
+           [:div.row
+            [:h3 "Criteria"]
+            [:div.add-criterion {:on-click #()}
+             [:i.fas.fa-plus]]]
+
+
+
+
+           (when (= :min-max-sum habit-type)
+             [:div.row
+              [:label "Tag:"]
+              [select {:value     (or q-type "")
+                       :entry     entry
+                       :on-change questionnaire-select
+                       :options   (keys q-tags)}]
+              [:label "Key:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]])
+           (when (= :min-max-time habit-type)
+             [:div.row
+              [:label "Saga:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]
+              [:label "Story:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]])
+           (when (= :min-max-time habit-type)
+             [:div.row
+              [:label "Saga:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]
+              [:label "Story:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]])
+           (when (= :questionnaire habit-type)
+             [:div.row
+              [:label "Questionnaire:"]
+              [:select {:value     q-type
+                        :on-change (questionnaire-select entry)}
+               [:option ""]
+               (for [[qt qk] q-tags]
+                 [:option {:value qt} qt])]])])))))

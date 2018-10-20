@@ -1,0 +1,197 @@
+@import "variables.scss";
+
+
+.habit-details {
+  font-size: $font-size-medium;
+  margin: 0.5em 0;
+  background-color: white;
+  border-radius: $entry-border-radius;
+
+  .header {
+    font-weight: bold;
+  }
+
+  .days {
+    padding-bottom: 5px;
+  }
+  .day-toggle {
+    background-color: #EEEEEE;
+    margin-right: 2px;
+    border-radius: 2px;
+    margin-bottom: 3px;
+    font-weight: bold;
+    color: #999;
+    display: inline-block;
+    width: 30px;
+    text-align: center;
+    font-size: $font-size-small;
+    cursor: pointer;
+    user-select: none;
+
+    &.selected {
+      background-color: $hashtag-blue;
+      color: white;
+    }
+  }
+
+  table {
+    border-collapse: collapse;
+    margin-bottom: 4px;
+
+    .prio {
+      min-width: 12px;
+      text-align: center;
+      display: inline-block;
+      color: white;
+      font-weight: bold;
+      background-color: #BBB;
+      padding: 0 2px;
+    }
+    .A {
+      background-color: $red;
+    }
+    .B {
+      background-color: $link-color;
+    }
+
+    th {
+      background-color: $edit-menu-bg;
+    }
+
+    tr {
+      cursor: pointer;
+      height: 1.3em;
+
+      &:hover {
+        background-color: antiquewhite;
+      }
+      &.selected {
+        background-color: desaturate(lighten($hashtag-blue, 30), 15);
+      }
+      &.active-timer {
+        background-color: desaturate(lighten($green, 40), 15);
+      }
+      &.active-timer-selected {
+        background-color: desaturate(lighten($green, 30), 10);
+      }
+      &.active-timer-selected-busy {
+        background-color: desaturate(lighten($red, 35), 10);
+      }
+      &.active-timer-busy {
+        background-color: desaturate(lighten($red, 40), 15);
+      }
+    }
+
+    td {
+      padding-right: 6px;
+      .legend {
+        height: 1.3em;
+        width: 12px;
+      }
+
+      &.left {
+        text-align: left;
+      }
+
+      &.time {
+        text-align: center;
+        min-width: 50px;
+      }
+    }
+  }
+
+  .row {
+    margin-top: 10px;
+    display: flex;
+
+    .add-criterion {
+      background-color: $green;
+      padding: 0 2px;
+      border-radius: 2px;
+      right: 0;
+    }
+  }
+
+  .on-off {
+    display: flex;
+    background-color: #ccc;
+    border-radius: 3px;
+    user-select: none;
+    cursor: pointer;
+    font-weight: bold;
+
+    div {
+      width: 30px;
+      color: #666;
+      text-align: center;
+    }
+
+    .active {
+      background-color: $green;
+      border: 0;
+      color: white;
+      border-bottom-right-radius: 3px;
+      border-top-right-radius: 3px;
+    }
+    .inactive {
+      color: white;
+      font-weight: bold;
+      background-color: $hashtag-blue;
+      border-bottom-left-radius: 3px;
+      border-top-left-radius: 3px;
+    }
+  }
+
+  h3 {
+    margin-bottom: 20px;
+    margin-left: 10px;
+  }
+
+  label {
+    white-space: nowrap;
+    width: 80px;
+    text-align: end;
+    padding-right: 5px;
+    display: inline-block;
+  }
+  input {
+    width: 90px;
+    padding: 1px 2px;
+    font-size: $font-size-small;
+  }
+  input[type="number"], input[type="time"] {
+    width: 65px;
+  }
+  input[type="text"] {
+    width: 120px;
+    &.url {
+      width: 330px;
+    }
+    &.time {
+      width: 60px;
+    }
+  }
+  input[type="checkbox"] {
+    width: 15px;
+    margin-right: 7px;
+  }
+  input[type="date"] {
+    width: 130px;
+  }
+  input[type="datetime-local"] {
+    width: 150px;
+  }
+  div {
+    line-height: 1.5em;
+  }
+  .name {
+    min-width: 100px;
+    margin-right: 5px;
+    display: inline-block;
+  }
+  .allocated, .actual, .remaining {
+    min-width: 50px;
+    display: inline-block;
+  }
+}
+
