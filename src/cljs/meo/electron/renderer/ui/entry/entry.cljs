@@ -125,7 +125,7 @@
          (when (contains? (:tags entry) "#habit")
            [habit/habit-details merged local-cfg put-fn edit-mode?])
          (when (= :habit (:entry-type merged))
-           [habit/habit-details2 merged local-cfg put-fn edit-mode?])
+           [habit/habit-details2 merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          [:div.footer

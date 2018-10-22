@@ -7,6 +7,10 @@
   background-color: white;
   border-radius: $entry-border-radius;
 
+  select {
+    outline: none;
+  }
+
   .header {
     font-weight: bold;
   }
@@ -100,15 +104,28 @@
     }
   }
 
+  .criterion {
+    border: 1px solid #DDD;
+    border-radius: $entry-border-radius;
+    margin-bottom: 5px;
+    padding-bottom: 10px;
+  }
+
   .row {
     margin-top: 10px;
     display: flex;
 
     .add-criterion {
       background-color: $green;
-      padding: 0 2px;
+      padding: 0 3px;
+      color: white;
       border-radius: 2px;
       right: 0;
+      height: 16px;
+      margin-top: 4px;
+      margin-left: 10px;
+      cursor: pointer;
+      user-select: none;
     }
   }
 
@@ -149,10 +166,14 @@
 
   label {
     white-space: nowrap;
-    width: 80px;
+    width: 70px;
     text-align: end;
-    padding-right: 5px;
+    padding-right: 3px;
     display: inline-block;
+
+    &.wide {
+      width: 95px;
+    }
   }
   input {
     width: 90px;
