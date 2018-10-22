@@ -164,16 +164,22 @@
     margin-left: 10px;
   }
 
+  h4 {
+    color: #666;
+    font-size: $font-size-medium;
+    font-weight: normal;
+    margin: 10px 10px 20px 12px;
+  }
+
   label {
     white-space: nowrap;
-    width: 70px;
+    width: 75px;
     text-align: end;
     padding-right: 3px;
     display: inline-block;
-
-    &.wide {
-      width: 95px;
-    }
+    font-size: $font-size-small;
+    font-family: $header-font-family;
+    color: #666;
   }
   input {
     width: 90px;

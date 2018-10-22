@@ -176,6 +176,7 @@
                                    updated (assoc-in entry path sel)]
                                (put-fn [:entry/update-local updated]))))]
         [:div
+         [:h4 "items filled on desired schedule"]
          [:div.row
           [:label.wide "Questionnaire:"]
           [:select {:value     quest-tag
@@ -188,9 +189,23 @@
 (defn select-update [{:keys [entry path xf put-fn]}]
   (let [xf (or xf identity)]
     (fn [ev]
-      (let [sel (xf (h/target-val ev))
+      (let [tv (h/target-val ev)
+            sel (if (empty? tv) tv (xf tv))
             updated (assoc-in entry path sel)]
         (put-fn [:entry/update-local updated])))))
+
+(defn input-row [entry label cfg path put-fn]
+  (let [v (get-in entry path)
+        on-change (fn [ev]
+                    (let [v (h/target-val ev)
+                          updated (assoc-in entry path v)]
+                      (put-fn [:entry/update-local updated])))]
+    [:div.row
+     [:label label]
+     [:input (merge {:on-change on-change
+                     :class     "time"
+                     :value     v}
+                    cfg)]]))
 
 (defn min-max-sum [{:keys []}]
   (let [backend-cfg (subscribe [:backend-cfg])
@@ -198,8 +213,13 @@
     (fn [{:keys [entry idx put-fn] :as params}]
       (let [cf-path [:habit :criteria idx :cf-tag]
             cf-tag (get-in entry cf-path "")
-            cfk-path [:habit :criteria idx :cf-key]]
+            cfk-path [:habit :criteria idx :cf-key]
+            k (get-in entry cfk-path)
+            fields (get-in @custom-fields [cf-tag :fields])
+            min-path [:habit :criteria idx :min-val]
+            max-path [:habit :criteria idx :max-val]]
         [:div
+         [:h4 "custom field values summed, within min/max range"]
          [:div.row
           [:label "Tag:"]
           [select {:entry     entry
@@ -208,15 +228,19 @@
                    :put-fn    put-fn
                    :options   (keys @custom-fields)}]]
          (when-not (empty? (name cf-tag))
-           (let [fields (get-in @custom-fields [cf-tag :fields])
-                 opts (map (fn [[k v]] [k (:label v)]) fields)]
+           (let [opts (map (fn [[k v]] [k (:label v)]) fields)]
              [:div.row
               [:label "Key:"]
               [select {:entry     entry
                        :on-change select-update
                        :path      cfk-path
+                       :xf        keyword
                        :put-fn    put-fn
-                       :options   (into {} opts)}]]))]))))
+                       :options   (into {} opts)}]]))
+         (when-not (empty? (str k))
+           [input-row entry "Minimum:" (get-in fields [k :cfg]) min-path put-fn])
+         (when-not (empty? (str k))
+           [input-row entry "Maximum:" (get-in fields [k :cfg]) max-path put-fn])]))))
 
 (defn min-max-time [{:keys []}]
   (let [sagas (subscribe [:sagas])
@@ -224,9 +248,13 @@
     (fn [{:keys [entry idx put-fn] :as params}]
       (let [saga-path [:habit :criteria idx :saga]
             saga (get-in entry saga-path "")
-            sagas (into {} (map (fn [[k v]] [k (:saga_name v)])
-                                @sagas))]
+            sagas (into {} (map (fn [[k v]] [k (:saga_name v)]) @sagas))
+            story-path [:habit :criteria idx :story]
+            story (get-in entry story-path)
+            min-path [:habit :criteria idx :min-time]
+            max-path [:habit :criteria idx :max-time]]
         [:div
+         [:h4 "time spent as desired, within range"]
          [:div.row
           [:label "Saga:"]
           [select {:entry     entry
@@ -235,9 +263,7 @@
                    :put-fn    put-fn
                    :options   sagas}]]
          (when saga
-           (let [story-path [:habit :criteria idx :story]
-                 stories (into {} (map (fn [[k v]] [k (:story_name v)])
-                                       @stories))]
+           (let [stories (into {} (map (fn [[k v]] [k (:story_name v)]) @stories))]
              [:div.row
               [:label "Story:"]
               [select {:entry     entry
@@ -245,25 +271,10 @@
                        :path      story-path
                        :put-fn    put-fn
                        :options   stories}]]))
-         (when true
-           [:div.row
-            [:label "Minimum:"]
-            [:input {
-                     ;:on-change on-change-fn
-                     :class "time"
-                     :type  :time
-                     ;:value value
-                     }]])
-         (when true
-           [:div.row
-            [:label "Maximum:"]
-            [:input {
-                     ;:on-change on-change-fn
-                     :class "time"
-                     :type  :time
-                     ;:value value
-                     }]])
-         ]))))
+         (when-not (empty? story)
+           [input-row entry "Minimum:" {:type :time} min-path put-fn])
+         (when-not (empty? story)
+           [input-row entry "Maximum:" {:type :time} max-path put-fn])]))))
 
 (defn criterion [{:keys [entry idx put-fn] :as params}]
   (let [path [:habit :criteria idx :type]
