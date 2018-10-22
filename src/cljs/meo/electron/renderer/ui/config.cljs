@@ -229,7 +229,7 @@
          [:div.grid
           [:div.wrapper
            [menu/menu-view put-fn]
-           [:div.single.config {:on-key-down save-key-fn}
+           [:div.config {:on-key-down save-key-fn}
             [:div.col
              [:h2 "Custom Fields Editor"]
              (when (and (:changes @local) (not= @backend-cfg (:changes @local)))

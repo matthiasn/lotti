@@ -176,9 +176,9 @@
                                    updated (assoc-in entry path sel)]
                                (put-fn [:entry/update-local updated]))))]
         [:div
-         [:h4 "items filled on desired schedule"]
+         [:h4 "Questionnaire filled on desired schedule"]
          [:div.row
-          [:label.wide "Questionnaire:"]
+          [:label.wide "Tag:"]
           [:select {:value     quest-tag
                     :on-change (quest-select entry)}
            [:option ""]
@@ -219,7 +219,7 @@
             min-path [:habit :criteria idx :min-val]
             max-path [:habit :criteria idx :max-val]]
         [:div
-         [:h4 "custom field values summed, within min/max range"]
+         [:h4 "Custom field values summed, within min/max range"]
          [:div.row
           [:label "Tag:"]
           [select {:entry     entry
@@ -254,7 +254,7 @@
             min-path [:habit :criteria idx :min-time]
             max-path [:habit :criteria idx :max-time]]
         [:div
-         [:h4 "time spent as desired, within range"]
+         [:h4 "Time spent as desired, within range"]
          [:div.row
           [:label "Saga:"]
           [select {:entry     entry

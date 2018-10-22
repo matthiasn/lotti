@@ -128,12 +128,10 @@
                 :click       new-window}
                {:label "Main View"
                 :click #(open :main)}
-               (when (contains? capabilities :charts)
-                 {:label "Charts"
-                  :click #(open :charts-1)})
-               (when (contains? capabilities :config)
-                 {:label "Config"
-                  :click #(open :config)})
+               {:label "Charts"
+                :click #(open :charts-1)}
+               {:label "Config"
+                :click #(open :config)}
                (when (contains? capabilities :sync-cfg)
                  {:label "Sync Config"
                   :click #(open :sync)})
