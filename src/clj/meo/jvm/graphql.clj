@@ -127,6 +127,28 @@
         stats (mapv f day-strings)]
     stats))
 
+(defn habit-success [habit day state]
+  (let [crit-success (fn [c]
+                       (when (= (:type c) :min-max-sum)
+                         (let [tag (:cf-tag c)
+                               k (:cf-key c)
+                               m (cf/custom-fields-mapper state tag)
+                               res (m day)
+                               min-val (:min-val c)]
+                           (when (and k c)
+                             (>= (k res) min-val)))))
+        by-criterion (mapv crit-success (-> habit :habit :criteria))]
+    {:habit_entry habit
+     :completed (every? true? by-criterion)}))
+
+(defn habits-success [state context args value]
+  (let [state @state
+        habits (gq/find-all-habits state)
+        day (:day args)
+        completions (mapv #(habit-success % day state) (vals habits))]
+    {:day    day
+     :habits completions}))
+
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))
 
@@ -407,6 +429,7 @@
                         :query/pvt-hashtags       pvt-hashtags
                         :query/logged-time        logged-time
                         :query/day-stats          day-stats
+                        :query/habits-success     habits-success
                         :query/started-tasks      started-tasks
                         :query/open-tasks         open-tasks
                         :query/waiting-habits     waiting-habits

@@ -179,6 +179,16 @@
                  :by_day         {:type (list :AwardPointItem)}
                  :by_day_skipped {:type (list :AwardPointItem)}}}
 
+  :HabitSuccess
+  {:description "Single habit status for day."
+   :fields      {:habit_entry {:type :Entry}
+                 :completed   {:type Boolean}}}
+
+  :HabitsSuccess
+  {:description "Status of all habits for specified day."
+   :fields      {:day    {:type (non-null String)}
+                 :habits {:type (list :HabitSuccess)}}}
+
   :DayStats
   {:description "Logged time for specified day."
    :fields      {:day              {:type (non-null String)}
@@ -367,6 +377,12 @@
    :description "List of all existing briefings."
    :args        {:prio {:type Int}}
    :resolve     :query/briefings}
+
+  :habits_success
+  {:type    :HabitsSuccess
+   :args    {:day  {:type String}
+             :prio {:type Int}}
+   :resolve :query/habits-success}
 
   :logged_time
   {:type    :DayStats

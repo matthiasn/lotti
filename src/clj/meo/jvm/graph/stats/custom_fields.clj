@@ -54,12 +54,13 @@
                                (try (op res)
                                     (catch Exception e (error e res)))
                                res)]))]
-              (into {} (mapv field-mapper fields))))]
+              (into {} (mapv field-mapper fields))))
+          fields (mapv stats-mapper custom-field-stats-def)]
       (apply merge
              {:date_string date-string
               :tag         tag
               :fields      (mapv (fn [[k v]]
                                    {:field (name k)
                                     :value v})
-                                 (first (mapv stats-mapper custom-field-stats-def)))}
-             (mapv stats-mapper custom-field-stats-def)))))
+                                 (first fields))}
+             fields))))

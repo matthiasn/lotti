@@ -133,8 +133,7 @@
           [hashtags-mentions entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]
-         (when (:custom_fields entry)
-           [c/custom-fields-div merged put-fn edit-mode?])
+         [c/custom-fields-div merged put-fn edit-mode?]
          (when (:git_commit entry)
            [git-commit merged put-fn])
          [ws/wavesurfer merged local-cfg put-fn]

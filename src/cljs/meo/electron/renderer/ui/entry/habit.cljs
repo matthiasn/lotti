@@ -160,7 +160,7 @@
     [:select {:value     (get-in entry path "")
               :on-change (on-change m)}
      [:option ""]
-     (for [[v t] options]
+     (for [[v t] (sort-by first options)]
        ^{:key v}
        [:option {:value v} t])]))
 
@@ -182,7 +182,7 @@
           [:select {:value     quest-tag
                     :on-change (quest-select entry)}
            [:option ""]
-           (for [[qt qk] q-tags]
+           (for [[qt qk] (sort-by first q-tags)]
              ^{:key qt}
              [:option {:value qt} qt])]]]))))
 
@@ -197,7 +197,8 @@
 (defn input-row [entry label cfg path put-fn]
   (let [v (get-in entry path)
         on-change (fn [ev]
-                    (let [v (h/target-val ev)
+                    (let [xf (if (= :number (:type cfg)) js/parseInt identity)
+                          v (xf (h/target-val ev))
                           updated (assoc-in entry path v)]
                       (put-fn [:entry/update-local updated])))]
     [:div.row

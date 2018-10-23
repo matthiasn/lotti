@@ -247,6 +247,13 @@
         (uc/add-edges [:starred (:timestamp entry)]))
     (uc/remove-edges graph [(:timestamp entry) :starred])))
 
+(defn add-habit [graph entry]
+  (if (= :habit (:entry-type entry))
+    (-> graph
+        (uc/add-nodes :habits)
+        (uc/add-edges [:habits (:timestamp entry)]))
+    graph))
+
 (defn add-flagged [graph entry]
   (if (:flagged entry)
     (-> graph
@@ -342,6 +349,7 @@
         (update-in [:graph] add-parent-ref new-entry)
         (update-in [:graph] add-story new-entry)
         (update-in [:graph] add-saga new-entry)
+        (update-in [:graph] add-habit new-entry)
         (update-in [:graph] add-starred new-entry)
         (update-in [:graph] add-flagged new-entry)
         (update-in [:graph] add-done :done :completion_ts new-entry)

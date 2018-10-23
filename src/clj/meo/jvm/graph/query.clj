@@ -404,6 +404,15 @@
         stories (into {} (mapv (fn [id] [id (uc/attrs g id)]) story-ids))]
     stories))
 
+(defn find-all-habits
+  "Finds all habits in graph and returns map with the id of the story
+   (creation timestamp) as key and the habit node itself as value."
+  [current-state]
+  (let [g (:graph current-state)
+        habit-ids (mapv :dest (uc/find-edges g {:src :habits}))
+        habits (into {} (mapv (fn [id] [id (uc/attrs g id)]) habit-ids))]
+    habits))
+
 (defn find-all-sagas
   "Finds all :saga entries in graph and returns map with the id of the saga
    (creation timestamp) as key and the saga node itself as value."
