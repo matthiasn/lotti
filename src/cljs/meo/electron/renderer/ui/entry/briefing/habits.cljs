@@ -15,45 +15,37 @@
     (if (not= c 0) c (compare (get-in y [:habit :points])
                               (get-in x [:habit :points])))))
 
-(defn habit-line [_entry _tab-group _put-fn]
+(defn habit-line [_habit _tab-group _put-fn]
   (let [query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))]
-    (fn habit-line-render [entry tab-group put-fn]
-      (let [ts (:timestamp entry)
+    (fn habit-line-render [habit tab-group put-fn]
+      (let [entry (:habit_entry habit)
+            ts (:timestamp entry)
             text (eu/first-line entry)]
         [:tr {:key      ts
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
-         [:td.award-points
-          (when-let [points (-> entry :habit :points)]
-            points)]
-         #_[:td.award-points
-            (when-let [penalty (-> entry :habit :penalty)]
-              penalty)]
+         [:td.completion
+          [:span.status {:class (when (:completed habit) "success")}]]
          [:td.habit text]]))))
-
 
 (defn waiting-habits
   "Renders table with open entries, such as started tasks and open habits."
   [local _put-fn]
-  (let [backend-cfg (subscribe [:backend-cfg])
-        gql-res (subscribe [:gql-res])
-        briefing (reaction (-> @gql-res :briefing :data :briefing))
-        habits (reaction (-> @gql-res :waiting-habits :data :waiting_habits))
-        expand-fn #(swap! local update-in [:expanded-habits] not)
-        saga-filter (fn [entry]
-                      (if (seq (:selected-set @local))
-                        (let [saga (get-in entry [:story :saga :timestamp])]
-                          (contains? (:selected-set @local) saga))
-                        true))
-        habits (reaction (->> @habits
-                              (filter saga-filter)
-                              (sort habit-sorter)))]
+  (let [gql-res (subscribe [:gql-res])
+        habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
+        filter-fn #(do
+                     (info :click @local)
+                     (swap! local update-in [:all] not))
+        habits (reaction (:habits @habits-success))]
     (fn waiting-habits-list-render [local put-fn]
-      (let [habits @habits
+      (let [local @local
+            habits (filter #(if (:all local)
+                              true
+                              (not (:completed %)))
+                           @habits)
             tab-group :briefing
-            show? (contains? (:capabilities @backend-cfg) :habits)
             open-new (fn [x]
                        (put-fn [:search/add
                                 {:tab-group :left
@@ -66,13 +58,12 @@
         [:div.waiting-habits
          [:table.habits
           [:tbody
-           [:tr {:on-click expand-fn}
-            [:th [:span.fa.fa-diamond.award-points]]
-            ;[:th [:span.fa.fa-diamond.penalty]]
+           [:tr {:on-click filter-fn}
+            [:th]
             [:th "Stuff I said I'd do."]
             [:th
              [:div.add-habit {:on-click new-habit}
               [:i.fas.fa-plus]]]]
-           (for [entry habits]
-             ^{:key (:timestamp entry)}
-             [habit-line entry tab-group put-fn])]]]))))
+           (for [habit habits]
+             ^{:key (:timestamp (:habit_entry habit))}
+             [habit-line habit tab-group put-fn])]]]))))
