@@ -124,13 +124,12 @@
                       {:message [:search/add
                                  {:tab-group :left
                                   :query     (up/parse-search (:timestamp x))}]
-                       :timeout 100}]))
-        new-task (h/new-entry put-fn {:linked_entries #{ts}
-                                      :starred        true
-                                      :perm_tags      #{"#task"}}
-                              open-new)]
+                       :timeout 100}]))]
     (fn add-task-render [ts put-fn]
-      (let []
+      (let [new-task (h/new-entry put-fn {:linked_entries #{ts}
+                                          :starred        true
+                                          :perm_tags      #{"#task"}}
+                                  open-new)]
         [:div.add-task
          [:div.toggle-visible
           {:on-click #(new-task)}

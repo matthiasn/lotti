@@ -165,6 +165,12 @@
   [local local-cfg put-fn]
   (let [gql-res (subscribe [:gql-res])
         open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))
+        started-tasks (reaction (->> @gql-res
+                                     :started-tasks
+                                     :data
+                                     :started_tasks
+                                     (map :timestamp)
+                                     set))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
@@ -184,9 +190,8 @@
                                     (filter saga-filter)
                                     (filter open-filter)))]
     (fn open-tasks-render [local local-cfg put-fn]
-      (let [entries-list @entries-list
-            tab-group (:tab-group local-cfg)
-            search-text @search-text]
+      (let [tab-group (:tab-group local-cfg)
+            entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)]
         (when (seq entries-list)
           [:div.open-tasks
            [:table.tasks
@@ -200,7 +205,7 @@
                (for [entry entries-list]
                  ^{:key (:timestamp entry)}
                  [task-row2 entry put-fn {:tab-group    tab-group
-                                          :search-text  search-text
+                                          :search-text  @search-text
                                           :show-logged? true}]))]]])))))
 
 (defn open-linked-tasks
