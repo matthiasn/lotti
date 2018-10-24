@@ -1,0 +1,16 @@
+{
+  habits_success(day:"%s") {
+    day
+    habits {
+      completed
+      habit_entry {
+        md
+        timestamp
+        habit
+        story {
+          story_name
+        }
+      }
+    }
+  }
+}

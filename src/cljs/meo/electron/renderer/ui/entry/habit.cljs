@@ -196,9 +196,14 @@
 
 (defn input-row [entry label cfg path put-fn]
   (let [v (get-in entry path)
+        t (:type cfg)
+        v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
         on-change (fn [ev]
-                    (let [xf (if (= :number (:type cfg)) js/parseInt identity)
+                    (let [xf (if (= :number t) js/parseInt identity)
                           v (xf (h/target-val ev))
+                          v (if (= (:time t))
+                              (.asMinutes (.duration moment v))
+                              v)
                           updated (assoc-in entry path v)]
                       (put-fn [:entry/update-local updated])))]
     [:div.row

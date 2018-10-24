@@ -139,15 +139,17 @@
                              (>= (k res) min-val)))))
         by-criterion (mapv crit-success (-> habit :habit :criteria))]
     {:habit_entry habit
-     :completed (every? true? by-criterion)}))
+     :completed   (every? true? by-criterion)}))
 
 (defn habits-success [state context args value]
-  (let [state @state
-        habits (gq/find-all-habits state)
-        day (:day args)
-        completions (mapv #(habit-success % day state) (vals habits))]
-    {:day    day
-     :habits completions}))
+  (try (let [state @state
+             habits (filter #(-> % :habit :active)
+                            (vals (gq/find-all-habits state)))
+             day (:day args)
+             completions (mapv #(habit-success % day state) habits)]
+         {:day    day
+          :habits completions})
+       (catch Exception ex (error ex))))
 
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))

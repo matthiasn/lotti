@@ -70,6 +70,20 @@
          [:img {:src (str "http://" iww-host "/upload-address/"
                           (stc/make-uuid) "/qrcode.png")}])])))
 
+(defn habit-monitor [put-fn]
+  (let [cfg (subscribe [:cfg])
+        iww-host (.-iwwHOST js/window)]
+    (put-fn [:gql/query {:file     "habits-success.gql"
+                         :id       :day-stats
+                         :res-hash nil
+                         :prio     5
+                         :args     [d]}])
+    (fn upload-view-render []
+      [:div
+       (when (:qr-code @cfg)
+         [:img {:src (str "http://" iww-host "/upload-address/"
+                          (stc/make-uuid) "/qrcode.png")}])])))
+
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])
         click (fn [_]
@@ -89,6 +103,7 @@
             today #(h/to-day (h/ymd (st/now)) pvt put-fn)]
         [:div.menu
          [:div.menu-header
+          [new-import-view put-fn]
           [new-import-view put-fn]
           ;[:h1 {:on-click today} (h/localize-date day @locale)]
           (when (.-PLAYGROUND js/window)
