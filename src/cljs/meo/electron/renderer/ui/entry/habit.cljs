@@ -201,7 +201,7 @@
         on-change (fn [ev]
                     (let [xf (if (= :number t) js/parseInt identity)
                           v (xf (h/target-val ev))
-                          v (if (= (:time t))
+                          v (if (= :time t)
                               (.asMinutes (.duration moment v))
                               v)
                           updated (assoc-in entry path v)]
