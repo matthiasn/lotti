@@ -39,7 +39,11 @@
     (put-fn [:cfg/refresh])
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
       (run-query "briefing.gql" :briefing 12 [ymd pvt])
-      (run-query "logged-by-day.gql" :logged-by-day 13 [ymd]))
+      (run-query "logged-by-day.gql" :logged-by-day 13 [ymd])
+      (put-fn [:gql/query {:file "habits-success.gql"
+                           :id   :habits-success
+                           :prio 13
+                           :args [ymd]}]))
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
     (run-query "waiting-habits.gql" :waiting-habits 15 [pvt false])

@@ -17,7 +17,8 @@
             [meo.electron.renderer.ui.entry.entry :as e]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [cljs.pprint :as pp]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -145,7 +146,9 @@
                        :outstanding-time-filter true
                        :selected-set            #{}
                        :show-filter             false
-                       :on-hold                 false})]
+                       :on-hold                 false})
+        pvt (subscribe [:show-pvt])]
+    (h/to-day (h/ymd (st/now)) pvt put-fn)
     (fn briefing-render [put-fn local-cfg]
       (let [ts (:timestamp @briefing)
             excluded (:excluded (:briefing @cfg))
