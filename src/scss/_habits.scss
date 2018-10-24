@@ -222,3 +222,22 @@
   }
 }
 
+.habit-monitor {
+  color: red;
+  margin-left: 90px;
+  display: flex;
+  flex-direction: row;
+
+  .status {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    margin-right: 10px;
+    background-color: $red;
+    cursor: pointer;
+
+    &.completed {
+      background-color: $green;
+    }
+  }
+}

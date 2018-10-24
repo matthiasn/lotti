@@ -359,35 +359,6 @@
     margin-top: 5px;
   }
 
-  .tooltip {
-    position: relative;
-    display: inline-block;
-  }
-
-  /* Tooltip text */
-  .tooltip .tooltiptext {
-    visibility: hidden;
-    width: 100px;
-    background-color: rgba(233, 233, 233, 0.9);
-    color: #333;
-    font-weight: bold;
-    text-align: center;
-    padding: 6px;
-    border-radius: 6px;
-    bottom: 100%;
-    left: 50%;
-    margin-left: -50px;
-
-    /* Position the tooltip text - see examples below! */
-    position: absolute;
-    z-index: 1;
-  }
-
-  /* Show the tooltip text when you mouse over the tooltip container */
-  .tooltip:hover .tooltiptext {
-    visibility: visible;
-  }
-
   label {
     display: inline-block;
     min-width: 85px;

@@ -331,7 +331,8 @@
                      :path      [:habit :schedule]
                      :xf        keyword
                      :options   {:daily  "per day"
-                                 :weekly "per week"}}]]
+                                 ;:weekly "per week"
+                                 }}]]
            [:div.row
             [:h3 "Criteria"]
             [:div.add-criterion {:on-click (add-criterion entry)}

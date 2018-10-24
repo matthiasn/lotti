@@ -174,6 +174,10 @@
                        :id   :logged-by-day
                        :prio 13
                        :args [ymd]}])
+  (put-fn [:gql/query {:file "habits-success.gql"
+                       :id   :habits-success
+                       :prio 13
+                       :args [ymd]}])
   (put-fn [:gql/query {:file "briefing.gql"
                        :id   :briefing
                        :prio 12

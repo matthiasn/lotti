@@ -5,6 +5,7 @@
       completed
       habit_entry {
         md
+        text
         timestamp
         habit
         story {

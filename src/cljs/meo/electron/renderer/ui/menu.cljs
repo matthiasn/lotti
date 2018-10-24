@@ -19,19 +19,18 @@
         [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))
-#_
-(def all-options
-  [{:option :show-pvt :cls "fa-user-secret"}
-   ;{:option :comments-standalone :cls "fa-comments"}
-   ;{:option :mute :cls "fa-volume-off"}
-   ;{:option :ticking-clock :cls "fa-clock-o"}
-   ;{:option :show-calendar :cls "fa-calendar"}
-   ;{:option :hide-hashtags :cls "fa-hashtag"}
-   ;{:option :single-column :cls "fa-columns"}
-   ;{:option :thumbnails :cls "fa-images"}
-   ;{:option :sort-asc :cls " fa-sort-asc"}
-   ;{:option :app-screenshot :cls "fa-window-minimize"}
-   {:option :dashboard-banner :cls "fa-chart-line"}])
+#_(def all-options
+    [{:option :show-pvt :cls "fa-user-secret"}
+     ;{:option :comments-standalone :cls "fa-comments"}
+     ;{:option :mute :cls "fa-volume-off"}
+     ;{:option :ticking-clock :cls "fa-clock-o"}
+     ;{:option :show-calendar :cls "fa-calendar"}
+     ;{:option :hide-hashtags :cls "fa-hashtag"}
+     ;{:option :single-column :cls "fa-columns"}
+     ;{:option :thumbnails :cls "fa-images"}
+     ;{:option :sort-asc :cls " fa-sort-asc"}
+     ;{:option :app-screenshot :cls "fa-window-minimize"}
+     {:option :dashboard-banner :cls "fa-chart-line"}])
 
 (defn change-language [cc]
   (let [spellcheck-handler (.-spellCheckHandler js/window)]
@@ -71,18 +70,20 @@
                           (stc/make-uuid) "/qrcode.png")}])])))
 
 (defn habit-monitor [put-fn]
-  (let [cfg (subscribe [:cfg])
-        iww-host (.-iwwHOST js/window)]
-    (put-fn [:gql/query {:file     "habits-success.gql"
-                         :id       :day-stats
-                         :res-hash nil
-                         :prio     5
-                         :args     [d]}])
+  (let [gql-res (subscribe [:gql-res])
+        habits-success (reaction (-> @gql-res :habits-success :data :habits_success))]
     (fn upload-view-render []
-      [:div
-       (when (:qr-code @cfg)
-         [:img {:src (str "http://" iww-host "/upload-address/"
-                          (stc/make-uuid) "/qrcode.png")}])])))
+      (let [habits (:habits @habits-success)]
+        [:div.habit-monitor
+         (for [habit habits]
+           (let [cls (when (:completed habit) "completed")
+                 text (-> habit :habit_entry :md)
+                 ts (-> habit :habit_entry :timestamp)
+                 on-click (up/add-search ts :right put-fn)]
+             [:div.status.tooltip {:class    cls
+                                   :key      ts
+                                   :on-click on-click}
+              [:span.tooltiptext (-> text)]]))]))))
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])
@@ -92,7 +93,7 @@
     (fn busy-status-render [_]
       (let [cls (name (or (:color @status) :green))]
         [:div.busy-status.rec-indicator {:class    cls
-                           :on-click click}]))))
+                                         :on-click click}]))))
 
 (defn menu-view [_put-fn]
   (let [cal-day (subscribe [:cal-day])
@@ -103,6 +104,7 @@
             today #(h/to-day (h/ymd (st/now)) pvt put-fn)]
         [:div.menu
          [:div.menu-header
+          [habit-monitor put-fn]
           [new-import-view put-fn]
           [new-import-view put-fn]
           ;[:h1 {:on-click today} (h/localize-date day @locale)]
