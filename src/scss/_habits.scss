@@ -107,7 +107,7 @@
   .criterion {
     border: 1px solid #DDD;
     border-radius: $entry-border-radius;
-    margin-bottom: 5px;
+    margin: 5px 0;
     padding-bottom: 10px;
   }
 
@@ -246,12 +246,13 @@
 
   .completion {
     text-align: center;
-    padding-left: 3px;
-    padding-right: 2px;
+    padding-left: 0;
+    padding-right: 0;
     .status {
       display: inline-block;
       width: 8px;
       height: 8px;
+      margin-right: 1px;
       border-radius: 4px;
       background-color: $red;
 

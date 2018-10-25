@@ -1,17 +1,13 @@
 {
-  habits_success(day:"%s") {
-    day
-    habits {
-      completed
+  habits_success(days:"%s") {
+    completed
       habit_entry {
         md
-        text
         timestamp
         habit
         story {
           story_name
         }
       }
-    }
   }
 }

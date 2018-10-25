@@ -182,12 +182,7 @@
   :HabitSuccess
   {:description "Single habit status for day."
    :fields      {:habit_entry {:type :Entry}
-                 :completed   {:type Boolean}}}
-
-  :HabitsSuccess
-  {:description "Status of all habits for specified day."
-   :fields      {:day    {:type (non-null String)}
-                 :habits {:type (list :HabitSuccess)}}}
+                 :completed   {:type (list Boolean)}}}
 
   :DayStats
   {:description "Logged time for specified day."
@@ -379,8 +374,8 @@
    :resolve     :query/briefings}
 
   :habits_success
-  {:type    :HabitsSuccess
-   :args    {:day  {:type String}
+  {:type    (list :HabitSuccess)
+   :args    {:days {:type Int}
              :prio {:type Int}}
    :resolve :query/habits-success}
 

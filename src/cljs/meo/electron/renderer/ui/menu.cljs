@@ -73,17 +73,16 @@
   (let [gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))]
     (fn upload-view-render []
-      (let [habits (:habits @habits-success)]
-        [:div.habit-monitor
-         (for [habit habits]
-           (let [cls (when (:completed habit) "completed")
-                 text (-> habit :habit_entry :md)
-                 ts (-> habit :habit_entry :timestamp)
-                 on-click (up/add-search ts :right put-fn)]
-             [:div.status.tooltip {:class    cls
-                                   :key      ts
-                                   :on-click on-click}
-              [:span.tooltiptext (-> text)]]))]))))
+      [:div.habit-monitor
+       (for [habit @habits-success]
+         (let [cls (when (first (:completed habit)) "completed")
+               text (-> habit :habit_entry :md)
+               ts (-> habit :habit_entry :timestamp)
+               on-click (up/add-search ts :right put-fn)]
+           [:div.status.tooltip {:class    cls
+                                 :key      ts
+                                 :on-click on-click}
+            [:span.tooltiptext (-> text)]]))])))
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])

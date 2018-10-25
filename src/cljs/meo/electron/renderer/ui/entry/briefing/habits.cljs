@@ -27,7 +27,8 @@
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
          [:td.completion
-          [:span.status {:class (when (:completed habit) "success")}]]
+          (for [completed (reverse (:completed habit))]
+            [:span.status {:class (when completed "success")}])]
          [:td.habit text]]))))
 
 (defn waiting-habits
@@ -37,14 +38,12 @@
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
         filter-fn #(do
                      (info :click @local)
-                     (swap! local update-in [:all] not))
-        habits (reaction (:habits @habits-success))]
+                     (swap! local update-in [:all] not))]
     (fn waiting-habits-list-render [local put-fn]
       (let [local @local
-            habits (filter #(if (:all local)
-                              true
-                              (not (:completed %)))
-                           @habits)
+            habits (filter #(or (:all local)
+                              (not (first (:completed %))))
+                           @habits-success)
             tab-group :briefing
             open-new (fn [x]
                        (put-fn [:search/add

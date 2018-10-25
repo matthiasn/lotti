@@ -43,7 +43,7 @@
       (put-fn [:gql/query {:file "habits-success.gql"
                            :id   :habits-success
                            :prio 13
-                           :args [ymd]}]))
+                           :args [3]}]))
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
     (run-query "waiting-habits.gql" :waiting-habits 15 [pvt false])

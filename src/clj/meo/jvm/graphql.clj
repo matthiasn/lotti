@@ -5,6 +5,7 @@
             [com.walmartlabs.lacinia.schema :as schema]
             [taoensso.timbre :refer [info error warn debug]]
             [com.walmartlabs.lacinia :as lacinia]
+            [meo.jvm.graphql.habits :as gh]
             [com.walmartlabs.lacinia.pedestal :as lp]
             [io.pedestal.http :as http]
             [ubergraph.core :as uc]
@@ -126,31 +127,6 @@
               (gsd/day-stats g day-nodes-attrs stories sagas day)))
         stats (mapv f day-strings)]
     stats))
-
-(defn habit-success [habit day state]
-  (let [successful? (fn [c]
-                      (when (= (:type c) :min-max-sum)
-                        (let [tag (:cf-tag c)
-                              k (:cf-key c)
-                              m (cf/custom-fields-mapper state tag)
-                              res (m day)
-                              min-val (:min-val c)
-                              x (k res)]
-                          (when (and k c (number? x) (number? min-val))
-                            (>= x min-val)))))
-        by-criterion (mapv successful? (-> habit :habit :criteria))]
-    {:habit_entry habit
-     :completed   (every? true? by-criterion)}))
-
-(defn habits-success [state context args value]
-  (try (let [state @state
-             habits (filter #(-> % :habit :active)
-                            (vals (gq/find-all-habits state)))
-             day (:day args)
-             completions (mapv #(habit-success % day state) habits)]
-         {:day    day
-          :habits completions})
-       (catch Exception ex (error ex))))
 
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))
@@ -431,7 +407,7 @@
                         :query/pvt-hashtags       pvt-hashtags
                         :query/logged-time        logged-time
                         :query/day-stats          day-stats
-                        :query/habits-success     habits-success
+                        :query/habits-success     gh/habits-success
                         :query/started-tasks      started-tasks
                         :query/open-tasks         open-tasks
                         :query/waiting-habits     waiting-habits
