@@ -284,8 +284,16 @@
 
 (defn criterion [{:keys [entry idx put-fn] :as params}]
   (let [path [:habit :criteria idx :type]
-        habit-type (get-in entry path)]
+        habit-type (get-in entry path)
+        rm-click (fn []
+                   (let [rm #(let [criteria %]
+                               (vec (concat (take idx criteria)
+                                            (drop (inc idx) criteria))))
+                         updated (update-in entry [:habit :criteria] rm)]
+                     (put-fn [:entry/update-local updated])))]
     [:div.criterion
+     [:i.fas.fa-trash-alt
+      {:on-click rm-click}]
      (when-not habit-type
        [:div.row
         [:label "Habit Type:"]
@@ -294,10 +302,11 @@
                  :put-fn    put-fn
                  :path      path
                  :xf        keyword
-                 :options   {:min-max-sum   "min/max sum"
-                             :min-max-time  "min/max time"
-                             :checked-off   "checked off"
-                             :questionnaire "questionnaire"}}]])
+                 :options   {:min-max-sum  "min/max sum"
+                             :min-max-time "min/max time"
+                             ;:checked-off   "checked off"
+                             ;:questionnaire "questionnaire"
+                             }}]])
      (when (= :min-max-sum habit-type)
        [min-max-sum params])
      (when (= :min-max-time habit-type)
@@ -306,8 +315,7 @@
        [quest-details params])]))
 
 (defn habit-details2 [entry put-fn]
-  (let [backend-cfg (subscribe [:backend-cfg])
-        add-criterion (fn [entry]
+  (let [add-criterion (fn [entry]
                         (fn [_]
                           (let [updated (update-in entry [:habit :criteria] #(vec (conj % {})))]
                             (put-fn [:entry/update-local updated]))))]
