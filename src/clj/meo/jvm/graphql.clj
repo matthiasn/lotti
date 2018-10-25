@@ -128,16 +128,17 @@
     stats))
 
 (defn habit-success [habit day state]
-  (let [crit-success (fn [c]
-                       (when (= (:type c) :min-max-sum)
-                         (let [tag (:cf-tag c)
-                               k (:cf-key c)
-                               m (cf/custom-fields-mapper state tag)
-                               res (m day)
-                               min-val (:min-val c)]
-                           (when (and k c)
-                             (>= (k res) min-val)))))
-        by-criterion (mapv crit-success (-> habit :habit :criteria))]
+  (let [successful? (fn [c]
+                      (when (= (:type c) :min-max-sum)
+                        (let [tag (:cf-tag c)
+                              k (:cf-key c)
+                              m (cf/custom-fields-mapper state tag)
+                              res (m day)
+                              min-val (:min-val c)
+                              x (k res)]
+                          (when (and k c (number? x) (number? min-val))
+                            (>= x min-val)))))
+        by-criterion (mapv successful? (-> habit :habit :criteria))]
     {:habit_entry habit
      :completed   (every? true? by-criterion)}))
 
@@ -180,7 +181,6 @@
   (fn [state context args value]
     (let [{:keys [query n pvt story tab incremental starred flagged from to]} args
           msg-meta (:msg-meta context)
-          _ (info :msg-meta msg-meta (keys context))
           current-state @state
           from (if from (dt/ymd-to-ts from) 0)
           to (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)
