@@ -312,33 +312,32 @@
                           (let [updated (update-in entry [:habit :criteria] #(vec (conj % {})))]
                             (put-fn [:entry/update-local updated]))))]
     (fn [entry put-fn]
-      (when (contains? (:capabilities @backend-cfg) :habits)
-        (let [criteria (get-in entry [:habit :criteria])
-              active (get-in entry [:habit :active])
-              toggle-active #(put-fn [:entry/update-local (update-in entry [:habit :active] not)])]
-          [:div.habit-details
-           [:h3.header "Habit details"]
-           [:div.row
-            [:label "Active? "]
-            [:div.on-off {:on-click toggle-active}
-             [:div {:class (when-not active "inactive")} "off"]
-             [:div {:class (when active "active")} "on"]]]
-           [:div.row
-            [:label "Schedule:"]
-            [select {:on-change select-update
-                     :entry     entry
-                     :put-fn    put-fn
-                     :path      [:habit :schedule]
-                     :xf        keyword
-                     :options   {:daily  "per day"
-                                 ;:weekly "per week"
-                                 }}]]
-           [:div.row
-            [:h3 "Criteria"]
-            [:div.add-criterion {:on-click (add-criterion entry)}
-             [:i.fas.fa-plus]]]
-           (for [[i c] (map-indexed (fn [i v] [i v]) criteria)]
-             ^{:key i}
-             [criterion {:entry  entry
-                         :put-fn put-fn
-                         :idx    i}])])))))
+      (let [criteria (get-in entry [:habit :criteria])
+            active (get-in entry [:habit :active])
+            toggle-active #(put-fn [:entry/update-local (update-in entry [:habit :active] not)])]
+        [:div.habit-details
+         [:h3.header "Habit details"]
+         [:div.row
+          [:label "Active? "]
+          [:div.on-off {:on-click toggle-active}
+           [:div {:class (when-not active "inactive")} "off"]
+           [:div {:class (when active "active")} "on"]]]
+         [:div.row
+          [:label "Schedule:"]
+          [select {:on-change select-update
+                   :entry     entry
+                   :put-fn    put-fn
+                   :path      [:habit :schedule]
+                   :xf        keyword
+                   :options   {:daily "per day"
+                               ;:weekly "per week"
+                               }}]]
+         [:div.row
+          [:h3 "Criteria"]
+          [:div.add-criterion {:on-click (add-criterion entry)}
+           [:i.fas.fa-plus]]]
+         (for [[i c] (map-indexed (fn [i v] [i v]) criteria)]
+           ^{:key i}
+           [criterion {:entry  entry
+                       :put-fn put-fn
+                       :idx    i}])]))))
