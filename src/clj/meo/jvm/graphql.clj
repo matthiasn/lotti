@@ -327,24 +327,19 @@
         schema (:schema current-state)
         qid (:id msg-payload)
         merged (merge (get-in current-state [:queries qid]) msg-payload)
-        {:keys [file args q id res-hash]} merged
+        {:keys [file args q id]} merged
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (when template (apply format template args))
         on-deliver
         (fn [res]
-          (let [new-hash (hash res)
-                new-data (not= new-hash res-hash)
-                res (merge merged
+          (let [res (merge merged
                            (xf/simplify res)
-                           {:res-hash new-hash
-                            :ts       (stc/now)
+                           {:ts       (stc/now)
                             :prio     (:prio merged 100)})]
             (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
-            (info "GraphQL query" id "finished in" (- (stc/now) start) "ms -"
-                  (if new-data "new data" "same hash, omitting response")
+            (info "GraphQL query" id "finished in" (- (stc/now) start) "ms "
                   (str "- '" (or file query-string) "'"))
-            (when new-data (put-fn (with-meta [:gql/res res]
-                                              {:sente-uid :broadcast})))))]
+            (put-fn (with-meta [:gql/res res] {:sente-uid :broadcast}))))]
     (swap! cmp-state assoc-in [:queries id] merged)
     (if query-string
       (execute-async schema query-string nil m {} on-deliver)

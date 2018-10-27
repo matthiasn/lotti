@@ -321,7 +321,15 @@
   (let [add-criterion (fn [entry]
                         (fn [_]
                           (let [updated (update-in entry [:habit :criteria] #(vec (conj % {})))]
-                            (put-fn [:entry/update-local updated]))))]
+                            (put-fn [:entry/update-local updated]))))
+        gql-res (subscribe [:gql-res])
+        ts (:timestamp entry)
+        habits-successes (reaction (-> @gql-res :habits-success :data :habits_success))
+        completions (reaction (->> @habits-successes
+                                   (filter #(= ts (:timestamp (:habit_entry %))))
+                                   first
+                                   :completed
+                                   reverse))]
     (fn [entry put-fn]
       (let [criteria (get-in entry [:habit :criteria])
             active (get-in entry [:habit :active])
@@ -351,4 +359,7 @@
            ^{:key i}
            [criterion {:entry  entry
                        :put-fn put-fn
-                       :idx    i}])]))))
+                       :idx    i}])
+         [:div.completion
+          (for [completed @completions]
+            [:span.status {:class (when completed "success")}])]]))))

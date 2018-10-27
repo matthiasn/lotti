@@ -258,28 +258,34 @@
   }
 }
 
+.completion {
+  //text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+  .status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 1px;
+    border-radius: 4px;
+    background-color: $red;
+
+    &.success {
+      background-color: $green;
+    }
+  }
+}
+
 .waiting-habits {
+  th {
+    text-align: left;
+  }
+
 
   .completion {
     text-align: center;
     padding-left: 0;
     padding-right: 0;
-    .status {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      margin-right: 1px;
-      border-radius: 4px;
-      background-color: $red;
-
-      &.success {
-        background-color: $green;
-      }
-    }
-  }
-
-  th {
-    text-align: left;
   }
 
   .add-habit {
