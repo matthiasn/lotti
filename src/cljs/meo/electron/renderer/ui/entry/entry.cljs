@@ -122,10 +122,8 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged local-cfg put-fn edit-mode?])
-         (when (contains? (:tags entry) "#habit")
-           [habit/habit-details merged local-cfg put-fn edit-mode?])
          (when (= :habit (:entry-type merged))
-           [habit/habit-details2 merged put-fn])
+           [habit/habit-details merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          [:div.footer
