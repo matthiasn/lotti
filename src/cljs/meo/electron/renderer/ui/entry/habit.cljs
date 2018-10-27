@@ -266,20 +266,23 @@
           [select {:entry     entry
                    :on-change select-update
                    :path      saga-path
+                   :xf        js/parseInt
                    :put-fn    put-fn
                    :options   sagas}]]
-         (when saga
-           (let [stories (into {} (map (fn [[k v]] [k (:story_name v)]) @stories))]
+         (when (number? saga)
+           (let [stories (filter #(= saga (:timestamp (:saga (second %)))) @stories)
+                 stories (into {} (map (fn [[k v]] [k (:story_name v)]) stories))]
              [:div.row
               [:label "Story:"]
               [select {:entry     entry
                        :on-change select-update
                        :path      story-path
+                       :xf        js/parseInt
                        :put-fn    put-fn
                        :options   stories}]]))
-         (when-not (empty? story)
+         (when (number? story)
            [input-row entry "Minimum:" {:type :time} min-path put-fn])
-         (when-not (empty? story)
+         (when (number? story)
            [input-row entry "Maximum:" {:type :time} max-path put-fn])]))))
 
 (defn criterion [{:keys [entry idx put-fn] :as params}]

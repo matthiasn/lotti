@@ -3,20 +3,20 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.10.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.10.0-beta4"]
                  [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
                  [org.clojure/data.avl "0.0.18"]
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [clj-pid "0.1.2"]
-                 [clj-time "0.14.5"]
+                 [clj-time "0.15.1"]
                  [clj-http "3.9.1"]
                  [ring/ring-core "1.7.0"]
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "3.0.0"]
                  [me.raynes/fs "1.4.6"]
-                 [markdown-clj "1.0.3"]
+                 [markdown-clj "1.0.5"]
                  [progrock "0.1.2"]
                  [cheshire "5.8.1"]
                  [me.raynes/conch "0.8.0"]
@@ -78,7 +78,7 @@
 
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
-            [lein-figwheel "0.5.16"]
+            [lein-figwheel "0.5.17"]
             [test2junit "1.4.2"]
             [lein-cloverage "1.0.13"]
             [deraen/lein-sass4clj "0.3.1"]

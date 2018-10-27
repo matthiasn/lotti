@@ -7,8 +7,7 @@
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info]]
             [cljs.reader :refer [read-string]]
-            [meo.common.utils.parse :as up]
-            [matthiasn.systems-toolbox.component :as st]))
+            [meo.common.utils.parse :as up]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -19,18 +18,6 @@
         [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))
-#_(def all-options
-    [{:option :show-pvt :cls "fa-user-secret"}
-     ;{:option :comments-standalone :cls "fa-comments"}
-     ;{:option :mute :cls "fa-volume-off"}
-     ;{:option :ticking-clock :cls "fa-clock-o"}
-     ;{:option :show-calendar :cls "fa-calendar"}
-     ;{:option :hide-hashtags :cls "fa-hashtag"}
-     ;{:option :single-column :cls "fa-columns"}
-     ;{:option :thumbnails :cls "fa-images"}
-     ;{:option :sort-asc :cls " fa-sort-asc"}
-     ;{:option :app-screenshot :cls "fa-window-minimize"}
-     {:option :dashboard-banner :cls "fa-chart-line"}])
 
 (defn change-language [cc]
   (let [spellcheck-handler (.-spellCheckHandler js/window)]
@@ -94,19 +81,12 @@
         [:div.busy-status.rec-indicator {:class    cls
                                          :on-click click}]))))
 
-(defn menu-view [_put-fn]
-  (let [cal-day (subscribe [:cal-day])
-        locale (subscribe [:locale])
-        pvt (subscribe [:show-pvt])]
-    (fn [put-fn]
-      (let [day (or @cal-day (h/ymd (st/now)))
-            today #(h/to-day (h/ymd (st/now)) pvt put-fn)]
-        [:div.menu
-         [:div.menu-header
-          [habit-monitor put-fn]
-          [new-import-view put-fn]
-          [new-import-view put-fn]
-          ;[:h1 {:on-click today} (h/localize-date day @locale)]
-          (when (.-PLAYGROUND js/window)
-            [:h1.playground "Playground"])
-          [upload-view]]]))))
+(defn menu-view [put-fn]
+  [:div.menu
+   [:div.menu-header
+    [habit-monitor put-fn]
+    [new-import-view put-fn]
+    [new-import-view put-fn]
+    (when (.-PLAYGROUND js/window)
+      [:h1.playground "Playground"])
+    [upload-view]]])

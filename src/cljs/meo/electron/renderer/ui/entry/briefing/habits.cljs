@@ -27,7 +27,7 @@
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
          [:td.completion
-          (for [completed (reverse (:completed habit))]
+          (for [completed (reverse (take 5 (:completed habit)))]
             [:span.status {:class (when completed "success")}])]
          [:td.habit text]]))))
 
@@ -42,7 +42,7 @@
     (fn waiting-habits-list-render [local put-fn]
       (let [local @local
             habits (filter #(or (:all local)
-                              (not (first (:completed %))))
+                                (not (first (:completed %))))
                            @habits-success)
             tab-group :briefing
             open-new (fn [x]
@@ -57,10 +57,13 @@
         [:div.waiting-habits
          [:table.habits
           [:tbody
-           [:tr {:on-click filter-fn}
-            [:th]
-            [:th "Stuff I said I'd do."]
-            [:th
+           [:tr
+            [:th {:on-click filter-fn}
+             [:i.fas.filter
+              {:class (if (:all local)
+                        "fa-angle-double-down"
+                        "fa-angle-double-up")}]]
+            [:th "Stuff I said I'd do."
              [:div.add-habit {:on-click new-habit}
               [:i.fas.fa-plus]]]]
            (for [habit habits]

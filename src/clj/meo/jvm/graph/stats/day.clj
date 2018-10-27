@@ -88,7 +88,7 @@
         by-story (reduce story-reducer {} nodes)
         by-ts (filter identity (map by-ts-mapper nodes))
         total (apply + (map second by-story))
-        by-story (map (fn [[k v]]
+        by-story-list (map (fn [[k v]]
                         (let [story (merge (get stories k) {:timestamp k})
                               saga (get sagas (:linked_saga story))]
                           {:logged v
@@ -101,4 +101,5 @@
        :word_count  (wordcount nodes)
        :entry_count (count nodes)
        :by_ts       by-ts
-       :by_story    by-story})))
+       :by_story_m  by-story
+       :by_story    by-story-list})))

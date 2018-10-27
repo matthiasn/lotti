@@ -278,5 +278,21 @@
     }
   }
 
+  th {
+    text-align: left;
+  }
+
+  .add-habit {
+    display: inline-block;
+    float: right;
+    height: 16px;
+    width: 16px;
+    text-align: center;
+  }
+
+  .filter {
+    color: #999;
+    padding-left: 6px;
+  }
 
 }
