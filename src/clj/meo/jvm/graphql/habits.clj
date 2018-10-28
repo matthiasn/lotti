@@ -12,35 +12,44 @@
 (defn habit-success [habit day state]
   (try
     (let [g (:graph state)
-          successful? (fn [c]
-                        (case (:type c)
 
-                          :min-max-sum
-                          (let [tag (:cf-tag c)
-                                k (:cf-key c)
-                                m (cf/custom-fields-mapper state tag)
-                                res (m day)
-                                min-val (:min-val c)
-                                max-val (:max-val c)
-                                x (k res)]
-                            (when (number? x)
-                              (and (if (number? min-val) (>= x min-val) true)
-                                   (if (number? max-val) (<= x max-val) true))))
+          success?
+          (fn [c]
+            (case (:type c)
 
-                          :min-max-time
-                          (let [{:keys [story min-time max-time]} c
-                                stories (gq/find-all-stories state)
-                                sagas (gq/find-all-sagas state)
-                                day-nodes (gq/get-nodes-for-day g {:date_string day})
-                                day-nodes-attrs (map #(uc/attrs g %) day-nodes)
-                                day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)
-                                actual (get-in day-stats [:by_story_m story] 0)]
-                            (when (number? actual)
-                              (and (if (number? min-time) (>= actual (* 60 min-time)) true)
-                                   (if (number? max-time) (<= actual (* 60 max-time)) true))))
+              :min-max-sum
+              (let [tag (:cf-tag c)
+                    k (:cf-key c)
+                    m (cf/custom-fields-mapper state tag)
+                    res (m day)
+                    min-val (:min-val c)
+                    max-val (:max-val c)
+                    x (k res)]
+                (when (number? x)
+                  (and (if (number? min-val) (>= x min-val) true)
+                       (if (number? max-val) (<= x max-val) true))))
 
-                          false))
-          by-criterion (mapv successful? (-> habit :habit :criteria))]
+              :min-max-time
+              (let [{:keys [story min-time max-time]} c
+                    stories (gq/find-all-stories state)
+                    sagas (gq/find-all-sagas state)
+                    day-nodes (gq/get-nodes-for-day g {:date_string day})
+                    day-nodes-attrs (map #(uc/attrs g %) day-nodes)
+                    day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)
+                    actual (get-in day-stats [:by_story_m story] 0)]
+                (when (number? actual)
+                  (and (if (number? min-time) (>= actual (* 60 min-time)) true)
+                       (if (number? max-time) (<= actual (* 60 max-time)) true))))
+
+              :questionnaire
+              (let [{:keys [quest-k req-n]} c
+                    day-nodes (gq/get-nodes-for-day g {:date_string day})
+                    day-nodes (map #(uc/attrs g %) day-nodes)
+                    q-nodes (filter #(get-in % [:questionnaires quest-k]) day-nodes)]
+                (<= req-n (count q-nodes)))
+
+              false))
+          by-criterion (mapv success? (-> habit :habit :criteria))]
       (every? true? by-criterion))
     (catch Exception ex (error ex))))
 

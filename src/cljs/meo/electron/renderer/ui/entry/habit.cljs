@@ -48,7 +48,7 @@
   (let [backend-cfg (subscribe [:backend-cfg])]
     (fn [{:keys [put-fn entry idx]}]
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
-            path [:habit :criteria idx :quest-tag]]
+            path [:habit :criteria idx :quest-k]]
         [:div
          [:h4 "Questionnaire filled on desired schedule"]
          [:div.row
@@ -57,12 +57,15 @@
                    :on-change select-update
                    :path      path
                    :put-fn    put-fn
-                   :options   (keys q-tags)}]]
+                   :xf        keyword
+                   :options   (zipmap (vals q-tags)
+                                      (keys q-tags))}]]
          [:div.row
           [:label.wide "Required n:"]
           [select {:entry     entry
                    :on-change select-update
                    :path      [:habit :criteria idx :req-n]
+                   :xf        js/parseInt
                    :put-fn    put-fn
                    :options   [1 2 3 4 5 6 7]}]]]))))
 
