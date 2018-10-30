@@ -1,0 +1,55 @@
+.questionnaire {
+  user-select: none;
+  margin-top: 10px;
+
+  .expand-toggle {
+    color: #aaa;
+    margin-left: 5px;
+  }
+
+  ol {
+    margin: 0.4em;
+    padding-left: 20px;
+  }
+
+  .multi-line {
+    margin-top: 5px;
+  }
+
+  label {
+    display: inline-block;
+    min-width: 85px;
+  }
+  .missing {
+    color: darkred;
+    font-weight: bold;
+  }
+  .range {
+    .opt {
+      display: inline-block;
+      padding: 3px 8px;
+      text-align: center;
+      color: #AAA;
+      background-color: #f0f0f0;
+      margin: 2px;
+      cursor: pointer;
+
+      &.sel {
+        color: #666;
+        font-weight: bold;
+        background-color: lightgreen;
+      }
+    }
+  }
+  .agg {
+    .res {
+      font-weight: bold;
+      display: inline-block;
+      margin: 0 8px 0 4px;
+    }
+    padding-bottom: 5px;
+  }
+  cite {
+    font-size: $font-size-small;
+  }
+}

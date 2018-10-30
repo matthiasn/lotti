@@ -1,4 +1,4 @@
-@import "variables.scss";
+@import "variables";
 
 body {
   color: $font-color;
@@ -140,25 +140,28 @@ i {
   visibility: visible;
 }
 
-@import "buttons.scss";
-@import "journal.scss";
-@import "habits.scss";
-@import "entry.scss";
-@import "briefing.scss";
-@import "story.scss";
-@import "tags.scss";
-@import "newlink.scss";
-@import "media.scss";
-@import "menu.scss";
-@import "search.scss";
-@import "config.scss";
-@import "stats.scss";
-@import "grid.scss";
-@import "calendar.scss";
-@import "carousel.scss";
-@import "datepicker.scss";
-@import "editor.scss";
-@import "rome.scss";
-@import "mapbox-gl.scss";
-@import "edn.scss";
-@import "infinite-cal.scss";
+@import "buttons";
+@import "journal";
+@import "tasks";
+@import "habits";
+@import "entry";
+@import "briefing";
+@import "story";
+@import "tags";
+@import "newlink";
+@import "media";
+@import "menu";
+@import "search";
+@import "config";
+@import "stats";
+@import "grid";
+@import "calendar";
+@import "carousel";
+@import "datepicker";
+@import "editor";
+@import "rome";
+@import "mapbox-gl";
+@import "edn";
+@import "infinite-cal";
+@import "ui-components";
+@import "questionnaire";

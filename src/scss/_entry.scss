@@ -341,71 +341,6 @@
   margin-top: 0;
 }
 
-.questionnaire {
-  user-select: none;
-  margin-top: 10px;
-
-  .expand-toggle {
-    color: #aaa;
-    margin-left: 5px;
-  }
-
-  ol {
-    margin: 0.4em;
-    padding-left: 20px;
-  }
-
-  .multi-line {
-    margin-top: 5px;
-  }
-
-  label {
-    display: inline-block;
-    min-width: 85px;
-  }
-  .missing {
-    color: darkred;
-    font-weight: bold;
-  }
-  .range {
-    .opt {
-      display: inline-block;
-      padding: 3px 8px;
-      text-align: center;
-      color: #AAA;
-      background-color: #f0f0f0;
-      margin: 2px;
-      cursor: pointer;
-
-      &.sel {
-        color: #666;
-        font-weight: bold;
-        background-color: lightgreen;
-      }
-    }
-  }
-  .agg {
-    .res {
-      font-weight: bold;
-      display: inline-block;
-      margin: 0 8px 0 4px;
-    }
-    padding-bottom: 5px;
-  }
-  cite {
-    font-size: $font-size-small;
-  }
-}
-
-.task-details {
-  fieldset {
-    label {
-      display: inline-block;
-      width: 90px;
-    }
-  }
-}
-
 .task-details, .habit-details, .custom-fields {
   fieldset {
     border: $edit-menu-bg 1px dashed;
@@ -454,25 +389,6 @@
   .penalty {
     color: $red;
   }
-}
-
-.linked-tasks {
-  margin-top: 2px;
-  div {
-    display: flex;
-  }
-
-  .checked {
-    padding-left: 3px;
-    color: $green;
-    i {
-      font-size: 1.2em;
-    }
-    .fa-times {
-      color: $red;
-    }
-  }
-
 }
 
 u {

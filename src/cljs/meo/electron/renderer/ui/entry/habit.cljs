@@ -1,29 +1,12 @@
 (ns meo.electron.renderer.ui.entry.habit
   (:require [matthiasn.systems-toolbox.component :as st]
             [moment]
+            [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]))
 
-(defn select [{:keys [options entry path on-change] :as m}]
-  (let [options (if (map? options)
-                  options
-                  (zipmap options options))]
-    [:select {:value     (get-in entry path "")
-              :on-change (on-change m)}
-     [:option ""]
-     (for [[v t] (sort-by first options)]
-       ^{:key v}
-       [:option {:value v} t])]))
-
-(defn select-update [{:keys [entry path xf put-fn]}]
-  (let [xf (or xf identity)]
-    (fn [ev]
-      (let [tv (h/target-val ev)
-            sel (if (empty? tv) tv (xf tv))
-            updated (assoc-in entry path sel)]
-        (put-fn [:entry/update-local updated])))))
 
 (defn input-row [entry label cfg path put-fn]
   (let [v (get-in entry path)
@@ -53,21 +36,21 @@
          [:h4 "Questionnaire filled on desired schedule"]
          [:div.row
           [:label.wide "Tag:"]
-          [select {:entry     entry
-                   :on-change select-update
-                   :path      path
-                   :put-fn    put-fn
-                   :xf        keyword
-                   :options   (zipmap (vals q-tags)
-                                      (keys q-tags))}]]
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      path
+                      :put-fn    put-fn
+                      :xf        keyword
+                      :options   (zipmap (vals q-tags)
+                                         (keys q-tags))}]]
          [:div.row
           [:label.wide "Required n:"]
-          [select {:entry     entry
-                   :on-change select-update
-                   :path      [:habit :criteria idx :req-n]
-                   :xf        js/parseInt
-                   :put-fn    put-fn
-                   :options   [1 2 3 4 5 6 7]}]]]))))
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      [:habit :criteria idx :req-n]
+                      :xf        js/parseInt
+                      :put-fn    put-fn
+                      :options   [1 2 3 4 5 6 7]}]]]))))
 
 (defn min-max-sum [{:keys []}]
   (let [backend-cfg (subscribe [:backend-cfg])
@@ -84,21 +67,21 @@
          [:h4 "Custom field values summed, within min/max range"]
          [:div.row
           [:label "Tag:"]
-          [select {:entry     entry
-                   :on-change select-update
-                   :path      cf-path
-                   :put-fn    put-fn
-                   :options   (keys @custom-fields)}]]
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      cf-path
+                      :put-fn    put-fn
+                      :options   (keys @custom-fields)}]]
          (when-not (empty? (name cf-tag))
            (let [opts (map (fn [[k v]] [k (:label v)]) fields)]
              [:div.row
               [:label "Key:"]
-              [select {:entry     entry
-                       :on-change select-update
-                       :path      cfk-path
-                       :xf        keyword
-                       :put-fn    put-fn
-                       :options   (into {} opts)}]]))
+              [uc/select {:entry     entry
+                          :on-change uc/select-update
+                          :path      cfk-path
+                          :xf        keyword
+                          :put-fn    put-fn
+                          :options   (into {} opts)}]]))
          (when-not (empty? (str k))
            [input-row entry "Minimum:" (get-in fields [k :cfg]) min-path put-fn])
          (when-not (empty? (str k))
@@ -119,23 +102,23 @@
          [:h4 "Time spent as desired, within range"]
          [:div.row
           [:label "Saga:"]
-          [select {:entry     entry
-                   :on-change select-update
-                   :path      saga-path
-                   :xf        js/parseInt
-                   :put-fn    put-fn
-                   :options   sagas}]]
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      saga-path
+                      :xf        js/parseInt
+                      :put-fn    put-fn
+                      :options   sagas}]]
          (when (number? saga)
            (let [stories (filter #(= saga (:timestamp (:saga (second %)))) @stories)
                  stories (into {} (map (fn [[k v]] [k (:story_name v)]) stories))]
              [:div.row
               [:label "Story:"]
-              [select {:entry     entry
-                       :on-change select-update
-                       :path      story-path
-                       :xf        js/parseInt
-                       :put-fn    put-fn
-                       :options   stories}]]))
+              [uc/select {:entry     entry
+                          :on-change uc/select-update
+                          :path      story-path
+                          :xf        js/parseInt
+                          :put-fn    put-fn
+                          :options   stories}]]))
          (when (number? story)
            [input-row entry "Minimum:" {:type :time} min-path put-fn])
          (when (number? story)
@@ -156,15 +139,15 @@
      (when-not habit-type
        [:div.row
         [:label "Habit Type:"]
-        [select {:on-change select-update
-                 :entry     entry
-                 :put-fn    put-fn
-                 :path      path
-                 :xf        keyword
-                 :options   {:min-max-sum  "min/max sum"
-                             :min-max-time "min/max time"
-                             ;:checked-off   "checked off"
-                             :questionnaire "questionnaire"}}]])
+        [uc/select {:on-change uc/select-update
+                    :entry     entry
+                    :put-fn    put-fn
+                    :path      path
+                    :xf        keyword
+                    :options   {:min-max-sum   "min/max sum"
+                                :min-max-time  "min/max time"
+                                ;:checked-off   "checked off"
+                                :questionnaire "questionnaire"}}]])
      (when (= :min-max-sum habit-type)
        [min-max-sum params])
      (when (= :min-max-time habit-type)
@@ -186,26 +169,22 @@
                                    :completed
                                    reverse))]
     (fn [entry put-fn]
-      (let [criteria (get-in entry [:habit :criteria])
-            active (get-in entry [:habit :active])
-            toggle-active #(put-fn [:entry/update-local (update-in entry [:habit :active] not)])]
+      (let [criteria (get-in entry [:habit :criteria])]
         [:div.habit-details
          [:h3.header "Habit details"]
          [:div.row
           [:label "Active? "]
-          [:div.on-off {:on-click toggle-active}
-           [:div {:class (when-not active "inactive")} "off"]
-           [:div {:class (when active "active")} "on"]]]
+          [uc/switch {:entry entry :put-fn put-fn :path [:habit :active]}]]
          [:div.row
           [:label "Schedule:"]
-          [select {:on-change select-update
-                   :entry     entry
-                   :put-fn    put-fn
-                   :path      [:habit :schedule]
-                   :xf        keyword
-                   :options   {:daily "per day"
-                               ;:weekly "per week"
-                               }}]]
+          [uc/select {:on-change uc/select-update
+                      :entry     entry
+                      :put-fn    put-fn
+                      :path      [:habit :schedule]
+                      :xf        keyword
+                      :options   {:daily "per day"
+                                  ;:weekly "per week"
+                                  }}]]
          [:div.row
           [:h3 "Criteria"]
           [:div.add-criterion {:on-click (add-criterion entry)}

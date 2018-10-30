@@ -1,0 +1,33 @@
+.on-off {
+  display: flex;
+  background-color: #ccc;
+  border-radius: 3px;
+  user-select: none;
+  cursor: pointer;
+  font-weight: bold;
+  width: 60px;
+  height: 18px;
+  line-height: 18px;
+
+  div {
+    width: 30px;
+    color: #666;
+    text-align: center;
+  }
+
+  .active {
+    background-color: $green;
+    border: 0;
+    color: white;
+    border-bottom-right-radius: 3px;
+    border-top-right-radius: 3px;
+  }
+  .inactive {
+    color: white;
+    font-weight: bold;
+    background-color: $hashtag-blue;
+    border-bottom-left-radius: 3px;
+    border-top-left-radius: 3px;
+  }
+}
+

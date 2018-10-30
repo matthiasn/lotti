@@ -1,0 +1,45 @@
+
+.task-details {
+
+  h3 {
+    margin-left: 76px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+  }
+
+  label {
+    display: inline-block;
+    width: 90px;
+    text-align: end;
+    margin-right: 6px;
+    font-family: $header-font-family;
+    font-weight: lighter;
+    font-size: $font-size-small;
+    color: #666;
+  }
+  .details {
+    margin: 6px 0;
+  }
+}
+
+.linked-tasks {
+  margin-top: 2px;
+  div {
+    display: flex;
+  }
+
+  .checked {
+    padding-left: 3px;
+    color: $green;
+    i {
+      font-size: 1.2em;
+    }
+    .fa-times {
+      color: $red;
+    }
+  }
+}

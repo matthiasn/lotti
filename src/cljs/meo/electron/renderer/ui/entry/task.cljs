@@ -6,7 +6,8 @@
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
             [clojure.set :as set]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [meo.electron.renderer.ui.ui-components :as uc]))
 
 (defn task-details [entry local-cfg put-fn edit-mode?]
   (let [local (r/atom {:show false})]
@@ -52,28 +53,24 @@
                                       (update-in [:perm_tags] set-fn #{"#closed"})
                                       (update-in [:tags] set-fn #{"#closed"}))]
                         (put-fn [:entry/update entry]))))
-            hold (fn [entry]
-                   (fn [_ev]
-                     (let [updated (update-in entry [:task :on_hold] not)]
-                       (put-fn [:entry/update updated]))))
             allocation (or (get-in entry [:task :estimate_m]) 0)
             priority (get-in entry [:task :priority])
             done-checked (get-in entry [:task :done])
             closed (get-in entry [:task :closed])]
-        [:form.task-details
-         [:div
-          [:div.overview
-           [:span.click {:class    (when done-checked "done")
-                         :on-click (done entry)}
-            [:i.fas.fa-check-circle]]
-           [:span.click {:class    (when closed "closed")
-                         :on-click (close entry)}
-            [:i.fas.fa-times-circle]]
-           [:span.click {:on-click #(swap! local update-in [:show] not)}
-            [:i.fas.fa-cog]]]]
+        [:div.task-details
+         [:div.overview
+          [:span.click {:class    (when done-checked "done")
+                        :on-click (done entry)}
+           [:i.fas.fa-check-circle]]
+          [:span.click {:class    (when closed "closed")
+                        :on-click (close entry)}
+           [:i.fas.fa-times-circle]]
+          [:span.click {:on-click #(swap! local update-in [:show] not)}
+           [:i.fas.fa-cog]]]
          (when (:show @local)
-           [:fieldset
-            [:div
+           [:div.details
+            [:h3 "Task details"]
+            [:div.row
              [:label " Priority: "]
              [:select {:value     (if priority (keyword priority) "")
                        :on-change (prio-select entry)}
@@ -83,27 +80,30 @@
               [:option {:value :C} "C"]
               [:option {:value :D} "D"]
               [:option {:value :E} "E"]]]
-            [:div
+            [:div.row
              [:label "Done? "]
-             [:input {:type      :checkbox
-                      :checked   (get-in entry [:task :done])
-                      :on-change (done entry)}]]
-            [:div
+             [uc/switch {:entry    entry
+                         :put-fn   put-fn
+                         :path     [:task :done]
+                         :on-click (done entry)}]]
+            [:div.row
              [:label "Closed? "]
-             [:input {:type      :checkbox
-                      :checked   (get-in entry [:task :closed])
-                      :on-change (close entry)}]]
-            [:div
+             [uc/switch {:entry    entry
+                         :put-fn   put-fn
+                         :path     [:task :closed]
+                         :on-click (close entry)}]]
+            [:div.row
              [:label "On hold? "]
-             [:input {:type      :checkbox
-                      :checked   (get-in entry [:task :on_hold])
-                      :on-change (hold entry)}]]
-            [:div
+             [uc/switch {:entry    entry
+                         :put-fn   put-fn
+                         :path     [:task :on_hold]
+                         :msg-type :entry/update}]]
+            [:div.row
              [:label "Reward points: "]
              [:input {:type      :number
                       :on-change (h/update-numeric entry [:task :points] put-fn)
                       :value     (get-in entry [:task :points] 0)}]]
-            [:div
+            [:div.row
              [:label "Allocation: "]
              [:input {:on-change (h/update-time entry [:task :estimate_m] put-fn)
                       :value     (when allocation
