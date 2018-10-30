@@ -77,8 +77,9 @@ endif
 clean: build-deps
 	@echo Cleaning up...
 	@rm -rf ./bin
+	@rm -rf ./dist
 	@eval $(LEIN) clean
-	@rm ./yarn.lock
+	@rm -f ./yarn.lock
 
 deps: clean
 	@echo Fetching Leiningen dependencies...
