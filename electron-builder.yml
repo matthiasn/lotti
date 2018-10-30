@@ -1,8 +1,6 @@
 appId: "matthiasn.meo"
 asar: false
 files:
-    - "!**/*"
-    - "bin/blink1-${os}*"
     - "bin/jlink/**"
     - "node_modules/**"
     - "!node_modules/babel-runtime/**"

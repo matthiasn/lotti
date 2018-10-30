@@ -1,3 +1,0 @@
-provider: s3
-bucket: matthiasn-meo
-acl: public-read
