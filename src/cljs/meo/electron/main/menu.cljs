@@ -21,13 +21,19 @@
 
 (defn app-menu [put-fn]
   (let [update-win {:url "electron/updater.html" :width 600 :height 300}
-        check-updates #(put-fn [:window/new update-win])]
+        check-updates #(put-fn [:window/new update-win])
+        open (fn [page] (put-fn [:nav/to {:page page}]))]
     {:label   "Application"
      :submenu [(when (= (:platform rt/runtime-info) "darwin")
                  {:label    "About meo"
                   :selector "orderFrontStandardAboutPanel:"})
                {:label "Check for Updates..."
                 :click check-updates}
+               {:type "separator"}
+               {:label       "Preferences"
+                :accelerator "Cmd+,"
+                :click       #(open :config)}
+               {:type "separator"}
                (when (contains? capabilities :spotify)
                  {:label "Start Spotify Service"
                   :click #(put-fn [:spotify/start])})
@@ -130,8 +136,6 @@
                 :click #(open :main)}
                {:label "Charts"
                 :click #(open :charts-1)}
-               {:label "Config"
-                :click #(open :config)}
                (when (contains? capabilities :sync-cfg)
                  {:label "Sync Config"
                   :click #(open :sync)})
