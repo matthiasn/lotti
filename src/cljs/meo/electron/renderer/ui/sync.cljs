@@ -4,9 +4,6 @@
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as rc]
             [taoensso.timbre :refer-macros [info error]]
-            [meo.electron.renderer.ui.stats :as stats]
-            [meo.electron.renderer.ui.menu :as menu]
-            [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.pprint :as pp]))
 
@@ -39,36 +36,31 @@
     (fn config-render [put-fn]
       (let [connected (= (:status @imap-status) :read-mailboxes)
             verify-account #(put-fn [:imap/get-status @local])]
-        [:div.flex-container
-         [:div.grid
-          [:div.wrapper
-           [menu/menu-view put-fn]
-           [:div.sync-cfg
-            [:div.settings
-             [:table
-              [:tbody
-               [settings-item local :text [:server :host] "Host:" true]
-               [settings-item local :number [:server :port] "Port:" true]
-               [settings-item local :text [:server :user] "User:" true]
-               [settings-item local :password [:server :password] "Password:" true]
-               [:tr.btn-check
-                [:td
-                 [:button {:on-click verify-account}
-                  "test account"]]
-                (when (= :saved (:status @imap-status))
-                  [:td.success (:detail @imap-status) [:i.fas.fa-check]])
-                (when connected
-                  [:td.success "connection successful" [:i.fas.fa-check]
-                   (when-not (= @local @imap-cfg)
-                     [:button.save {:on-click save}
-                      "save"])])
-                (when (= :error (:status @imap-status))
-                  [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
-               [settings-item local :text [:sync :write :mailbox] "Write Mailbox:" connected]
-               [settings-item local :password [:sync :write :secret] "Write Secret:" connected]
-               [settings-item local :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]
-               [settings-item local :password [:sync :read :fred :secret] "Read Secret:" connected]]]]
-            [:div
-             [:img {:src (str "http://" iww-host "/secrets/"
-                              (stc/make-uuid) "/secrets.png")}]]]]
-          [:div.footer [stats/stats-text]]]]))))
+        [:div.sync-cfg
+         [:div.settings
+          [:table
+           [:tbody
+            [settings-item local :text [:server :host] "Host:" true]
+            [settings-item local :number [:server :port] "Port:" true]
+            [settings-item local :text [:server :user] "User:" true]
+            [settings-item local :password [:server :password] "Password:" true]
+            [:tr.btn-check
+             [:td
+              [:button {:on-click verify-account}
+               "test account"]]
+             (when (= :saved (:status @imap-status))
+               [:td.success (:detail @imap-status) [:i.fas.fa-check]])
+             (when connected
+               [:td.success "connection successful" [:i.fas.fa-check]
+                (when-not (= @local @imap-cfg)
+                  [:button.save {:on-click save}
+                   "save"])])
+             (when (= :error (:status @imap-status))
+               [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
+            [settings-item local :text [:sync :write :mailbox] "Write Mailbox:" connected]
+            [settings-item local :password [:sync :write :secret] "Write Secret:" connected]
+            [settings-item local :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]
+            [settings-item local :password [:sync :read :fred :secret] "Read Secret:" connected]]]]
+         [:div
+          [:img {:src (str "http://" iww-host "/secrets/"
+                           (stc/make-uuid) "/secrets.png")}]]]))))

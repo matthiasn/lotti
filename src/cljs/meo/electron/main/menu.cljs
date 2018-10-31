@@ -136,9 +136,6 @@
                 :click #(open :main)}
                {:label "Charts"
                 :click #(open :charts-1)}
-               (when (contains? capabilities :sync-cfg)
-                 {:label "Sync Config"
-                  :click #(open :sync)})
                (when (contains? capabilities :countries)
                  {:label "Countries"
                   :click #(open :countries)})

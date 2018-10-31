@@ -11,7 +11,8 @@
             [clojure.string :as s]
             [meo.common.specs :as specs]
             [meo.common.utils.parse :as p]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [meo.electron.renderer.ui.sync :as sync]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
@@ -194,7 +195,8 @@
 
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
-                       :new-field-input ""})
+                       :new-field-input ""
+                       :page            :custom-fields})
         iww-host (.-iwwHOST js/window)
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
@@ -213,6 +215,11 @@
                         (:custom-fields changes)
                         (:custom-fields @backend-cfg)))
         custom-fields (reaction (sort-by #(lower-case (first %)) @cfg))
+        menu-item (fn [k t active]
+                    [:div.menu-item
+                     {:on-click #(swap! local assoc-in [:page] k)
+                      :class (when (= active k) "active")}
+                     t])
         add-tag (fn [tag]
                   (fn [_ev]
                     (let [updated (assoc-in @cfg [tag] {:default-story nil
@@ -224,32 +231,47 @@
             items (filter item-filter @custom-fields)
             save-key-fn (fn [ev]
                           (when (and (= (.-keyCode ev) 83) (.-metaKey ev))
-                            (save-fn ev)))]
+                            (save-fn ev)))
+            page (:page @local)]
         [:div.flex-container
          [:div.grid
           [:div.wrapper
            [menu/menu-view put-fn]
            [:div.config {:on-key-down save-key-fn}
-            [:div.col
-             [:h2 "Custom Fields Editor"]
-             (when (and (:changes @local) (not= @backend-cfg (:changes @local)))
-               [:div.save
-                [:span.not-saved {:on-click save-fn}
-                 [:span.fa.fa-floppy-o] " save"]
-                [:span.cancel {:on-click cancel-fn}
-                 [:span.fa.fa-ban] "  cancel"]])
-             [:div.input-line
-              [:input {:on-change input-fn}]
-              (when (and (empty? items)
-                         ((specs/is-tag? "#") text))
-                [:span.add {:on-click (add-tag text)}
-                 [:span.fa.fa-plus] "add"])]
-             (when (seq text)
-               [custom-fields-list local])]
+            [:div.menu
+             [:h1 "Settings"]
+             [menu-item :custom-fields "Custom Fields" page]
+             [menu-item :sync "Synchronization" page]
+             [menu-item :photos "Photos" page]
+             [menu-item :localization "Localization" page]
+             [menu-item :playground "Playground" page]
+             [:div.menu-item.exit
+              {:on-click #(put-fn [:nav/to {:page :main}])}
+              "Exit"]]
+            (when (= :custom-fields page)
+              [:div.col.custom-fields
+               [:h2 "Custom Fields Editor"]
+               (when (and (:changes @local) (not= @backend-cfg (:changes @local)))
+                 [:div.save
+                  [:span.not-saved {:on-click save-fn}
+                   [:span.fa.fa-floppy-o] " save"]
+                  [:span.cancel {:on-click cancel-fn}
+                   [:span.fa.fa-ban] "  cancel"]])
+               [:div.input-line
+                [:input {:on-change input-fn}]
+                (when (and (empty? items)
+                           ((specs/is-tag? "#") text))
+                  [:span.add {:on-click (add-tag text)}
+                   [:span.fa.fa-plus] "add"])]
+               (when (seq text)
+                 [custom-fields-list local])])
             [custom-field-cfg local]
-            [:div.third-col]
-            [locale put-fn]
-            [:div
-             [:button {:on-click #(put-fn [:photos/gen-cache])}
-              "regenerate cache"]]]
-           [:div.footer [stats/stats-text]]]]]))))
+            (when (= :localization page)
+              [locale put-fn])
+            (when (= :sync page)
+              [sync/sync put-fn])
+            (when (= :photos page)
+              [:div
+               [:button {:on-click #(put-fn [:photos/gen-cache])}
+                "regenerate cache"]])]
+           [:div.cfg.footer [stats/stats-text]]]]]))))

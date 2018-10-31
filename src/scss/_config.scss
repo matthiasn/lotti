@@ -1,7 +1,44 @@
+@import "variables.scss";
+
 .config {
   display: flex;
   background-color: #EEE;
-  padding-left: 1em;
+
+  .custom-fields {
+    padding-left: 20px;
+  }
+
+  .menu {
+    background-color: white;
+    height: 100%;
+    width: 200px;
+
+    h1 {
+      padding: 30px 25px;
+      background-color: $orange;
+      margin: 0;
+      color: white;
+    }
+
+    .menu-item {
+      cursor: pointer;
+      font-size: $font-size-large;
+      padding: 25px;
+      font-family: $header-font-family;
+
+      &:hover {
+        background-color: lighten($hashtag-blue, 35);
+      }
+
+      &.active {
+        background-color: $hashtag-blue;
+        color: white;
+      }
+      &.exit {
+        font-weight: bold;
+      }
+    }
+  }
 
   pre {
     height: 200px;
@@ -15,6 +52,7 @@
   }
 
   .col {
+    padding-left: 1em;
     display: flex;
     flex-direction: column;
   }
@@ -131,6 +169,7 @@
 
   .locale {
     padding-right: 15px;
+    padding-left: 20px;
   }
 }
 
@@ -138,7 +177,7 @@
   display: flex;
   flex-flow: row;
   justify-content: space-evenly;
-  width: 100vw;
+  background-color: $tab-bg;
 
   img {
     margin-top: 60px;

@@ -52,7 +52,7 @@
     grid-row: 2;
   }
   .config {
-    grid-column: 1 / 5;
+    grid-column: 1 / 7;
     grid-row: 2;
   }
   .left {
@@ -63,11 +63,16 @@
     grid-column: 6;
     grid-row: 2;
   }
+
   .footer {
     grid-column: 4 / 7;
     grid-row: 3;
     overflow: auto;
     user-select: none;
+
+    &.cfg {
+      grid-column: 1/7;
+    }
 
     .fa {
       font-size: 1.1em;
