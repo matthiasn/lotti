@@ -146,6 +146,7 @@
                        :outstanding-time-filter true
                        :selected-set            #{}
                        :show-filter             false
+                       :show-points             false
                        :on-hold                 false})
         pvt (subscribe [:show-pvt])]
     (h/to-day (h/ymd (st/now)) pvt put-fn)

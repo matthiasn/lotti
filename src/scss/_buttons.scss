@@ -143,22 +143,23 @@ a .toggle {
 }
 
 .linked-tasks {
+  padding: 4px 0;
   .filter {
     background-color: #DDE;
-    color: #AAA;
+    color: #555;
     font-size: $font-size-small;
-    padding: 1px 5px;
-    margin: 0 2px 0 3px;
+    padding: 0 4px;
+    margin: 0 1px;
     border-bottom: #ddd 1px solid;
     cursor: pointer;
-    border-top-right-radius: 3px;
-    border-top-left-radius: 3px;
+    border-top-right-radius: 2px;
+    border-top-left-radius: 2px;
     font-family: $header-font-family;
   }
 
   .current {
     background-color: $show-more;
-    color: whitesmoke;
+    color: white;
     border-bottom: #00a699 1px solid;
   }
 }

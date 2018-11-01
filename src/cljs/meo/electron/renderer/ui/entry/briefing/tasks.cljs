@@ -41,7 +41,7 @@
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged? show-points]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -65,9 +65,10 @@
              (when closed [:i.fas.fa-times])]
             (when-let [prio (some-> entry :task :priority (name))]
               [:span.prio {:class prio} prio]))]
-         [:td.award-points
-          (when-let [points (-> entry :task :points)]
-            points)]
+         (when show-points
+           [:td.award-points
+            (when-let [points (-> entry :task :points)]
+              points)])
          [:td.estimate
           (let [seconds (* 60 estimate)]
             [:span {:class cls}
@@ -88,7 +89,8 @@
 
 (defn task-row2 [entry _put-fn _cfg]
   (let [ts (:timestamp entry)]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?]}]
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
+                              show-points]}]
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)]
@@ -96,9 +98,10 @@
                    :class    cls}
          [:td (when-let [prio (some-> entry :task :priority (name))]
                 [:span.prio {:class prio} prio])]
-         [:td.award-points
-          (when-let [points (-> entry :task :points)]
-            points)]
+         (when show-points
+           [:td.award-points
+            (when-let [points (-> entry :task :points)]
+              points)])
          [:td.estimate
           (let [seconds (* 60 estimate)]
             [:span {:class cls}
@@ -139,14 +142,17 @@
     (fn started-tasks-list-render [local local-cfg put-fn]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
-            search-text @search-text]
+            search-text @search-text
+            show-points (:show-points @local)]
         (when (seq entries-list)
           [:div.started-tasks
            [:table.tasks
             [:tbody
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
-              [:th [:i.fa.far.fa-gem]]
+              (when show-points
+                [:th {:on-click #(swap! local assoc :show-points false)}
+                 [:i.fa.far.fa-gem]])
               [:th [:i.fal.fa-bell]]
               [:th [:i.far.fa-stopwatch]]
               [:th
@@ -158,6 +164,7 @@
                ^{:key (:timestamp entry)}
                [task-row entry put-fn {:tab-group    tab-group
                                        :search-text  search-text
+                                       :show-points  show-points
                                        :show-logged? true}])]]])))))
 
 (defn open-tasks
@@ -191,14 +198,16 @@
                                     (filter open-filter)))]
     (fn open-tasks-render [local local-cfg put-fn]
       (let [tab-group (:tab-group local-cfg)
-            entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)]
+            entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)
+            show-points (:show-points @local)]
         (when (seq entries-list)
           [:div.open-tasks
            [:table.tasks
             [:tbody
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
-              [:th [:i.fa.far.fa-gem]]
+              (when show-points
+                [:th [:i.fa.far.fa-gem]])
               [:th [:i.fal.fa-bell]]
               [:th "Open Tasks"]]
              (doall
@@ -206,6 +215,7 @@
                  ^{:key (:timestamp entry)}
                  [task-row2 entry put-fn {:tab-group    tab-group
                                           :search-text  @search-text
+                                          :show-points  show-points
                                           :show-logged? true}]))]]])))))
 
 (defn open-linked-tasks
@@ -247,7 +257,8 @@
                      (let [rm-link #(disj (set %) ts)
                            upd (update-in entry [:linked-entries] rm-link)]
                        (put-fn [:entry/update upd])))
-            search-text @search-text]
+            search-text @search-text
+            show-points (:show-points @local)]
         (when (seq linked-entries)
           [:div.linked-tasks
            [filter-btn :all]
@@ -258,7 +269,8 @@
             [:tbody
              [:tr
               [:th.xs [:i.far.fa-exclamation-triangle]]
-              [:th [:i.fa.far.fa-gem]]
+              (when show-points
+                [:th [:i.fa.far.fa-gem]])
               [:th [:i.fa.far.fa-stopwatch]]
               [:th [:strong "Linked Tasks"]]
               [:th.xs [:i.fa.far.fa-link]]]
@@ -266,4 +278,5 @@
                ^{:key (:timestamp entry)}
                [task-row entry put-fn {:tab-group   tab-group
                                        :search-text search-text
+                                       :show-points  show-points
                                        :unlink      unlink}])]]])))))
