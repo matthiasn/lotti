@@ -34,15 +34,25 @@ Here's how the app currently looks like:
 
 ## Installation
 
-There are two install scripts, one for Ubuntu and one for the Mac. These install the dependencies required. If anything is missing, please submit a pull request. And have a look at what the script for your platform does before blindly running it, and typing in your superuser password, which is required for `apt` in the Linux version.
- 
- For Mac:
+There is a `Makefile` that contains all the build targets. You will obviously need **[GNU make](https://www.gnu.org/software/make/)** to run the targets. Alternatively, you can run the commands in there individually. Please have a look at the `Makefile` to see what the commands are.
 
-    $ ./install_mac.sh
-     
-For Linux: 
-     
-    $ ./install_ubuntu.sh
+To prepare your environment and install the required dependencies on a Mac, you can run
+
+    $ make install-mac
+    
+For Ubuntu, run
+
+    $ make install-mac
+    
+If anything is missing, please submit a pull request. And have a look at what the script for your platform does before blindly running it, and typing in your superuser password, which is required for `apt` in the Linux version.
+ 
+Afterwards, if all you want to do is create a packaged version of meo, you can run
+
+    $ make package-only  
+
+This will build and package the entire application, both the JVM and the Electron parts.
+
+
 
 Then, you need to install the JavaScript dependencies:
 

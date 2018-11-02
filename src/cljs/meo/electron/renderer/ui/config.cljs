@@ -47,7 +47,7 @@
             backend-cfg @backend-cfg]
         (when (and sel item)
           [:div.detail
-           [:h2 sel]
+           [:h1 sel]
            [:div.story-line
             [:label "Story"]
             [:select {:value     (:default-story cfg "")
@@ -83,16 +83,16 @@
                ^{:key field}
                [:div.field
                 [:span.fa.fa-trash-alt {:on-click delete-field}]
-                [:div
+                [:div.row
                  [:label "Name:"]
                  [:span.name field]]
-                [:div
+                [:div.row
                  [:label "Label:"]
                  [:input {:value     label
                           :on-change input-fn}]
                  (when-not (= (get-in backend-cfg (drop 1 label-path)) label)
                    [:span.warn [:span.fa.fa-exclamation] "unsaved"])]
-                [:div
+                [:div.row
                  [:label "Type:"]
                  [:select {:value     field-type
                            :on-change type-select}
@@ -102,7 +102,7 @@
                  (when-not (= (get-in backend-cfg (drop 1 type-path)) field-type)
                    [:span.warn [:span.fa.fa-exclamation] "unsaved"])]
                 (when (contains? #{:number :time} field-type)
-                  [:div
+                  [:div.row
                    [:label "Aggregation:"]
                    [:select {:value     agg
                              :on-change agg-select}
@@ -115,7 +115,7 @@
                    (when-not (= (get-in backend-cfg (drop 1 agg-path)) agg)
                      [:span.warn [:span.fa.fa-exclamation] "unsaved"])])
                 (when (contains? #{:number} field-type)
-                  [:div
+                  [:div.row
                    [:label "Step:"]
                    [:select {:value     step
                              :on-change step-select}
@@ -132,7 +132,8 @@
             (when (valid-field-name (:new-field-input @local ""))
               [:span.add {:on-click add-field}
                [:span.fa.fa-plus] "add"])]
-           [:pre [:code (with-out-str (pp/pprint item))]]])))))
+           ;[:pre [:code (with-out-str (pp/pprint item))]]
+           ])))))
 
 (defn custom-fields-list [local]
   (let [stories (subscribe [:stories])
@@ -148,8 +149,9 @@
                         (:custom-fields @backend-cfg)))
         custom-fields (reaction (sort-by #(lower-case (first %)) @cfg))]
     (fn custom-fields-render [local]
+      (pp/pprint @stories)
       (let [stories @stories
-            text (:search @local)
+            text (:search @local "")
             item-filter #(s/includes? (lower-case (first %)) text)
             items (filter item-filter @custom-fields)
             sel (:selected @local)]
@@ -160,15 +162,16 @@
                                         (:custom-fields @backend-cfg))
                              updated (dissoc cf-cfg sel)]
                          (swap! local assoc-in [:changes :custom-fields] updated)
-                         (swap! local assoc-in [:selected] nil)))]
+                         (swap! local assoc-in [:selected] nil)))
+                 ds (:default-story cfg)]
              ^{:key tag}
              [:div.custom-field
               {:on-click #(select-item tag)
                :class    (when (= sel tag) "active")}
               (when (= sel tag)
                 [:span.fa.fa-trash-alt {:on-click del}])
-              [:h3 tag (when-let [ds (:default-story cfg)]
-                         (str "   (" (get-in stories [ds :story_name]) ")"))]
+              [:div.story (get-in stories [ds :story_name])]
+              [:h3 tag]
               [:ul
                (for [[k v] (:fields cfg)]
                  ^{:key (str tag k)}
@@ -258,13 +261,14 @@
                   [:span.cancel {:on-click cancel-fn}
                    [:span.fa.fa-ban] "  cancel"]])
                [:div.input-line
-                [:input {:on-change input-fn}]
-                (when (and (empty? items)
-                           ((specs/is-tag? "#") text))
-                  [:span.add {:on-click (add-tag text)}
-                   [:span.fa.fa-plus] "add"])]
-               (when (seq text)
-                 [custom-fields-list local])])
+                [:span.search
+                 [:i.far.fa-search]
+                 [:input {:on-change input-fn}]
+                 (when (and (empty? items)
+                            ((specs/is-tag? "#") text))
+                   [:span.add {:on-click (add-tag text)}
+                    [:i.fas.fa-plus] "add"])]]
+               [custom-fields-list local]])
             [custom-field-cfg local]
             (when (= :localization page)
               [locale put-fn])
