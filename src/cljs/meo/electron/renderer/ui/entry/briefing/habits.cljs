@@ -23,12 +23,13 @@
       (let [entry (:habit_entry habit)
             ts (:timestamp entry)
             text (eu/first-line entry)]
-        [:tr {:key      ts
+        [:tr {:key ts
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
          [:td.completion
-          (for [completed (reverse (take 5 (:completed habit)))]
-            [:span.status {:class (when completed "success")}])]
+          (for [[i c] (h/idxd (reverse (take 5 (:completed habit))))]
+            [:span.status {:class (when c "success")
+                           :key i}])]
          [:td.habit text]]))))
 
 (defn waiting-habits

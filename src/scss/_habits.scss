@@ -215,13 +215,19 @@
   flex-direction: row;
 
   .status {
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: $entry-border-radius;
     margin-right: 4px;
     background-color: $red;
     cursor: pointer;
 
+    .progress {
+      height: 100%;
+      background-color: orange;
+      opacity: 0.7;
+      border-radius: $entry-border-radius;
+    }
     &.completed {
       background-color: $green;
     }

@@ -195,5 +195,6 @@
                        :put-fn put-fn
                        :idx    i}])
          [:div.completion
-          (for [completed @completions]
-            [:span.status {:class (when completed "success")}])]]))))
+          (for [[i c] (h/idxd @completions)]
+            [:span.status {:class (when c "success")
+                           :key i}])]]))))

@@ -12,7 +12,7 @@
                  [clj-pid "0.1.2"]
                  [clj-time "0.15.1"]
                  [clj-http "3.9.1"]
-                 [ring/ring-core "1.7.0"]
+                 [ring/ring-core "1.7.1"]
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "3.0.0"]
                  [me.raynes/fs "1.4.6"]
