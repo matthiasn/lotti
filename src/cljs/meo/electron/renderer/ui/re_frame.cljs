@@ -9,12 +9,9 @@
             [meo.electron.renderer.ui.grid :as g]
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.footer :as f]
-            [meo.electron.renderer.ui.dashboard :as db]
             [meo.electron.renderer.ui.config :as cfg]
-            [meo.electron.renderer.ui.sync :as sync]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
-            [meo.electron.renderer.ui.charts.time.durations :as cd]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.data-explorer :as dex]
@@ -90,12 +87,6 @@
        [h/error-boundary
         [stats/stats-text]]])))
 
-(defn charts-page [put-fn]
-  [:div.flex-container
-   [:div.charts-grid
-    [:div.wrapper
-     [cd/durations-bar-chart 200 5 put-fn]]]])
-
 (defn countries-page [put-fn]
   [:div.flex-container
    [loc/location-chart]])
@@ -129,8 +120,6 @@
           [:div
            (case (:page current-page)
              :config [cfg/config put-fn]
-             :sync [sync/sync put-fn]
-             :charts-1 [charts-page put-fn]
              :countries [countries-page put-fn]
              :calendar [cal put-fn]
              :correlation [corr/scatter-matrix put-fn]

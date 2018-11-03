@@ -8,9 +8,7 @@
   [page]
   (case page
     "dashboards" :dashboards
-    "charts1" :charts-1
     "config" :config
-    "sync" :sync
     "countries" :countries
     "heatmap" :heatmap
     "calendar" :calendar
