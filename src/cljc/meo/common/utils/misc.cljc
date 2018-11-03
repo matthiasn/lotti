@@ -134,3 +134,6 @@
        :queries
        (map (fn [[k v]] [k (dissoc v :editor-state)]))
        (into {})))
+
+(defn idxd [coll]
+  (map-indexed (fn [idx v] [idx v]) coll))

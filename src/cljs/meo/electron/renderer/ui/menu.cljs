@@ -62,21 +62,28 @@
                               :habits-success
                               :data
                               :habits_success
-                              (sort-by #(first (:completed %)))))]
+                              (sort-by #(:success (first (:completed %))))))]
     (fn upload-view-render []
       [:div.habit-monitor
        (for [habit @habits]
          (let [completed (first (:completed habit))
-               cls (when completed "completed")
-               text (-> habit :habit_entry :md)
+               success (:success completed)
+               cls (when success "completed")
+               min-val (get-in habit [:habit_entry :habit :criteria 0 :min-val])
+               min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
+               v (get-in completed [:values 0 :v])
+               min-v (if min-time (* 60 min-time) min-val)
+               percent-completed (when (pos? min-v) (* 100 (/ v min-v)))
+               text (str completed (-> habit :habit_entry :md))
                ts (-> habit :habit_entry :timestamp)
                on-click (up/add-search ts :right put-fn)]
-           [:div.status.tooltip {:key      ts
-                                 :class    cls
-                                 :on-click on-click}
-            (when-not completed
-              [:div.progress
-               {:style {:width (str (rand-int 100) "%")}}])
+           [:div.tooltip
+            [:div.status {:key      ts
+                          :class    cls
+                          :on-click on-click}
+             (when-not success
+               [:div.progress
+                {:style {:width (str percent-completed "%")}}])]
             [:span.tooltiptext (-> text)]]))])))
 
 (defn busy-status [put-fn]

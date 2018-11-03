@@ -5,7 +5,8 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [moment]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [meo.common.utils.misc :as m]))
 
 (defn habit-sorter
   "Sorts habits."
@@ -27,9 +28,9 @@
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
          [:td.completion
-          (for [[i c] (h/idxd (reverse (take 5 (:completed habit))))]
-            [:span.status {:class (when c "success")
-                           :key i}])]
+          (for [[i c] (m/idxd (reverse (take 5 (:completed habit))))]
+            [:span.status {:class (when (:success c) "success")
+                           :key   i}])]
          [:td.habit text]]))))
 
 (defn waiting-habits
@@ -43,7 +44,7 @@
     (fn waiting-habits-list-render [local put-fn]
       (let [local @local
             habits (filter #(or (:all local)
-                                (not (first (:completed %))))
+                                (not (:success (first (:completed %)))))
                            @habits-success)
             tab-group :briefing
             open-new (fn [x]

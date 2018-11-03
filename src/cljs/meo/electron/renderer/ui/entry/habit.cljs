@@ -4,6 +4,7 @@
             [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.common.utils.misc :as m]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]))
 
@@ -195,6 +196,6 @@
                        :put-fn put-fn
                        :idx    i}])
          [:div.completion
-          (for [[i c] (h/idxd @completions)]
-            [:span.status {:class (when c "success")
-                           :key i}])]]))))
+          (for [[i c] (m/idxd @completions)]
+            [:span.status {:class (when (:success c) "success")
+                           :key   i}])]]))))

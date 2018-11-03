@@ -197,6 +197,3 @@
                                 (do (error @err)
                                     [:div "Something went wrong."])
                                 comp))})))
-
-(defn idxd [coll]
-  (map-indexed (fn [idx v] [idx v]) coll))
