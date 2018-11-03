@@ -12,9 +12,28 @@
 
 (def PORT (:port rt/runtime-info))
 
+(defn spawn-process [cmd args opts]
+  (info "STARTUP: spawning" cmd args opts)
+  (spawn cmd (clj->js args) (clj->js opts)))
+
+(defn kill [pid]
+  (info "Killing PID" pid)
+  (when pid
+    (if (= (:platform rt/runtime-info) "win32")
+      (spawn-process "TaskKill" ["-F" "/PID" pid] {})
+      (spawn-process "/bin/kill" ["-KILL" pid] {}))))
+
+(defn kill-by-port [port]
+  (let [find (find-process "port" port)
+        cb (fn [processes]
+             (doseq [proc processes]
+               (info "About to kill process" proc)
+               (kill (.-pid proc))))]
+    (.then find cb)))
+
 (defn jvm-up? [{:keys [put-fn current-state cmp-state msg-payload]}]
   (info "JVM up?" (:attempt current-state) msg-payload)
-  (let [icon (:icon-path rt/runtime-info)
+  (let [{:keys [version icon]} rt/runtime-info
         environment (:environment msg-payload)
         port (if (= environment :live) PORT (:pg-port rt/runtime-info))
         index-page (if (= environment :live)
@@ -42,20 +61,29 @@
                        :opts {:titleBarStyle "hidden"
                               :icon          icon}}
                       (when (= environment :playground)
-                        {:window-id index-page}))]
+                        {:window-id index-page}))
+                data (atom "")
+                version-handler
+                (fn [_]
+                  (let [package-json (.parse js/JSON @data)
+                        backend-version (.-version package-json)]
+                    (info version backend-version)
+                    (if (= version backend-version)
+                      (do (put-fn [:window/new msg])
+                          (put-fn (with-meta [:window/close]
+                                             {:window-id loading-page})))
+                      (do (kill-by-port port)
+                          (try-again res)))))]
+            (.on res "data" (fn [chunk] (swap! data str chunk)))
+            (.on res "end" version-handler)
             (info "HTTP response: " status-code (= status-code 200))
-            (if (= status-code 200)
-              (do (put-fn [:window/new msg])
-                  (put-fn (with-meta [:window/close] {:window-id loading-page})))
+            (when-not (= status-code 200)
               (try-again res))))
         req (http/get (clj->js {:host "localhost"
-                                :port port}) res-handler)]
+                                :port port
+                                :path "/package.json"}) res-handler)]
     (.on req "error" try-again)
     {:new-state (update-in current-state [:attempt] #(inc (or % 0)))}))
-
-(defn spawn-process [cmd args opts]
-  (info "STARTUP: spawning" cmd args opts)
-  (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn start-jvm [{:keys [current-state msg-payload]}]
   (let [{:keys [user-data java jar app-path data-path
@@ -107,21 +135,6 @@
           (info "Opening item" path
                 (.openItem shell path)))))
   {})
-
-(defn kill [pid]
-  (info "Killing PID" pid)
-  (when pid
-    (if (= (:platform rt/runtime-info) "win32")
-      (spawn-process "TaskKill" ["-F" "/PID" pid] {})
-      (spawn-process "/bin/kill" ["-KILL" pid] {}))))
-
-(defn kill-by-port [port]
-  (let [find (find-process "port" port)
-        cb (fn [processes]
-             (doseq [proc processes]
-               (info "About to kill process" proc)
-               (kill (.-pid proc))))]
-    (.then find cb)))
 
 (defn shutdown-jvm [{:keys [msg-payload]}]
   (let [environments (:environments msg-payload)

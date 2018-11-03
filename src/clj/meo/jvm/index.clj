@@ -1,6 +1,7 @@
 (ns meo.jvm.index
   (:require [hiccup.page :refer [html5 include-css include-js]]
             [compojure.route :as r]
+            [compojure.core :refer [GET]]
             [meo.jvm.routes.upload-qr :as qr]
             [meo.jvm.routes.map-tile :as mt]
             [meo.jvm.file-utils :as fu]))
@@ -12,9 +13,11 @@
     [:body "hello world..."]))
 
 (def port 8765)
+(def package-json (slurp (str fu/app-path "/package.json")))
 
 (defn routes-fn [_put-fn]
   [(r/files "/audio" {:root (str fu/data-path "/audio/")})
+   (GET "/package.json" [] package-json)
    qr/address-route
    qr/ws-address-route
    qr/secrets-route

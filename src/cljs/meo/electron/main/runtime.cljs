@@ -53,6 +53,7 @@
               :pid-file         (str data-path "/meo.pid")
               :pg-pid-file      (str playground-path "/meo.pid")
               :resources-path   rp
+              :version          (.getVersion app)
               :app-path         app-path}]
     (into {:repo-dir      repo-dir
            :index-page    (if repo-dir "electron/index-dev.html" "electron/index.html")
