@@ -3,6 +3,7 @@
             [child_process :refer [spawn fork]]
             [electron :refer [app session shell]]
             [http :as http]
+            [find-process :as find-process]
             [cljs.reader :refer [read-string]]
             [path :refer [join normalize]]
             [meo.electron.main.runtime :as rt]
@@ -114,15 +115,21 @@
       (spawn-process "TaskKill" ["-F" "/PID" pid] {})
       (spawn-process "/bin/kill" ["-KILL" pid] {}))))
 
+(defn kill-by-port [port]
+  (let [find (find-process "port" port)
+        cb (fn [processes]
+             (doseq [proc processes]
+               (info "About to kill process" proc)
+               (kill (.-pid proc))))]
+    (.then find cb)))
+
 (defn shutdown-jvm [{:keys [msg-payload]}]
   (let [environments (:environments msg-payload)
-        {:keys [pid-file pg-pid-file]} rt/runtime-info
-        pid (readFileSync pid-file "utf-8")
-        pg-pid (readFileSync pg-pid-file "utf-8")]
+        {:keys [port pg-port]} rt/runtime-info]
     (when (contains? environments :live)
-      (kill pid))
+      (kill-by-port port))
     (when (contains? environments :playground)
-      (kill pg-pid)))
+      (kill-by-port pg-port)))
   {})
 
 (defn clear-cache [{:keys []}]

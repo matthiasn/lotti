@@ -33,7 +33,7 @@
           downloaded (fn [ev]
                        (info "Update downloaded")
                        (when (:immediate @state)
-                         (put-fn [:app/shutdown-jvm])
+                         (put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])
                          (put-fn [:cmd/schedule-new
                                   {:timeout 1000
                                    :message [:update/quit-install]}]))
@@ -83,7 +83,7 @@
   (info "UPDATE: install")
   {:emit-msg [[:app/clear-cache]
               ;[:app/clear-iww-cache]
-              [:app/shutdown-jvm]
+              [:app/shutdown-jvm {:environments #{:live :playground}}]
               [:cmd/schedule-new {:timeout 1000
                                   :message [:update/quit-install]}]]})
 

@@ -1,6 +1,6 @@
 {
   "name": "meo",
-  "version": "0.5.332",
+  "version": "0.5.333",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -40,6 +40,7 @@
     "electron-log": "2.2.17",
     "electron-updater": "3.1.6",
     "emoji-flags": "1.2.0",
+    "find-process": "1.2.0",
     "globalize": "1.4.0",
     "iana-tz-data": "2018.5.0",
     "imap": "0.8.19",

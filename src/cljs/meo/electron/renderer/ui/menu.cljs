@@ -74,7 +74,7 @@
                v (get-in completed [:values 0 :v])
                min-v (if min-time (* 60 min-time) min-val)
                percent-completed (when (pos? min-v) (* 100 (/ v min-v)))
-               text (str completed (-> habit :habit_entry :md))
+               text (str (-> habit :habit_entry :md) " - " v)
                ts (-> habit :habit_entry :timestamp)
                on-click (up/add-search ts :right put-fn)]
            [:div.tooltip
