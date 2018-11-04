@@ -104,12 +104,11 @@
      :state    local}))
 
 (defn set-status
-  [{:keys [current-state msg msg-type msg-meta msg-payload]}]
+  [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:status-msg] msg-payload)]
     {:new-state new-state}))
 
-(defn cmp-map
-  [cmp-id]
+(defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
    :handler-map {:update/status set-status}})

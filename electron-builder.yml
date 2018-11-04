@@ -16,3 +16,5 @@ publish:
     bucket: "matthiasn-meo"
     channel: "release"
     acl: "public-read"
+nsis:
+    differentialPackage: false
