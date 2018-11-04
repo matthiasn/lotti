@@ -1,20 +1,16 @@
 (ns meo.jvm.firehose
-  (:require [taoensso.timbre :refer [info]]
-            [clj-time.core :as time]
-            [clj-time.format :as tf]))
+  (:require [taoensso.timbre :refer [info]]))
 
 (def filename (if-let [log-dir (get (System/getenv) "LOG_DIR")]
-                (str log-dir "meo-firehose-")
-                "./log/meo-firehose-"))
+                (str log-dir "meo-firehose.fh")
+                "./log/meo-firehose.fh"))
 
 (defn append-firehose-ev [{:keys [current-state msg-type msg-meta msg-payload]}]
   (when (:started current-state)
     (let [serializable {:msg-type    msg-type
                         :msg-meta    msg-meta
                         :msg-payload msg-payload}
-          serialized (str (pr-str serializable) "\n")
-          ymd (tf/unparse (tf/formatters :year-month-day) (time/now))
-          filename (str filename ymd ".fh")]
+          serialized (str (pr-str serializable) "\n")]
       (spit filename serialized :append true)))
   {})
 

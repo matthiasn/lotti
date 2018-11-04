@@ -156,6 +156,7 @@
 (defn tab-search [put-fn]
   (fn [state context args value]
     (let [{:keys [query n pvt story tab incremental starred flagged from to]} args
+          incremental false ; until diff fixed
           msg-meta (:msg-meta context)
           current-state @state
           from (if from (dt/ymd-to-ts from) 0)

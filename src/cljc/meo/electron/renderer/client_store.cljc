@@ -84,9 +84,6 @@
         prev (if incremental (get-in current-state [:gql-res2 tab]) (sorted-map-by >))
         cleaned (apply dissoc prev del)
         res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
-        ;res-map (merge cleaned res-map)
-        ;res-map (into {} (map (fn [entry] [(:timestamp entry) entry]) res))
-        ;res-map (merge cleaned res-map)
         new-state (assoc-in current-state [:gql-res2 tab] res-map)]
     {:new-state new-state}))
 
