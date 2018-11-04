@@ -70,9 +70,12 @@
                success (:success completed)
                cls (when success "completed")
                min-val (get-in habit [:habit_entry :habit :criteria 0 :min-val])
+               req-n (get-in habit [:habit_entry :habit :criteria 0 :req-n])
                min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
                v (get-in completed [:values 0 :v])
-               min-v (if min-time (* 60 min-time) min-val)
+               min-v (if min-time
+                       (* 60 min-time)
+                       (or min-val req-n))
                percent-completed (when (pos? min-v) (* 100 (/ v min-v)))
                text (str (-> habit :habit_entry :md) " - " v)
                ts (-> habit :habit_entry :timestamp)
