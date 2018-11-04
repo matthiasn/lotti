@@ -146,8 +146,9 @@
                {:label       "Toggle Split View"
                 :accelerator "CmdOrCtrl+Alt+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
-               {:label "Toggle Private Mode"
-                :click #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
+               {:label       "Toggle Private Mode"
+                :accelerator "CmdOrCtrl+Alt+P"
+                :click       #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
                (when (contains? capabilities :dashboard-banner)
                  {:label "Toggle Charts"
                   :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})

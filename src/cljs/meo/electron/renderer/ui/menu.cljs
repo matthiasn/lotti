@@ -104,7 +104,8 @@
    [:div.menu-header
     [habit-monitor put-fn]
     [new-import-view put-fn]
-    [new-import-view put-fn]
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
-    [upload-view]]])
+    [upload-view]
+    [toggle-option-view {:cls    "fa-user-secret"
+                         :option :show-pvt} put-fn]]])
