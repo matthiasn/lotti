@@ -65,15 +65,13 @@
           [:div.habit-details
            [habits/waiting-habits local put-fn]]]]))))
 
-(defn calendar-view [put-fn]
+(defn calendar-view [_put-fn]
   (let [rbc (aget js/window "deps" "BigCalendar")
         default (aget rbc "default")
         cal (r/adapt-react-class default)
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         gql-res (subscribe [:gql-res])
-        cfg (subscribe [:cfg])
-        show-cal (reaction (:show-cal @cfg))
         stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))]
     (fn calendar-view-render [put-fn]
       (let [today (h/ymd (st/now))
@@ -103,11 +101,10 @@
             events (map xf (:by_ts @stats))
             scroll-to (when (= today day)
                         {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
-        (when @show-cal
-          [:div.cal
-           [:div.cal-container
-            [:div.big-calendar {:class (when-not @show-pvt "pvt")}
-             [cal (merge {:events     events
-                          :date       (.toDate (moment. day))
-                          :onNavigate #(info :navigate %)}
-                         scroll-to)]]]])))))
+        [:div.cal
+         [:div.cal-container
+          [:div.big-calendar {:class (when-not @show-pvt "pvt")}
+           [cal (merge {:events     events
+                        :date       (.toDate (moment. day))
+                        :onNavigate #(info :navigate %)}
+                       scroll-to)]]]]))))
