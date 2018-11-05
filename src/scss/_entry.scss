@@ -220,7 +220,7 @@
     }
 
     time {
-      font-size: 0.6em;
+      font-size: $font-size-xs;
     }
 
     a time {
@@ -230,7 +230,7 @@
     div:nth-child(2) {
       flex-grow: 1;
       flex-shrink: 0;
-      padding-left: 10px;
+      text-align: center;
 
       .incomplete {
         font-size: 1em;

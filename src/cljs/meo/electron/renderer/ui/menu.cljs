@@ -77,7 +77,10 @@
                        (* 60 min-time)
                        (or min-val req-n))
                percent-completed (when (pos? min-v) (* 100 (/ v min-v)))
-               text (str (-> habit :habit_entry :md) " - " v)
+               text (str (-> habit :habit_entry :text) " - "
+                         (if min-time
+                           (h/s-to-hh-mm v)
+                           v))
                ts (-> habit :habit_entry :timestamp)
                on-click (up/add-search ts :right put-fn)]
            [:div.tooltip
@@ -87,7 +90,7 @@
              (when-not success
                [:div.progress
                 {:style {:width (str percent-completed "%")}}])]
-            [:span.tooltiptext (-> text)]]))])))
+            [:span.tooltiptext text]]))])))
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])

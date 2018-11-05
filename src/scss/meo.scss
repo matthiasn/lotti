@@ -118,14 +118,13 @@ i {
 /* Tooltip text */
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 100px;
+  width: 120px;
   background-color: rgba(211, 211, 211, 0.8);
   color: #333;
   font-weight: bold;
   text-align: center;
   padding: 6px 3px;
   border-radius: 3px;
-  bottom: -188%;
   left: 50%;
   margin-left: -50px;
 

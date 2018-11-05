@@ -49,7 +49,7 @@
       [:div
        [:span.link-btn {:on-click open-linked
                         :class    (when entry-active? "active")}
-        (str " linked: " (:linked_cnt entry))]])))
+        (str "linked: " (:linked_cnt entry))]])))
 
 (defn conflict-view [entry put-fn]
   (let []
@@ -105,15 +105,12 @@
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
          [:div.header-1
-          [:div
-           [es/story-select entry tab-group put-fn]]
-          ;[loc/geonames entry put-fn]
-          ]
+          [:div [es/story-select entry tab-group put-fn]]
+          [linked-btn merged local-cfg active put-fn]]
          [:div.header
           [:div
            [:a [:time {:on-click add-search} formatted-time]]
            [:time (u/visit-duration merged)]]
-          [linked-btn merged local-cfg active put-fn]
           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-form merged put-fn]
          [es/saga-name-field merged edit-mode? put-fn]

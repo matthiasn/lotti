@@ -236,7 +236,7 @@
 }
 
 .completion {
-  //text-align: center;
+  text-align: center;
   padding-left: 0;
   padding-right: 0;
   .status {
@@ -254,14 +254,16 @@
 }
 
 .waiting-habits {
+  white-space: nowrap;
+
   th {
     text-align: left;
   }
 
   .completion {
     text-align: center;
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 2px;
+    padding-right: 2px;
   }
 
   .add-habit {
