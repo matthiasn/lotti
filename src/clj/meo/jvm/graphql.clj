@@ -186,6 +186,7 @@
                           (map (partial linked-for g))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
           res (->> lazy-res
+                   (filter :timestamp)
                    (filter #(< (:timestamp %) to))
                    (filter #(> (:timestamp %) from))
                    (take (or n 100)))]
