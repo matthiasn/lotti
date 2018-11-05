@@ -7,7 +7,8 @@
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info]]
             [cljs.reader :refer [read-string]]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [meo.common.utils.misc :as u]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -56,6 +57,25 @@
          [:img {:src (str "http://" iww-host "/upload-address/"
                           (stc/make-uuid) "/qrcode.png")}])])))
 
+(defn percent-achieved [habit]
+  (let [completed (first (:completed habit))
+        f (fn [[i criterion]]
+            (info criterion)
+            (let [min-val (:min-val criterion)
+                  req-n (:req-n criterion)
+                  min-time (:min-time criterion)
+                  v (get-in completed [:values i :v])
+                  min-v (if min-time
+                          (* 60 min-time)
+                          (or min-val req-n))]
+              (when (pos? min-v)
+                (min (* 100 (/ v min-v)) 100))))
+        by-criteria (map f (u/idxd (get-in habit [:habit_entry :habit :criteria])))
+        cnt (count by-criteria)]
+    (when (pos? cnt)
+      (/ (apply + by-criteria)
+         cnt))))
+
 (defn habit-monitor [put-fn]
   (let [gql-res (subscribe [:gql-res])
         habits (reaction (->> @gql-res
@@ -69,25 +89,20 @@
          (let [completed (first (:completed habit))
                success (:success completed)
                cls (when success "completed")
-               min-val (get-in habit [:habit_entry :habit :criteria 0 :min-val])
-               req-n (get-in habit [:habit_entry :habit :criteria 0 :req-n])
                min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
                v (get-in completed [:values 0 :v])
-               min-v (if min-time
-                       (* 60 min-time)
-                       (or min-val req-n))
-               percent-completed (when (pos? min-v) (* 100 (/ v min-v)))
                text (str (-> habit :habit_entry :text) " - "
                          (if min-time
                            (h/s-to-hh-mm v)
                            v))
+               percent-completed (percent-achieved habit)
                ts (-> habit :habit_entry :timestamp)
                on-click (up/add-search ts :right put-fn)]
            [:div.tooltip
             [:div.status {:key      ts
                           :class    cls
                           :on-click on-click}
-             (when-not success
+             (when (and percent-completed (not success))
                [:div.progress
                 {:style {:width (str percent-completed "%")}}])]
             [:span.tooltiptext text]]))])))
