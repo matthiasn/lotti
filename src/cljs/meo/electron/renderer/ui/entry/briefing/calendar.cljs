@@ -13,6 +13,21 @@
             [meo.common.utils.parse :as p]
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]))
 
+(def locales
+  {:fr {:locale       (js/require "date-fns/locale/fr")
+        :headerFormat "dddd, D MMM"
+        :weekdays     ["Dim" "Lun" "Mar" "Mer" "Jeu", "Ven", "Sam"]
+        :blank        "Aucune date selectionnee"}
+   :de {:locale       (js/require "date-fns/locale/de")
+        :headerFormat "dddd, DD. MMMM"
+        :weekdays     ["SO" "MO" "DI" "MI" "DO", "FR", "SA"]
+        :blank        "Kein Datum ausgewählt"}
+   :en {:locale       (js/require "date-fns/locale/en")
+        :headerFormat "dddd, D MMMM"
+        :weekdays     ["Sun" "Mon" "Tue" "Wed" "Thu", "Fri", "Sat"]
+        :blank        "No Date selected"}
+   :es {:locale       (js/require "date-fns/locale/es")
+        :headerFormat "dddd, D MMMM"}})
 
 (def infinite-cal-adapted
   (r/adapt-react-class (->> ric/Calendar
@@ -48,13 +63,15 @@
                        :on-hold                 false})
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn [put-fn]
-      (let [h (* (- (aget js/window "innerHeight") 52) 0.45)]
+      (let [h (* (- (aget js/window "innerHeight") 52) 0.45)
+            locale (:locale @cfg :en)]
         [:div.inf-cal
          [:div.infinite-cal
           [infinite-cal-adapted
            {:width           "100%"
             :height          h
-            :showHeader      false
+            :showHeader      true
+            :locale          (clj->js (locale locales))
             :onSelect        onSelect
             :autoFocus       true
             :keyboardSupport true

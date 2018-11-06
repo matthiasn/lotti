@@ -123,7 +123,7 @@
            [habit/habit-details merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
-         [:div.footer
+         [:div.entry-footer
           [pomo/pomodoro-header merged edit-mode? put-fn]
           [hashtags-mentions entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]

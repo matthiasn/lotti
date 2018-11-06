@@ -1,3 +1,5 @@
+@import "variables.scss";
+
 .questionnaire {
   user-select: none;
   margin-top: 10px;
@@ -19,6 +21,7 @@
   label {
     display: inline-block;
     min-width: 85px;
+    font-size: $font-size-medium;
   }
   .missing {
     color: darkred;

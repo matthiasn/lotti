@@ -186,7 +186,7 @@
   align-items: center;
   box-sizing: border-box;
   overflow: hidden;
-  padding: 12px 20px;
+  padding: 10px 12px;
   line-height: 1.3;
   font-weight: 400;
   border-top-left-radius: 3px;
@@ -198,7 +198,8 @@
   border-bottom-left-radius: 3px; }
 .Cal__Header__root.Cal__Header__landscape .Cal__Header__dateWrapper.Cal__Header__day {
   flex-grow: 1;
-  height: 76px; }
+  height: 76px;
+}
 
 .Cal__Header__wrapper {
   display: flex;
@@ -221,11 +222,11 @@
 .Cal__Header__dateWrapper.Cal__Header__active {
   color: white; }
 .Cal__Header__dateWrapper.Cal__Header__day {
-  height: 24px;
-  font-size: $font-size-meo-header;
+  height: 27px;
+  margin-top: 3px;
+  font-size: $font-size-large;
   font-family: $header-font-family;
   font-weight: bold;
-  //line-height: 36px;
   text-transform: capitalize; }
 .Cal__Header__dateWrapper.Cal__Header__year {
   height: 20px;
