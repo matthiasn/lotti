@@ -1,18 +1,17 @@
 (ns meo.electron.renderer.ui.config
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.menu :as menu]
+            [meo.electron.renderer.ui.sync :as sync]
             [meo.electron.renderer.helpers :as h]
+            [meo.common.utils.parse :as p]
+            [meo.common.specs :as specs]
+            [clojure.string :as s]
             [cljs.pprint :as pp]
             [reagent.core :as r]
-            [clojure.string :as s]
-            [meo.common.specs :as specs]
-            [meo.common.utils.parse :as p]
-            [matthiasn.systems-toolbox.component :as stc]
-            [meo.electron.renderer.ui.sync :as sync]))
+            [moment]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
@@ -138,6 +137,8 @@
 (defn custom-fields-list [local]
   (let [stories (subscribe [:stories])
         backend-cfg (subscribe [:backend-cfg])
+        pvt-tags (reaction (:pvt-tags @backend-cfg))
+        pvt (subscribe [:show-pvt])
         select-item (fn [tag]
                       (let [select-toggle #(when-not (= % tag) tag)]
                         (when-not (:changes @local)
@@ -154,7 +155,9 @@
             text (:search @local "")
             item-filter #(s/includes? (lower-case (first %)) text)
             items (filter item-filter @custom-fields)
-            sel (:selected @local)]
+            sel (:selected @local)
+            pvt-tags @pvt-tags
+            items (if @pvt items (filter #(not (contains? pvt-tags (first %))) items))]
         [:div.cfg-items
          (for [[tag cfg] items]
            (let [del (fn [ev]
@@ -200,7 +203,6 @@
   (let [local (r/atom {:search          ""
                        :new-field-input ""
                        :page            :custom-fields})
-        iww-host (.-iwwHOST js/window)
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
