@@ -1,5 +1,5 @@
 {
-  habits_success(days: "%s") {
+  habits_success(days: "%s", pvt: "%s") {
     completed {
       success
       day

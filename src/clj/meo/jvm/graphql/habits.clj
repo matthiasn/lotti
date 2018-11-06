@@ -6,7 +6,8 @@
             [meo.jvm.datetime :as dt]
             [meo.common.utils.misc :as m]
             [matthiasn.systems-toolbox.component :as stc]
-            [meo.jvm.graph.stats.day :as gsd]))
+            [meo.jvm.graph.stats.day :as gsd]
+            [meo.common.utils.misc :as um]))
 
 (def d (* 24 60 60 1000))
 
@@ -68,9 +69,12 @@
   (try
     (let [days (range (:days args 5))
           now (stc/now)
+          pvt (:pvt args)
           day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
           habits (filter #(-> % :habit :active)
                          (vals (gq/find-all-habits @state)))
+          pvt-filter (um/pvt-filter (:options @state))
+          habits (if pvt habits (filter pvt-filter habits))
           f (fn [habit]
               {:completed   (mapv #(habit-success habit % @state) day-strings)
                :habit_entry habit})

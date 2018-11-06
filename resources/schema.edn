@@ -388,7 +388,8 @@
   :habits_success
   {:type    (list :HabitSuccess)
    :args    {:days {:type Int}
-             :prio {:type Int}}
+             :prio {:type Int}
+             :pvt  {:type Boolean}}
    :resolve :query/habits-success}
 
   :logged_time
