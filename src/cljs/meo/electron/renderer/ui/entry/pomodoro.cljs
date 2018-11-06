@@ -30,7 +30,7 @@
                           (if running?
                             (put-fn [:cmd/pomodoro-stop entry])
                             (put-fn [:cmd/pomodoro-start entry])))]
-        (when-not edit-mode? (swap! local assoc-in [:edit] false))
+        ;(when-not edit-mode? (swap! local assoc-in [:edit] false))
         [:div.pomodoro
          (when edit-mode?
            [:span.btn.start-stop {:on-click start-stop
@@ -41,7 +41,7 @@
            [:input {:value     (h/s-to-hh-mm completed-time)
                     :type      :time
                     :on-change on-change}]
-           [:span.dur {:on-click time-click}
+           [:div.dur {:on-click time-click}
             formatted])]))))
 
 (defn pomodoro-footer [entry put-fn]
@@ -52,4 +52,4 @@
                               (h/s-to-hh-mm-ss logged-duration))]
         (when logged-duration
           [:div.pomodoro
-           [:span.dur logged-duration]])))))
+           [:div.dur logged-duration]])))))

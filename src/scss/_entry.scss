@@ -58,6 +58,7 @@
       height: 20px;
       display: flex;
       align-items: center;
+      border: none;
 
       .completed {
         color: $green;
@@ -369,11 +370,31 @@
   }
 }
 
+input {
+  border-radius: $entry-border-radius;
+  outline: none !important;
+  border:1px solid #CCC;
+  box-shadow: 0 0 2px #AAA;
+  padding: 3px 6px;
+  margin-left: 6px;
+  font-size: $font-size-medium;
+  font-weight: bold;
+  color: #444;
+  height: 24px;
+  display: inline-block;
+}
+
+input[type="number"] {
+  width: 75px !important;
+  margin-right: 8px;
+}
+
+input[type="time"] {
+  width: 85px !important;
+  margin-right: 8px;
+}
+
 .task-details, .habit-details {
-  input[type="number"] {
-    width: 60px !important;
-    margin-right: 8px;
-  }
   span {
     white-space: nowrap;
   }

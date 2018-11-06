@@ -71,7 +71,7 @@
                    input-cfg
                    {:on-change on-change-fn
                     :class     (when (= input-type :time) "time")
-                    :type      (if (= input-type :time) :text input-type)
+                    :type      input-type
                     :value     value})]]))))
 
 (defn custom-fields-div
