@@ -124,7 +124,9 @@
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          [:div.entry-footer
-          [pomo/pomodoro-header merged edit-mode? put-fn]
+          (if (= (:entry_type entry) :pomodoro)
+            [pomo/pomodoro-action merged edit-mode? put-fn]
+            [pomo/pomodoro-footer merged put-fn])
           [hashtags-mentions entry tab-group put-fn]
           [:div.word-count (u/count-words-formatted merged)]]
          [conflict-view merged put-fn]

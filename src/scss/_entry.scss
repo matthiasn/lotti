@@ -54,10 +54,10 @@
     }
 
     .pomodoro {
+      margin-right: 12px;
+      height: 20px;
       display: flex;
       align-items: center;
-      margin-right: 12px;
-      height: 22px;
 
       .completed {
         color: $green;
@@ -68,6 +68,7 @@
         margin-right: 0.3em;
         font-family: monospace;
         font-size: $font-size-small;
+        margin-bottom: 5px;
       }
 
       .fas {
