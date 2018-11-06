@@ -9,11 +9,12 @@
             [clojure.set :as set]))
 
 (defn task-sorter [x y]
-  (let [c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
+  (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))
+        c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
         c2 (compare (or (get-in x [:task :priority]) :X)
                     (or (get-in y [:task :priority]) :X))
         c3 (compare (:timestamp x) (:timestamp y))]
-    (if (not= c1 0) c1 (if (not= c2 0) c2 c3))))
+    (if (not= c0 0) c0 (if (not= c1 0) c1 (if (not= c2 0) c2 c3)))))
 
 (defn m-to-hhmm
   [minutes]
@@ -278,5 +279,5 @@
                ^{:key (:timestamp entry)}
                [task-row entry put-fn {:tab-group   tab-group
                                        :search-text search-text
-                                       :show-points  show-points
+                                       :show-points show-points
                                        :unlink      unlink}])]]])))))
