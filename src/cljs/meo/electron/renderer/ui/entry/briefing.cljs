@@ -174,7 +174,7 @@
           [add-task ts put-fn]]
          [:div.scroll
           [tasks/started-tasks local local-cfg put-fn]
-          [tasks/open-linked-tasks ts local local-cfg put-fn]
+          [tasks/open-linked-tasks local local-cfg put-fn]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary

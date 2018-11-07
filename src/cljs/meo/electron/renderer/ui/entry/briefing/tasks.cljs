@@ -168,6 +168,12 @@
                                        :show-points  show-points
                                        :show-logged? true}])]]])))))
 
+(defn open-task-sorter [x y]
+  (let [c0 (compare (or (get-in x [:task :priority]) :X)
+                    (or (get-in y [:task :priority]) :X))
+        c1 (compare (:timestamp y) (:timestamp x))]
+    (if (not= c0 0) c0 (if (not= c1 0) c1))))
+
 (defn open-tasks
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
@@ -212,7 +218,7 @@
               [:th [:i.fal.fa-bell]]
               [:th "Open Tasks"]]
              (doall
-               (for [entry (sort task-sorter entries-list)]
+               (for [entry (sort open-task-sorter entries-list)]
                  ^{:key (:timestamp entry)}
                  [task-row2 entry put-fn {:tab-group    tab-group
                                           :search-text  @search-text
@@ -221,7 +227,7 @@
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
-  [ts local put-fn]
+  [local _local-cfg _put-fn]
   (let [gql-res (subscribe [:gql-res])
         started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
         briefing (reaction (-> @gql-res :briefing :data :briefing))
@@ -237,7 +243,7 @@
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
                       (name fk) (when (= fk (:filter @local)) text)])]
-    (fn open-linked-tasks-render [ts local local-cfg put-fn]
+    (fn open-linked-tasks-render [local local-cfg put-fn]
       (let [{:keys [tab-group]} local-cfg
             linked-entries (:linked @briefing)
             current-filter (get linked-filters (:filter @local))
