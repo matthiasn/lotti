@@ -28,7 +28,7 @@
               :on-click (up/add-search ts tab-group put-fn)
               :class    (when (= (str ts) search-text) "selected")}
          [:td.completion
-          (for [[i c] (m/idxd (reverse (take 5 (:completed habit))))]
+          (for [[i c] (m/idxd (reverse (take 7 (:completed habit))))]
             [:span.status {:class (when (:success c) "success")
                            :key   i}])]
          [:td.habit text]]))))
