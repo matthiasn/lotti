@@ -22,57 +22,55 @@
       (when-not for-day
         (put-fn [:entry/update-local
                  (assoc-in entry [:for_day] (h/format-time (st/now)))]))
-      [:fieldset
-       [:legend "#for-day"]
-       (if edit-mode?
-         [:div [:label "Day: "]
-          [:input {:type      :datetime-local
-                   :on-change (input-fn entry)
-                   :value     for-day}]]
-         [:div for-day])])))
+      [:div.for-day
+       [:h2 "Report time and date:"]
+       [:input {:type        :datetime-local
+                :on-change   (input-fn entry)
+                :on-key-down (h/key-down-save entry put-fn)
+                :value       for-day}]])))
 
-(defn field-input []
-  (let []
-    (fn field-input-render [entry edit-mode? field tag k put-fn]
-      (let [input-cfg (:cfg field)
-            input-type (:type input-cfg)
-            path [:custom_fields tag k]
-            value (get-in entry path)
-            value (if (and value (= :time input-type))
-                    (h/m-to-hh-mm value)
-                    value)
-            on-change-fn
-            (fn [ev]
-              (let [v (.. ev -target -value)
-                    parsed (case input-type
-                             :number (when (seq v) (js/parseFloat v))
-                             :time (when (seq v)
-                                     (.asMinutes (.duration moment v)))
-                             v)
-                    updated (assoc-in entry path parsed)]
-                (put-fn [:entry/update-local updated])))]
-        (when-not value
-          (when (and (= input-type :number) edit-mode?)
-            (let [p1 (-> (:md entry) (s/split tag) first)
-                  last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
-              (when last-n
-                (let [updated (assoc-in entry path (js/parseFloat last-n))]
-                  (put-fn [:entry/update-local updated])))))
-          (when (and (= input-type :time) edit-mode?)
-            (let [p1 (-> (:md entry) (s/split tag) first)
-                  v (last (re-seq #"\d+:\d{2}" p1))]
-              (when v
-                (let [m (.asMinutes (.duration moment v))
-                      updated (assoc-in entry path m)]
-                  (put-fn [:entry/update-local updated]))))))
-        [:div
-         [:label (:label field)]
-         [:input (merge
-                   input-cfg
-                   {:on-change on-change-fn
-                    :class     (when (= input-type :time) "time")
-                    :type      input-type
-                    :value     value})]]))))
+(defn field-input [entry edit-mode? field tag k put-fn]
+  (let [input-cfg (:cfg field)
+        input-type (:type input-cfg)
+        path [:custom_fields tag k]
+        value (get-in entry path)
+        value (if (and value (= :time input-type))
+                (h/m-to-hh-mm value)
+                value)
+        on-change-fn
+        (fn [ev]
+          (let [v (.. ev -target -value)
+                parsed (case input-type
+                         :number (when (seq v) (js/parseFloat v))
+                         :time (when (seq v)
+                                 (.asMinutes (.duration moment v)))
+                         v)
+                updated (assoc-in entry path parsed)]
+            (put-fn [:entry/update-local updated])))
+        input-cfg (merge
+                    input-cfg
+                    {:on-change   on-change-fn
+                     :class       (when (= input-type :time) "time")
+                     :type        input-type
+                     :on-key-down (h/key-down-save entry put-fn)
+                     :value       value})]
+    (when-not value
+      (when (and (= input-type :number) edit-mode?)
+        (let [p1 (-> (:md entry) (s/split tag) first)
+              last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
+          (when last-n
+            (let [updated (assoc-in entry path (js/parseFloat last-n))]
+              (put-fn [:entry/update-local updated])))))
+      (when (and (= input-type :time) edit-mode?)
+        (let [p1 (-> (:md entry) (s/split tag) first)
+              v (last (re-seq #"\d+:\d{2}" p1))]
+          (when v
+            (let [m (.asMinutes (.duration moment v))
+                  updated (assoc-in entry path m)]
+              (put-fn [:entry/update-local updated]))))))
+    [:tr
+     [:td [:label (:label field)]]
+     [:td [:input input-cfg]]]))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
@@ -93,13 +91,14 @@
                                                  :linked-stories #{default-story}})]))
           [:form.custom-fields
            [for-day entry edit-mode? put-fn]
-           (for [[tag conf] entry-field-tags]
+           (for [[tag conf] (sort-by first entry-field-tags)]
              ^{:key (str "cf" ts tag)}
-             [:fieldset
-              [:legend tag]
-              (for [[k field] (:fields conf)]
-                ^{:key (str "cf" ts tag k)}
-                [field-input entry edit-mode? field tag k put-fn])])])))))
+             [:div
+              [:h2 tag]
+              [:table
+               (for [[k field] (:fields conf)]
+                 ^{:key (str "cf" ts tag k)}
+                 [field-input entry edit-mode? field tag k put-fn])]])])))))
 
 (defn questionnaire-div
   "In edit mode, allow editing of questionnaire, otherwise show a summary."

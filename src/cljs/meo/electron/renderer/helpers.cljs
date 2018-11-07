@@ -197,3 +197,22 @@
                                 (do (error @err)
                                     [:div "Something went wrong."])
                                 comp))})))
+
+(defn keydown-fn [entry k put-fn]
+  (fn [ev]
+    (let [text (aget ev "target" "innerText")
+          updated (assoc-in entry [k] text)
+          key-code (.. ev -keyCode)
+          meta-key (.. ev -metaKey)]
+      (when (and meta-key (= key-code 83))                  ; CMD-s pressed
+        (put-fn [:entry/update updated])
+        (.preventDefault ev)))))
+
+
+(defn key-down-save [entry put-fn]
+  (fn [ev]
+    (let [key-code (.. ev -keyCode)
+          meta-key (.. ev -metaKey)]
+      (when (and meta-key (= key-code 83))                  ; CMD-s pressed
+        (put-fn [:entry/update entry])
+        (.preventDefault ev)))))

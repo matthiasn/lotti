@@ -342,9 +342,32 @@
   margin-top: 0;
 }
 
+.custom-fields {
+  margin-bottom: 20px;
+
+  label {
+    display: inline-block;
+    min-width: 80px;
+    text-align: end;
+    width: 100%;
+  }
+
+  .for-day {
+    input {
+      margin-top: 6px;
+      margin-left: 30px;
+    }
+  }
+}
+
 .task-details, .habit-details, .custom-fields {
   fieldset {
     border: $edit-menu-bg 1px dashed;
+  }
+
+  h2 {
+    margin-top: 12px;
+    font-weight: lighter;
   }
 
   .overview {
@@ -391,6 +414,11 @@ input[type="number"] {
 
 input[type="time"] {
   width: 85px !important;
+  margin-right: 8px;
+}
+
+input[type="datetime-local"] {
+  width: 166px !important;
   margin-right: 8px;
 }
 

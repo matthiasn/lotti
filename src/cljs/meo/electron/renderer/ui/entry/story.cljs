@@ -15,16 +15,6 @@
       :on-key-down      on-keydown-fn}
      text]))
 
-(defn keydown-fn [entry k put-fn]
-  (fn [ev]
-    (let [text (aget ev "target" "innerText")
-          updated (assoc-in entry [k] text)
-          key-code (.. ev -keyCode)
-          meta-key (.. ev -metaKey)]
-      (when (and meta-key (= key-code 83))                  ; CMD-s pressed
-        (put-fn [:entry/update updated])
-        (.preventDefault ev)))))
-
 (defn input-fn [entry k put-fn]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
@@ -39,7 +29,7 @@
   [entry put-fn]
   (when (= (:entry_type entry) :story)
     (let [on-input-fn (input-fn entry :story_name put-fn)
-          on-keydown-fn (keydown-fn entry :story_name put-fn)]
+          on-keydown-fn (h/keydown-fn entry :story_name put-fn)]
       [:div.story
        [saga-select entry put-fn]
        [:label "Story Name:"]
@@ -51,7 +41,7 @@
   [entry edit-mode? put-fn]
   (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga_name put-fn)
-          on-keydown-fn (keydown-fn entry :saga_name put-fn)]
+          on-keydown-fn (h/keydown-fn entry :saga_name put-fn)]
       [:div.story.saga
        [:label "Saga:"]
        [editable-field on-input-fn on-keydown-fn (:saga_name entry)]])))

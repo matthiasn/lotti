@@ -7,7 +7,6 @@
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.ui.entry.actions :as a]
             [taoensso.timbre :refer-macros [info error debug]]
-            [meo.electron.renderer.ui.entry.location :as loc]
             [meo.electron.renderer.ui.entry.capture :as c]
             [meo.electron.renderer.ui.entry.task :as task]
             [meo.electron.renderer.ui.entry.habit :as habit]
