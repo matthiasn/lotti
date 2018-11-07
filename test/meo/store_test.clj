@@ -272,4 +272,5 @@
               (with-open [reader (clojure.java.io/reader last-log)]
                 (let [last-line (last (line-seq reader))
                       parsed (clojure.edn/read-string last-line)]
-                  (is (= parsed delete-msg)))))))))))
+                  (is (= (dissoc parsed :vclock) delete-msg))
+                  (is (map? (:vclock parsed))))))))))))

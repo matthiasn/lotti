@@ -131,10 +131,9 @@
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
                                   :id      :generate-opts}])
-      #_
-      (put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
-                                  :message [:state/persist]
-                                  :id      :persist-state}])
+      #_(put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
+                                    :message [:state/persist]
+                                    :id      :persist-state}])
       (when-not (s/includes? fu/data-path "playground")
         (put-fn (with-meta [:sync/imap entry] broadcast-meta)))
       (when-not (:silent msg-meta)
@@ -213,9 +212,14 @@
 (defn trash-entry-fn [{:keys [current-state msg-payload put-fn]}]
   (let [entry-ts (:timestamp msg-payload)
         new-state (ga/remove-node current-state entry-ts)
-        cfg (:cfg current-state)]
+        cfg (:cfg current-state)
+        node-id (:node-id cfg)
+        new-global-vclock (vc/next-global-vclock current-state)
+        vclock-offset (get-in new-global-vclock [node-id])
+        new-state (assoc-in new-state [:global-vclock] new-global-vclock)]
     (info "Entry" entry-ts "marked as deleted.")
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
+                           :vclock    {node-id vclock-offset}
                            :deleted   true}
                       put-fn)
     (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
