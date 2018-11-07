@@ -11,7 +11,10 @@
   .menu {
     background-color: white;
     height: 100%;
-    width: 200px;
+    width: 2180px;
+    max-width: 180px;
+    min-width: 180px;
+    z-index: 11;
 
     h1 {
       padding: 30px 25px;
@@ -113,7 +116,7 @@
     margin-bottom: 20px;
 
     .search {
-      background-color: white;
+      background-color: #DDD;
       height: 36px;
       display: inline-block;
       border-radius: $entry-border-radius;
@@ -146,7 +149,8 @@
       margin-bottom: 10px;
       color: #444;
       font-weight: bold;
-      padding-top: 10px;
+      font-size: $font-size-medium;
+      padding: 15px;
     }
   }
 
@@ -232,6 +236,7 @@
   flex-flow: row;
   justify-content: space-evenly;
   background-color: $tab-bg;
+  width: 100%;
 
   img {
     margin-top: 60px;
@@ -242,7 +247,7 @@
     input {
       margin: 6px;
       padding: 6px 12px;
-      width: 500px;
+      width: 350px;
       color: orange;
       font-size: 14px;
       font-family: monospace;
