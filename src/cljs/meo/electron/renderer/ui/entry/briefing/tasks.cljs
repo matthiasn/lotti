@@ -212,7 +212,7 @@
               [:th [:i.fal.fa-bell]]
               [:th "Open Tasks"]]
              (doall
-               (for [entry entries-list]
+               (for [entry (sort task-sorter entries-list)]
                  ^{:key (:timestamp entry)}
                  [task-row2 entry put-fn {:tab-group    tab-group
                                           :search-text  @search-text
