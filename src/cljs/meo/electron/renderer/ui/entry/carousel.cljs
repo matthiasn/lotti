@@ -3,18 +3,20 @@
             [reagent.ratom :refer-macros [reaction]]
             [reagent.impl.component :as ric]
             [taoensso.timbre :refer [info error debug]]
+            [meo.electron.renderer.ui.entry.quill :as q]
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [meo.electron.renderer.ui.leaflet :as l]
+            [meo.electron.renderer.ui.mapbox :as mb]
+            [meo.electron.renderer.helpers :as h]
             [clojure.data.avl :as avl]
             [meo.common.utils.misc :as u]
             [clojure.string :as s]
             [mapbox-gl]
+            [turndown :as turndown]
             [markdown.core :as md]
-            [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
-            [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.set :as set]
-            [meo.electron.renderer.ui.leaflet :as l]
-            [clojure.string :as str]
-            [meo.electron.renderer.ui.mapbox :as mb]))
+            [clojure.string :as str]))
 
 (defn stars-view [entry put-fn]
   (let [star (fn [idx n]
@@ -108,7 +110,12 @@
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
             external (str h/photos file)
-            {:keys [latitude longitude]} selected]
+            {:keys [latitude longitude]} selected
+            td (turndown. (clj->js {:headingStyle "atx"}))
+            on-change (fn [_ html]
+                        (let [md (.turndown td html)
+                              updated (assoc-in selected [:md] md)]
+                          (put-fn [:entry/update-local updated])))]
         [:div.info-drawer
          (when (and latitude longitude
                     (not (and (zero? latitude)
@@ -121,8 +128,11 @@
                              :put-fn       put-fn}]
              [l/leaflet-map selected true {} put-fn]))
          [:time (h/localize-datetime-full ts locale)]
+         [q/editor {:id           :quill-editor
+                    :content      html
+                    :selection    nil
+                    :on-change-fn on-change}]
          [stars-view selected put-fn]
-         [:div.md {:dangerouslySetInnerHTML {:__html html}}]
          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))))
 
 (defn carousel [_]
