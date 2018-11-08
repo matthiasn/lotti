@@ -67,8 +67,8 @@
       ; link two entries
       (let [dropped (:currently-dragged @cfg)
             ts (:timestamp dropped)
-            story (or (-> dropped :story :timestamp)
-                      (-> entry :story :timestamp))
+            story (or (-> entry :story :timestamp)
+                      (-> dropped :story :timestamp))
             updated (update-in entry [:linked_entries] #(set (conj % ts)))
             updated (assoc-in updated [:primary_story] story)]
         (when (and ts (not= ts (:timestamp updated)))
