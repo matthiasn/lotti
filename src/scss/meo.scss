@@ -118,19 +118,27 @@ i {
 /* Tooltip text */
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 120px;
-  background-color: rgba(211, 211, 211, 0.8);
+  min-width: 120px;
+  background-color: #FAFAFA;
   color: #333;
-  font-weight: bold;
-  text-align: center;
-  padding: 6px 3px;
-  border-radius: 3px;
-  left: 50%;
-  margin-left: -50px;
+  text-align: left;
+  padding: 6px 9px;
+  border-radius: 2px;
+  font-size: $font-size-medium;
+  margin-top: 5px;
+  border: 1px solid #AAA;
+  box-shadow: 0 0 2px #AAA;
+
+  h4 {
+    font-family: $header-font-family;
+    margin-bottom: 4px;
+    margin-top: 3px;
+    white-space: nowrap;
+  }
 
   /* Position the tooltip text - see examples below! */
   position: absolute;
-  z-index: 10;
+  z-index: 2000;
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */

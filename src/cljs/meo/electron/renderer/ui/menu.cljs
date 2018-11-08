@@ -8,7 +8,9 @@
             [taoensso.timbre :refer-macros [info]]
             [cljs.reader :refer [read-string]]
             [meo.common.utils.parse :as up]
-            [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [meo.common.utils.misc :as m]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -91,21 +93,28 @@
                cls (when success "completed")
                min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
                v (get-in completed [:values 0 :v])
-               text (str (-> habit :habit_entry :text) " - "
-                         (if min-time
-                           (h/s-to-hh-mm v)
-                           v))
+               text (eu/first-line (:habit_entry habit))
+               text2 (if min-time
+                       (h/s-to-hh-mm v)
+                       v)
                percent-completed (percent-achieved habit)
                ts (-> habit :habit_entry :timestamp)
-               on-click (up/add-search ts :right put-fn)]
+               on-click (up/add-search ts :right put-fn)
+               started (and percent-completed (not success))]
            [:div.tooltip
             [:div.status {:key      ts
                           :class    cls
                           :on-click on-click}
-             (when (and percent-completed (not success))
+             (when started
                [:div.progress
                 {:style {:width (str percent-completed "%")}}])]
-            [:span.tooltiptext text]]))])))
+            [:div.tooltiptext
+             [:h4 text]
+             (when (and started (pos? percent-completed)) [:div "Progress: " text2])
+             [:div.completion
+              (for [[i c] (m/idxd (reverse (take 99 (:completed habit))))]
+                [:span.status {:class (when (:success c) "success")
+                               :key   i}])]]]))])))
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])

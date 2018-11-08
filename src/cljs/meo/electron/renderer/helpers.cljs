@@ -177,7 +177,7 @@
   (put-fn [:gql/query {:file "habits-success.gql"
                        :id   :habits-success
                        :prio 13
-                       :args [28 pvt]}])
+                       :args [28 @pvt]}])
   (put-fn [:gql/query {:file "briefing.gql"
                        :id   :briefing
                        :prio 12
