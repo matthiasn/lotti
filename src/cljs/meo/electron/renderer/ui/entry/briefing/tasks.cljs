@@ -86,7 +86,7 @@
                (s-to-hhmmss actual)])])
          [:td.text text]
          (when unlink
-           [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
+           [:td [:i.fa.far.fa-unlink {:on-click #(unlink ts)}]])]))))
 
 (defn task-row2 [entry _put-fn _cfg]
   (let [ts (:timestamp entry)]
@@ -260,10 +260,9 @@
                               (filter saga-filter)
                               (filter #(not (contains? started-tasks (:timestamp %))))
                               (sort task-sorter))
-            unlink (fn [entry ts]
-                     (let [rm-link #(disj (set %) ts)
-                           upd (update-in entry [:linked-entries] rm-link)]
-                       (put-fn [:entry/update upd])))
+            unlink (fn [ts]
+                     (let [timestamps [ts (:timestamp @briefing)]]
+                       (put-fn [:entry/unlink timestamps])))
             search-text @search-text
             show-points (:show-points @local)]
         (when (seq linked-entries)

@@ -343,7 +343,7 @@
 }
 
 .custom-fields {
-  margin-bottom: 20px;
+  margin-bottom: 6px;
 
   label {
     display: inline-block;
@@ -366,7 +366,7 @@
   }
 
   h2 {
-    margin-top: 12px;
+    margin-top: 8px;
     font-weight: lighter;
   }
 
@@ -466,7 +466,7 @@ u {
     color: gold;
   }
   .fa-unlink {
-    cursor: not-allowed;
+    cursor: default;
   }
   .award-points, .estimate {
     text-align: right;

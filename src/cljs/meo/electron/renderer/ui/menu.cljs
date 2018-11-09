@@ -101,9 +101,8 @@
                ts (-> habit :habit_entry :timestamp)
                on-click (up/add-search ts :right put-fn)
                started (and percent-completed (not success))]
-           [:div.tooltip
-            [:div.status {:key      ts
-                          :class    cls
+           [:div.tooltip {:key ts}
+            [:div.status {:class    cls
                           :on-click on-click}
              (when started
                [:div.progress

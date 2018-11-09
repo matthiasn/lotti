@@ -96,9 +96,10 @@
              [:div
               [:h2 tag]
               [:table
-               (for [[k field] (:fields conf)]
-                 ^{:key (str "cf" ts tag k)}
-                 [field-input entry edit-mode? field tag k put-fn])]])])))))
+               [:tbody
+                (for [[k field] (:fields conf)]
+                  ^{:key (str "cf" ts tag k)}
+                  [field-input entry edit-mode? field tag k put-fn])]]])])))))
 
 (defn questionnaire-div
   "In edit mode, allow editing of questionnaire, otherwise show a summary."
