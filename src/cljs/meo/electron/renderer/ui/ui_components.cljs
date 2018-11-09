@@ -30,3 +30,8 @@
     [:div.on-off {:on-click toggle}
      [:div {:class (when-not v "inactive")} "no"]
      [:div {:class (when v "active")} "yes"]]))
+
+(defn switch2 [{:keys [v]}]
+  [:div.on-off2
+   [:div {:class (when-not v "inactive")} "no"]
+   [:div {:class (when v "active")} "yes"]])

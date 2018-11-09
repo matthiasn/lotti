@@ -1,4 +1,6 @@
-.on-off {
+@import "variables.scss";
+
+.on-off, .on-off2 {
   display: flex;
   background-color: #ccc;
   border-radius: 3px;
@@ -24,10 +26,20 @@
   }
   .inactive {
     color: white;
-    font-weight: bold;
     background-color: $hashtag-blue;
     border-bottom-left-radius: 3px;
     border-top-left-radius: 3px;
   }
 }
 
+.on-off2 {
+  width: 36px;
+  height: 12px;
+  line-height: $font-size-small;
+  font-size: $font-size-small;
+  font-weight: lighter;
+
+  div {
+    width: 18px;
+  }
+}

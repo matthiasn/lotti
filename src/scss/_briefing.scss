@@ -76,10 +76,6 @@
     z-index: 1002;
     font-family: $header-font-family;
 
-    :hover {
-      background-color: #dde;
-    }
-
     &.add-task {
       :active {
         background-color: $green;
@@ -124,20 +120,19 @@
       border: #aaa 1px solid;
       border-radius: 5px;
       box-shadow: 0 0 1px 1px #AAA;
+      padding: 0 8px 8px 8px;
     }
     .item {
       padding: 3px 6px;
       cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items:center;
 
-      &.selected {
-        background-color: lighten($orange, 30);
+      .on-off2 {
+        margin-right: 8px;
       }
     }
-    input {
-      margin-right: 7px;
-      cursor: pointer;
-    }
-
   }
 
   .open-tasks, .started-tasks, .linked-tasks {

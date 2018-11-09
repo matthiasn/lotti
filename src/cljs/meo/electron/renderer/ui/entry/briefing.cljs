@@ -18,7 +18,8 @@
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [cljs.pprint :as pp]
             [meo.common.utils.parse :as up]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.electron.renderer.ui.ui-components :as uc]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -91,7 +92,7 @@
         [:div.saga-filter
          [:div.toggle-visible
           {:on-click #(swap! local update-in [:show-filter] not)}
-          [:i.fas {:style {:margin-left 0
+          [:i.fas {:style {:margin-left  0
                            :margin-right 4}
                    :class (if (:show-filter @local)
                             "fa-chevron-square-up"
@@ -111,11 +112,9 @@
                     toggle #(let [op (if selected? disj conj)]
                               (swap! local update-in [:selected-set] op ts))]
                 ^{:key ts}
-                [:div.item
-                 {:on-click toggle
-                  :class    (when selected? "selected")}
-                 [:input {:type    :checkbox
-                          :checked selected?}]
+                [:div.item {:class    (when selected? "selected")
+                            :on-click toggle}
+                 [uc/switch2 {:v selected?}]
                  (s/trim (:saga_name saga))]))])]))))
 
 (defn add-task [ts put-fn]
