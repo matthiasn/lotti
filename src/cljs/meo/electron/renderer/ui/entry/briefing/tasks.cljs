@@ -85,8 +85,8 @@
               [:span {:class cls}
                (s-to-hhmmss actual)])])
          [:td.text text]
-         (when unlink
-           [:td [:i.fa.far.fa-unlink {:on-click #(unlink ts)}]])]))))
+         [:td (when unlink
+                [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
 
 (defn task-row2 [entry _put-fn _cfg]
   (let [ts (:timestamp entry)]
@@ -131,10 +131,6 @@
                           (contains? (:selected-set @local) saga))
                         true))
         open-filter (fn [entry] (not (-> entry :task :done)))
-        filter-btn (fn [fk]
-                     [:span.filter {:class    (when (:on-hold @local) "current")
-                                    :on-click #(swap! local update-in [:on_hold] not)}
-                      (name fk)])
         entries-list (reaction (->> @started-tasks
                                     (filter on-hold-filter)
                                     (filter saga-filter)
@@ -234,11 +230,14 @@
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        linked-filters {:all    identity
-                        :open   #(and (not (-> % :task :done))
-                                      (not (-> % :task :closed)))
-                        :done   #(-> % :task :done)
-                        :closed #(-> % :task :closed)}
+        by-ts (reaction (get-in @gql-res [:logged-by-day :data :logged_time :by_ts]))
+        activity (reaction (->> @by-ts (map :parent) (filter identity) set))
+        linked-filters {:all      identity
+                        :open     #(and (not (-> % :task :done))
+                                        (not (-> % :task :closed)))
+                        :done     #(-> % :task :done)
+                        :closed   #(-> % :task :closed)
+                        :activity identity}
         filter-btn (fn [fk text]
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
@@ -258,31 +257,35 @@
                               (filter task-filter)
                               (filter current-filter)
                               (filter saga-filter)
-                              (filter #(not (contains? started-tasks (:timestamp %))))
-                              (sort task-sorter))
-            unlink (fn [ts]
-                     (let [timestamps [ts (:timestamp @briefing)]]
-                       (put-fn [:entry/unlink timestamps])))
+                              (filter #(not (contains? started-tasks (:timestamp %)))))
+            filter-k (:filter @local)
+            linked-tasks (if (= filter-k :activity)
+                           @activity
+                           linked-tasks)
+            unlink (when-not (= filter-k :activity)
+                     (fn [ts]
+                       (let [timestamps [ts (:timestamp @briefing)]]
+                         (put-fn [:entry/unlink timestamps]))))
             search-text @search-text
             show-points (:show-points @local)]
-        (when (seq linked-entries)
-          [:div.linked-tasks
-           [filter-btn :all]
-           [filter-btn :open]
-           [filter-btn :done]
-           [filter-btn :closed]
-           [:table.tasks
-            [:tbody
-             [:tr
-              [:th.xs [:i.far.fa-exclamation-triangle]]
-              (when show-points
-                [:th [:i.fa.far.fa-gem]])
-              [:th [:i.fa.far.fa-stopwatch]]
-              [:th [:strong "Linked Tasks"]]
-              [:th.xs [:i.fa.far.fa-link]]]
-             (for [entry linked-tasks]
-               ^{:key (:timestamp entry)}
-               [task-row entry put-fn {:tab-group   tab-group
-                                       :search-text search-text
-                                       :show-points show-points
-                                       :unlink      unlink}])]]])))))
+        [:div.linked-tasks
+         [filter-btn :all]
+         [filter-btn :open]
+         [filter-btn :done]
+         [filter-btn :closed]
+         [filter-btn :activity]
+         [:table.tasks
+          [:tbody
+           [:tr
+            [:th.xs [:i.far.fa-exclamation-triangle]]
+            (when show-points
+              [:th [:i.fa.far.fa-gem]])
+            [:th [:i.fa.far.fa-stopwatch]]
+            [:th [:strong "Linked Tasks"]]
+            [:th.xs [:i.fa.far.fa-link]]]
+           (for [entry (sort task-sorter linked-tasks)]
+             ^{:key (:timestamp entry)}
+             [task-row entry put-fn {:tab-group   tab-group
+                                     :search-text search-text
+                                     :show-points show-points
+                                     :unlink      unlink}])]]]))))

@@ -82,6 +82,7 @@
                             :md          md
                             :text        text
                             :comment_for comment_for
+                            :parent      parent
                             :completed   completed
                             :summed      summed
                             :manual      manual})))

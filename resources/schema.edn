@@ -135,6 +135,7 @@
                  :md          {:type String}
                  :text        {:type String}
                  :comment_for {:type ID}
+                 :parent      {:type :Entry}
                  :completed   {:type        Int
                                :description "Completed time in seconds"}
                  :manual      {:type        Int
