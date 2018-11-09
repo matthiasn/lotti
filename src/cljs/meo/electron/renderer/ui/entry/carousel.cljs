@@ -176,7 +176,7 @@
                               (contains? (:filter @local)
                                          (:stars entry))))
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
-        sorted (reaction (sort-by :timestamp entries))
+        sorted (reaction (concat [(first entries)] (sort-by :timestamp (rest entries))))
         avl-sort (fn [xs] (into (avl/sorted-set-by cmp) (filter filter-by-stars xs)))
         selected (reaction (or (:selected @local)
                                (first (vec (avl-sort @sorted)))))
