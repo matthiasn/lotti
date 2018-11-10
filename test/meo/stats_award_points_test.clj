@@ -32,20 +32,24 @@
 
 (deftest award-point-stats-test
   (testing "works with empty stats list"
-    (is (= {:total         0
-            :total-skipped 0}
-           (aw/award-points-by :habit {} []))))
+    (is (= {:by_day []
+            :total  0}
+           (aw/award-points-by :habit []))))
   (testing "sums correctly"
-    (is (= {:by-day        {"2017-03-23" {:habit 30}
-                            "2017-03-24" {:habit 190}
-                            "2017-03-25" {:habit 185}
-                            "2017-03-26" {:habit 225}}
-            :total         630
-            :total-skipped 0}
-           (aw/award-points-by :habit {} entries))))
+    (is (= {:by_day [{:date_string "2017-03-24"
+                      :task        190}
+                     {:date_string "2017-03-25"
+                      :task        185}
+                     {:date_string "2017-03-26"
+                      :task        225}
+                     {:date_string "2017-03-23"
+                      :task        30}]
+            :total  630}
+           (aw/award-points-by :habit entries))))
   (testing "ignores entry when not done"
-    (is (= {:by-day        {"2017-03-24" {:habit 10}
-                            "2017-03-25" {:habit 100}}
-            :total         110
-            :total-skipped 0}
-           (aw/award-points-by :habit {} entries2)))))
+    (is (= {:by_day [{:date_string "2017-03-24"
+                      :task        10}
+                     {:date_string "2017-03-25"
+                      :task        100}]
+            :total  110}
+           (aw/award-points-by :habit entries2)))))

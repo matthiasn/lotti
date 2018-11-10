@@ -23,7 +23,7 @@
                    (map :points)
                    (filter identity)
                    (apply +))]
-    {:by_day (map (fn [[k v]] {:date_string k :task v}) by-day)
+    {:by_day (mapv (fn [[k v]] {:date_string k :task v}) by-day)
      :total  total}))
 
 (defn claimed-points [current-state]
