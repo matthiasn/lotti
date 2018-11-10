@@ -175,10 +175,8 @@
   :AwardPoints
   {:description "Award points result"
    :fields      {:total          {:type Int}
-                 :total_skipped  {:type Int}
                  :claimed        {:type Int}
-                 :by_day         {:type (list :AwardPointItem)}
-                 :by_day_skipped {:type (list :AwardPointItem)}}}
+                 :by_day         {:type (list :AwardPointItem)}}}
 
   :HabitCriterion
   {:description "Habit success for single criterion"

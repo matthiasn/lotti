@@ -210,9 +210,10 @@
 
 .habit-monitor {
   color: red;
-  margin-left: 90px;
   display: flex;
   flex-direction: row;
+  flex: 2;
+  margin-left: 20px;
 
   .status {
     width: 16px;

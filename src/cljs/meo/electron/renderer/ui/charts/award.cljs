@@ -1,32 +1,22 @@
 (ns meo.electron.renderer.ui.charts.award
   (:require [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.helpers :as h]
+            [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]))
 
 (defn points-by-day-chart
   "Renders bars."
   [stats]
-  (let [chart-h 22
-        daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) stats)
+  (let [by-day (sort-by :date_string (:by_day stats))
+        chart-h 12
+        daily-totals (map :task by-day)
         max-val (apply max daily-totals)
-        indexed (map-indexed (fn [idx [day v]] [idx [day v]])
-                             (take-last 14 stats))]
-    [:svg
+        indexed (map-indexed (fn [idx {:keys [date_string task]}] [idx [date_string task]])
+                             (take-last 10 by-day))]
+    [:svg {:width (+ 10 (* 8 (count indexed)))}
      [:g
       (for [[idx [day v]] indexed]
-        (let [v (h/add (:task v) (:habit v))
-              y-scale (/ chart-h (or max-val 1))
-              h (if (pos? v) (* y-scale v) 0)]
-          (when (pos? max-val)
-            ^{:key (str day idx)}
-            [:rect {:x      (* 8 idx)
-                    :y      (- chart-h h)
-                    :fill   "#7FE283"
-                    :width  7
-                    :height h}])))
-      (for [[idx [day v]] indexed]
-        (let [v (:task v)
-              y-scale (/ chart-h (or max-val 1))
+        (let [y-scale (/ chart-h (or max-val 1))
               h (if (pos? v) (* y-scale v) 0)]
           (when (pos? max-val)
             ^{:key (str day idx)}
@@ -39,20 +29,15 @@
 (defn award-points
   "Simple view for points awarded."
   [put-fn]
-  (let [stats (subscribe [:stats])
-        last-update (subscribe [:last-update])
-        local (r/atom {:last-fetched 0})]
+  (let [gql-res (subscribe [:gql-res])
+        stats (reaction (:award_points (:data (:award-points @gql-res))))]
     (fn [put-fn]
-      (let [award-points (:award-points @stats)
-            by-day (sort-by first (:by-day award-points))
-            total (:total award-points 0)
-            total-skipped (:total-skipped award-points 0)
-            claimed (:claimed award-points 0)
-            balance (- total claimed total-skipped)]
+      (let [total (:total @stats 0)
+            claimed (:claimed @stats 0)
+            balance (- total claimed)]
         [:div.award
-         [:div.points [:span.fa.fa-diamond] balance]
          [:div
+          [:span.fa.fa-diamond] balance
           [:span.total total]
-          [:span.total-skipped total-skipped]
           [:span.claimed claimed]]
-         [points-by-day-chart by-day]]))))
+         [points-by-day-chart @stats]]))))

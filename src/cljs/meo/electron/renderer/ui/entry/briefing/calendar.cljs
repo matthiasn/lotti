@@ -5,6 +5,7 @@
             [meo.common.utils.parse :as up]
             [taoensso.timbre :refer-macros [info]]
             [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.charts.award :as ca]
             [moment :as moment]
             [reagent.ratom :refer-macros [reaction]]
             [react-big-calendar]

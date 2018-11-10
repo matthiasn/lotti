@@ -10,7 +10,8 @@
             [meo.common.utils.parse :as up]
             [meo.common.utils.misc :as u]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.common.utils.misc :as m]))
+            [meo.common.utils.misc :as m]
+            [meo.electron.renderer.ui.charts.award :as ca]))
 
 (defn toggle-option-view [{:keys [option cls]} put-fn]
   (let [cfg (subscribe [:cfg])]
@@ -128,10 +129,11 @@
 (defn menu-view [put-fn]
   [:div.menu
    [:div.menu-header
+    [toggle-option-view {:cls    "fa-user-secret"
+                         :option :show-pvt} put-fn]
     [habit-monitor put-fn]
     [new-import-view put-fn]
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
     [upload-view]
-    [toggle-option-view {:cls    "fa-user-secret"
-                         :option :show-pvt} put-fn]]])
+    [ca/award-points put-fn]]])

@@ -315,39 +315,32 @@ $backlog-weekend: lighten($backlog, 30);
 }
 
 .award {
-  background-color: white;
-  padding: 5px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  padding: 2px 3px;
+  font-weight: bold;
+  font-family: $header-font-family;
+  font-size: $font-size-small;
 
-  .points {
-    font-size: 2em;
-    font-weight: bold;
-
-    .fa {
-      font-size: 0.8em;
-      top: -2px;
-      left: -5px;
-      position: relative;
-    }
+  .fa-diamond {
+    font-size: 0.8em;
+    margin-right: 3px;
+    top: -2px;
+    color: gold;
+    position: relative;
   }
 
   .total {
-    font-size: 1em;
     color: $green;
-    margin-right: 0.5em;
-  }
-  .total-skipped {
-    font-size: 1em;
-    color: $red;
-    margin-right: 0.5em;
+    margin-left: 5px;
+    margin-right: 3px;
   }
   .claimed {
-    font-size: 1em;
     color: orange;
   }
 
   svg {
-    padding: 4px;
-    height: 30px;
+    padding: 2px 5px;
+    height: 15px;
   }
 }

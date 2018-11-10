@@ -1,0 +1,10 @@
+{
+  award_points {
+    claimed
+    total
+    by_day {
+      date_string
+      task
+    }
+  }
+}
