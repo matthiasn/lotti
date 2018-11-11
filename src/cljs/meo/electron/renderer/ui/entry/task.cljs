@@ -72,8 +72,9 @@
             [:h3 "Task details"]
             [:div.row
              [:label " Priority: "]
-             [:select {:value     (if priority (keyword priority) "")
-                       :on-change (prio-select entry)}
+             [:select {:value       (if priority (keyword priority) "")
+                       :on-change   (prio-select entry)
+                       :on-key-down (h/key-down-save entry put-fn)}
               [:option ""]
               [:option {:value :A} "A"]
               [:option {:value :B} "B"]
@@ -100,12 +101,13 @@
                          :msg-type :entry/update}]]
             [:div.row
              [:label "Reward points: "]
-             [:input {:type      :number
-                      :on-change (h/update-numeric entry [:task :points] put-fn)
-                      :value     (get-in entry [:task :points] 0)}]]
+             [:input {:type        :number
+                      :on-change   (h/update-numeric entry [:task :points] put-fn)
+                      :on-key-down (h/key-down-save entry put-fn)
+                      :value       (get-in entry [:task :points] 0)}]]
             [:div.row
              [:label "Allocation: "]
-             [:input {:on-change (h/update-time entry [:task :estimate_m] put-fn)
-                      :value     (when allocation
-                                   (h/m-to-hh-mm allocation))
-                      :type      :time}]]])]))))
+             [:input {:on-change   (h/update-time entry [:task :estimate_m] put-fn)
+                      :on-key-down (h/key-down-save entry put-fn)
+                      :value       (when allocation (h/m-to-hh-mm allocation))
+                      :type        :time}]]])]))))
