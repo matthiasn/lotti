@@ -134,6 +134,27 @@
                                         {:relationship :DATE}]))))
       state)))
 
+(defn add-adjusted-ts
+  "Adds links to timeline nodes when when entry date and time were adjusted."
+  [state entry]
+  (let [g (:graph state)]
+    (if-let [adjusted-ts (:adjusted_ts entry)]
+      (let [dt (c/from-long adjusted-ts)
+            year (ct/year dt)
+            month (ct/month dt)
+            year-node {:type :timeline/year :year year}
+            month-node {:type :timeline/month :year year :month month}
+            day-node {:type :timeline/day :year year :month month :day (ct/day dt)}]
+        (assoc-in state [:graph] (-> g
+                                     (uc/add-nodes year-node month-node day-node)
+                                     (uc/add-edges
+                                       [year-node month-node]
+                                       [month-node day-node]
+                                       [day-node
+                                        (:timestamp entry)
+                                        {:relationship :DATE}]))))
+      state)))
+
 (defn add-parent-ref [graph entry]
   (if-let [comment-for (:comment_for entry)]
     (uc/add-edges graph
@@ -349,6 +370,7 @@
     (-> new-state
         (add-geoname new-entry)
         (add-for-day new-entry)
+        (add-adjusted-ts new-entry)
         (update-in [:graph] add-parent-ref new-entry)
         (update-in [:graph] add-story new-entry)
         (update-in [:graph] add-saga new-entry)

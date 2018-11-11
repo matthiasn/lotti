@@ -222,26 +222,31 @@
 
     .datetime {
       font-size: $font-size-xs;
+      width: 100%;
+      display: flex;
       time {
         font-weight: bold;
       }
 
       .adjust {
-        time {
-          margin: 0 6px;
-        }
+        display: flex;
+        margin-bottom: 8px;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
 
         input {
           font-size: $font-size-xs;
           padding: 0 0 0 3px;
           width: 120px!important;
           height: auto;
-          margin-right: 0;
+          margin: 0;
         }
         i {
           cursor: pointer;
-          padding: 4px 6px;
+          padding: 3px 3px;
           color: #999;
+          font-size: $font-size-medium;
         }
 
       }
@@ -381,13 +386,6 @@
     min-width: 80px;
     text-align: end;
     width: 100%;
-  }
-
-  .for-day {
-    input {
-      margin-top: 6px;
-      margin-left: 30px;
-    }
   }
 }
 

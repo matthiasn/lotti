@@ -65,6 +65,7 @@
   :Entry
   {:description "A journal entry"
    :fields      {:timestamp           {:type (non-null ID)}
+                 :adjusted_ts         {:type ID}
                  :last_saved          {:type ID}
                  :comment_for         {:type ID}
                  :md                  {:type String}
@@ -132,6 +133,7 @@
   :LoggedCalItem
   {:description "Logged time item."
    :fields      {:timestamp   {:type (non-null ID)}
+                 :adjusted_ts {:type ID}
                  :md          {:type String}
                  :text        {:type String}
                  :comment_for {:type ID}

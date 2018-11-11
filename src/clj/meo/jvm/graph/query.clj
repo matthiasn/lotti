@@ -41,8 +41,11 @@
     (let [local-fmt (ctf/with-zone (ctf/formatters :year-month-day)
                                    (ct/default-time-zone))
           entry-day (ctf/unparse local-fmt (ctc/from-long (:timestamp entry)))
+          adjusted-day (when-let [adjusted-ts (:adjusted_ts entry)]
+                         (ctf/unparse local-fmt (ctc/from-long adjusted-ts)))
           q-day (:date_string q)
           day-match? (or (= q-day entry-day)
+                         (= q-day adjusted-day)
                          (when-let [for-day (:for_day entry)]
                            (= q-day (subs for-day 0 10)))
                          (when-let [for-day (:completion_ts (:task entry))]

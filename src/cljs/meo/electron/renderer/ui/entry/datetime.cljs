@@ -14,31 +14,32 @@
         ts (:timestamp entry)]
     (fn [entry put-fn]
       (let [locale (:locale @cfg :en)
-            adjusted-ts (:adjusted-ts entry)
+            adjusted-ts (:adjusted_ts entry)
             formatted-time (h/localize-datetime (moment (or adjusted-ts ts)) locale)
             on-change (fn [ev]
                         (let [adjusted-ts (.valueOf (moment (h/target-val ev)))
-                              updated (assoc-in entry [:adjusted-ts] adjusted-ts)]
+                              updated (assoc-in entry [:adjusted_ts] adjusted-ts)]
                           (put-fn [:entry/update-local updated])))
             rm-adjusted-ts (fn [_]
-                             (let [updated (assoc-in entry [:adjusted-ts] nil)]
+                             (let [updated (assoc-in entry [:adjusted_ts] ts)]
                                (put-fn [:entry/update-local updated])
                                (toggle-adjust)))]
         [:div.datetime
          (if (:show-adjust-ts @local)
            [:div.adjust
-            "created:"
+            [:i.far.fa-clock]
             [:time {:on-click toggle-adjust}
              (h/localize-datetime (moment ts) locale)]
-            " adjusted: "
+            [:i.far.fa-pencil-alt]
             [:input {:type        :datetime-local
                      :on-change   on-change
                      :on-key-down (h/key-down-save entry put-fn)
                      :value       (h/format-time (or adjusted-ts ts))}]
-            [:i.fas.fa-trash-alt
+            [:i.far.fa-trash-alt
              {:on-click rm-adjusted-ts}]]
            [:a [:time.ts
                 {:on-click toggle-adjust
-                 :class    (when adjusted-ts "adjusted")}
+                 :class    (when (and adjusted-ts (not= adjusted-ts ts))
+                             "adjusted")}
                 formatted-time]])
          [:time (u/visit-duration entry)]]))))

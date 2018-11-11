@@ -95,14 +95,17 @@
       (let [today (h/ymd (st/now))
             day (or @cal-day today)
             xf (fn [entry]
-                 (let [{:keys [completed manual story text
+                 (let [{:keys [completed manual story text adjusted_ts
                                comment_for timestamp]} entry
+                       timestamp (js/parseInt timestamp)
+                       adjusted_ts (js/parseInt adjusted_ts)
+                       ts (if (number? adjusted_ts) adjusted_ts timestamp)
                        start (if (pos? completed)
-                               timestamp
-                               (- timestamp (* manual 1000)))
+                               ts
+                               (- ts (* manual 1000)))
                        end (if (pos? completed)
-                             (+ timestamp (* completed 1000))
-                             timestamp)
+                             (+ ts (* completed 1000))
+                             ts)
                        story-name (get-in story [:story_name])
                        saga-name (get-in story [:saga :saga_name]
                                          "none")

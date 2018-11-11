@@ -5,7 +5,8 @@
             [taoensso.timbre :refer [info error warn debug]]
             [clj-time.coerce :as c]
             [clj-time.format :as ctf]
-            [clj-time.core :as ct]))
+            [clj-time.core :as ct]
+            [meo.jvm.datetime :as dt]))
 
 (def dtz (ct/default-time-zone))
 (def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))
@@ -29,7 +30,12 @@
                            (let [for-day (:for_day entry)]
                              (or (not for-day)
                                  (= date-string (subs for-day 0 10)))))
+          adjusted-ts-filter (fn [entry]
+                               (let [adjusted-ts (:adjusted_ts entry)]
+                                 (or (not adjusted-ts)
+                                     (= date-string (dt/ts-to-ymd adjusted-ts)))))
           nodes (filter for-day-filter nodes)
+          nodes (filter adjusted-ts-filter nodes)
           stats-mapper
           (fn [[k fields]]
             (let [field-mapper

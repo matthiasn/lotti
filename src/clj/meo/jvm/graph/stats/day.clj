@@ -70,7 +70,7 @@
                              for-ts (when for_day
                                       (let [dt (ctf/parse dt/dt-local-fmt for_day)]
                                         (c/to-long dt)))
-                             ts (or for-ts timestamp)
+                             adjusted-ts (:adjusted_ts entry)
                              saga (get sagas (:linked_saga story))
                              completed (or (get entry :completed_time) 0)
                              manual (manually-logged entry date-string)
@@ -78,7 +78,8 @@
                          (when (pos? summed)
                            {:story       (when story
                                            (assoc-in story [:saga] saga))
-                            :timestamp   ts
+                            :timestamp   timestamp
+                            :adjusted_ts (or adjusted-ts for-ts)
                             :md          md
                             :text        text
                             :comment_for comment_for

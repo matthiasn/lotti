@@ -18,6 +18,7 @@
 
     by_ts {
       timestamp
+      adjusted_ts
       md
       text
 
