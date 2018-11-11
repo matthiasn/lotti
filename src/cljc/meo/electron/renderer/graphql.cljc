@@ -14,9 +14,8 @@
         git-query {:query/data [:git_stats {:days days}
                                 [:date_string :commits]]}
         award-query {:query/data [:award_points {:days (inc days)}
-                                  [:total :claimed :total_skipped
-                                   [:by_day [:date_string :habit :task]]
-                                   [:by_day_skipped [:date_string :habit]]]]}
+                                  [:total :claimed
+                                   [:by_day [:date_string :task]]]]}
         queries (conj queries git-query award-query)]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
