@@ -5,6 +5,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.parse :as up]
+            [meo.electron.renderer.ui.entry.datetime :as dt]
             [meo.electron.renderer.ui.entry.actions :as a]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.entry.capture :as c]
@@ -23,7 +24,8 @@
             [moment]
             [meo.electron.renderer.ui.entry.pomodoro :as pomo]
             [clojure.pprint :as pp]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn hashtags-mentions [entry tab-group put-fn]
   (let [clear-import #(put-fn [:entry/update (update entry :tags disj "#import")])
@@ -85,18 +87,14 @@
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
-        q-date-string (.format (moment ts) "YYYY-MM-DD")
         tab-group (:tab-group local-cfg)
-        add-search (up/add-search q-date-string tab-group put-fn)
         drop-fn (a/drop-linked-fn entry cfg put-fn)
-        local (r/atom {:scroll-disabled true})]
+        local (r/atom {:scroll-disabled  true})]
     (fn journal-entry-render [entry put-fn local-cfg]
       (let [merged (merge entry @new-entry)
             edit-mode? @edit-mode
-            locale (:locale @cfg :en)
             toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry])
                                         (put-fn [:entry/update-local entry]))
-            formatted-time (h/localize-datetime (moment ts) locale)
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
             map-id (str ts (when qid (name qid)))]
@@ -107,9 +105,7 @@
           [:div [es/story-select entry tab-group put-fn]]
           [linked-btn merged local-cfg active put-fn]]
          [:div.header
-          [:div
-           [:a [:time {:on-click add-search} formatted-time]]
-           [:time (u/visit-duration merged)]]
+          [dt/datetime-header merged put-fn]
           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
          [es/story-form merged put-fn]
          [es/saga-name-field merged edit-mode? put-fn]

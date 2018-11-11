@@ -220,8 +220,39 @@
       }
     }
 
-    time {
+    .datetime {
       font-size: $font-size-xs;
+      time {
+        font-weight: bold;
+      }
+
+      .adjust {
+        time {
+          margin: 0 6px;
+        }
+
+        input {
+          font-size: $font-size-xs;
+          padding: 0 0 0 3px;
+          width: 120px!important;
+          height: auto;
+          margin-right: 0;
+        }
+        i {
+          cursor: pointer;
+          padding: 4px 6px;
+          color: #999;
+        }
+
+      }
+
+      time {
+        cursor: pointer;
+
+        &.adjusted {
+          color: $red;
+        }
+      }
     }
 
     a time {
