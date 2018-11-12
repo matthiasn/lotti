@@ -8,7 +8,9 @@
             [camel-snake-kebab.extras :refer [transform-keys]]
             [meo.jvm.datetime :as dt]
             [clj-time.coerce :as c]
-            [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]
+            [clj-time.core :as ct]
+            [clj-time.coerce :as ctc]))
 
 (defn time-by-sagas
   "Calculate time spent per saga, plus time not assigned to any saga."
@@ -24,9 +26,11 @@
    different day, or, if so, when date string from query is equal to the
    referenced day. Otherwise returns zero."
   [entry date-string]
-  (let [manual (gq/summed-durations entry)]
-    (if-let [for-day (:for_day entry)]
-      (let [ymd (subs for-day 0 10)]
+  (let [manual (gq/summed-durations entry)
+        local-fmt (ctf/with-zone (ctf/formatters :year-month-day)
+                                 (ct/default-time-zone))]
+    (if-let [adjusted-ts (:adjusted_ts entry)]
+      (let [ymd (ctf/unparse local-fmt (ctc/from-long adjusted-ts))]
         (if (= date-string ymd) manual 0))
       manual)))
 
@@ -59,7 +63,7 @@
                             acc)))
         by-ts-mapper (fn [entry]
                        (let [{:keys [timestamp comment_for primary_story md
-                                     text for_day]} entry
+                                     text adjusted_ts]} entry
                              parent (when (and comment_for
                                                (uc/has-node? g comment_for))
                                       (uc/attrs g comment_for))
@@ -67,10 +71,6 @@
                                           primary_story
                                           :no-story)
                              story (get-in stories [story-id])
-                             for-ts (when for_day
-                                      (let [dt (ctf/parse dt/dt-local-fmt for_day)]
-                                        (c/to-long dt)))
-                             adjusted-ts (:adjusted_ts entry)
                              saga (get sagas (:linked_saga story))
                              completed (or (get entry :completed_time) 0)
                              manual (manually-logged entry date-string)
@@ -79,7 +79,7 @@
                            {:story       (when story
                                            (assoc-in story [:saga] saga))
                             :timestamp   timestamp
-                            :adjusted_ts (or adjusted-ts for-ts)
+                            :adjusted_ts adjusted_ts
                             :md          md
                             :text        text
                             :comment_for comment_for
@@ -91,11 +91,11 @@
         by-ts (filter identity (map by-ts-mapper nodes))
         total (apply + (map second by-story))
         by-story-list (map (fn [[k v]]
-                        (let [story (merge (get stories k) {:timestamp k})
-                              saga (get sagas (:linked_saga story))]
-                          {:logged v
-                           :story  (assoc-in story [:linked_saga] saga)}))
-                      by-story)]
+                             (let [story (merge (get stories k) {:timestamp k})
+                                   saga (get sagas (:linked_saga story))]
+                               {:logged v
+                                :story  (assoc-in story [:linked_saga] saga)}))
+                           by-story)]
     (merge
       (tasks nodes)
       {:day         date-string

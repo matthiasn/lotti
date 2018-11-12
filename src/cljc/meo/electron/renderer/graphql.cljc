@@ -38,6 +38,7 @@
 
 (defn tabs-query [queries incremental pvt]
   (let [fields [:timestamp
+                :adjusted_ts
                 :text
                 :md
                 :latitude
@@ -57,7 +58,6 @@
                 :saga_name
                 :linked_saga
                 :stars
-                :for_day
                 :questionnaires
                 :custom_fields
                 :entry_type
@@ -84,13 +84,14 @@
                             :longitude
                             :img_file
                             :starred
-                            :for_day
+                            :adjusted_ts
                             :comment_for
                             :entry_type
                             :completed_time
                             :custom_fields
                             :questionnaires]]
                 [:linked [:timestamp
+                          :adjusted_ts
                           :md
                           :tags
                           :mentions

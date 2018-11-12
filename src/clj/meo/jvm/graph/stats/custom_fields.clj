@@ -26,15 +26,10 @@
           day-nodes (gq/get-nodes-for-day g {:date_string date-string})
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
           nodes (filter :custom_fields day-nodes-attrs)
-          for-day-filter (fn [entry]
-                           (let [for-day (:for_day entry)]
-                             (or (not for-day)
-                                 (= date-string (subs for-day 0 10)))))
           adjusted-ts-filter (fn [entry]
                                (let [adjusted-ts (:adjusted_ts entry)]
                                  (or (not adjusted-ts)
                                      (= date-string (dt/ts-to-ymd adjusted-ts)))))
-          nodes (filter for-day-filter nodes)
           nodes (filter adjusted-ts-filter nodes)
           stats-mapper
           (fn [[k fields]]
@@ -42,8 +37,7 @@
                   (fn [[field v]]
                     (let [path [:custom_fields k field]
                           val-mapper (fn [entry]
-                                       (let [ts (or (when-let [fd (:for_day entry)]
-                                                      (c/to-long (parse fd)))
+                                       (let [ts (or (:adjusted_ts entry)
                                                     (:timestamp entry))]
                                          {:v  (get-in entry path)
                                           :ts ts}))

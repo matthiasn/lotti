@@ -2,8 +2,8 @@
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error debug]]
-            [meo.common.utils.misc :as u]
             [meo.electron.renderer.helpers :as h]
+            [meo.common.utils.misc :as u]
             [reagent.core :as r]
             [moment]))
 
@@ -28,9 +28,7 @@
         toggle-adjust #(swap! local update-in [:show-adjust-ts] not)
         ts (:timestamp entry)]
     (fn [entry local put-fn]
-      (let [locale (:locale @cfg :en)
-            adjusted-ts (:adjusted_ts entry)
-            formatted-time (h/localize-datetime (moment (or adjusted-ts ts)) locale)
+      (let [adjusted-ts (:adjusted_ts entry)
             on-change (fn [ev]
                         (let [adjusted-ts (.valueOf (moment (h/target-val ev)))
                               updated (assoc-in entry [:adjusted_ts] adjusted-ts)]

@@ -1,33 +1,12 @@
 (ns meo.electron.renderer.ui.entry.capture
-  (:require [clojure.string :as s]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.ui.questionnaires :as q]
             [meo.electron.renderer.helpers :as h]
-            [moment]
             [taoensso.timbre :refer-macros [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
-            [matthiasn.systems-toolbox.component :as st]
-            [reagent.core :as r]))
-
-(defn for-day
-  [entry edit-mode? put-fn]
-  (when (and (contains? (:tags entry) "#for-day")
-             (not (= (:entry_type entry) :pomodoro)))
-    (let [input-fn (fn [entry]
-                     (fn [ev]
-                       (let [day (h/target-val ev)
-                             updated (assoc-in entry [:for_day] day)]
-                         (put-fn [:entry/update-local updated]))))
-          for-day (:for_day entry)]
-      (when-not for-day
-        (put-fn [:entry/update-local
-                 (assoc-in entry [:for_day] (h/format-time (st/now)))]))
-      [:div.for-day
-       [:h2 "Report time and date:"]
-       [:input {:type        :datetime-local
-                :on-change   (input-fn entry)
-                :on-key-down (h/key-down-save entry put-fn)
-                :value       for-day}]])))
+            [clojure.string :as s]
+            [reagent.core :as r]
+            [moment]))
 
 (defn field-input [entry edit-mode? field tag k put-fn]
   (let [input-cfg (:cfg field)
@@ -90,7 +69,6 @@
                                                 {:primary_story  default-story
                                                  :linked-stories #{default-story}})]))
           [:form.custom-fields
-           [for-day entry edit-mode? put-fn]
            (for [[tag conf] (sort-by first entry-field-tags)]
              ^{:key (str "cf" ts tag)}
              [:div

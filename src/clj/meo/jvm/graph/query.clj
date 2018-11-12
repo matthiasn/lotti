@@ -46,10 +46,8 @@
           q-day (:date_string q)
           day-match? (or (= q-day entry-day)
                          (= q-day adjusted-day)
-                         (when-let [for-day (:for_day entry)]
-                           (= q-day (subs for-day 0 10)))
-                         (when-let [for-day (:completion_ts (:task entry))]
-                           (= q-day (subs for-day 0 10))))
+                         (when-let [completion-day (:completion_ts (:task entry))]
+                           (= q-day (subs completion-day 0 10))))
 
           q-timestamp (:timestamp q)
           q-ts-match? (= q-timestamp (str (:timestamp entry)))

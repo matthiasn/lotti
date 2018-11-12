@@ -10,7 +10,9 @@
             [clj-http.client :as hc]
             [clj-time.format :as ctf]
             [clj-time.core :as ct]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [meo.jvm.datetime :as dt]
+            [clj-time.coerce :as c]))
 
 
 (defn to-snake [k]
@@ -250,6 +252,34 @@
                     snake (snake-xf entry)
                     id (:timestamp entry)
                     serialized (str (pr-str snake) "\n")]
+                (swap! ts-uuids conj id)
+                (spit (str out-path "/" filename) serialized :append true))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
+
+;(m/migrate-to-adjusted-ts "./data/migrations/adjusted-ts" "./data/migrations/adjusted-ts-out")
+(defn migrate-to-adjusted-ts [path out-path]
+  (let [files (file-seq (clojure.java.io/file path))
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)]
+    (fs/mkdirs out-path)
+    (doseq [f sorted-files]
+      (with-open [reader (clojure.java.io/reader f)]
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (swap! line-count inc)
+              (let [entry (clojure.edn/read-string line)
+                    id (:timestamp entry)
+                    entry (if-let [for-day (:for_day entry)]
+                            (let [adjusted-ts (c/to-long (ctf/parse dt/dt-local-fmt for-day))]
+                              (assoc-in entry [:adjusted_ts] adjusted-ts))
+                            entry)
+                    serialized (str (pr-str entry) "\n")]
                 (swap! ts-uuids conj id)
                 (spit (str out-path "/" filename) serialized :append true))
               (catch Exception ex
