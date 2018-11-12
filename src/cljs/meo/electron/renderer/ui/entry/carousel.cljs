@@ -101,21 +101,44 @@
      [:div {:on-click (sel 1)}
       [:i.fa-star {:class (cls 1)}]]]))
 
+(defn text-editor
+  "Quill-based text editor for entry text for use in the image gallery view.
+   I chose Quill as opposed to Draft.js to have a comparison, as Draft.js
+   has given me more problems than I anticipated. Working mostly fine now,
+   but won't hurt to have a potential alternative. Curious about your
+   experience with either."
+  [entry put-fn]
+  (let [local (r/atom entry)]
+    (fn [entry put-fn]
+      (let [html (md/md->html (:md @local))
+            td (turndown. (clj->js {:headingStyle "atx"}))
+            on-change (fn [x html]
+                        (let [md (.turndown td html)
+                              updated (assoc-in @local [:md] md)]
+                          (reset! local updated)
+                          (put-fn [:entry/update-local updated])))
+            on-save (fn [_]
+                      (put-fn [:entry/update @local]))]
+        [:div.gallery-editor
+         [q/editor {:id           :quill-editor
+                    :content      html
+                    :save-fn      on-save
+                    :on-change-fn on-change}]
+         [:div
+          (when (not= entry @local)
+            [:div.save {:on-click on-save}
+             [:i.fas.fa-save]
+             "save"])]]))))
+
 (defn info-drawer [selected locale put-fn]
   (let [local (r/atom {})
         backend-cfg (subscribe [:backend-cfg])]
     (fn [selected locale put-fn]
       (let [ts (:timestamp selected)
-            html (md/md->html (:md selected))
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
             external (str h/photos file)
-            {:keys [latitude longitude]} selected
-            td (turndown. (clj->js {:headingStyle "atx"}))
-            on-change (fn [_ html]
-                        (let [md (.turndown td html)
-                              updated (assoc-in selected [:md] md)]
-                          (put-fn [:entry/update-local updated])))]
+            {:keys [latitude longitude]} selected]
         [:div.info-drawer
          (when (and latitude longitude
                     (not (and (zero? latitude)
@@ -128,10 +151,7 @@
                              :put-fn       put-fn}]
              [l/leaflet-map selected true {} put-fn]))
          [:time (h/localize-datetime-full ts locale)]
-         [q/editor {:id           :quill-editor
-                    :content      html
-                    :selection    nil
-                    :on-change-fn on-change}]
+         [text-editor selected put-fn]
          [stars-view selected put-fn]
          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))))
 

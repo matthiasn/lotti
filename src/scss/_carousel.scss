@@ -1,3 +1,5 @@
+@import "variables";
+
 /********************************************
 	BREAKPOINT WIDTHS
 ********************************************/
@@ -317,6 +319,24 @@
         display: block;
         font-size: 0.9em;
         margin: 10px;
+      }
+
+      .gallery-editor {
+        .save {
+          font-size: $font-size-large;
+          padding: 10px 0;
+          margin: 12px 6px;
+          width: 90px;
+          text-align: center;
+          font-weight: bold;
+          background-color: $red;
+          border-radius: $entry-border-radius;
+          cursor: pointer;
+
+          i {
+            margin-right: 6px;
+          }
+        }
       }
 
       .md {

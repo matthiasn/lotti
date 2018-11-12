@@ -1,6 +1,7 @@
 (ns meo.electron.renderer.ui.entry.quill
   "Adapted from https://github.com/benhowell/reagent-quill/blob/master/quill.cljs"
   (:require [reagent.core :as r]
+            [taoensso.timbre :refer [info error debug]]
             [quill :as quill]))
 
 (defn quill-toolbar [id]
@@ -52,17 +53,25 @@
     [:button {:class "ql-clean"}]]])
 
 
-(defn editor [{:keys [id content selection on-change-fn]}]
+(defn editor
+  "Wrapper for a Quill editor inside a Reagent component. Adapted from reagent-quill, see
+   URL above."
+  [{:keys [id content selection on-change-fn save-fn]}]
   (let [this (r/atom nil)
         value #(aget @this "container" "firstChild" "innerHTML")
+        cfg (fn [component]
+              {:modules     {:toolbar  (aget (.-children (r/dom-node component)) 0)
+                             :keyboard {:bindings {:custom {:key      "S"
+                                                            :shortKey true
+                                                            :handler  save-fn}}}}
+               :theme       "snow"
+               :placeholder "..."})
+        
         did-mount
-        (fn [component]
-          (reset! this
-                  (quill.
-                    (aget (.-children (r/dom-node component)) 1)
-                    #js {:modules     #js {:toolbar (aget (.-children (r/dom-node component)) 0)}
-                         :theme       "snow"
-                         :placeholder "Compose an epic..."}))
+        (fn [cmp]
+          (let [node (aget (.-children (r/dom-node cmp)) 1)
+                q (quill. node (clj->js (cfg cmp)))]
+            (reset! this q))
 
           (.on @this "text-change"
                (fn [delta old-delta source]
