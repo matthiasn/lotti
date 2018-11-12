@@ -89,7 +89,8 @@
         backend-cfg (subscribe [:backend-cfg])
         tab-group (:tab-group local-cfg)
         drop-fn (a/drop-linked-fn entry cfg put-fn)
-        local (r/atom {:scroll-disabled  true})]
+        local (r/atom {:scroll-disabled true
+                       :show-adjust-ts  false})]
     (fn journal-entry-render [entry put-fn local-cfg]
       (let [merged (merge entry @new-entry)
             edit-mode? @edit-mode
@@ -105,8 +106,11 @@
           [:div [es/story-select entry tab-group put-fn]]
           [linked-btn merged local-cfg active put-fn]]
          [:div.header
-          [dt/datetime-header merged put-fn]
-          [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]
+          (when (:show-adjust-ts @local)
+            [dt/datetime-edit merged local put-fn])
+          [:div.action-row
+           [dt/datetime-header merged local put-fn]
+           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]]
          [es/story-form merged put-fn]
          [es/saga-name-field merged edit-mode? put-fn]
          (when-not (:spotify entry)

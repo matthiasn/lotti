@@ -7,12 +7,27 @@
             [reagent.core :as r]
             [moment]))
 
-(defn datetime-header [entry put-fn]
+(defn datetime-header [entry local put-fn]
   (let [cfg (subscribe [:cfg])
-        local (r/atom {:show-adjust-ts false})
         toggle-adjust #(swap! local update-in [:show-adjust-ts] not)
         ts (:timestamp entry)]
-    (fn [entry put-fn]
+    (fn [entry local put-fn]
+      (let [locale (:locale @cfg :en)
+            adjusted-ts (:adjusted_ts entry)
+            formatted-time (h/localize-datetime (moment (or adjusted-ts ts)) locale)]
+        [:div.datetime
+         [:a [:time.ts
+              {:on-click toggle-adjust
+               :class    (when (and adjusted-ts (not= adjusted-ts ts))
+                           "adjusted")}
+              formatted-time]]
+         [:time (u/visit-duration entry)]]))))
+
+(defn datetime-edit [entry local put-fn]
+  (let [cfg (subscribe [:cfg])
+        toggle-adjust #(swap! local update-in [:show-adjust-ts] not)
+        ts (:timestamp entry)]
+    (fn [entry local put-fn]
       (let [locale (:locale @cfg :en)
             adjusted-ts (:adjusted_ts entry)
             formatted-time (h/localize-datetime (moment (or adjusted-ts ts)) locale)
@@ -25,21 +40,12 @@
                                (put-fn [:entry/update-local updated])
                                (toggle-adjust)))]
         [:div.datetime
-         (if (:show-adjust-ts @local)
-           [:div.adjust
-            [:i.far.fa-clock]
-            [:time {:on-click toggle-adjust}
-             (h/localize-datetime (moment ts) locale)]
-            [:i.far.fa-pencil-alt]
-            [:input {:type        :datetime-local
-                     :on-change   on-change
-                     :on-key-down (h/key-down-save entry put-fn)
-                     :value       (h/format-time (or adjusted-ts ts))}]
-            [:i.far.fa-trash-alt
-             {:on-click rm-adjusted-ts}]]
-           [:a [:time.ts
-                {:on-click toggle-adjust
-                 :class    (when (and adjusted-ts (not= adjusted-ts ts))
-                             "adjusted")}
-                formatted-time]])
-         [:time (u/visit-duration entry)]]))))
+         [:div.adjust
+          [:div
+           [:i.far.fa-pencil-alt]
+           [:input {:type        :datetime-local
+                    :on-change   on-change
+                    :on-key-down (h/key-down-save entry put-fn)
+                    :value       (h/format-time (or adjusted-ts ts))}]
+           [:i.far.fa-trash-alt
+            {:on-click rm-adjusted-ts}]]]]))))

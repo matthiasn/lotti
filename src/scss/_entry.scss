@@ -192,7 +192,14 @@
     flex-wrap: wrap;
     display: flex;
     justify-content: space-between;
+    width: 100%;
 
+    .action-row {
+      display: flex;
+      flex-flow: row;
+      width: 100%;
+      justify-content: space-between;
+    }
     .starred {
       color: gold;
       font-weight: 900;
@@ -231,8 +238,6 @@
       .adjust {
         display: flex;
         margin-bottom: 8px;
-        align-items: center;
-        justify-content: space-around;
         width: 100%;
 
         input {
@@ -253,6 +258,7 @@
 
       time {
         cursor: pointer;
+        user-select: none;
 
         &.adjusted {
           color: $red;
