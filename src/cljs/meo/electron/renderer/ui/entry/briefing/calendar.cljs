@@ -98,7 +98,7 @@
                  (let [{:keys [completed manual story text adjusted_ts
                                comment_for timestamp]} entry
                        timestamp (js/parseInt timestamp)
-                       adjusted_ts (js/parseInt adjusted_ts)
+                       adjusted_ts (when adjusted_ts (js/parseInt adjusted_ts))
                        ts (if (number? adjusted_ts) adjusted_ts timestamp)
                        start (if (pos? completed)
                                ts
