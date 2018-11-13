@@ -20,8 +20,8 @@
                      :pomodoro-stats   (sorted-map)
                      :task-stats       (sorted-map)
                      :wordcount-stats  (sorted-map)
-                     :gql-res2         {:left  (sorted-map-by >)
-                                        :right (sorted-map-by >)}
+                     :gql-res2         {:left  {:res (sorted-map-by >)}
+                                        :right {:res (sorted-map-by >)}}
                      :options          {:pvt-hashtags #{"#pvt"}}
                      :cfg              cfg})]
     (put-fn [:imap/get-cfg])
@@ -81,11 +81,16 @@
     {:new-state new-state}))
 
 (defn gql-res2 [{:keys [current-state msg-payload]}]
-  (let [{:keys [tab res del incremental]} msg-payload
-        prev (if incremental (get-in current-state [:gql-res2 tab]) (sorted-map-by >))
-        cleaned (apply dissoc prev del)
+  (let [{:keys [tab res del incremental query]} msg-payload
+        prev (get-in current-state [:gql-res2 tab])
+        prev-res (if (and incremental
+                          (= query (:query prev)))
+                   (:res prev)
+                   (sorted-map-by >))
+        cleaned (apply dissoc prev-res del)
         res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
-        new-state (assoc-in current-state [:gql-res2 tab] res-map)]
+        new-state (assoc-in current-state [:gql-res2 tab] {:res   res-map
+                                                           :query query})]
     {:new-state new-state}))
 
 (defn imap-status [{:keys [current-state msg-payload]}]

@@ -14,6 +14,7 @@
         gql-res (subscribe [:gql-res2])
         entry (reaction (-> @gql-res
                             (get tab-group)
+                            :res
                             vals
                             (nth idx)))]
     (fn entry-wrapper-render [_idx local-cfg put-fn]
@@ -36,7 +37,7 @@
         local (r/atom {:last-cnt 0
                        :last-fetch 0})
         tab-group (:tab-group local-cfg)
-        entries-list (reaction (vals (get-in @gql-res [tab-group])))]
+        entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
     (fn journal-view-render [local-cfg put-fn]
       (let [query-id (:query-id local-cfg)
             tg (:tab-group local-cfg)
