@@ -34,7 +34,7 @@
   (let [clicked (r/atom false)
         guarded-edit-fn (fn [_ev]
                           (swap! clicked not)
-                          (.setTimeout js/window #(reset! clicked false) 5000))]
+                          (.setTimeout js/window #(reset! clicked false) 25000))]
     (fn [toggle-edit edit-mode? entry]
       (when edit-mode?
         [:span.delete-btn
