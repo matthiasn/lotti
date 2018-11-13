@@ -66,7 +66,7 @@
                                                             :handler  save-fn}}}}
                :theme       "snow"
                :placeholder "..."})
-        
+
         did-mount
         (fn [cmp]
           (let [node (aget (.-children (r/dom-node cmp)) 1)

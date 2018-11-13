@@ -17,7 +17,8 @@
         new-fn (h/new-entry put-fn entry)]
     (js/setTimeout new-fn 2000)
     (info "initiating screenshot" entry)
-    {:emit-msg [:import/screenshot {:filename filename}]}))
+    {:emit-msg [:import/screenshot {:filename  filename
+                                    :timestamp screenshot-ts}]}))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
