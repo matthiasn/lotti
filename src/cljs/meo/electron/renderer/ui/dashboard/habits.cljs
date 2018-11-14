@@ -5,46 +5,34 @@
             [reagent.ratom :refer-macros [reaction]]
             [camel-snake-kebab.core :refer [->kebab-case]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (defn habits-chart
-  [{:keys [k score-k]} _put-fn]
+  [{:keys [habit]} _put-fn]
   (let [show-pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])
-        habits (reaction (->> @gql-res
-                              :habits-success
-                              :data
-                              :habits_success
-                              (sort-by #(:success (first (:completed %))))))]
-    (fn habits-chart-render [{:keys [y k w h score-k start end mn mx color
-                                     x-offset label]} put-fn]
-      (let [
-
-            span (- end start)
-            rng (- mx mn)
-            scale (/ h rng)
+        habits (subscribe [:habits])
+        habit-entry (reaction (get-in @habits [habit :habit_entry]))
+        completions (reaction (->> (get-in @habits [habit :completed]) reverse))]
+    (fn habits-chart-render [{:keys [y w h start end x-offset days]} put-fn]
+      (let [label (eu/first-line @habit-entry)
             btm-y (+ y h)
-            line-inc (if (> mx 100) 50 10)
-            lines (filter #(zero? (mod % line-inc)) (range 1 rng))
+            span (- end start)
             mapper (fn [idx itm]
-                     (let [ts (:timestamp itm)
-                           from-beginning (- ts start)
-                           x (+ x-offset (* w (/ from-beginning span)))
-                           v (:score itm)
-                           y (- btm-y (* (- v mn) scale))
-                           s (str x "," y)]
-                       {:x       x
-                        :y       y
-                        :ts      ts
-                        :v       v
-                        :starred (:starred itm)
-                        :s       s}))]
+                     (let [prior (< (+ start (* idx (/ span days))) habit)]
+                       {:cx      (+ x-offset 8 (* idx (/ w (inc days))))
+                        :cy      (- btm-y 12)
+                        :r       8
+                        :idx     idx
+                        :opacity (if prior 0.3 1)
+                        :fill    (if (:success itm) "green" "red")}))
+            points (map-indexed mapper @completions)]
         [:g
-         (for [n lines]
-           ^{:key (str k score-k n)}
-           [dc/line (- btm-y (* n scale)) "#888" 1])
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          (when @show-pvt
-           [dc/row-label label y h])]))))
+           [dc/row-label label y h])
+         (for [p points]
+           ^{:key (str label (:idx p))}
+           [:circle p])]))))

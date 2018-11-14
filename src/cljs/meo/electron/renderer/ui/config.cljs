@@ -208,7 +208,7 @@
        [:table
         [:thead
          [:tr
-          [:th "metrics"]
+          [:th "metric"]
           [:th "n"]
           [:th "total time"]
           [:th "mean"]

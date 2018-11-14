@@ -43,7 +43,7 @@
       (put-fn [:gql/query {:file "habits-success.gql"
                            :id   :habits-success
                            :prio 13
-                           :args [90 pvt]}]))
+                           :args [91 pvt]}]))
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "award-points.gql" :award-points 14 [])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])

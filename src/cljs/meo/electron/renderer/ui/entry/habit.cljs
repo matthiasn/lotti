@@ -161,13 +161,10 @@
                         (fn [_]
                           (let [updated (update-in entry [:habit :criteria] #(vec (conj % {})))]
                             (put-fn [:entry/update-local updated]))))
-        gql-res (subscribe [:gql-res])
         ts (:timestamp entry)
-        habits-successes (reaction (-> @gql-res :habits-success :data :habits_success))
-        completions (reaction (->> @habits-successes
-                                   (filter #(= ts (:timestamp (:habit_entry %))))
-                                   first
-                                   :completed
+        habits (subscribe [:habits])
+        completions (reaction (->> (get-in @habits [ts :completed])
+                                   (take 28)
                                    reverse))]
     (fn [entry put-fn]
       (let [criteria (get-in entry [:habit :criteria])]
