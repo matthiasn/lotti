@@ -45,7 +45,23 @@
 
   .metrics {
     display: flex;
-    flex-flow: row;
+    flex-flow: column;
+
+    table {
+      text-align: right;
+      margin-top: 20px;
+
+      .label {
+      }
+
+      td {
+        padding-left: 10px;
+      }
+
+      .data {
+        font-family: monospace;
+      }
+    }
 
     .btn {
       padding: 10px 20px;

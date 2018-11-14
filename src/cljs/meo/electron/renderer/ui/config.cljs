@@ -200,16 +200,44 @@
           [:option {:value k} locale-name])]])))
 
 (defn metrics [put-fn]
-  (let [metrics (subscribe [:metrics])]
+  (let [metrics (subscribe [:metrics])
+        td-fmt (fn [v] [:td.data (.toFixed v 2)])]
     (fn [put-fn]
       [:div.metrics
        [:span.btn {:on-click #(put-fn [:metrics/get])} "retrieve metrics"]
-       [:pre [:code (with-out-str (pp/pprint @metrics))]]])))
+       [:table
+        [:thead
+         [:tr
+          [:th "metrics"]
+          [:th "n"]
+          [:th "total time"]
+          [:th "mean"]
+          [:th "std-dev"]
+          [:th "smallest"]
+          [:th "p75"]
+          [:th "p95"]
+          [:th "p99"]
+          [:th "p99.9"]
+          [:th "largest"]]]
+        [:tbody
+         (for [[metric data] @metrics]
+           [:tr
+            [:td.label metric]
+            [:td.data (:n data)]
+            [td-fmt (* (:mean data) (:n data))]
+            [td-fmt (:mean data)]
+            [td-fmt (:std-dev data)]
+            [td-fmt (:smallest data)]
+            [td-fmt (get-in data [:percentiles 0.75])]
+            [td-fmt (get-in data [:percentiles 0.95])]
+            [td-fmt (get-in data [:percentiles 0.99])]
+            [td-fmt (get-in data [:percentiles 0.999])]
+            [td-fmt (:largest data)]])]]])))
 
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :page            :custom-fields})
+                       :page            :metrics})
         backend-cfg (subscribe [:backend-cfg])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
@@ -252,12 +280,12 @@
            [:div.config {:on-key-down save-key-fn}
             [:div.menu
              [:h1 "Settings"]
+             [menu-item :metrics "Metrics" page]
              [menu-item :custom-fields "Custom Fields" page]
              [menu-item :sync "Synchronization" page]
              [menu-item :photos "Photos" page]
              [menu-item :localization "Localization" page]
              [menu-item :playground "Playground" page]
-             [menu-item :metrics "Metrics" page]
              [:div.menu-item.exit
               {:on-click #(put-fn [:nav/to {:page :main}])}
               "Exit"]]

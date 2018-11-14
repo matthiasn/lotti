@@ -7,6 +7,7 @@
             [meo.electron.renderer.ui.dashboard.earlybird :as eb]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
             [meo.electron.renderer.ui.dashboard.commits :as c]
+            [meo.electron.renderer.ui.dashboard.habits :as h]
             [meo.electron.renderer.graphql :as gql]
             [taoensso.timbre :refer-macros [info debug]]
             [matthiasn.systems-toolbox.component :as st]))
@@ -78,6 +79,7 @@
           (for [chart-cfg (:charts @charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
                              :scores-chart ds/scores-chart
+                             :habits-chart h/habits-chart
                              :commits-chart c/commits-chart
                              :earlybird-chart eb/earlybird-chart
                              :bp-chart bp/bp-chart
