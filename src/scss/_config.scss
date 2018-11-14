@@ -43,10 +43,27 @@
     }
   }
 
-  pre {
-    height: 200px;
-    font-size: 8px;
-    overflow-y: scroll;
+  .metrics {
+    display: flex;
+    flex-flow: row;
+
+    .btn {
+      padding: 10px 20px;
+      font-weight: bold;
+      height: 30px;
+      width: 100px;
+      text-align: center;
+      margin: 10px;
+      border-radius: $entry-border-radius;
+      background-color: $green;
+    }
+
+    pre {
+      background-color: white;
+      overflow-y: scroll;
+      margin-left: 20px;
+      height: auto;
+    }
   }
 
   input {

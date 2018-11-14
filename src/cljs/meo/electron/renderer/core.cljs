@@ -27,7 +27,7 @@
   (merge sente-base-cfg
          {:relay-types #{:entry/update :entry/trash :entry/sync
                          :import/photos :import/spotify :import/flight
-                         :backend-cfg/save :import/git
+                         :backend-cfg/save :import/git :metrics/get
                          :photos/gen-cache :export/geojson
                          :import/movie :entry/unlink :startup/progress?
                          :import/listen :spotify/play :import/gen-thumbs

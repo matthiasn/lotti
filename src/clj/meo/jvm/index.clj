@@ -31,4 +31,4 @@
                    :out-chan [:buffer 100]}
    :relay-types   #{:entry/saved :backend-cfg/new :cmd/toggle-key :cfg/show-qr
                     :ws/ping :startup/progress :file/encrypt :search/res :sync/imap
-                    :sync/start-imap :gql/res :gql/res2}})
+                    :sync/start-imap :gql/res :gql/res2 :metrics/info}})

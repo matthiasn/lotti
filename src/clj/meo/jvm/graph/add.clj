@@ -10,7 +10,9 @@
             [meo.common.utils.misc :as u]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.datetime :as dt]
-            [clj-time.coerce :as c]))
+            [clj-time.coerce :as c]
+            [meo.jvm.metrics :as mt]
+            [metrics.timers :as tmr]))
 
 (defn add-entry [graph entry]
   (let [ts (:timestamp entry)]
@@ -302,7 +304,9 @@
   "Adds node to both graph and the sorted set, which maintains the entries
    sorted by timestamp."
   [current-state entry]
-  (let [graph (:graph current-state)
+  (let [timer-id ["graph" "add" (name (or (:entry-type entry) "entry"))]
+        started-timer (mt/start-timer timer-id)
+        graph (:graph current-state)
         ts (:timestamp entry)
         old-entry (when (uc/has-node? graph ts) (uc/attrs graph ts))
         merged (merge old-entry entry)
@@ -344,18 +348,20 @@
                     new-state)
         new-state (if (not old-entry)
                     (add-timeline-tree new-state new-entry)
-                    new-state)]
-    (-> new-state
-        (add-geoname new-entry)
-        (add-adjusted-ts new-entry)
-        (update-in [:graph] add-parent-ref new-entry)
-        (update-in [:graph] add-story new-entry)
-        (update-in [:graph] add-saga new-entry)
-        (update-in [:graph] add-habit new-entry)
-        (update-in [:graph] add-starred new-entry)
-        (update-in [:graph] add-flagged new-entry)
-        (update-in [:graph] add-done :done :completion_ts new-entry)
-        (update-in [:graph] add-done :closed :closed_ts new-entry)
-        (update-in [:graph] add-location new-entry)
-        (update-in [:graph] add-briefing new-entry)
-        (update-in [:sorted-entries] conj ts))))
+                    new-state)
+        res (-> new-state
+                (add-geoname new-entry)
+                (add-adjusted-ts new-entry)
+                (update-in [:graph] add-parent-ref new-entry)
+                (update-in [:graph] add-story new-entry)
+                (update-in [:graph] add-saga new-entry)
+                (update-in [:graph] add-habit new-entry)
+                (update-in [:graph] add-starred new-entry)
+                (update-in [:graph] add-flagged new-entry)
+                (update-in [:graph] add-done :done :completion_ts new-entry)
+                (update-in [:graph] add-done :closed :closed_ts new-entry)
+                (update-in [:graph] add-location new-entry)
+                (update-in [:graph] add-briefing new-entry)
+                (update-in [:sorted-entries] conj ts))]
+    (tmr/stop started-timer)
+    res))

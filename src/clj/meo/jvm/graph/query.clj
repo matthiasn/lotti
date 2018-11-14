@@ -12,7 +12,9 @@
             [matthiasn.systems-toolbox.component :as st]
             [clj-uuid :as uuid]
             [clj-time.core :as ct]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [meo.jvm.metrics :as mt]
+            [metrics.timers :as tmr]))
 
 ;; TODO: migrate existing audio entries to use a different keyword
 (defn summed-durations
@@ -221,7 +223,8 @@
    node.
    Warns when node not in graph. (debugging, should never happen)"
   [state query]
-  (let [g (:graph state)
+  (let [started-timer (mt/start-timer ["graph" "query" "extract-sorted-entries"])
+        g (:graph state)
         n (:n query 20)
         mapper-fn (fn [n]
                     (if (uc/has-node? g n)
@@ -302,8 +305,10 @@
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
         parent-ids (filter identity (mapv :comment_for matched-entries))
-        parents (map mapper-fn parent-ids)]
-    (flatten [matched-entries parents])))
+        parents (map mapper-fn parent-ids)
+        res (flatten [matched-entries parents])]
+    (tmr/stop started-timer)
+    res))
 
 (defn extract-sorted2
   "Extracts nodes and their properties in descending timestamp order by looking
@@ -311,7 +316,8 @@
    node.
    Warns when node not in graph. (debugging, should never happen)"
   [state query]
-  (let [g (:graph state)
+  (let [started-timer (mt/start-timer ["graph" "query" "extract-sorted2"])
+        g (:graph state)
         matched-ids (cond
                       ; full-text search
                       (:ft-search query)
@@ -356,6 +362,7 @@
 
                       ; set with all timestamps
                       :else (:sorted-entries state))]
+    (tmr/stop started-timer)
     matched-ids))
 
 (defn find-all-hashtags

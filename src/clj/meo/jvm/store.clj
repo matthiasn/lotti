@@ -7,6 +7,7 @@
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graph.add :as ga]
             [meo.jvm.learn :as tf]
+            [meo.jvm.metrics :as m]
             [meo.jvm.export :as e]
             [meo.common.specs]
             [progrock.core :as pr]
@@ -168,6 +169,7 @@
                  :cfg/refresh        refresh-cfg
                  :backend-cfg/save   fu/write-cfg
                  :search/remove      gql/search-remove
+                 :metrics/get        m/get-metrics
                  :gql/query          gql/run-query
                  :gql/cmd            gql/start-stop
                  :gql/run-registered gql/run-registered}})

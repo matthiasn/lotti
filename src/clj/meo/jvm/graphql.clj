@@ -26,6 +26,9 @@
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.geo :as geo]
+            [meo.jvm.metrics :as mt]
+            [metrics.timers :as tmr]
+            [metrics.core :as mc]
             [com.walmartlabs.lacinia.parser :as parser]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [clojure.set :as set]
@@ -325,22 +328,26 @@
 
 (defn run-query [{:keys [cmp-state current-state msg-payload put-fn] :as m}]
   (let [start (stc/now)
-        schema (:schema current-state)
         qid (:id msg-payload)
         merged (merge (get-in current-state [:queries qid]) msg-payload)
         {:keys [file args q id]} merged
+        started-timer (mt/start-timer ["graphql" "query" (name id)])
+        schema (:schema current-state)
         template (if file (slurp (io/resource (str "queries/" file))) q)
         query-string (when template (apply format template args))
         on-deliver
         (fn [res]
-          (let [res (merge merged
-                           (xf/simplify res)
-                           {:ts       (stc/now)
-                            :prio     (:prio merged 100)})]
-            (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
-            (info "GraphQL query" id "finished in" (- (stc/now) start) "ms "
-                  (str "- '" (or file query-string) "'"))
-            (put-fn (with-meta [:gql/res res] {:sente-uid :broadcast}))))]
+          (try
+            (let [res (merge merged
+                             (xf/simplify res)
+                             {:ts   (stc/now)
+                              :prio (:prio merged 100)})]
+              (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
+              (info "GraphQL query" id "finished in" (- (stc/now) start) "ms "
+                    (str "- '" (or file query-string) "'"))
+              (put-fn (with-meta [:gql/res res] {:sente-uid :broadcast}))
+              (tmr/stop started-timer))
+            (catch Exception ex (error ex))))]
     (swap! cmp-state assoc-in [:queries id] merged)
     (if query-string
       (execute-async schema query-string nil m {} on-deliver)

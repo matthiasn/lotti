@@ -43,7 +43,7 @@
       (put-fn [:gql/query {:file "habits-success.gql"
                            :id   :habits-success
                            :prio 13
-                           :args [28 pvt]}]))
+                           :args [90 pvt]}]))
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "award-points.gql" :award-points 14 [])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
@@ -73,6 +73,10 @@
 
 (defn progress [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:startup-progress] msg-payload)]
+    {:new-state new-state}))
+
+(defn save-metrics [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:metrics] msg-payload)]
     {:new-state new-state}))
 
 (defn gql-res [{:keys [current-state msg-payload]}]
@@ -129,6 +133,7 @@
                         :cal/to-day       c/cal-to-day
                         :cmd/toggle       c/toggle-set-fn
                         :cmd/set-opt      c/set-conj-fn
+                        :metrics/info     save-metrics
                         :cmd/set-dragged  c/set-currently-dragged
                         :cmd/toggle-key   c/toggle-key-fn
                         :cmd/assoc-in     c/assoc-in-state})})

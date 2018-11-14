@@ -199,6 +199,13 @@
           ^{:key k}
           [:option {:value k} locale-name])]])))
 
+(defn metrics [put-fn]
+  (let [metrics (subscribe [:metrics])]
+    (fn [put-fn]
+      [:div.metrics
+       [:span.btn {:on-click #(put-fn [:metrics/get])} "retrieve metrics"]
+       [:pre [:code (with-out-str (pp/pprint @metrics))]]])))
+
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
@@ -250,6 +257,7 @@
              [menu-item :photos "Photos" page]
              [menu-item :localization "Localization" page]
              [menu-item :playground "Playground" page]
+             [menu-item :metrics "Metrics" page]
              [:div.menu-item.exit
               {:on-click #(put-fn [:nav/to {:page :main}])}
               "Exit"]]
@@ -276,6 +284,8 @@
               [locale put-fn])
             (when (= :sync page)
               [sync/sync put-fn])
+            (when (= :metrics page)
+              [metrics put-fn])
             (when (= :photos page)
               [:div
                [:button {:on-click #(put-fn [:photos/gen-cache])}

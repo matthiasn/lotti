@@ -348,3 +348,5 @@
                                            :meo.photo/full-path]))
 
 (s/def :playground/gen nil?)
+
+(s/def :metrics/info map?)

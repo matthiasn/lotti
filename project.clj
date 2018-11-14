@@ -31,6 +31,8 @@
                  [org.eclipse.jetty.websocket/websocket-server "9.4.7.v20170914"]
 
                  [vincit/venia "0.2.5"]
+                 [metrics-clojure "2.10.0"]
+                 [metrics-clojure-jvm "2.10.0"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
