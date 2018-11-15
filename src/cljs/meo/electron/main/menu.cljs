@@ -38,8 +38,7 @@
                  {:label "Start Spotify Service"
                   :click #(put-fn [:spotify/start])})
                {:label "Quit Background Service"
-                :click #(do (put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])
-                            (put-fn [:app/shutdown]))}
+                :click #(put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])}
                {:label       "Quit"
                 :accelerator "CmdOrCtrl+Q"
                 :click       #(put-fn [:app/shutdown])}]}))

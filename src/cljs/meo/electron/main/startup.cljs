@@ -136,13 +136,14 @@
                 (.openItem shell path)))))
   {})
 
-(defn shutdown-jvm [{:keys [msg-payload]}]
+(defn shutdown-jvm [{:keys [msg-payload put-fn]}]
   (let [environments (:environments msg-payload)
         {:keys [port pg-port]} rt/runtime-info]
     (when (contains? environments :live)
       (kill-by-port port))
     (when (contains? environments :playground)
       (kill-by-port pg-port)))
+  (put-fn [:cmd/schedule-new {:timeout 1500 :message [:app/shutdown]}])
   {})
 
 (defn clear-cache [{:keys []}]

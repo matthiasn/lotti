@@ -14,17 +14,19 @@
         habits (subscribe [:habits])
         habit-entry (reaction (get-in @habits [habit :habit_entry]))
         completions (reaction (->> (get-in @habits [habit :completed]) reverse))]
-    (fn habits-chart-render [{:keys [y w h start end x-offset days]} put-fn]
+    (fn habits-chart-render [{:keys [y w start end x-offset days]} put-fn]
       (let [label (eu/first-line @habit-entry)
+            h 25
             btm-y (+ y h)
             span (- end start)
             mapper (fn [idx itm]
-                     (let [prior (< (+ start (* idx (/ span days))) habit)]
+                     (let [prior (< (+ start (* idx (/ span days))) habit)
+                           current (= idx days)]
                        {:cx      (+ x-offset 8 (* idx (/ w (inc days))))
                         :cy      (- btm-y 12)
                         :r       8
                         :idx     idx
-                        :opacity (if prior 0.3 1)
+                        :opacity (if prior 0.3 (if current 0.5 1))
                         :fill    (if (:success itm) "green" "red")}))
             points (map-indexed mapper @completions)]
         [:g
