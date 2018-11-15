@@ -102,6 +102,10 @@
 
 (def editor (adapt-react-class "EntryTextEditor"))
 
+(defn editor-wrapper [_]
+  (fn [props]
+    [editor props]))
+
 (defn entry-editor [entry2 put-fn]
   (let [ts (:timestamp entry2)
         {:keys [new-entry]} (eu/entry-reaction ts)
@@ -170,11 +174,12 @@
     (fn [entry2 _put-fn]
       (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
         [:div {:class (when unsaved "unsaved")}
-         [editor {:md       (or (or (:md @new-entry) (:md entry2)) "")
-                  :ts       ts
-                  :changed  unsaved
-                  :mentions @mentions
-                  :hashtags @hashtags
-                  :saveFn   save-fn
-                  :startFn  start-fn
-                  :onChange change-cb}]]))))
+         [editor-wrapper
+          {:md       (or (or (:md @new-entry) (:md entry2)) "")
+           :ts       ts
+           :changed  unsaved
+           :mentions @mentions
+           :hashtags @hashtags
+           :saveFn   save-fn
+           :startFn  start-fn
+           :onChange change-cb}]]))))

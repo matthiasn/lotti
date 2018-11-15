@@ -248,7 +248,7 @@
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
-           :n        100
+           :n        Integer/MAX_VALUE
            :pvt      (:pvt args)}
         current-state @state
         g (:graph current-state)
@@ -256,6 +256,7 @@
         tasks (->> res
                    (entries-w-logged g)
                    (mapv #(entry-w-story g %))
+                   (filter #(not (:on_hold (:task %))))
                    (mapv (partial entry-w-comments g)))]
     tasks))
 
