@@ -58,8 +58,9 @@
           (let [status-code (.-statusCode res)
                 msg (merge
                       {:url  index-page
-                       :opts {:titleBarStyle "hidden"
-                              :icon          icon}}
+                       :opts {:titleBarStyle   "hidden"
+                              :backgroundColor "#282828"
+                              :icon            icon}}
                       (when (= environment :playground)
                         {:window-id index-page}))
                 data (atom "")
