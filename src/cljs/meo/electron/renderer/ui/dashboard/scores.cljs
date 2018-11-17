@@ -56,9 +56,11 @@
   [{:keys [k score-k]} _put-fn]
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])]
-    (fn scores-chart-render [{:keys [y k w h score-k start end mn mx color
-                                     x-offset label]} put-fn]
-      (let [qid (keyword (str (s/upper-case (name k)) "_" (name score-k)))
+    (fn scores-chart-render [{:keys [y k w h score-k score_k start end mn mx color
+                                     x-offset label] :as m} put-fn]
+      (info m)
+      (let [score-k (or score_k score-k)
+            qid (keyword (str (s/upper-case (name k)) "_" (name score-k)))
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
             span (- end start)

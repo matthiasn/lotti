@@ -252,10 +252,18 @@
     (uc/remove-edges graph [(:timestamp entry) :starred])))
 
 (defn add-habit [graph entry]
-  (if (= :habit (:entry-type entry))
+  (if (or (= :habit (:entry-type entry))
+          (= :habit (:entry_type entry)))
     (-> graph
         (uc/add-nodes :habits)
         (uc/add-edges [:habits (:timestamp entry)]))
+    graph))
+
+(defn add-dashboard-cfg [graph entry]
+  (if (= :dashboard_cfg (:entry_type entry))
+    (-> graph
+        (uc/add-nodes :dashboard_cfgs)
+        (uc/add-edges [:dashboard_cfgs (:timestamp entry)]))
     graph))
 
 (defn add-flagged [graph entry]
@@ -356,6 +364,7 @@
                 (update-in [:graph] add-story new-entry)
                 (update-in [:graph] add-saga new-entry)
                 (update-in [:graph] add-habit new-entry)
+                (update-in [:graph] add-dashboard-cfg new-entry)
                 (update-in [:graph] add-starred new-entry)
                 (update-in [:graph] add-flagged new-entry)
                 (update-in [:graph] add-done :done :completion_ts new-entry)

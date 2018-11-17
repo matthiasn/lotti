@@ -1,12 +1,12 @@
 (ns meo.electron.renderer.ui.dashboard.habits
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
             [camel-snake-kebab.core :refer [->kebab-case]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
+            [meo.electron.renderer.ui.entry.utils :as eu]
             [clojure.string :as s]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [moment]))
 
 (defn habits-chart
   [{:keys [habit]} _put-fn]
@@ -14,9 +14,9 @@
         habits (subscribe [:habits])
         habit-entry (reaction (get-in @habits [habit :habit_entry]))
         completions (reaction (->> (get-in @habits [habit :completed]) reverse))]
-    (fn habits-chart-render [{:keys [y w start end x-offset days]} put-fn]
+    (fn habits-chart-render [{:keys [y w h start end x-offset days]} put-fn]
       (let [label (eu/first-line @habit-entry)
-            h 25
+            h (or h 25)
             btm-y (+ y h)
             span (- end start)
             mapper (fn [idx itm]

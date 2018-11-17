@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.ui.ui-components
-  (:require [meo.electron.renderer.helpers :as h]))
+  (:require [meo.electron.renderer.helpers :as h]
+            [taoensso.timbre :refer-macros [info error debug]]))
 
 
 (defn select [{:keys [options entry path on-change] :as m}]
@@ -12,7 +13,6 @@
      (for [[v t] (sort-by first options)]
        ^{:key v}
        [:option {:value v} t])]))
-
 
 (defn select-update [{:keys [entry path xf put-fn]}]
   (let [xf (or xf identity)]

@@ -57,13 +57,17 @@
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_entry()"}])
         new-story #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_story()"}])
-        new-saga #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_saga()"}])]
+        new-saga #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_saga()"}])
+        new-habit #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_habit()"}])
+        new-dashboard #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_dashboard()"}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
                 :click       new-entry}
                {:label "New Story" :click new-story}
                {:label "New Saga" :click new-saga}
+               {:label "New Habit" :click new-habit}
+               {:label "New Dashboard" :click new-dashboard}
                (when (contains? capabilities :sync-swift)
                  {:label       "Upload"
                   :accelerator "CmdOrCtrl+U"

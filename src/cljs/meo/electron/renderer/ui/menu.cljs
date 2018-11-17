@@ -36,6 +36,8 @@
     (def ^:export new-entry (h/new-entry put-fn {} open-new))
     (def ^:export new-story (h/new-entry put-fn {:entry_type :story} open-new))
     (def ^:export new-saga (h/new-entry put-fn {:entry_type :saga} open-new))
+    (def ^:export new-habit (h/new-entry put-fn {:entry_type :habit} open-new))
+    (def ^:export new-dashboard (h/new-entry put-fn {:entry_type :dashboard-cfg} open-new))
     (fn [put-fn]
       (when (:show @local)
         [:div.new-import

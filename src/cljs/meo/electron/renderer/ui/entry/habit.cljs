@@ -166,6 +166,10 @@
         completions (reaction (->> (get-in @habits [ts :completed])
                                    (take 28)
                                    reverse))]
+    (when (= :habit (:entry-type entry))
+      (put-fn [:entry/update (-> entry
+                                 (dissoc :entry-type)
+                                 (assoc :entry_type :habit))]))
     (fn [entry put-fn]
       (let [criteria (get-in entry [:habit :criteria])]
         [:div.habit-details

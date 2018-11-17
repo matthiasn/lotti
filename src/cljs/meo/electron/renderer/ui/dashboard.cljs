@@ -49,6 +49,7 @@
                         :last-h 0}
                        (get-in @questionnaires [:dashboards @active-dashboard])))]
     (fn dashboard-render [days put-fn]
+      (info (get-in @questionnaires [:dashboards @active-dashboard]))
       (let [now (st/now)
             d (* 24 60 60 1000)
             within-day (mod now d)
@@ -76,6 +77,7 @@
                    x (+ 200 scaled)]
                ^{:key n}
                [dc/tick x "#CCC" 1 30 end-y]))]
+          (info (:charts @charts-pos))
           (for [chart-cfg (:charts @charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
                              :scores-chart ds/scores-chart
@@ -88,6 +90,82 @@
                              :points-lost-by-day dc/points-lost-by-day-chart)]
               ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
               [chart-fn (merge common chart-cfg) put-fn]))
+          (for [n (range (inc days))]
+            (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
+                  scaled (* 1800 (/ offset span))
+                  x (+ 200 scaled)
+                  ts (+ start offset)
+                  weekday (dc/df ts dc/weekday)
+                  weekend? (get #{"Sat" "Sun"} weekday)]
+              ^{:key n}
+              [:g {:writing-mode "tb-rl"}
+               [:text {:x           x
+                       :y           36
+                       :font-size   9
+                       :fill        (if weekend? :red :black)
+                       :text-anchor "middle"}
+                (dc/df ts dc/month-day)]]))]]))))
+
+
+(defn dashboard2 [days put-fn]
+  (let [dashboard (subscribe [:dashboard])
+        gql-res (subscribe [:gql-res])
+        res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
+        charts-pos (reaction
+                     (reduce
+                       (fn [acc m]
+                         (let [{:keys [last-y last-h]} acc
+                               cfg (assoc-in m [:y] (+ last-y last-h))]
+                           {:last-y (:y cfg)
+                            :last-h (:h cfg 25)
+                            :charts (conj (:charts acc) cfg)}))
+                       {:last-y 50
+                        :last-h 0}
+                       @dashboard))]
+    (fn dashboard-render [days put-fn]
+      (let [now (st/now)
+            d (* 24 60 60 1000)
+            within-day (mod now d)
+            start (+ dc/tz-offset (- now within-day (* days d)))
+            end (+ (- now within-day) d dc/tz-offset)
+            span (- end start)
+            common {:start    start
+                    :end      end
+                    :w        1800
+                    :x-offset 200
+                    :span     span
+                    :days     days}
+            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
+        ;(gql-query charts-pos days put-fn)
+        ^{:key @res-hash}
+        [:div.questionnaires
+         [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
+                :style   {:background :white}}
+          [:filter#blur1
+           [:feGaussianBlur {:stdDeviation 3}]]
+          [:g
+           (for [n (range (+ 2 days))]
+             (let [offset (+ (* n d) dc/tz-offset)
+                   scaled (* 1800 (/ offset span))
+                   x (+ 200 scaled)]
+               ^{:key n}
+               [dc/tick x "#CCC" 1 30 end-y]))]
+          (for [chart-cfg (:charts @charts-pos)]
+            (let [chart-fn (case (:type chart-cfg)
+                             ;:scores_chart ds/scores-chart
+                             :habits_chart h/habits-chart
+                             :habit_success h/habits-chart
+                             :questionnaire ds/scores-chart
+                             ;:commits-chart c/commits-chart
+                             ;:earlybird-chart eb/earlybird-chart
+                             ;:bp-chart bp/bp-chart
+                             ;:barchart_row dc/barchart-row
+                             ;:points-by-day dc/points-by-day-chart
+                             ;:points-lost-by-day dc/points-lost-by-day-chart
+                             nil)]
+              (when chart-fn
+                ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
+                [chart-fn (merge common chart-cfg) put-fn])))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
                   scaled (* 1800 (/ offset span))

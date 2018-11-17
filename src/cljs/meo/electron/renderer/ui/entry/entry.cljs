@@ -11,6 +11,7 @@
             [meo.electron.renderer.ui.entry.capture :as c]
             [meo.electron.renderer.ui.entry.task :as task]
             [meo.electron.renderer.ui.entry.habit :as habit]
+            [meo.electron.renderer.ui.entry.dashboard-cfg :as db]
             [meo.electron.renderer.ui.entry.reward :as reward]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
@@ -118,8 +119,11 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged local-cfg put-fn edit-mode?])
-         (when (= :habit (:entry-type merged))
+         (when (or (= :habit (:entry-type merged))
+                   (= :habit (:entry_type merged)))
            [habit/habit-details merged put-fn])
+         (when (= :dashboard-cfg (:entry_type merged))
+           [db/dashboard-config merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          [:div.entry-footer

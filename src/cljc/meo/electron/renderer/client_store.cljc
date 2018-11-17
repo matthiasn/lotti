@@ -59,6 +59,10 @@
   (let [new-state (assoc-in current-state [:current-page] msg-payload)]
     {:new-state new-state}))
 
+(defn dashboard-set-handler [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:dashboard] msg-payload)]
+    {:new-state new-state}))
+
 (defn blink-busy [{:keys [current-state msg-payload]}]
   (let [color (:color msg-payload)
         new-state (assoc-in current-state [:busy-status :color] color)]
@@ -126,6 +130,7 @@
                         :ws/ping          ping
                         :backend-cfg/new  save-backend-cfg
                         :nav/to           nav-handler
+                        :dashboard/set    dashboard-set-handler
                         :blink/busy       blink-busy
                         :imap/status      imap-status
                         :imap/cfg         imap-cfg

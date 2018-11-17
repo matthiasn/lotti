@@ -135,9 +135,10 @@
       background-color: $green;
       padding: 0 3px;
       color: white;
-      border-radius: 2px;
+      border-radius: 3px;
       right: 0;
-      height: 16px;
+      font-size: 12px;
+      height: 15px;
       margin-top: 4px;
       margin-left: 10px;
       cursor: pointer;
@@ -195,7 +196,7 @@
     width: 150px;
   }
   div {
-    line-height: 1.5em;
+    line-height: 16px;
   }
   .name {
     min-width: 100px;

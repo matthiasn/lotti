@@ -20,6 +20,9 @@
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
 (reg-sub :gql-res2 (fn [db _] (:gql-res2 db)))
+
+(reg-sub :dashboard (fn [db _] (:dashboard db)))
+
 (reg-sub :habits (fn [db _]
                    (->> (:gql-res db)
                         :habits-success

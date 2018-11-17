@@ -45,6 +45,7 @@
       [:div.footer
        (when @dashboard-banner
          [:div {:style {:max-height (:height @local)}}
+          [db/dashboard2 (:days @local) put-fn]
           [db/dashboard (:days @local) put-fn]
           (when @show-pvt
             [:div

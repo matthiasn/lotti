@@ -51,7 +51,7 @@
                        (put-fn [:search/add
                                 {:tab-group :left
                                  :query     (up/parse-search (:timestamp x))}]))
-            habit-default {:entry-type :habit
+            habit-default {:entry_type :habit
                            :starred    true
                            :perm_tags  #{"#habit"}}
             new-habit (h/new-entry put-fn habit-default
