@@ -152,14 +152,12 @@
                [dc/tick x "#CCC" 1 30 end-y]))]
           (for [chart-cfg (:charts @charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
-                             ;:scores_chart ds/scores-chart
-                             :habits_chart h/habits-chart
                              :habit_success h/habits-chart
-                             :questionnaire ds/scores-chart
+                             :questionnaire ds/scores-chart2
                              ;:commits-chart c/commits-chart
                              ;:earlybird-chart eb/earlybird-chart
                              ;:bp-chart bp/bp-chart
-                             ;:barchart_row dc/barchart-row
+                             :barchart_row dc/barchart-row2
                              ;:points-by-day dc/points-by-day-chart
                              ;:points-lost-by-day dc/points-lost-by-day-chart
                              nil)]

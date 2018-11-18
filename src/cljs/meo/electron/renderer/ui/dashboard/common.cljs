@@ -115,13 +115,14 @@
 (defn rect [{:keys []}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h cls ymd]}]
+    (fn [{:keys [v x w y h cls ymd color]}]
       [:g
        [:rect {:on-click click
                :x        x
                :y        (- y h)
                :width    w
                :height   h
+               :fill     color
                :class    (cc/weekend-class cls {:date_string ymd})}]
        (when (:show-label @local)
          [:text {:x           (+ x 11)
@@ -201,6 +202,56 @@
                     :cls cls
                     :n   n}]))
          [line (+ y h) "#000" 2]]))))
+
+(defn barchart-row2 [_ _]
+  (let [show-pvt (subscribe [:show-pvt])
+        gql-res (subscribe [:gql-res])]
+    (fn barchart-row [{:keys [days span mx label tag h y field color
+                              cls threshold success-cls] :as m} put-fn]
+      (when (and field tag)
+        (let [btm-y (+ y h)
+              qid (keyword (s/replace (subs tag 1) "-" "_"))
+              data (get-in @gql-res [:dashboard :data qid])
+              indexed (map-indexed (fn [i x] [i x]) data)
+              mx (or mx
+                     (apply max (map
+                                  (fn [x]
+                                    (:value
+                                      (first (filter #(= (name field) (:field %))
+                                                     (:fields x)))
+                                      0))
+                                  data)))
+              scale (if (pos? mx) (/ (- h 3) mx) 1)]
+          [:g
+           (when @show-pvt
+             [row-label (or label tag) y h])
+           (for [[n {:keys [date-string fields]}] indexed]
+             (let [field (first (filter #(= (name field) (:field %)) fields))
+                   v (:value field 0)
+                   d (* 24 60 60 1000)
+                   offset (* n d)
+                   span (if (zero? span) 1 span)
+                   scaled (* 1800 (/ offset span))
+                   x (+ 201 scaled)
+                   v (min mx v)
+                   h (* v scale)
+                   cls (if (and threshold (> v threshold))
+                         success-cls
+                         cls)
+                   display-v (if (= :duration field)
+                               (h/m-to-hh-mm v)
+                               v)]
+               ^{:key (str tag field n)}
+               [rect {:v     display-v
+                      :x     x
+                      :w     (/ 1500 days)
+                      :ymd   date-string
+                      :y     btm-y
+                      :h     h
+                      :cls   cls
+                      :color color
+                      :n     n}]))
+           [line (+ y h) "#000" 2]])))))
 
 (defn points-by-day-chart [{:keys [y h label]}]
   (let [gql-res (subscribe [:gql-res])

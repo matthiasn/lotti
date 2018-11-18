@@ -54,6 +54,8 @@
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
             tag-path [:dashboard_cfg :items idx :k]
             h-path [:dashboard_cfg :items idx :h]
+            color-path [:dashboard_cfg :items idx :color]
+            label-path [:dashboard_cfg :items idx :label]
             show-details (not (empty? (str (get-in entry tag-path))))]
         [:div
          [:h4 "Questionnaire"]
@@ -78,13 +80,30 @@
                           :put-fn    put-fn
                           :options   options}]]))
          (when show-details
-           [input-row entry "Row Height:" {:type :number} h-path put-fn])]))))
+           [input-row entry "Row Height:" {:type :number} h-path put-fn])
+         (when show-details
+           [input-row entry "Label:" {} label-path put-fn])
+         (when show-details
+           [:div.row
+            [:label.wide "Color:"]
+            [uc/select {:entry     entry
+                        :on-change uc/select-update
+                        :path      color-path
+                        :put-fn    put-fn
+                        :options   {:red     "Red"
+                                    :green   "Green"
+                                    :blue    "Blue"
+                                    :yellow  "Yellow"
+                                    :magenta "Magenta"
+                                    :cyan    "Cyan"
+                                    :gray    "Gray"
+                                    :black   "Black"}}]])]))))
 
 (defn barchart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
     (fn [{:keys [put-fn entry idx]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
-            tag-path [:dashboard_cfg :items idx :cf_tag]
+            tag-path [:dashboard_cfg :items idx :tag]
             h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
@@ -121,7 +140,6 @@
             [uc/select {:entry     entry
                         :on-change uc/select-update
                         :path      color-path
-                        :xf        keyword
                         :put-fn    put-fn
                         :options   {:red     "Red"
                                     :green   "Green"

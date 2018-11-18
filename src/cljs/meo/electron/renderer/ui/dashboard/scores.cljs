@@ -58,7 +58,6 @@
         gql-res (subscribe [:gql-res])]
     (fn scores-chart-render [{:keys [y k w h score-k score_k start end mn mx color
                                      x-offset label] :as m} put-fn]
-      (info m)
       (let [score-k (or score_k score-k)
             qid (keyword (str (s/upper-case (name k)) "_" (name score-k)))
             data (sort-by :timestamp
@@ -85,6 +84,47 @@
         [:g
          (for [n lines]
            ^{:key (str k score-k n)}
+           [dc/line (- btm-y (* n scale)) "#888" 1])
+         [dc/chart-line data mapper color put-fn]
+         [dc/line y "#000" 2]
+         [dc/line (+ y h) "#000" 2]
+         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
+         (when @show-pvt
+           [dc/row-label label y h])]))))
+
+(defn scores-chart2
+  [{:keys []} _put-fn]
+  (let [show-pvt (subscribe [:show-pvt])
+        gql-res (subscribe [:gql-res])]
+    (fn scores-chart-render [{:keys [y k w h score_k start end mn mx color
+                                     x-offset label] :as m} put-fn]
+      (let [mn 0
+            mx 50
+            qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
+            data (sort-by :timestamp
+                          (get-in @gql-res [:dashboard-questionnaires :data qid]))
+            span (- end start)
+            rng (- mx mn)
+            scale (/ h rng)
+            btm-y (+ y h)
+            line-inc (if (> mx 100) 50 10)
+            lines (filter #(zero? (mod % line-inc)) (range 1 rng))
+            mapper (fn [idx itm]
+                     (let [ts (:timestamp itm)
+                           from-beginning (- ts start)
+                           x (+ x-offset (* w (/ from-beginning span)))
+                           v (:score itm)
+                           y (- btm-y (* (- v mn) scale))
+                           s (str x "," y)]
+                       {:x       x
+                        :y       y
+                        :ts      ts
+                        :v       v
+                        :starred (:starred itm)
+                        :s       s}))]
+        [:g
+         (for [n lines]
+           ^{:key (str k score_k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
          [dc/chart-line data mapper color put-fn]
          [dc/line y "#000" 2]
