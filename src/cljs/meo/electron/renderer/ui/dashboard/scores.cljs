@@ -97,10 +97,8 @@
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])]
     (fn scores-chart-render [{:keys [y k w h score_k start end mn mx color
-                                     x-offset label] :as m} put-fn]
-      (let [mn 0
-            mx 50
-            qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
+                                     x-offset label] :as cfg} put-fn]
+      (let [qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
             span (- end start)
@@ -108,7 +106,7 @@
             scale (/ h rng)
             btm-y (+ y h)
             line-inc (if (> mx 100) 50 10)
-            lines (filter #(zero? (mod % line-inc)) (range 1 rng))
+            lines (butlast (filter #(zero? (mod % line-inc)) (range 1 rng)))
             mapper (fn [idx itm]
                      (let [ts (:timestamp itm)
                            from-beginning (- ts start)
@@ -126,7 +124,7 @@
          (for [n lines]
            ^{:key (str k score_k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
-         [dc/chart-line data mapper color put-fn]
+         [dc/chart-line3 data mapper cfg put-fn]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]

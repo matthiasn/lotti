@@ -10,7 +10,9 @@
             [meo.electron.renderer.ui.dashboard.habits :as h]
             [meo.electron.renderer.graphql :as gql]
             [taoensso.timbre :refer-macros [info debug]]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.electron.renderer.helpers :as rh]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (defn gql-query [charts-pos days put-fn]
   (let [tags (->> (:charts @charts-pos)
@@ -112,16 +114,19 @@
         gql-res (subscribe [:gql-res])
         res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
         charts-pos (reaction
-                     (reduce
-                       (fn [acc m]
-                         (let [{:keys [last-y last-h]} acc
-                               cfg (assoc-in m [:y] (+ last-y last-h))]
-                           {:last-y (:y cfg)
-                            :last-h (:h cfg 25)
-                            :charts (conj (:charts acc) cfg)}))
-                       {:last-y 50
-                        :last-h 0}
-                       @dashboard))]
+                     (let [ts (:timestamp @dashboard)
+                           new-entry @(:new-entry (eu/entry-reaction ts))
+                           entry (or new-entry @dashboard)
+                           items (:items (:dashboard_cfg entry))
+                           acc {:last-y 50
+                                :last-h 0}
+                           f (fn [acc m]
+                               (let [{:keys [last-y last-h]} acc
+                                     cfg (assoc-in m [:y] (+ last-y last-h))]
+                                 {:last-y (:y cfg)
+                                  :last-h (:h cfg)
+                                  :charts (conj (:charts acc) cfg)}))]
+                       (reduce f acc items)))]
     (fn dashboard-render [days put-fn]
       (let [now (st/now)
             d (* 24 60 60 1000)
@@ -163,7 +168,7 @@
                              nil)]
               (when chart-fn
                 ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
-                [chart-fn (merge common chart-cfg) put-fn])))
+                [rh/error-boundary [chart-fn (merge common chart-cfg) put-fn]])))
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
                   scaled (* 1800 (/ offset span))

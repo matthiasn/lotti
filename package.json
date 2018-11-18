@@ -1,6 +1,6 @@
 {
-  "name": "meo",
-  "version": "0.5.383",
+  "name": "meoDev",
+  "version": "0.5.384",
   "description": "meo - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -60,6 +60,7 @@
     "react-addons-css-transition-group": "^15.6.2",
     "react-addons-shallow-compare": "15.6.2",
     "react-big-calendar": "0.19.2",
+    "react-color": "^2.14.1",
     "react-dom": "16.6.1",
     "react-infinite-calendar": "^2.3.1",
     "react-list": "0.8.10",

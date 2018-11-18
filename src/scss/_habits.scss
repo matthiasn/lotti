@@ -111,15 +111,13 @@
     padding-bottom: 10px;
     position: relative;
 
-    .fa-trash-alt {
-      position: absolute;
-      right: 0;
-      top: 0;
+    .fas {
       cursor: pointer;
-      padding: 4px 6px;
-      font-weight: 100;
+      padding: 4px;
+      font-weight: bold;
       font-size: $font-size-small;
       color: #BBB;
+      float: right;
 
       &:hover {
         color: red;
@@ -152,10 +150,10 @@
   }
 
   h4 {
-    color: #666;
-    font-size: $font-size-medium;
+    color: #888;
+    font-size: $font-size-small;
     font-weight: normal;
-    margin: 10px 10px 20px 12px;
+    margin: 3px 10px 20px 12px;
   }
 
   label {

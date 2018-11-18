@@ -92,6 +92,37 @@
                       :fill     (if (:starred p) :white color)
                       :style    {:stroke color}}])]]))))
 
+(defn chart-line3 [scores point-mapper cfg put-fn]
+  (let [active-dashboard (subscribe [:active-dashboard])]
+    (fn chart-line-render [scores point-mapper cfg put-fn]
+      (let [points (map-indexed point-mapper scores)
+            color (:color cfg)
+            line-points (s/join " " (map :s points))
+            active-dashboard @active-dashboard]
+        [:g
+         [:g {:filter "url(#blur1)"}
+          [:rect {:width  "100%"
+                  :height "100%"
+                  :style  {:fill   :none
+                           :stroke :none}}]
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width 2
+                               :fill         :none}}]]
+         [:g
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width (or (:stroke_width cfg) 1)
+                               :fill         :none}}]
+          (for [p points]
+            ^{:key (str active-dashboard p)}
+            [:circle {:cx       (:x p)
+                      :cy       (:y p)
+                      :on-click (up/add-search (:ts p) :left put-fn)
+                      :r        (if (:starred p) 5 2.5)
+                      :fill     (if (:starred p) :white :none)
+                      :style    {:stroke color}}])]]))))
+
 (defn scatter-chart [scores point-mapper color]
   (let [points (map-indexed point-mapper scores)]
     [:g
@@ -208,7 +239,7 @@
         gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span mx label tag h y field color
                               cls threshold success-cls] :as m} put-fn]
-      (when (and field tag)
+      (when (and tag field)
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs tag 1) "-" "_"))
               data (get-in @gql-res [:dashboard :data qid])
