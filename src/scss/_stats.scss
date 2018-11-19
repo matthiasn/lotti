@@ -26,7 +26,7 @@ $backlog-weekend: lighten($backlog, 30);
   .controls {
     position: absolute;
     right: 3px;
-    top: 3px;
+    bottom: 12px;
     z-index: 1111;
 
     .fas {

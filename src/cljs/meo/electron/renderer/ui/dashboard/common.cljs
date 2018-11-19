@@ -30,36 +30,6 @@
           :stroke       color
           :stroke-width w}])
 
-(defn chart-line [scores point-mapper color put-fn]
-  (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper color put-fn]
-      (let [points (map-indexed point-mapper scores)
-            line-points (s/join " " (map :s points))
-            active-dashboard @active-dashboard]
-        [:g
-         [:g {:filter "url(#blur1)"}
-          [:rect {:width  "100%"
-                  :height "100%"
-                  :style  {:fill   :none
-                           :stroke :none}}]
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width 2
-                               :fill         :none}}]]
-         [:g
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width 1
-                               :fill         :none}}]
-          (for [p points]
-            ^{:key (str active-dashboard p)}
-            [:circle {:cx       (:x p)
-                      :cy       (:y p)
-                      :on-click (up/add-search (:ts p) :left put-fn)
-                      :r        (if (:starred p) 5 2.5)
-                      :fill     (if (:starred p) :white :none)
-                      :style    {:stroke color}}])]]))))
-
 (defn chart-line2 [scores point-mapper color put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper color put-fn]
@@ -92,7 +62,7 @@
                       :fill     (if (:starred p) :white color)
                       :style    {:stroke color}}])]]))))
 
-(defn chart-line3 [scores point-mapper cfg put-fn]
+(defn chart-line [scores point-mapper cfg put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg put-fn]
       (let [points (map-indexed point-mapper scores)
@@ -187,54 +157,6 @@
    label])
 
 (defn barchart-row [_ _]
-  (let [show-pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span mx label tag k h y
-                              cls threshold success-cls]} put-fn]
-      (let [btm-y (+ y h)
-            qid (keyword (s/replace (subs tag 1) "-" "_"))
-            data (get-in @gql-res [:dashboard :data qid])
-            indexed (map-indexed (fn [i x] [i x]) data)
-            mx (or mx
-                   (apply max (map
-                                (fn [x]
-                                  (:value
-                                    (first (filter #(= (name k) (:field %))
-                                                   (:fields x)))
-                                    0))
-                                data)))
-            scale (if (pos? mx) (/ (- h 3) mx) 1)]
-        [:g
-         (when @show-pvt
-           [row-label (or label tag) y h])
-         (for [[n {:keys [date-string fields]}] indexed]
-           (let [field (first (filter #(= (name k) (:field %)) fields))
-                 v (:value field 0)
-                 d (* 24 60 60 1000)
-                 offset (* n d)
-                 span (if (zero? span) 1 span)
-                 scaled (* 1800 (/ offset span))
-                 x (+ 201 scaled)
-                 v (min mx v)
-                 h (* v scale)
-                 cls (if (and threshold (> v threshold))
-                       success-cls
-                       cls)
-                 display-v (if (= :duration k)
-                             (h/m-to-hh-mm v)
-                             v)]
-             ^{:key (str tag k n)}
-             [rect {:v   display-v
-                    :x   x
-                    :w   (/ 1500 days)
-                    :ymd date-string
-                    :y   btm-y
-                    :h   h
-                    :cls cls
-                    :n   n}]))
-         [line (+ y h) "#000" 2]]))))
-
-(defn barchart-row2 [_ _]
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span mx label tag h y field color

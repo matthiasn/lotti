@@ -65,25 +65,34 @@
   (let [backend-cfg (subscribe [:backend-cfg])]
     (fn [{:keys [put-fn entry idx]}]
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
-            tag-path [:dashboard_cfg :items idx :k]
+            tag-path [:dashboard_cfg :items idx :tag]
+            k-path [:dashboard_cfg :items idx :k]
             h-path [:dashboard_cfg :items idx :h]
             label-path [:dashboard_cfg :items idx :label]
             sw-path [:dashboard_cfg :items idx :stroke_width]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
-            show-details (not (empty? (str (get-in entry tag-path))))]
+            show-details (not (empty? (str (get-in entry k-path))))
+            select-q (fn [{:keys [entry xf put-fn options]}]
+                       (let [xf (or xf identity)]
+                         (fn [ev]
+                           (let [tv (h/target-val ev)
+                                 sel (if (empty? tv) tv (xf tv))
+                                 updated (assoc-in entry k-path sel)
+                                 updated (assoc-in updated tag-path (get options sel))]
+                             (put-fn [:entry/update-local updated])))))]
         [:div
          [:h4 "Questionnaire"]
          [:div.row
           [:label.wide "Tag:"]
           [uc/select {:entry     entry
-                      :on-change uc/select-update
-                      :path      tag-path
+                      :on-change select-q
+                      :path      k-path
                       :put-fn    put-fn
                       :xf        keyword
                       :options   (zipmap (vals q-tags) (keys q-tags))}]]
          (when show-details
-           (let [tag (get-in entry tag-path)
+           (let [tag (get-in entry k-path)
                  aggs (get-in @backend-cfg [:questionnaires :items tag :aggregations])
                  options (zipmap (keys aggs) (map :label (vals aggs)))]
              [:div.row
@@ -162,14 +171,14 @@
                          updated (assoc-in entry items-path items)]
                      (put-fn [:entry/update-local updated])))
         mv-click (fn [f _]
-                     (let [items (get-in entry items-path)
-                           item (get-in entry [:dashboard_cfg :items idx])
-                           items (vec (concat (take idx items) (drop (inc idx) items)))
-                           items (vec (concat (take (f idx) items)
-                                              [item]
-                                              (drop (f idx) items)))
-                           updated (assoc-in entry items-path items)]
-                       (put-fn [:entry/update-local updated])))]
+                   (let [items (get-in entry items-path)
+                         item (get-in entry [:dashboard_cfg :items idx])
+                         items (vec (concat (take idx items) (drop (inc idx) items)))
+                         items (vec (concat (take (f idx) items)
+                                            [item]
+                                            (drop (f idx) items)))
+                         updated (assoc-in entry items-path items)]
+                     (put-fn [:entry/update-local updated])))]
     [:div.criterion
      [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
      (when (and (< idx (dec n)) (> n 1))

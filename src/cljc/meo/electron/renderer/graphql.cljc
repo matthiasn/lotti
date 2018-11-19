@@ -21,9 +21,9 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn dashboard-questionnaires [days items]
-  (let [qfn (fn [{:keys [tag score-k] :as cfg}]
+  (let [qfn (fn [{:keys [tag score_k] :as cfg}]
               (if tag
-                (let [kn (name score-k)
+                (let [kn (name score_k)
                       alias (keyword
                               (str (s/replace (subs tag 1) "-" "_") "_" kn))]
                   {:query/data  [:questionnaires {:days days
