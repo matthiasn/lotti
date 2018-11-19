@@ -161,30 +161,21 @@
                          items (vec (concat (take idx items) (drop (inc idx) items)))
                          updated (assoc-in entry items-path items)]
                      (put-fn [:entry/update-local updated])))
-        up-click (fn []
-                   (let [items (get-in entry items-path)
-                         item (get-in entry [:dashboard_cfg :items idx])
-                         items (vec (concat (take idx items) (drop (inc idx) items)))
-                         items (vec (concat (take (dec idx) items)
-                                            [item]
-                                            (drop (dec idx) items)))
-                         updated (assoc-in entry items-path items)]
-                     (put-fn [:entry/update-local updated])))
-        down-click (fn []
+        mv-click (fn [f _]
                      (let [items (get-in entry items-path)
                            item (get-in entry [:dashboard_cfg :items idx])
                            items (vec (concat (take idx items) (drop (inc idx) items)))
-                           items (vec (concat (take (inc idx) items)
+                           items (vec (concat (take (f idx) items)
                                               [item]
-                                              (drop (inc idx) items)))
+                                              (drop (f idx) items)))
                            updated (assoc-in entry items-path items)]
                        (put-fn [:entry/update-local updated])))]
     [:div.criterion
      [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
      (when (and (< idx (dec n)) (> n 1))
-       [:i.fas.fa-arrow-down {:on-click down-click}])
+       [:i.fas.fa-arrow-down {:on-click (partial mv-click inc)}])
      (when (pos? idx)
-       [:i.fas.fa-arrow-up {:on-click up-click}])
+       [:i.fas.fa-arrow-up {:on-click (partial mv-click dec)}])
 
      (when-not habit-type
        [:div.row
@@ -211,11 +202,9 @@
                      (let [updated (update-in entry [:dashboard_cfg :items] #(vec (conj % {})))]
                        (put-fn [:entry/update-local updated]))))]
     (fn [entry put-fn]
-      (let [items (get-in entry [:dashboard_cfg :items])
-            set-active #(put-fn [:dashboard/set entry])]
+      (let [items (get-in entry [:dashboard_cfg :items])]
         [:div.habit-details
          [:h3.header
-          {:on-click set-active}
           "Dashboard Configuration"]
          [:div.row
           [:label "Active? "]

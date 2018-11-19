@@ -51,16 +51,13 @@
     (run-query "day-stats.gql" :day-stats 15 [90])
     (s/gql-query :left current-state false put-fn)
     (s/gql-query :right current-state false put-fn)
+    (s/dashboard-cfg-query current-state put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
     {}))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:current-page] msg-payload)]
-    {:new-state new-state}))
-
-(defn dashboard-set-handler [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:dashboard] msg-payload)]
     {:new-state new-state}))
 
 (defn blink-busy [{:keys [current-state msg-payload]}]
@@ -130,7 +127,6 @@
                         :ws/ping          ping
                         :backend-cfg/new  save-backend-cfg
                         :nav/to           nav-handler
-                        :dashboard/set    dashboard-set-handler
                         :blink/busy       blink-busy
                         :imap/status      imap-status
                         :imap/cfg         imap-cfg

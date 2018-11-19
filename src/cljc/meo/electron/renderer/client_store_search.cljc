@@ -47,6 +47,18 @@
                          :res-hash nil
                          :prio     1}])))
 
+(defn dashboard-cfg-query [current-state put-fn]
+  (let [queries [[:dashboard_cfg
+                  {:search-text "#dashboard-cfg"
+                   :n           1000}]]
+        pvt (:show-pvt (:cfg current-state))
+        gql-query (gql/tabs-query queries false pvt)]
+    (info gql-query)
+    (put-fn [:gql/query {:q        gql-query
+                         :id       :dashboard_cfg
+                         :res-hash nil
+                         :prio     11}])))
+
 (defn update-query-cfg [state put-fn]
   (reset! query-cfg (:query-cfg state))
   (gql-query :left state true put-fn)

@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.ui.dashboard
   (:require [moment]
+            [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
@@ -110,8 +111,13 @@
 
 
 (defn dashboard2 [days put-fn]
-  (let [dashboard (subscribe [:dashboard])
-        gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res])
+        gql-res2 (subscribe [:gql-res2])
+        local (r/atom {:idx 0})
+        dashboards (reaction (-> @gql-res2 :dashboard_cfg :res))
+        dashboard (reaction (-> @dashboards
+                                vals
+                                (nth (:idx @local))))
         res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
         charts-pos (reaction
                      (let [ts (:timestamp @dashboard)
@@ -126,7 +132,9 @@
                                  {:last-y (:y cfg)
                                   :last-h (:h cfg)
                                   :charts (conj (:charts acc) cfg)}))]
-                       (reduce f acc items)))]
+                       (reduce f acc items)))
+        next (fn [_] (swap! local update-in [:idx] #(min (dec (count @dashboards)) (inc %))))
+        prev (fn [_] (swap! local update-in [:idx] #(max 0 (dec %))))]
     (fn dashboard-render [days put-fn]
       (let [now (st/now)
             d (* 24 60 60 1000)
@@ -144,6 +152,9 @@
         ;(gql-query charts-pos days put-fn)
         ^{:key @res-hash}
         [:div.questionnaires
+         [:div.controls
+          [:i.fas.fa-arrow-right {:on-click next}]
+          [:i.fas.fa-arrow-left {:on-click prev}]]
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
                 :style   {:background :white}}
           [:filter#blur1

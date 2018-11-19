@@ -21,7 +21,27 @@ $backlog-weekend: lighten($backlog, 30);
 
 .questionnaires {
   overflow-y: auto;
+  position: relative;
 
+  .controls {
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    z-index: 1111;
+
+    .fas {
+      color: #CCC;
+      float: right;
+      cursor: pointer;
+      padding: 2px;
+      &:hover {
+        color: #999;
+      }
+      &:active {
+        color: $hashtag-blue;
+      }
+    }
+  }
   .done {
     fill: $done;
   }
