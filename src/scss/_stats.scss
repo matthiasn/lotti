@@ -26,14 +26,18 @@ $backlog-weekend: lighten($backlog, 30);
   .controls {
     position: absolute;
     right: 3px;
-    bottom: 12px;
+    bottom: 6px;
     z-index: 1111;
 
     .fas {
-      color: #CCC;
+      color: #BBB;
+      font-size: $font-size-small;
       float: right;
       cursor: pointer;
-      padding: 2px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      margin-left: 2px;
+      background-color: #EEE;
       &:hover {
         color: #999;
       }

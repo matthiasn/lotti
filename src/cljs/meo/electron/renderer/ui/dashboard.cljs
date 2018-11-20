@@ -37,11 +37,11 @@
 (defn dashboard [days put-fn]
   (let [gql-res (subscribe [:gql-res])
         gql-res2 (subscribe [:gql-res2])
-        local (r/atom {:idx 0})
+        local (r/atom {:idx 0 :play false})
         dashboards (reaction (-> @gql-res2 :dashboard_cfg :res))
         dashboard (reaction (-> @dashboards
                                 vals
-                                (nth (:idx @local))))
+                                (nth (min (:idx @local) (dec (count @dashboards))))))
         res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
         charts-pos (reaction
                      (let [ts (:timestamp @dashboard)
@@ -56,13 +56,21 @@
                                  {:last-y (:y cfg)
                                   :last-h (:h cfg)
                                   :charts (conj (:charts acc) cfg)}))]
-                       (reduce f acc items)))
-        n (count @dashboards)
-        next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
-        prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
-        cycle (fn [f _] (swap! local update-in [:idx] f))]
+                       (reduce f acc items)))]
     (fn dashboard-render [days put-fn]
       (let [now (st/now)
+            n (count @dashboards)
+            next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
+            prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
+            cycle (fn [f _] (swap! local update-in [:idx] f))
+            play (fn [_]
+                   (let [f #(swap! local update-in [:idx] next-item)
+                         t (js/setInterval f 60000)]
+                     (swap! local assoc-in [:play] true)
+                     (swap! local assoc-in [:timer] t)))
+            pause (fn []
+                    (js/clearInterval (:timer @local))
+                    (swap! local assoc-in [:play] false))
             d (* 24 60 60 1000)
             within-day (mod now d)
             start (+ dc/tz-offset (- now within-day (* days d)))
@@ -79,9 +87,11 @@
         ^{:key @res-hash}
         [:div.questionnaires
          [:div.controls
-          [:i.fas.fa-arrow-right {:on-click (partial cycle next-item)}]
-          [:i.fas.fa-arrow-left {:on-click (partial cycle prev-item)}]]
-         [:svg {:viewBox (str "0 0 2100 " (+ end-y 20))
+          [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
+          [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
+                   :on-click (if (:play @local) pause play)}]
+          [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
+         [:svg {:viewBox (str "0 0 2100 " (+ end-y 60))
                 :style   {:background :white}}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
