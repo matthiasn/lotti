@@ -36,14 +36,12 @@
                            :prio     15}]))))
 
 (defn dashboard [days put-fn]
-  (let [gql-res (subscribe [:gql-res])
-        gql-res2 (subscribe [:gql-res2])
+  (let [gql-res2 (subscribe [:gql-res2])
         local (r/atom {:idx 0 :play false})
         dashboards (reaction (-> @gql-res2 :dashboard_cfg :res))
         dashboard (reaction (-> @dashboards
                                 vals
                                 (nth (min (:idx @local) (dec (count @dashboards))))))
-        res-hash (reaction (hash (get-in @gql-res [:dashboard :data])))
         charts-pos (reaction
                      (let [ts (:timestamp @dashboard)
                            new-entry @(:new-entry (eu/entry-reaction ts))
@@ -86,9 +84,9 @@
                     :x-offset 200
                     :span     span
                     :days     days}
-            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
+            end-y (max (+ (:last-y @charts-pos) (:last-h @charts-pos))
+                       200)]
         (gql-query charts-pos days put-fn)
-        ^{:key @res-hash}
         [:div.questionnaires
          [:div.controls
           [:i.fas.fa-cog {:on-click open-cfg}]
