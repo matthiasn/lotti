@@ -13,7 +13,8 @@
             [taoensso.timbre :refer-macros [info debug]]
             [matthiasn.systems-toolbox.component :as st]
             [meo.electron.renderer.helpers :as rh]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [meo.common.utils.parse :as up]))
 
 (defn gql-query [charts-pos days put-fn]
   (let [tags (->> (:charts @charts-pos)
@@ -54,7 +55,7 @@
                                (let [{:keys [last-y last-h]} acc
                                      cfg (assoc-in m [:y] (+ last-y last-h))]
                                  {:last-y (:y cfg)
-                                  :last-h (:h cfg)
+                                  :last-h (:h cfg 25)
                                   :charts (conj (:charts acc) cfg)}))]
                        (reduce f acc items)))]
     (fn dashboard-render [days put-fn]
@@ -71,6 +72,9 @@
             pause (fn []
                     (js/clearInterval (:timer @local))
                     (swap! local assoc-in [:play] false))
+            open-cfg #(put-fn [:search/add
+                               {:tab-group :right
+                                :query     (up/parse-search (:timestamp @dashboard))}])
             d (* 24 60 60 1000)
             within-day (mod now d)
             start (+ dc/tz-offset (- now within-day (* days d)))
@@ -87,6 +91,7 @@
         ^{:key @res-hash}
         [:div.questionnaires
          [:div.controls
+          [:i.fas.fa-cog {:on-click open-cfg}]
           [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
           [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                    :on-click (if (:play @local) pause play)}]

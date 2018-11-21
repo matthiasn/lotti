@@ -633,19 +633,3 @@ u {
     font-weight: bold;
   }
 }
-
-.infinite-cal {
-  display: flex;
-  justify-content: space-between;
-  flex-flow: column;
-  height: calc(100vh - 52px);
-
-  .habit-details {
-    max-height: calc(50vh - 26px);
-    overflow: auto;
-
-    .award-points {
-      padding-left: 10px;
-    }
-  }
-}

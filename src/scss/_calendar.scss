@@ -1,5 +1,21 @@
 @import "variables.scss";
 
+.infinite-cal {
+  display: flex;
+  justify-content: space-between;
+  flex-flow: column;
+  height: calc(100vh - 44px);
+
+  .habit-details {
+    max-height: calc(50vh - 22px);
+    overflow: auto;
+
+    .award-points {
+      padding-left: 10px;
+    }
+  }
+}
+
 .big-calendar {
   background-color: $entry-bg;
   flex: 2;
