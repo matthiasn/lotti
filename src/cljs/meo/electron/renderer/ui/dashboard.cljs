@@ -37,7 +37,9 @@
 
 (defn dashboard [days put-fn]
   (let [gql-res2 (subscribe [:gql-res2])
-        local (r/atom {:idx 0 :play false})
+        local (r/atom {:idx   0
+                       :play  false
+                       :min-h 320})
         dashboards (reaction (-> @gql-res2 :dashboard_cfg :res))
         dashboard (reaction (-> @dashboards
                                 vals
@@ -84,20 +86,24 @@
                     :x-offset 200
                     :span     span
                     :days     days}
-            end-y (max (+ (:last-y @charts-pos) (:last-h @charts-pos))
-                       200)]
+            end-y (max (+ (:last-y @charts-pos) (:last-h @charts-pos)) (:min-h @local))]
         (gql-query charts-pos days put-fn)
         [:div.questionnaires
          [:div.controls
+          [:input {:type      :number
+                   :step      10
+                   :on-change #(let [v (.. % -target -value)
+                                     parsed (when (seq v) (js/parseFloat v))]
+                                 (swap! local assoc-in [:min-h] parsed))
+                   :value     (:min-h @local)}]
           [:i.fas.fa-cog {:on-click open-cfg}]
           [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
           [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                    :on-click (if (:play @local) pause play)}]
           [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
-
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 60))
                 :style   {:background :white}
-                :key (str (:timestamp @dashboard) (:idx @local))}
+                :key     (str (:timestamp @dashboard) (:idx @local))}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
           [:g

@@ -29,6 +29,14 @@ $backlog-weekend: lighten($backlog, 30);
     bottom: 6px;
     z-index: 1111;
 
+    input {
+      font-size: $font-size-small;
+      margin-right: 10px;
+      padding: 2px 0 2px 4px;
+      height: 14px;
+      width: 38px!important;
+      color: #999;
+    }
     .fas {
       color: #BBB;
       font-size: $font-size-small;
