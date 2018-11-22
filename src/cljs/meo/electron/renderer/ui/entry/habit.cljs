@@ -6,7 +6,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
             [taoensso.timbre :refer-macros [info error debug]]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [clojure.string :as s]))
 
 
 (defn input-row [entry label cfg path put-fn]
@@ -28,6 +29,8 @@
                      :value     v}
                     cfg)]]))
 
+(defn a-z [x] (s/lower-case (second x)))
+
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
     (fn [{:keys [put-fn entry idx]}]
@@ -42,6 +45,7 @@
                       :path      path
                       :put-fn    put-fn
                       :xf        keyword
+                      :sorted-by a-z
                       :options   (zipmap (vals q-tags)
                                          (keys q-tags))}]]
          [:div.row
@@ -72,6 +76,7 @@
                       :on-change uc/select-update
                       :path      cf-path
                       :put-fn    put-fn
+                      :sorted-by a-z
                       :options   (keys @custom-fields)}]]
          (when-not (empty? (name cf-tag))
            (let [opts (map (fn [[k v]] [k (:label v)]) fields)]
@@ -108,6 +113,7 @@
                       :path      saga-path
                       :xf        js/parseInt
                       :put-fn    put-fn
+                      :sorted-by a-z
                       :options   sagas}]]
          (when (number? saga)
            (let [stories (filter #(= saga (:timestamp (:saga (second %)))) @stories)
@@ -119,6 +125,7 @@
                           :path      story-path
                           :xf        js/parseInt
                           :put-fn    put-fn
+                          :sorted-by a-z
                           :options   stories}]]))
          (when (number? story)
            [input-row entry "Minimum:" {:type :time} min-path put-fn])
@@ -145,8 +152,8 @@
                     :put-fn    put-fn
                     :path      path
                     :xf        keyword
-                    :options   {:min-max-sum   "min/max sum"
-                                :min-max-time  "min/max time"
+                    :options   {:min-max-sum   "recorded data"
+                                :min-max-time  "time spent"
                                 ;:checked-off   "checked off"
                                 :questionnaire "questionnaire"}}]])
      (when (= :min-max-sum habit-type)
