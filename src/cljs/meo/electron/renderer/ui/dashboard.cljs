@@ -94,8 +94,10 @@
           [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                    :on-click (if (:play @local) pause play)}]
           [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
+
          [:svg {:viewBox (str "0 0 2100 " (+ end-y 60))
-                :style   {:background :white}}
+                :style   {:background :white}
+                :key (str (:timestamp @dashboard) (:idx @local))}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
           [:g
