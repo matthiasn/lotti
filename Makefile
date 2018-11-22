@@ -141,6 +141,12 @@ publish-beta:
 
 beta: install publish-beta
 
+publish-beta-gh:
+	@echo Publishing beta - requires S3 credentials in ENV...
+	./node_modules/.bin/electron-builder -c electron-builder-beta-gh.yml --publish always $(OSFLAG)
+
+beta-gh: install publish-beta-gh
+
 release: install
 	@echo Publishing release - requires S3 credentials in ENV...
 	./node_modules/.bin/electron-builder --publish always $(OSFLAG)
