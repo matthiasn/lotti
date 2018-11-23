@@ -86,7 +86,7 @@
                     :x-offset 200
                     :span     span
                     :days     days}
-            end-y (max (+ (:last-y @charts-pos) (:last-h @charts-pos)) (:min-h @local))]
+            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
         (gql-query charts-pos days put-fn)
         [:div.questionnaires
          [:div.controls
@@ -101,7 +101,7 @@
           [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                    :on-click (if (:play @local) pause play)}]
           [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
-         [:svg {:viewBox (str "0 0 2100 " (+ end-y 60))
+         [:svg {:viewBox (str "0 0 2100 " (+ (max end-y (:min-h @local)) 60))
                 :style   {:background :white}
                 :key     (str (:timestamp @dashboard) (:idx @local))}
           [:filter#blur1

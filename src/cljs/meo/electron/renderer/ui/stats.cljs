@@ -7,7 +7,7 @@
             [electron :refer [remote]]
             [re-frame.core :refer [subscribe]]))
 
-(defn stats-text []
+(defn stats-text [rt-info]
   (let [gql-res (subscribe [:gql-res])
         stories (subscribe [:stories])
         stats (reaction (:data (:count-stats @gql-res)))
@@ -23,13 +23,14 @@
         (:hours_logged @stats) " hours | "
         (:word_count @stats) " words | "
         (:open_tasks @stats) " open tasks | "
-        (:backlog_count @stats) " backlog | "
         (:completed_count @stats) " done | "
         (:closed_count @stats) " closed | "
         (:import_count @stats) " #import | "
         (:screenshots @stats) " #screenshot | "
-        (:active_threads @stats) " threads | PID "
-        (:pid @stats) " | "
+        (when rt-info
+          [:span (:active_threads @stats)] " threads | PID ")
+        (when rt-info
+          [:span (:pid @stats) " | "])
         " © Matthias Nehlsen"]])))
 
 (defn stats-view [put-fn]

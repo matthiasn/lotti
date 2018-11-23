@@ -318,4 +318,4 @@
               [:div
                [:button {:on-click #(put-fn [:photos/gen-cache])}
                 "regenerate cache"]])]
-           [:div.cfg.footer [stats/stats-text]]]]]))))
+           [:div.cfg.footer [stats/stats-text true]]]]]))))
