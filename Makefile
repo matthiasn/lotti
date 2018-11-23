@@ -32,7 +32,6 @@ install-mac:
 	npm install -g electron-builder
 	npm install -g electron-cli
 	npm install -g electron-build-env
-	npm install -g electron-publisher-s3
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
@@ -58,7 +57,6 @@ install-ubuntu:
 	npm install -g electron-builder@20.14.7
 	npm install -g electron-cli
 	npm install -g electron-build-env
-	npm install -g electron-publisher-s3
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
@@ -136,17 +134,15 @@ package-only:
 	./node_modules/.bin/electron-builder $(OSFLAG)
 
 publish-beta:
-	@echo Publishing beta - requires S3 credentials in ENV...
+	@echo Publishing beta - requires GH_TOKEN in ENV...
 	./node_modules/.bin/electron-builder -c electron-builder-beta.yml --publish always $(OSFLAG)
 
 beta: install publish-beta
 
-publish-beta-gh:
-	@echo Publishing beta - requires S3 credentials in ENV...
-	./node_modules/.bin/electron-builder -c electron-builder-beta-gh.yml --publish always $(OSFLAG)
+publish-release:
+	@echo Publishing release - requires GH_TOKEN in ENV...
+	./node_modules/.bin/electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
-beta-gh: install publish-beta-gh
-
-release: install
-	@echo Publishing release - requires S3 credentials in ENV...
+release: install publish-release
+	@echo Publishing release - requires GH_TOKEN in ENV...
 	./node_modules/.bin/electron-builder --publish always $(OSFLAG)

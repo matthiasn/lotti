@@ -1,15 +1,7 @@
 (ns meo.electron.main.update
-  (:require [taoensso.timbre :as timbre :refer-macros [info error]]
+  (:require [taoensso.timbre :refer-macros [info error]]
             [electron-log :as electron-log]
             [electron-updater :refer [autoUpdater]]))
-
-(defn set-feed [channel]
-  (.setFeedURL autoUpdater (clj->js
-                             {:url      "https://matthiasn-meo.s3.amazonaws.com"
-                              :provider "s3"
-                              :bucket   "matthiasn-meo"
-                              :acl      "public-read"
-                              :channel  channel})))
 
 (defn state-fn [put-fn]
   (try
@@ -43,9 +35,7 @@
                           (info "Update downloading" (str info))
                           (put-fn [:update/status {:status :update/downloading
                                                    :info   info}])))
-          error (fn [ev]
-                  (error "ERROR in auto-updater" ev)
-                  #_(put-fn [:update/status {:status :update/error}]))]
+          error (fn [ev] (error "ERROR in auto-updater" ev))]
       (info "Starting UPDATE Component")
       (aset autoUpdater "autoDownload" false)
       (aset autoUpdater "logger" electron-log)
@@ -61,13 +51,13 @@
 (defn check-updates [open-window]
   (fn [{:keys [current-state]}]
     (info "UPDATE: check release versions")
-    (set-feed "release")
+    (aset autoUpdater "allowPrerelease" false)
     (.checkForUpdates autoUpdater)
     {:new-state (assoc-in current-state [:open-window] open-window)}))
 
 (defn check-updates-beta [_]
   (info "UPDATE: check beta versions")
-  (set-feed "beta")
+  (aset autoUpdater "allowPrerelease" true)
   (.checkForUpdates autoUpdater)
   {})
 

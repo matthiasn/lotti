@@ -12,9 +12,8 @@ files:
     - "src/**"
     - "resources/**"
 publish:
-    provider: "s3"
-    bucket: "matthiasn-meo"
-    channel: "beta"
-    acl: "public-read"
+    provider: "github"
+    owner: "matthiasn"
+    draft: true
 nsis:
     differentialPackage: false
