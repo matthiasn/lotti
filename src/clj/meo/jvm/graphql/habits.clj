@@ -71,8 +71,7 @@
           now (stc/now)
           pvt (:pvt args)
           day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
-          habits (filter #(-> % :habit :active)
-                         (vals (gq/find-all-habits @state)))
+          habits (filter #(-> % :habit :active) (gq/find-all-habits @state))
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))
           f (fn [habit]

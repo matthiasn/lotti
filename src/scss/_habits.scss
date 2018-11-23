@@ -257,6 +257,15 @@
 .waiting-habits {
   white-space: nowrap;
 
+  .start {
+    opacity: 0.2;
+    text-align: right;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
   th {
     text-align: left;
   }

@@ -55,27 +55,16 @@
   (map (fn [[k v]] {:day k :timestamp v})
        (gq/find-all-briefings @state)))
 
-(defn get-entry [g ts]
-  (when (and ts (uc/has-node? g ts))
-    (xf/vclock-xf (uc/attrs g ts))))
-
-(defn entry-w-story [g entry]
-  (let [story (get-entry g (:primary_story entry))
-        saga (get-entry g (:linked_saga story))]
-    (merge entry
-           {:story (when story
-                     (assoc-in story [:saga] saga))})))
-
 (def d (* 24 60 60 1000))
 
 (defn entry-w-comments [g entry]
-  (let [comments (mapv #(get-entry g %) (:comments entry))]
+  (let [comments (mapv #(gq/get-entry g %) (:comments entry))]
     (assoc-in entry [:comments] comments)))
 
 (defn linked-for [g entry]
   (let [ts (:timestamp entry)]
     (assoc-in entry [:linked] (->> (gq/get-linked-for-ts g ts)
-                                   (map #(entry-w-story g (get-entry g %)))
+                                   (map #(gq/entry-w-story g (gq/get-entry g %)))
                                    (filter :timestamp)
                                    (vec)))))
 
@@ -86,7 +75,7 @@
                     (gq/get-done g :done)
                     (gq/get-done g :closed)))]
     (->> entries
-         (map #(entry-w-story g (get-entry g %)))
+         (map #(gq/entry-w-story g (gq/get-entry g %)))
          (filter :timestamp)
          (set))))
 
@@ -94,12 +83,12 @@
   (let [g (:graph @state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
-    (when-let [briefing (get-entry g ts)]
+    (when-let [briefing (gq/get-entry g ts)]
       (let [briefing (linked-for g briefing)
             linked-completed (fn [xs] (vec (set/union (set xs) (completed-for-day g d))))
             briefing (update-in briefing [:linked] linked-completed)
             comments (:comments (gq/get-comments briefing g ts))
-            comments (mapv #(update-in (get-entry g %) [:questionnaires :pomo1] vec)
+            comments (mapv #(update-in (gq/get-entry g %) [:questionnaires :pomo1] vec)
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]
@@ -112,7 +101,7 @@
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
         day-nodes (gq/get-nodes-for-day g {:date_string day})
-        day-nodes-attrs (map #(get-entry g %) day-nodes)
+        day-nodes-attrs (map #(gq/get-entry g %) day-nodes)
         day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
     day-stats))
 
@@ -126,7 +115,7 @@
         day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
         f (fn [day]
             (let [day-nodes (gq/get-nodes-for-day g {:date_string day})
-                  day-nodes-attrs (map #(get-entry g %) day-nodes)]
+                  day-nodes-attrs (map #(gq/get-entry g %) day-nodes)]
               (gsd/day-stats g day-nodes-attrs stories sagas day)))
         stats (mapv f day-strings)]
     stats))
@@ -137,7 +126,7 @@
 (defn entries-w-logged [g entries]
   (let [logged-t (fn [comment-ts]
                    (or
-                     (when-let [c (get-entry g comment-ts)]
+                     (when-let [c (gq/get-entry g comment-ts)]
                        (let [path [:custom_fields "#duration" :duration]]
                          (+ (or (:completed_time c) 0)
                             (* 60 (or (get-in c path) 0)))))
@@ -182,7 +171,7 @@
                      prev-lazy-res
                      (->> (gq/get-filtered-lazy current-state q)
                           (filter #(not (:comment_for %)))
-                          (map (partial entry-w-story g))
+                          (map (partial gq/entry-w-story g))
                           (entries-w-logged g)
                           (map (partial entry-w-comments g))
                           (map (partial linked-for g))
@@ -255,7 +244,7 @@
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (entries-w-logged g)
-                   (mapv #(entry-w-story g %))
+                   (mapv #(gq/entry-w-story g %))
                    (filter #(not (:on_hold (:task %))))
                    (mapv (partial entry-w-comments g)))]
     tasks))
@@ -270,7 +259,7 @@
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (entries-w-logged g)
-                   (mapv #(entry-w-story g %))
+                   (mapv #(gq/entry-w-story g %))
                    (mapv (partial entry-w-comments g)))]
     tasks))
 
@@ -282,7 +271,7 @@
         current-state @state
         g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
-        habits (mapv #(entry-w-story g %) habits)]
+        habits (mapv #(gq/entry-w-story g %) habits)]
     habits))
 
 (defn ^:private as-errors

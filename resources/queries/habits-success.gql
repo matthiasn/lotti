@@ -17,6 +17,7 @@
       habit
       story {
         story_name
+        timestamp
       }
     }
   }

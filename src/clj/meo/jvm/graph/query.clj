@@ -14,7 +14,19 @@
             [clj-time.core :as ct]
             [clojure.pprint :as pp]
             [meo.jvm.metrics :as mt]
-            [metrics.timers :as tmr]))
+            [metrics.timers :as tmr]
+            [meo.jvm.graphql.xforms :as xf]))
+
+(defn get-entry [g ts]
+  (when (and ts (uc/has-node? g ts))
+    (xf/vclock-xf (uc/attrs g ts))))
+
+(defn entry-w-story [g entry]
+  (let [story (get-entry g (:primary_story entry))
+        saga (get-entry g (:linked_saga story))]
+    (merge entry
+           {:story (when story
+                     (assoc-in story [:saga] saga))})))
 
 ;; TODO: migrate existing audio entries to use a different keyword
 (defn summed-durations
@@ -417,9 +429,8 @@
    (creation timestamp) as key and the habit node itself as value."
   [current-state]
   (let [g (:graph current-state)
-        habit-ids (mapv :dest (uc/find-edges g {:src :habits}))
-        habits (into {} (mapv (fn [id] [id (uc/attrs g id)]) habit-ids))]
-    habits))
+        habit-ids (mapv :dest (uc/find-edges g {:src :habits}))]
+    (mapv (fn [id] (entry-w-story g (uc/attrs g id))) habit-ids)))
 
 (defn find-all-sagas
   "Finds all :saga entries in graph and returns map with the id of the saga
