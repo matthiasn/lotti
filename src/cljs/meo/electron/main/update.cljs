@@ -35,7 +35,9 @@
                           (info "Update downloading" (str info))
                           (put-fn [:update/status {:status :update/downloading
                                                    :info   info}])))
-          error (fn [ev] (error "ERROR in auto-updater" ev))]
+          error (fn [ev]
+                  (error "in auto-updater" ev)
+                  (put-fn [:update/status {:status :update/not-available}]))]
       (info "Starting UPDATE Component")
       (aset autoUpdater "autoDownload" false)
       (aset autoUpdater "logger" electron-log)
