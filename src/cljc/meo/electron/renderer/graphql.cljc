@@ -9,7 +9,7 @@
   (let [qfn (fn [t]
               {:query/data  [:custom_field_stats {:days days :tag t}
                              [:date_string [:fields [:field :value]]]]
-               :query/alias (keyword (s/replace (subs t 1) "-" "_"))})
+               :query/alias (keyword (s/replace (subs (str t) 1) "-" "_"))})
         queries (mapv qfn tags)
         git-query {:query/data [:git_stats {:days days}
                                 [:date_string :commits]]}
@@ -25,7 +25,7 @@
               (if tag
                 (let [kn (name score_k)
                       alias (keyword
-                              (str (s/replace (subs tag 1) "-" "_") "_" kn))]
+                              (str (s/replace (subs (str tag) 1) "-" "_") "_" kn))]
                   {:query/data  [:questionnaires {:days days
                                                   :tag  tag
                                                   :k    kn}

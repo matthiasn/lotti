@@ -161,9 +161,10 @@
         gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span mx label tag h y field color
                               cls threshold success-cls] :as m} put-fn]
-      (when (and tag field)
+      (when (and tag field (seq tag))
+        (info m)
         (let [btm-y (+ y h)
-              qid (keyword (s/replace (subs tag 1) "-" "_"))
+              qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
               data (get-in @gql-res [:dashboard :data qid])
               indexed (map-indexed (fn [i x] [i x]) data)
               mx (or mx
