@@ -94,6 +94,7 @@
                        :show-adjust-ts  false})]
     (fn journal-entry-render [entry put-fn local-cfg]
       (let [merged (merge entry @new-entry)
+            {:keys [latitude longitude]} merged
             edit-mode? @edit-mode
             toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry])
                                         (put-fn [:entry/update-local entry]))
@@ -137,7 +138,11 @@
          (when (:git_commit entry)
            [git-commit merged put-fn])
          [ws/wavesurfer merged local-cfg put-fn]
-         (when @show-map?
+         (when (and @show-map?
+                    latitude
+                    longitude
+                    (not (and (zero? latitude)
+                              (zero? longitude))))
            (if mapbox-token
              [:div.entry-mapbox
               {:on-click #(swap! local update-in [:scroll-disabled] not)}

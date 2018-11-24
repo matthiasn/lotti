@@ -152,7 +152,10 @@
         mouse-enter #(reset! visible true)
         toggle-debug #(swap! local update-in [:debug] not)]
     (fn entry-actions-render [entry local put-fn edit-mode? toggle-edit local-cfg]
-      (let [map? (:latitude entry)
+      (let [{:keys [latitude longitude]} entry
+            map? (and latitude longitude
+                      (not (and (zero? latitude)
+                                (zero? longitude))))
             prev-saved? (or (:last_saved entry) (< ts 1479563777132))
             comment? (:comment_for entry)
             star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])

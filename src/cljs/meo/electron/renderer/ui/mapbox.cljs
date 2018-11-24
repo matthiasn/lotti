@@ -54,12 +54,18 @@
       (.easeTo mb-map (clj->js ease-to))
       (.addTo marker mb-map))))
 
+(defn render [props]
+  (let [{:keys [put-fn id selected]} props
+        rm-location #(put-fn [:entry/update
+                              (merge selected
+                                     {:longitude 0
+                                      :latitude  0})])]
+    [:div.mapbox {:id id}
+     [:i.fas.fa-trash-alt {:on-click rm-location}]]))
+
 (defn mapbox-cls [props]
   (aset mapbox-gl "accessToken" (:mapbox-token props))
   (r/create-class
     {:component-did-mount          (mapbox-did-mount props)
      :component-will-receive-props component-will-receive-props
-     :reagent-render               (fn [props]
-                                     (let [{:keys [local id]} props]
-                                       [:div.mapbox
-                                        {:id id}]))}))
+     :reagent-render               render}))

@@ -19,6 +19,17 @@
   .mapbox {
     width: 100%;
     height: 200px;
+    position: relative;
+
+    .fa-trash-alt {
+      position: absolute;
+      color: lighten($red, 20);
+      top: 5px;
+      right: 5px;
+      z-index: 11;
+      font-size: $font-size-small;
+      cursor: pointer;
+    }
   }
 
   .entry-text {
