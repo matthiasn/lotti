@@ -27,9 +27,11 @@
           day-nodes-attrs (map #(uber/attrs g %) day-nodes)
           nodes (filter :custom_fields day-nodes-attrs)
           adjusted-ts-filter (fn [entry]
-                               (let [adjusted-ts (:adjusted_ts entry)]
+                               (let [adjusted-ts (:adjusted_ts entry)
+                                     tz (:timezone entry)]
                                  (or (not adjusted-ts)
-                                     (= date-string (dt/ts-to-ymd adjusted-ts)))))
+                                     (= (dt/ts-to-ymd-tz adjusted-ts tz)
+                                        date-string))))
           nodes (filter adjusted-ts-filter nodes)
           stats-mapper
           (fn [[k fields]]
