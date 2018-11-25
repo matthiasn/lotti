@@ -146,6 +146,10 @@ i {
   visibility: visible;
 }
 
+.leaflet {
+  height: 130px;
+}
+
 @import "buttons";
 @import "journal";
 @import "tasks";

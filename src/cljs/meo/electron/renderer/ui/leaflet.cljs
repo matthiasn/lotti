@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.ui.leaflet
   (:require [reagent.core :as rc]
+            [taoensso.timbre :refer [info]]
             [leaflet]))
 
 (defn leaflet-did-mount
@@ -29,7 +30,7 @@
   (set! (.-imagePath js/L.Icon.Default) "../resources/public/images/")
   (rc/create-class
     {:component-did-mount (leaflet-did-mount props)
-     :reagent-render      (fn [props] [:div.map {:id (:id props)}])}))
+     :reagent-render      (fn [props] [:div.leaflet {:id (:id props)}])}))
 
 (defn leaflet-map
   "Helper for showing map when exists and desired."
