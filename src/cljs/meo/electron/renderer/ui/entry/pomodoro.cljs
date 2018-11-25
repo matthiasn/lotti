@@ -8,7 +8,7 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]))
 
-(defn pomodoro-action [entry _edit-mode? put-fn]
+(defn pomodoro-time [entry _edit-mode? put-fn]
   (let [local (r/atom {:edit false})
         time-click #(swap! local assoc-in [:edit] true)
         busy-status (subscribe [:busy-status])
@@ -24,25 +24,33 @@
                           (put-fn [:entry/update-local updated])))
             running? (and (:pomodoro-running entry)
                           (= @running-pomodoro (:timestamp entry))
-                          (< (- (st/now) (or (:last @busy-status) 0)) 2000))
-            start-stop #(let [color (if running? :green :red)]
-                          (put-fn [:blink/busy {:color color}])
-                          (if running?
-                            (put-fn [:cmd/pomodoro-stop entry])
-                            (put-fn [:cmd/pomodoro-start entry])))]
-        ;(when-not edit-mode? (swap! local assoc-in [:edit] false))
+                          (< (- (st/now) (or (:last @busy-status) 0)) 2000))]
         [:div.pomodoro
-         (when edit-mode?
-           [:span.btn.start-stop {:on-click start-stop
-                                  :class    (if running? "stop" "start")}
-            [:i.fas {:class (if running? "fa-pause-circle"
-                                         "fa-play-circle")}]])
          (if (and edit-mode? (:edit @local) (not running?))
            [:input {:value     (h/s-to-hh-mm completed-time)
                     :type      :time
                     :on-change on-change}]
            [:div.dur {:on-click time-click}
             formatted])]))))
+
+(defn pomodoro-btn [entry _edit-mode? put-fn]
+  (let [busy-status (subscribe [:busy-status])
+        running-pomodoro (subscribe [:running-pomodoro])]
+    (fn [entry edit-mode? _put-fn]
+      (let [running? (and (:pomodoro-running entry)
+                          (= @running-pomodoro (:timestamp entry))
+                          (< (- (st/now) (or (:last @busy-status) 0)) 2000))
+            start-stop #(let [color (if running? :green :red)]
+                          (put-fn [:blink/busy {:color color}])
+                          (if running?
+                            (put-fn [:cmd/pomodoro-stop entry])
+                            (put-fn [:cmd/pomodoro-start entry])))]
+        [:div.pomodoro
+         (when edit-mode?
+           [:span.btn.start-stop {:on-click start-stop
+                                  :class    (if running? "stop" "start")}
+            [:i.fas {:class (if running? "fa-pause-circle"
+                                         "fa-play-circle")}]])]))))
 
 (defn pomodoro-footer [entry put-fn]
   (let [new-entries (subscribe [:new-entries])]

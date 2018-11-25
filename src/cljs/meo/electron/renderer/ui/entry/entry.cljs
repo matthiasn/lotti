@@ -127,12 +127,16 @@
            [db/dashboard-config merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
-         [:div.entry-footer
-          (if (= (:entry_type entry) :pomodoro)
-            [pomo/pomodoro-action merged edit-mode? put-fn]
-            [pomo/pomodoro-footer merged put-fn])
-          [hashtags-mentions entry tab-group put-fn]
-          [:div.word-count (u/count-words-formatted merged)]]
+         (let [pomodoro (= :pomodoro (:entry_type entry))]
+           [:div.entry-footer
+            (when pomodoro
+              [pomo/pomodoro-btn merged edit-mode? put-fn])
+            (when pomodoro
+              [pomo/pomodoro-time merged edit-mode? put-fn])
+            (when-not pomodoro
+              [pomo/pomodoro-footer merged put-fn])
+            [hashtags-mentions entry tab-group put-fn]
+            [:div.word-count (u/count-words-formatted merged)]])
          [conflict-view merged put-fn]
          [c/custom-fields-div merged put-fn edit-mode?]
          (when (:git_commit entry)
