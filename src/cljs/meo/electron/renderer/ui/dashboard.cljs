@@ -18,10 +18,10 @@
 
 (defn gql-query [charts-pos days put-fn]
   (let [tags (->> (:charts @charts-pos)
-                  (filter #(contains? #{:barchart_row} (:type %)))
+                  (filter #(contains? #{:barchart_row :bp_chart} (:type %)))
                   (mapv :tag))]
     (when-let [query-string (gql/graphql-query (inc days) tags)]
-      (info "dashboard tags" query-string)
+      (debug "dashboard tags" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard
@@ -29,7 +29,7 @@
   (let [items (->> (:charts @charts-pos)
                    (filter #(= :questionnaire (:type %))))]
     (when-let [query-string (gql/dashboard-questionnaires days items)]
-      (info "dashboard" query-string)
+      (debug "dashboard" query-string)
       (put-fn [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard-questionnaires
@@ -82,6 +82,7 @@
             span (- end start)
             common {:start    start
                     :end      end
+                    :h        25
                     :w        1800
                     :x-offset 200
                     :span     span
@@ -117,10 +118,10 @@
             (let [chart-fn (case (:type chart-cfg)
                              :habit_success h/habits-chart
                              :questionnaire ds/scores-chart
+                             :barchart_row dc/barchart-row
+                             :bp_chart bp/bp-chart
                              ;:commits-chart c/commits-chart
                              ;:earlybird-chart eb/earlybird-chart
-                             ;:bp-chart bp/bp-chart
-                             :barchart_row dc/barchart-row
                              ;:points-by-day dc/points-by-day-chart
                              ;:points-lost-by-day dc/points-lost-by-day-chart
                              nil)]

@@ -3,41 +3,94 @@
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
-            [meo.electron.renderer.ui.dashboard.common :as dc]))
+            [meo.electron.renderer.ui.dashboard.common :as dc]
+            [meo.common.utils.parse :as up]
+            [clojure.string :as s]))
+
+(defn chart-line [scores point-mapper cfg put-fn]
+  (let [active-dashboard (subscribe [:active-dashboard])]
+    (fn chart-line-render [scores point-mapper cfg put-fn]
+      (let [color (:color cfg)
+            points (map-indexed point-mapper scores)
+            points (filter #(pos? (:v %)) (apply concat points))
+            points (sort-by :ts points)
+            line-points (s/join " " (map :s points))
+            active-dashboard @active-dashboard
+            glow (:glow cfg)]
+        [:g
+         (when glow
+           [:g {:filter "url(#blur1)"}
+            [:rect {:width  "100%"
+                    :height "100%"
+                    :style  {:fill   :none
+                             :stroke :none}}]
+            [:polyline {:points line-points
+                        :style  {:stroke       color
+                                 :stroke-width (:stroke_width cfg 1.5)
+                                 :fill         :none}}]])
+         [:g
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width (:stroke_width cfg 1.5)
+                               :fill         :none}}]
+          (for [p points]
+            ^{:key (str active-dashboard p)}
+            [:circle {:cx       (:x p)
+                      :cy       (:y p)
+                      :on-click (up/add-search (:ts p) :right put-fn)
+                      :fill     :none
+                      :r        (:circle_radius cfg 3)
+                      :style    {:stroke       color
+                                 :stroke-width (:circle_stroke_width cfg 2)}}])]]))))
 
 (defn bp-chart [_ _put-fn]
-  (let [show-pvt (subscribe [:show-pvt])]
-    (fn [{:keys [y k score-k h start span mn mx x-offset label
-                 w tag stats]} put-fn]
-      (info :bp-chart stats)
-      (let [rng (- mx mn)
+  (let [show-pvt (subscribe [:show-pvt])
+        gql-res (subscribe [:gql-res])
+        bp-data (reaction
+                  (-> @gql-res
+                      :dashboard
+                      :data
+                      :BP))]
+    (fn [{:keys [y k h start span mn mx x-offset w stroke_width] :as m} put-fn]
+      (debug :bp-chart m)
+      (let [mx (or mx 200)
+            mn (or mn 200)
+            w (or w 500)
+            rng (- mx mn)
+            label "Blood Pressure"
             scale (/ h rng)
             btm-y (+ y h)
             line-inc 10
             lines (filter #(zero? (mod % line-inc)) (range 1 rng))
             mapper (fn [k]
-                     (fn [_idx [ymd _v]]
-                       (let [measurements (get-in stats [ymd tag k])
-                             points (map (fn [{:keys [v ts]}]
-                                           (let [from-beginning (- ts start)
+                     (fn [idx data]
+                       (let [points (map (fn [{:keys [] :as m}]
+                                           (let [ts (.valueOf (moment (:date_string data)))
+                                                 v (->> data
+                                                        :fields
+                                                        (filter #(= k (:field %)))
+                                                        first
+                                                        :value)
+                                                 from-beginning (- ts start)
                                                  x (+ x-offset
                                                       (* w (/ from-beginning span)))
                                                  y (- btm-y (* (- v mn) scale))
                                                  s (str x "," y)]
-                                             {:ymd ymd
+                                             (debug idx data v ts)
+                                             {:ymd (:date_string data)
                                               :v   v
                                               :x   x
                                               :y   y
                                               :ts  ts
                                               :s   s}))
-                                         measurements)]
+                                         data)]
                          (filter :v points))))]
         [:g
          (for [n lines]
-           ^{:key (str k score-k n)}
+           ^{:key (str "bp" k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
          (for [n lines]
-           ^{:key (str k score-k n)}
+           ^{:key (str "bp" k n)}
            [:text {:x           2008
                    :y           (- (+ btm-y 5) (* n scale))
                    :font-size   8
@@ -49,11 +102,9 @@
          [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 2]
          [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 2]
 
-         [dc/chart-line2 stats (mapper :bp_systolic) "red" put-fn]
-         [dc/chart-line2 stats (mapper :bp_diastolic) "blue" put-fn]
+         [chart-line @bp-data (mapper "bp_systolic") (merge {:color "red"} m) put-fn]
+         [chart-line @bp-data (mapper "bp_diastolic") (merge {:color "blue"} m) put-fn]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]
-         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
-         (when @show-pvt
-           [dc/row-label label y h])]))))
+         (when @show-pvt [dc/row-label label y h])]))))

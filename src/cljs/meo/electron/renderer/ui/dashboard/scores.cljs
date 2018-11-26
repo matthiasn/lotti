@@ -5,7 +5,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [camel-snake-kebab.core :refer [->kebab-case]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.common.utils.parse :as up]))
 
 (defn scores-fn [stats k]
   (->> stats
@@ -48,9 +49,43 @@
          [dc/scatter-chart @scores mapper color]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          (when @show-pvt
            [dc/row-label label y h])]))))
+
+(defn chart-line [scores point-mapper cfg put-fn]
+  (let [active-dashboard (subscribe [:active-dashboard])]
+    (fn chart-line-render [scores point-mapper cfg put-fn]
+      (let [points (map-indexed point-mapper scores)
+            color (:color cfg)
+            line-points (s/join " " (map :s points))
+            active-dashboard @active-dashboard
+            stroke (:stroke_width cfg 1)
+            glow (:glow cfg)]
+        [:g
+         (when glow
+           [:g {:filter "url(#blur1)"}
+            [:rect {:width  "100%"
+                    :height "100%"
+                    :style  {:fill   :none
+                             :stroke :none}}]
+            [:polyline {:points line-points
+                        :style  {:stroke       color
+                                 :stroke-width stroke
+                                 :fill         :none}}]])
+         [:g
+          [:polyline {:points line-points
+                      :style  {:stroke       color
+                               :stroke-width stroke
+                               :fill         :none}}]
+          (for [p points]
+            ^{:key (str active-dashboard p)}
+            [:circle {:cx       (:x p)
+                      :cy       (:y p)
+                      :on-click (up/add-search (:ts p) :left put-fn)
+                      :r        (:circle_radius cfg 3)
+                      :fill     (if (:starred p) :white :none)
+                      :style    {:stroke       color
+                                 :stroke-width (:circle_stroke_width cfg 2)}}])]]))))
 
 (defn scores-chart
   [{:keys []} _put-fn]
@@ -84,9 +119,8 @@
          (for [n lines]
            ^{:key (str k score_k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
-         [dc/chart-line data mapper cfg put-fn]
+         [chart-line data mapper cfg put-fn]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          (when @show-pvt
            [dc/row-label label y h])]))))

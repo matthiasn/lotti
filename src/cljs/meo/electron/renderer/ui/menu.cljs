@@ -5,7 +5,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [matthiasn.systems-toolbox.component :as stc]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info]]
+            [taoensso.timbre :refer-macros [info debug]]
             [cljs.reader :refer [read-string]]
             [meo.common.utils.parse :as up]
             [meo.common.utils.misc :as u]
@@ -67,7 +67,7 @@
 (defn percent-achieved [habit]
   (let [completed (first (:completed habit))
         f (fn [[i criterion]]
-            (info criterion)
+            (debug criterion)
             (let [min-val (:min-val criterion)
                   req-n (:req-n criterion)
                   min-time (:min-time criterion)

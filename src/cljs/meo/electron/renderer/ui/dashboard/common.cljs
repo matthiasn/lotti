@@ -30,69 +30,6 @@
           :stroke       color
           :stroke-width w}])
 
-(defn chart-line2 [scores point-mapper color put-fn]
-  (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper color put-fn]
-      (let [points (map-indexed point-mapper scores)
-            points (filter #(pos? (:v %)) (apply concat points))
-            points (sort-by :ts points)
-            line-points (s/join " " (map :s points))
-            active-dashboard @active-dashboard]
-        [:g
-         #_[:g {:filter "url(#blur1)"}
-            [:rect {:width  "100%"
-                    :height "100%"
-                    :style  {:fill   :none
-                             :stroke :none}}]
-            [:polyline {:points line-points
-                        :style  {:stroke       color
-                                 :stroke-width 1.5
-                                 :fill         :none}}]]
-         [:g
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width 1.5
-                               :fill         :none}}]
-          (for [p points]
-            ^{:key (str active-dashboard p)}
-            [:circle {:cx       (:x p)
-                      :cy       (:y p)
-                      :on-click (up/add-search (:ts p) :right put-fn)
-                      :r        (if (:starred p) 8 2)
-                      :fill     (if (:starred p) :white color)
-                      :style    {:stroke color}}])]]))))
-
-(defn chart-line [scores point-mapper cfg put-fn]
-  (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg put-fn]
-      (let [points (map-indexed point-mapper scores)
-            color (:color cfg)
-            line-points (s/join " " (map :s points))
-            active-dashboard @active-dashboard]
-        [:g
-         [:g {:filter "url(#blur1)"}
-          [:rect {:width  "100%"
-                  :height "100%"
-                  :style  {:fill   :none
-                           :stroke :none}}]
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width 2
-                               :fill         :none}}]]
-         [:g
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width (or (:stroke_width cfg) 1)
-                               :fill         :none}}]
-          (for [p points]
-            ^{:key (str active-dashboard p)}
-            [:circle {:cx       (:x p)
-                      :cy       (:y p)
-                      :on-click (up/add-search (:ts p) :left put-fn)
-                      :r        (if (:starred p) 5 2.5)
-                      :fill     (if (:starred p) :white :none)
-                      :style    {:stroke color}}])]]))))
-
 (defn scatter-chart [scores point-mapper color]
   (let [points (map-indexed point-mapper scores)]
     [:g
@@ -151,7 +88,7 @@
 (defn row-label [label y h]
   [:text {:x           180
           :y           (+ y (+ 5 (/ h 2)))
-          :font-size   12
+          :font-size   20
           :fill        "#777"
           :text-anchor "end"}
    label])
@@ -162,7 +99,6 @@
     (fn barchart-row [{:keys [days span mx label tag h y field color
                               cls threshold success-cls] :as m} put-fn]
       (when (and tag field (seq tag))
-        (info m)
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
               data (get-in @gql-res [:dashboard :data qid])
@@ -267,17 +203,6 @@
             indexed (map-indexed (fn [idx [day v]] [idx [day v]])
                                  (take-last 180 by-day))]
         [:g
-         (for [[idx [day v]] indexed]
-           (let [v (:habit v)
-                 y-scale (/ h (or max-val 1))
-                 h (if (pos? v) (* y-scale v) 0)]
-             (when (pos? max-val)
-               ^{:key (str day idx)}
-               [:rect {:x      (+ 202 (* 10 idx))
-                       :y      (- btm-y h)
-                       :fill   "#f3b3b3"
-                       :width  6
-                       :height h}])))
          [line (+ y h) "#000" 2]
          (when @show-pvt
            [row-label label y h])]))))

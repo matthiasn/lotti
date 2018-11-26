@@ -49,6 +49,28 @@
                                          (map #(eu/first-line (:habit_entry %))
                                               (vals @habits)))}]]]))))
 
+(defn bp-chart [_]
+  (let []
+    (fn [{:keys [put-fn entry idx]}]
+      (let [h-path [:dashboard_cfg :items idx :h]
+            mn-path [:dashboard_cfg :items idx :mn]
+            mx-path [:dashboard_cfg :items idx :mx]
+            sw-path [:dashboard_cfg :items idx :stroke_width]
+            csw-path [:dashboard_cfg :items idx :circle_stroke_width]
+            cr-path [:dashboard_cfg :items idx :circle_radius]
+            glow-path [:dashboard_cfg :items idx :glow]]
+        [:div
+         [:h4 "Blood pressure chart"]
+         [input-row entry "Height:" {:type :number} h-path put-fn]
+         [input-row entry "Min:" {:type :number} mn-path put-fn]
+         [input-row entry "Max:" {:type :number} mx-path put-fn]
+         [input-row entry "Stroke:" {:type :number} sw-path put-fn]
+         [input-row entry "Circle Radius:" {:type :number} cr-path put-fn]
+         [input-row entry "Circle Stroke:" {:type :number} csw-path put-fn]
+         [:div.row
+          [:label "Glow? "]
+          [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]]))))
+
 (defn color-picker [entry idx put-fn]
   (let [color-path [:dashboard_cfg :items idx :color]
         set-color (fn [data]
@@ -72,6 +94,9 @@
             sw-path [:dashboard_cfg :items idx :stroke_width]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
+            glow-path [:dashboard_cfg :items idx :glow]
+            csw-path [:dashboard_cfg :items idx :circle_stroke_width]
+            cr-path [:dashboard_cfg :items idx :circle_radius]
             show-details (not (empty? (str (get-in entry k-path))))
             select-q (fn [{:keys [entry xf put-fn options]}]
                        (let [xf (or xf identity)]
@@ -113,6 +138,14 @@
            [input-row entry "Max:" {:type :number} mx-path put-fn])
          (when show-details
            [input-row entry "Stroke:" {:type :number} sw-path put-fn])
+         (when show-details
+           [input-row entry "Circle Radius:" {:type :number} cr-path put-fn])
+         (when show-details
+           [input-row entry "Circle Stroke:" {:type :number} csw-path put-fn])
+         (when show-details
+           [:div.row
+            [:label "Glow? "]
+            [uc/switch {:entry entry :put-fn put-fn :path glow-path}]])
          (when show-details
            [color-picker entry idx put-fn])]))))
 
@@ -196,9 +229,12 @@
                     :xf        keyword
                     :options   {:barchart_row  "Custom Field"
                                 :habit_success "Habit Success"
-                                :questionnaire "Questionnaire"}}]])
+                                :questionnaire "Questionnaire"
+                                :bp_chart      "Blood Pressure"}}]])
      (when (= :habit_success habit-type)
        [habit-success params])
+     (when (= :bp_chart habit-type)
+       [bp-chart params])
      (when (= :barchart_row habit-type)
        [barchart-row params])
      (when (= :questionnaire habit-type)

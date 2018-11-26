@@ -32,7 +32,7 @@
         [:g
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         [:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
+         ;[:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          (when @show-pvt
            [dc/row-label label y h])
          (for [p points]
