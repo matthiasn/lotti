@@ -18,8 +18,9 @@
 
 (defn gql-query [charts-pos days put-fn]
   (let [tags (->> (:charts @charts-pos)
-                  (filter #(contains? #{:barchart_row :bp_chart} (:type %)))
-                  (mapv :tag))]
+                  (filter #(contains? #{:barchart_row} (:type %)))
+                  (mapv :tag)
+                  (concat ["#BP"]))]
     (when-let [query-string (gql/graphql-query (inc days) tags)]
       (debug "dashboard tags" query-string)
       (put-fn [:gql/query {:q        query-string

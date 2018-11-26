@@ -157,6 +157,12 @@
                  :tag         {:type String}
                  :fields      {:type (list :CustomFieldItem)}}}
 
+  :BloodPressureStatsItem
+  {:description "Blood Pressure item."
+   :fields      {:timestamp    {:type (non-null ID)}
+                 :bp_systolic  {:type Float}
+                 :bp_diastolic {:type Float}}}
+
   :GitStatsItem
   {:description "Custom field stats item."
    :fields      {:date_string {:type (non-null String)}
@@ -176,9 +182,9 @@
 
   :AwardPoints
   {:description "Award points result"
-   :fields      {:total          {:type Int}
-                 :claimed        {:type Int}
-                 :by_day         {:type (list :AwardPointItem)}}}
+   :fields      {:total   {:type Int}
+                 :claimed {:type Int}
+                 :by_day  {:type (list :AwardPointItem)}}}
 
   :HabitCriterion
   {:description "Habit success for single criterion"
@@ -356,6 +362,13 @@
                  :tag  {:type String}
                  :prio {:type Int}}
    :resolve     :query/custom-field-stats}
+
+  :bp_field_stats
+  {:type        (list :BloodPressureStatsItem)
+   :description "Blood Pressure for number of days"
+   :args        {:days {:type Int}
+                 :prio {:type Int}}
+   :resolve     :query/bp-field-stats}
 
   :git_stats
   {:type        (list :GitStatsItem)

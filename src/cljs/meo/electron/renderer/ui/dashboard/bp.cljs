@@ -46,11 +46,7 @@
 (defn bp-chart [_ _put-fn]
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
-        bp-data (reaction
-                  (-> @gql-res
-                      :dashboard
-                      :data
-                      :BP))]
+        bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
     (fn [{:keys [y k h start span mn mx x-offset w stroke_width] :as m} put-fn]
       (debug :bp-chart m)
       (let [mx (or mx 200)
@@ -64,27 +60,18 @@
             lines (filter #(zero? (mod % line-inc)) (range 1 rng))
             mapper (fn [k]
                      (fn [idx data]
-                       (let [points (map (fn [{:keys [] :as m}]
-                                           (let [ts (.valueOf (moment (:date_string data)))
-                                                 v (->> data
-                                                        :fields
-                                                        (filter #(= k (:field %)))
-                                                        first
-                                                        :value)
-                                                 from-beginning (- ts start)
-                                                 x (+ x-offset
-                                                      (* w (/ from-beginning span)))
-                                                 y (- btm-y (* (- v mn) scale))
-                                                 s (str x "," y)]
-                                             (debug idx data v ts)
-                                             {:ymd (:date_string data)
-                                              :v   v
-                                              :x   x
-                                              :y   y
-                                              :ts  ts
-                                              :s   s}))
-                                         data)]
-                         (filter :v points))))]
+                       (let [ts (:timestamp data)
+                             v (get data k)
+                             from-beginning (- ts start)
+                             x (+ x-offset
+                                  (* w (/ from-beginning span)))
+                             y (- btm-y (* (- v mn) scale))
+                             s (str x "," y)]
+                         [{:v  v
+                           :x  x
+                           :y  y
+                           :ts ts
+                           :s  s}])))]
         [:g
          (for [n lines]
            ^{:key (str "bp" k n)}
@@ -102,8 +89,8 @@
          [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 2]
          [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 2]
 
-         [chart-line @bp-data (mapper "bp_systolic") (merge {:color "red"} m) put-fn]
-         [chart-line @bp-data (mapper "bp_diastolic") (merge {:color "blue"} m) put-fn]
+         [chart-line @bp-data (mapper :bp_systolic) (merge {:color "red"} m) put-fn]
+         [chart-line @bp-data (mapper :bp_diastolic) (merge {:color "blue"} m) put-fn]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]

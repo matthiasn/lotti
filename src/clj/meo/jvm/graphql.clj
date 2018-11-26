@@ -203,6 +203,20 @@
         stats (mapv custom-fields-mapper day-strings)]
     stats))
 
+(defn bp-field-stats [state context args value]
+  (let [{:keys [days]} args
+        from (- (stc/now) (* days d))
+        q (merge (p/parse-search "#BP"))
+        nodes (:entries-list (gq/get-filtered @state q))
+        f (fn [entry] {:timestamp (:timestamp entry)
+                       :bp_systolic (get-in entry [:custom_fields "#BP" :bp_systolic])
+                       :bp_diastolic (get-in entry [:custom_fields "#BP" :bp_diastolic])})
+        bp-entries (mapv f nodes)
+        filtered (->> bp-entries
+                      (filter #(every? identity (vals %)))
+                      (filter #(> (:timestamp %) from)))]
+    filtered))
+
 (defn git-stats [state context args value]
   (let [{:keys [days]} args
         days (reverse (range days))
@@ -286,7 +300,7 @@
                                 (catch ExceptionInfo e
                                   [nil (as-errors e)]))]
     (if (some? error-result)
-      (error "GraphQL error" error-result)
+      (error "GraphQL error" query error-result)
       (let [res (lacinia/execute-parsed-query-async parsed variables context)]
         (resolve/on-deliver! res on-deliver)))))
 
@@ -409,6 +423,7 @@
                         :query/sagas              sagas
                         :query/geo-photos         geo/photos-within-bounds
                         :query/custom-field-stats custom-field-stats
+                        :query/bp-field-stats     bp-field-stats
                         :query/git-stats          git-stats
                         :query/briefings          briefings
                         :query/questionnaires     questionnaires
