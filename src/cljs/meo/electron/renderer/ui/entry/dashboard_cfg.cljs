@@ -5,32 +5,13 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
             [taoensso.timbre :refer-macros [info error debug]]
+            [meo.electron.renderer.ui.entry.cfg-shared :as cs]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [reagent.core :as r]
             [moment]))
 
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
-
-(defn input-row [entry label cfg path put-fn]
-  (let [v (get-in entry path)
-        t (:type cfg)
-        v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
-        on-change (fn [ev]
-                    (let [xf (if (= :number t) js/parseFloat identity)
-                          v (xf (h/target-val ev))
-                          v (if (= :time t)
-                              (.asMinutes (.duration moment v))
-                              v)
-                          updated (assoc-in entry path v)]
-                      (put-fn [:entry/update-local updated])))]
-    [:div.row
-     [:label label]
-     [:input (merge {:on-change on-change
-                     :class     "time"
-                     :value     v}
-                    cfg)]]))
-
 
 (defn habit-success [_]
   (let [habits (subscribe [:habits])]
@@ -61,12 +42,24 @@
             glow-path [:dashboard_cfg :items idx :glow]]
         [:div
          [:h4 "Blood pressure chart"]
-         [input-row entry "Height:" {:type :number} h-path put-fn]
-         [input-row entry "Min:" {:type :number} mn-path put-fn]
-         [input-row entry "Max:" {:type :number} mx-path put-fn]
-         [input-row entry "Stroke:" {:type :number} sw-path put-fn]
-         [input-row entry "Circle Radius:" {:type :number} cr-path put-fn]
-         [input-row entry "Circle Stroke:" {:type :number} csw-path put-fn]
+         [cs/input-row entry {:type  :number
+                              :label "Heigth:"
+                              :path  h-path} put-fn]
+         [cs/input-row entry {:label "Min:"
+                              :type  :number
+                              :path  mn-path} put-fn]
+         [cs/input-row entry {:type  :number
+                              :label "Max:"
+                              :path  mx-path} put-fn]
+         [cs/input-row entry {:type  :number
+                              :label "Stroke:"
+                              :path  sw-path} put-fn]
+         [cs/input-row entry {:type  :number
+                              :label "Circle Radius:"
+                              :path  cr-path} put-fn]
+         [cs/input-row entry {:type  :number
+                              :label "Circle Stroke:"
+                              :path  csw-path} put-fn]
          [:div.row
           [:label "Glow? "]
           [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]]))))
@@ -129,19 +122,32 @@
                           :put-fn    put-fn
                           :options   options}]]))
          (when show-details
-           [input-row entry "Height:" {:type :number} h-path put-fn])
+           [cs/input-row entry {:type  :number
+                                :label "Height:"
+                                :path  h-path} put-fn])
          (when show-details
-           [input-row entry "Label:" {} label-path put-fn])
+           [cs/input-row entry {:label "Label:"
+                                :path  label-path} put-fn])
          (when show-details
-           [input-row entry "Min:" {:type :number} mn-path put-fn])
+           [cs/input-row entry {:label "Min:"
+                                :type  :number
+                                :path  mn-path} put-fn])
          (when show-details
-           [input-row entry "Max:" {:type :number} mx-path put-fn])
+           [cs/input-row entry {:label "Max:"
+                                :type  :number
+                                :path  mx-path} put-fn])
          (when show-details
-           [input-row entry "Stroke:" {:type :number} sw-path put-fn])
+           [cs/input-row entry {:label "Stroke:"
+                                :type  :number
+                                :path  sw-path} put-fn])
          (when show-details
-           [input-row entry "Circle Radius:" {:type :number} cr-path put-fn])
+           [cs/input-row entry {:label "Circle Radius:"
+                                :type  :number
+                                :path  cr-path} put-fn])
          (when show-details
-           [input-row entry "Circle Stroke:" {:type :number} csw-path put-fn])
+           [cs/input-row entry {:label "Circle Stroke:"
+                                :type  :number
+                                :path  csw-path} put-fn])
          (when show-details
            [:div.row
             [:label "Glow? "]
@@ -186,11 +192,17 @@
          (when field
            [color-picker entry idx put-fn])
          (when field
-           [input-row entry "Min:" field-cfg mn-path put-fn])
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Min:"
+                                       :path  mn-path}) put-fn])
          (when field
-           [input-row entry "Max:" field-cfg mx-path put-fn])
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Max:"
+                                       :path  mx-path}) put-fn])
          (when field
-           [input-row entry "Height:" {:type :number} h-path put-fn])]))))
+           [cs/input-row entry {:label "Height:"
+                                :type  :number
+                                :path  h-path} put-fn])]))))
 
 
 (defn item [{:keys [entry idx put-fn] :as params}]

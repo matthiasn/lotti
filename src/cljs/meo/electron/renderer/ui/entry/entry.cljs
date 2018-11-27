@@ -12,6 +12,7 @@
             [meo.electron.renderer.ui.entry.task :as task]
             [meo.electron.renderer.ui.entry.habit :as habit]
             [meo.electron.renderer.ui.entry.dashboard-cfg :as db]
+            [meo.electron.renderer.ui.entry.custom-field-cfg :as cfc]
             [meo.electron.renderer.ui.entry.reward :as reward]
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
@@ -125,6 +126,8 @@
            [habit/habit-details merged put-fn])
          (when (= :dashboard-cfg (:entry_type merged))
            [db/dashboard-config merged put-fn])
+         (when (= :custom-field-cfg (:entry_type merged))
+           [cfc/custom-field-config merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          (let [pomodoro (= :pomodoro (:entry_type entry))]

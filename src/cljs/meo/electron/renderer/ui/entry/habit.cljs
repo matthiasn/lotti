@@ -5,29 +5,10 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
+            [meo.electron.renderer.ui.entry.cfg-shared :as cs]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [clojure.string :as s]))
-
-
-(defn input-row [entry label cfg path put-fn]
-  (let [v (get-in entry path)
-        t (:type cfg)
-        v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
-        on-change (fn [ev]
-                    (let [xf (if (= :number t) js/parseInt identity)
-                          v (xf (h/target-val ev))
-                          v (if (= :time t)
-                              (.asMinutes (.duration moment v))
-                              v)
-                          updated (assoc-in entry path v)]
-                      (put-fn [:entry/update-local updated])))]
-    [:div.row
-     [:label label]
-     [:input (merge {:on-change on-change
-                     :class     "time"
-                     :value     v}
-                    cfg)]]))
 
 (defn a-z [x] (s/lower-case (second x)))
 
@@ -67,7 +48,8 @@
             k (get-in entry cfk-path)
             fields (get-in @custom-fields [cf-tag :fields])
             min-path [:habit :criteria idx :min-val]
-            max-path [:habit :criteria idx :max-val]]
+            max-path [:habit :criteria idx :max-val]
+            field-cfg (get-in fields [k :cfg])]
         [:div
          [:h4 "Custom field values summed, within min/max range"]
          [:div.row
@@ -89,9 +71,13 @@
                           :put-fn    put-fn
                           :options   (into {} opts)}]]))
          (when-not (empty? (str k))
-           [input-row entry "Minimum:" (get-in fields [k :cfg]) min-path put-fn])
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Minimum:"
+                                       :path  min-path}) put-fn])
          (when-not (empty? (str k))
-           [input-row entry "Maximum:" (get-in fields [k :cfg]) max-path put-fn])]))))
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Maximum:"
+                                       :path  max-path}) put-fn])]))))
 
 (defn min-max-time [{:keys []}]
   (let [sagas (subscribe [:sagas])
@@ -128,9 +114,13 @@
                           :sorted-by a-z
                           :options   stories}]]))
          (when (number? story)
-           [input-row entry "Minimum:" {:type :time} min-path put-fn])
+           [cs/input-row entry {:label "Minimum:"
+                                :type :time
+                                :path min-path} put-fn])
          (when (number? story)
-           [input-row entry "Maximum:" {:type :time} max-path put-fn])]))))
+           [cs/input-row entry {:label "Maximum:"
+                                :type  :time
+                                :path  max-path} put-fn])]))))
 
 (defn criterion [{:keys [entry idx put-fn] :as params}]
   (let [path [:habit :criteria idx :type]

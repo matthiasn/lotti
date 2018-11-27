@@ -1,8 +1,8 @@
 (ns meo.common.specs
   (:require [meo.common.utils.parse :as p]
-    #?(:clj
-            [clojure.spec.alpha :as s]
-       :cljs [cljs.spec.alpha :as s])))
+            #?(:clj
+                     [clojure.spec.alpha :as s]
+               :cljs [cljs.spec.alpha :as s])))
 
 (defn number-in-range?
   "Return function that returns true if start <= val and val < end"
@@ -32,7 +32,15 @@
 
 (s/def :meo.entry/timezone (s/nilable string?))
 (s/def :meo.entry/utc-offset (number-in-range? -720 720))
-(s/def :meo.entry/entry-type (s/nilable #{:pomodoro :story :saga :habit :dashboard-cfg}))
+
+(s/def :meo.entry/entry-type
+  (s/nilable #{:pomodoro
+               :story
+               :saga
+               :habit
+               :dashboard-cfg
+               :custom-field-cfg}))
+
 (s/def :meo.entry/comment-for possible-timestamp?)
 
 (s/def :meo.entry/primary-story (s/nilable possible-timestamp?))
@@ -183,7 +191,7 @@
 (s/def :search/set-active (s/keys :req-un [:meo.search/tab-group
                                            :meo.search/query-id]))
 (s/def :search/remove (s/keys :req-un [:meo.search/tab-group]
-                                  :opt-un [:meo.search/query-id]))
+                              :opt-un [:meo.search/query-id]))
 (s/def :search/remove-all (s/keys :req-un [:meo.search/search-text]
                                   :opt-un [:meo.search/story]))
 

@@ -59,6 +59,7 @@
         new-story #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_story()"}])
         new-saga #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_saga()"}])
         new-habit #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_habit()"}])
+        new-custom-field #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_custom_field()"}])
         new-dashboard #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_dashboard()"}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
@@ -68,6 +69,7 @@
                {:label "New Saga" :click new-saga}
                {:label "New Habit" :click new-habit}
                {:label "New Dashboard" :click new-dashboard}
+               {:label "New Custom Field" :click new-custom-field}
                (when (contains? capabilities :sync-swift)
                  {:label       "Upload"
                   :accelerator "CmdOrCtrl+U"
