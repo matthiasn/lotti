@@ -9,8 +9,11 @@
             [moment]
             [meo.common.utils.parse :as p]))
 
-(defn is-tag? [s] (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s))
-(defn valid-name? [s] (re-find (re-pattern (str "^" p/tag-char-cls "+$")) s))
+(defn is-tag? [s] (when (string? s) (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s)))
+
+(defn valid-name? [s]
+  (let [s (if (keyword? s) (name s) s)]
+    (when (string? s) (re-find (re-pattern (str "^" p/tag-char-cls "+$")) s))))
 
 (defn field-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
@@ -30,11 +33,12 @@
         [:div
          [:h4 "Custom Field"]
          [cs/input-row entry (merge field-cfg
-                                    {:label "Name:"
+                                    {:label    "Name:"
                                      :validate valid-name?
-                                     :path  name-path}) put-fn]
+                                     :xf       keyword
+                                     :path     name-path}) put-fn]
          [cs/input-row entry (merge field-cfg
-                                    {:label "Name:"
+                                    {:label "Label:"
                                      :path  label-path}) put-fn]
          [:div.row
           [:label.wide "Type:"]

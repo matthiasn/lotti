@@ -6,7 +6,8 @@
             [clj-time.coerce :as c]
             [clj-time.format :as ctf]
             [clj-time.core :as ct]
-            [meo.jvm.datetime :as dt]))
+            [meo.jvm.datetime :as dt]
+            [meo.common.utils.parse :as p]))
 
 (def dtz (ct/default-time-zone))
 (def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))

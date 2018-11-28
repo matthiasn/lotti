@@ -36,7 +36,7 @@
   (with-redefs [cse/new-entries-ls (atom {})]
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
           new-state (:new-state (cse/new-entry-fn {:current-state current-state
-                                                   :msg-payload test-entry}))]
+                                                   :msg-payload   test-entry}))]
       (testing
         "pomodoro test entry in new-entries"
         (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
@@ -51,10 +51,10 @@
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
-                                   :msg-payload test-entry}))
+                                   :msg-payload   test-entry}))
           new-state2 (:new-state (cse/update-local
                                    {:current-state new-state
-                                    :msg-payload entry-update}))]
+                                    :msg-payload   entry-update}))]
       (testing
         "pomodoro test entry in new-entries"
         (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
@@ -73,10 +73,10 @@
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
-                                   :msg-payload test-entry}))
+                                   :msg-payload   test-entry}))
           new-state2 (:new-state (cse/remove-local
                                    {:current-state new-state
-                                    :msg-payload entry-update}))]
+                                    :msg-payload   entry-update}))]
       (testing
         "pomodoro test entry in new-entries"
         (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
@@ -94,13 +94,14 @@
     (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
-                                   :msg-payload test-entry}))
+                                   :msg-payload   test-entry}))
           new-state (:new-state (cse/update-local
                                   {:current-state new-state
-                                   :msg-payload entry-update}))
+                                   :msg-payload   entry-update}))
           new-state2 (:new-state (cse/entry-saved-fn
                                    {:current-state new-state
-                                    :msg-payload entry-update}))]
+                                    :msg-payload   entry-update
+                                    :put-fn        (fn [_])}))]
       (testing
         "test entry in new-entries"
         (is (= (merge test-entry entry-update)
@@ -116,85 +117,83 @@
 
 (def pomodoro-inc-msg
   {:timestamp 1465059173965})
-#_
-(deftest pomodoro-inc-test
-  "Test the time increment handler for running pomodoros. Expectation is that
-   the :completed-time key is incremented on every call."
-  (let [play-counter (atom {"ticking-clock" 0 "ringer" 0})]
+#_(deftest pomodoro-inc-test
+    "Test the time increment handler for running pomodoros. Expectation is that
+     the :completed-time key is incremented on every call."
+    (let [play-counter (atom {"ticking-clock" 0 "ringer" 0})]
+      (with-redefs [cse/new-entries-ls (atom {})
+                    cse/play-audio (fn [id] (swap! play-counter update-in [id] inc))]
+        (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
+              current-state (assoc-in current-state [:cfg :mute] false)
+              current-state (assoc-in current-state [:cfg :ticking-clock] true)
+              new-state (:new-state (cse/update-local
+                                      {:current-state current-state
+                                       :msg-payload   test-entry}))
+              new-state1 (:new-state (cse/pomodoro-start
+                                       {:current-state new-state
+                                        :msg-payload   test-entry}))
+              new-state2 (:new-state (cse/pomodoro-inc
+                                       {:current-state new-state1
+                                        :msg-payload   pomodoro-inc-msg}))
+              new-state3 (:new-state (cse/pomodoro-inc
+                                       {:current-state new-state2
+                                        :msg-payload   pomodoro-inc-msg}))]
+          (testing
+            "pomodoro test entry in new-entries"
+            (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
+          (testing
+            "pomodoro set to running"
+            (is (:pomodoro-running (get-in new-state1 [:new-entries 1465059173965]))))
+          (testing
+            "time incremented"
+            (is (= 1 (get-in new-state2
+                             [:new-entries 1465059173965 :completed-time]))))
+          (testing
+            "time incremented"
+            (is (= 2 (get-in new-state3
+                             [:new-entries 1465059173965 :completed-time]))))
+          (testing
+            "new entries atom properly updated - this would be backed by
+             localstorage on client"
+            (is (= (:new-entries new-state3) @cse/new-entries-ls)))
+          (testing
+            "tick was played twice"
+            (is (= 2
+                   (get-in @play-counter ["ticking-clock"]))))))))
+#_(deftest pomodoro-start-test
+    "Tests that the pomodoro-start handler properly sets the entry status to
+     started and and stopped."
     (with-redefs [cse/new-entries-ls (atom {})
-                  cse/play-audio (fn [id] (swap! play-counter update-in [id] inc))]
+                  cse/play-audio (fn [_id])]
       (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-            current-state (assoc-in current-state [:cfg :mute] false)
-            current-state (assoc-in current-state [:cfg :ticking-clock] true)
             new-state (:new-state (cse/update-local
                                     {:current-state current-state
-                                     :msg-payload test-entry}))
+                                     :msg-payload   test-entry}))
             new-state1 (:new-state (cse/pomodoro-start
                                      {:current-state new-state
-                                      :msg-payload test-entry}))
+                                      :msg-payload   test-entry}))
             new-state2 (:new-state (cse/pomodoro-inc
                                      {:current-state new-state1
-                                      :msg-payload pomodoro-inc-msg}))
-            new-state3 (:new-state (cse/pomodoro-inc
+                                      :msg-payload   pomodoro-inc-msg}))
+            new-state3 (:new-state (cse/pomodoro-start
                                      {:current-state new-state2
-                                      :msg-payload pomodoro-inc-msg}))]
+                                      :msg-payload   test-entry}))]
         (testing
           "pomodoro test entry in new-entries"
           (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
         (testing
           "pomodoro set to running"
-          (is (:pomodoro-running (get-in new-state1 [:new-entries 1465059173965]))))
+          (is (:pomodoro-running
+                (get-in new-state1 [:new-entries 1465059173965]))))
         (testing
           "time incremented"
           (is (= 1 (get-in new-state2
                            [:new-entries 1465059173965 :completed-time]))))
         (testing
-          "time incremented"
-          (is (= 2 (get-in new-state3
-                           [:new-entries 1465059173965 :completed-time]))))
+          "pomodoro set to not running"
+          (is (not (:pomodoro-running
+                     (get-in new-state3 [:new-entries 1465059173965])))))
         (testing
           "new entries atom properly updated - this would be backed by
            localstorage on client"
-          (is (= (:new-entries new-state3) @cse/new-entries-ls)))
-        (testing
-          "tick was played twice"
-          (is (= 2
-                 (get-in @play-counter ["ticking-clock"]))))))))
-#_
-(deftest pomodoro-start-test
-  "Tests that the pomodoro-start handler properly sets the entry status to
-   started and and stopped."
-  (with-redefs [cse/new-entries-ls (atom {})
-                cse/play-audio (fn [_id])]
-    (let [current-state @(:state (store/initial-state-fn (fn [_put-fn])))
-          new-state (:new-state (cse/update-local
-                                  {:current-state current-state
-                                   :msg-payload test-entry}))
-          new-state1 (:new-state (cse/pomodoro-start
-                                   {:current-state new-state
-                                    :msg-payload test-entry}))
-          new-state2 (:new-state (cse/pomodoro-inc
-                                   {:current-state new-state1
-                                    :msg-payload pomodoro-inc-msg}))
-          new-state3 (:new-state (cse/pomodoro-start
-                                   {:current-state new-state2
-                                    :msg-payload test-entry}))]
-      (testing
-        "pomodoro test entry in new-entries"
-          (is (= test-entry (get-in new-state [:new-entries 1465059173965]))))
-      (testing
-        "pomodoro set to running"
-        (is (:pomodoro-running
-              (get-in new-state1 [:new-entries 1465059173965]))))
-      (testing
-        "time incremented"
-        (is (= 1 (get-in new-state2
-                         [:new-entries 1465059173965 :completed-time]))))
-      (testing
-        "pomodoro set to not running"
-        (is (not (:pomodoro-running
-                   (get-in new-state3 [:new-entries 1465059173965])))))
-      (testing
-        "new entries atom properly updated - this would be backed by
-         localstorage on client"
-        (is (= (:new-entries new-state3) @cse/new-entries-ls))))))
+          (is (= (:new-entries new-state3) @cse/new-entries-ls))))))

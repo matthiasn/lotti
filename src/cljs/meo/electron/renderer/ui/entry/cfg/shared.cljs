@@ -6,12 +6,12 @@
             [moment]))
 
 (defn input-row [entry cfg put-fn]
-  (let [{:keys [label validate path]} cfg
+  (let [{:keys [label validate path xf]} cfg
         v (get-in entry path)
         t (:type cfg)
         v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
         on-change (fn [ev]
-                    (let [xf (if (= :number t) js/parseFloat identity)
+                    (let [xf (or xf (if (= :number t) js/parseFloat identity))
                           v (xf (h/target-val ev))
                           v (if (= :time t)
                               (.asMinutes (.duration moment v))

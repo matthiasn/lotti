@@ -366,6 +366,30 @@
                            :msg-meta    msg-meta}))))
   {})
 
+(defn custom-fields-cfg
+  "Generates the custom custom fields config map as required by the
+   user interface. The usage of custom fields in the UI predates the
+   definition of custom fields in a specialized entry. The data
+   format should be adjusted subsequently."
+  [state]
+  (let [q {:tags #{"#custom-field-cfg"}
+           :n    Integer/MAX_VALUE}
+        res (:entries-list (gq/get-filtered state q))
+        f (fn [entry]
+            (let [{:keys [tag items]} (:custom_field_cfg entry)
+                  story (:primary_story entry)
+                  fm (fn [field]
+                       (let [k (keyword (:name field))
+                             label (:label field)]
+                         [k {:cfg   (select-keys field [:type :step :agg])
+                             :label label}]))
+                  fields (into {} (map fm items))]
+              [tag {:default-story story
+                    :timestamp     (:timestamp entry)
+                    :fields        fields}]))
+        res (map f res)]
+    (into {} res)))
+
 (defn gen-opt [cmp-state f k]
   (cp/future
     thread-pool
@@ -379,6 +403,7 @@
   (gen-opt cmp-state gq/find-all-hashtags :hashtags)
   (gen-opt cmp-state gq/find-all-mentions :mentions)
   (gen-opt cmp-state gq/find-all-pvt-hashtags :pvt-hashtags)
+  (gen-opt cmp-state custom-fields-cfg :custom_fields)
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]

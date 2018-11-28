@@ -124,9 +124,12 @@
     {}))
 
 (defn refresh-cfg
-  "Refresh configuration by reloading the config file."
+  "Refresh configuration by reloading the config file. Attaches custom fields config from
+   configuration entries."
   [{:keys [current-state put-fn]}]
-  (let [cfg (fu/load-cfg)]
+  (let [cfg (fu/load-cfg)
+        cf2 {:custom-fields (gql/custom-fields-cfg current-state)}
+        cfg (merge cfg cf2)]
     (put-fn [:backend-cfg/new cfg])
     {:new-state (assoc-in current-state [:cfg] cfg)}))
 

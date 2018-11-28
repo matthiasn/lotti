@@ -42,7 +42,7 @@
 
 (defn entry-saved-fn
   "Remove new entry from local when saving is confirmed by backend."
-  [{:keys [current-state msg-payload msg-meta]}]
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         curr-local (get-in current-state [:new-entries ts])
         new-state (if (or (= (:md curr-local)
@@ -55,6 +55,7 @@
                     current-state)]
     (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
+    (put-fn [:cfg/refresh])
     {:new-state new-state}))
 
 (defn play-audio
