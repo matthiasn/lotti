@@ -1,11 +1,11 @@
-(ns meo.electron.renderer.ui.entry.habit
+(ns meo.electron.renderer.ui.entry.cfg.habit
   (:require [matthiasn.systems-toolbox.component :as st]
             [moment]
             [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
-            [meo.electron.renderer.ui.entry.cfg-shared :as cs]
+            [meo.electron.renderer.ui.entry.cfg.shared :as cs]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [clojure.string :as s]))

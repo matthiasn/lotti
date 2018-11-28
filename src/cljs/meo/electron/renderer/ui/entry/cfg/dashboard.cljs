@@ -1,15 +1,16 @@
-(ns meo.electron.renderer.ui.entry.dashboard-cfg
+(ns meo.electron.renderer.ui.entry.cfg.dashboard
   (:require [react-color :as react-color]
             [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
             [taoensso.timbre :refer-macros [info error debug]]
-            [meo.electron.renderer.ui.entry.cfg-shared :as cs]
+            [meo.electron.renderer.ui.entry.cfg.shared :as cs]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [reagent.core :as r]
-            [moment]))
+            [moment]
+            [meo.common.utils.parse :as up]))
 
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
 
@@ -257,9 +258,17 @@
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:dashboard_cfg :items] #(vec (conj % {})))]
-                       (put-fn [:entry/update-local updated]))))]
+                       (put-fn [:entry/update-local updated]))))
+        open-new (fn [x]
+                   (put-fn [:search/add
+                            {:tab-group :left
+                             :query     (up/parse-search (:timestamp x))}]))]
     (fn [entry put-fn]
-      (let [items (get-in entry [:dashboard_cfg :items])]
+      (let [items (get-in entry [:dashboard_cfg :items])
+            copy-opts {:dashboard_cfg (:dashboard_cfg entry)
+                       :entry_type    :dashboard-cfg
+                       :perm_tags     #{"#dashboard-cfg"}}
+            copy-click (h/new-entry put-fn copy-opts open-new)]
         [:div.habit-details
          [:h3.header
           "Dashboard Configuration"]
@@ -274,4 +283,8 @@
            ^{:key i}
            [item {:entry  entry
                   :put-fn put-fn
-                  :idx    i}])]))))
+                  :idx    i}])
+         [:div.row
+          [:div.copy-dashboard
+           {:on-click copy-click}
+           "copy"]]]))))

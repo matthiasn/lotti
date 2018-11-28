@@ -1,8 +1,8 @@
-(ns meo.electron.renderer.ui.entry.custom-field-cfg
+(ns meo.electron.renderer.ui.entry.cfg.custom-field
   (:require [react-color :as react-color]
             [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
-            [meo.electron.renderer.ui.entry.cfg-shared :as cs]
+            [meo.electron.renderer.ui.entry.cfg.shared :as cs]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]

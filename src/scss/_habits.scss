@@ -212,6 +212,19 @@
     min-width: 50px;
     display: inline-block;
   }
+
+  .copy-dashboard {
+    background-color: desaturate(lighten($green, 10), 5);
+    border-radius: $entry-border-radius;
+    color: #EEE;
+    font-weight: bold;
+    padding: 2px 5px;
+    cursor: pointer;
+    &:hover {
+      background-color: $green;
+      color: white;
+    }
+  }
 }
 
 .habit-monitor {

@@ -1,4 +1,4 @@
-(ns meo.electron.renderer.ui.entry.cfg-shared
+(ns meo.electron.renderer.ui.entry.cfg.shared
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error debug]]
