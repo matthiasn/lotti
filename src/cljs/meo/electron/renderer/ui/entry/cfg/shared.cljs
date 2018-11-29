@@ -6,7 +6,7 @@
             [moment]))
 
 (defn input-row [entry cfg put-fn]
-  (let [{:keys [label validate path xf]} cfg
+  (let [{:keys [label validate path xf error]} cfg
         v (get-in entry path)
         t (:type cfg)
         v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
@@ -25,5 +25,6 @@
                      :class     "time"
                      :value     v}
                     cfg)]
-     (when-not valid?
-       [:span.err "Invalid input"])]))
+     (if error [:span.err error]
+               (when-not valid?
+                 [:span.err "Invalid input"]))]))

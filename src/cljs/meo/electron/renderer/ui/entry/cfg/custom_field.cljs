@@ -7,7 +7,8 @@
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [moment]
-            [meo.common.utils.parse :as p]))
+            [meo.common.utils.parse :as p]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (defn is-tag? [s] (when (string? s) (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s)))
 
@@ -35,7 +36,6 @@
          [cs/input-row entry (merge field-cfg
                                     {:label    "Name:"
                                      :validate valid-name?
-                                     :xf       keyword
                                      :path     name-path}) put-fn]
          [cs/input-row entry (merge field-cfg
                                     {:label "Label:"
@@ -102,22 +102,31 @@
                    (fn [_]
                      (let [updated (update-in entry [:custom_field_cfg :items] #(vec (conj % {})))]
                        (put-fn [:entry/update-local updated]))))
-        tag-path [:custom_field_cfg :tag]]
+        tag-path [:custom_field_cfg :tag]
+        backend-cfg (subscribe [:backend-cfg])
+        ts (:timestamp entry)
+        {:keys [edit-mode]} (eu/entry-reaction ts)]
     (fn [entry put-fn]
-      (let [items (get-in entry [:custom_field_cfg :items])]
+      (let [items (get-in entry [:custom_field_cfg :items])
+            tag (get-in entry tag-path)
+            tag-err (when-let [cfg (get-in @backend-cfg [:custom-fields tag])]
+                      (when-not (= ts (:timestamp cfg))
+                        "already defined"))]
         [:div.habit-details
          [:h3.header
           "Custom Field Configuration"]
          [cs/input-row entry {:validate is-tag?
                               :label    "Tag:"
-                              :path     tag-path} put-fn]
+                              :path     tag-path
+                              :error    tag-err} put-fn]
          [:div.row
           [:label "Active? "]
           [uc/switch {:entry entry :put-fn put-fn :path [:custom_field_cfg :active]}]]
-         [:div.row
+         [:div.row.space-between
           [:h3 "Criteria"]
           [:div.add-criterion {:on-click (add-item entry)}
-           [:i.fas.fa-plus]]]
+           [:i.fas.fa-plus]]
+          [:div.spacer]]
          (for [[i c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry  entry

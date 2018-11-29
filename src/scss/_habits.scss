@@ -136,9 +136,17 @@
     margin-top: 10px;
     display: flex;
 
-    .add-criterion {
+    &.space-between {
+      justify-content: space-between;
+    }
+
+    .spacer {
+      flex: 2;
+    }
+
+    .add-criterion, .save {
       background-color: $green;
-      padding: 0 3px;
+      padding: 1px 6px 16px 6px;
       color: white;
       border-radius: 3px;
       right: 0;
@@ -148,6 +156,15 @@
       margin-left: 10px;
       cursor: pointer;
       user-select: none;
+      &.save {
+        text-align: right;
+        background-color: $red;
+        width: 55px;
+        font-weight: bold;
+        i {
+          margin-right: 4px;
+        }
+      }
     }
   }
 

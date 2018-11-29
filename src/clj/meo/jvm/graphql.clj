@@ -372,6 +372,7 @@
    definition of custom fields in a specialized entry. The data
    format should be adjusted subsequently."
   [state]
+  (debug "custom-fields-cfg")
   (let [q {:tags #{"#custom-field-cfg"}
            :n    Integer/MAX_VALUE}
         res (:entries-list (gq/get-filtered state q))
@@ -387,8 +388,9 @@
               [tag {:default-story story
                     :timestamp     (:timestamp entry)
                     :fields        fields}]))
-        res (map f res)]
-    (into {} res)))
+        res (into {} (map f res))]
+    (debug "custom-fields-cfg" res)
+    res))
 
 (defn gen-opt [cmp-state f k]
   (cp/future

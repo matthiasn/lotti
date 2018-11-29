@@ -65,11 +65,14 @@
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
                 :click       new-entry}
-               {:label "New Story" :click new-story}
-               {:label "New Saga" :click new-saga}
-               {:label "New Habit" :click new-habit}
-               {:label "New Dashboard" :click new-dashboard}
-               {:label "New Custom Field" :click new-custom-field}
+
+               {:label   "New..."
+                :submenu [{:label "New Story" :click new-story}
+                          {:label "New Saga" :click new-saga}
+                          {:label "New Habit" :click new-habit}
+                          {:label "New Dashboard" :click new-dashboard}
+                          {:label "New Custom Field" :click new-custom-field}]}
+
                (when (contains? capabilities :sync-swift)
                  {:label       "Upload"
                   :accelerator "CmdOrCtrl+U"
@@ -84,6 +87,7 @@
                           (when (contains? capabilities :spotify)
                             {:label "Spotify"
                              :click #(put-fn [:import/spotify])})]}
+               #_
                {:label "Export"
                 :click #(put-fn [:export/geojson])}]}))
 
