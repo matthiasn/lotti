@@ -5,7 +5,8 @@
             [re-frame.core :refer [subscribe]]
             [react-list :as rl]
             [reagent.core :as r]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.electron.renderer.helpers :as h]))
 
 (def react-list (r/adapt-react-class rl))
 
@@ -27,7 +28,8 @@
   (fn [idx]
     (r/as-element
       [:div {:key idx}
-       [entry-wrapper idx local-cfg put-fn]])))
+       [h/error-boundary
+        [entry-wrapper idx local-cfg put-fn]]])))
 
 (defn journal-view
   "Renders journal div, one entry per item, with map if geo data exists in the
@@ -58,10 +60,11 @@
                                                   :tab-group tg}])]
         ^{:key (str query-id)}
         [:div.journal {:on-mouse-enter on-mouse-enter}
-         [:div.journal-entries {:on-scroll on-scroll
-                                :id (name tab-group)}
-          [react-list {:length       (count @entries-list)
-                       :itemRenderer (item local-cfg put-fn)}]]]))))
+         [h/error-boundary
+          [:div.journal-entries {:on-scroll on-scroll
+                                 :id        (name tab-group)}
+           [react-list {:length       (count @entries-list)
+                        :itemRenderer (item local-cfg put-fn)}]]]]))))
 
 (def interval (atom nil))
 (defn scroll-down [id h]
