@@ -127,8 +127,11 @@
          [:div.row
           [:label "Active? "]
           [uc/switch {:entry entry :put-fn put-fn :path [:custom_field_cfg :active]}]]
+         [:div.row
+          [:label "Private? "]
+          [uc/switch {:entry entry :put-fn put-fn :path [:custom_field_cfg :pvt]}]]
          [:div.row.space-between
-          [:h3 "Criteria"]
+          [:h3 "Fields"]
           [:div.add-criterion {:on-click (add-item entry)}
            [:i.fas.fa-plus]]
           [:div.spacer]]
