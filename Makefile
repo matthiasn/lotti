@@ -77,7 +77,7 @@ clean: build-deps
 	@rm -rf ./bin
 	@rm -rf ./dist
 	@eval $(LEIN) clean
-#	@rm -f ./yarn.lock
+ 	@rm -f ./yarn.lock
 
 deps: clean
 	@echo Fetching Leiningen dependencies...
@@ -133,16 +133,8 @@ package-only:
 	@echo Building executable...
 	./node_modules/.bin/electron-builder $(OSFLAG)
 
-publish-beta:
-	@echo Publishing beta - requires GH_TOKEN in ENV...
-	./node_modules/.bin/electron-builder -c electron-builder-beta.yml --publish always $(OSFLAG)
-
-beta: install publish-beta
-
-publish-release:
-	@echo Publishing release - requires GH_TOKEN in ENV...
+publish-github:
+	@echo Publishing to GitHub Releases - requires GH_TOKEN in ENV...
 	./node_modules/.bin/electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
-release: install publish-release
-	@echo Publishing release - requires GH_TOKEN in ENV...
-	./node_modules/.bin/electron-builder --publish always $(OSFLAG)
+release: install publish-github
