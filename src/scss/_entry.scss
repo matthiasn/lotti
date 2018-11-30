@@ -584,14 +584,6 @@ u {
     }
   }
 
-  @at-root .validation-error .edit-menu {
-    background-color: lighten($red, 10);
-
-    i.fa-save {
-      cursor: not-allowed;
-    }
-  }
-
   padding: 0 4px;
   margin: 0 -9px 5px -9px;
 
@@ -620,6 +612,16 @@ u {
 
   .fa-wide {
     padding: 3px 3px;
+  }
+}
+
+.validation-error {
+  .edit-menu {
+    background-color: lighten($red, 10)!important;
+
+    i.fa-save {
+      cursor: not-allowed!important;
+    }
   }
 }
 

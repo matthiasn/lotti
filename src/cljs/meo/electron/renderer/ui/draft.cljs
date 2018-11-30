@@ -89,7 +89,7 @@
         y (assoc y :tags (set/union (:perm_tags y) (:tags y)))
         ks (set/intersection (set (keys x))
                              (set (keys y)))
-        ks (conj ks :starred :flagged :latitude :longitude :habit)
+        ks (conj ks :starred :flagged :latitude :longitude :habit :custom_field_cfg)
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
         x2 (update-in x1 [:md] s/replace " " "")

@@ -67,11 +67,11 @@
                 :click       new-entry}
 
                {:label   "New..."
-                :submenu [{:label "New Story" :click new-story}
-                          {:label "New Saga" :click new-saga}
-                          {:label "New Habit" :click new-habit}
-                          {:label "New Dashboard" :click new-dashboard}
-                          {:label "New Custom Field" :click new-custom-field}]}
+                :submenu [{:label "Story" :click new-story}
+                          {:label "Saga" :click new-saga}
+                          {:label "Habit" :click new-habit}
+                          {:label "Dashboard" :click new-dashboard}
+                          {:label "Custom Field" :click new-custom-field}]}
 
                (when (contains? capabilities :sync-swift)
                  {:label       "Upload"

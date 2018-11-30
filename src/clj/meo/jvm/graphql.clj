@@ -388,7 +388,7 @@
               [tag {:default-story story
                     :timestamp     (:timestamp entry)
                     :fields        fields}]))
-        res (into {} (map f res))]
+        res (into {} (filter first (map f res)))]
     (debug "custom-fields-cfg" res)
     res))
 
