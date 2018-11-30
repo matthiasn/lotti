@@ -101,7 +101,8 @@
                                         (put-fn [:entry/update-local entry]))
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
-            map-id (str ts (when qid (name qid)))]
+            map-id (str ts (when qid (name qid)))
+            errors (cfc/validate-cfg @new-entry backend-cfg)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
@@ -118,18 +119,16 @@
          [es/saga-name-field merged edit-mode? put-fn]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged put-fn])
-         (when (and (not (:spotify entry))
-                    ;(not (= :custom-field-cfg (:entry_type merged)))
-                    )
-           [d/entry-editor entry put-fn])
+         (when (= :dashboard-cfg (:entry_type merged))
+           [db/dashboard-config merged put-fn])
+         (when-not (:spotify entry)
+           [d/entry-editor entry errors put-fn])
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged local-cfg put-fn edit-mode?])
          (when (or (= :habit (:entry-type merged))
                    (= :habit (:entry_type merged)))
            [habit/habit-details merged put-fn])
-         (when (= :dashboard-cfg (:entry_type merged))
-           [db/dashboard-config merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          (let [pomodoro (= :pomodoro (:entry_type entry))]

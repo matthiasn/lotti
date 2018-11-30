@@ -13,7 +13,8 @@
             [cljs.pprint :as pp]
             [clojure.walk :as walk]
             [clojure.string :as str]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.electron.renderer.ui.entry.cfg.custom-field :as cfc]))
 
 (defn editor-state-from-text [text]
   (let [content-from-text (.createFromText Draft.ContentState text)]
@@ -106,7 +107,7 @@
   (fn [props]
     [editor props]))
 
-(defn entry-editor [entry2 put-fn]
+(defn entry-editor [entry2 errors put-fn]
   (let [ts (:timestamp entry2)
         {:keys [new-entry]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
@@ -166,16 +167,20 @@
                       (put-fn [:window/progress {:v 0}])
                       (put-fn [:blink/busy {:color :green}])
                       (put-fn [:cmd/pomodoro-stop updated]))
-                    (put-fn [:entry/update updated])))
+                    (when (empty? errors)
+                      (put-fn [:entry/update updated]))))
         start-fn #(let [latest-entry (merge (dissoc entry2 :comments)
                                             @new-entry)]
                     (when (= (:entry_type latest-entry) :pomodoro)
                       (put-fn [:cmd/pomodoro-start latest-entry])))]
-    (fn [entry2 _put-fn]
-      (let [unsaved (when @new-entry (compare-entries entry2 @new-entry))]
-        [:div {:class (when unsaved "unsaved")}
+    (fn [entry2 errors _put-fn]
+      (let [unsaved (when (and @new-entry (empty? errors))
+                      (compare-entries entry2 @new-entry))
+            err (seq errors)]
+        [:div {:class (str (when unsaved "unsaved ")
+                           (when err "validation-error"))}
          [editor-wrapper
-          {:md       (or (or (:md @new-entry) (:md entry2)) "")
+          {:md       (or (:md @new-entry) (:md entry2) "")
            :ts       ts
            :changed  unsaved
            :mentions @mentions

@@ -96,6 +96,14 @@
        [:i.fas.fa-arrow-up {:on-click (partial mv-click dec)}])
      [field-row params]]))
 
+(defn validate-cfg [entry backend-cfg]
+  (let [tag-path [:custom_field_cfg :tag]
+        tag (get-in entry tag-path)
+        ts (:timestamp entry)
+        res (when-let [cfg (get-in @backend-cfg [:custom-fields tag])]
+              (when-not (= ts (:timestamp cfg))
+                "already defined"))]
+    (if res [res] [])))
 
 (defn custom-field-config [entry put-fn]
   (let [add-item (fn [entry]
@@ -108,10 +116,7 @@
         {:keys [edit-mode]} (eu/entry-reaction ts)]
     (fn [entry put-fn]
       (let [items (get-in entry [:custom_field_cfg :items])
-            tag (get-in entry tag-path)
-            tag-err (when-let [cfg (get-in @backend-cfg [:custom-fields tag])]
-                      (when-not (= ts (:timestamp cfg))
-                        "already defined"))]
+            tag-err (first (validate-cfg entry backend-cfg))]
         [:div.habit-details
          [:h3.header
           "Custom Field Configuration"]
