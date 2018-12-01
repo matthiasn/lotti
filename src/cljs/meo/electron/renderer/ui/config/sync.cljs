@@ -1,4 +1,4 @@
-(ns meo.electron.renderer.ui.sync
+(ns meo.electron.renderer.ui.config.sync
   (:require [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]

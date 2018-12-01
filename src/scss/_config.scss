@@ -2,10 +2,19 @@
 
 .config {
   display: flex;
-  background-color: #DDD;
+  background-color: $tab-bg;
 
   .custom-fields {
     padding-left: 20px;
+  }
+
+  h2 {
+    color: #EEE;
+  }
+
+  .tile-tabs {
+    max-width: 350px;
+    margin-left: 6px;
   }
 
   .menu {
@@ -43,9 +52,14 @@
     }
   }
 
+  .photos {
+    padding: 20px 30px;
+  }
+
   .metrics {
     display: flex;
     flex-flow: column;
+    color: #DDD;
 
     table {
       text-align: right;
@@ -111,15 +125,18 @@
     min-width: 300px;
     flex: 1;
     background-color: #fafafa;
-    padding: 10px 15px;
+    padding: 6px 15px;
     margin: 0 6px 5px 0;
     cursor: pointer;
     user-select: none;
     border-radius: $entry-border-radius;
 
     h3 {
-      margin: 5px 0;
+      margin: 2px 0;
       font-family: $header-font-family;
+      &:hover {
+        color: $link-color;
+      }
     }
 
     ul {
@@ -137,8 +154,10 @@
     font-size: 0.8em;
     cursor: pointer;
     white-space: nowrap;
-    background-color: $green;
-    padding: 3px 6px;
+    padding: 2px 6px;
+    margin-left: 20px;
+    border-radius: $entry-border-radius;
+
     .fa {
       margin-right: 4px;
     }
@@ -149,31 +168,32 @@
     margin-bottom: 20px;
 
     .search {
-      background-color: #DDD;
-      height: 36px;
       display: inline-block;
       border-radius: $entry-border-radius;
       padding-right: 0;
       margin-right: 10px;
+      margin-left: 16px;
 
       .fa-plus {
-        padding: 8px 6px 0 4px;
+        padding: 6px 6px;
       }
 
       .fa-search {
-        padding: 8px 2px 4px 10px;
+        padding: 8px 8px 4px 10px;
+        color: #DDD;
       }
 
       .add {
-        background-color: $green;
-        height: 36px;
         display: inline-block;
         border-top-right-radius: $entry-border-radius;
         border-bottom-right-radius: $entry-border-radius;
         color: white;
         font-weight: bold;
-        padding-right: 10px;
         font-size: $font-size-large;
+
+        &:hover {
+          background-color: $green;
+        }
       }
     }
 
@@ -184,21 +204,6 @@
       font-weight: bold;
       font-size: $font-size-medium;
       padding: 15px;
-    }
-  }
-
-  .fa-trash-alt {
-    float: right;
-    cursor: pointer;
-    padding: 3px;
-    font-weight: 100;
-
-    &.tag-delete {
-      padding: 20px;
-    }
-
-    &:hover {
-      color: red;
     }
   }
 

@@ -9,7 +9,7 @@
             [meo.electron.renderer.ui.grid :as g]
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.footer :as f]
-            [meo.electron.renderer.ui.config :as cfg]
+            [meo.electron.renderer.ui.config.core :as cfg]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]

@@ -250,6 +250,7 @@ $backlog-weekend: lighten($backlog, 30);
   position: absolute;
   bottom: 0;
   width: 100%;
+  z-index: 111;
 
   .highlight {
     font-weight: bold;

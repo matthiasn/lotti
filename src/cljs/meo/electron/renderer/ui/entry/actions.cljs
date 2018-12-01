@@ -180,13 +180,14 @@
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
-          (when (not comment?)
+          (when (and (contains? #{:left :right} tab-group) (not comment?))
             [:i.fa.toggle.far
              {:class    (if (= tab-group :left)
                           "fa-arrow-alt-from-left"
                           "fa-arrow-alt-from-right")
               :on-click move-over}])
-          (when-not comment? [new-link entry put-fn create-linked])
+          (when (and (contains? #{:left :right} tab-group) (not comment?))
+            [new-link entry put-fn create-linked])
           [trash-icon trash-entry]
           (when (contains? (:capabilities @backend-cfg) :debug)
             [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
