@@ -25,7 +25,6 @@
 (defn custom-fields-list [local put-fn]
   (let [stories (subscribe [:stories])
         backend-cfg (subscribe [:backend-cfg])
-        pvt-tags (reaction (:pvt-tags @backend-cfg))
         pvt (subscribe [:show-pvt])
         select-item (fn [tag cfg]
                       (let [ts (:timestamp cfg)
@@ -51,8 +50,9 @@
             item-filter #(s/includes? (lower-case (first %)) text)
             items (filter item-filter @custom-fields)
             sel (:selected @local)
-            pvt-tags @pvt-tags
-            items (if @pvt items (filter #(not (contains? pvt-tags (first %))) items))]
+            items (if @pvt
+                    items
+                    (filter #(not (get-in % [1 :pvt])) items))]
         [:div.col.custom-fields
          [:h2 "Custom Fields Editor"]
          [:div.input-line

@@ -15,7 +15,7 @@
 (defn config [_put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :page            :metrics})
+                       :page            :custom-fields})
         menu-item (fn [k t active]
                     [:div.menu-item
                      {:on-click #(swap! local assoc-in [:page] k)
@@ -30,8 +30,8 @@
            [:div.config
             [:div.menu
              [:h1 "Settings"]
-             [menu-item :metrics "Metrics" page]
              [menu-item :custom-fields "Custom Fields" page]
+             [menu-item :metrics "Metrics" page]
              [menu-item :sync "Synchronization" page]
              [menu-item :photos "Photos" page]
              [menu-item :localization "Localization" page]

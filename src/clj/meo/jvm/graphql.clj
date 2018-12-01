@@ -208,8 +208,8 @@
         from (- (stc/now) (* days d))
         q (merge (p/parse-search "#BP"))
         nodes (:entries-list (gq/get-filtered @state q))
-        f (fn [entry] {:timestamp (:timestamp entry)
-                       :bp_systolic (get-in entry [:custom_fields "#BP" :bp_systolic])
+        f (fn [entry] {:timestamp    (:timestamp entry)
+                       :bp_systolic  (get-in entry [:custom_fields "#BP" :bp_systolic])
                        :bp_diastolic (get-in entry [:custom_fields "#BP" :bp_diastolic])})
         bp-entries (mapv f nodes)
         filtered (->> bp-entries
@@ -377,7 +377,7 @@
            :n    Integer/MAX_VALUE}
         res (:entries-list (gq/get-filtered state q))
         f (fn [entry]
-            (let [{:keys [tag items]} (:custom_field_cfg entry)
+            (let [{:keys [tag items pvt]} (:custom_field_cfg entry)
                   story (:primary_story entry)
                   fm (fn [field]
                        (let [k (keyword (:name field))
@@ -387,6 +387,7 @@
                   fields (into {} (map fm items))]
               [tag {:default-story story
                     :timestamp     (:timestamp entry)
+                    :pvt           pvt
                     :fields        fields}]))
         res (->> (map f res)
                  (sort-by #(:timestamp (second %)))
