@@ -276,15 +276,19 @@
           [:label "Active? "]
           [uc/switch {:entry entry :put-fn put-fn :path [:dashboard_cfg :active]}]]
          [:div.row
+          [:label "Private? "]
+          [uc/switch {:entry entry :put-fn put-fn :path [:dashboard_cfg :pvt]}]]
+         [:div.row
           [:h3 "Criteria"]
           [:div.add-criterion {:on-click (add-item entry)}
-           [:i.fas.fa-plus]]]
+           [:i.fas.fa-plus]]
+          [:div.spacer]
+          [:div.copy-dashboard
+           {:on-click copy-click}
+           [:i.fas.fa-copy]
+           "copy"]]
          (for [[i c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry  entry
                   :put-fn put-fn
-                  :idx    i}])
-         [:div.row
-          [:div.copy-dashboard
-           {:on-click copy-click}
-           "copy"]]]))))
+                  :idx    i}])]))))

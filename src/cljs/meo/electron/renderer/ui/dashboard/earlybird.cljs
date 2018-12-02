@@ -101,8 +101,7 @@
       (let [indexed2 (map-indexed idx-fn @stats)
             l (/ h 5)]
         [:g
-         (when @show-pvt
-           [row-label "24h Rhythm" y h])
+         [row-label "24h Rhythm" y h]
          [legend "00:00" 175 (+ y (* l 0.5))]
          [legend "06:00" 175 (+ y (* l 1.5))]
          [legend "12:00" 175 (+ y (* l 2.5))]

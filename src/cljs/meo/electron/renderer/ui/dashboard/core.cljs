@@ -1,4 +1,4 @@
-(ns meo.electron.renderer.ui.dashboard
+(ns meo.electron.renderer.ui.dashboard.core
   (:require [moment]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
@@ -17,7 +17,7 @@
             [meo.common.utils.parse :as up]))
 
 (defn gql-query [charts-pos days put-fn]
-  (let [tags (->> (:charts @charts-pos)
+  (let [tags (->> (:charts charts-pos)
                   (filter #(contains? #{:barchart_row} (:type %)))
                   (mapv :tag)
                   (concat ["#BP"]))]
@@ -27,7 +27,7 @@
                            :res-hash nil
                            :id       :dashboard
                            :prio     15}])))
-  (let [items (->> (:charts @charts-pos)
+  (let [items (->> (:charts charts-pos)
                    (filter #(= :questionnaire (:type %))))]
     (when-let [query-string (gql/dashboard-questionnaires days items)]
       (debug "dashboard" query-string)
@@ -41,27 +41,31 @@
         local (r/atom {:idx   0
                        :play  false
                        :min-h 320})
-        dashboards (reaction (-> @gql-res2 :dashboard_cfg :res))
-        dashboard (reaction (-> @dashboards
-                                vals
-                                (nth (min (:idx @local) (dec (count @dashboards))))))
-        charts-pos (reaction
-                     (let [ts (:timestamp @dashboard)
-                           new-entry @(:new-entry (eu/entry-reaction ts))
-                           entry (or new-entry @dashboard)
-                           items (:items (:dashboard_cfg entry))
-                           acc {:last-y 50
-                                :last-h 0}
-                           f (fn [acc m]
-                               (let [{:keys [last-y last-h]} acc
-                                     cfg (assoc-in m [:y] (+ last-y last-h))]
-                                 {:last-y (:y cfg)
-                                  :last-h (:h cfg 25)
-                                  :charts (conj (:charts acc) cfg)}))]
-                       (reduce f acc items)))]
+        pvt (subscribe [:show-pvt])]
     (fn dashboard-render [days put-fn]
       (let [now (st/now)
-            n (count @dashboards)
+            pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
+            dashboards (->> @gql-res2
+                            :dashboard_cfg
+                            :res
+                            (filter pvt-filter))
+            dashboard (-> dashboards
+                          vals
+                          (nth (min (:idx @local) (dec (count dashboards)))))
+            charts-pos (let [ts (:timestamp dashboard)
+                             new-entry @(:new-entry (eu/entry-reaction ts))
+                             entry (or new-entry dashboard)
+                             items (:items (:dashboard_cfg entry))
+                             acc {:last-y 50
+                                  :last-h 0}
+                             f (fn [acc m]
+                                 (let [{:keys [last-y last-h]} acc
+                                       cfg (assoc-in m [:y] (+ last-y last-h))]
+                                   {:last-y (:y cfg)
+                                    :last-h (:h cfg 25)
+                                    :charts (conj (:charts acc) cfg)}))]
+                         (reduce f acc items))
+            n (count dashboards)
             next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
             prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
             cycle (fn [f _] (swap! local update-in [:idx] f))
@@ -75,7 +79,7 @@
                     (swap! local assoc-in [:play] false))
             open-cfg #(put-fn [:search/add
                                {:tab-group :right
-                                :query     (up/parse-search (:timestamp @dashboard))}])
+                                :query     (up/parse-search (:timestamp dashboard))}])
             d (* 24 60 60 1000)
             within-day (mod now d)
             start (+ dc/tz-offset (- now within-day (* days d)))
@@ -88,7 +92,7 @@
                     :x-offset 200
                     :span     span
                     :days     days}
-            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))]
+            end-y (+ (:last-y charts-pos) (:last-h charts-pos))]
         (gql-query charts-pos days put-fn)
         [:div.questionnaires
          [:div.controls
@@ -105,7 +109,7 @@
           [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
          [:svg {:viewBox (str "0 0 2100 " (+ (max end-y (:min-h @local)) 60))
                 :style   {:background :white}
-                :key     (str (:timestamp @dashboard) (:idx @local))}
+                :key     (str (:timestamp dashboard) (:idx @local))}
           [:filter#blur1
            [:feGaussianBlur {:stdDeviation 3}]]
           [:g
@@ -115,7 +119,7 @@
                    x (+ 200 scaled)]
                ^{:key n}
                [dc/tick x "#CCC" 1 30 end-y]))]
-          (for [chart-cfg (:charts @charts-pos)]
+          (for [chart-cfg (:charts charts-pos)]
             (let [chart-fn (case (:type chart-cfg)
                              :habit_success h/habits-chart
                              :questionnaire ds/scores-chart

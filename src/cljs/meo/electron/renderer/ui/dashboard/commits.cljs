@@ -57,8 +57,7 @@
             mx (apply max (map #(:commits (second %)) indexed))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]
         [:g
-         (when @show-pvt
-           [row-label "#git-commit" y h])
+         [row-label "#git-commit" y h]
          (for [[n {:keys [date-string commits weekday]}] indexed]
            (let [d (* 24 60 60 1000)
                  offset (* n d)

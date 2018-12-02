@@ -49,8 +49,7 @@
          [dc/scatter-chart @scores mapper color]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         (when @show-pvt
-           [dc/row-label label y h])]))))
+         [dc/row-label label y h]]))))
 
 (defn chart-line [scores point-mapper cfg put-fn]
   (let [active-dashboard (subscribe [:active-dashboard])]
@@ -122,5 +121,4 @@
          [chart-line data mapper cfg put-fn]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         (when @show-pvt
-           [dc/row-label label y h])]))))
+         [dc/row-label label y h]]))))

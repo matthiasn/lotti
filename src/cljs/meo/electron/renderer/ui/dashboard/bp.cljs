@@ -94,4 +94,4 @@
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]
-         (when @show-pvt [dc/row-label label y h])]))))
+         [dc/row-label label y h]]))))

@@ -4,11 +4,9 @@
             [meo.electron.renderer.helpers :as h]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
-            [clojure.pprint :as pp]
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
-            [meo.electron.renderer.ui.charts.common :as cc]
-            [meo.common.utils.parse :as up]))
+            [meo.electron.renderer.ui.charts.common :as cc]))
 
 (def month-day "DD.MM.")
 (def ymd "YYYY-MM-DD")
@@ -94,8 +92,7 @@
    label])
 
 (defn barchart-row [_ _]
-  (let [show-pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])]
+  (let [gql-res (subscribe [:gql-res])]
     (fn barchart-row [{:keys [days span mx label tag h y field color
                               cls threshold success-cls] :as m} put-fn]
       (when (and tag field (seq tag))
@@ -113,8 +110,7 @@
                                   data)))
               scale (if (pos? mx) (/ (- h 3) mx) 1)]
           [:g
-           (when @show-pvt
-             [row-label (or label tag) y h])
+           [row-label (or label tag) y h]
            (for [[n {:keys [date-string fields]}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
@@ -144,8 +140,7 @@
            [line (+ y h) "#000" 2]])))))
 
 (defn points-by-day-chart [{:keys [y h label]}]
-  (let [gql-res (subscribe [:gql-res])
-        show-pvt (subscribe [:show-pvt])]
+  (let [gql-res (subscribe [:gql-res])]
     (fn points-by-day-render [{:keys [y h label days span]}]
       (let [data (get-in @gql-res [:dashboard :data :award-points])
             btm-y (+ y h)
@@ -188,12 +183,10 @@
                        :width  w
                        :height h}])))
          [line (+ y h) "#000" 2]
-         (when @show-pvt
-           [row-label label y h])]))))
+         [row-label label y h]]))))
 
 (defn points-lost-by-day-chart [{:keys [y h label]}]
-  (let [stats (subscribe [:stats])
-        show-pvt (subscribe [:show-pvt])]
+  (let [stats (subscribe [:stats])]
     (fn points-by-day-render [{:keys [y h label]}]
       (let [btm-y (+ y h)
             award-points (:award-points @stats)
@@ -204,5 +197,4 @@
                                  (take-last 180 by-day))]
         [:g
          [line (+ y h) "#000" 2]
-         (when @show-pvt
-           [row-label label y h])]))))
+         [row-label label y h]]))))

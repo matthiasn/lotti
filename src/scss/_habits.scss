@@ -135,6 +135,7 @@
   .row {
     margin-top: 10px;
     display: flex;
+    align-items: center;
 
     &.space-between {
       justify-content: space-between;
@@ -145,17 +146,22 @@
     }
 
     .add-criterion, .save {
-      background-color: $green;
-      padding: 1px 6px 16px 6px;
-      color: white;
+      background-color: desaturate(lighten($green, 10), 5);
+      padding: 2px 6px 16px 6px;
+      color: #EEE;
       border-radius: 3px;
       right: 0;
       font-size: 12px;
-      height: 15px;
-      margin-top: 4px;
+      height: 17px;
       margin-left: 10px;
       cursor: pointer;
       user-select: none;
+
+      &:hover {
+        background-color: $green;
+        color: white;
+      }
+
       &.save {
         text-align: right;
         background-color: $red;
@@ -235,11 +241,16 @@
     border-radius: $entry-border-radius;
     color: #EEE;
     font-weight: bold;
-    padding: 2px 5px;
+    padding: 2px 6px;
+    height: 19px;
     cursor: pointer;
     &:hover {
       background-color: $green;
       color: white;
+    }
+
+    i {
+      margin-right: 3px;
     }
   }
 }
