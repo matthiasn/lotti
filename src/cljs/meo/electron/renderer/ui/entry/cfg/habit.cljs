@@ -175,6 +175,9 @@
           [:label "Active? "]
           [uc/switch {:entry entry :put-fn put-fn :path [:habit :active]}]]
          [:div.row
+          [:label "Private? "]
+          [uc/switch {:entry entry :put-fn put-fn :path [:habit :pvt]}]]
+         [:div.row
           [:label "Schedule:"]
           [uc/select {:on-change uc/select-update
                       :entry     entry

@@ -51,14 +51,17 @@
   [local _put-fn]
   (let [gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
+        pvt (subscribe [:show-pvt])
         filter-fn #(do
                      (info :click @local)
                      (swap! local update-in [:all] not))]
     (fn waiting-habits-list-render [local put-fn]
       (let [local @local
+            pvt @pvt
             habits (filter #(or (:all local)
                                 (not (:success (first (:completed %)))))
                            @habits-success)
+            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) habits)
             tab-group :briefing
             open-new (fn [x]
                        (put-fn [:search/add

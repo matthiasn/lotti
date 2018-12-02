@@ -88,11 +88,13 @@
 
 (defn habit-monitor [put-fn]
   (let [gql-res (subscribe [:gql-res])
+        pvt (subscribe [:show-pvt])
         habits (reaction (->> @gql-res
                               :habits-success
                               :data
                               :habits_success
-                              (sort-by #(:success (first (:completed %))))))]
+                              (sort-by #(:success (first (:completed %))))
+                              (filter #(or @pvt (not (get-in % [:habit_entry :habit :pvt]))))))]
     (fn upload-view-render []
       [:div.habit-monitor
        (for [habit @habits]
