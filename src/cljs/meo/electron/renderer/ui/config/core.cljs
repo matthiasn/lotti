@@ -3,6 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.ui.config.custom-fields :as cf]
+            [meo.electron.renderer.ui.config.habits :as ch]
             [meo.electron.renderer.ui.config.metrics :as cm]
             [meo.electron.renderer.ui.config.locale :as cl]
             [meo.electron.renderer.ui.config.sync :as sync]
@@ -31,6 +32,7 @@
             [:div.menu
              [:h1 "Settings"]
              [menu-item :custom-fields "Custom Fields" page]
+             [menu-item :habits "Habits" page]
              [menu-item :metrics "Metrics" page]
              [menu-item :sync "Synchronization" page]
              [menu-item :photos "Photos" page]
@@ -42,12 +44,16 @@
             (when (= :custom-fields page)
               [h/error-boundary
                [cf/custom-fields-list local put-fn]])
-            (when (and (= :custom-fields page)
-                       (:selected @local))
+            (when (and (= :custom-fields page) (:selected @local))
               [h/error-boundary
                [cf/custom-field-tab :custom_field_cfg put-fn]])
             (when (= :localization page)
               [cl/locale put-fn])
+            (when (= :habits page)
+              [ch/habits local put-fn])
+            (when (and (= :habits page) (:selected @local))
+              [h/error-boundary
+               [ch/habits-tab :habits_cfg put-fn]])
             (when (= :sync page)
               [sync/sync put-fn])
             (when (= :metrics page)

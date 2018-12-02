@@ -4,7 +4,35 @@
   display: flex;
   background-color: $tab-bg;
 
-  .custom-fields {
+  table {
+    background-color: white;
+    color: $font-color;
+    max-width: 450px;
+    line-height: 22px;
+    border-collapse: collapse;
+
+    tr {
+      cursor: pointer;
+      &:hover {
+        background-color: desaturate(lighten($orange, 40%), 10%);
+      }
+      &.active {
+        background-color: lighten($orange, 25%);
+      }
+    }
+
+    .completion {
+      width: 140px;
+    }
+
+    .habit {
+      font-weight: bold;
+      font-size: $font-size-large;
+      font-family: $header-font-family;
+    }
+  }
+
+  .custom-fields, .habits {
     margin-left: 8px;
 
     h2 {

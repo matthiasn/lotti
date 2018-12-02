@@ -52,9 +52,7 @@
   (let [gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
         pvt (subscribe [:show-pvt])
-        filter-fn #(do
-                     (info :click @local)
-                     (swap! local update-in [:all] not))]
+        filter-fn #(swap! local update-in [:all] not)]
     (fn waiting-habits-list-render [local put-fn]
       (let [local @local
             pvt @pvt
