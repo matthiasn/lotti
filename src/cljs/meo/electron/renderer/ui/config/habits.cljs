@@ -47,6 +47,7 @@
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
+
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
@@ -54,14 +55,18 @@
                      (gql-query @pvt (str ts) put-fn)))
         add-click (h/new-entry put-fn {:entry_type :habit
                                        :perm_tags  #{"#habit-cfg"}
-                                       :tags       #{"#habit-cfg"}}
+                                       :tags       #{"#habit-cfg"}
+                                       :habit      {:active true}}
                                open-new)
         gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
         pvt (subscribe [:show-pvt])]
     (fn habits-render [local put-fn]
       (let [pvt @pvt
-            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits-success)]
+            search-text (:search @local)
+            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits-success)
+            search-match (fn [x] (s/includes? (eu/first-line (:habit_entry x)) (str search-text)))
+            habits (filter search-match habits)]
         [:div.col.habits
          [:h2 "Habits Editor"]
          [:div.input-line
@@ -86,3 +91,11 @@
     (fn tabs-render [_tab-group put-fn]
       [:div.tile-tabs
        [j/journal-view @local-cfg put-fn]])))
+
+(defn habits-row [local put-fn]
+  [:div.habit-cfg-row
+   [h/error-boundary
+    [habits local put-fn]]
+   (when (:selected @local)
+     [h/error-boundary
+      [habits-tab :habits_cfg put-fn]])])

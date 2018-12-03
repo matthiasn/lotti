@@ -7,7 +7,7 @@
   table {
     background-color: white;
     color: $font-color;
-    max-width: 450px;
+    width: 400px;
     line-height: 22px;
     border-collapse: collapse;
 
@@ -29,6 +29,14 @@
       font-weight: bold;
       font-size: $font-size-large;
       font-family: $header-font-family;
+    }
+  }
+
+  .habit-cfg-row {
+    display: flex;
+
+    .journal {
+      width: 350px;
     }
   }
 

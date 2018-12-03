@@ -50,10 +50,7 @@
             (when (= :localization page)
               [cl/locale put-fn])
             (when (= :habits page)
-              [ch/habits local put-fn])
-            (when (and (= :habits page) (:selected @local))
-              [h/error-boundary
-               [ch/habits-tab :habits_cfg put-fn]])
+              [ch/habits-row local put-fn])
             (when (= :sync page)
               [sync/sync put-fn])
             (when (= :metrics page)
