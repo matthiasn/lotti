@@ -6,7 +6,9 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [moment]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.electron.renderer.helpers :as h]
+            [clojure.string :as s]))
 
 (defn task-sorter [x y]
   (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))
@@ -171,7 +173,7 @@
     (if (not= c0 0) c0 (if (not= c1 0) c1))))
 
 (defn open-tasks
-  "Renders table with open entries, such as started tasks and open habits."
+  "Renders table with open tasks."
   [local local-cfg put-fn]
   (let [gql-res (subscribe [:gql-res])
         open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))
@@ -195,31 +197,41 @@
                           (contains? (:selected-set @local) saga))
                         true))
         open-filter (fn [entry] (not (-> entry :task :done)))
+        closed-filter (fn [entry] (not (-> entry :task :closed)))
         entries-list (reaction (->> @open-tasks
                                     (filter on-hold-filter)
                                     (filter saga-filter)
-                                    (filter open-filter)))]
+                                    (filter open-filter)
+                                    (filter closed-filter)))
+        on-change #(swap! local assoc-in [:task-search] (h/target-val %))]
     (fn open-tasks-render [local local-cfg put-fn]
       (let [tab-group (:tab-group local-cfg)
             entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)
+            task-search (:task-search @local)
+            task-search-filter (fn [entry]
+                                 (s/includes? (s/lower-case (:md entry))
+                                              (s/lower-case (str task-search))))
+            entries-list (filter task-search-filter entries-list)
             show-points (:show-points @local)]
-        (when (seq entries-list)
-          [:div.open-tasks
-           [:table.tasks
-            [:tbody
-             [:tr
-              [:th.xs [:i.far.fa-exclamation-triangle]]
-              (when show-points
-                [:th [:i.fa.far.fa-gem]])
-              [:th [:i.fal.fa-bell]]
-              [:th "Open Tasks"]]
-             (doall
-               (for [entry (sort open-task-sorter entries-list)]
-                 ^{:key (:timestamp entry)}
-                 [task-row2 entry put-fn {:tab-group    tab-group
-                                          :search-text  @search-text
-                                          :show-points  show-points
-                                          :show-logged? true}]))]]])))))
+        [:div.open-tasks
+         [:table.tasks
+          [:tbody
+           [:tr
+            [:th.xs [:i.far.fa-exclamation-triangle]]
+            (when show-points
+              [:th [:i.fa.far.fa-gem]])
+            [:th [:i.fal.fa-bell]]
+            [:th "Open Tasks"
+             [:i.fas.fa-search]
+             [:input {:on-input on-change
+                      :value    (:task-search @local)}]]]
+           (doall
+             (for [entry (sort open-task-sorter entries-list)]
+               ^{:key (:timestamp entry)}
+               [task-row2 entry put-fn {:tab-group    tab-group
+                                        :search-text  @search-text
+                                        :show-points  show-points
+                                        :show-logged? true}]))]]]))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."

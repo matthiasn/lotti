@@ -213,6 +213,19 @@
   }
   .open-tasks {
     margin-top: 15px;
+
+    .fa-search {
+      margin-left: 22px;
+      padding-bottom: 4px;
+    }
+
+    input {
+      margin-left: 4px;
+      padding: 0 3px;
+      font-size: $font-size-small;
+      font-weight: lighter;
+      height: 20px;
+    }
   }
 
 }
