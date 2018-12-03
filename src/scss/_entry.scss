@@ -102,6 +102,10 @@
         min-width: 60px;
         font-size: $font-size-small;
       }
+
+      i {
+        font-size: $font-size-large;
+      }
     }
   }
 
@@ -334,27 +338,6 @@
       align-items: flex-end;
       flex-wrap: wrap;
       transition: opacity 0.5s;
-    }
-  }
-
-  .pomodoro {
-    .btn {
-      margin-left: 0.5em;
-      margin-right: 0;
-      padding-right: 1px;
-      top: 0;
-      position: relative;
-      font-size: 1.4em;
-    }
-    .start {
-      color: $green;
-    }
-    .stop {
-      color: $red;
-    }
-    input {
-      min-width: 60px;
-      font-size: $font-size-small;
     }
   }
 

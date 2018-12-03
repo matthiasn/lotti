@@ -48,7 +48,7 @@
               [h/error-boundary
                [cf/custom-field-tab :custom_field_cfg put-fn]])
             (when (= :localization page)
-              [cl/locale put-fn])
+              [cl/locale-preferences put-fn])
             (when (= :habits page)
               [ch/habits-row local put-fn])
             (when (= :sync page)

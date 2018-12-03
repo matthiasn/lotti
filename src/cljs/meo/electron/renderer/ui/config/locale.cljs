@@ -3,7 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]))
 
-(defn locale [put-fn]
+(defn locale-preferences [put-fn]
   (let [cfg (subscribe [:cfg])
         locales {:de "German"
                  :en "English"
