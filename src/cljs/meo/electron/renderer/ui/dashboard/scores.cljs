@@ -88,8 +88,7 @@
 
 (defn scores-chart
   [{:keys []} _put-fn]
-  (let [show-pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])]
+  (let [gql-res (subscribe [:gql-res])]
     (fn scores-chart-render [{:keys [y k w h score_k start end mn mx
                                      x-offset label] :as cfg} put-fn]
       (let [qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))

@@ -62,11 +62,10 @@
         [uc/switch (merge sw-common {:path [:saga_cfg :pvt]})]]])))
 
 (defn saga-select
-  "In edit mode, allow editing of story, otherwise show story name."
   [entry put-fn]
   (let [sagas (subscribe [:sagas])
         ts (:timestamp entry)]
-    (fn story-select-render [entry put-fn]
+    (fn saga-select-render [entry put-fn]
       (let [linked-saga (:linked_saga entry)
             entry-type (:entry_type entry)
             select-handler
@@ -98,6 +97,7 @@
 
 (defn story-select [entry tab-group put-fn]
   (let [stories (subscribe [:stories])
+        show-pvt (subscribe [:show-pvt])
         ts (:timestamp entry)
         local (r/atom {:search "" :show false :idx 0})
         story-predict (subscribe [:story-predict])
@@ -108,7 +108,7 @@
                         s (:search @local)
                         filter-fn #(h/str-contains-lc? (:story_name %) s)
                         stories (vec (filter filter-fn stories))]
-                    (map-indexed (fn [i v] [i v]) (take 10 stories))))
+                    (map-indexed (fn [i v] [i v]) stories)))
         assign-story (fn [story]
                        (let [ts (:timestamp story)
                              stop-watch (:stop-watch @local)
@@ -140,6 +140,13 @@
             story-name (get-in entry [:story :story_name])
             saga-name (get-in entry [:story :saga :saga_name])
             open-story (up/add-search linked-story tab-group put-fn)
+            show-pvt @show-pvt
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
+            active-filter (fn [x] (:active (second x)))
+            indexed (->> @indexed
+                         (filter pvt-filter)
+                         (filter active-filter)
+                         (take 10))
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)
@@ -175,7 +182,7 @@
                           :value      (:search @local)}]]
                 [:table
                  [:tbody
-                  (for [[idx story] @indexed]
+                  (for [[idx story] indexed]
                     (let [active (= linked-story (:timestamp story))
                           cls (cond active "current"
                                     (= idx curr-idx) "idx"
