@@ -49,24 +49,27 @@
           :stroke       s}])
 
 (defn rect [{:keys []}]
-  (let [local (r/atom {})
-        click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h cls ymd color]}]
-      [:g
-       [:rect {:on-click click
-               :x        x
-               :y        (- y h)
-               :width    w
-               :height   h
-               :fill     color
-               :class    (cc/weekend-class cls {:date_string ymd})}]
-       (when (:show-label @local)
-         [:text {:x           (+ x 11)
-                 :y           (- y 5)
-                 :font-size   8
-                 :fill        "#777"
-                 :text-anchor "middle"}
-          v])])))
+  (let []
+    (fn [{:keys [v x w y h cls ymd color label local]}]
+      (let [display-text [:span ymd ": " [:strong v] " " label]
+            enter #(swap! local assoc :display-text display-text)
+            leave #(swap! local assoc :display-text "")]
+        [:g
+         [:rect {:on-mouse-enter enter
+                 :on-mouse-leave leave
+                 :x              x
+                 :y              (- y h)
+                 :width          w
+                 :height         h
+                 :fill           color
+                 :class          (cc/weekend-class cls {:date_string ymd})}]
+         (when (:show-label @local)
+           [:text {:x           (+ x 11)
+                   :y           (- y 5)
+                   :font-size   8
+                   :fill        "#777"
+                   :text-anchor "middle"}
+            v])]))))
 
 (defn indexed-days [stats tag k start days]
   (let [d (* 24 60 60 1000)
@@ -92,14 +95,17 @@
    label])
 
 (defn barchart-row [_ _]
-  (let [gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span mx label tag h y field color
+  (let [gql-res (subscribe [:gql-res])
+        backend-cfg (subscribe [:backend-cfg])
+        custom-fields (reaction (:custom-fields @backend-cfg))]
+    (fn barchart-row [{:keys [days span mx tag h y field color local
                               cls threshold success-cls] :as m} put-fn]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
               data (get-in @gql-res [:dashboard :data qid])
               indexed (map-indexed (fn [i x] [i x]) data)
+              label (get-in @custom-fields [tag :fields (keyword field) :label])
               mx (or mx
                      (apply max (map
                                   (fn [x]
@@ -111,7 +117,7 @@
               scale (if (pos? mx) (/ (- h 3) mx) 1)]
           [:g
            [row-label (or label tag) y h]
-           (for [[n {:keys [date-string fields]}] indexed]
+           (for [[n {:keys [date_string fields]}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
                    d (* 24 60 60 1000)
@@ -131,9 +137,12 @@
                [rect {:v     display-v
                       :x     x
                       :w     (/ 1500 days)
-                      :ymd   date-string
+                      :ymd   date_string
                       :y     btm-y
                       :h     h
+                      :label label
+                      :local local
+                      :tag   tag
                       :cls   cls
                       :color color
                       :n     n}]))

@@ -53,17 +53,19 @@
                                  :none nil
                                  #(apply + (map :v %))))
                           res (vec (filter #(:v %) (mapv val-mapper nodes)))]
-                      [field (if op
-                               (try (op res)
-                                    (catch Exception e (error e res)))
-                               res)]))]
+                      [field {:v   (if op
+                                     (try (op res)
+                                          (catch Exception e (error e res)))
+                                     res)
+                              :tag tag}]))]
               (into {} (mapv field-mapper fields))))
           fields (mapv stats-mapper custom-field-stats-def)]
       (apply merge
              {:date_string date-string
               :tag         tag
-              :fields      (mapv (fn [[k v]]
+              :fields      (mapv (fn [[k {:keys [v tag]}]]
                                    {:field (name k)
+                                    :tag   tag
                                     :value v})
                                  (first fields))}
              fields))))

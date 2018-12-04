@@ -29,6 +29,11 @@ $backlog-weekend: lighten($backlog, 30);
     bottom: 6px;
     z-index: 1111;
 
+    .display-text {
+      margin-right: 40px;
+      font-size: $font-size-small;
+    }
+
     input {
       font-size: $font-size-small;
       margin-right: 10px;

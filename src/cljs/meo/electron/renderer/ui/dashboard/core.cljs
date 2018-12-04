@@ -38,9 +38,10 @@
 
 (defn dashboard [days put-fn]
   (let [gql-res2 (subscribe [:gql-res2])
-        local (r/atom {:idx   0
-                       :play  false
-                       :min-h 320})
+        local (r/atom {:idx          0
+                       :play         false
+                       :min-h        320
+                       :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [days put-fn]
       (let [now (st/now)
@@ -90,12 +91,14 @@
                     :h        25
                     :w        1800
                     :x-offset 200
+                    :local    local
                     :span     span
                     :days     days}
             end-y (+ (:last-y charts-pos) (:last-h charts-pos))]
         (gql-query charts-pos days put-fn)
         [:div.questionnaires
          [:div.controls
+          [:span.display-text (:display-text @local)]
           [:input {:type      :number
                    :step      10
                    :on-change #(let [v (.. % -target -value)
