@@ -21,7 +21,8 @@
             [expound.alpha :as exp]
             [clojure.string :as str]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [meo.jvm.graphql.custom-fields :as gcf]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
@@ -128,7 +129,7 @@
    configuration entries."
   [{:keys [current-state put-fn]}]
   (let [cfg (fu/load-cfg)
-        cf2 {:custom-fields (gql/custom-fields-cfg current-state)}
+        cf2 {:custom-fields (gcf/custom-fields-cfg current-state)}
         cfg (merge cfg cf2)]
     (put-fn [:backend-cfg/new cfg])
     {:new-state (assoc-in current-state [:cfg] cfg)}))

@@ -6,7 +6,6 @@
             [clojure.string :as s]
             [reagent.core :as r]
             [meo.electron.renderer.graphql :as gql]
-            [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.journal :as j]
             [moment]))
 
@@ -49,8 +48,7 @@
         sagas (subscribe [:sagas])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-
-                     (swap! local assoc-in [:search] text)))
+                     (swap! local assoc-in [:sagas-search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
@@ -58,12 +56,12 @@
         add-click (h/new-entry put-fn {:entry_type :saga
                                        :perm_tags  #{"#saga-cfg"}
                                        :tags       #{"#saga-cfg"}
-                                       :saga_cfg    {:active true}} open-new)
+                                       :saga_cfg   {:active true}} open-new)
         show-pvt (subscribe [:show-pvt])]
     (fn sagas-list-render [local put-fn]
       (let [show-pvt @show-pvt
             sagas @sagas
-            search-text (:search @local)
+            search-text (:sagas-search @local)
             search-match (fn [x] (s/includes? (s/lower-case (str (:saga_name (second x))))
                                               (s/lower-case (str search-text))))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
@@ -74,7 +72,8 @@
          [:div.input-line
           [:span.search
            [:i.far.fa-search]
-           [:input {:on-change input-fn}]
+           [:input {:on-change input-fn
+                    :value     search-text}]
            [:span.add {:on-click add-click}
             [:i.fas.fa-plus]]]]
          [:table.sagas-stories

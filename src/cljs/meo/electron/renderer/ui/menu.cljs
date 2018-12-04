@@ -93,37 +93,39 @@
                               :habits-success
                               :data
                               :habits_success
-                              (sort-by #(:success (first (:completed %))))
-                              (filter #(or @pvt (not (get-in % [:habit_entry :habit :pvt]))))))]
-    (fn upload-view-render []
-      [:div.habit-monitor
-       (for [habit @habits]
-         (let [completed (first (:completed habit))
-               success (:success completed)
-               cls (when success "completed")
-               min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
-               v (get-in completed [:values 0 :v])
-               text (eu/first-line (:habit_entry habit))
-               text2 (if min-time
-                       (h/s-to-hh-mm v)
-                       v)
-               percent-completed (percent-achieved habit)
-               ts (-> habit :habit_entry :timestamp)
-               on-click (up/add-search ts :right put-fn)
-               started (and percent-completed (not success))]
-           [:div.tooltip {:key ts}
-            [:div.status {:class    cls
-                          :on-click on-click}
-             (when started
-               [:div.progress
-                {:style {:width (str percent-completed "%")}}])]
-            [:div.tooltiptext
-             [:h4 text]
-             (when (and started (pos? percent-completed)) [:div "Progress: " text2])
-             [:div.completion
-              (for [[i c] (m/idxd (reverse (take 99 (:completed habit))))]
-                [:span.status {:class (when (:success c) "success")
-                               :key   i}])]]]))])))
+                              (sort-by #(:success (first (:completed %))))))]
+    (fn habit-monitor-render []
+      (let [pvt @pvt
+            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits)]
+        [:div.habit-monitor
+         (for [habit habits]
+           (let [completed (first (:completed habit))
+                 success (:success completed)
+                 cls (when success "completed")
+                 min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
+                 v (get-in completed [:values 0 :v])
+                 text (eu/first-line (:habit_entry habit))
+                 text2 (if min-time
+                         (h/s-to-hh-mm v)
+                         v)
+                 percent-completed (percent-achieved habit)
+                 ts (-> habit :habit_entry :timestamp)
+                 on-click (up/add-search ts :right put-fn)
+                 started (and percent-completed (not success))]
+             ^{:key ts}
+             [:div.tooltip
+              [:div.status {:class    cls
+                            :on-click on-click}
+               (when started
+                 [:div.progress
+                  {:style {:width (str percent-completed "%")}}])]
+              [:div.tooltiptext
+               [:h4 text]
+               (when (and started (pos? percent-completed)) [:div "Progress: " text2])
+               [:div.completion
+                (for [[i c] (m/idxd (reverse (take 99 (:completed habit))))]
+                  [:span.status {:class (when (:success c) "success")
+                                 :key   i}])]]]))]))))
 
 (defn busy-status [put-fn]
   (let [status (subscribe [:busy-status])

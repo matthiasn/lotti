@@ -24,6 +24,7 @@
             [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.jvm.graph.stats.git :as g]
             [meo.jvm.graph.stats.questionnaires :as q]
+            [meo.jvm.graphql.custom-fields :as gcf]
             [meo.jvm.graph.stats.awards :as aw]
             [meo.jvm.graph.geo :as geo]
             [meo.jvm.metrics :as mt]
@@ -368,37 +369,6 @@
                            :msg-meta    msg-meta}))))
   {})
 
-(defn custom-fields-cfg
-  "Generates the custom custom fields config map as required by the
-   user interface. The usage of custom fields in the UI predates the
-   definition of custom fields in a specialized entry. The data
-   format should be adjusted subsequently."
-  [state]
-  (debug "custom-fields-cfg")
-  (let [q {:tags #{"#custom-field-cfg"}
-           :n    Integer/MAX_VALUE}
-        res (:entries-list (gq/get-filtered state q))
-        f (fn [entry]
-            (let [{:keys [tag items pvt]} (:custom_field_cfg entry)
-                  story (:primary_story entry)
-                  fm (fn [field]
-                       (let [k (keyword (:name field))
-                             label (:label field)]
-                         [k {:cfg   (select-keys field [:type :step :agg])
-                             :label label}]))
-                  fields (into {} (map fm items))]
-              [tag {:default-story story
-                    :timestamp     (:timestamp entry)
-                    :pvt           pvt
-                    :fields        fields}]))
-        res (->> (map f res)
-                 (sort-by #(:timestamp (second %)))
-                 (filter first)
-                 reverse
-                 (into {}))]
-    (debug "custom-fields-cfg" res)
-    res))
-
 (defn gen-opt [cmp-state f k]
   (cp/future
     thread-pool
@@ -410,7 +380,7 @@
   (gen-opt cmp-state gq/find-all-hashtags :hashtags)
   (gen-opt cmp-state gq/find-all-mentions :mentions)
   (gen-opt cmp-state gq/find-all-pvt-hashtags :pvt-hashtags)
-  (gen-opt cmp-state custom-fields-cfg :custom_fields)
+  (gen-opt cmp-state gcf/custom-fields-cfg :custom_fields)
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]

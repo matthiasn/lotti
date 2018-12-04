@@ -106,6 +106,7 @@
               data (get-in @gql-res [:dashboard :data qid])
               indexed (map-indexed (fn [i x] [i x]) data)
               label (get-in @custom-fields [tag :fields (keyword field) :label])
+              field-type (get-in @custom-fields [tag :fields (keyword field) :cfg :type])
               mx (or mx
                      (apply max (map
                                   (fn [x]
@@ -130,7 +131,7 @@
                    cls (if (and threshold (> v threshold))
                          success-cls
                          cls)
-                   display-v (if (= :duration field)
+                   display-v (if (= :time field-type)
                                (h/m-to-hh-mm v)
                                v)]
                ^{:key (str tag field n)}

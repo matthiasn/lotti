@@ -26,7 +26,7 @@
                     res (m day)
                     min-val (:min-val c)
                     max-val (:max-val c)
-                    x (k res)]
+                    x (:v (k res))]
                 {:success (when (number? x)
                             (and (if (number? min-val) (>= x min-val) true)
                                  (if (number? max-val) (<= x max-val) true)))

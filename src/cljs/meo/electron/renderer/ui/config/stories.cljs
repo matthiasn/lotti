@@ -48,7 +48,7 @@
         stories (subscribe [:stories])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-                     (swap! local assoc-in [:search] text)))
+                     (swap! local assoc-in [:stories-search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
@@ -61,7 +61,7 @@
     (fn stories-list-render [local put-fn]
       (let [show-pvt @show-pvt
             stories @stories
-            search-text (:search @local)
+            search-text (:stories-search @local)
             search-match (fn [x] (s/includes? (s/lower-case (str (:story_name (second x))))
                                               (s/lower-case (str search-text))))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
@@ -72,7 +72,8 @@
          [:div.input-line
           [:span.search
            [:i.far.fa-search]
-           [:input {:on-change input-fn}]
+           [:input {:on-change input-fn
+                    :value     search-text}]
            [:span.add {:on-click add-click}
             [:i.fas.fa-plus]]]]
          [:table.sagas-stories
