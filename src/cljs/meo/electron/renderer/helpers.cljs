@@ -46,7 +46,7 @@
 
 (defn localize-date [s locale]
   (when-let [locale (get locales locale)]
-    (.formatDate locale (.toDate (moment. s)) (clj->js {:date "full"}))))
+    (.formatDate locale (.toDate (moment. s)) (clj->js {:date "medium"}))))
 
 (defn localize-datetime [s locale]
   (when-let [locale (get locales locale)]

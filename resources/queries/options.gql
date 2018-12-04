@@ -5,11 +5,13 @@
       timestamp
       saga_name
     }
+    text
     story_name
   }
   sagas {
     timestamp
     saga_name
+    text
   }
   hashtags
   pvt_hashtags

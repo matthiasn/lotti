@@ -18,6 +18,7 @@
       }
       &.active {
         background-color: lighten($orange, 25%);
+        font-weight: bold;
       }
     }
 
@@ -26,9 +27,31 @@
     }
 
     .habit {
-      font-weight: bold;
       font-size: $font-size-large;
       font-family: $header-font-family;
+      padding-left: 8px;
+    }
+
+    &.sagas-stories {
+      width: 450px;
+      font-family: $header-font-family;
+      font-size: $font-size-medium;
+
+      th {
+        background-color: #00a699;
+        text-align: left;
+      }
+      th, td {
+        padding-left: 8px;
+      }
+    }
+  }
+
+  .stories, .sagas {
+    overflow-y: scroll;
+
+    i {
+      font-size: $font-size-large;
     }
   }
 
@@ -45,12 +68,11 @@
 
     h2 {
       margin-top: 12px;
+      color: #EEE;
     }
   }
 
-  h2 {
-    color: #EEE;
-  }
+
 
   .tile-tabs {
     max-width: 350px;

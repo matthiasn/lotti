@@ -3,6 +3,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.ui.config.custom-fields :as cf]
+            [meo.electron.renderer.ui.config.sagas :as cs]
+            [meo.electron.renderer.ui.config.stories :as cst]
             [meo.electron.renderer.ui.config.habits :as ch]
             [meo.electron.renderer.ui.config.metrics :as cm]
             [meo.electron.renderer.ui.config.locale :as cl]
@@ -16,7 +18,7 @@
 (defn config [_put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :page            :custom-fields})
+                       :page            :sagas})
         menu-item (fn [k t active]
                     [:div.menu-item
                      {:on-click #(swap! local assoc-in [:page] k)
@@ -31,6 +33,8 @@
            [:div.config
             [:div.menu
              [:h1 "Settings"]
+             [menu-item :sagas "Sagas" page]
+             [menu-item :stories "Stories" page]
              [menu-item :custom-fields "Custom Fields" page]
              [menu-item :habits "Habits" page]
              [menu-item :metrics "Metrics" page]
@@ -41,6 +45,10 @@
              [:div.menu-item.exit
               {:on-click #(put-fn [:nav/to {:page :main}])}
               "Exit"]]
+            (when (= :sagas page)
+              [cs/sagas local put-fn])
+            (when (= :stories page)
+              [cst/stories local put-fn])
             (when (= :custom-fields page)
               [h/error-boundary
                [cf/custom-fields-list local put-fn]])
