@@ -6,9 +6,6 @@
             [clojure.string :as s]
             [reagent.core :as r]
             [meo.electron.renderer.graphql :as gql]
-            [meo.common.utils.parse :as up]
-            [meo.common.utils.misc :as m]
-            [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.journal :as j]
             [moment]))
 
@@ -26,43 +23,50 @@
                          :prio     11}])))
 
 (defn story-row [_story local put-fn]
-  (let [pvt (subscribe [:show-pvt])
+  (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn saga-row-render [story local put-fn]
       (let [ts (:timestamp story)
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (gql-query @pvt (str ts) put-fn))
+                         (gql-query @show-pvt (str ts) put-fn))
             locale (:locale @cfg :en)
-            date-str (h/localize-date (moment (or ts)) locale)]
+            date-str (h/localize-date (moment (or ts)) locale)
+            pvt (:pvt story)
+            active (:active story)]
         [:tr {:key      ts
               :class    (when (= sel ts) "active")
               :on-click line-click}
          [:td date-str]
          [:td [:strong (:story_name story)]]
-         [:td [:i.fas.fa-toggle-on]]
-         [:td [:i.fas.fa-toggle-off]]]))))
+         [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
+         [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
 (defn stories-list [local put-fn]
   (let [pvt (subscribe [:show-pvt])
         stories (subscribe [:stories])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
                      (gql-query @pvt (str ts) put-fn)))
-        add-click (h/new-entry put-fn {:entry_type :habit
-                                       :perm_tags  #{"#habit-cfg"}
-                                       :tags       #{"#habit-cfg"}
-                                       :habit      {:active true}}
-                               open-new)
-        pvt (subscribe [:show-pvt])]
+        add-click (h/new-entry put-fn {:entry_type :story
+                                       :perm_tags  #{"#story-cfg"}
+                                       :tags       #{"#story-cfg"}
+                                       :story_cfg  {:active true}} open-new)
+        show-pvt (subscribe [:show-pvt])]
     (fn stories-list-render [local put-fn]
-      (let []
+      (let [show-pvt @show-pvt
+            stories @stories
+            search-text (:search @local)
+            search-match (fn [x] (s/includes? (s/lower-case (str (:story_name (second x))))
+                                              (s/lower-case (str search-text))))
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
+            stories (filter search-match stories)
+            stories (filter pvt-filter stories)]
         [:div.col.habits.stories
          [:h2 "Stories Editor"]
          [:div.input-line
@@ -78,7 +82,7 @@
             [:th "story"]
             [:th "active"]
             [:th "private"]]
-           (for [story (vals @stories)]
+           (for [story (vals stories)]
              ^{:key (:timestamp story)}
              [story-row story local put-fn])]]]))))
 

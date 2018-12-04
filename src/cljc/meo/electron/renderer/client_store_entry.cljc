@@ -151,7 +151,8 @@
         relevant #(select-keys % [:md :questionnaires :custom_fields :task
                                   :habit :completed_time :starred :img-size
                                   :primary_story :story_name :flagged
-                                  :adjusted_ts :custom_field_cfg])
+                                  :adjusted_ts :custom_field_cfg :saga_cfg
+                                  :story_cfg])
         changed? (not= (relevant saved) (relevant msg-payload))]
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])

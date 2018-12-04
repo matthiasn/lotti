@@ -24,23 +24,25 @@
                          :prio     11}])))
 
 (defn saga-row [_saga local put-fn]
-  (let [pvt (subscribe [:show-pvt])
+  (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn saga-row-render [saga local put-fn]
       (let [ts (:timestamp saga)
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (gql-query @pvt (str ts) put-fn))
+                         (gql-query @show-pvt (str ts) put-fn))
             locale (:locale @cfg :en)
-            date-str (h/localize-date (moment (or ts)) locale)]
+            date-str (h/localize-date (moment (or ts)) locale)
+            pvt (:pvt saga)
+            active (:active saga)]
         [:tr {:key      ts
               :class    (when (= sel ts) "active")
               :on-click line-click}
          [:td date-str]
          [:td [:strong (:saga_name saga)]]
-         [:td [:i.fas.fa-toggle-on]]
-         [:td [:i.fas.fa-toggle-off]]]))))
+         [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
+         [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
 (defn sagas-list [local put-fn]
   (let [pvt (subscribe [:show-pvt])
@@ -53,14 +55,20 @@
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
                      (gql-query @pvt (str ts) put-fn)))
-        add-click (h/new-entry put-fn {:entry_type :habit
-                                       :perm_tags  #{"#habit-cfg"}
-                                       :tags       #{"#habit-cfg"}
-                                       :habit      {:active true}}
-                               open-new)
-        pvt (subscribe [:show-pvt])]
+        add-click (h/new-entry put-fn {:entry_type :saga
+                                       :perm_tags  #{"#saga-cfg"}
+                                       :tags       #{"#saga-cfg"}
+                                       :saga_cfg    {:active true}} open-new)
+        show-pvt (subscribe [:show-pvt])]
     (fn sagas-list-render [local put-fn]
-      (let []
+      (let [show-pvt @show-pvt
+            sagas @sagas
+            search-text (:search @local)
+            search-match (fn [x] (s/includes? (s/lower-case (str (:saga_name (second x))))
+                                              (s/lower-case (str search-text))))
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
+            sagas (filter search-match sagas)
+            sagas (filter pvt-filter sagas)]
         [:div.col.habits.sagas
          [:h2 "Sagas Editor"]
          [:div.input-line
@@ -76,7 +84,7 @@
             [:th "saga"]
             [:th "active"]
             [:th "private"]]
-           (for [saga (vals @sagas)]
+           (for [saga (vals sagas)]
              ^{:key (:timestamp saga)}
              [saga-row saga local put-fn])]]]))))
 

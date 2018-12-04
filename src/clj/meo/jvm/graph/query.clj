@@ -451,7 +451,7 @@
              (let [story (uc/attrs g id)
                    saga (get sagas (:linked_saga story))
                    story (assoc-in story [:saga] saga)]
-               story))]
+               (merge story (:story_cfg story))))]
     (mapv xf story-ids)))
 
 (defn find-all-sagas2
@@ -459,7 +459,9 @@
   [current-state]
   (let [g (:graph current-state)
         story-ids (mapv :dest (uc/find-edges g {:src :sagas}))]
-    (mapv #(uc/attrs g %) story-ids)))
+    (mapv #(let [saga (uc/attrs g %)]
+             (merge saga (:saga_cfg saga)))
+          story-ids)))
 
 (defn find-all-briefings
   "Finds all briefings in graph and returns map with the day as key and the

@@ -6,12 +6,16 @@
       saga_name
     }
     text
+    active
+    pvt
     story_name
   }
   sagas {
     timestamp
     saga_name
     text
+    active
+    pvt
   }
   hashtags
   pvt_hashtags

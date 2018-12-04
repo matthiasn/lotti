@@ -5,7 +5,8 @@
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [clojure.set :as set]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [meo.electron.renderer.ui.ui-components :as uc]))
 
 (defn editable-field [_ _ text]
   (fn [on-input-fn on-keydown-fn _]
@@ -29,11 +30,18 @@
   [entry put-fn]
   (when (= (:entry_type entry) :story)
     (let [on-input-fn (input-fn entry :story_name put-fn)
-          on-keydown-fn (h/keydown-fn entry :story_name put-fn)]
+          on-keydown-fn (h/keydown-fn entry :story_name put-fn)
+          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}]
       [:div.story
        [saga-select entry put-fn]
        [:label "Story Name:"]
-       [editable-field on-input-fn on-keydown-fn (:story_name entry)]])))
+       [editable-field on-input-fn on-keydown-fn (:story_name entry)]
+       [:div.row
+        [:label "Active? "]
+        [uc/switch (merge sw-common {:path [:story_cfg :active]})]]
+       [:div.row
+        [:label "Private? "]
+        [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]])))
 
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
@@ -41,10 +49,17 @@
   [entry edit-mode? put-fn]
   (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga_name put-fn)
-          on-keydown-fn (h/keydown-fn entry :saga_name put-fn)]
+          on-keydown-fn (h/keydown-fn entry :saga_name put-fn)
+          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}]
       [:div.story.saga
        [:label "Saga:"]
-       [editable-field on-input-fn on-keydown-fn (:saga_name entry)]])))
+       [editable-field on-input-fn on-keydown-fn (:saga_name entry)]
+       [:div.row
+        [:label "Active? "]
+        [uc/switch (merge sw-common {:path [:saga_cfg :active]})]]
+       [:div.row
+        [:label "Private? "]
+        [uc/switch (merge sw-common {:path [:saga_cfg :pvt]})]]])))
 
 (defn saga-select
   "In edit mode, allow editing of story, otherwise show story name."

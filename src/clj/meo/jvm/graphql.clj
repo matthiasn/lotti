@@ -46,8 +46,10 @@
 (defn hashtags [state context args value] (-> @state :options :hashtags))
 (defn pvt-hashtags [state context args value] (-> @state :options :pvt-hashtags))
 (defn mentions [state context args value] (-> @state :options :mentions))
-(defn stories [state context args value] (-> @state :options :stories))
-(defn sagas [state context args value] (-> @state :options :sagas))
+
+(defn stories [state context args value] (gq/find-all-stories2 @state))
+(defn sagas [state context args value] (gq/find-all-sagas2 @state))
+
 (defn thread-count [state context args value] (Thread/activeCount))
 (defn pid [state context args value] (pid/current))
 
@@ -405,8 +407,6 @@
       (info "options" k (- (stc/now) start) "ms"))))
 
 (defn gen-options [{:keys [cmp-state]}]
-  (gen-opt cmp-state gq/find-all-sagas2 :sagas)
-  (gen-opt cmp-state gq/find-all-stories2 :stories)
   (gen-opt cmp-state gq/find-all-hashtags :hashtags)
   (gen-opt cmp-state gq/find-all-mentions :mentions)
   (gen-opt cmp-state gq/find-all-pvt-hashtags :pvt-hashtags)
