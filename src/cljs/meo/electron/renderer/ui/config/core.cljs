@@ -41,7 +41,6 @@
              [menu-item :sync "Synchronization" page]
              [menu-item :photos "Photos" page]
              [menu-item :localization "Localization" page]
-             [menu-item :playground "Playground" page]
              [:div.menu-item.exit
               {:on-click #(put-fn [:nav/to {:page :main}])}
               "Exit"]]
@@ -65,6 +64,7 @@
               [cm/metrics put-fn])
             (when (= :photos page)
               [:div.photos
+               [:h2 "Photo Settings"]
                [:button {:on-click #(put-fn [:photos/gen-cache])}
                 "regenerate cache"]])]
            [:div.cfg.footer [stats/stats-text true]]]]]))))

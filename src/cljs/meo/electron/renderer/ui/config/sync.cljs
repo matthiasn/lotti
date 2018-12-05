@@ -38,6 +38,7 @@
             verify-account #(put-fn [:imap/get-status @local])]
         [:div.sync-cfg
          [:div.settings
+          [:h2 "Sync Settings"]
           [:table
            [:tbody
             [settings-item local :text [:server :host] "Host:" true]

@@ -7,10 +7,13 @@
 
 (defn metrics [put-fn]
   (let [metrics (subscribe [:metrics])
-        td-fmt (fn [v] [:td.data (.toFixed v 2)])]
+        td-fmt (fn [v] [:td.data (.toFixed v 2)])
+        get-metrics #(put-fn [:metrics/get])]
+    (get-metrics)
     (fn [put-fn]
       [:div.metrics
-       [:span.btn {:on-click #(put-fn [:metrics/get])} "retrieve metrics"]
+       [:h2 "Backend Metrics"]
+       [:span.btn {:on-click #(put-fn [:metrics/get])} "update"]
        (when (seq @metrics)
          [:table
           [:thead

@@ -4,6 +4,13 @@
   display: flex;
   background-color: $tab-bg;
 
+  h2 {
+    margin-top: 18px;
+    font-size: 18px;
+    color: #EEE;
+    font-weight: lighter;
+  }
+
   table {
     background-color: white;
     color: $font-color;
@@ -72,15 +79,7 @@
   }
 
   .custom-fields, .habits {
-    margin-left: 8px;
-
-    h2 {
-      margin-top: 12px;
-      color: #EEE;
-    }
   }
-
-
 
   .tile-tabs {
     max-width: 350px;
@@ -125,22 +124,29 @@
 
   .photos {
     padding: 20px 30px;
+
+    button {
+      margin-top: 30px;
+    }
   }
 
   .metrics {
     display: flex;
     flex-flow: column;
     color: #DDD;
+    margin-left: 20px;
 
     table {
       text-align: right;
       margin-top: 20px;
+      width: auto;
+      padding: 5px;
 
       .label {
       }
 
-      td {
-        padding-left: 10px;
+      td, th {
+        padding: 0 7px;
       }
 
       .data {
@@ -374,6 +380,8 @@
     table {
       padding: 60px 40px 0 40px;
       padding-right: 30px;
+      background-color: $tab-bg;
+      margin-top: 30px;
 
       tr.spacer {
         height: 20px;
@@ -384,6 +392,10 @@
       }
 
       tr {
+        cursor: default;
+        &:hover {
+          background-color: transparent;
+        }
         &.invisible {
           opacity: 0;
         }
