@@ -3,7 +3,7 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.10.0-beta8"]
+  :dependencies [[org.clojure/clojure "1.10.0-RC3"]
                  [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
@@ -41,7 +41,7 @@
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.37"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
-                 [org.clojure/tools.reader "1.3.0"]
+                 [org.clojure/tools.reader "1.3.2"]
                  [clucy "0.4.0"]
                  [clj.qrgen "0.4.0"]
                  [image-resizer "0.1.10"]
@@ -69,7 +69,7 @@
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
-                                           [cljsjs/moment "2.22.2-1"]
+                                           [cljsjs/moment "2.22.2-2"]
                                            [matthiasn/systems-toolbox-electron "0.6.24"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
