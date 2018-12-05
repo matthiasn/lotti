@@ -60,13 +60,14 @@
         show-pvt (subscribe [:show-pvt])]
     (fn sagas-list-render [local put-fn]
       (let [show-pvt @show-pvt
-            sagas @sagas
+            sagas (vals @sagas)
             search-text (:sagas-search @local)
-            search-match (fn [x] (s/includes? (s/lower-case (str (:saga_name (second x))))
+            search-match (fn [x] (s/includes? (s/lower-case (str (:saga_name x)))
                                               (s/lower-case (str search-text))))
-            pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
             sagas (filter search-match sagas)
-            sagas (filter pvt-filter sagas)]
+            sagas (filter pvt-filter sagas)
+            sagas (reverse (sort-by :timestamp sagas))]
         [:div.col.habits.sagas
          [:h2 "Sagas Editor"]
          [:div.input-line
@@ -83,7 +84,7 @@
             [:th "saga"]
             [:th "active"]
             [:th "private"]]
-           (for [saga (vals sagas)]
+           (for [saga sagas]
              ^{:key (:timestamp saga)}
              [saga-row saga local put-fn])]]]))))
 

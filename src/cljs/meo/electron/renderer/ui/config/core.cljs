@@ -18,7 +18,9 @@
 (defn config [_put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :page            :sagas})
+                       :page            :sagas
+                       :stories_cfg     {:sorted-by :timestamp
+                                         :reverse   true}})
         menu-item (fn [k t active]
                     [:div.menu-item
                      {:on-click #(swap! local assoc-in [:page] k)

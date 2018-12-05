@@ -60,13 +60,23 @@
         show-pvt (subscribe [:show-pvt])]
     (fn stories-list-render [local put-fn]
       (let [show-pvt @show-pvt
-            stories @stories
             search-text (:stories-search @local)
-            search-match (fn [x] (s/includes? (s/lower-case (str (:story_name (second x))))
+            search-match (fn [x] (s/includes? (s/lower-case (str (:story_name x)))
                                               (s/lower-case (str search-text))))
-            pvt-filter (fn [x] (if show-pvt true (not (:pvt (second x)))))
-            stories (filter search-match stories)
-            stories (filter pvt-filter stories)]
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
+            sort-fn (get-in @local [:stories_cfg :sorted-by])
+            stories (->> (vals @stories)
+                         (filter search-match)
+                         (filter pvt-filter)
+                         (sort-by sort-fn))
+            stories (if (get-in @local [:stories_cfg :reverse])
+                      (reverse stories)
+                      stories)
+            sort-click (fn [k]
+                         (fn [_]
+                           (if (= k sort-fn)
+                             (swap! local update-in [:stories_cfg :reverse] not)
+                             (swap! local assoc-in [:stories_cfg :sorted-by] k))))]
         [:div.col.habits.stories
          [:h2 "Stories Editor"]
          [:div.input-line
@@ -79,11 +89,11 @@
          [:table.sagas-stories
           [:tbody
            [:tr
-            [:th "created"]
-            [:th "story"]
-            [:th "active"]
-            [:th "private"]]
-           (for [story (vals stories)]
+            [:th {:on-click (sort-click :timestamp)} "created"]
+            [:th {:on-click (sort-click :story_name)} "story"]
+            [:th {:on-click (sort-click :active)} "active"]
+            [:th {:on-click (sort-click :pvt)} "private"]]
+           (for [story stories]
              ^{:key (:timestamp story)}
              [story-row story local put-fn])]]]))))
 
