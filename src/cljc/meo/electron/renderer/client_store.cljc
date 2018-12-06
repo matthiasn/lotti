@@ -58,7 +58,11 @@
     {}))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:current-page] msg-payload)]
+  (let [old-page (:page (:current-page current-state))
+        new-page (:page msg-payload)
+        toggle (:toggle msg-payload)
+        new-page (if (and toggle (= old-page new-page)) toggle new-page)
+        new-state (assoc-in current-state [:current-page] {:page new-page})]
     {:new-state new-state}))
 
 (defn blink-busy [{:keys [current-state msg-payload]}]

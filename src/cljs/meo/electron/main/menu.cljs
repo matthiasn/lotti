@@ -22,7 +22,8 @@
 (defn app-menu [put-fn]
   (let [update-win {:url "electron/updater.html" :width 600 :height 300}
         check-updates #(put-fn [:window/new update-win])
-        open (fn [page] (put-fn [:nav/to {:page page}]))]
+        open (fn [page] (put-fn [:nav/to {:page   page
+                                          :toggle :main}]))]
     {:label   "Application"
      :submenu [(when (= (:platform rt/runtime-info) "darwin")
                  {:label    "About meo"
@@ -87,9 +88,8 @@
                           (when (contains? capabilities :spotify)
                             {:label "Spotify"
                              :click #(put-fn [:import/spotify])})]}
-               #_
-               {:label "Export"
-                :click #(put-fn [:export/geojson])}]}))
+               #_{:label "Export"
+                  :click #(put-fn [:export/geojson])}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 

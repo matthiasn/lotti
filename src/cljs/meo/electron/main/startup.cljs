@@ -23,8 +23,28 @@
       (spawn-process "TaskKill" ["-F" "/PID" pid] {})
       (spawn-process "/bin/kill" ["-KILL" pid] {}))))
 
+(defn kill-by-port-lsof
+  "Kill process for port by calling lsof on Linux and Mac
+   in addition to using find-process, as the latter worked
+   fine on Mac and Windows but not on Linux."
+  [port]
+  (let [platform (:platform rt/runtime-info)
+        lsof-path (case platform
+                    "darwin" "/usr/sbin/lsof"
+                    "linux" "/usr/bin/lsof"
+                    nil)]
+    (when lsof-path
+      (let [lsof (spawn-process lsof-path ["-n" (str "-i4TCP:" port)] {})
+            stdout (aget lsof "stdout")
+            cb (fn [data]
+                 (let [pid (re-find #"[0-9]{1,5}" (str data))
+                       pid (when pid (js/parseInt pid))]
+                   (when pid (kill pid))))]
+        (.on stdout "data" cb)))))
+
 (defn kill-by-port [port]
   (info "Killing process for port" port)
+  (kill-by-port-lsof port)
   (let [find (find-process "port" port)
         cb (fn [processes]
              (doseq [proc processes]
