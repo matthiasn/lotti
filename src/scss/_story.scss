@@ -111,6 +111,10 @@
     box-shadow: 0 0 1px 1px #AAA;
     font-size: 0.8em;
 
+    table {
+      max-width: 260px;
+    }
+
     tr:nth-child(even) {
       background-color: lighten($hashtag-blue, 40%);
     }

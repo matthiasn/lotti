@@ -107,7 +107,7 @@
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default}
          [:div.header-1
-          [:div [es/story-select entry tab-group put-fn]]
+          [:div [es/story-select merged tab-group put-fn]]
           [linked-btn merged local-cfg active put-fn]]
          [:div.header
           (when (:show-adjust-ts @local)

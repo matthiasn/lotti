@@ -108,35 +108,14 @@
                         s (:search @local)
                         filter-fn #(h/str-contains-lc? (:story_name %) s)
                         stories (vec (filter filter-fn stories))]
-                    (map-indexed (fn [i v] [i v]) stories)))
-        assign-story (fn [story]
-                       (let [ts (:timestamp story)
-                             stop-watch (:stop-watch @local)
-                             updated (assoc-in entry [:primary_story] ts)]
-                         (swap! local assoc-in [:show] false)
-                         (put-fn [:entry/update updated])
-                         (stop-watch)))
-        keydown (fn [ev]
-                  (let [key-code (.. ev -keyCode)
-                        n (count @indexed)
-                        idx-inc #(if (< % (dec n)) (inc %) 0)
-                        idx-dec #(if (pos? %) (dec %) (dec n))]
-                    (info key-code)
-                    (when (:show @local)
-                      (when (= key-code 27)
-                        (swap! local assoc-in [:show] false))
-                      (when (= key-code 40)
-                        (swap! local update-in [:idx] idx-inc))
-                      (when (= key-code 38)
-                        (swap! local update-in [:idx] idx-dec))
-                      (when (= key-code 13)
-                        (assign-story (second (nth @indexed (:idx @local))))))
-                    (.stopPropagation ev)))
-        start-watch #(.addEventListener js/document "keydown" keydown)
-        stop-watch #(.removeEventListener js/document "keydown" keydown)]
-    (swap! local assoc-in [:stop-watch] stop-watch)
+                    (map-indexed (fn [i v] [i v]) stories)))]
     (fn story-select-filter-render [entry tab-group put-fn]
-      (let [linked-story (get-in entry [:story :timestamp])
+      (let [assign-story (fn [story]
+                           (let [ts (:timestamp story)
+                                 updated (assoc-in entry [:primary_story] ts)]
+                             (swap! local assoc-in [:show] false)
+                             (put-fn [:entry/update updated])))
+            linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story_name])
             saga-name (get-in entry [:story :saga :saga_name])
             open-story (up/add-search linked-story tab-group put-fn)

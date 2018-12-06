@@ -24,6 +24,7 @@
       (spawn-process "/bin/kill" ["-KILL" pid] {}))))
 
 (defn kill-by-port [port]
+  (info "Killing process for port" port)
   (let [find (find-process "port" port)
         cb (fn [processes]
              (doseq [proc processes]
