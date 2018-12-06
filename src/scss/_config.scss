@@ -4,6 +4,10 @@
   display: flex;
   background-color: $tab-bg;
 
+  th {
+    user-select: none;
+  }
+
   h2 {
     margin-top: 18px;
     font-size: 18px;
@@ -31,6 +35,7 @@
 
     .completion {
       width: 140px;
+      text-align: left;
     }
 
     .habit {
@@ -39,7 +44,7 @@
       padding-left: 8px;
     }
 
-    &.sagas-stories {
+    &.sagas-stories, &.habit_cfg {
       width: 450px;
       font-family: $header-font-family;
       font-size: $font-size-medium;
@@ -62,7 +67,7 @@
     }
   }
 
-  .stories, .sagas {
+  .stories, .sagas, .habits {
     overflow-y: scroll;
 
     i {

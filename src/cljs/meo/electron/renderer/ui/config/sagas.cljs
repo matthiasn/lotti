@@ -80,10 +80,10 @@
          [:table.sagas-stories
           [:tbody
            [:tr
-            [:th "created"]
-            [:th "saga"]
-            [:th "active"]
-            [:th "private"]]
+            [:th "Created"]
+            [:th "Saga"]
+            [:th "Active"]
+            [:th "Private"]]
            (for [saga sagas]
              ^{:key (:timestamp saga)}
              [saga-row saga local put-fn])]]]))))

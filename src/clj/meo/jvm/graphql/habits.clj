@@ -71,12 +71,14 @@
           now (stc/now)
           pvt (:pvt args)
           day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
-          habits (filter #(-> % :habit :active) (gq/find-all-habits @state))
+          habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))
           f (fn [habit]
-              {:completed   (mapv #(habit-success habit % @state) day-strings)
-               :habit_entry habit})
+              (let [completed (when (:active (:habit habit))
+                                (mapv #(habit-success habit % @state) day-strings))]
+                {:completed   completed
+                 :habit_entry habit}))
           res (mapv f habits)]
       res)
     (catch Exception ex (error ex))))

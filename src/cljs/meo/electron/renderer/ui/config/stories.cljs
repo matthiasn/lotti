@@ -89,10 +89,10 @@
          [:table.sagas-stories
           [:tbody
            [:tr
-            [:th {:on-click (sort-click :timestamp)} "created"]
-            [:th {:on-click (sort-click :story_name)} "story"]
-            [:th {:on-click (sort-click :active)} "active"]
-            [:th {:on-click (sort-click :pvt)} "private"]]
+            [:th {:on-click (sort-click :timestamp)} "Created"]
+            [:th {:on-click (sort-click :story_name)} "Story"]
+            [:th {:on-click (sort-click :active)} "Active"]
+            [:th {:on-click (sort-click :pvt)} "Private"]]
            (for [story stories]
              ^{:key (:timestamp story)}
              [story-row story local put-fn])]]]))))
