@@ -5,6 +5,12 @@
             [clojure.walk :as walk]))
 
 (def capabilities (:capabilities rt/runtime-info))
+(def platform (:platform rt/runtime-info))
+
+(def screenshot-accelerator
+  (if (= platform "darwin")
+    "Command+Shift+3"
+    "PrintScreen"))
 
 (defn rm-filtered [m]
   (walk/postwalk (fn [node]
@@ -25,7 +31,7 @@
         open (fn [page] (put-fn [:nav/to {:page   page
                                           :toggle :main}]))]
     {:label   "Application"
-     :submenu [(when (= (:platform rt/runtime-info) "darwin")
+     :submenu [(when (= platform "darwin")
                  {:label    "About meo"
                   :selector "orderFrontStandardAboutPanel:"})
                {:label "Check for Updates..."
@@ -169,15 +175,26 @@
                 :accelerator "CmdOrCtrl+Alt+I"
                 :click       #(put-fn [:window/dev-tools])}]}))
 
-(defn capture-menu [put-fn]
+(defn capture-menu [cmp-state put-fn]
   (let [screenshot #(put-fn [:screenshot/take])
-        accelerator (if (= (:platform rt/runtime-info) "darwin")
-                      "Command+Shift+3"
-                      "PrintScreen")]
+        reload #(put-fn [:cmd/schedule-new
+                         {:message [:menu/reload]
+                          :timeout 1}])
+        register #(do (.register globalShortcut screenshot-accelerator screenshot)
+                      (swap! cmp-state assoc :global-screenshots true)
+                      (reload))
+        unregister #(do (.unregister globalShortcut screenshot-accelerator)
+                        (swap! cmp-state assoc :global-screenshots false)
+                        (reload))]
     {:label   "Capture"
      :submenu [{:label       "New Screenshot"
-                :accelerator accelerator
-                :click       screenshot}]}))
+                :accelerator screenshot-accelerator
+                :click       screenshot}
+               (if (:global-screenshots @cmp-state)
+                 {:label "Unregister Global Screenshots"
+                  :click unregister}
+                 {:label "Register Global Screenshots"
+                  :click register})]}))
 
 (defn learn-menu [put-fn]
   (let [export #(put-fn [:tf/learn-stories #{:export}])
@@ -236,7 +253,7 @@
               :accelerator "CmdOrCtrl+Alt+I"
               :click       #(put-fn [:window/dev-tools])}]})
 
-(defn state-fn [put-fn]
+(defn menu [{:keys [cmp-state put-fn]}]
   (let [put-fn (fn [msg]
                  (let [msg-meta (merge {:window-id :active} (meta msg))]
                    (put-fn (with-meta msg msg-meta))))
@@ -244,23 +261,31 @@
                   (file-menu put-fn)
                   (edit-menu put-fn)
                   (view-menu put-fn)
-                  (capture-menu put-fn)
+                  (capture-menu cmp-state put-fn)
                   (when (contains? capabilities :tensorflow)
                     (learn-menu put-fn))
                   (playground-menu put-fn)
                   (dev-menu put-fn)]
         menu-tpl (rm-filtered (filter identity menu-tpl))
-        menu (.buildFromTemplate Menu (clj->js menu-tpl))
+        menu (.buildFromTemplate Menu (clj->js menu-tpl))]
+    (info "Starting Menu")
+    (.setApplicationMenu Menu menu))
+  {})
+
+(defn state-fn [put-fn]
+  (let [state (atom {:global-screenshots true})
+        put-fn (fn [msg]
+                 (let [msg-meta (merge {:window-id :active} (meta msg))]
+                   (put-fn (with-meta msg msg-meta))))
         activate #(put-fn [:window/activate])
         screenshot #(put-fn [:screenshot/take])]
     (info "Starting Menu Component")
+    (menu {:cmp-state state :put-fn put-fn})
     (.on app "activate" activate)
-    (if (= (:platform rt/runtime-info) "darwin")
-      (.register globalShortcut "Command+Shift+3" screenshot)
-      (.register globalShortcut "PrintScreen" screenshot))
-    (.setApplicationMenu Menu menu))
-  {:state (atom {})})
+    (.register globalShortcut screenshot-accelerator screenshot)
+    {:state state}))
 
 (defn cmp-map [cmp-id]
-  {:cmp-id   cmp-id
-   :state-fn state-fn})
+  {:cmp-id      cmp-id
+   :state-fn    state-fn
+   :handler-map {:menu/reload menu}})

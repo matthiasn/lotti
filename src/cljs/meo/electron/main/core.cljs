@@ -93,6 +93,7 @@
        [:cmd/route {:from :electron/scheduler
                     :to   #{:electron/updater
                             :electron/window-manager
+                            :electron/menu-cmp
                             :electron/geocoder
                             :electron/sync
                             :electron/blink
