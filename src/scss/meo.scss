@@ -4,20 +4,14 @@ body {
   color: $font-color;
   background-color: $body-background-color;
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 200;
   font-family: $font-family;
-  -webkit-font-smoothing: antialiased;
-
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.05);
+  outline: 1px solid transparent;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: $header-font-family;
-}
-
-*, *:before, *:after {
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
 }
 
 .flex-container {

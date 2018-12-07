@@ -45,9 +45,11 @@ video {
 
     input[type="range"] {
       margin-left: 5px;
-      width: 120px;
+      width: 150px;
       position: relative;
       top: 4px;
+      border: none;
+      box-shadow: none;
     }
   }
 }
