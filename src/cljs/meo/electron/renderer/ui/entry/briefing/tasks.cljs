@@ -56,7 +56,7 @@
                   active "active-timer"
                   (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)
-            logged-time (eu/logged-total new-entries entry)
+            logged-time (eu/logged-total @new-entries entry)
             done (get-in entry [:task :done])
             closed (get-in entry [:task :closed])]
         [:tr.task {:on-click (up/add-search ts tab-group put-fn)

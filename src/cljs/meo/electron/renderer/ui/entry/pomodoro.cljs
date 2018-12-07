@@ -52,12 +52,9 @@
             [:i.fas {:class (if running? "fa-pause-circle"
                                          "fa-play-circle")}]])]))))
 
-(defn pomodoro-footer [entry put-fn]
-  (let [new-entries (subscribe [:new-entries])]
-    (fn [entry _put-fn]
-      (let [logged-duration (eu/logged-total new-entries entry)
-            logged-duration (when (pos? logged-duration)
-                              (h/s-to-hh-mm-ss logged-duration))]
-        (when logged-duration
-          [:div.pomodoro
-           [:div.dur logged-duration]])))))
+(defn pomodoro-footer [entry _put-fn]
+  (let [logged-duration (subscribe [:logged-duration entry])]
+    (fn [_entry _put-fn]
+      (when-let [duration @logged-duration]
+        [:div.pomodoro
+         [:div.dur duration]]))))

@@ -19,7 +19,7 @@
                             vals
                             (nth idx)))]
     (fn entry-wrapper-render [_idx local-cfg put-fn]
-      ^{:key (str (:timestamp @entry) (:vclock @entry))}
+      ^{:key (str (hash @entry) (:vclock @entry))}
       [:div
        (when @entry
          [e/entry-with-comments @entry put-fn local-cfg])])))

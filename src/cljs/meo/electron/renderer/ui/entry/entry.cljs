@@ -138,7 +138,7 @@
             (when pomodoro
               [pomo/pomodoro-time merged edit-mode? put-fn])
             (when-not pomodoro
-              [pomo/pomodoro-footer merged put-fn])
+              [pomo/pomodoro-footer entry put-fn])
             [hashtags-mentions entry tab-group put-fn]
             [:div.word-count (u/count-words-formatted merged)]])
          [conflict-view merged put-fn]

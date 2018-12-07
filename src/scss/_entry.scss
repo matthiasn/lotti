@@ -57,6 +57,7 @@
     align-items: center;
     user-select: none;
     color: $body-background-color;
+    padding-top: 5px;
 
     .word-count {
       flex: 1;
@@ -170,8 +171,7 @@
   .header-1 {
     display: flex;
     justify-content: space-between;
-    padding-top: 3px;
-    height: 24px;
+    padding: 2px 0;
 
     .geoname {
       font-size: $font-size-small;

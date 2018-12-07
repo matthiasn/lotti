@@ -15,7 +15,8 @@
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.data-explorer :as dex]
-            [meo.electron.renderer.helpers :as h]))
+            [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
@@ -67,6 +68,15 @@
 (reg-sub :entries-map (fn [db _] (:entries-map db)))
 (reg-sub :results (fn [db _] (:results db)))
 (reg-sub :new-entries (fn [db _] (:new-entries db)))
+
+(reg-sub
+  :logged-duration
+  (fn [db [_ entry]]
+    (let [new-entries (:new-entries db)
+          logged-duration (eu/logged-total new-entries entry)]
+      (when (pos? logged-duration)
+        (h/s-to-hh-mm-ss logged-duration)))))
+
 (reg-sub :cfg (fn [db _] (:cfg db)))
 (reg-sub :locale (fn [db _] (:locale (:cfg db) :en)))
 (reg-sub :backend-cfg (fn [db _] (:backend-cfg db)))
