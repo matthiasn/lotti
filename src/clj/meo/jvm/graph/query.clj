@@ -392,7 +392,8 @@
                    [tag cnt])))
          (sort-by second)
          reverse
-         (mapv first))))
+         (mapv first)
+         set)))
 
 (defn find-all-pvt-hashtags
   "Finds all private hashtags. Private hashtags are either those used

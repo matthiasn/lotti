@@ -72,7 +72,6 @@
            (for [[tag conf] (sort-by first entry-field-tags)]
              ^{:key (str "cf" ts tag)}
              [:div
-              [:h2 tag]
               [:table
                [:tbody
                 (for [[k field] (:fields conf)]

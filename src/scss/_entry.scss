@@ -424,13 +424,14 @@
 input {
   border-radius: $entry-border-radius;
   outline: none !important;
-  border:1px solid #CCC;
+  //border:1px solid #CCC;
+  border: none;
   box-shadow: 0 0 2px #AAA;
   padding: 3px 6px;
   font-size: $font-size-medium;
   font-weight: bold;
   color: #444;
-  height: 24px;
+  height: 20px;
   display: inline-block;
 }
 

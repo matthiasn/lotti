@@ -123,7 +123,7 @@
                          hashtags (if show-pvt?
                                     (concat hashtags pvt-hashtags)
                                     hashtags)]
-                     (map (fn [h] {:name h}) hashtags)))
+                     (set (map (fn [h] {:name h}) hashtags))))
         update-local (fn []
                        (let [start (st/now)
                              editor-state (:editor-state @cb-atom)
