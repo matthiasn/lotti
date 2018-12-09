@@ -50,8 +50,8 @@
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
     (run-query "options.gql" :options 10 nil)
     (run-query "day-stats.gql" :day-stats 15 [90])
-    (s/gql-query :left current-state false put-fn)
-    (s/gql-query :right current-state false put-fn)
+    (s/gql-query :left current-state true put-fn)
+    (s/gql-query :right current-state true put-fn)
     (s/dashboard-cfg-query current-state put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
@@ -88,7 +88,8 @@
 (defn gql-res [{:keys [current-state msg-payload]}]
   (let [{:keys [id]} msg-payload
         new-state (assoc-in current-state [:gql-res id] msg-payload)]
-    {:new-state new-state}))
+    (when-not (contains? #{:left :right} id)
+      {:new-state new-state})))
 
 (defn gql-res2 [{:keys [current-state msg-payload]}]
   (let [{:keys [tab res del incremental query]} msg-payload
@@ -98,7 +99,7 @@
                    (:res prev)
                    (sorted-map-by >))
         cleaned (apply dissoc prev-res del)
-        res-map (into cleaned (map (fn [entry] [(:timestamp entry) entry]) res))
+        res-map (into cleaned (mapv (fn [entry] [(:timestamp entry) entry]) res))
         new-state (assoc-in current-state [:gql-res2 tab] {:res   res-map
                                                            :query query})]
     {:new-state new-state}))

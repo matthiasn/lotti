@@ -44,10 +44,19 @@
 (defn mention-count [state context args value] (count (gq/find-all-mentions @state)))
 (defn completed-count [state context args value] (gs/completed-count @state))
 
-(defn hashtags [state context args value] (-> @state :options :hashtags))
-(defn pvt-hashtags [state context args value] (-> @state :options :pvt-hashtags))
-(defn mentions [state context args value] (-> @state :options :mentions))
+(defn hashtags [state context args value]
+  "Regular tags without private tags"
+  (let [tags (-> @state :options :hashtags)
+        pvt-tags (-> @state :options :pvt-hashtags)]
+    (set/difference tags pvt-tags)))
 
+(defn pvt-hashtags [state context args value]
+  "All tags, including private."
+  (let [tags (-> @state :options :hashtags)
+        pvt-tags (-> @state :options :pvt-hashtags)]
+    (set/union tags pvt-tags)))
+
+(defn mentions [state context args value] (-> @state :options :mentions))
 (defn stories [state context args value] (gq/find-all-stories2 @state))
 (defn sagas [state context args value] (gq/find-all-sagas2 @state))
 

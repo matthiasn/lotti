@@ -16,25 +16,29 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]))
 
-(defn gql-query [charts-pos days put-fn]
-  (let [tags (->> (:charts charts-pos)
-                  (filter #(contains? #{:barchart_row} (:type %)))
-                  (mapv :tag)
-                  (concat ["#BP"]))]
-    (when-let [query-string (gql/graphql-query (inc days) tags)]
-      (debug "dashboard tags" query-string)
-      (put-fn [:gql/query {:q        query-string
-                           :res-hash nil
-                           :id       :dashboard
-                           :prio     15}])))
-  (let [items (->> (:charts charts-pos)
-                   (filter #(= :questionnaire (:type %))))]
-    (when-let [query-string (gql/dashboard-questionnaires days items)]
-      (debug "dashboard" query-string)
-      (put-fn [:gql/query {:q        query-string
-                           :res-hash nil
-                           :id       :dashboard-questionnaires
-                           :prio     15}]))))
+(defn gql-query [charts-pos days local put-fn]
+  (when-not (and (= (:days @local) days)
+                 (= (:charts-pos @local) charts-pos))
+    (swap! local assoc :days days)
+    (swap! local assoc :charts-pos charts-pos)
+    (let [tags (->> (:charts charts-pos)
+                    (filter #(contains? #{:barchart_row} (:type %)))
+                    (mapv :tag)
+                    (concat ["#BP"]))]
+      (when-let [query-string (gql/graphql-query (inc days) tags)]
+        (debug "dashboard tags" query-string)
+        (put-fn [:gql/query {:q        query-string
+                             :res-hash nil
+                             :id       :dashboard
+                             :prio     15}])))
+    (let [items (->> (:charts charts-pos)
+                     (filter #(= :questionnaire (:type %))))]
+      (when-let [query-string (gql/dashboard-questionnaires days items)]
+        (debug "dashboard" query-string)
+        (put-fn [:gql/query {:q        query-string
+                             :res-hash nil
+                             :id       :dashboard-questionnaires
+                             :prio     15}])))))
 
 (defn dashboard [days put-fn]
   (let [gql-res2 (subscribe [:gql-res2])
@@ -95,7 +99,7 @@
                     :span     span
                     :days     days}
             end-y (+ (:last-y charts-pos) (:last-h charts-pos))]
-        (gql-query charts-pos days put-fn)
+        (gql-query charts-pos days local put-fn)
         [:div.questionnaires
          [:div.controls
           [:span.display-text (:display-text @local)]
@@ -139,7 +143,7 @@
           (for [n (range (inc days))]
             (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
                   scaled (* 1800 (/ offset span))
-                  x (+ 200 scaled)
+                  x (+ 201 scaled)
                   ts (+ start offset)
                   weekday (dc/df ts dc/weekday)
                   weekend? (get #{"Sat" "Sun"} weekday)]
@@ -147,7 +151,8 @@
               [:g {:writing-mode "tb-rl"}
                [:text {:x           x
                        :y           36
-                       :font-size   9
+                       :font-size   12
+                       :font-weight (if weekend? :normal :light)
                        :fill        (if weekend? :red :black)
                        :text-anchor "middle"}
                 (dc/df ts dc/month-day)]]))]]))))

@@ -86,6 +86,18 @@
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))
 (reg-sub :chart-data (fn [db _] (select-keys db [:media-stats])))
 
+(reg-sub :hashtags (fn [db _]
+                     (let [show-pvt? (:show-pvt (:cfg db))
+                           gql-res (:gql-res db)
+                           hashtags (-> gql-res :options :data :hashtags)
+                           pvt-hashtags (-> gql-res :options :data :pvt_hashtags)
+                           hashtags (if show-pvt? pvt-hashtags hashtags)]
+                       (map (fn [h] {:name h}) hashtags))))
+
+(reg-sub :mentions (fn [db _]
+                     (map (fn [m] {:name m})
+                          (get-in db [:gql-res :options :data :mentions]))))
+
 (defn main-page [put-fn]
   (let [cfg (subscribe [:cfg])
         single-column (reaction (:single-column @cfg))]

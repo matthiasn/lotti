@@ -267,7 +267,7 @@
   (let [query-path [:query-cfg :queries (:query-id msg-payload)]
         merged (merge (get-in current-state query-path) msg-payload)
         new-query (-> merged
-                      (update-in [:n] + 50)
+                      (update-in [:n] + 25)
                       (assoc-in [:incremental] true))]
     {:send-to-self [:search/update new-query]}))
 

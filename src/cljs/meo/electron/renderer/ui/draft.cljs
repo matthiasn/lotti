@@ -112,18 +112,8 @@
         {:keys [new-entry]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
         status (subscribe [:busy-status])
-        cfg (subscribe [:cfg])
-        gql-res (subscribe [:gql-res])
-        mentions (reaction (map (fn [m] {:name m})
-                                (get-in @gql-res [:options :data :mentions])))
-        hashtags (reaction
-                   (let [show-pvt? (:show-pvt @cfg)
-                         hashtags (-> @gql-res :options :data :hashtags)
-                         pvt-hashtags (-> @gql-res :options :data :pvt_hashtags)
-                         hashtags (if show-pvt?
-                                    (concat hashtags pvt-hashtags)
-                                    hashtags)]
-                     (set (map (fn [h] {:name h}) hashtags))))
+        mentions (subscribe [:mentions])
+        hashtags (subscribe [:hashtags])
         update-local (fn []
                        (let [start (st/now)
                              editor-state (:editor-state @cb-atom)

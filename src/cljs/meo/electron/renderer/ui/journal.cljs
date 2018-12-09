@@ -19,7 +19,7 @@
                             vals
                             (nth idx)))]
     (fn entry-wrapper-render [_idx local-cfg put-fn]
-      ^{:key (str (hash @entry) (:vclock @entry))}
+      ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
        (when @entry
          [e/entry-with-comments @entry put-fn local-cfg])])))
@@ -36,7 +36,7 @@
    entry."
   [local-cfg _put-fn]
   (let [gql-res (subscribe [:gql-res2])
-        local (r/atom {:last-cnt 0
+        local (r/atom {:last-cnt   0
                        :last-fetch 0})
         tab-group (:tab-group local-cfg)
         entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
@@ -52,9 +52,9 @@
                           (when (and (or (< (- sh st) th)
                                          (< (- sh st) (* 0.2 sh)))
                                      (> (- (st/now) (:last-fetch @local)) 1000))
-                            (reset! local {:last-cnt cnt
+                            (reset! local {:last-cnt   cnt
                                            :last-fetch (st/now)})
-                            (put-fn [:show/more {:query-id query-id
+                            (put-fn [:show/more {:query-id  query-id
                                                  :tab-group tg}]))))
             on-mouse-enter #(put-fn [:search/cmd {:t         :active-tab
                                                   :tab-group tg}])]
