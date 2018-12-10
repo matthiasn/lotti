@@ -103,6 +103,8 @@
   .story-search {
     position: absolute;
     background-color: white;
+    top: 0;
+
     z-index: 1002;
     padding: 4px 0 10px 6px;
     white-space: nowrap;
@@ -146,10 +148,11 @@
     }
 
     i {
-      font-size: 8px;
+      font-size: 12px;
+      font-weight: bold;
       padding: 0 4px;
-      color: black;
       opacity: 1;
+      color: #777;
     }
   }
 }
