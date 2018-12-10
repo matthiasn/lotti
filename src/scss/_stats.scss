@@ -26,7 +26,7 @@ $backlog-weekend: lighten($backlog, 30);
   .controls {
     position: absolute;
     right: 3px;
-    bottom: 6px;
+    bottom: 8px;
     z-index: 1111;
 
     .display-text {
@@ -37,7 +37,7 @@ $backlog-weekend: lighten($backlog, 30);
     input {
       font-size: $font-size-small;
       margin-right: 10px;
-      padding: 2px 0 2px 4px;
+      padding: 0 0 0 4px;
       height: 14px;
       width: 38px!important;
       color: #999;
@@ -250,7 +250,6 @@ $backlog-weekend: lighten($backlog, 30);
   background-color: $stats-bg-color;
   color: $stats-color;
   font-size: 0.9em;
-  height: 20px;
   padding: 4px 20px 4px 30px;
   position: absolute;
   bottom: 0;
