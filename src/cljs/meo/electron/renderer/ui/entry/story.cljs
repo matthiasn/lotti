@@ -122,7 +122,6 @@
                         n (count @indexed)
                         idx-inc #(if (< % (dec n)) (inc %) 0)
                         idx-dec #(if (pos? %) (dec %) (dec n))]
-                    (info key-code (:idx @local))
                     (when (:show @local)
                       (when (= key-code 27)
                         (swap! local assoc-in [:show] false))
