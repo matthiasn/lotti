@@ -26,9 +26,12 @@
     font-weight: normal;
     display: flex;
     cursor: pointer;
+    margin-bottom: 7px;
+
     i {
       margin-right: 6px;
     }
+
     span {
       &:hover {
         color: $link-color;
@@ -55,6 +58,7 @@
       color: $green;
     }
   }
+
   .name {
     padding-right: 1em;
   }
@@ -91,10 +95,12 @@
     &.show {
       cursor: none;
     }
+
     &.predicted {
       background-color: lightgreen;
       color: black;
     }
+
     &:hover {
       color: $link-color;
     }
@@ -104,9 +110,8 @@
     position: absolute;
     background-color: white;
     top: 0;
-
     z-index: 1002;
-    padding: 4px 0 10px 6px;
+    padding: 4px 0;
     white-space: nowrap;
     border: #aaa 1px solid;
     border-radius: 5px;
@@ -115,6 +120,8 @@
 
     table {
       max-width: 260px;
+      border-spacing: 0;
+      font-size: $font-size-small;
     }
 
     tr:nth-child(even) {
@@ -126,11 +133,13 @@
 
       td {
         min-width: 115px;
-        padding-left: 2px;
+        padding: 1px 8px;
       }
+
       .current {
         background-color: lighten($hashtag-blue, 10%);
       }
+
       .idx {
         background-color: lighten($orange, 30%);
       }

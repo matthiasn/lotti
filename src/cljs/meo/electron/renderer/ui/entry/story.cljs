@@ -115,8 +115,9 @@
                          (map-indexed (fn [i v] [i v])))))
         assign-story (fn [story]
                        (swap! local assoc-in [:show] false)
-                       (put-fn [:entry/update {:primary_story (:timestamp story)
-                                               :timestamp     ts}]))
+                       (put-fn [:entry/update-merged
+                                {:primary_story (:timestamp story)
+                                 :timestamp     ts}]))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         n (count @indexed)

@@ -1,10 +1,10 @@
 (ns meo.electron.renderer.client-store-entry
   (:require #?(:cljs [meo.electron.renderer.localstorage :as sa])
-    [matthiasn.systems-toolbox.component :as st]
-    [meo.common.utils.misc :as u]
-    #?(:clj [taoensso.timbre :refer [info debug]]
-       :cljs [taoensso.timbre :refer-macros [info debug]])
-    [meo.common.utils.parse :as p]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meo.common.utils.misc :as u]
+            #?(:clj  [taoensso.timbre :refer [info debug]]
+               :cljs [taoensso.timbre :refer-macros [info debug]])
+            [meo.common.utils.parse :as p]))
 
 #?(:clj  (defonce new-entries-ls (atom {}))
    :cljs (defonce new-entries-ls (sa/local-storage
@@ -157,7 +157,8 @@
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])
             entry (u/deep-merge saved new-entry msg-payload)
-            parsed (p/parse-entry (:md entry))
+            md (:md entry)
+            parsed (when md (p/parse-entry md))
             updated (merge entry parsed)
             updated (if (-> updated :questionnaires :pomo1)
                       (update-in updated [:tags] conj "#PSS")
@@ -166,6 +167,15 @@
         (update-local-storage new-state)
         {:new-state new-state})
       {})))
+
+(defn update-merged
+  "Update local entry with payload and save in backend."
+  [{:keys [current-state msg-payload put-fn]}]
+  (let [ts (:timestamp msg-payload)
+        new-entry (get-in current-state [:new-entries ts])
+        entry (u/deep-merge new-entry msg-payload)]
+    (put-fn [:entry/update entry])
+    {}))
 
 (defn remove-local [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
@@ -189,11 +199,12 @@
     {:new-state new-state}))
 
 (def entry-handler-map
-  {:entry/new          new-entry-fn
-   :entry/update-local update-local
-   :entry/remove-local remove-local
-   :entry/saved        entry-saved-fn
-   :geonames/res       geo-res
-   :cmd/pomodoro-inc   pomodoro-inc
-   :cmd/pomodoro-start pomodoro-start
-   :cmd/pomodoro-stop  pomodoro-stop})
+  {:entry/new           new-entry-fn
+   :entry/update-local  update-local
+   :entry/update-merged update-merged
+   :entry/remove-local  remove-local
+   :entry/saved         entry-saved-fn
+   :geonames/res        geo-res
+   :cmd/pomodoro-inc    pomodoro-inc
+   :cmd/pomodoro-start  pomodoro-start
+   :cmd/pomodoro-stop   pomodoro-stop})

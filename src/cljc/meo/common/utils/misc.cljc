@@ -35,8 +35,12 @@
           private-tags (:pvt-hashtags options)
           hashtags (:hashtags options)
           only-pvt-tags (set/difference private-tags hashtags)
-          matched (set/intersection tags only-pvt-tags)]
-      (empty? matched))))
+          matched (set/intersection tags only-pvt-tags)
+          pvt-cfg (or (:pvt (:custom_field_cfg entry))
+                      (:pvt (:habit entry))
+                      (:pvt (:dashboard_cfg entry)))]
+      (and (empty? matched)
+           (not pvt-cfg)))))
 
 (defn suggestions
   "Renders suggestions for hashtags or mentions if either occurs before the
