@@ -60,6 +60,7 @@
                                 (not (:success (first (:completed %)))))
                            @habits-success)
             habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) habits)
+            habits (filter #(-> % :habit_entry :habit :active) habits)
             tab-group :briefing
             open-new (fn [x]
                        (put-fn [:search/add
