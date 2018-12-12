@@ -40,6 +40,7 @@
 
 (defn min-max-sum [{:keys []}]
   (let [backend-cfg (subscribe [:backend-cfg])
+        pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn [{:keys [entry idx put-fn] :as params}]
       (let [cf-path [:habit :criteria idx :cf-tag]
@@ -49,7 +50,11 @@
             fields (get-in @custom-fields [cf-tag :fields])
             min-path [:habit :criteria idx :min-val]
             max-path [:habit :criteria idx :max-val]
-            field-cfg (get-in fields [k :cfg])]
+            field-cfg (get-in fields [k :cfg])
+            custom-fields (vec @custom-fields)
+            tags (if @pvt
+                   custom-fields
+                   (filter #(not (:pvt (second %))) custom-fields))]
         [:div
          [:h4 "Custom field values summed, within min/max range"]
          [:div.row
@@ -59,7 +64,7 @@
                       :path      cf-path
                       :put-fn    put-fn
                       :sorted-by a-z
-                      :options   (keys @custom-fields)}]]
+                      :options   (map first tags)}]]
          (when-not (empty? (name cf-tag))
            (let [opts (map (fn [[k v]] [k (:label v)]) fields)]
              [:div.row
@@ -81,11 +86,14 @@
 
 (defn min-max-time [{:keys []}]
   (let [sagas (subscribe [:sagas])
+        pvt (subscribe [:show-pvt])
         stories (subscribe [:stories])]
     (fn [{:keys [entry idx put-fn] :as params}]
       (let [saga-path [:habit :criteria idx :saga]
             saga (get-in entry saga-path "")
-            sagas (into {} (map (fn [[k v]] [k (:saga_name v)]) @sagas))
+            sagas  (filter #(:active (second %)) @sagas)
+            sagas (if @pvt sagas (filter #(not (:pvt (second %))) sagas))
+            sagas (into {} (map (fn [[k v]] [k (:saga_name v)]) sagas))
             story-path [:habit :criteria idx :story]
             story (get-in entry story-path)
             min-path [:habit :criteria idx :min-time]
@@ -102,7 +110,10 @@
                       :sorted-by a-z
                       :options   sagas}]]
          (when (number? saga)
-           (let [stories (filter #(= saga (:timestamp (:saga (second %)))) @stories)
+           (let [stories (filter #(and (= saga (:timestamp (:saga (second %))))
+                                       (:active (second  %)))
+                                 @stories)
+                 stories (if @pvt stories (filter #(not (:pvt (second %))) stories))
                  stories (into {} (map (fn [[k v]] [k (:story_name v)]) stories))]
              [:div.row
               [:label "Story:"]
@@ -115,8 +126,8 @@
                           :options   stories}]]))
          (when (number? story)
            [cs/input-row entry {:label "Minimum:"
-                                :type :time
-                                :path min-path} put-fn])
+                                :type  :time
+                                :path  min-path} put-fn])
          (when (number? story)
            [cs/input-row entry {:label "Maximum:"
                                 :type  :time
