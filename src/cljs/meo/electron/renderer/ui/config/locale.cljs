@@ -14,7 +14,7 @@
                        (put-fn [:cmd/toggle-key {:path     [:cfg :locale]
                                                  :reset-to sel}])))]
     (fn [put-fn]
-      [:div.locale
+      [:div.col.locale
        [:h2 "Localization"]
        [:select {:value     (:locale @cfg :en)
                  :on-change set-locale}

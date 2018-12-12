@@ -12,7 +12,7 @@
         sort-fn #(let [data (second %)] (* (:mean data) (:n data)))]
     (get-metrics)
     (fn [put-fn]
-      [:div.metrics
+      [:div.metrics.col
        [:h2 "Backend Metrics"]
        [:span.btn {:on-click #(put-fn [:metrics/get])} "update"]
        (when (seq @metrics)

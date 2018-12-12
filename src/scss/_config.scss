@@ -128,10 +128,8 @@
   }
 
   .photos {
-    padding: 20px 30px;
-
     button {
-      margin-top: 30px;
+      margin-top: 10px;
     }
   }
 
@@ -139,7 +137,6 @@
     display: flex;
     flex-flow: column;
     color: #DDD;
-    margin-left: 20px;
 
     table {
       text-align: right;
@@ -186,7 +183,7 @@
   }
 
   .col {
-    padding-left: 1em;
+    padding-left: 16px;
     display: flex;
     flex-direction: column;
   }
@@ -343,11 +340,6 @@
   .third-col {
     flex: 1;
   }
-
-  .locale {
-    padding-right: 15px;
-    padding-left: 20px;
-  }
 }
 
 .sync-cfg {
@@ -356,6 +348,7 @@
   justify-content: space-evenly;
   background-color: $tab-bg;
   width: 100%;
+  margin-left: 16px;
 
   img {
     margin-top: 60px;

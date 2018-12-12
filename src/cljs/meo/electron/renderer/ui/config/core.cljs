@@ -87,7 +87,7 @@
                        (when (= :metrics page)
                          [cm/metrics put-fn])
                        (when (= :photos page)
-                         [:div.photos
+                         [:div.photos.col
                           [:h2 "Photo Settings"]
                           [:button {:on-click #(put-fn [:photos/gen-cache])}
                            "regenerate cache"]])]

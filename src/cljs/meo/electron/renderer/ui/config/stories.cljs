@@ -25,7 +25,7 @@
 (defn story-row [_story local put-fn]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
-    (fn saga-row-render [story local put-fn]
+    (fn story-row-render [story local put-fn]
       (let [ts (:timestamp story)
             sel (:selected @local)
             line-click (fn [_]
@@ -39,6 +39,7 @@
               :class    (when (= sel ts) "active")
               :on-click line-click}
          [:td date-str]
+         [:td [:strong (:saga_name (:saga story))]]
          [:td [:strong (:story_name story)]]
          [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
          [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
@@ -90,6 +91,7 @@
           [:tbody
            [:tr
             [:th {:on-click (sort-click :timestamp)} "Created"]
+            [:th {:on-click (sort-click #(get-in % [:saga :saga_name]))} "Saga"]
             [:th {:on-click (sort-click :story_name)} "Story"]
             [:th {:on-click (sort-click :active)} "Active"]
             [:th {:on-click (sort-click :pvt)} "Private"]]
