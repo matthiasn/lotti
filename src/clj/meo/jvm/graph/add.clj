@@ -28,7 +28,7 @@
   [current-state entry]
   (let [graph (:graph current-state)
         cfg (:cfg current-state)
-        tags (set (:tags entry))
+        tags (set/union (set (:perm_tags entry)) (set (:tags entry)))
         pvt-tags (set/union (:pvt-displayed cfg) (:pvt-tags cfg))
         pvt-entry? (seq (set/intersection tags pvt-tags))
         comment-for (:comment_for entry)
