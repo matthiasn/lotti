@@ -257,10 +257,14 @@
 
       time {
         font-weight: bold;
+      }
 
-        &.visit {
-          margin-left: 10px;
-          font-weight: lighter;
+      .visit {
+        margin-left: 6px;
+        font-weight: lighter;
+
+        time {
+          font-weight: normal;
         }
       }
 

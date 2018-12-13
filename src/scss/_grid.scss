@@ -18,11 +18,11 @@
     height: calc(100vh - 16px);
     grid-gap: 2px;
     background-color: $grid-bg;
-    grid-template-columns: 12px 100px 215px $briefing-width minmax(250px, 1fr);
+    grid-template-columns: 12px 100px 215px $briefing-width minmax(280px, 1fr);
     grid-template-rows: 22px minmax(0, 2fr) fit-content(95vh);
   }
   .col-3 {
-    grid-template-columns: 12px 100px 215px $briefing-width minmax(250px, 1fr) minmax(250px, 1fr)!important;
+    grid-template-columns: 12px 100px 215px $briefing-width minmax(280px, 1fr) minmax(280px, 1fr)!important;
   }
 
   .menu {

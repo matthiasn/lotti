@@ -133,7 +133,7 @@
                (let [dur (- depart-ts arrival-ts)]
                  (if (int? dur) (/ dur 1000) dur)))]
     (when (and secs (< secs 99999999))
-      (str "Visit: " (s-to-hh-mm secs)))))
+      (s-to-hh-mm secs))))
 
 (defn get-stats
   "Retrieves stats for the last n days."

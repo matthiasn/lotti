@@ -21,7 +21,9 @@
                :class    (when (and adjusted-ts (not= adjusted-ts ts))
                            "adjusted")}
               formatted-time]]
-         [:time.visit (h/visit-duration entry)]]))))
+         (when-let [visit-dur (h/visit-duration entry)]
+           [:span.visit "Visit: "
+            [:time visit-dur]])]))))
 
 (defn datetime-edit [entry local put-fn]
   (let [cfg (subscribe [:cfg])

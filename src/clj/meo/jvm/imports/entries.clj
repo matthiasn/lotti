@@ -4,7 +4,10 @@
             [camel-snake-kebab.core :refer :all]
             [taoensso.timbre :refer [info error warn]]
             [clojure.string :as s]
-            [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]
+            [clj-time.format :as f]
+            [clj-time.core :as t]
+            [clj-time.coerce :as c]))
 
 (defn import-visits-fn
   [rdr put-fn msg-meta filename]
@@ -13,17 +16,16 @@
       (doseq [line lines]
         (let [raw-visit (cc/parse-string line keyword)
               {:keys [arrival_ts departure_ts]} (u/visit-timestamps raw-visit)
+              fmt (f/formatters :hour-minute-second)
               dur (when departure_ts
-                    (-> (- departure_ts arrival_ts)
-                        (/ 6000)
-                        (Math/floor)
-                        (/ 10)))
+                    (f/unparse fmt (c/from-long (- departure_ts arrival_ts))))
               visit (merge raw-visit
                            {:timestamp arrival_ts
                             :md        (if dur
-                                         (str "Duration: " dur "m #visit")
+                                         (str "Duration: " dur " #visit")
                                          "No departure recorded #visit")
-                            :tags      #{"#visit" "#import"}})]
+                            :tags      #{"#import"}
+                            :perm_tags #{"#visit"}})]
           (if-not (neg? (:timestamp visit))
             (put-fn (with-meta [:entry/import visit] msg-meta))
             (warn "negative timestamp?" visit)))))
