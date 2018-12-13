@@ -44,7 +44,9 @@
           "private hashtags are set correctly"
           (let [res (gs/make-stats-tags new-state)
                 pvt-hashtags (:pvt-hashtags res)]
-            (is (= #{"#pvt" "#thing"} pvt-hashtags))))
+            (is (= {"#pvt"   2
+                    "#thing" 2}
+                   pvt-hashtags))))
 
         (testing
           "private hashtags are extended as expected:
@@ -52,16 +54,22 @@
              * #task not added as private tag"
           (let [res (gs/make-stats-tags new-state2)
                 pvt-hashtags (:pvt-hashtags res)]
-            (is (= #{"#pvt" "#thing" "#new-pvt-tag"} pvt-hashtags))))
+            (is (= {"#new-pvt-tag" 2
+                    "#pvt"         4
+                    "#thing"       2}
+                   pvt-hashtags))))
 
         (testing
           "hashtags and mentions in result of stats-tags publish fn"
           (let [res (gs/make-stats-tags new-state2)]
-            (is (= #{"#task"  "#done" "#completed" "#comment"}
+            (is (= #{["#comment" 2]
+                     ["#completed" 5]
+                     ["#done" 7]
+                     ["#task" 10]}
                    (set (:hashtags res))))
-            (is (= #{"#new-pvt-tag"
-                     "#pvt"
-                     "#thing"}
+            (is (= #{["#new-pvt-tag" 2]
+                     ["#pvt" 4]
+                     ["#thing" 2]}
                    (set (:pvt-hashtags res))))
             (is (= (:pvt-displayed res) stc/private-tags))
             (is (= #{"@JaneDoe" "@someone"} (:mentions res)))))))))

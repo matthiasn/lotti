@@ -384,27 +384,29 @@
    autosuggestions."
   [current-state]
   (let [g (:graph current-state)
-        ltags (mapv #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))]
-    (->> ltags
-         (mapv (fn [lt]
-                 (let [tag (:val (uc/attrs g {:tag lt}))
-                       cnt (count (uc/find-edges g {:src {:tag lt}}))]
-                   [tag cnt])))
-         (sort-by second)
-         reverse
-         (mapv first)
-         set)))
+        ltags (mapv #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))
+        f (fn [lt]
+            (let [tag (:val (uc/attrs g {:tag lt}))
+                  cnt (count (uc/find-edges g {:src {:tag lt}}))]
+              [tag cnt]))
+        tag-cnt (mapv f ltags)
+        res (into {} tag-cnt)]
+    res))
 
 (defn find-all-pvt-hashtags
   "Finds all private hashtags. Private hashtags are either those used
    exclusively in entries marked private, or the tags in the config key
    :pvt-tags."
   [current-state]
-  (let [cfg (:cfg current-state)
-        g (:graph current-state)
+  (let [g (:graph current-state)
         ltags (mapv #(-> % :dest :ptag) (uc/find-edges g {:src :pvt-hashtags}))
-        tags (mapv #(:val (uc/attrs g {:ptag %})) ltags)]
-    (disj (set/union (set tags) (:pvt-tags cfg)) "#new" "#import")))
+        f (fn [lt]
+            (let [tag (:val (uc/attrs g {:ptag lt}))
+                  cnt (count (uc/find-edges g {:src {:ptag lt}}))]
+              [tag cnt]))
+        tag-cnt (mapv f ltags)
+        res (into {} tag-cnt)]
+    res))
 
 (defn find-all-mentions
   "Finds all hashtags used in entries by finding the edges that originate from

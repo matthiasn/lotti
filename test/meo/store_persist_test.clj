@@ -76,8 +76,15 @@
         (testing
           "hashtags and mentions in result of stats-tags publish fn"
           (let [res (gs/make-stats-tags new-state)]
-            (is (= (set (:hashtags res)) #{"#task" "#entry" "#test" "#done" "#new"
-                                           "#completed" "#blah" "#comment"}))
+            (is (= (set (:hashtags res))
+                   #{["#blah" 101]
+                     ["#comment" 2]
+                     ["#completed" 3]
+                     ["#done" 4]
+                     ["#entry" 101]
+                     ["#new" 101]
+                     ["#task" 6]
+                     ["#test" 101]}))
             (is (= stc/private-tags
                    (:pvt-displayed res)))
             (is (= #{"@myself" "@someone"}
