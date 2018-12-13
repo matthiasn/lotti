@@ -124,6 +124,17 @@
   (let [t (moment ms)]
     (.format (.utc t) "mm:ss:SSS")))
 
+(defn visit-duration
+  "Formats duration string."
+  [entry]
+  (let [arrival-ts (:arrival_timestamp entry)
+        depart-ts (:departure_timestamp entry)
+        secs (when (and arrival-ts depart-ts)
+               (let [dur (- depart-ts arrival-ts)]
+                 (if (int? dur) (/ dur 1000) dur)))]
+    (when (and secs (< secs 99999999))
+      (str "Visit: " (s-to-hh-mm secs)))))
+
 (defn get-stats
   "Retrieves stats for the last n days."
   [stats-key n m put-fn]

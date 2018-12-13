@@ -67,6 +67,7 @@
       font-family: monospace;
       color: $body-background-color;
     }
+
     .likes {
       flex: 1;
     }
@@ -96,9 +97,11 @@
       .start {
         color: $green;
       }
+
       .stop {
         color: $red;
       }
+
       input {
         min-width: 60px;
         font-size: $font-size-small;
@@ -127,6 +130,7 @@
 
   pre {
     margin: 0;
+
     code {
       white-space: pre-wrap;
     }
@@ -181,6 +185,7 @@
     .loc {
       padding-right: 3px;
     }
+
     .fa {
       padding-top: 7px;
       padding-left: 0;
@@ -191,10 +196,12 @@
       font-size: $font-size-medium;
       top: -2px;
     }
+
     .fa {
       position: relative;
       padding-left: 4px;
     }
+
     .up {
       top: -8px;
     }
@@ -214,10 +221,12 @@
       width: 100%;
       justify-content: space-between;
     }
+
     .starred {
       color: gold;
       font-weight: 900;
     }
+
     .flagged {
       color: $red;
       font-weight: 900;
@@ -245,8 +254,14 @@
       font-size: $font-size-xs;
       width: 100%;
       display: flex;
+
       time {
         font-weight: bold;
+
+        &.visit {
+          margin-left: 10px;
+          font-weight: lighter;
+        }
       }
 
       .adjust {
@@ -257,10 +272,11 @@
         input {
           font-size: $font-size-xs;
           padding: 0 0 0 3px;
-          width: 120px!important;
+          width: 120px !important;
           height: auto;
           margin: 0;
         }
+
         i {
           cursor: pointer;
           padding: 3px 3px;
@@ -293,31 +309,37 @@
         font-size: 1em;
         color: #999;
       }
+
       .completed {
         color: $green;
         font-size: 1em;
       }
+
       .completed-cnt {
         color: $green;
         font-size: 0.8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
+
       .incomplete-cnt {
         color: #999;
         font-size: 0.8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
+
       .fa-bolt {
         color: $red;
         font-size: 1em;
       }
+
       .bolt-cnt {
         color: $red;
         font-size: 0.8em;
         font-weight: bold;
       }
+
       .dur {
         margin-left: 0.2em;
         margin-right: 0.3em;
@@ -354,6 +376,7 @@
 .comments {
   > .entry {
   }
+
   .entry:nth-child(even) {
     background-color: lighten($hashtag-blue, 40%);
   }
@@ -411,9 +434,11 @@
       i {
         font-size: 1.2em;
       }
+
       &.done {
         color: $green;
       }
+
       &.hold, &.closed {
         color: $red;
       }
@@ -458,6 +483,7 @@ input[type="datetime-local"] {
   span {
     white-space: nowrap;
   }
+
   time {
     font-weight: bold;
   }
@@ -467,6 +493,7 @@ input[type="datetime-local"] {
   .bonus {
     color: $green;
   }
+
   .penalty {
     color: $red;
   }
@@ -486,20 +513,25 @@ u {
 
   .fa-diamond {
     color: $green;
+
     &.penalty {
       color: $red;
     }
   }
+
   .xs {
     width: 10px;
     padding-left: 2px;
   }
+
   .fa-star {
     color: gold;
   }
+
   .fa-unlink {
     cursor: default;
   }
+
   .award-points, .estimate {
     text-align: right;
     width: 32px;
@@ -509,6 +541,7 @@ u {
       color: $red;
     }
   }
+
   .award-points {
     //font-weight: 700;
   }
@@ -521,6 +554,7 @@ u {
     font-weight: bold;
     margin-right: 5px;
   }
+
   img {
     padding-top: 5px;
   }
@@ -529,6 +563,7 @@ u {
 .flight {
   input[type="text"] {
     width: 120px;
+
     &.url {
       width: 330px;
     }
@@ -542,6 +577,7 @@ u {
 
 .edit-menu {
   background-color: lighten($edit-menu-bg, 7);
+
   i.fa {
     color: #BBB;
   }
@@ -580,9 +616,11 @@ u {
   .header-2 {
     font-size: 0.9em;
   }
+
   .header-3 {
     font-size: 0.8em;
   }
+
   .header-4 {
     font-size: 0.7em;
   }
@@ -607,10 +645,10 @@ u {
 
 .validation-error {
   .edit-menu {
-    background-color: lighten($red, 10)!important;
+    background-color: lighten($red, 10) !important;
 
     i.fa-save {
-      cursor: not-allowed!important;
+      cursor: not-allowed !important;
     }
   }
 }

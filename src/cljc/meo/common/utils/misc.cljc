@@ -16,17 +16,6 @@
            (when (pos? min) (str min "m "))
            (when (pos? sec) (str sec "s"))))))
 
-(defn visit-duration
-  "Formats duration string."
-  [entry]
-  (let [arrival-ts (:arrival_timestamp entry)
-        depart-ts (:departure_timestamp entry)
-        secs (when (and arrival-ts depart-ts)
-               (let [dur (- depart-ts arrival-ts)]
-                 (if (int? dur) (/ dur 1000) dur)))]
-    (when (and secs (< secs 99999999))
-      (str ", " (duration-string secs)))))
-
 (defn pvt-filter
   "Filter for entries considered private."
   [options]
