@@ -657,19 +657,6 @@ u {
   }
 }
 
-.conflict {
-
-  .warn {
-    background-color: $red;
-    color: white;
-    padding: 5px 10px;
-
-    .fa {
-      padding-right: 5px;
-    }
-  }
-}
-
 .git-commit {
   font-family: monospace;
   font-size: 0.6em;

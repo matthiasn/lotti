@@ -1,0 +1,37 @@
+@import "variables.scss";
+
+.conflict {
+
+  h3 {
+    margin: 6px 0 4px 0;
+  }
+
+  button {
+    margin-top: 6px;
+    font-family: $header-font-family;
+    font-size: $font-size-medium;
+    padding: 4px 8px;
+    font-weight: lighter;
+  }
+
+  pre {
+    code {
+      font-size: 9px!important;
+    }
+    cursor: pointer;
+    background-color: #EEE;
+    padding: 4px;
+    border-radius: $entry-border-radius;
+  }
+  .warn {
+    background-color: $red;
+    color: white;
+    font-family: $header-font-family;
+    font-size: $font-size-large;
+    padding: 5px 10px;
+
+    .fa {
+      padding-right: 5px;
+    }
+  }
+}

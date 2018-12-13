@@ -19,6 +19,7 @@
             [meo.electron.renderer.ui.entry.carousel :as cl]
             [meo.electron.renderer.ui.entry.wavesurfer :as ws]
             [meo.common.utils.misc :as u]
+            [meo.electron.renderer.ui.entry.conflict :as ec]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.ui.draft :as d]
             [clojure.set :as set]
@@ -53,14 +54,6 @@
        [:span.link-btn {:on-click open-linked
                         :class    (when entry-active? "active")}
         (str "linked: " (:linked_cnt entry))]])))
-
-(defn conflict-view [entry put-fn]
-  (let []
-    (fn [entry put-fn]
-      (when-let [conflict (:conflict entry)]
-        [:div.conflict
-         [:div.warn [:span.fa.fa-exclamation] "Conflict"]
-         [:pre [:code (with-out-str (pp/pprint conflict))]]]))))
 
 (defn git-commit [_entry _put-fn]
   (let [repos (subscribe [:repos])]
@@ -141,7 +134,7 @@
               [pomo/pomodoro-footer entry put-fn])
             [hashtags-mentions entry tab-group put-fn]
             [:div.word-count (u/count-words-formatted merged)]])
-         [conflict-view merged put-fn]
+         [ec/conflict-view merged put-fn]
          [c/custom-fields-div merged put-fn edit-mode?]
          (when (:git_commit entry)
            [git-commit merged put-fn])

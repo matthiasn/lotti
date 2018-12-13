@@ -71,7 +71,8 @@
      :emit-msg  [[:ft/add entry]]}))
 
 (defn persist-state! [{:keys [current-state]}]
-  (let [relevant (select-keys current-state [:sorted-entries :graph :global-vclock :vclock-map :cfg])
+  (let [ks [:sorted-entries :graph :global-vclock :vclock-map :cfg :conflict]
+        relevant (select-keys current-state ks)
         w-date (assoc-in relevant [:persisted] (dt/ts-to-ymd (st/now)))]
     (try
       (info "Persisting application state as Nippy file")
@@ -171,7 +172,7 @@
                         new-state (ga/add-node current-state with-conflict)]
                     (warn "conflict\n" prev "\n" entry)
                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
-                    ;(append-daily-log cfg entry put-fn)
+                    (append-daily-log cfg entry put-fn)
                     {:new-state new-state
                      :emit-msg  [:ft/add entry]})
       {})))
