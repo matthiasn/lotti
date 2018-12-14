@@ -15,9 +15,17 @@
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
 
 (defn habit-success [_]
-  (let [habits (subscribe [:habits])]
+  (let [habits (subscribe [:habits])
+        pvt (subscribe [:show-pvt])]
     (fn [{:keys [put-fn entry idx] :as habit}]
-      (let [path [:dashboard_cfg :items idx :habit]]
+      (let [path [:dashboard_cfg :items idx :habit]
+            pvt-filter #(-> % second :habit_entry :habit :pvt not)
+            habits (if @pvt
+                     @habits
+                     (into {} (filter pvt-filter @habits)))
+            options (zipmap (keys habits)
+                            (map #(eu/first-line (:habit_entry %))
+                                 (vals habits)))]
         [:div
          [:h4 "Habit Success or Failure"]
          [:div.row
@@ -27,9 +35,7 @@
                       :path      path
                       :put-fn    put-fn
                       :xf        js/parseInt
-                      :options   (zipmap (keys @habits)
-                                         (map #(eu/first-line (:habit_entry %))
-                                              (vals @habits)))}]]]))))
+                      :options   options}]]]))))
 
 (defn bp-chart [_]
   (let []
@@ -157,7 +163,8 @@
            [color-picker entry idx put-fn])]))))
 
 (defn barchart-row [_]
-  (let [backend-cfg (subscribe [:backend-cfg])]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        pvt (subscribe [:show-pvt])]
     (fn [{:keys [put-fn entry idx]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
             tag-path [:dashboard_cfg :items idx :tag]
@@ -169,7 +176,10 @@
             tag (get-in entry tag-path)
             field (get-in entry field-path)
             fields (get-in @backend-cfg [:custom-fields tag :fields])
-            field-cfg (get-in fields [field :cfg])]
+            field-cfg (get-in fields [field :cfg])
+            custom-fields (if @pvt
+                            custom-fields
+                            (filter #(not (:pvt (second %))) custom-fields))]
         [:div
          [:h4 "Custom Field"]
          [:div.row
@@ -178,7 +188,7 @@
                       :on-change uc/select-update
                       :path      tag-path
                       :put-fn    put-fn
-                      :options   (keys custom-fields)}]]
+                      :options   (map first custom-fields)}]]
          (when tag-selected
            (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
                  options (zipmap (keys fields) (map :label (vals fields)))]
