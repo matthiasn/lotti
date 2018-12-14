@@ -1,5 +1,5 @@
 (ns meo.electron.main.menu
-  (:require [taoensso.timbre :refer-macros [info]]
+  (:require [taoensso.timbre :refer-macros [info debug]]
             [electron :refer [app Menu dialog globalShortcut]]
             [meo.electron.main.runtime :as rt]
             [clojure.walk :as walk]))
@@ -57,7 +57,7 @@
                                          :extensions ["jpg" "png"]}]})
         callback (fn [res]
                    (let [files (js->clj res)]
-                     (info files)
+                     (debug files)
                      (put-fn [:import/photos files])))]
     (.showOpenDialog dialog options callback)))
 

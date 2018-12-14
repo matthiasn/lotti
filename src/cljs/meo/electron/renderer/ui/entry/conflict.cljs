@@ -10,7 +10,7 @@
         (when-not (contains? #{:resolved-theirs :resolved-ours} conflict)
           (let [ours (fn [_]
                        (let [updated (assoc entry :conflict :resolved-ours)]
-                         (info updated)
+                         (debug updated)
                          (put-fn [:entry/update updated])))
                 theirs (fn [_]
                          (let [updated (assoc entry :conflict :resolved-theirs)
@@ -19,7 +19,7 @@
                                             (merge a b)
                                             b))
                                updated (merge-with merge-fn updated conflict)]
-                           (info updated)
+                           (debug updated)
                            (put-fn [:entry/update updated])))]
             [:div.conflict
              [:div.warn [:span.fa.fa-exclamation] "Conflict"]

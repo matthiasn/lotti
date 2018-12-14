@@ -43,10 +43,9 @@
                         arrow-down (= key-code 40)
                         enter (= key-code 13)
                         esc (= key-code 27)]
-                    (info key-code)
+                    (debug key-code)
                     (if (:page @local)
-                      (when (or esc arrow-left)
-                        (swap! local dissoc :page))
+                      (when esc (swap! local dissoc :page))
                       (do
                         (when arrow-down (next-page))
                         (when arrow-up (prev-page))

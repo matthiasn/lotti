@@ -1,7 +1,7 @@
 (ns meo.electron.renderer.ui.entry.briefing.habits
   (:require [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info]]
+            [taoensso.timbre :refer-macros [info debug]]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [moment]
@@ -31,8 +31,8 @@
             create-entry #(let [story (get-in entry [:story :timestamp])
                                 f (h/new-entry put-fn {:primary_story story} open-new)
                                 new-entry (f)]
-                            (info entry)
-                            (info new-entry))]
+                            (debug entry)
+                            (debug new-entry))]
         [:tr {:key   ts
               :class (when (= (str ts) search-text) "selected")}
          [:td.completion

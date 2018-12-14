@@ -150,8 +150,7 @@
                                     1500)]
                             (swap! local assoc-in [:timeout] t)
                             (stop-watch)))
-            mouse-enter #(do (info :mouse-enter)
-                             (when-let [t (:timeout @local)] (js/clearTimeout t)))
+            mouse-enter #(when-let [t (:timeout @local)] (js/clearTimeout t))
             toggle-visible (fn [_]
                              (swap! local update-in [:show] not)
                              (if (:show @local) (start-watch) (stop-watch)))
