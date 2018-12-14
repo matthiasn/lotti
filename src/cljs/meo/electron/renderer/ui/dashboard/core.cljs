@@ -42,6 +42,7 @@
 
 (defn dashboard [days put-fn]
   (let [gql-res2 (subscribe [:gql-res2])
+        habits (subscribe [:habits])
         local (r/atom {:idx          0
                        :play         false
                        :min-h        320
@@ -61,6 +62,10 @@
                              new-entry @(:new-entry (eu/entry-reaction ts))
                              entry (or new-entry dashboard)
                              items (:items (:dashboard_cfg entry))
+                             item-filter #(if (= :habit_success (:type %))
+                                            (get-in @habits [(:habit %) :habit_entry :habit :active])
+                                            true)
+                             items (filter item-filter items)
                              acc {:last-y 50
                                   :last-h 0}
                              f (fn [acc m]
