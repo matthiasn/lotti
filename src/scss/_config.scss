@@ -113,7 +113,7 @@
       padding: 20px;
       font-family: $header-font-family;
 
-      &:hover {
+      &:hover, &.highlight {
         background-color: lighten($hashtag-blue, 35);
       }
 
@@ -158,9 +158,9 @@
 
     .btn {
       padding: 10px 20px;
-      font-weight: bold;
-      height: 30px;
       width: 100px;
+      font-size: $font-size-large;
+      font-family: $header-font-family;
       text-align: center;
       margin: 10px;
       border-radius: $entry-border-radius;

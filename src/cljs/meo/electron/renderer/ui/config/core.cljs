@@ -18,30 +18,42 @@
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :page            :sagas
+                       :section         :sagas
                        :stories_cfg     {:sorted-by :timestamp
                                          :reverse   true}})
         menu-item (fn [k t active]
                     [:div.menu-item
                      {:on-click #(swap! local assoc-in [:page] k)
-                      :class    (when (= active k) "active")}
+                      :class    (str
+                                  (when (= active k) "active ")
+                                  (when (= (:section @local) k) "highlight"))}
                      t])
         sections [:sagas :stories :custom-fields :habits
                   :metrics :sync :photos :localization :exit]
         sections (concat sections sections)
-        next-item (fn [coll] (first (rest (drop-while #(not= (:page @local) %) coll))))
-        next-page #(swap! local assoc :page (next-item sections))
-        prev-page #(swap! local assoc :page (next-item (reverse sections)))
-        exit #(put-fn [:nav/to {:page :main}])
+        next-item (fn [coll] (first (rest (drop-while #(not= (:section @local) %) coll))))
+        next-page #(swap! local assoc :section (next-item sections))
+        prev-page #(swap! local assoc :section (next-item (reverse sections)))
+        exit #(do (swap! local dissoc :page) (put-fn [:nav/to {:page :main}]))
         keydown (fn [ev]
-                  (let [key-code (.. ev -keyCode)]
+                  (let [key-code (.. ev -keyCode)
+                        arrow-up (= key-code 38)
+                        arrow-left (= key-code 37)
+                        arrow-right (= key-code 39)
+                        arrow-down (= key-code 40)
+                        enter (= key-code 13)
+                        esc (= key-code 27)]
                     (info key-code)
-                    (when (= key-code 40)
-                      (next-page))
-                    (when (= key-code 38)
-                      (prev-page))
-                    (when (and (= :exit (:page @local)) (= key-code 13))
-                      (exit))
+                    (if (:page @local)
+                      (when (or esc arrow-left)
+                        (swap! local dissoc :page))
+                      (do
+                        (when arrow-down (next-page))
+                        (when arrow-up (prev-page))
+                        (when (or arrow-right enter)
+                          (if (= :exit (:section @local))
+                            (exit)
+                            (swap! local assoc :page (:section @local))))))
                     (.stopPropagation ev)))
         did-mount (fn [_]
                     (info "adding event listener")
@@ -66,7 +78,7 @@
                         [menu-item :localization "Localization" page]
                         [:div.menu-item.exit
                          {:on-click exit
-                          :class    (when (= :exit (:page @local)) "active")}
+                          :class    (when (= :exit (:section @local)) "highlight")}
                          "Exit"]]
                        (when (= :sagas page)
                          [cs/sagas local put-fn])
