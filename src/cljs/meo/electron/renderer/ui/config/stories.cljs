@@ -62,8 +62,7 @@
     (fn stories-list-render [local put-fn]
       (let [show-pvt @show-pvt
             search-text (:stories-search @local)
-            search-match (fn [x] (s/includes? (s/lower-case (str (:story_name x)))
-                                              (s/lower-case (str search-text))))
+            search-match #(h/str-contains-lc? (:story_name %) (str search-text))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
             sort-fn (get-in @local [:stories_cfg :sorted-by])
             stories (->> (vals @stories)

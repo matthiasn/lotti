@@ -62,8 +62,7 @@
       (let [show-pvt @show-pvt
             sagas (vals @sagas)
             search-text (:sagas-search @local)
-            search-match (fn [x] (s/includes? (s/lower-case (str (:saga_name x)))
-                                              (s/lower-case (str search-text))))
+            search-match #(h/str-contains-lc? (:saga_name %) (str search-text))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
             sagas (filter search-match sagas)
             sagas (filter pvt-filter sagas)

@@ -47,7 +47,7 @@
     (fn custom-fields-list-render [local put-fn]
       (let [stories @stories
             text (:search @local "")
-            item-filter #(s/includes? (lower-case (first %)) text)
+            item-filter #(h/str-contains-lc? (first %) text)
             items (filter item-filter @custom-fields)
             sel (:selected @local)
             items (if @pvt

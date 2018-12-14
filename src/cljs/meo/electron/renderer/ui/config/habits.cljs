@@ -77,8 +77,11 @@
     (fn habits-render [local put-fn]
       (let [pvt @pvt
             search-text (:search @local)
-            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits-success)
-            search-match (fn [x] (s/includes? (eu/first-line (:habit_entry x)) (str search-text)))
+            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt])))
+                           @habits-success)
+            search-match #(h/str-contains-lc?
+                            (eu/first-line (:habit_entry %))
+                            (str search-text))
             habits (filter search-match habits)
             sort-fn (get-in @local [:habits_cfg :sorted-by] by-ts)
             sort-click (fn [f]

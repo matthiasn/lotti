@@ -208,9 +208,7 @@
       (let [tab-group (:tab-group local-cfg)
             entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)
             task-search (:task-search @local)
-            task-search-filter (fn [entry]
-                                 (s/includes? (s/lower-case (:md entry))
-                                              (s/lower-case (str task-search))))
+            task-search-filter (fn [entry] (h/str-contains-lc? (:md entry) task-search))
             entries-list (filter task-search-filter entries-list)
             show-points (:show-points @local)]
         [:div.open-tasks
