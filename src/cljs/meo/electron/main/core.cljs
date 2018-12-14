@@ -40,7 +40,7 @@
 (def wm-relay #{:exec/js
                 :cmd/toggle-key
                 :update/status
-                :screenshot/take
+                :screenshot/save
                 :entry/update
                 :entry/sync
                 :geonames/res
@@ -87,6 +87,7 @@
                     :to   #{:electron/window-manager
                             :electron/startup
                             :electron/scheduler
+                            :electron/screenshot
                             :electron/geocoder
                             :electron/updater}}]
 

@@ -1,7 +1,7 @@
 (ns meo.electron.renderer.ui.config.core
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info error]]
+            [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.config.custom-fields :as cf]
             [meo.electron.renderer.ui.config.sagas :as cs]
             [meo.electron.renderer.ui.config.stories :as cst]
