@@ -213,6 +213,7 @@
   {:description "Logged time for specified day."
    :fields      {:day              {:type (non-null String)}
                  :by_ts            {:type (list :LoggedCalItem)}
+                 :by_ts_cal        {:type (list :LoggedCalItem)}
                  :by_story         {:type (list :LoggedByStory)}
                  :word_count       {:type Int}
                  :entry_count      {:type Int}

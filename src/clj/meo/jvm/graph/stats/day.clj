@@ -45,7 +45,7 @@
      :done_tasks_cnt   (count done-nodes)
      :closed_tasks_cnt (count closed-nodes)}))
 
-(defn day-stats [g nodes stories sagas date-string]
+(defn day-stats [g nodes cal-nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
                         (let [comment-for (:comment_for entry)
                               parent (when (and comment-for
@@ -89,6 +89,7 @@
                             :manual      manual})))
         by-story (reduce story-reducer {} nodes)
         by-ts (filter identity (map by-ts-mapper nodes))
+        by-ts-cal (filter identity (map by-ts-mapper (concat nodes cal-nodes)))
         total (apply + (map second by-story))
         by-story-list (map (fn [[k v]]
                              (let [story (merge (get stories k) {:timestamp k})
@@ -103,5 +104,6 @@
        :word_count  (wordcount nodes)
        :entry_count (count nodes)
        :by_ts       by-ts
+       :by_ts_cal   by-ts-cal
        :by_story_m  by-story
        :by_story    by-story-list})))

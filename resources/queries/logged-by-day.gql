@@ -47,5 +47,37 @@
         }
       }
     }
+
+    by_ts_cal {
+      timestamp
+      adjusted_ts
+      md
+      text
+
+      story {
+        timestamp
+        saga {
+          timestamp
+          saga_name
+        }
+        story_name
+      }
+
+      completed
+      summed
+      manual
+      comment_for
+
+      parent {
+        timestamp
+        text
+        task {
+          done
+          closed
+          estimate_m
+          priority
+        }
+      }
+    }
   }
 }

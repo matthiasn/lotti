@@ -119,13 +119,11 @@
                     :color color
                     :start (js/Date. start)
                     :end   (js/Date. end)}))
-            events (map xf (:by_ts @stats))
-            scroll-to (when (= today day)
-                        {:scroll-to-date (js/Date. (- (st/now) (* 3 60 60 1000)))})]
+            events (map xf (:by_ts_cal @stats))]
         [:div.cal
          [:div.cal-container
           [:div.big-calendar {:class (when-not @show-pvt "pvt")}
-           [cal (merge {:events     events
-                        :date       (.toDate (moment. day))
-                        :onNavigate #(info :navigate %)}
-                       scroll-to)]]]]))))
+           [cal {:events            events
+                 :date              (.toDate (moment. day))
+                 :onNavigate        #(info :navigate %)
+                 :showMultiDayTimes true}]]]]))))

@@ -39,7 +39,7 @@
                     sagas (gq/find-all-sagas state)
                     day-nodes (gq/get-nodes-for-day g {:date_string day})
                     day-nodes-attrs (map #(uc/attrs g %) day-nodes)
-                    day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)
+                    day-stats (gsd/day-stats g day-nodes-attrs [] stories sagas day)
                     actual (get-in day-stats [:by_story_m story] 0)]
                 {:success (when (number? actual)
                             (and (if (number? min-time) (>= actual (* 60 min-time)) true)

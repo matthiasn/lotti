@@ -114,15 +114,21 @@
                                       :day      d})]
         briefing))))
 
+(defn day-nodes [g day]
+  (let [nodes (gq/get-nodes-for-day g {:date_string day})]
+    (map #(gq/get-entry g %) nodes)))
+
 (defn logged-time [state context args value]
   (let [day (:day args)
         current-state @state
         g (:graph current-state)
         stories (gq/find-all-stories current-state)
         sagas (gq/find-all-sagas current-state)
-        day-nodes (gq/get-nodes-for-day g {:date_string day})
-        day-nodes-attrs (map #(gq/get-entry g %) day-nodes)
-        day-stats (gsd/day-stats g day-nodes-attrs stories sagas day)]
+        nodes (day-nodes g day)
+        prev-nodes (day-nodes g (dt/days-before day 1))
+        next-nodes (day-nodes g (dt/days-before day -1))
+        cal-nodes (concat prev-nodes next-nodes)
+        day-stats (gsd/day-stats g nodes cal-nodes stories sagas day)]
     day-stats))
 
 (defn day-stats [state context args value]
@@ -136,7 +142,7 @@
         f (fn [day]
             (let [day-nodes (gq/get-nodes-for-day g {:date_string day})
                   day-nodes-attrs (map #(gq/get-entry g %) day-nodes)]
-              (gsd/day-stats g day-nodes-attrs stories sagas day)))
+              (gsd/day-stats g day-nodes-attrs [] stories sagas day)))
         stats (mapv f day-strings)]
     stats))
 
