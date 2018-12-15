@@ -16,7 +16,7 @@
         award-query {:query/data [:award_points {:days (inc days)}
                                   [:total :claimed
                                    [:by_day [:date_string :task]]]]}
-        queries (conj queries git-query award-query)]
+        #_#_queries (conj queries git-query award-query)]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 

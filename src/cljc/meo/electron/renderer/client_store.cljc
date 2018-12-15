@@ -46,7 +46,7 @@
                          :args [91 pvt]}])
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "bp.gql" :bp 14 [91])
-    (run-query "award-points.gql" :award-points 14 [])
+    ;(run-query "award-points.gql" :award-points 14 [])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
     (run-query "options.gql" :options 10 nil)
     (run-query "day-stats.gql" :day-stats 15 [90])

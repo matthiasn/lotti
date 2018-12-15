@@ -147,4 +147,4 @@
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
     [upload-view]
-    [ca/award-points put-fn]]])
+    #_[ca/award-points put-fn]]])
