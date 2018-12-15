@@ -73,7 +73,9 @@
           q-not-tags (set (mapv s/lower-case (:not-tags q)))
           q-mentions (set (mapv s/lower-case (:mentions q)))
 
-          tags (set (mapv s/lower-case (:tags entry)))
+          tags (set/union (set (mapv s/lower-case (:tags entry)))
+                          (set (mapv s/lower-case (:perm_tags entry))))
+
           entry-comments (mapv #(uc/attrs g %) (:comments entry))
           entry-comments-tags (apply set/union (mapv :tags entry-comments))
           tags (set (mapv s/lower-case (set/union tags entry-comments-tags)))
