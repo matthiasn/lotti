@@ -190,7 +190,7 @@
       }
 
       td {
-        padding: 0 3px 0 1px;
+        padding: 0 3px 0 0;
         .legend {
           height: 1.3em;
           width: 12px;
@@ -212,19 +212,19 @@
     }
   }
   .open-tasks {
-    margin-top: 15px;
+    margin-top: 10px;
 
     .fa-search {
       margin-left: 22px;
-      padding-bottom: 4px;
+      padding-bottom: 5px;
     }
 
     input {
-      margin-left: 4px;
-      padding: 0 3px;
+      margin: 1px 0 1px 4px;
+      padding: 0 4px;
       font-size: $font-size-small;
       font-weight: lighter;
-      height: 20px;
+      height: 18px;
     }
   }
 
