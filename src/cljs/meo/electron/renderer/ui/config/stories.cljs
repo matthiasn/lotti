@@ -49,7 +49,7 @@
         stories (subscribe [:stories])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-                     (swap! local assoc-in [:stories-search] text)))
+                     (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
@@ -61,7 +61,7 @@
         show-pvt (subscribe [:show-pvt])]
     (fn stories-list-render [local put-fn]
       (let [show-pvt @show-pvt
-            search-text (:stories-search @local)
+            search-text (:search @local "")
             search-match #(h/str-contains-lc? (:story_name %) (str search-text))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
             sort-fn (get-in @local [:stories_cfg :sorted-by])

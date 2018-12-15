@@ -55,7 +55,6 @@
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
@@ -76,7 +75,7 @@
         by-success #(->> % :completed (take 10) (filter :success) count)]
     (fn habits-render [local put-fn]
       (let [pvt @pvt
-            search-text (:search @local)
+            search-text (:search @local "")
             habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt])))
                            @habits-success)
             search-match #(h/str-contains-lc?
@@ -96,7 +95,8 @@
          [:div.input-line
           [:span.search
            [:i.far.fa-search]
-           [:input {:on-change input-fn}]
+           [:input {:on-change input-fn
+                    :value     search-text}]
            [:span.add {:on-click add-click}
             [:i.fas.fa-plus]]]]
          [:table.habit_cfg

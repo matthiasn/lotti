@@ -46,8 +46,8 @@
                                        :tags       #{"#custom-field-cfg"}} open-new)]
     (fn custom-fields-list-render [local put-fn]
       (let [stories @stories
-            text (:search @local "")
-            item-filter #(h/str-contains-lc? (first %) text)
+            search-text (:search @local "")
+            item-filter #(h/str-contains-lc? (first %) search-text)
             items (filter item-filter @custom-fields)
             sel (:selected @local)
             items (if @pvt
@@ -58,7 +58,8 @@
          [:div.input-line
           [:span.search
            [:i.far.fa-search]
-           [:input {:on-change input-fn}]
+           [:input {:on-change input-fn
+                    :value     search-text}]
            [:span.add {:on-click add-click}
             [:i.fas.fa-plus]]]]
          [:div.cfg-items

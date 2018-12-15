@@ -48,7 +48,7 @@
         sagas (subscribe [:sagas])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
-                     (swap! local assoc-in [:sagas-search] text)))
+                     (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
@@ -61,7 +61,7 @@
     (fn sagas-list-render [local put-fn]
       (let [show-pvt @show-pvt
             sagas (vals @sagas)
-            search-text (:sagas-search @local)
+            search-text (:search @local "")
             search-match #(h/str-contains-lc? (:saga_name %) (str search-text))
             pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
             sagas (filter search-match sagas)

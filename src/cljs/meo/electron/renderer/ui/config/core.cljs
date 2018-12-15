@@ -18,22 +18,22 @@
 (defn config [put-fn]
   (let [local (r/atom {:search          ""
                        :new-field-input ""
-                       :section         :sagas
+                       :highlighted     :sagas
                        :stories_cfg     {:sorted-by :timestamp
                                          :reverse   true}})
         menu-item (fn [k t active]
                     [:div.menu-item
-                     {:on-click #(swap! local assoc-in [:page] k)
+                     {:on-click #(swap! local merge {:page k :search ""})
                       :class    (str
                                   (when (= active k) "active ")
-                                  (when (= (:section @local) k) "highlight"))}
+                                  (when (= (:highlighted @local) k) "highlight"))}
                      t])
         sections [:sagas :stories :custom-fields :habits
                   :metrics :sync :photos :localization :exit]
         sections (concat sections sections)
-        next-item (fn [coll] (first (rest (drop-while #(not= (:section @local) %) coll))))
-        next-page #(swap! local assoc :section (next-item sections))
-        prev-page #(swap! local assoc :section (next-item (reverse sections)))
+        next-item (fn [coll] (first (rest (drop-while #(not= (:highlighted @local) %) coll))))
+        next-page #(swap! local assoc :highlighted (next-item sections))
+        prev-page #(swap! local assoc :highlighted (next-item (reverse sections)))
         exit #(do (swap! local dissoc :page) (put-fn [:nav/to {:page :main}]))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
@@ -46,13 +46,14 @@
                     (debug key-code)
                     (if (:page @local)
                       (when esc (swap! local dissoc :page))
-                      (do
+                      (let [highlighted (:highlighted @local)]
                         (when arrow-down (next-page))
                         (when arrow-up (prev-page))
                         (when (or arrow-right enter)
-                          (if (= :exit (:section @local))
+                          (if (= :exit highlighted)
                             (exit)
-                            (swap! local assoc :page (:section @local))))))
+                            (swap! local merge {:page   highlighted
+                                                :search ""})))))
                     (.stopPropagation ev)))
         did-mount (fn [_]
                     (info "adding event listener")
@@ -77,7 +78,7 @@
                         [menu-item :localization "Localization" page]
                         [:div.menu-item.exit
                          {:on-click exit
-                          :class    (when (= :exit (:section @local)) "highlight")}
+                          :class    (when (= :exit (:highlighted @local)) "highlight")}
                          "Exit"]]
                        (when (= :sagas page)
                          [cs/sagas local put-fn])
