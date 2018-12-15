@@ -80,7 +80,7 @@ globalize.load( require( "cldr-data" ).entireMainFor( "en", "de", "fr", "es" ) )
 globalize.loadTimeZone( require( "iana-tz-data" ) );
 globalize.locale( "de" );
 
-_reactBigCalendar2.default.setLocalizer(_reactBigCalendar2.default.globalizeLocalizer(globalize));
+const localizer = _reactBigCalendar2.default.globalizeLocalizer(globalize)
 
 let allViews = ['day', 'week'];
 
@@ -138,6 +138,7 @@ let Calendar = function (_Component2) {
                 views: allViews,
                 defaultView: 'day',
                 toolbar: false,
+                localizer: localizer,
                 components: components,
                 messages: messages,
                 eventPropGetter: eventPropGetter,
