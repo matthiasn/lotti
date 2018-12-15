@@ -207,7 +207,7 @@
     (fn open-tasks-render [local local-cfg put-fn]
       (let [tab-group (:tab-group local-cfg)
             entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)
-            task-search (:task-search @local)
+            task-search (:task-search @local "")
             task-search-filter (fn [entry] (h/str-contains-lc? (:md entry) task-search))
             entries-list (filter task-search-filter entries-list)
             show-points (:show-points @local)]

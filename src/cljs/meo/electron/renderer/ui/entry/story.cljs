@@ -105,7 +105,7 @@
         pvt-filter (fn [x] (if @show-pvt true (not (:pvt x))))
         active-filter (fn [x] (:active x))
         indexed (reaction
-                  (let [s (:search @local)
+                  (let [s (:search @local "")
                         filter-fn #(h/str-contains-lc? (:story_name %) s)]
                     (->> (merged-stories @predictions (keys @stories))
                          (map #(get @stories %))
