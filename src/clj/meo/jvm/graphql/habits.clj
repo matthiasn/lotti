@@ -82,3 +82,15 @@
           res (mapv f habits)]
       res)
     (catch Exception ex (error ex))))
+
+
+(defn waiting-habits [state context args value]
+  (let [q {:tags #{"#habit"}
+           :opts #{":waiting"}
+           :n    100
+           :pvt  (:pvt args)}
+        current-state @state
+        g (:graph current-state)
+        habits (filter identity (gq/get-filtered2 current-state q))
+        habits (mapv #(gq/entry-w-story g %) habits)]
+    habits))

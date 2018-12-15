@@ -1,7 +1,7 @@
 (ns meo.res-diff-test
   (:require [clojure.test :refer [deftest testing is]]
             [clojure.set :as set]
-            [meo.jvm.graphql :as gql]))
+            [meo.jvm.graphql.tab-search :as gts]))
 
 (def prev-res-1
   [{:timestamp 123455
@@ -22,10 +22,10 @@
   (testing "works with empty results"
     (is (= {:del #{}
             :res #{}}
-           (gql/res-diff [] []))))
+           (gts/res-diff [] []))))
   (testing "returns only entries in new result"
     (is (= {:del #{123455
                    123457}
             :res #{{:md        "1234567b"
                     :timestamp 123457}}}
-           (gql/res-diff prev-res-1 new-res-1)))))
+           (gts/res-diff prev-res-1 new-res-1)))))

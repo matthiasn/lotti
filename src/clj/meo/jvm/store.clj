@@ -22,7 +22,9 @@
             [clojure.string :as str]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [meo.jvm.graphql.custom-fields :as gcf]))
+            [meo.jvm.graphql.custom-fields :as gcf]
+            [meo.jvm.graphql.opts :as opts]
+            [meo.jvm.graphql.exec :as exec]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)
@@ -113,7 +115,7 @@
     (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
     (swap! cmp-state assoc-in [:startup-progress] 1)
-    (gql/gen-options {:cmp-state cmp-state})
+    (opts/gen-options {:cmp-state cmp-state})
     (put-fn [:cmd/schedule-new {:timeout 1000
                                 :message [:gql/run-registered]
                                 :id      :run-registered}])
@@ -161,7 +163,7 @@
                  :entry/unlink       ga/unlink
                  :entry/update       f/geo-entry-persist-fn
                  :entry/sync         f/sync-fn
-                 :options/gen        gql/gen-options
+                 :options/gen        opts/gen-options
                  :startup/read       read-entries
                  :sync/entry         f/sync-receive
                  :sync/done          sync-done
@@ -174,6 +176,6 @@
                  :backend-cfg/save   fu/write-cfg
                  :search/remove      gql/search-remove
                  :metrics/get        m/get-metrics
-                 :gql/query          gql/run-query
+                 :gql/query          exec/run-query
                  :gql/cmd            gql/start-stop
                  :gql/run-registered gql/run-registered}})
