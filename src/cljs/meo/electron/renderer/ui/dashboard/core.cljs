@@ -23,7 +23,8 @@
     (swap! local assoc :days days)
     (swap! local assoc :charts-pos charts-pos)
     (let [tags (->> (:charts charts-pos)
-                    (filter #(contains? #{:barchart_row} (:type %)))
+                    (filter #(contains? #{:barchart_row
+                                          :linechart_row} (:type %)))
                     (mapv :tag)
                     (concat ["#BP"]))]
       (when-let [query-string (gql/graphql-query (inc days) tags)]
