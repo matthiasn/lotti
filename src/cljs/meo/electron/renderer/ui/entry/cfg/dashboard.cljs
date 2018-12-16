@@ -181,7 +181,7 @@
                             custom-fields
                             (filter #(not (:pvt (second %))) custom-fields))]
         [:div
-         [:h4 "Custom Field"]
+         [:h4 "Custom Field Bar Chart"]
          [:div.row
           [:label.wide "Tag:"]
           [uc/select {:entry     entry
@@ -214,6 +214,64 @@
            [cs/input-row entry {:label "Height:"
                                 :type  :number
                                 :path  h-path} put-fn])]))))
+
+(defn linechart-row [_]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        pvt (subscribe [:show-pvt])]
+    (fn [{:keys [put-fn entry idx]}]
+      (let [custom-fields (get-in @backend-cfg [:custom-fields])
+            tag-path [:dashboard_cfg :items idx :tag]
+            h-path [:dashboard_cfg :items idx :h]
+            sw-path [:dashboard_cfg :items idx :stroke_width]
+            csw-path [:dashboard_cfg :items idx :circle_stroke_width]
+            cr-path [:dashboard_cfg :items idx :circle_radius]
+            tag-selected (not (empty? (str (get-in entry tag-path))))
+            field-path [:dashboard_cfg :items idx :field]
+            tag (get-in entry tag-path)
+            field (get-in entry field-path)
+            fields (get-in @backend-cfg [:custom-fields tag :fields])
+            field-cfg (get-in fields [field :cfg])
+            custom-fields (if @pvt
+                            custom-fields
+                            (filter #(not (:pvt (second %))) custom-fields))]
+        [:div
+         [:h4 "Custom Field Line Chart"]
+         [:div.row
+          [:label.wide "Tag:"]
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      tag-path
+                      :put-fn    put-fn
+                      :options   (map first custom-fields)}]]
+         (when tag-selected
+           (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
+                 options (zipmap (keys fields) (map :label (vals fields)))]
+             [:div.row
+              [:label.wide "Field:"]
+              [uc/select {:entry     entry
+                          :on-change uc/select-update
+                          :path      field-path
+                          :xf        keyword
+                          :put-fn    put-fn
+                          :options   options}]]))
+         (when field
+           [color-picker entry idx put-fn])
+         (when field
+           [cs/input-row entry {:label "Height:"
+                                :type  :number
+                                :path  h-path} put-fn])
+         (when field
+           [cs/input-row entry {:label "Stroke:"
+                                :type  :number
+                                :path  sw-path} put-fn])
+         (when field
+           [cs/input-row entry {:label "Circle Radius:"
+                                :type  :number
+                                :path  cr-path} put-fn])
+         (when field
+           [cs/input-row entry {:label "Circle Stroke:"
+                                :type  :number
+                                :path  csw-path} put-fn])]))))
 
 
 (defn item [{:keys [entry idx put-fn] :as params}]
@@ -250,7 +308,8 @@
                     :put-fn    put-fn
                     :path      path
                     :xf        keyword
-                    :options   {:barchart_row  "Custom Field"
+                    :options   {:barchart_row  "Custom Field Bar Chart"
+                                :linechart_row "Custom Field Line Chart"
                                 :habit_success "Habit Success"
                                 :questionnaire "Questionnaire"
                                 :bp_chart      "Blood Pressure"}}]])
@@ -260,6 +319,8 @@
        [bp-chart params])
      (when (= :barchart_row habit-type)
        [barchart-row params])
+     (when (= :linechart_row habit-type)
+       [linechart-row params])
      (when (= :questionnaire habit-type)
        [quest-details params])]))
 

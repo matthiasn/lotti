@@ -4,6 +4,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
+            [meo.electron.renderer.ui.dashboard.cf-linechart :as cfl]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
             [meo.electron.renderer.ui.dashboard.earlybird :as eb]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
@@ -136,6 +137,7 @@
                              :habit_success h/habits-chart
                              :questionnaire ds/scores-chart
                              :barchart_row dc/barchart-row
+                             :linechart_row cfl/linechart-row
                              :bp_chart bp/bp-chart
                              ;:commits-chart c/commits-chart
                              ;:earlybird-chart eb/earlybird-chart
