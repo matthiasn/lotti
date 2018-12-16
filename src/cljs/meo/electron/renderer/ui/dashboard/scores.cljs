@@ -55,11 +55,10 @@
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg put-fn]
       (let [points (map-indexed point-mapper scores)
-            color (:color cfg)
+            {:keys [color fill glow]} cfg
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard
-            stroke (:stroke_width cfg 1)
-            glow (:glow cfg)]
+            stroke (:stroke_width cfg 1)]
         [:g
          (when glow
            [:g {:filter "url(#blur1)"}
@@ -82,7 +81,7 @@
                       :cy       (:y p)
                       :on-click (up/add-search (:ts p) :left put-fn)
                       :r        (:circle_radius cfg 3)
-                      :fill     (if (:starred p) :white :none)
+                      :fill     fill
                       :style    {:stroke       color
                                  :stroke-width (:circle_stroke_width cfg 2)}}])]]))))
 

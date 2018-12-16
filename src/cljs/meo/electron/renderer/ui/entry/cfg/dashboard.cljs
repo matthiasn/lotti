@@ -37,6 +37,18 @@
                       :xf        js/parseInt
                       :options   options}]]]))))
 
+(defn color-picker [entry idx k label put-fn]
+  (let [color-path [:dashboard_cfg :items idx k]
+        set-color (fn [data]
+                    (let [hex (aget data "hex")
+                          updated (assoc-in entry color-path hex)]
+                      (put-fn [:entry/update-local updated])))]
+    [:div.row
+     [:label.wide label]
+     [chrome-picker {:disableAlpha     true
+                     :color            (get-in entry color-path "#ccc")
+                     :onChangeComplete set-color}]]))
+
 (defn bp-chart [_]
   (let []
     (fn [{:keys [put-fn entry idx]}]
@@ -67,21 +79,16 @@
          [cs/input-row entry {:type  :number
                               :label "Circle Stroke:"
                               :path  csw-path} put-fn]
+
+         [color-picker entry idx :systolic_color "Systolic Stroke:" put-fn]
+         [color-picker entry idx :systolic_fill "Systolic Fill:" put-fn]
+
+         [color-picker entry idx :diastolic_color "Diastolic Stroke:" put-fn]
+         [color-picker entry idx :diastolic_fill "Diastolic Fill:" put-fn]
+
          [:div.row
           [:label "Glow? "]
           [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]]))))
-
-(defn color-picker [entry idx put-fn]
-  (let [color-path [:dashboard_cfg :items idx :color]
-        set-color (fn [data]
-                    (let [hex (aget data "hex")
-                          updated (assoc-in entry color-path hex)]
-                      (put-fn [:entry/update-local updated])))]
-    [:div.row
-     [:label.wide "Color:"]
-     [chrome-picker {:disableAlpha     true
-                     :color            (get-in entry color-path "#ccc")
-                     :onChangeComplete set-color}]]))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
@@ -160,7 +167,9 @@
             [:label "Glow? "]
             [uc/switch {:entry entry :put-fn put-fn :path glow-path}]])
          (when show-details
-           [color-picker entry idx put-fn])]))))
+           [color-picker entry idx :color "Stroke:" put-fn])
+         (when show-details
+           [color-picker entry idx :fill "Fill:" put-fn])]))))
 
 (defn barchart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
@@ -201,7 +210,7 @@
                           :put-fn    put-fn
                           :options   options}]]))
          (when field
-           [color-picker entry idx put-fn])
+           [color-picker entry idx :color "Stroke:" put-fn])
          (when field
            [cs/input-row entry (merge field-cfg
                                       {:label "Min:"
@@ -255,7 +264,9 @@
                           :put-fn    put-fn
                           :options   options}]]))
          (when field
-           [color-picker entry idx put-fn])
+           [color-picker entry idx :color "Stroke:" put-fn])
+         (when field
+           [color-picker entry idx :fill "Fill:" put-fn])
          (when field
            [cs/input-row entry {:label "Height:"
                                 :type  :number

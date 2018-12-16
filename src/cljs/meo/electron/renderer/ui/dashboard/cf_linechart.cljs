@@ -6,6 +6,9 @@
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]))
 
+(def ymd "YYYY-MM-DD")
+(defn df [ts format] (.format (moment ts) format))
+
 (defn line [y s w]
   [:line {:x1           195
           :x2           2000
@@ -22,10 +25,10 @@
           :text-anchor "end"}
    label])
 
-(defn chart-line [scores point-mapper cfg ]
+(defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg ]
-      (let [color (:color cfg)
+    (fn chart-line-render [scores point-mapper cfg]
+      (let [{:keys [color label local fill]} cfg
             points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) (apply concat points))
             points (sort-by :ts points)
@@ -37,13 +40,19 @@
                               :stroke-width (:stroke_width cfg 3)
                               :fill         :none}}]
          (for [p points]
-           ^{:key (str active-dashboard p)}
-           [:circle {:cx    (:x p)
-                     :cy    (:y p)
-                     :fill  :none
-                     :r     (:circle_radius cfg 4)
-                     :style {:stroke       color
-                             :stroke-width (:circle_stroke_width cfg 2)}}])]))))
+           (let [enter #(let [ymd (df (:ts p) ymd)
+                              t [:span ymd ": " [:strong (:v p)] " " label]]
+                          (swap! local assoc :display-text t))
+                 leave #(swap! local assoc :display-text "")]
+             ^{:key (str active-dashboard p)}
+             [:circle {:cx             (:x p)
+                       :cy             (:y p)
+                       :on-mouse-enter enter
+                       :on-mouse-leave leave
+                       :fill           fill
+                       :r              (:circle_radius cfg 4)
+                       :style          {:stroke       color
+                                        :stroke-width (:circle_stroke_width cfg 2)}}]))]))))
 
 (defn linechart-row [_ _]
   (let [gql-res (subscribe [:gql-res])
@@ -81,8 +90,9 @@
                            :x  x
                            :y  y
                            :ts ts
-                           :s  s}]))]
+                           :s  s}]))
+              cfg (merge m {:label label})]
           [:g
            [row-label (or label tag) y h]
-           [chart-line values mapper (merge {:color "red"} m) ]
+           [chart-line values mapper (merge {:color "red"} cfg)]
            [line (+ y h) "#000" 2]])))))
