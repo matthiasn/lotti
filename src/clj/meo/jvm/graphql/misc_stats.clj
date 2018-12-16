@@ -8,7 +8,6 @@
             [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [meo.jvm.datetime :as dt]
-            [meo.jvm.graph.stats.custom-fields :as cf]
             [meo.jvm.graph.stats.git :as g]
             [meo.jvm.graph.stats.questionnaires :as q]
             [meo.jvm.graph.stats.awards :as aw]))
@@ -17,15 +16,6 @@
 
 (defn match-count [state context args value]
   (gs/res-count @state (p/parse-search (:query args))))
-
-(defn custom-field-stats [state context args value]
-  (let [{:keys [days tag]} args
-        days (reverse (range days))
-        now (stc/now)
-        custom-fields-mapper (cf/custom-fields-mapper @state tag)
-        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
-        stats (mapv custom-fields-mapper day-strings)]
-    stats))
 
 (defn bp-field-stats [state context args value]
   (let [{:keys [days]} args

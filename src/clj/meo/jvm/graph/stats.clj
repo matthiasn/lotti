@@ -2,15 +2,10 @@
   "Get stats from graph."
   (:require [ubergraph.core :as uber]
             [meo.jvm.graph.query :as gq]
-            [meo.jvm.graph.stats.awards :as aw]
-            [meo.jvm.graph.stats.questionnaires :as q]
-            [meo.jvm.graph.stats.custom-fields :as cf]
-            [meo.jvm.graph.stats.git :as g]
             [meo.common.utils.misc :as u]
             [taoensso.timbre :refer [info error warn]]
-            [clojure.set :as set]
             [clj-pid.core :as pid]
-            [matthiasn.systems-toolbox.component :as st]))
+            [clojure.set :as set]))
 
 (defn media-mapper
   "Create mapper function for media stats"

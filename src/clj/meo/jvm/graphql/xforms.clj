@@ -15,6 +15,7 @@
                                   (cond
 
                                     (and v (contains? #{:timestamp
+                                                        :ts
                                                         :comment_for
                                                         :linked_saga
                                                         :last_saved} k))

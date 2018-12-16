@@ -1,6 +1,7 @@
 (ns meo.jvm.graphql.common
   (:require [meo.jvm.graph.query :as gq]))
 
+(def d (* 24 60 60 1000))
 
 (defn entries-w-logged [g entries]
   (let [logged-t (fn [comment-ts]

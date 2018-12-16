@@ -1,7 +1,7 @@
 (ns meo.jvm.graphql.habits
   (:require [meo.jvm.graph.query :as gq]
             [taoensso.timbre :refer [info error warn debug]]
-            [meo.jvm.graph.stats.custom-fields :as cf]
+            [meo.jvm.graphql.custom-fields :as cf]
             [ubergraph.core :as uc]
             [meo.jvm.datetime :as dt]
             [meo.common.utils.misc :as m]

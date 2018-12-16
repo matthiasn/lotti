@@ -5,6 +5,10 @@
     fields{
       field
       value
+      values {
+        ts
+        v
+      }
     }
   }
 }

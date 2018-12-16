@@ -8,7 +8,9 @@
 (defn graphql-query [days tags]
   (let [qfn (fn [t]
               {:query/data  [:custom_field_stats {:days days :tag t}
-                             [:date_string [:fields [:field :value]]]]
+                             [:date_string
+                              [:fields [:field :value
+                                        [:values [:ts :v]]]]]]
                :query/alias (keyword (s/replace (subs (str t) 1) "-" "_"))})
         queries (mapv qfn tags)
         git-query {:query/data [:git_stats {:days days}

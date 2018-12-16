@@ -15,7 +15,8 @@
             [meo.jvm.graphql.tab-search :as gts]
             [meo.jvm.graphql.briefings-logged :as gbl]
             [meo.jvm.graph.geo :as geo]
-            [taoensso.timbre :refer [info error warn debug]]))
+            [taoensso.timbre :refer [info error warn debug]]
+            [meo.jvm.graphql.custom-fields :as gcf]))
 
 (defn search-remove [{:keys [current-state msg-payload]}]
   (let [tab-group (:tab-group msg-payload)
@@ -71,7 +72,7 @@
                         :query/stories            opts/stories
                         :query/sagas              opts/sagas
                         :query/geo-photos         geo/photos-within-bounds
-                        :query/custom-field-stats gms/custom-field-stats
+                        :query/custom-field-stats gcf/custom-field-stats
                         :query/bp-field-stats     gms/bp-field-stats
                         :query/git-stats          gms/git-stats
                         :query/briefings          opts/briefings

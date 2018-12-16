@@ -152,10 +152,16 @@
                                :description "Summed time in seconds"}
                  :story       {:type :Story}}}
 
+  :CustomFieldTsVal
+  {:description "Custom field stats item."
+   :fields      {:ts {:type (non-null ID)}
+                 :v  {:type Float}}}
+
   :CustomFieldItem
   {:description "Custom field stats item."
-   :fields      {:field {:type (non-null String)}
-                 :value {:type Float}}}
+   :fields      {:field  {:type (non-null String)}
+                 :value  {:type Float}
+                 :values {:type (list :CustomFieldTsVal)}}}
 
   :CustomFieldStatsItem
   {:description "Custom field stats item."
