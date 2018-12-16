@@ -9,7 +9,8 @@
             [meo.electron.renderer.graphql :as gql]
             [meo.common.utils.misc :as m]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.electron.renderer.ui.journal :as j]))
+            [meo.electron.renderer.ui.journal :as j]
+            [meo.electron.renderer.ui.dashboard.core :as db]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
@@ -119,9 +120,15 @@
        [j/journal-view @local-cfg put-fn]])))
 
 (defn dashboards-row [local put-fn]
-  [:div.habit-cfg-row
-   [h/error-boundary
-    [dashboards local put-fn]]
+  [:div.dashboards-cfg
+   [:div.habit-cfg-row
+    [h/error-boundary
+     [dashboards local put-fn]]
+    (when (:selected @local)
+      [h/error-boundary
+       [dashboards-tab :habits_cfg put-fn]])]
    (when (:selected @local)
      [h/error-boundary
-      [dashboards-tab :habits_cfg put-fn]])])
+      [db/dashboard {:days         90
+                     :dashboard-ts (:selected @local)}
+       put-fn]])])

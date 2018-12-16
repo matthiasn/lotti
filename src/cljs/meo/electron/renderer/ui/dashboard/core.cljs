@@ -42,7 +42,7 @@
                              :id       :dashboard-questionnaires
                              :prio     15}])))))
 
-(defn dashboard [days put-fn]
+(defn dashboard [cfg put-fn]
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
@@ -50,16 +50,18 @@
                        :min-h        320
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
-    (fn dashboard-render [days put-fn]
+    (fn dashboard-render [{:keys [days controls dashboard-ts]} put-fn]
       (let [now (st/now)
             pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
             dashboards (->> @gql-res2
                             :dashboard_cfg
                             :res
-                            (filter pvt-filter))
-            dashboard (-> dashboards
-                          vals
-                          (nth (min (:idx @local) (dec (count dashboards)))))
+                            (filter pvt-filter)
+                            (into {}))
+            dashboard (or (get dashboards dashboard-ts)
+                          (-> dashboards
+                              vals
+                              (nth (min (:idx @local) (dec (count dashboards))))))
             charts-pos (let [ts (:timestamp dashboard)
                              new-entry @(:new-entry (eu/entry-reaction ts))
                              entry (or new-entry dashboard)
@@ -158,14 +160,18 @@
          [:div.controls
           [:h2 text]
           [:span.display-text (:display-text @local)]
-          [:input {:type      :number
-                   :step      10
-                   :on-change #(let [v (.. % -target -value)
-                                     parsed (when (seq v) (js/parseFloat v))]
-                                 (swap! local assoc-in [:min-h] parsed))
-                   :value     (:min-h @local)}]
-          [:i.fas.fa-cog {:on-click open-cfg}]
-          [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
-          [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
-                   :on-click (if (:play @local) pause play)}]
-          [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]]))))
+          (when controls
+            [:div
+             [:input {:type      :number
+                      :step      10
+                      :on-change #(let [v (.. % -target -value)
+                                        parsed (when (seq v) (js/parseFloat v))]
+                                    (swap! local assoc-in [:min-h] parsed))
+                      :value     (:min-h @local)}]])
+          (when controls
+            [:div.btns
+             ;[:i.fas.fa-cog {:on-click open-cfg}]
+             [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
+             [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
+                      :on-click (if (:play @local) pause play)}]
+             [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]]))))

@@ -75,8 +75,26 @@
     }
   }
 
+  .dashboards-cfg {
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    margin-left: 8px;
+
+    .dashboards {
+      flex: 1;
+    }
+    .dashboard {
+      z-index: 111;
+      border-top: $tab-bg 4px solid;
+    }
+  }
+
   .habit-cfg-row {
     display: flex;
+    flex: 2;
 
     .journal {
       width: 350px;

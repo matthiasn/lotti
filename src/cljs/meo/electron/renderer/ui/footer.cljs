@@ -5,8 +5,9 @@
             [reagent.core :as r]))
 
 (defn footer [put-fn]
-  (let [local (r/atom {:days 90})]
+  (let [local (r/atom {:days     90
+                       :controls true})]
     (fn footer-render [put-fn]
       [:div.footer
        [:div {:style {:max-height (:height @local)}}
-        [db/dashboard (:days @local) put-fn]]])))
+        [db/dashboard @local put-fn]]])))
