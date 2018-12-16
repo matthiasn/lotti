@@ -1,0 +1,19 @@
+@import "variables.scss";
+
+.dashboard {
+  background-color: white;
+
+  pre {
+    color: white!important;
+  }
+  .controls {
+    display: flex;
+    flex-flow: row;
+    padding-bottom: 8px;
+
+    h2 {
+      margin: 0 0 0 100px;
+      flex: 2;
+    }
+  }
+}

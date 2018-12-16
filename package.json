@@ -1,7 +1,7 @@
 {
   "name": "meo",
-  "version": "0.5.473",
-  "description": "meo - a personal information manager",
+  "version": "0.5.474",
+  "description": "meo  - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
     "start": "electron .",

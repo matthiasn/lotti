@@ -6,6 +6,7 @@
             [meo.electron.renderer.ui.config.sagas :as cs]
             [meo.electron.renderer.ui.config.stories :as cst]
             [meo.electron.renderer.ui.config.habits :as ch]
+            [meo.electron.renderer.ui.config.dashboards :as cd]
             [meo.electron.renderer.ui.config.metrics :as cm]
             [meo.electron.renderer.ui.config.locale :as cl]
             [meo.electron.renderer.ui.config.sync :as sync]
@@ -28,7 +29,7 @@
                                   (when (= active k) "active ")
                                   (when (= (:highlighted @local) k) "highlight"))}
                      t])
-        sections [:sagas :stories :custom-fields :habits
+        sections [:sagas :stories :custom-fields :habits :dashboards
                   :metrics :sync :photos :localization :exit]
         sections (concat sections sections)
         next-item (fn [coll] (first (rest (drop-while #(not= (:highlighted @local) %) coll))))
@@ -72,6 +73,7 @@
                         [menu-item :stories "Stories" page]
                         [menu-item :custom-fields "Custom Fields" page]
                         [menu-item :habits "Habits" page]
+                        [menu-item :dashboards "Dashboards" page]
                         [menu-item :metrics "Metrics" page]
                         [menu-item :sync "Synchronization" page]
                         [menu-item :photos "Photos" page]
@@ -94,6 +96,8 @@
                          [cl/locale-preferences put-fn])
                        (when (= :habits page)
                          [ch/habits-row local put-fn])
+                       (when (= :dashboards page)
+                         [cd/dashboards-row local put-fn])
                        (when (= :sync page)
                          [sync/sync put-fn])
                        (when (= :metrics page)

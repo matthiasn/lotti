@@ -105,23 +105,14 @@
                     :local    local
                     :span     span
                     :days     days}
-            end-y (+ (:last-y charts-pos) (:last-h charts-pos))]
+            end-y (+ (:last-y charts-pos) (:last-h charts-pos))
+            text (eu/first-line dashboard)
+            text (or (when-not (empty? text)
+                       text)
+                     "YOUR DASHBOARD DESCRIPTION HERE")]
         (gql-query charts-pos days local put-fn)
-        [:div.questionnaires
-         [:div.controls
-          [:span.display-text (:display-text @local)]
-          [:input {:type      :number
-                   :step      10
-                   :on-change #(let [v (.. % -target -value)
-                                     parsed (when (seq v) (js/parseFloat v))]
-                                 (swap! local assoc-in [:min-h] parsed))
-                   :value     (:min-h @local)}]
-          [:i.fas.fa-cog {:on-click open-cfg}]
-          [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
-          [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
-                   :on-click (if (:play @local) pause play)}]
-          [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]
-         [:svg {:viewBox (str "0 0 2100 " (+ (max end-y (:min-h @local)) 60))
+        [:div.dashboard
+         [:svg {:viewBox (str "0 0 2100 " (+ (max end-y (:min-h @local)) 6))
                 :style   {:background :white}
                 :key     (str (:timestamp dashboard) (:idx @local))}
           [:filter#blur1
@@ -163,4 +154,18 @@
                        :font-weight (if weekend? :normal :light)
                        :fill        (if weekend? :red :black)
                        :text-anchor "middle"}
-                (dc/df ts dc/month-day)]]))]]))))
+                (dc/df ts dc/month-day)]]))]
+         [:div.controls
+          [:h2 text]
+          [:span.display-text (:display-text @local)]
+          [:input {:type      :number
+                   :step      10
+                   :on-change #(let [v (.. % -target -value)
+                                     parsed (when (seq v) (js/parseFloat v))]
+                                 (swap! local assoc-in [:min-h] parsed))
+                   :value     (:min-h @local)}]
+          [:i.fas.fa-cog {:on-click open-cfg}]
+          [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]
+          [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
+                   :on-click (if (:play @local) pause play)}]
+          [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]]]))))
