@@ -51,7 +51,7 @@
 
 (defn bp-chart [_]
   (let []
-    (fn [{:keys [put-fn entry idx]}]
+    (fn [{:keys [put-fn entry idx collapsed]}]
       (let [h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
@@ -61,38 +61,40 @@
             glow-path [:dashboard_cfg :items idx :glow]]
         [:div
          [:h4 "Blood pressure chart"]
-         [cs/input-row entry {:type  :number
-                              :label "Heigth:"
-                              :path  h-path} put-fn]
-         [cs/input-row entry {:label "Min:"
-                              :type  :number
-                              :path  mn-path} put-fn]
-         [cs/input-row entry {:type  :number
-                              :label "Max:"
-                              :path  mx-path} put-fn]
-         [cs/input-row entry {:type  :number
-                              :label "Stroke:"
-                              :path  sw-path} put-fn]
-         [cs/input-row entry {:type  :number
-                              :label "Circle Radius:"
-                              :path  cr-path} put-fn]
-         [cs/input-row entry {:type  :number
-                              :label "Circle Stroke:"
-                              :path  csw-path} put-fn]
+         (when-not collapsed
+           [:div
+            [cs/input-row entry {:type  :number
+                                 :label "Heigth:"
+                                 :path  h-path} put-fn]
+            [cs/input-row entry {:label "Min:"
+                                 :type  :number
+                                 :path  mn-path} put-fn]
+            [cs/input-row entry {:type  :number
+                                 :label "Max:"
+                                 :path  mx-path} put-fn]
+            [cs/input-row entry {:type  :number
+                                 :label "Stroke:"
+                                 :path  sw-path} put-fn]
+            [cs/input-row entry {:type  :number
+                                 :label "Circle Radius:"
+                                 :path  cr-path} put-fn]
+            [cs/input-row entry {:type  :number
+                                 :label "Circle Stroke:"
+                                 :path  csw-path} put-fn]
 
-         [color-picker entry idx :systolic_color "Systolic Stroke:" put-fn]
-         [color-picker entry idx :systolic_fill "Systolic Fill:" put-fn]
+            [color-picker entry idx :systolic_color "Systolic Stroke:" put-fn]
+            [color-picker entry idx :systolic_fill "Systolic Fill:" put-fn]
 
-         [color-picker entry idx :diastolic_color "Diastolic Stroke:" put-fn]
-         [color-picker entry idx :diastolic_fill "Diastolic Fill:" put-fn]
+            [color-picker entry idx :diastolic_color "Diastolic Stroke:" put-fn]
+            [color-picker entry idx :diastolic_fill "Diastolic Fill:" put-fn]
 
-         [:div.row
-          [:label "Glow? "]
-          [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]]))))
+            [:div.row
+             [:label "Glow? "]
+             [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]])]))))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
-    (fn [{:keys [put-fn entry idx]}]
+    (fn [{:keys [put-fn entry idx collapsed]}]
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
             tag-path [:dashboard_cfg :items idx :tag]
             k-path [:dashboard_cfg :items idx :k]
@@ -104,7 +106,8 @@
             glow-path [:dashboard_cfg :items idx :glow]
             csw-path [:dashboard_cfg :items idx :circle_stroke_width]
             cr-path [:dashboard_cfg :items idx :circle_radius]
-            show-details (not (empty? (str (get-in entry k-path))))
+            show-details (and (not (empty? (str (get-in entry k-path))))
+                              (not collapsed))
             select-q (fn [{:keys [entry xf put-fn options]}]
                        (let [xf (or xf identity)]
                          (fn [ev]
@@ -174,13 +177,14 @@
 (defn barchart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx]}]
+    (fn [{:keys [put-fn entry idx collapsed]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
             tag-path [:dashboard_cfg :items idx :tag]
             h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
-            tag-selected (not (empty? (str (get-in entry tag-path))))
+            show-details (and (not (empty? (str (get-in entry tag-path))))
+                              (not collapsed))
             field-path [:dashboard_cfg :items idx :field]
             tag (get-in entry tag-path)
             field (get-in entry field-path)
@@ -198,7 +202,7 @@
                       :path      tag-path
                       :put-fn    put-fn
                       :options   (map first custom-fields)}]]
-         (when tag-selected
+         (when show-details
            (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
                  options (zipmap (keys fields) (map :label (vals fields)))]
              [:div.row
@@ -209,17 +213,17 @@
                           :xf        keyword
                           :put-fn    put-fn
                           :options   options}]]))
-         (when field
+         (when (and show-details field)
            [color-picker entry idx :color "Stroke:" put-fn])
-         (when field
+         (when (and show-details field)
            [cs/input-row entry (merge field-cfg
                                       {:label "Min:"
                                        :path  mn-path}) put-fn])
-         (when field
+         (when (and show-details field)
            [cs/input-row entry (merge field-cfg
                                       {:label "Max:"
                                        :path  mx-path}) put-fn])
-         (when field
+         (when (and show-details field)
            [cs/input-row entry {:label "Height:"
                                 :type  :number
                                 :path  h-path} put-fn])]))))
@@ -227,19 +231,19 @@
 (defn linechart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx]}]
+    (fn [{:keys [put-fn entry idx collapsed]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
             tag-path [:dashboard_cfg :items idx :tag]
             h-path [:dashboard_cfg :items idx :h]
             sw-path [:dashboard_cfg :items idx :stroke_width]
             csw-path [:dashboard_cfg :items idx :circle_stroke_width]
             cr-path [:dashboard_cfg :items idx :circle_radius]
-            tag-selected (not (empty? (str (get-in entry tag-path))))
+            show-details (and (not (empty? (str (get-in entry tag-path))))
+                              (not collapsed))
             field-path [:dashboard_cfg :items idx :field]
             tag (get-in entry tag-path)
-            field (get-in entry field-path)
-            fields (get-in @backend-cfg [:custom-fields tag :fields])
-            field-cfg (get-in fields [field :cfg])
+            show-fields (and (get-in entry field-path)
+                             (not collapsed))
             custom-fields (if @pvt
                             custom-fields
                             (filter #(not (:pvt (second %))) custom-fields))]
@@ -252,7 +256,7 @@
                       :path      tag-path
                       :put-fn    put-fn
                       :options   (map first custom-fields)}]]
-         (when tag-selected
+         (when show-details
            (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
                  options (zipmap (keys fields) (map :label (vals fields)))]
              [:div.row
@@ -263,77 +267,85 @@
                           :xf        keyword
                           :put-fn    put-fn
                           :options   options}]]))
-         (when field
+         (when show-fields
            [color-picker entry idx :color "Stroke:" put-fn])
-         (when field
+         (when show-fields
            [color-picker entry idx :fill "Fill:" put-fn])
-         (when field
+         (when show-fields
            [cs/input-row entry {:label "Height:"
                                 :type  :number
                                 :path  h-path} put-fn])
-         (when field
+         (when show-fields
            [cs/input-row entry {:label "Stroke:"
                                 :type  :number
                                 :path  sw-path} put-fn])
-         (when field
+         (when show-fields
            [cs/input-row entry {:label "Circle Radius:"
                                 :type  :number
                                 :path  cr-path} put-fn])
-         (when field
+         (when show-fields
            [cs/input-row entry {:label "Circle Stroke:"
                                 :type  :number
                                 :path  csw-path} put-fn])]))))
 
 
-(defn item [{:keys [entry idx put-fn] :as params}]
-  (let [path [:dashboard_cfg :items idx :type]
-        habit-type (get-in entry path)
-        items-path [:dashboard_cfg :items]
-        n (count (get-in entry items-path))
-        rm-click (fn []
-                   (let [items (get-in entry items-path)
-                         items (vec (concat (take idx items) (drop (inc idx) items)))
-                         updated (assoc-in entry items-path items)]
-                     (put-fn [:entry/update-local updated])))
-        mv-click (fn [f _]
-                   (let [items (get-in entry items-path)
-                         item (get-in entry [:dashboard_cfg :items idx])
-                         items (vec (concat (take idx items) (drop (inc idx) items)))
-                         items (vec (concat (take (f idx) items)
-                                            [item]
-                                            (drop (f idx) items)))
-                         updated (assoc-in entry items-path items)]
-                     (put-fn [:entry/update-local updated])))]
-    [:div.criterion
-     [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
-     (when (and (< idx (dec n)) (> n 1))
-       [:i.fas.fa-arrow-down {:on-click (partial mv-click inc)}])
-     (when (pos? idx)
-       [:i.fas.fa-arrow-up {:on-click (partial mv-click dec)}])
+(defn item [_]
+  (let [local (r/atom {:collapsed true})]
+    (fn item-render [{:keys [entry idx put-fn] :as params}]
+      (let [path [:dashboard_cfg :items idx :type]
+            habit-type (get-in entry path)
+            items-path [:dashboard_cfg :items]
+            n (count (get-in entry items-path))
+            rm-click (fn []
+                       (let [items (get-in entry items-path)
+                             items (vec (concat (take idx items) (drop (inc idx) items)))
+                             updated (assoc-in entry items-path items)]
+                         (put-fn [:entry/update-local updated])))
+            mv-click (fn [f _]
+                       (let [items (get-in entry items-path)
+                             item (get-in entry [:dashboard_cfg :items idx])
+                             items (vec (concat (take idx items) (drop (inc idx) items)))
+                             items (vec (concat (take (f idx) items)
+                                                [item]
+                                                (drop (f idx) items)))
+                             updated (assoc-in entry items-path items)]
+                         (put-fn [:entry/update-local updated])))
+            params (merge @local params)]
+        [:div.criterion
+         [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
+         (when (and (< idx (dec n)) (> n 1))
+           [:i.fas.fa-arrow-down {:on-click (partial mv-click inc)}])
+         (when (pos? idx)
+           [:i.fas.fa-arrow-up {:on-click (partial mv-click dec)}])
+         (when-not (= :habit_success habit-type)
+           [:i.fas {:class    (if (:collapsed @local)
+                                "fa-chevron-double-down"
+                                "fa-chevron-double-up")
+                    :on-click #(swap! local update :collapsed not)}])
 
-     (when-not habit-type
-       [:div.row
-        [:label "Chart Type:"]
-        [uc/select {:on-change uc/select-update
-                    :entry     entry
-                    :put-fn    put-fn
-                    :path      path
-                    :xf        keyword
-                    :options   {:barchart_row  "Custom Field Bar Chart"
-                                :linechart_row "Custom Field Line Chart"
-                                :habit_success "Habit Success"
-                                :questionnaire "Questionnaire"
-                                :bp_chart      "Blood Pressure"}}]])
-     (when (= :habit_success habit-type)
-       [habit-success params])
-     (when (= :bp_chart habit-type)
-       [bp-chart params])
-     (when (= :barchart_row habit-type)
-       [barchart-row params])
-     (when (= :linechart_row habit-type)
-       [linechart-row params])
-     (when (= :questionnaire habit-type)
-       [quest-details params])]))
+         (when-not habit-type
+           [:div.row
+            [:label "Chart Type:"]
+            [uc/select {:on-change uc/select-update
+                        :entry     entry
+                        :put-fn    put-fn
+                        :path      path
+                        :xf        keyword
+                        :options   {:barchart_row  "Custom Field Bar Chart"
+                                    :linechart_row "Custom Field Line Chart"
+                                    :habit_success "Habit Success"
+                                    :questionnaire "Questionnaire"
+                                    :bp_chart      "Blood Pressure"}}]])
+         (when (= :habit_success habit-type)
+           [habit-success params])
+         (when (= :bp_chart habit-type)
+           [bp-chart params])
+         (when (= :barchart_row habit-type)
+           [barchart-row params])
+         (when (= :linechart_row habit-type)
+           [linechart-row params])
+         (when (= :questionnaire habit-type)
+           [quest-details params])]))))
 
 
 (defn dashboard-config [entry put-fn]
