@@ -192,7 +192,7 @@
          (when thumbnails?
            [cl/gallery (cl/gallery-entries entry) local-cfg put-fn])
          (when (seq comments)
-           (if (= query-id @show-comments-for?)
+           (if (not (= query-id @show-comments-for?))
              [:div.comments
               (let [n (count comments)]
                 [:div.show-comments
