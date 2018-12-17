@@ -202,17 +202,16 @@
                       :path      tag-path
                       :put-fn    put-fn
                       :options   (map first custom-fields)}]]
-         (when show-details
-           (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
-                 options (zipmap (keys fields) (map :label (vals fields)))]
-             [:div.row
-              [:label.wide "Field:"]
-              [uc/select {:entry     entry
-                          :on-change uc/select-update
-                          :path      field-path
-                          :xf        keyword
-                          :put-fn    put-fn
-                          :options   options}]]))
+         (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
+               options (zipmap (keys fields) (map :label (vals fields)))]
+           [:div.row
+            [:label.wide "Field:"]
+            [uc/select {:entry     entry
+                        :on-change uc/select-update
+                        :path      field-path
+                        :xf        keyword
+                        :put-fn    put-fn
+                        :options   options}]])
          (when (and show-details field)
            [color-picker entry idx :color "Stroke:" put-fn])
          (when (and show-details field)
@@ -256,17 +255,16 @@
                       :path      tag-path
                       :put-fn    put-fn
                       :options   (map first custom-fields)}]]
-         (when show-details
-           (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
-                 options (zipmap (keys fields) (map :label (vals fields)))]
-             [:div.row
-              [:label.wide "Field:"]
-              [uc/select {:entry     entry
-                          :on-change uc/select-update
-                          :path      field-path
-                          :xf        keyword
-                          :put-fn    put-fn
-                          :options   options}]]))
+         (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
+               options (zipmap (keys fields) (map :label (vals fields)))]
+           [:div.row
+            [:label.wide "Field:"]
+            [uc/select {:entry     entry
+                        :on-change uc/select-update
+                        :path      field-path
+                        :xf        keyword
+                        :put-fn    put-fn
+                        :options   options}]])
          (when show-fields
            [color-picker entry idx :color "Stroke:" put-fn])
          (when show-fields

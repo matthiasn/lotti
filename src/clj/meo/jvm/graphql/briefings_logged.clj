@@ -51,7 +51,7 @@
         nodes (day-nodes g day)
         prev-nodes (day-nodes g (dt/days-before day 1))
         next-nodes (day-nodes g (dt/days-before day -1))
-        cal-nodes (concat prev-nodes next-nodes)
+        cal-nodes (set (concat prev-nodes next-nodes))
         day-stats (gsd/day-stats g nodes cal-nodes stories sagas day)]
     day-stats))
 
