@@ -6,7 +6,8 @@
             [reagent.ratom :refer-macros [reaction]]
             [clojure.string :as s]
             [reagent.core :as r]
-            [moment]))
+            [moment]
+            [clojure.set :as set]))
 
 (defn field-input [entry edit-mode? field tag k put-fn]
   (let [input-cfg (:cfg field)
@@ -59,7 +60,8 @@
     (fn custom-fields-render [entry put-fn edit-mode?]
       (when-let [custom-fields @custom-fields]
         (let [ts (:timestamp entry)
-              entry-field-tags (select-keys custom-fields (:tags entry))
+              tags (set/union (set (:tags entry)) (set (:perm_tags entry)))
+              entry-field-tags (select-keys custom-fields tags)
               default-story (->> entry-field-tags
                                  (map (fn [[k v]] (:default-story v)))
                                  (filter identity)
@@ -88,7 +90,8 @@
       (when-let [questionnaires @questionnaires]
         (let [ts (:timestamp entry)
               questionnaire-tags (:mapping questionnaires)
-              q-tags (select-keys questionnaire-tags (:tags entry))
+              tags (set/union (set (:tags entry)) (set (:perm_tags entry)))
+              q-tags (select-keys questionnaire-tags tags)
               q-mapper (fn [[t k]] [k (get-in questionnaires [:items k])])
               pomo-q [:pomo1 (get-in questionnaires [:items :pomo1])]
               entry-questionnaires (map q-mapper q-tags)

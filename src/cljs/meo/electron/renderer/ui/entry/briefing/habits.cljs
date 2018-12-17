@@ -6,7 +6,8 @@
             [meo.common.utils.parse :as up]
             [moment]
             [meo.electron.renderer.helpers :as h]
-            [meo.common.utils.misc :as m]))
+            [meo.common.utils.misc :as m]
+            [clojure.set :as set]))
 
 (defn habit-sorter
   "Sorts habits."
@@ -18,6 +19,7 @@
 
 (defn habit-line [_habit _tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
+        options (subscribe [:options])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         open-new (fn [x]
@@ -28,8 +30,18 @@
       (let [entry (:habit_entry habit)
             ts (:timestamp entry)
             text (eu/first-line entry)
-            create-entry #(let [story (get-in entry [:story :timestamp])
-                                f (h/new-entry put-fn {:primary_story story} open-new)
+            create-entry #(let [mapping (-> @options :questionnaires :mapping)
+                                mapping2 (zipmap (vals mapping) (keys mapping))
+                                story (get-in entry [:story :timestamp])
+                                criteria (:criteria (:habit entry))
+                                first-criterion (first (:criteria (:habit entry)))
+                                q-tag (when (= :questionnaire (:type first-criterion))
+                                        {:perm_tags #{(get mapping2 (:quest-k first-criterion))}})
+                                cf-tags (set (map :cf-tag criteria))
+                                tags (set/union cf-tags q-tag)
+                                completion-entry (merge {:perm_tags tags
+                                                         :primary_story story} q-tag)
+                                f (h/new-entry put-fn completion-entry open-new)
                                 new-entry (f)]
                             (debug entry)
                             (debug new-entry))]
@@ -39,12 +51,10 @@
           (for [[i c] (m/idxd (reverse (take 5 (:completed habit))))]
             [:span.status {:class (when (:success c) "success")
                            :key   i}])]
-         [:td.habit
-          {:on-click (up/add-search ts tab-group put-fn)}
-          text]
+         [:td.habit {:on-click create-entry} text]
          [:td.start
-          [:i.fas.fa-hourglass-start
-           {:on-click create-entry}]]]))))
+          [:i.fas.fa-cog
+           {:on-click (up/add-search ts tab-group put-fn)}]]]))))
 
 (defn waiting-habits
   "Renders table with open habits."
