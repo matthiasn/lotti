@@ -23,7 +23,7 @@
     background-color: white;
     padding: 3px;
     margin: 0 2px 0 0;
-    min-width: 16px;
+    min-width: 17px;
     cursor: pointer;
     font-size: 0.8em;
     font-family: $header-font-family;
@@ -74,7 +74,6 @@
       right: 2px;
     }
   }
-
   .active {
     border-bottom: 3px inset $green;
     font-weight: 400;

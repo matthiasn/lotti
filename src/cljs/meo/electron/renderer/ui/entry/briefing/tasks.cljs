@@ -72,6 +72,7 @@
            [:td.award-points
             (when-let [points (-> entry :task :points)]
               points)])
+         #_
          [:td.estimate
           (let [seconds (* 60 estimate)]
             [:span {:class cls}
@@ -152,7 +153,7 @@
               (when show-points
                 [:th {:on-click #(swap! local assoc :show-points false)}
                  [:i.fa.far.fa-gem]])
-              [:th [:i.fal.fa-bell]]
+              ;[:th [:i.fal.fa-bell]]
               [:th [:i.far.fa-stopwatch]]
               [:th
                [:div

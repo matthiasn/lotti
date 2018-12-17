@@ -112,8 +112,6 @@
          [es/saga-name-field merged edit-mode? put-fn]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged put-fn])
-         (when (= :dashboard-cfg (:entry_type merged))
-           [db/dashboard-config merged put-fn])
          (when-not (:spotify entry)
            [d/entry-editor entry errors put-fn])
          (when (or (contains? (set (:perm_tags entry)) "#task")
@@ -122,6 +120,8 @@
          (when (or (= :habit (:entry-type merged))
                    (= :habit (:entry_type merged)))
            [habit/habit-details merged put-fn])
+         (when (= :dashboard-cfg (:entry_type merged))
+           [db/dashboard-config merged put-fn])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged put-fn])
          (let [pomodoro (= :pomodoro (:entry_type entry))]

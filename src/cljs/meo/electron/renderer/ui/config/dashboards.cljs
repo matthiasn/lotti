@@ -16,12 +16,12 @@
   (if str (s/lower-case str) ""))
 
 (defn gql-query [pvt search-text put-fn]
-  (let [queries [[:habits_cfg
+  (let [queries [[:dashboards_cfg
                   {:search-text search-text
                    :n           1000}]]
         query (gql/tabs-query queries false pvt)]
     (put-fn [:gql/query {:q        query
-                         :id       :habits_cfg
+                         :id       :dashboards_cfg
                          :res-hash nil
                          :prio     11}])))
 
@@ -126,7 +126,7 @@
      [dashboards local put-fn]]
     (when (:selected @local)
       [h/error-boundary
-       [dashboards-tab :habits_cfg put-fn]])]
+       [dashboards-tab :dashboards_cfg put-fn]])]
    (when (:selected @local)
      [h/error-boundary
       [db/dashboard {:days         90

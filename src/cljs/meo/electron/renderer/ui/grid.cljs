@@ -62,7 +62,8 @@
                 :draggable     true
                 :on-drag-start on-drag-start}
                [:span.fa.fa-times
-                {:on-click #(do (put-fn [:search/remove query-coord])
+                {:style {:color (cc/item-color search-text "dark")}
+                 :on-click #(do (put-fn [:search/remove query-coord])
                                 (.stopPropagation %))}]]))]]))))
 
 (defn tabs-view [tab-group put-fn]

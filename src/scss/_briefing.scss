@@ -190,7 +190,7 @@
       }
 
       td {
-        padding: 0 3px 0 0;
+        padding: 0 5px 0 0;
         .legend {
           height: 1.3em;
           width: 12px;
@@ -205,8 +205,8 @@
           min-width: 50px;
         }
         &.text {
-          word-break: break-word;
-          line-height: 1em;
+          white-space: nowrap;
+          max-width: 120px;
         }
       }
     }
