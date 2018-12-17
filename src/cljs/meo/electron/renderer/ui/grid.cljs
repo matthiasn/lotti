@@ -10,14 +10,17 @@
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.ui.entry.entry :as e]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [meo.electron.renderer.ui.entry.briefing :as b]))
+            [meo.electron.renderer.ui.entry.briefing :as b]
+            [meo.electron.renderer.ui.charts.common :as cc]))
 
 (defn fmt-ts [q]
   (let [ts (:timestamp q)]
     (.format (moment (js/parseInt ts)) "YY-MM-DD HH:mm")))
 
 (defn tabs-header-view [tab-group put-fn]
-  (let [query-cfg (subscribe [:query-cfg])]
+  (let [query-cfg (subscribe [:query-cfg])
+        gql-res (subscribe [:gql-res2])
+        first-res (reaction (first (vals (get-in @gql-res [tab-group :res]))))]
     (fn tabs-header-view-render
       [tab-group put-fn]
       (let [query-config @query-cfg
@@ -54,13 +57,13 @@
               ^{:key (str "tab-header" q)}
               [:div.tab-item
                {:class         (when (= active-query q) "active")
+                :style         {:background-color (cc/item-color search-text)}
                 :on-click      #(put-fn [:search/set-active query-coord])
                 :draggable     true
                 :on-drag-start on-drag-start}
-               [:span (str (or search-text q))
-                [:span.fa.fa-times
-                 {:on-click #(do (put-fn [:search/remove query-coord])
-                                 (.stopPropagation %))}]]]))]]))))
+               [:span.fa.fa-times
+                {:on-click #(do (put-fn [:search/remove query-coord])
+                                (.stopPropagation %))}]]))]]))))
 
 (defn tabs-view [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
