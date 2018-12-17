@@ -3,6 +3,7 @@
   (:require [reagent.core :as rc]
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
+            [electron :refer [remote]]
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.ui.menu :as menu]
             [meo.electron.renderer.ui.heatmap :as hm]
@@ -135,7 +136,7 @@
             percent (Math/floor (* 100 startup-progress))]
         [:div.loader
          [:div.content
-          [:h1 "starting meo..."]
+          [:h1 "starting meo v" (.getVersion (aget remote "app")) "..."]
           [:div.meter
            [:span {:style {:width (str percent "%")}}]]]]))))
 
