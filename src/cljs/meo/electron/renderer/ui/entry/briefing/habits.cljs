@@ -34,13 +34,11 @@
                                 mapping2 (zipmap (vals mapping) (keys mapping))
                                 story (get-in entry [:story :timestamp])
                                 criteria (:criteria (:habit entry))
-                                first-criterion (first (:criteria (:habit entry)))
-                                q-tag (when (= :questionnaire (:type first-criterion))
-                                        {:perm_tags #{(get mapping2 (:quest-k first-criterion))}})
+                                q-tags (set (map (fn [x] (get mapping2 (:quest-k x))) criteria))
                                 cf-tags (set (map :cf-tag criteria))
-                                tags (set/union cf-tags q-tag)
+                                tags (disj (set/union cf-tags q-tags) nil)
                                 completion-entry (merge {:perm_tags tags
-                                                         :primary_story story} q-tag)
+                                                         :primary_story story})
                                 f (h/new-entry put-fn completion-entry open-new)
                                 new-entry (f)]
                             (debug entry)
