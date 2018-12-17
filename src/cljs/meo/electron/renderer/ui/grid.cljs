@@ -29,7 +29,10 @@
             on-drop #(let [dragged (:dragged query-config)]
                        (when (not= tab-group (:tab-group dragged))
                          (put-fn [:search/move-tab {:dragged dragged :to tab-group}]))
-                       (.preventDefault %))]
+                       (.preventDefault %))
+            queries (map (fn [q]
+                           [q (get-in query-config [:queries q])])
+                         queries)]
         [:div.tabs-header {:on-drop       on-drop
                            :on-drag-over  h/prevent-default
                            :on-drag-enter h/prevent-default}
@@ -45,10 +48,10 @@
             {:on-click #(put-fn [:search/close-all {:tab-group tab-group}])}
             [:span (count queries) [:span.fa.fa-times]]])
          [:div.tab-items
-          (for [q queries]
-            (let [query (get-in query-config [:queries q])
-                  search-text (s/trim (str (:search-text query)))
+          (for [[q query] (sort-by #(:story-name (second %)) queries)]
+            (let [search-text (s/trim (str (:search-text query)))
                   search-text (cond
+                                (:story-name query) (:story-name query)
                                 (empty? search-text) "empty"
                                 (:timestamp query) (fmt-ts query)
                                 :else search-text)
@@ -62,7 +65,7 @@
                 :draggable     true
                 :on-drag-start on-drag-start}
                [:span.fa.fa-times
-                {:style {:color (cc/item-color search-text "dark")}
+                {:style    {:color (cc/item-color search-text "dark")}
                  :on-click #(do (put-fn [:search/remove query-coord])
                                 (.stopPropagation %))}]]))]]))))
 

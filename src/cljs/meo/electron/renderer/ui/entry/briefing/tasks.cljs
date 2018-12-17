@@ -40,6 +40,21 @@
         fmt (.format utc "HH:mm")]
     fmt))
 
+(defn add-search
+  "Adds search by sending a message that'll open the specified search in a new
+   tab."
+  [{:keys [query-string tab-group story-name]} put-fn]
+  (fn [_ev]
+    (let [q (merge (up/parse-search query-string)
+                   {:story-name story-name})
+          msg [:search/add {:tab-group (case tab-group
+                                         :off :off
+                                         :briefing :left
+                                         :left :right
+                                         :left)
+                            :query     q}]]
+      (put-fn msg))))
+
 (defn task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
@@ -59,7 +74,9 @@
             logged-time (eu/logged-total @new-entries entry)
             done (get-in entry [:task :done])
             closed (get-in entry [:task :closed])]
-        [:tr.task {:on-click (up/add-search ts tab-group put-fn)
+        [:tr.task {:on-click (add-search {:tab-group    tab-group
+                                          :story-name   (-> entry :story :story_name)
+                                          :query-string ts} put-fn)
                    :class    cls}
          [:td
           (if (or done closed)
@@ -72,11 +89,10 @@
            [:td.award-points
             (when-let [points (-> entry :task :points)]
               points)])
-         #_
-         [:td.estimate
-          (let [seconds (* 60 estimate)]
-            [:span {:class cls}
-             (s-to-hhmm (.abs js/Math seconds))])]
+         #_[:td.estimate
+            (let [seconds (* 60 estimate)]
+              [:span {:class cls}
+               (s-to-hhmm (.abs js/Math seconds))])]
          (when show-logged?
            [:td.estimate
             (let [actual (if (and active busy)
@@ -98,7 +114,8 @@
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)]
-        [:tr.task {:on-click (up/add-search ts tab-group put-fn)
+        [:tr.task {:on-click (add-search {:tab-group  tab-group
+                                          :story-name (-> entry :story :story_name) :query-string ts} put-fn)
                    :class    cls}
          [:td (when-let [prio (some-> entry :task :priority (name))]
                 [:span.prio {:class prio} prio])]
