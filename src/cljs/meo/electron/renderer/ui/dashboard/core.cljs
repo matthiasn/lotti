@@ -16,7 +16,7 @@
             [meo.electron.renderer.helpers :as rh]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
-            [meo.electron.renderer.ui.entry.cfg.dashboard :as db]))
+            [meo.electron.renderer.ui.dashboard.cf_barchart :as db]))
 
 (defn gql-query [charts-pos days local put-fn]
   (when-not (and (= (:days @local) days)
