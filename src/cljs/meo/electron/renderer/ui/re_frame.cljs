@@ -17,11 +17,14 @@
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.data-explorer :as dex]
             [meo.electron.renderer.helpers :as h]
-            [meo.electron.renderer.ui.entry.utils :as eu]))
+            [meo.electron.renderer.ui.entry.utils :as eu]
+            [meo.electron.renderer.ui.help :as help]))
 
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
 (reg-sub :gql-res2 (fn [db _] (:gql-res2 db)))
+
+(reg-sub :manual (fn [db _] (:manual db)))
 
 (reg-sub :dashboard (fn [db _] (:dashboard db)))
 
@@ -158,6 +161,7 @@
              :calendar [cal put-fn]
              :correlation [corr/scatter-matrix put-fn]
              :heatmap [hm/heatmap put-fn]
+             :help [help/help put-fn]
              :empty [:div.flex-container]
              [main-page put-fn])
            (when @data-explorer

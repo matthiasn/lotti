@@ -34,6 +34,7 @@
               :electron-path    (first (.-argv process))
               :node-path        "/usr/local/bin/node"
               :data-path        data-path
+              :manual-path      (str app-path "/doc")
               :playground-path  playground-path
               :daily-logs-path  (str data-path "/daily-logs")
               :encrypted-path   encrypted-path

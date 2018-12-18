@@ -253,6 +253,13 @@
               :accelerator "CmdOrCtrl+Alt+I"
               :click       #(put-fn [:window/dev-tools])}]})
 
+(defn help-menu [put-fn]
+  (let [open (fn [page] (put-fn [:nav/to {:page page}]))]
+    {:label   "Help"
+     :submenu [{:label       "Manual"
+                :accelerator "CmdOrCtrl+?"
+                :click       #(open :help)}]}))
+
 (defn menu [{:keys [cmp-state put-fn]}]
   (let [put-fn (fn [msg]
                  (let [msg-meta (merge {:window-id :active} (meta msg))]
@@ -265,7 +272,8 @@
                   (when (contains? capabilities :tensorflow)
                     (learn-menu put-fn))
                   (playground-menu put-fn)
-                  (dev-menu put-fn)]
+                  (dev-menu put-fn)
+                  (help-menu put-fn)]
         menu-tpl (rm-filtered (filter identity menu-tpl))
         menu (.buildFromTemplate Menu (clj->js menu-tpl))]
     (info "Starting Menu")

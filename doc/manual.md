@@ -1,4 +1,4 @@
-# Manual
+# What is meo and how do I use it?
 
 **Meo** is a data-driven journal that helps you **get your life in order**. First, you define what you want to capture, e.g. how long you sleep, how many steps you take, how much beer you drink. Variables you have some influence on. Then you define habits, where a set of rules determines habit success (or failure). Then you record the data or have meo recorded it for you. A dashboard finally shows you where you succeed and where you fail. Your only job then is to keep everything green, for as long as you possibly can. **Don’t break the chain**, pretty much. Here’s my example of recent success and failure for some of the habits I defined for myself:
 
@@ -12,7 +12,7 @@ In addition, I reserve say fifteen minutes a day for some text about how I am do
 
 ## The Privacy of Your Data
 
-Some of the data I record in meo is not private, in the sense that I would not mind if anyone saw those entries (such as those in the screenshots here). But there are also those where I decidedly would mind if anyone saw them. So why would share these if I did not have to? I believe that everybody should be able to gather data about their lives themselves – without having to donate said data to Silicon Valley, or anyone else. 
+Some of the data I record in meo is not private, in the sense that I would not mind if anyone saw those entries (such as those in the screenshots here). But there are also those where I decidedly would mind if anyone saw them. So why would share these if I did not have to? I believe that everybody should be able to gather data about their lives themselves – without having to **donate** said data to Silicon Valley, or anyone else. 
 
 With meo, it is very simple. Your data stays with you. Meo does not share of any of your data with anyone. Meo might at some point give you a way to actively share data with others, but there will not ever be any sharing of anything with anyone without your consent, and only ever at your explicit command. That’s all. No fine print, and you can verify all this in the source code. You have no reason to trust anyone’s word when it comes to your private data.
 

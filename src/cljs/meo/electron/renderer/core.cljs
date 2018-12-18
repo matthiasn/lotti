@@ -55,6 +55,7 @@
                        :imap/save-cfg
                        :sync/imap
                        :sync/start-imap
+                       :help/get-manual
                        :import/screenshot
                        :blink/busy})
 

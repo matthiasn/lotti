@@ -9,6 +9,7 @@
             [meo.electron.main.update :as upd]
             [meo.electron.main.blink :as bl]
             [meo.electron.main.imap :as imap]
+            [meo.electron.main.help :as help]
             [meo.electron.main.screenshot :as screen]
             [meo.electron.main.geocoder :as geocoder]
             [meo.electron.main.startup :as st]
@@ -60,6 +61,7 @@
                 :import/spotify
                 :import/git
                 :nav/to
+                :help/manual
                 :playground/gen
                 :firehose/cmp-put
                 :firehose/cmp-recv})
@@ -74,6 +76,7 @@
                      (bl/cmp-map :electron/blink)
                      (screen/cmp-map :electron/screenshot)
                      (imap/cmp-map :electron/sync)
+                     (help/cmp-map :electron/help)
                      (upd/cmp-map :electron/updater)
                      (sched/cmp-map :electron/scheduler)
                      (menu/cmp-map :electron/menu-cmp)
@@ -105,6 +108,7 @@
                             :electron/updater
                             :electron/geocoder
                             :electron/blink
+                            :electron/help
                             :electron/screenshot
                             :electron/sync
                             :electron/scheduler
@@ -117,6 +121,9 @@
                     :to   :electron/startup}]
 
        [:cmd/route {:from :electron/geocoder
+                    :to   :electron/window-manager}]
+
+       [:cmd/route {:from :electron/help
                     :to   :electron/window-manager}]
 
        [:cmd/route {:from :electron/screenshot

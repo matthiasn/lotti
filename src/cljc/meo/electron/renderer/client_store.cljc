@@ -37,6 +37,7 @@
                                          :args     args}]))
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
+    (put-fn [:help/get-manual])
     (when-let [ymd (get-in current-state [:cfg :cal-day])]
       (run-query "briefing.gql" :briefing 12 [ymd pvt])
       (run-query "logged-by-day.gql" :logged-by-day 13 [ymd]))
@@ -112,6 +113,10 @@
   (let [new-state (assoc-in current-state [:imap-cfg] msg-payload)]
     {:new-state new-state}))
 
+(defn save-manual [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:manual] msg-payload)]
+    {:new-state new-state}))
+
 (defn ping [_]
   #?(:cljs (info :ping))
   {})
@@ -141,6 +146,7 @@
                         :cmd/toggle       c/toggle-set-fn
                         :cmd/set-opt      c/set-conj-fn
                         :metrics/info     save-metrics
+                        :help/manual      save-manual
                         :cmd/set-dragged  c/set-currently-dragged
                         :cmd/toggle-key   c/toggle-key-fn
                         :cmd/assoc-in     c/assoc-in-state})})
