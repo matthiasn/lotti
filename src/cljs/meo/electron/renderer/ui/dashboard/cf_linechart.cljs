@@ -4,26 +4,11 @@
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meo.electron.renderer.ui.dashboard.common :as dc]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
-
-(defn line [y s w]
-  [:line {:x1           195
-          :x2           2000
-          :y1           y
-          :y2           y
-          :stroke-width w
-          :stroke       s}])
-
-(defn row-label [label y h]
-  [:text {:x           180
-          :y           (+ y (+ 5 (/ h 2)))
-          :font-size   20
-          :fill        "#777"
-          :text-anchor "end"}
-   label])
 
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
@@ -93,6 +78,6 @@
                            :s  s}]))
               cfg (merge m {:label label})]
           [:g
-           [row-label (or label tag) y h]
+           [dc/row-label (or label tag) y h]
            [chart-line values mapper (merge {:color "red"} cfg)]
-           [line (+ y h) "#000" 2]])))))
+           [dc/line (+ y h) "#000" 2]])))))

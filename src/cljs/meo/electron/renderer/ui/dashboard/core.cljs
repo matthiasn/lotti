@@ -15,7 +15,8 @@
             [matthiasn.systems-toolbox.component :as st]
             [meo.electron.renderer.helpers :as rh]
             [meo.electron.renderer.ui.entry.utils :as eu]
-            [meo.common.utils.parse :as up]))
+            [meo.common.utils.parse :as up]
+            [meo.electron.renderer.ui.entry.cfg.dashboard :as db]))
 
 (defn gql-query [charts-pos days local put-fn]
   (when-not (and (= (:days @local) days)
@@ -130,10 +131,10 @@
             (let [chart-fn (case (:type chart-cfg)
                              :habit_success h/habits-chart
                              :questionnaire ds/scores-chart
-                             :barchart_row dc/barchart-row
+                             :barchart_row db/barchart-row
                              :linechart_row cfl/linechart-row
                              :bp_chart bp/bp-chart
-                             ;:commits-chart c/commits-chart
+                             :commits-chart c/commits-chart
                              ;:earlybird-chart eb/earlybird-chart
                              ;:points-by-day dc/points-by-day-chart
                              ;:points-lost-by-day dc/points-lost-by-day-chart

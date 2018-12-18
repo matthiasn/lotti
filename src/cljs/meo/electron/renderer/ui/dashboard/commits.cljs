@@ -3,33 +3,20 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
-            [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
             [meo.electron.renderer.ui.charts.common :as cc]))
-
-(def month-day "DD.MM.")
-(def ymd "YYYY-MM-DD")
-(def weekday "ddd")
-(defn df [ts format] (.format (moment ts) format))
-
-(defn line [y s w]
-  [:line {:x1           195
-          :x2           2000
-          :y1           y
-          :y2           y
-          :stroke-width w
-          :stroke       s}])
 
 (defn rect [{:keys []}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h cls ymd]}]
+    (fn [{:keys [v x w y h color cls ymd]}]
       [:g
        [:rect {:on-click click
                :x        x
                :y        (- y h)
                :width    w
                :height   h
+               :fill color
                :class    (cc/weekend-class cls {:date_string ymd})}]
        (when (:show-label @local)
          [:text {:x           (+ x 11)
@@ -39,25 +26,16 @@
                  :text-anchor "middle"}
           v])])))
 
-(defn row-label [label y h]
-  [:text {:x           180
-          :y           (+ y (+ 5 (/ h 2)))
-          :font-size   12
-          :fill        "#777"
-          :text-anchor "end"}
-   label])
-
 (defn commits-chart [_ _]
-  (let [show-pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span start h y]} put-fn]
+  (let [gql-res (subscribe [:gql-res])]
+    (fn barchart-row [{:keys [days span start h y color]} put-fn]
       (let [btm-y (+ y h)
             data (get-in @gql-res [:dashboard :data :git_stats])
             indexed (map-indexed (fn [i x] [i x]) data)
             mx (apply max (map #(:commits (second %)) indexed))
             scale (if (pos? mx) (/ (- h 3) mx) 1)]
         [:g
-         [row-label "#git-commit" y h]
+         [dc/row-label "#git-commit" y h]
          (for [[n {:keys [date-string commits weekday]}] indexed]
            (let [d (* 24 60 60 1000)
                  offset (* n d)
@@ -67,12 +45,13 @@
                  v commits
                  h (* v scale)]
              ^{:key (str :git-commits n)}
-             [rect {:v   v
-                    :x   x
-                    :w   (/ 1500 days)
-                    :ymd date-string
-                    :y   btm-y
-                    :h   h
-                    :cls "done"
-                    :n   n}]))
-         [line (+ y h) "#000" 2]]))))
+             [rect {:v     v
+                    :x     x
+                    :w     (/ 1500 days)
+                    :ymd   date-string
+                    :y     btm-y
+                    :color color
+                    :h     h
+                    :cls   "done"
+                    :n     n}]))
+         [dc/line (+ y h) "#000" 2]]))))

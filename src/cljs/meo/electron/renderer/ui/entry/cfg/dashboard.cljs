@@ -227,6 +227,21 @@
                                 :type  :number
                                 :path  h-path} put-fn])]))))
 
+(defn gitstats-row [_]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        pvt (subscribe [:show-pvt])]
+    (fn [{:keys [put-fn entry idx collapsed]}]
+      (let [h-path [:dashboard_cfg :items idx :h]
+            show-details (not collapsed)]
+        [:div
+         [:h4 "Git Stats Bar Chart"]
+         (when show-details
+           [color-picker entry idx :color "Stroke:" put-fn])
+         (when show-details
+           [cs/input-row entry {:label "Height:"
+                                :type  :number
+                                :path  h-path} put-fn])]))))
+
 (defn linechart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
@@ -329,8 +344,10 @@
                         :put-fn    put-fn
                         :path      path
                         :xf        keyword
+                        :sorted-by second
                         :options   {:barchart_row  "Custom Field Bar Chart"
                                     :linechart_row "Custom Field Line Chart"
+                                    :commits-chart "Git Stats Bar Chart"
                                     :habit_success "Habit Success"
                                     :questionnaire "Questionnaire"
                                     :bp_chart      "Blood Pressure"}}]])
@@ -338,6 +355,8 @@
            [habit-success params])
          (when (= :bp_chart habit-type)
            [bp-chart params])
+         (when (= :commits-chart habit-type)
+           [gitstats-row params])
          (when (= :barchart_row habit-type)
            [barchart-row params])
          (when (= :linechart_row habit-type)
