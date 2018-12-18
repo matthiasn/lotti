@@ -59,7 +59,7 @@
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
                      (gql-query @pvt (str ts) put-fn)))
-        add-click (h/new-entry put-fn {:entry_type    :dashboard_cfg
+        add-click (h/new-entry put-fn {:entry_type    :dashboard-cfg
                                        :perm_tags     #{"#dashboard-cfg"}
                                        :tags          #{"#dashboard-cfg"}
                                        :dashboard_cfg {:active true}}
