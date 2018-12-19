@@ -169,11 +169,24 @@
       tr {
         cursor: pointer;
 
+        .fa-unlink {
+          opacity: 0;
+        }
+
         &:hover {
           background-color: antiquewhite;
         }
         &.selected {
           background-color: desaturate(lighten($hashtag-blue, 30), 15);
+          cursor: default;
+
+          .fa-unlink {
+            background-color: desaturate(lighten($hashtag-blue, 30), 15);
+            opacity: 1;
+            cursor: pointer;
+            padding: 2px 4px;
+            z-index: 11;
+          }
         }
         &.active-timer {
           background-color: desaturate(lighten($green, 40), 15);
@@ -194,6 +207,10 @@
         .legend {
           height: 1.3em;
           width: 12px;
+        }
+
+        &.last {
+          padding-right: 0;
         }
 
         &.left {

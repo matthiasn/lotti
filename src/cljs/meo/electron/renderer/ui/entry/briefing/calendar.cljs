@@ -107,9 +107,8 @@
                              (+ ts (* completed 1000))
                              ts)
                        story-name (get-in story [:story_name])
-                       saga-name (get-in story [:saga :saga_name]
-                                         "none")
-                       color (cc/item-color saga-name)
+                       saga-name (get-in story [:saga :saga_name] "none")
+                       color (cc/item-color story-name)
                        title (str (when story-name (str story-name " - "))
                                   text)
                        open-ts (or comment_for timestamp)

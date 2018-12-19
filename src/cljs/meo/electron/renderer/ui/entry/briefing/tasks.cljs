@@ -59,7 +59,8 @@
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged? show-points]}]
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
+                              show-estimate show-points]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -89,10 +90,11 @@
            [:td.award-points
             (when-let [points (-> entry :task :points)]
               points)])
-         #_[:td.estimate
+         (when show-estimate
+           [:td.estimate
             (let [seconds (* 60 estimate)]
               [:span {:class cls}
-               (s-to-hhmm (.abs js/Math seconds))])]
+               (s-to-hhmm (.abs js/Math seconds))])])
          (when show-logged?
            [:td.estimate
             (let [actual (if (and active busy)
@@ -104,7 +106,7 @@
               [:span {:class cls}
                (s-to-hhmmss actual)])])
          [:td.text text]
-         [:td (when unlink
+         [:td.last (when unlink
                 [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
 
 (defn task-row2 [entry _put-fn _cfg]
@@ -313,7 +315,8 @@
             [:th.xs [:i.fa.far.fa-link]]]
            (for [entry (sort task-sorter linked-tasks)]
              ^{:key (:timestamp entry)}
-             [task-row entry put-fn {:tab-group   tab-group
-                                     :search-text search-text
-                                     :show-points show-points
-                                     :unlink      unlink}])]]]))))
+             [task-row entry put-fn {:tab-group     tab-group
+                                     :search-text   search-text
+                                     :show-points   show-points
+                                     :show-estimate true
+                                     :unlink        unlink}])]]]))))
