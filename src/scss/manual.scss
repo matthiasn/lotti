@@ -1,0 +1,40 @@
+@import "variables";
+
+body {
+  background-color: white;
+  margin-top: 12px;
+  height: calc(100vh - 22px);
+  width: 100%;
+  color: $font-color;
+  font-size: $font-size-large;
+  line-height: 1.3em;
+  font-weight: 200;
+  font-family: $font-family;
+
+  overflow-y: scroll;
+  overflow-x: hidden;
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: $header-font-family;
+    font-weight: 400;
+    margin-bottom: 0.5em;
+  }
+
+  h1 {
+    margin-bottom: 25px;
+    font-weight: 100;
+  }
+  strong {
+    font-weight: bold
+  }
+  img {
+    max-width: 90vw;
+    width: auto;
+  }
+
+  .md {
+    padding: 8px 32px;
+  }
+
+
+}

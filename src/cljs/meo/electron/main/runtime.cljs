@@ -59,6 +59,9 @@
     (into {:repo-dir      repo-dir
            :index-page    (if repo-dir "electron/index-dev.html" "electron/index.html")
            :index-page-pg (if repo-dir "electron/index-pg-dev.html" "electron/index-pg.html")
+           :help-page     (if repo-dir
+                            "http://localhost:8765/help/manual.html"
+                            "http://localhost:7788/help/manual.html")
            :port          (if repo-dir 8765 7788)
            :pg-port       (if repo-dir 8764 7787)
            :capabilities  capabilities

@@ -140,7 +140,8 @@
     {:label   "View"
      :submenu [{:label       "Close Tab"
                 :accelerator "CmdOrCtrl+W"
-                :click       #(put-fn [:search/cmd {:t :close-tab}])}
+                :click       #(do (put-fn [:search/cmd {:t :close-tab}])
+                                  (put-fn (with-meta [:window/close] {:window-id :help})))}
                {:label       "Next Tab"
                 :accelerator "Ctrl+Tab"
                 :click       #(put-fn [:search/cmd {:t :next-tab}])}
@@ -254,11 +255,15 @@
               :click       #(put-fn [:window/dev-tools])}]})
 
 (defn help-menu [put-fn]
-  (let [open (fn [page] (put-fn [:nav/to {:page page}]))]
+  (let [help-page (:help-page rt/runtime-info)
+        new-window #(put-fn [:window/new {:url       help-page
+                                          :window-id :help
+                                          :width     600
+                                          :height    800}])]
     {:label   "Help"
-     :submenu [{:label       "Manual"
+     :submenu [{:label       "Show Manual"
                 :accelerator "CmdOrCtrl+?"
-                :click       #(open :help)}]}))
+                :click       new-window}]}))
 
 (defn menu [{:keys [cmp-state put-fn]}]
   (let [put-fn (fn [msg]

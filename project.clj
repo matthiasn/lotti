@@ -3,7 +3,7 @@
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
-  :dependencies [[org.clojure/clojure "1.10.0-RC4"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
@@ -70,7 +70,7 @@
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
                                            [cljsjs/moment "2.22.2-2"]
-                                           [matthiasn/systems-toolbox-electron "0.6.24"]
+                                           [matthiasn/systems-toolbox-electron "0.6.25"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
 

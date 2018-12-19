@@ -1,0 +1,28 @@
+(ns meo.jvm.routes.help
+  (:require [compojure.core :refer [GET]]
+            [taoensso.timbre :refer [info debug]]
+            [hiccup.page :refer [html5 include-css include-js]]
+            [meo.jvm.file-utils :as fu]
+            [markdown.core :as mc]
+            [clojure.string :as s]))
+
+(def help-route
+  (GET "/help/manual.html" []
+    (info "delivering manual")
+    (let [filename (str fu/app-path "/doc/manual.md")
+          md (slurp filename)
+          html (mc/md-to-html-string md :heading-anchors true)
+          css "../css/manual.css"]
+      (html5
+        {:lang "en"}
+        [:head
+         [:title "meo - the manual"]
+         (include-css css)]
+        [:body [:div.md html]]))))
+
+(def help-img-route
+  (GET "/help/images/:img" [img]
+    (info "delivering" img)
+    (let [filename (str fu/app-path "/doc/images/" img)
+          file (java.io.File. filename)]
+      {:body file})))

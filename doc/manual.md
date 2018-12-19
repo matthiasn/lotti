@@ -1,4 +1,4 @@
-# What is meo and how do I use it?
+# What is **meo** and how do I **use** it?
 
 **Meo** is a data-driven journal that helps you **get your life in order**. First, you define what you want to capture, e.g. how long you sleep, how many steps you take, how much beer you drink. Variables you have some influence on. Then you define habits, where a set of rules determines habit success (or failure). Then you record the data or have meo recorded it for you. A dashboard finally shows you where you succeed and where you fail. Your only job then is to keep everything green, for as long as you possibly can. **Don’t break the chain**, pretty much. Here’s my example of recent success and failure for some of the habits I defined for myself:
 

@@ -3,6 +3,7 @@
             [compojure.route :as r]
             [compojure.core :refer [GET]]
             [meo.jvm.routes.upload-qr :as qr]
+            [meo.jvm.routes.help :as h]
             [meo.jvm.routes.map-tile :as mt]
             [meo.jvm.file-utils :as fu]))
 
@@ -21,7 +22,9 @@
    qr/address-route
    qr/ws-address-route
    qr/secrets-route
-   mt/map-tile-route])
+   mt/map-tile-route
+   h/help-img-route
+   h/help-route])
 
 (def sente-map
   {:index-page-fn index-page
