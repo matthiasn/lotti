@@ -1,5 +1,5 @@
 @import "variables";
-
+@import url('https://fonts.googleapis.com/css?family=Lato:300,300i,400,700,900|Oswald:400,500,600');
 body {
   background-color: white;
   margin-top: 12px;
@@ -8,16 +8,20 @@ body {
   color: $font-color;
   font-size: $font-size-large;
   line-height: 1.3em;
-  font-weight: 200;
+  font-weight: 300;
   font-family: $font-family;
 
   overflow-y: scroll;
   overflow-x: hidden;
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: $header-font-family;
-    font-weight: 400;
+    font-family: 'Oswald', SansSerif;
+    font-weight: 500;
     margin-bottom: 0.5em;
+
+    strong {
+      font-weight: 500;
+    };
   }
 
   h1 {
@@ -25,11 +29,12 @@ body {
     font-weight: 100;
   }
   strong {
-    font-weight: bold
+    font-weight: bold;
   }
   img {
     max-width: 90vw;
     width: auto;
+    max-height: 50vh;
   }
 
   .md {

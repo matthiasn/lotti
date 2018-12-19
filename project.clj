@@ -39,7 +39,7 @@
                  [ubergraph "0.5.2"]
                  [factual/geo "2.1.1"]
                  [camel-snake-kebab "0.4.0"]
-                 [matthiasn/systems-toolbox "0.6.37"]
+                 [matthiasn/systems-toolbox "0.6.38"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
                  [org.clojure/tools.reader "1.3.2"]
                  [clucy "0.4.0"]

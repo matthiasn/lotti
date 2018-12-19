@@ -11,13 +11,12 @@
     (info "delivering manual")
     (let [filename (str fu/app-path "/doc/manual.md")
           md (slurp filename)
-          html (mc/md-to-html-string md :heading-anchors true)
-          css "../css/manual.css"]
+          html (mc/md-to-html-string md :heading-anchors true)]
       (html5
         {:lang "en"}
         [:head
          [:title "meo - the manual"]
-         (include-css css)]
+         (include-css "../css/manual.css")]
         [:body [:div.md html]]))))
 
 (def help-img-route
