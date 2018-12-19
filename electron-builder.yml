@@ -11,6 +11,7 @@ files:
     - "electron/**"
     - "src/**"
     - "resources/**"
+    - "doc/**"
 publish:
     provider: "github"
     owner: "matthiasn"
