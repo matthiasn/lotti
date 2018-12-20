@@ -170,9 +170,8 @@
                {:label       "Toggle Private Mode"
                 :accelerator "CmdOrCtrl+Alt+P"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
-               (when (contains? capabilities :dashboard-banner)
-                 {:label "Toggle Charts"
-                  :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])})
+               {:label "Toggle Dashboard"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}

@@ -4,10 +4,13 @@
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]))
 
-(defn footer [put-fn]
-  (let [local (r/atom {:days     90
+(defn dashboard [put-fn]
+  (let [cfg (subscribe [:cfg])
+        dashboard (reaction (:dashboard-banner @cfg))
+        local (r/atom {:days     90
                        :controls true})]
-    (fn footer-render [put-fn]
-      [:div.footer
-       [:div {:style {:max-height (:height @local)}}
-        [db/dashboard @local put-fn]]])))
+    (fn dashboard-render [put-fn]
+      (when @dashboard
+        [:div.footer
+         [:div {:style {:max-height (:height @local)}}
+          [db/dashboard @local put-fn]]]))))

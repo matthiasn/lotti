@@ -120,7 +120,7 @@
            [:div.right
             [h/error-boundary [g/tabs-view :right put-fn]]])
          [h/error-boundary
-          [f/footer put-fn]]]]
+          [f/dashboard put-fn]]]]
        [h/error-boundary
         [stats/stats-text]]])))
 
