@@ -8,7 +8,8 @@
             [path :refer [join normalize]]
             [meo.electron.main.runtime :as rt]
             [fs :refer [existsSync renameSync readFileSync]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.string :as s]))
 
 (def PORT (:port rt/runtime-info))
 
@@ -37,7 +38,9 @@
       (let [lsof (spawn-process lsof-path ["-n" (str "-i4TCP:" port)] {})
             stdout (aget lsof "stdout")
             cb (fn [data]
-                 (let [pid (re-find #"[0-9]{1,5}" (str data))
+                 (let [lines (s/split-lines data)
+                       line (first (filter #(s/includes? % "java") lines))
+                       pid (re-find #"[0-9]{1,5}" (str line))
                        pid (when pid (js/parseInt pid))]
                    (when pid (kill pid))))]
         (.on stdout "data" cb)))))
