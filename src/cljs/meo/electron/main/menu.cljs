@@ -26,8 +26,7 @@
                  m))
 
 (defn app-menu [put-fn]
-  (let [update-win {:url "electron/updater.html" :width 600 :height 300}
-        check-updates #(put-fn [:window/new update-win])
+  (let [check-updates #(put-fn [:update/check])
         open (fn [page] (put-fn [:nav/to {:page   page
                                           :toggle :main}]))]
     {:label   "Application"

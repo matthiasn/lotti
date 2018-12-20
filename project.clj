@@ -159,15 +159,6 @@
                                               :optimizations  :none
                                               :parallel-build true}}
 
-                              {:id           "updater"
-                               :source-paths ["src/cljs"]
-                               :compiler     {:main           meo.electron.update.core
-                                              :output-to      "prod/updater/updater.js"
-                                              :output-dir     "out/updater"
-                                              :target         :nodejs
-                                              :optimizations  :simple
-                                              :parallel-build true}}
-
                               {:id           "cljs-test"
                                :source-paths ["src/cljs" "src/cljc" "test"]
                                :compiler     {:output-to     "out/testable.js"

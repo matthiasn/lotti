@@ -100,8 +100,6 @@ cljs: deps npm-deps
 	@eval $(LEIN) cljs-main
 	@echo Building ClojureScript for electron renderer process...
 	@eval $(LEIN) cljs-renderer
-	@echo Building ClojureScript for electron updater process...
-	@eval $(LEIN) cljs-updater
 
 figwheel:
 	@lein cljs-figwheel

@@ -77,7 +77,6 @@
   [put-fn]
   (let [local (r/atom {})
         updater-status (subscribe [:updater-status])]
-    ;(put-fn [:update/check])
     (fn updater-render [put-fn]
       (let [status-msg @updater-status
             status (:status status-msg)]
