@@ -121,6 +121,11 @@
   #?(:cljs (info :ping))
   {})
 
+(defn set-updater-status
+  [{:keys [current-state msg-payload]}]
+  (let [new-state (assoc-in current-state [:updater-status] msg-payload)]
+    {:new-state new-state}))
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    initial-state-fn
@@ -147,6 +152,7 @@
                         :cmd/set-opt      c/set-conj-fn
                         :metrics/info     save-metrics
                         :help/manual      save-manual
+                        :update/status    set-updater-status
                         :cmd/set-dragged  c/set-currently-dragged
                         :cmd/toggle-key   c/toggle-key-fn
                         :cmd/assoc-in     c/assoc-in-state})})

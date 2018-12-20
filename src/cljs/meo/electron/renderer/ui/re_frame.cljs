@@ -17,6 +17,7 @@
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.data-explorer :as dex]
             [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.updater :as upd]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.help :as help]))
 
@@ -89,6 +90,7 @@
 (reg-sub :timing (fn [db _] (:timing db)))
 (reg-sub :geo-photos (fn [db _] (:geo-photos db)))
 (reg-sub :chart-data (fn [db _] (select-keys db [:media-stats])))
+(reg-sub :updater-status (fn [db _] (:updater-status db)))
 
 (reg-sub :hashtags (fn [db _]
                      (let [show-pvt? (:show-pvt (:cfg db))
@@ -122,7 +124,9 @@
          [h/error-boundary
           [f/dashboard put-fn]]]]
        [h/error-boundary
-        [stats/stats-text]]])))
+        [stats/stats-text]]
+       [h/error-boundary
+        [upd/updater put-fn]]])))
 
 (defn countries-page [put-fn]
   [:div.flex-container

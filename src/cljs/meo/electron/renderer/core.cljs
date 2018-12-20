@@ -57,6 +57,8 @@
                        :sync/start-imap
                        :help/get-manual
                        :import/screenshot
+                       :update/check :update/check-beta :update/download
+                       :update/install :window/close
                        :blink/busy})
 
 (defn init []
