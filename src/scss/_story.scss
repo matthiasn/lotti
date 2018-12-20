@@ -41,6 +41,19 @@
     }
   }
 
+  .badge {
+    text-align: center;
+    .story-badge {
+      font-size: $header-font-family;
+      font-weight: bold;
+      display: inline-block;
+      padding: 8px 12px;
+      margin: 12px 0 20px 12px;
+      border-radius: $entry-border-radius;
+    }
+  }
+
+
   label {
     display: inline-block;
     width: 60px;

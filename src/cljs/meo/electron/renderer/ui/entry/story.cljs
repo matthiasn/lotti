@@ -5,6 +5,7 @@
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [clojure.set :as set]
+            [react-color :as react-color]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.ui.ui-components :as uc]
             [meo.electron.renderer.ui.charts.common :as cc]))
@@ -25,6 +26,19 @@
 
 (declare saga-select)
 
+(def chrome-picker (r/adapt-react-class react-color/ChromePicker))
+
+(defn color-picker [entry path label put-fn]
+  (let [set-color (fn [data]
+                    (let [hex (aget data "hex")
+                          updated (assoc-in entry path hex)]
+                      (put-fn [:entry/update-local updated])))]
+    [:div.row
+     [:label.wide label]
+     [chrome-picker {:disableAlpha     true
+                     :color            (get-in entry path "#ccc")
+                     :onChangeComplete set-color}]]))
+
 (defn story-form
   "Renders editable field for story name when the entry is of type :story.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
@@ -32,17 +46,30 @@
   (when (= (:entry_type entry) :story)
     (let [on-input-fn (input-fn entry :story_name put-fn)
           on-keydown-fn (h/keydown-fn entry :story_name put-fn)
-          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}]
+          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}
+          font-color-path [:story_cfg :font_color]
+          badge-color-path [:story_cfg :badge_color]]
       [:div.story
        [saga-select entry put-fn]
        [:label "Story Name:"]
-       [editable-field on-input-fn on-keydown-fn (:story_name entry)]
+       [:div.story-edit-field
+        {:content-editable true
+         :on-input         on-input-fn
+         :on-key-down      on-keydown-fn}
+        (:story_name entry)]
        [:div.row
         [:label "Active? "]
         [uc/switch (merge sw-common {:path [:story_cfg :active]})]]
        [:div.row
         [:label "Private? "]
-        [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]])))
+        [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]
+       [color-picker entry font-color-path "Text Color:" put-fn]
+       [:div.badge
+        [:span.story-badge
+         {:style {:background-color (get-in entry badge-color-path :white)
+                  :color            (get-in entry font-color-path :black)}}
+         (:story_name entry)]]
+       [color-picker entry badge-color-path "Badge Color:" put-fn]])))
 
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
