@@ -5,9 +5,9 @@
   position: fixed;
   right: 0;
   bottom: 0;
-  background-color: lighten(desaturate(orange, 10), 10);
+  background-color: lighten(desaturate($orange, 15), 15);
   width: 450px;
-  height: 180px;
+  height: 225px;
   border-top-left-radius: $entry-border-radius;
 
   button {
@@ -39,7 +39,7 @@
   display: block;
   height: 100%;
   border-radius: 4px;
-  background-color: $green;
+  background-color: $orange;
   position: relative;
   overflow: hidden;
 }
