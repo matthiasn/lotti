@@ -111,14 +111,16 @@
 
   :Story
   {:description "A story"
-   :fields      {:timestamp  {:type (non-null ID)}
-                 :story_name {:type String}
-                 :text       {:type String}
-                 :pvt        {:type Boolean}
-                 :active     {:type Boolean}
-                 :vclock     {:type (list :Vclock)}
-                 :saga       {:type        :Saga
-                              :description "Saga that the story belongs to."}}}
+   :fields      {:timestamp   {:type (non-null ID)}
+                 :story_name  {:type String}
+                 :text        {:type String}
+                 :font_color  {:type String}
+                 :badge_color {:type String}
+                 :pvt         {:type Boolean}
+                 :active      {:type Boolean}
+                 :vclock      {:type (list :Vclock)}
+                 :saga        {:type        :Saga
+                               :description "Saga that the story belongs to."}}}
 
   :Briefing
   {:description "A briefing (plan for a specific day)"

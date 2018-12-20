@@ -8,6 +8,8 @@
     text
     active
     pvt
+    font_color
+    badge_color
     story_name
   }
   sagas {

@@ -165,7 +165,12 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
     (fn story-select-filter-render [entry tab-group put-fn]
       (let [linked-story (get-in entry [:story :timestamp])
+            story (get @stories linked-story)
             story-name (get-in entry [:story :story_name])
+            font-color (or (get-in story [:font_color])
+                           (cc/item-color story-name "dark"))
+            badge-color (or (get-in story [:badge_color])
+                            (cc/item-color story-name "light"))
             saga-name (get-in entry [:story :saga :saga_name])
             open-story (up/add-search {:tab-group    tab-group
                                        :story-name   story-name
@@ -188,14 +193,12 @@
             icon-cls (str (when (and (not (:primary_story entry))
                                      @predictions)
                             "predicted ")
-                          (when (:show @local) "show"))
-            icon-color (cc/item-color story-name "light")
-            font-color (cc/item-color story-name "dark")]
+                          (when (:show @local) "show"))]
         (when-not (or (:comment_for entry)
                       (contains? #{:story :saga} (:entry_type entry)))
           [:div.story-select
            [:div.story.story-name
-            (when story-name {:style {:background-color icon-color
+            (when story-name {:style {:background-color badge-color
                                       :color            font-color}})
             [:i.fal.fa-book
              (merge
