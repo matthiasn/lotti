@@ -57,7 +57,8 @@
                                 (:timestamp query) (fmt-ts query)
                                 :else search-text)
                   query-coord {:query-id q :tab-group tab-group}
-                  on-drag-start #(put-fn [:search/set-dragged query-coord])]
+                  on-drag-start #(put-fn [:search/set-dragged query-coord])
+                  tooltip-text (:first-line query)]
               ^{:key (str "tab-header" q)}
               [:div.tooltip
                [:div.tab-item
@@ -70,8 +71,9 @@
                  {:style    {:color (cc/item-color search-text "dark")}
                   :on-click #(do (put-fn [:search/remove query-coord])
                                  (.stopPropagation %))}]]
-               [:div.tooltiptext
-                [:h4 (:first-line query)]]]))]]))))
+               (when-not (empty? tooltip-text)
+                 [:div.tooltiptext
+                  [:h4 tooltip-text]])]))]]))))
 
 (defn tabs-view [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
