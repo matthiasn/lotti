@@ -43,10 +43,11 @@
 (defn add-search
   "Adds search by sending a message that'll open the specified search in a new
    tab."
-  [{:keys [query-string tab-group story-name]} put-fn]
+  [{:keys [query-string tab-group first-line story-name]} put-fn]
   (fn [_ev]
     (let [q (merge (up/parse-search query-string)
-                   {:story-name story-name})
+                   {:story-name story-name
+                    :first-line first-line})
           msg [:search/add {:tab-group (case tab-group
                                          :off :off
                                          :briefing :left
@@ -77,6 +78,7 @@
             closed (get-in entry [:task :closed])]
         [:tr.task {:on-click (add-search {:tab-group    tab-group
                                           :story-name   (-> entry :story :story_name)
+                                          :first-line   text
                                           :query-string ts} put-fn)
                    :class    cls}
          [:td
@@ -107,7 +109,7 @@
                (s-to-hhmmss actual)])])
          [:td.text text]
          [:td.last (when unlink
-                [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
+                     [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
 
 (defn task-row2 [entry _put-fn _cfg]
   (let [ts (:timestamp entry)]
@@ -117,7 +119,8 @@
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)]
         [:tr.task {:on-click (add-search {:tab-group  tab-group
-                                          :story-name (-> entry :story :story_name) :query-string ts} put-fn)
+                                          :story-name (-> entry :story :story_name) :query-string ts
+                                          :first-line text} put-fn)
                    :class    cls}
          [:td (when-let [prio (some-> entry :task :priority (name))]
                 [:span.prio {:class prio} prio])]

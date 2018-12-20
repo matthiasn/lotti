@@ -14,16 +14,16 @@
 
   .tab-items {
     display: flex;
-    overflow-y: auto;
   }
 
   .tab-item {
     position: relative;
+    height: 16px;
     display: flex;
     background-color: white;
     padding: 3px;
     margin: 0 2px 0 0;
-    min-width: 17px;
+    min-width: 12px;
     cursor: pointer;
     font-size: 0.8em;
     font-family: $header-font-family;
@@ -50,16 +50,22 @@
       color: #889;
 
       .fa-plus {
-        margin-left: 2px;
-        margin-right: 2px;
+        margin-left: 3px;
+        margin-right: 3px;
       }
     }
 
     &.close-all {
       background-color: lighten($red, 30);
       font-weight: bold;
-      font-family: monospace;
       color: #999;
+
+      span {
+        margin-top: 7px;
+      }
+      i {
+        margin-top: 1px;
+      }
     }
 
     .fa {

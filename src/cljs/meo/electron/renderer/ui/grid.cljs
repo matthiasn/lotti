@@ -46,7 +46,8 @@
          (when (> (count queries) 2)
            [:div.tab-item.close-all
             {:on-click #(put-fn [:search/close-all {:tab-group tab-group}])}
-            [:span (count queries) [:span.fa.fa-times]]])
+            [:span (count queries) ]
+            [:i.fas.fa-times]])
          [:div.tab-items
           (for [[q query] (sort-by #(:story-name (second %)) queries)]
             (let [search-text (s/trim (str (:search-text query)))
@@ -58,16 +59,19 @@
                   query-coord {:query-id q :tab-group tab-group}
                   on-drag-start #(put-fn [:search/set-dragged query-coord])]
               ^{:key (str "tab-header" q)}
-              [:div.tab-item
-               {:class         (when (= active-query q) "active")
-                :style         {:background-color (cc/item-color search-text)}
-                :on-click      #(put-fn [:search/set-active query-coord])
-                :draggable     true
-                :on-drag-start on-drag-start}
-               [:span.fa.fa-times
-                {:style    {:color (cc/item-color search-text "dark")}
-                 :on-click #(do (put-fn [:search/remove query-coord])
-                                (.stopPropagation %))}]]))]]))))
+              [:div.tooltip
+               [:div.tab-item
+                {:class         (when (= active-query q) "active")
+                 :style         {:background-color (cc/item-color search-text)}
+                 :on-click      #(put-fn [:search/set-active query-coord])
+                 :draggable     true
+                 :on-drag-start on-drag-start}
+                [:span.fa.fa-times
+                 {:style    {:color (cc/item-color search-text "dark")}
+                  :on-click #(do (put-fn [:search/remove query-coord])
+                                 (.stopPropagation %))}]]
+               [:div.tooltiptext
+                [:h4 (:first-line query)]]]))]]))))
 
 (defn tabs-view [tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
