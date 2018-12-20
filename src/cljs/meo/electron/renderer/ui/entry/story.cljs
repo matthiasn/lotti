@@ -6,7 +6,8 @@
             [meo.electron.renderer.helpers :as h]
             [clojure.set :as set]
             [meo.common.utils.parse :as up]
-            [meo.electron.renderer.ui.ui-components :as uc]))
+            [meo.electron.renderer.ui.ui-components :as uc]
+            [meo.electron.renderer.ui.charts.common :as cc]))
 
 (defn editable-field [_ _ text]
   (fn [on-input-fn on-keydown-fn _]
@@ -160,22 +161,19 @@
             icon-cls (str (when (and (not (:primary_story entry))
                                      @predictions)
                             "predicted ")
-                          (when (:show @local) "show"))]
+                          (when (:show @local) "show"))
+            icon-color (cc/item-color story-name "light")
+            font-color (cc/item-color story-name "dark")]
         (when-not (or (:comment_for entry)
                       (contains? #{:story :saga} (:entry_type entry)))
           [:div.story-select
            [:div.story.story-name
+            (when story-name {:style {:background-color icon-color
+                                      :color            font-color}})
             [:i.fal.fa-book
              (merge
                {:on-click toggle-visible
-                :class    icon-cls}
-
-
-
-               (when-not (empty? story-name)
-                 {:style {:color "red"}})
-
-               )]
+                :class    (str icon-cls)})]
             [:span {:on-click open-story}
              saga-name
              (when-not (empty? saga-name) ": ")
