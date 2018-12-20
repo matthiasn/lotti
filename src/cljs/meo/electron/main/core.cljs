@@ -44,6 +44,7 @@
                 :screenshot/save
                 :entry/update
                 :entry/sync
+                :entry/create
                 :geonames/res
                 :export/geojson
                 :gql/cmd

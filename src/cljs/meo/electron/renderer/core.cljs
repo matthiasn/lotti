@@ -87,6 +87,10 @@
        [:cmd/route {:from #{:renderer/router}
                     :to   :renderer/store}]
 
+       [:cmd/route {:from :renderer/exec-cmp
+                    :to   #{:renderer/ws-cmp
+                            :renderer/store}}]
+
        [:cmd/route {:from #{:renderer/screenshot
                             :renderer/ui-cmp}
                     :to   :renderer/scheduler}]

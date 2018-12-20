@@ -62,12 +62,17 @@
     (.showOpenDialog dialog options callback)))
 
 (defn file-menu [put-fn]
-  (let [new-entry #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_entry()"}])
-        new-story #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_story()"}])
-        new-saga #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_saga()"}])
-        new-habit #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_habit()"}])
-        new-custom-field #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_custom_field()"}])
-        new-dashboard #(put-fn [:exec/js {:js "meo.electron.renderer.ui.menu.new_dashboard()"}])]
+  (let [new-entry #(put-fn [:entry/create {}])
+        new-story #(put-fn [:entry/create {:entry_type :story}])
+        new-saga #(put-fn [:entry/create {:entry_type :saga}])
+        new-habit #(put-fn [:entry/create {:entry_type :habit}])
+        new-custom-field #(put-fn [:entry/create
+                                   {:entry_type :custom-field-cfg
+                                    :perm_tags  #{"#custom-field-cfg"}
+                                    :tags       #{"#custom-field-cfg"}}])
+        new-dashboard #(put-fn [:entry/create
+                                {:entry_type :dashboard-cfg
+                                 :perm_tags  #{"#dashboard-cfg"}}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
