@@ -7,7 +7,8 @@
   bottom: 0;
   background-color: lighten(desaturate(orange, 10), 10);
   width: 450px;
-  height: 150px;
+  height: 180px;
+  border-top-left-radius: $entry-border-radius;
 
   button {
     background-color: $hashtag-blue;
