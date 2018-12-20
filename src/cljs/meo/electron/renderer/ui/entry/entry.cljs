@@ -38,16 +38,28 @@
        [:span.hashtag {:on-click clear-import} "#import"])
      (for [mention (:mentions entry)]
        ^{:key (str "mention-" mention)}
-       [:span.mention {:on-click (up/add-search mention tab-group put-fn)} mention])
+       [:span.mention {:on-click (up/add-search {:tab-group    tab-group
+                                                 :story-name   mention
+                                                 :first-line   mention
+                                                 :query-string mention} put-fn)} mention])
      (for [tag (disj tags "#import")]
        ^{:key (str "tag-" tag)}
-       [:span.hashtag {:on-click (up/add-search tag tab-group put-fn)} tag])]))
+       [:span.hashtag {:on-click (up/add-search {:tab-group    tab-group
+                                                 :story-name   tag
+                                                 :first-line   tag
+                                                 :query-string tag} put-fn)} tag])]))
 
 (defn linked-btn [entry local-cfg active put-fn]
   (when (pos? (:linked_cnt entry))
     (let [ts (:timestamp entry)
+          text (eu/first-line entry)
+          story-name (get-in entry [:story :story_name])
           tab-group (:tab-group local-cfg)
-          open-linked (up/add-search (str "l:" ts) tab-group put-fn)
+          open-linked (up/add-search {:tab-group    tab-group
+                                      :story-name   story-name
+                                      :first-line   (str "linked for: " text)
+                                      :query-string (str "l:" ts)}
+                                     put-fn)
           entry-active? (when-let [query-id (:query-id local-cfg)]
                           (= (query-id @active) ts))]
       [:div

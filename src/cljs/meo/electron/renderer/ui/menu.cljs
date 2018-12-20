@@ -110,7 +110,11 @@
                          v)
                  percent-completed (percent-achieved habit)
                  ts (-> habit :habit_entry :timestamp)
-                 on-click (up/add-search ts :right put-fn)
+                 on-click (up/add-search
+                            {:tab-group    :right
+                             :story-name   (-> habit :habit_entry :story :story_name)
+                             :first-line   text
+                             :query-string ts} put-fn)
                  started (and percent-completed (not success))]
              ^{:key ts}
              [:div.tooltip

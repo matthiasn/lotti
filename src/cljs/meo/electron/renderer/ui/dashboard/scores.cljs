@@ -55,7 +55,7 @@
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg put-fn]
       (let [points (map-indexed point-mapper scores)
-            {:keys [color fill glow]} cfg
+            {:keys [color fill glow label]} cfg
             line-points (s/join " " (map :s points))
             active-dashboard @active-dashboard
             stroke (:stroke_width cfg 1)]
@@ -79,7 +79,10 @@
             ^{:key (str active-dashboard p)}
             [:circle {:cx       (:x p)
                       :cy       (:y p)
-                      :on-click (up/add-search (:ts p) :left put-fn)
+                      :on-click (up/add-search
+                                  {:tab-group    :left
+                                   :first-line   label
+                                   :query-string (:ts p)} put-fn)
                       :r        (:circle_radius cfg 3)
                       :fill     fill
                       :style    {:stroke       color

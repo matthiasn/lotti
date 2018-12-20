@@ -121,6 +121,8 @@
         hide-fn (fn [_ev] (.setTimeout js/window #(reset! visible false) 60000))
         query-id (:query-id local-cfg)
         tab-group (:tab-group local-cfg)
+        story-name (get-in entry [:story :story_name])
+        text (eu/first-line entry)
         toggle-map #(put-fn [:cmd/toggle
                              {:timestamp ts
                               :path      [:cfg :show-maps-for]}])
@@ -148,7 +150,11 @@
                     (put-fn [:search/remove-all
                              {:story       (get-in entry [:story :timestamp])
                               :search-text (str ts)}])
-                    ((up/add-search ts tab-group put-fn)))
+                    ((up/add-search {:tab-group    tab-group
+                                     :story-name   story-name
+                                     :first-line   text
+                                     :query-string ts}
+                                    put-fn)))
         mouse-enter #(reset! visible true)
         toggle-debug #(swap! local update-in [:debug] not)]
     (fn entry-actions-render [entry local put-fn edit-mode? toggle-edit local-cfg]
@@ -174,7 +180,7 @@
                                        open-new)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div.items ;{:style {:opacity opacity}}
+         [:div.items                                        ;{:style {:opacity opacity}}
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
@@ -205,7 +211,7 @@
                            (info "created comment" new-entry)
                            (put-fn [:entry/update new-entry])))
         new-pomodoro (fn [_ev]
-                       (let [create (h/new-entry put-fn (p/pomodoro-defaults ts) )
+                       (let [create (h/new-entry put-fn (p/pomodoro-defaults ts))
                              new-entry (create)]
                          (info "new-pomodoro" new-entry)
                          (put-fn [:cmd/schedule-new

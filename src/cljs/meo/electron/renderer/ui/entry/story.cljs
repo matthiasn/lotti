@@ -139,7 +139,10 @@
       (let [linked-story (get-in entry [:story :timestamp])
             story-name (get-in entry [:story :story_name])
             saga-name (get-in entry [:story :saga :saga_name])
-            open-story (up/add-search linked-story tab-group put-fn)
+            open-story (up/add-search {:tab-group    tab-group
+                                       :story-name   story-name
+                                       :first-line   story-name
+                                       :query-string linked-story} put-fn)
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)
@@ -162,7 +165,17 @@
                       (contains? #{:story :saga} (:entry_type entry)))
           [:div.story-select
            [:div.story.story-name
-            [:i.fal.fa-book {:on-click toggle-visible :class icon-cls}]
+            [:i.fal.fa-book
+             (merge
+               {:on-click toggle-visible
+                :class    icon-cls}
+
+
+
+               (when-not (empty? story-name)
+                 {:style {:color "red"}})
+
+               )]
             [:span {:on-click open-story}
              saga-name
              (when-not (empty? saga-name) ": ")

@@ -21,15 +21,20 @@
   (let [query-cfg (subscribe [:query-cfg])
         options (subscribe [:options])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
-        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
-        open-new (fn [x]
-                   (put-fn [:search/add
-                            {:tab-group :left
-                             :query     (up/parse-search (:timestamp x))}]))]
+        search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))]
     (fn habit-line-render [habit tab-group put-fn]
       (let [entry (:habit_entry habit)
+            story-name (:story_name (:story entry))
             ts (:timestamp entry)
             text (eu/first-line entry)
+            open-new (fn [x]
+                       (let [story-name (-> entry :story :story_name)
+                             q (merge (up/parse-search (:timestamp x))
+                                      {:story-name story-name
+                                       :first-line story-name})]
+                         (info q)
+                         (put-fn [:search/add {:tab-group :left
+                                               :query     q}])))
             create-entry #(let [mapping (-> @options :questionnaires :mapping)
                                 mapping2 (zipmap (vals mapping) (keys mapping))
                                 story (get-in entry [:story :timestamp])
@@ -37,7 +42,7 @@
                                 q-tags (set (map (fn [x] (get mapping2 (:quest-k x))) criteria))
                                 cf-tags (set (map :cf-tag criteria))
                                 tags (disj (set/union cf-tags q-tags) nil)
-                                completion-entry (merge {:perm_tags tags
+                                completion-entry (merge {:perm_tags     tags
                                                          :primary_story story})
                                 f (h/new-entry put-fn completion-entry open-new)
                                 new-entry (f)]
@@ -52,7 +57,10 @@
          [:td.habit {:on-click create-entry} text]
          [:td.start
           [:i.fas.fa-cog
-           {:on-click (up/add-search ts tab-group put-fn)}]]]))))
+           {:on-click (up/add-search {:tab-group    tab-group
+                                      :story-name   story-name
+                                      :first-line   text
+                                      :query-string ts} put-fn)}]]]))))
 
 (defn waiting-habits
   "Renders table with open habits."

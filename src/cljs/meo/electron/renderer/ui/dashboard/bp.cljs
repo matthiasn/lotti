@@ -37,17 +37,21 @@
                                :stroke-width (:stroke_width cfg 1.5)
                                :fill         :none}}]
           (for [p points]
-            (let [enter #(let [{:keys [bp_systolic bp_diastolic]} (:data p)
-                               ymd (df (:ts p) ymd)
-                               t [:span ymd ": " [:strong bp_systolic "/" bp_diastolic] " mmHG"]]
-                           (swap! local assoc :display-text t))
+            (let [{:keys [bp_systolic bp_diastolic]} (:data p)
+                  ymd (df (:ts p) ymd)
+                  bp (str bp_systolic "/" bp_diastolic " mmHG")
+                  t [:span ymd ": " [:strong bp]]
+                  enter #(swap! local assoc :display-text t)
                   leave #(swap! local assoc :display-text "")]
               ^{:key (str active-dashboard p)}
               [:circle {:cx             (:x p)
                         :cy             (:y p)
                         :on-mouse-enter enter
                         :on-mouse-leave leave
-                        :on-click       (up/add-search (:ts p) :right put-fn)
+                        :on-click       (up/add-search
+                                          {:tab-group    :right
+                                           :first-line   (str "#BP " bp)
+                                           :query-string (:ts p)} put-fn)
                         :fill           fill
                         :r              (:circle_radius cfg 3)
                         :style          {:stroke       color

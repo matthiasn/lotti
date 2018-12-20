@@ -46,7 +46,7 @@
          (when (> (count queries) 2)
            [:div.tab-item.close-all
             {:on-click #(put-fn [:search/close-all {:tab-group tab-group}])}
-            [:span (count queries) ]
+            [:span (count queries)]
             [:i.fas.fa-times]])
          [:div.tab-items
           (for [[q query] (sort-by #(:story-name (second %)) queries)]

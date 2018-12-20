@@ -12,7 +12,8 @@
             [react-infinite-calendar :as ric]
             [meo.electron.renderer.ui.charts.common :as cc]
             [meo.common.utils.parse :as p]
-            [meo.electron.renderer.ui.entry.briefing.habits :as habits]))
+            [meo.electron.renderer.ui.entry.briefing.habits :as habits]
+            [meo.electron.renderer.ui.entry.utils :as eu]))
 
 (def locales
   {:fr {:locale       (js/require "date-fns/locale/fr")
@@ -106,13 +107,16 @@
                        end (if (pos? completed)
                              (+ ts (* completed 1000))
                              ts)
-                       story-name (get-in story [:story_name])
-                       saga-name (get-in story [:saga :saga_name] "none")
+                       text (eu/first-line entry)
+                       story-name (get-in story [:story_name] "none")
                        color (cc/item-color story-name)
                        title (str (when story-name (str story-name " - "))
                                   text)
-                       open-ts (or comment_for timestamp)
-                       click (up/add-search open-ts :left put-fn)]
+                       open-ts (or comment_for timestamp 0)
+                       click (up/add-search {:tab-group    :left
+                                             :story-name   story-name
+                                             :first-line   text
+                                             :query-string open-ts} put-fn)]
                    {:title title
                     :click click
                     :color color

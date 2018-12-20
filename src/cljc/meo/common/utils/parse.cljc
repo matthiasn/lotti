@@ -61,18 +61,20 @@
      :linked      (second (re-find #"l:([0-9]{13})" text))
      :n           100}))
 
-
 (defn add-search
   "Adds search by sending a message that'll open the specified search in a new
    tab."
-  [query-string tab-group put-fn]
+  [{:keys [query-string tab-group first-line story-name]} put-fn]
   (fn [_ev]
-    (let [msg [:search/add {:tab-group (case tab-group
+    (let [q (merge (parse-search query-string)
+                   {:story-name story-name
+                    :first-line first-line})
+          msg [:search/add {:tab-group (case tab-group
                                          :off :off
                                          :briefing :left
                                          :left :right
                                          :left)
-                            :query     (parse-search query-string)}]]
+                            :query     q}]]
       (put-fn msg))))
 
 (defn autocomplete-tags
