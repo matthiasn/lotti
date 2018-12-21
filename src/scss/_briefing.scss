@@ -202,8 +202,11 @@
         }
       }
 
+      th {
+        white-space: nowrap;
+      }
       td {
-        padding: 0 5px 0 0;
+        padding: 0 2px;
         .legend {
           height: 1.3em;
           width: 12px;
@@ -219,7 +222,6 @@
 
         &.time {
           text-align: center;
-          min-width: 50px;
         }
         &.text {
           white-space: nowrap;

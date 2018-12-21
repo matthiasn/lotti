@@ -3,6 +3,8 @@
     timestamp
     md
     text
+    last_saved
+
     story {
       timestamp
       story_name
@@ -26,6 +28,8 @@
       timestamp
       completed_time
       custom_fields
+      last_saved
+
     }
   }
 }

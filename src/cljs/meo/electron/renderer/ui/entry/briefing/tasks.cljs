@@ -8,15 +8,17 @@
             [moment]
             [clojure.set :as set]
             [meo.electron.renderer.helpers :as h]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn task-sorter [x y]
   (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))
         c1 (compare (get-in x [:task :done]) (get-in y [:task :done]))
         c2 (compare (or (get-in x [:task :priority]) :X)
                     (or (get-in y [:task :priority]) :X))
-        c3 (compare (:timestamp x) (:timestamp y))]
-    (if (not= c0 0) c0 (if (not= c1 0) c1 (if (not= c2 0) c2 c3)))))
+        c3 (compare (:since-update x) (:since-update y))
+        c4 (compare (:timestamp x) (:timestamp y))]
+    (if (not= c0 0) c0 (if (not= c1 0) c1 (if (not= c2 0) c2 (if (not= c3 0) c3 c4))))))
 
 (defn m-to-hhmm
   [minutes]
@@ -40,12 +42,16 @@
         fmt (.format utc "HH:mm")]
     fmt))
 
+(defn time-ago [ms-ago]
+  (let [dur (.duration moment  ms-ago)]
+    (.humanize dur false)))
+
 (defn task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
     (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
-                              show-estimate show-points]}]
+                              show-estimate show-points show-last-updated]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -59,7 +65,8 @@
             estimate (get-in entry [:task :estimate_m] 0)
             logged-time (eu/logged-total @new-entries entry)
             done (get-in entry [:task :done])
-            closed (get-in entry [:task :closed])]
+            closed (get-in entry [:task :closed])
+            last-updated (time-ago (:since-update entry))]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :first-line   text
@@ -81,8 +88,10 @@
             (let [seconds (* 60 estimate)]
               [:span {:class cls}
                (s-to-hhmm (.abs js/Math seconds))])])
+         (when show-last-updated
+           [:td.time last-updated])
          (when show-logged?
-           [:td.estimate
+           [:td.estimate.time
             (let [actual (if (and active busy)
                            logged-time
                            (:completed_s (:task entry)))
@@ -123,11 +132,21 @@
          (when unlink
            [:td [:i.fa.far.fa-unlink {:on-click unlink}]])]))))
 
+(defn add-last-updated [x]
+  (let [last-saved-all (into [(:last_saved x)]
+                             (map :last_saved (:comments x)))
+        last-updated (apply max last-saved-all)]
+    (assoc-in x [:since-update] (- last-updated (stc/now)))))
+
 (defn started-tasks
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg put-fn]
   (let [gql-res (subscribe [:gql-res])
-        started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
+        started-tasks (reaction (->> @gql-res
+                                     :started-tasks
+                                     :data
+                                     :started_tasks
+                                     (map add-last-updated)))
         query-cfg (subscribe [:query-cfg])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
@@ -161,19 +180,20 @@
               (when show-points
                 [:th {:on-click #(swap! local assoc :show-points false)}
                  [:i.fa.far.fa-gem]])
-              ;[:th [:i.fal.fa-bell]]
-              [:th [:i.far.fa-stopwatch]]
+              [:th "idle for"]
+              [:th "time spent"]
               [:th
                [:div
-                "Started Tasks"
+                "started tasks"
                 ;[filter-btn :on_hold]
                 ]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-row entry put-fn {:tab-group    tab-group
-                                       :search-text  search-text
-                                       :show-points  show-points
-                                       :show-logged? true}])]]])))))
+               [task-row entry put-fn {:tab-group         tab-group
+                                       :search-text       search-text
+                                       :show-points       show-points
+                                       :show-last-updated true
+                                       :show-logged?      true}])]]])))))
 
 (defn open-task-sorter [x y]
   (let [c0 (compare (or (get-in x [:task :priority]) :X)
