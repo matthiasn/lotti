@@ -43,14 +43,14 @@
     fmt))
 
 (defn time-ago [ms-ago]
-  (let [dur (.duration moment  ms-ago)]
+  (let [dur (.duration moment ms-ago)]
     (.humanize dur false)))
 
 (defn task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
+    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged? show-age
                               show-estimate show-points show-last-updated]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
@@ -66,7 +66,8 @@
             logged-time (eu/logged-total @new-entries entry)
             done (get-in entry [:task :done])
             closed (get-in entry [:task :closed])
-            last-updated (time-ago (:since-update entry))]
+            last-updated (time-ago (:since-update entry))
+            age (time-ago (- (stc/now) (:timestamp entry)))]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :first-line   text
@@ -90,6 +91,8 @@
                (s-to-hhmm (.abs js/Math seconds))])])
          (when show-last-updated
            [:td.time last-updated])
+         (when show-age
+           [:td.time age])
          (when show-logged?
            [:td.estimate.time
             (let [actual (if (and active busy)
@@ -104,13 +107,14 @@
          [:td.last (when unlink
                      [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
 
-(defn task-row2 [entry _put-fn _cfg]
+(defn open-task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)]
     (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
                               show-points]}]
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
-            estimate (get-in entry [:task :estimate_m] 0)]
+            estimate (get-in entry [:task :estimate_m] 0)
+            age (time-ago (- (stc/now) (:timestamp entry)))]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :query-string ts
@@ -123,10 +127,7 @@
            [:td.award-points
             (when-let [points (-> entry :task :points)]
               points)])
-         [:td.estimate
-          (let [seconds (* 60 estimate)]
-            [:span {:class cls}
-             (s-to-hhmm (.abs js/Math seconds))])]
+         [:td.time age]
          [:td.text
           (subs text 0 50)]
          (when unlink
@@ -191,7 +192,7 @@
                ^{:key (:timestamp entry)}
                [task-row entry put-fn {:tab-group         tab-group
                                        :search-text       search-text
-                                       :show-points       show-points
+                                       :show-points       false
                                        :show-last-updated true
                                        :show-logged?      true}])]]])))))
 
@@ -247,18 +248,18 @@
             [:th.xs [:i.far.fa-exclamation-triangle]]
             (when show-points
               [:th [:i.fa.far.fa-gem]])
-            [:th [:i.fal.fa-bell]]
-            [:th "Open Tasks"
+            [:th "age"]
+            [:th "open tasks"
              [:i.fas.fa-search]
              [:input {:on-input on-change
                       :value    (:task-search @local)}]]]
            (doall
              (for [entry (sort open-task-sorter entries-list)]
                ^{:key (:timestamp entry)}
-               [task-row2 entry put-fn {:tab-group    tab-group
-                                        :search-text  @search-text
-                                        :show-points  show-points
-                                        :show-logged? true}]))]]]))))
+               [open-task-row entry put-fn {:tab-group    tab-group
+                                            :search-text  @search-text
+                                            :show-points  show-points
+                                            :show-logged? true}]))]]]))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
@@ -319,13 +320,14 @@
             [:th.xs [:i.far.fa-exclamation-triangle]]
             (when show-points
               [:th [:i.fa.far.fa-gem]])
-            [:th [:i.fa.far.fa-stopwatch]]
-            [:th [:strong "Linked Tasks"]]
+            [:th "age"]
+            [:th "linked tasks"]
             [:th.xs [:i.fa.far.fa-link]]]
            (for [entry (sort task-sorter linked-tasks)]
              ^{:key (:timestamp entry)}
              [task-row entry put-fn {:tab-group     tab-group
                                      :search-text   search-text
                                      :show-points   show-points
-                                     :show-estimate true
+                                     :show-estimate false
+                                     :show-age      true
                                      :unlink        unlink}])]]]))))
