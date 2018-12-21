@@ -44,7 +44,7 @@
 
 (defn time-ago [ms-ago]
   (let [dur (.duration moment ms-ago)]
-    (.humanize dur false)))
+    (s/replace (.humanize dur false) "a few " "")))
 
 (defn task-row [entry _put-fn _cfg]
   (let [ts (:timestamp entry)
@@ -114,9 +114,7 @@
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)
-            age (s/replace
-                  (time-ago (- (stc/now) (:timestamp entry)))
-                  "a few " "")]
+            age (time-ago (- (stc/now) (:timestamp entry)))]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :query-string ts
