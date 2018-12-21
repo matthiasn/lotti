@@ -114,7 +114,9 @@
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)
-            age (time-ago (- (stc/now) (:timestamp entry)))]
+            age (s/replace
+                  (time-ago (- (stc/now) (:timestamp entry)))
+                  "a few " "")]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :query-string ts
