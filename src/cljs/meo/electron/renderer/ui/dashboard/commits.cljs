@@ -4,27 +4,32 @@
             [reagent.ratom :refer-macros [reaction]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [reagent.core :as r]
+            [taoensso.timbre :refer-macros [info error debug]]
+            [tinycolor2 :as tinycolor]
             [meo.electron.renderer.ui.charts.common :as cc]))
 
 (defn rect [{:keys []}]
   (let [local (r/atom {})
         click (fn [_] (swap! local update-in [:show-label] not))]
-    (fn [{:keys [v x w y h color cls ymd]}]
-      [:g
-       [:rect {:on-click click
-               :x        x
-               :y        (- y h)
-               :width    w
-               :height   h
-               :fill color
-               :class    (cc/weekend-class cls {:date_string ymd})}]
-       (when (:show-label @local)
-         [:text {:x           (+ x 11)
-                 :y           (- y 5)
-                 :font-size   8
-                 :fill        "#777"
-                 :text-anchor "middle"}
-          v])])))
+    (fn [{:keys [v mx x w y h color cls ymd]}]
+      (let [tc (new tinycolor color)
+            lighten-by (/ 1 (/ v mx))
+            lightened (.lighten tc lighten-by)]
+        [:g
+         [:rect {:on-click click
+                 :x        x
+                 :y        (- y h)
+                 :width    w
+                 :height   h
+                 :fill     (.toString lightened)
+                 :class    (cc/weekend-class cls {:date_string ymd})}]
+         (when (:show-label @local)
+           [:text {:x           (+ x 11)
+                   :y           (- y 5)
+                   :font-size   8
+                   :fill        "#777"
+                   :text-anchor "middle"}
+            v])]))))
 
 (defn commits-chart [_ _]
   (let [gql-res (subscribe [:gql-res])]
@@ -42,16 +47,16 @@
                  span (if (zero? span) 1 span)
                  scaled (* 1800 (/ offset span))
                  x (+ 201 scaled)
-                 v commits
-                 h (* v scale)]
+                 v commits]
              ^{:key (str :git-commits n)}
              [rect {:v     v
-                    :x     x
-                    :w     (/ 1500 days)
-                    :ymd   date-string
-                    :y     btm-y
-                    :color color
-                    :h     h
-                    :cls   "done"
-                    :n     n}]))
+                     :mx    mx
+                     :x     x
+                     :w     (/ 1500 days)
+                     :ymd   date-string
+                     :y     btm-y
+                     :color color
+                     :h     (- h 5)
+                     :cls   "done"
+                     :n     n}]))
          [dc/line (+ y h) "#000" 2]]))))
