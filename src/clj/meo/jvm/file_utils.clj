@@ -7,7 +7,11 @@
             [clojure.pprint :as pp]))
 
 (def app-path (or (System/getenv "APP_PATH") "."))
-(def data-path (or (System/getenv "DATA_PATH") "./data"))
+
+;; this would need to be adapted when developing on Windows -
+;; PR to detect platform and then use tmp dir very welcome
+(def data-path (or (System/getenv "DATA_PATH") "/tmp/meo/data"))
+
 (def pid-file (str data-path "/meo.pid"))
 (def daily-logs-path (str data-path "/daily-logs/"))
 (def bak-path (str data-path "/backup/"))
