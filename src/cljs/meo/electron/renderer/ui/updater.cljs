@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]))
+            [taoensso.timbre :refer-macros [info debug]]
+            [clojure.pprint :as pp]))
 
 (defn cancel-btn [put-fn]
   (let [cancel (fn [_]
@@ -35,7 +36,7 @@
         download-install (fn [_] (put-fn [:update/download :immediate]))
         {:keys [version releaseDate]} (:info status-msg)]
     [:div.updater
-     [:h2 "New version of meo available."]
+     [:h2 "New version of meo available..."]
      [:div.info
       [:div [:strong "Version: "] version]
       [:div [:strong "Release date: "] (subs releaseDate 0 10)]]
@@ -72,6 +73,13 @@
      " "
      [:button {:on-click install} "install"]]))
 
+(def test-status
+  {:status :update/downloading
+   :info   {:total          211111111
+            :percent        10.47368
+            :bytesPerSecond 22222213
+            :transferred    22111121}})
+
 (defn updater
   "Updater view component"
   [put-fn]
@@ -89,4 +97,6 @@
              :update/available [update-available status-msg put-fn]
              :update/downloading [downloading status-msg put-fn]
              :update/downloaded [update-downloaded put-fn]
-             [:h2 "meo Updater: " (str status-msg)])])))))
+             [:div
+              [:h2 "meo Updater status: "]
+              [:pre [:code (with-out-str (pp/pprint status-msg))]]])])))))

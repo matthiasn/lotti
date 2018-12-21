@@ -1,14 +1,16 @@
 @import "variables.scss";
 
 .updater {
-  padding: 6px 20px;
+  padding: 6px 24px;
   position: fixed;
   right: 0;
   bottom: 0;
-  background-color: lighten(desaturate($orange, 15), 15);
-  width: 450px;
-  height: 225px;
-  border-top-left-radius: $entry-border-radius;
+  background-color: white;
+  width: 360px;
+  height: 190px;
+  border-top-left-radius: 10px;
+  border-left: $red solid 4px;
+  border-top: $red solid 4px;
 
   button {
     background-color: $hashtag-blue;
@@ -22,17 +24,17 @@
   }
 
   .info {
-    padding: 1em 0 2em 0;
+    padding: 12px 0;
   }
 }
 
 // adapted from https://css-tricks.com/css3-progress-bars/
 .meter {
-  height: 16px;
+  height: 10px;
   position: relative;
-  background: $body-background-color;
+  background-color: #DDD;
   border-radius: 6px;
-  padding: 4px;
+  padding: 3px;
 }
 
 .meter > span {

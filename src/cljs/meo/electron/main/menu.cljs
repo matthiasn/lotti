@@ -164,13 +164,14 @@
                  {:label "Scatter Matrix"
                   :click #(open :correlation)})
                {:label       "Toggle Split View"
-                :accelerator "CmdOrCtrl+Alt+S"
+                :accelerator "CmdOrCtrl+Shift+S"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :single-column]}])}
                {:label       "Toggle Private Mode"
-                :accelerator "CmdOrCtrl+Alt+P"
+                :accelerator "CmdOrCtrl+Shift+P"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
-               {:label "Toggle Dashboard"
-                :click #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
+               {:label       "Toggle Dashboard"
+                :accelerator "CmdOrCtrl+Shift+D"
+                :click       #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}
