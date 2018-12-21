@@ -4,13 +4,17 @@
             [me.raynes.fs :as fs]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [clojure.string :as s]))
 
 (def app-path (or (System/getenv "APP_PATH") "."))
 
-;; this would need to be adapted when developing on Windows -
-;; PR to detect platform and then use tmp dir very welcome
-(def data-path (or (System/getenv "DATA_PATH") "/tmp/meo/data"))
+(def platform (s/lower-case (System/getProperty "os.name")))
+(def tmp-dir (System/getProperty "java.io.tmpdir"))
+(def data-path (or (System/getenv "DATA_PATH")
+                   (if (s/includes? platform "windows")
+                     (str tmp-dir "/meo/data")
+                     "/tmp/meo/data")))
 
 (def pid-file (str data-path "/meo.pid"))
 (def daily-logs-path (str data-path "/daily-logs/"))
