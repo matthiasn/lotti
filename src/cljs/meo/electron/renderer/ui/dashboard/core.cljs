@@ -53,11 +53,13 @@
     (fn dashboard-render [{:keys [days controls dashboard-ts]} put-fn]
       (let [now (st/now)
             pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
+            active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
             not-empty-filter (fn [x] (seq (get-in x [1 :dashboard_cfg :items])))
             dashboards (->> @gql-res2
                             :dashboard_cfg
                             :res
                             (filter pvt-filter)
+                            (filter active-filter)
                             (filter not-empty-filter)
                             (into {}))
             dashboard (or (get dashboards dashboard-ts)
@@ -93,9 +95,6 @@
             pause (fn []
                     (js/clearInterval (:timer @local))
                     (swap! local assoc-in [:play] false))
-            open-cfg #(put-fn [:search/add
-                               {:tab-group :right
-                                :query     (up/parse-search (:timestamp dashboard))}])
             d (* 24 60 60 1000)
             within-day (mod now d)
             start (+ dc/tz-offset (- now within-day (* days d)))
@@ -115,57 +114,58 @@
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")]
         (gql-query charts-pos days local put-fn)
-        [:div.dashboard
-         [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
-                :style   {:background :white}
-                :key     (str (:timestamp dashboard) (:idx @local))}
-          [:filter#blur1
-           [:feGaussianBlur {:stdDeviation 3}]]
-          [:g
-           (for [n (range (+ 2 days))]
-             (let [offset (+ (* n d) dc/tz-offset)
-                   scaled (* 1800 (/ offset span))
-                   x (+ 200 scaled)]
-               ^{:key n}
-               [dc/tick x "#CCC" 1 30 end-y]))]
-          (for [chart-cfg (:charts charts-pos)]
-            (let [chart-fn (case (:type chart-cfg)
-                             :habit_success h/habits-chart
-                             :questionnaire ds/scores-chart
-                             :barchart_row db/barchart-row
-                             :linechart_row cfl/linechart-row
-                             :bp_chart bp/bp-chart
-                             :commits-chart c/commits-chart
-                             ;:earlybird-chart eb/earlybird-chart
-                             ;:points-by-day dc/points-by-day-chart
-                             ;:points-lost-by-day dc/points-lost-by-day-chart
-                             nil)]
-              (when chart-fn
-                ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
-                [rh/error-boundary [chart-fn (merge common chart-cfg) put-fn]])))
-          (for [n (range (inc days))]
-            (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
-                  scaled (* 1800 (/ offset span))
-                  x (+ 201 scaled)
-                  ts (+ start offset)
-                  weekday (dc/df ts dc/weekday)
-                  weekend? (get #{"Sat" "Sun"} weekday)]
-              ^{:key n}
-              [:g {:writing-mode "tb-rl"}
-               [:text {:x           x
-                       :y           36
-                       :font-size   12
-                       :font-weight (if weekend? :normal :light)
-                       :fill        (if weekend? :red :black)
-                       :text-anchor "middle"}
-                (dc/df ts dc/month-day)]]))]
-         [:div.controls
-          [:h2 text]
-          [:span.display-text (:display-text @local)]
-          (when controls
-            [:div.btns
-             ;[:i.fas.fa-cog {:on-click open-cfg}]
-             [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
-             [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
-                      :on-click (if (:play @local) pause play)}]
-             [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]]))))
+        (when dashboard
+          [:div.dashboard
+           [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
+                  :style   {:background :white}
+                  :key     (str (:timestamp dashboard) (:idx @local))}
+            [:filter#blur1
+             [:feGaussianBlur {:stdDeviation 3}]]
+            [:g
+             (for [n (range (+ 2 days))]
+               (let [offset (+ (* n d) dc/tz-offset)
+                     scaled (* 1800 (/ offset span))
+                     x (+ 200 scaled)]
+                 ^{:key n}
+                 [dc/tick x "#CCC" 1 30 end-y]))]
+            (for [chart-cfg (:charts charts-pos)]
+              (let [chart-fn (case (:type chart-cfg)
+                               :habit_success h/habits-chart
+                               :questionnaire ds/scores-chart
+                               :barchart_row db/barchart-row
+                               :linechart_row cfl/linechart-row
+                               :bp_chart bp/bp-chart
+                               :commits-chart c/commits-chart
+                               ;:earlybird-chart eb/earlybird-chart
+                               ;:points-by-day dc/points-by-day-chart
+                               ;:points-lost-by-day dc/points-lost-by-day-chart
+                               nil)]
+                (when chart-fn
+                  ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
+                  [rh/error-boundary [chart-fn (merge common chart-cfg) put-fn]])))
+            (for [n (range (inc days))]
+              (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
+                    scaled (* 1800 (/ offset span))
+                    x (+ 201 scaled)
+                    ts (+ start offset)
+                    weekday (dc/df ts dc/weekday)
+                    weekend? (get #{"Sat" "Sun"} weekday)]
+                ^{:key n}
+                [:g {:writing-mode "tb-rl"}
+                 [:text {:x           x
+                         :y           36
+                         :font-size   12
+                         :font-weight (if weekend? :normal :light)
+                         :fill        (if weekend? :red :black)
+                         :text-anchor "middle"}
+                  (dc/df ts dc/month-day)]]))]
+           [:div.controls
+            [:h2 text]
+            [:span.display-text (:display-text @local)]
+            (when (and controls (< 1 (count dashboards)))
+              [:div.btns
+               ;[:i.fas.fa-cog {:on-click open-cfg}]
+               [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
+               [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
+                        :on-click (if (:play @local) pause play)}]
+               [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]])))))
