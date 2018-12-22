@@ -1,8 +1,10 @@
 (ns meo.common.specs
   (:require [meo.common.utils.parse :as p]
-            #?(:clj
-                     [clojure.spec.alpha :as s]
-               :cljs [cljs.spec.alpha :as s])))
+            #?(:clj [clojure.spec.alpha :as s]
+               :cljs [cljs.spec.alpha :as s])
+            [meo.common.specs.imap]
+            [meo.common.specs.help]
+            [meo.common.specs.updater]))
 
 (defn number-in-range?
   "Return function that returns true if start <= val and val < end"
@@ -311,18 +313,11 @@
 (s/def :wm.progress/v number?)
 (s/def :window/progress (s/keys :req-un [:wm.progress/v]))
 
-(s/def :sync/start-server nil?)
-(s/def :sync/stop-server (s/nilable keyword?))
-(s/def :sync/scan-inbox nil?)
-(s/def :sync/scan-images nil?)
-
 (s/def :startup/progress number?)
 (s/def :startup/read nil?)
 
 (s/def :meo.enc/filename string?)
 (s/def :file/encrypt (s/keys :req-un [:meo.enc/filename]))
-
-(s/def :meo.update/status (s/map-of keyword? keyword?))
 
 (s/def :meo.gql/id keyword?)
 (s/def :meo.gql/file string?)

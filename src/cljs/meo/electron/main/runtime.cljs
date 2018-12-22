@@ -12,7 +12,7 @@
   (let [cwd (.cwd process)
         rp (.-resourcesPath process)
         repo-dir (s/includes? (s/lower-case rp) "electron")
-        user-data (if repo-dir cwd (.getPath app "userData"))
+        user-data (if repo-dir "/tmp/meo" (.getPath app "userData"))
         app-path (if repo-dir cwd (str rp "/app"))
         platform (.-platform process)                       ; e.g. darwin, win32
         download-path (.getPath app "downloads")

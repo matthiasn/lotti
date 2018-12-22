@@ -80,7 +80,7 @@
 
   :plugins [[lein-cljsbuild "1.1.7"
              :exclusions [org.apache.commons/commons-compress]]
-            [lein-figwheel "0.5.17"]
+            [lein-figwheel "0.5.18"]
             [test2junit "1.4.2"]
             [lein-cloverage "1.0.13"]
             [deraen/lein-sass4clj "0.3.1"]
