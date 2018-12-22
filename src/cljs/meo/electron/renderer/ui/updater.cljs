@@ -46,22 +46,31 @@
      " "
      [:button {:on-click download-install} "download & install"]]))
 
-(defn downloading [status-msg put-fn]
+(defn downloading [status-msg local put-fn]
   (let [{:keys [total percent bytesPerSecond transferred]} (:info status-msg)
         mbs (/ (Math/floor (/ bytesPerSecond 1024 102.4)) 10)
         total (Math/floor (/ total 1024 1024))
         transferred (Math/floor (/ transferred 1024 1024))
-        percent (Math/floor percent)]
+        percent (Math/floor percent)
+        expanded (:expanded @local)]
     [:div.updater
-     [:h2 "Downloading new version of meo."]
+     [:i.fas
+      {:class (if expanded
+                "fa-chevron-double-down"
+                "fa-chevron-double-up")
+       :on-click #(swap! local update :expanded not)}]
+     (when expanded
+       [:h2 "Downloading new meo version."])
      [:div.meter
       [:span {:style {:width (str percent "%")}}]]
-     [:div.info
-      [:div [:strong "Total size: "] total " MB"]
-      [:div [:strong "Transferred: "] transferred " MB"]
-      [:div [:strong "Progress: "] percent "%"]
-      [:div [:strong "Speed: "] mbs " MB/s"]]
-     [cancel-btn put-fn]]))
+     (when expanded
+       [:div.info
+        [:div [:strong "Total size: "] total " MB"]
+        [:div [:strong "Transferred: "] transferred " MB"]
+        [:div [:strong "Progress: "] percent "%"]
+        [:div [:strong "Speed: "] mbs " MB/s"]])
+     (when expanded
+       [cancel-btn put-fn])]))
 
 (defn update-downloaded [put-fn]
   (let [install (fn [_]
@@ -95,7 +104,7 @@
              :update/checking [checking put-fn]
              :update/not-available [no-update put-fn]
              :update/available [update-available status-msg put-fn]
-             :update/downloading [downloading status-msg put-fn]
+             :update/downloading [downloading status-msg local put-fn]
              :update/downloaded [update-downloaded put-fn]
              [:div
               [:h2 "meo Updater status: "]

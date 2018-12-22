@@ -1,16 +1,29 @@
 @import "variables.scss";
 
 .updater {
-  padding: 6px 24px;
+  z-index: 1111;
+  padding: 10px 24px;
   position: fixed;
   right: 0;
   bottom: 0;
   background-color: white;
   width: 360px;
-  height: 190px;
+  height: auto;
   border-top-left-radius: 10px;
   border-left: $red solid 4px;
   border-top: $red solid 4px;
+
+  .fa-chevron-double-down, .fa-chevron-double-up {
+    position: absolute;
+    right: 8px;
+    bottom: 12px;
+    cursor: pointer;
+  }
+
+  h2 {
+    margin-top: 6px;
+    margin-bottom: 10px;
+  }
 
   button {
     background-color: $hashtag-blue;
