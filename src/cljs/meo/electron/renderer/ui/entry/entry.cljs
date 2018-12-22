@@ -120,12 +120,12 @@
           [:div.action-row
            [dt/datetime-header merged local put-fn]
            [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]]
-         [es/story-form merged put-fn]
-         [es/saga-name-field merged edit-mode? put-fn]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged put-fn])
          (when-not (:spotify entry)
            [d/entry-editor entry errors put-fn])
+         [es/story-form merged put-fn]
+         [es/saga-name-field merged edit-mode? put-fn]
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged local-cfg put-fn edit-mode?])

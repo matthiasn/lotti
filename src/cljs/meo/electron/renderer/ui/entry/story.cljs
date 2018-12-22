@@ -46,30 +46,32 @@
   (when (= (:entry_type entry) :story)
     (let [on-input-fn (input-fn entry :story_name put-fn)
           on-keydown-fn (h/keydown-fn entry :story_name put-fn)
-          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}
-          font-color-path [:story_cfg :font_color]
-          badge-color-path [:story_cfg :badge_color]]
-      [:div.story
-       [saga-select entry put-fn]
-       [:label "Story Name:"]
-       [:div.story-edit-field
-        {:content-editable true
-         :on-input         on-input-fn
-         :on-key-down      on-keydown-fn}
-        (:story_name entry)]
-       [:div.row
-        [:label "Active? "]
-        [uc/switch (merge sw-common {:path [:story_cfg :active]})]]
-       [:div.row
-        [:label "Private? "]
-        [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]
-       [color-picker entry font-color-path "Text Color:" put-fn]
-       [:div.badge
-        [:span.story-badge
-         {:style {:background-color (get-in entry badge-color-path :white)
-                  :color            (get-in entry font-color-path :black)}}
-         (:story_name entry)]]
-       [color-picker entry badge-color-path "Badge Color:" put-fn]])))
+          initial-story-name (:story_name entry)]
+      (fn story-form-render [entry put-fn]
+        (let [sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}
+              font-color-path [:story_cfg :font_color]
+              badge-color-path [:story_cfg :badge_color]]
+          [:div.story
+           [saga-select entry put-fn]
+           [:label "Story Name:"]
+           [:div.story-edit-field
+            {:content-editable true
+             :on-input         on-input-fn
+             :on-key-down      on-keydown-fn}
+            initial-story-name]
+           [:div.row
+            [:label "Active? "]
+            [uc/switch (merge sw-common {:path [:story_cfg :active]})]]
+           [:div.row
+            [:label "Private? "]
+            [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]
+           [color-picker entry font-color-path "Text Color:" put-fn]
+           [:div.badge
+            [:span.story-badge
+             {:style {:background-color (get-in entry badge-color-path :white)
+                      :color            (get-in entry font-color-path :black)}}
+             (:story_name entry)]]
+           [color-picker entry badge-color-path "Badge Color:" put-fn]])))))
 
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
