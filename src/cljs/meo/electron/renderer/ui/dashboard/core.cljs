@@ -48,16 +48,17 @@
         habits (subscribe [:habits])
         local (r/atom {:idx          0
                        :play         false
-                       :min-h        320
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [{:keys [days controls dashboard-ts]} put-fn]
       (let [now (st/now)
             pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
+            not-empty-filter (fn [x] (seq (get-in x [1 :dashboard_cfg :items])))
             dashboards (->> @gql-res2
                             :dashboard_cfg
                             :res
                             (filter pvt-filter)
+                            (filter not-empty-filter)
                             (into {}))
             dashboard (or (get dashboards dashboard-ts)
                           (-> dashboards
@@ -115,7 +116,7 @@
                      "YOUR DASHBOARD DESCRIPTION HERE")]
         (gql-query charts-pos days local put-fn)
         [:div.dashboard
-         [:svg {:viewBox (str "0 0 2100 " (+ (max end-y (:min-h @local)) 6))
+         [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
                 :style   {:background :white}
                 :key     (str (:timestamp dashboard) (:idx @local))}
           [:filter#blur1
@@ -161,14 +162,6 @@
          [:div.controls
           [:h2 text]
           [:span.display-text (:display-text @local)]
-          (when controls
-            [:div
-             [:input {:type      :number
-                      :step      10
-                      :on-change #(let [v (.. % -target -value)
-                                        parsed (when (seq v) (js/parseFloat v))]
-                                    (swap! local assoc-in [:min-h] parsed))
-                      :value     (:min-h @local)}]])
           (when controls
             [:div.btns
              ;[:i.fas.fa-cog {:on-click open-cfg}]
