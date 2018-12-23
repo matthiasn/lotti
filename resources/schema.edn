@@ -74,6 +74,7 @@
                  :perm_tags           {:type (list String)}
                  :mentions            {:type (list String)}
                  :img_file            {:type String}
+                 :img_rel_path        {:type String}
                  :audio_file          {:type String}
                  :entry_type          {:type String}
                  :for_day             {:type String}

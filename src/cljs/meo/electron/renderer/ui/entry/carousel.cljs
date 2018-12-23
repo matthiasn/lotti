@@ -46,7 +46,8 @@
           md (:md entry)
           md (if fullscreen md (str (first (str/split-lines md))))
           html (md/md->html md)
-          toggle-expanded #(swap! local update-in [:fullscreen] not)]
+          toggle-expanded #(swap! local update-in [:fullscreen] not)
+          original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
       [:div.slide
        [:img {:src resized-rotated}]
        (when-not fullscreen
@@ -57,6 +58,7 @@
            (if fullscreen
              [:i.fas.fa-compress]
              [:i.fas.fa-expand])]
+          [:span original-filename]
           (when fullscreen
             [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
           [:div {:dangerouslySetInnerHTML {:__html html}}]])])))
@@ -139,7 +141,8 @@
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
             external (str h/photos file)
-            {:keys [latitude longitude]} selected]
+            {:keys [latitude longitude]} selected
+            original-filename (last (s/split (:img_rel_path selected) #"[/\\\\]"))]
         [:div.info-drawer
          (when (and latitude longitude
                     (not (and (zero? latitude)
@@ -154,7 +157,9 @@
          [:time (h/localize-datetime-full ts locale)]
          [text-editor selected put-fn]
          [stars-view selected put-fn]
-         [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]))))
+         [:div.stars
+          [:span original-filename]
+          [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]]))))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]

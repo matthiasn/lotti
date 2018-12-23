@@ -50,6 +50,7 @@
                 :arrival_timestamp
                 :departure_timestamp
                 :img_file
+                :img_rel_path
                 :last_saved
                 :audio_file
                 :tags
@@ -85,6 +86,7 @@
                             :latitude
                             :longitude
                             :img_file
+                            :img_rel_path
                             :starred
                             :adjusted_ts
                             :comment_for
@@ -100,7 +102,8 @@
                           :stars
                           :latitude
                           :longitude
-                          :img_file]]
+                          :img_file
+                          :img_rel_path]]
                 [:reward [:claimed
                           :claimed_ts
                           :points]]

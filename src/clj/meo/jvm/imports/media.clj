@@ -14,7 +14,8 @@
             [meo.jvm.utils.images :as img]
             [meo.common.specs :as specs]
             [cheshire.core :as cc]
-            [clj-http.client :as hc])
+            [clj-http.client :as hc]
+            [io.pedestal.log :as log])
   (:import [com.drew.imaging ImageMetadataReader]))
 
 (defn dms-to-dd
@@ -99,14 +100,15 @@
         target-filename (str timestamp "-" filename)]
     (fs/copy rel-path (str fu/img-path target-filename))
     (img/gen-thumbs file target-filename)
-    {:timestamp timestamp
-     :latitude  (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
-     :longitude (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
-     :img_file  target-filename
-     :img       {:orientation orientation}
-     :md        ""
-     :tags      #{"#import"}
-     :perm_tags #{"#photo"}}))
+    {:timestamp    timestamp
+     :latitude     (dms-to-dd exif "GPS Latitude" "GPS Latitude Ref")
+     :longitude    (dms-to-dd exif "GPS Longitude" "GPS Longitude Ref")
+     :img_file     target-filename
+     :img_rel_path rel-path
+     :img          {:orientation orientation}
+     :md           ""
+     :tags         #{"#import"}
+     :perm_tags    #{"#photo"}}))
 
 (defn gen-thumbs [{:keys [msg-payload]}]
   (let [{:keys [filename full-path]} msg-payload]
