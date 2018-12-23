@@ -47,7 +47,7 @@
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
-                       :play         false
+                       :play         true
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [{:keys [days controls dashboard-ts]} put-fn]
@@ -113,6 +113,9 @@
             text (or (when-not (empty? text)
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")]
+        (when (and (:play @local)
+                   (not (:timer @local)))
+          (play nil))
         (gql-query charts-pos days local put-fn)
         (when dashboard
           [:div.dashboard
