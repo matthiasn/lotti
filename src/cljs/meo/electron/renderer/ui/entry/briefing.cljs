@@ -136,6 +136,19 @@
           "task"
           [:i.fas.fa-plus-square]]]))))
 
+(defn all-entries-for-day [put-fn]
+  (let [cal-day (subscribe [:cal-day])
+        click #(put-fn [:search/add
+                        {:tab-group :left
+                         :query     (up/parse-search @cal-day)}])]
+    (fn [_put-fn]
+      (let []
+        [:div.add-task
+         [:div.toggle-visible
+          {:on-click click}
+          "show all"
+          [:i.fas.fa-chevron-square-right]]]))))
+
 (defn briefing-view [put-fn local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
@@ -168,12 +181,17 @@
                         :on-drag-over  h/prevent-default
                         :on-drag-enter h/prevent-default}
          [:div.briefing-header
-          [sagas-filter local]
-          [a/briefing-actions ts put-fn]
-          [add-task ts put-fn]]
+          [h/error-boundary
+           [all-entries-for-day put-fn]]
+          [h/error-boundary
+           [sagas-filter local]]
+          [h/error-boundary
+           [add-task ts put-fn]]]
          [:div.scroll
-          [tasks/started-tasks local local-cfg put-fn]
-          [tasks/open-linked-tasks local local-cfg put-fn]
+          [h/error-boundary
+           [tasks/started-tasks local local-cfg put-fn]]
+          [h/error-boundary
+           [tasks/open-linked-tasks local local-cfg put-fn]]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary
@@ -190,7 +208,8 @@
             (for [comment (:comments @briefing)]
               ^{:key (str "c" comment)}
               [e/journal-entry comment put-fn local-cfg])]]
-          [tasks/open-tasks local local-cfg put-fn]]]))))
+          [h/error-boundary
+           [tasks/open-tasks local local-cfg put-fn]]]]))))
 
 (defn briefing-column-view
   [tab-group put-fn]

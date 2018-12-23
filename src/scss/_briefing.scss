@@ -11,21 +11,7 @@
     flex-flow: row;
     padding: 1px;
     min-height: 28px;
-
-    .actions {
-      padding-top: 2px;
-      flex: 2;
-      align-items: flex-end;
-      display: flex;
-      justify-content: center;
-      flex-wrap: nowrap;
-
-      .fa {
-        margin: 0;
-        padding: 2px 2px 8px 3px;
-        font-size: 11px;
-      }
-    }
+    justify-content: space-between;
   }
 
   .scroll {
