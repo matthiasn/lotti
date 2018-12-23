@@ -6,7 +6,8 @@
             [clojure.data.avl :as avl]
             [clojure.string :as s]
             [markdown.core :as md]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [meo.electron.renderer.graphql :as gql]))
 
 (defn stars-view [entry put-fn]
   (let [star (fn [idx n]
@@ -24,6 +25,16 @@
      [star 4 stars]
      [star 5 stars]]))
 
+(defn gql-query [pvt search-text put-fn]
+  (let [queries [[:gallery
+                  {:search-text search-text
+                   :n           1000}]]
+        query (gql/tabs-query queries false pvt)]
+    (put-fn [:gql/query {:q        query
+                         :id       :gallery
+                         :res-hash nil
+                         :prio     11}])))
+
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
@@ -33,7 +44,10 @@
           ts (:timestamp entry)
           md (str (first (s/split-lines (:md entry))))
           html (md/md->html md)
-          toggle-expanded #(info :toggle-expanded)
+          toggle-expanded (fn [_]
+                            (info :toggle-expanded)
+                            (gql-query true (str ts) put-fn)
+                            (put-fn [:nav/to {:page :gallery}]))
           original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
       [:div.slide
        [:img {:src resized-rotated}]

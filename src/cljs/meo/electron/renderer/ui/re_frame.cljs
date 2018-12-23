@@ -13,6 +13,7 @@
             [meo.electron.renderer.ui.config.core :as cfg]
             [meo.electron.renderer.ui.charts.correlation :as corr]
             [meo.electron.renderer.ui.charts.location :as loc]
+            [meo.electron.renderer.ui.img.core :as ic]
             [meo.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meo.electron.renderer.ui.entry.briefing :as b]
             [meo.electron.renderer.ui.data-explorer :as dex]
@@ -165,6 +166,7 @@
              :calendar [cal put-fn]
              :correlation [corr/scatter-matrix put-fn]
              :heatmap [hm/heatmap put-fn]
+             :gallery [ic/gallery-page put-fn]
              :help [help/help put-fn]
              :empty [:div.flex-container]
              [main-page put-fn])

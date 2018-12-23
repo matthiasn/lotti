@@ -262,6 +262,18 @@
   margin: 0;
   background-color: black;
 
+  &.page {
+    height: 100vh;
+  }
+
+  .leaflet {
+    height: 310px;
+  }
+
+  .fa-external-link-alt {
+    padding-left: 6px;
+  }
+
   .carousel .slide img {
     height: 260px;
     width: auto;

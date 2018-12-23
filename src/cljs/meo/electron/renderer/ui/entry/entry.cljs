@@ -207,10 +207,6 @@
          [journal-entry entry put-fn local-cfg]
          (when thumbnails?
            [icl/gallery (icl/gallery-entries entry) local-cfg put-fn])
-
-         (when thumbnails?
-           [cl/gallery (cl/gallery-entries entry) local-cfg put-fn])
-
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments
