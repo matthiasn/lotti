@@ -62,10 +62,12 @@
                             (filter active-filter)
                             (filter not-empty-filter)
                             (into {}))
+            n (count dashboards)
             dashboard (or (get dashboards dashboard-ts)
-                          (-> dashboards
-                              vals
-                              (nth (min (:idx @local) (dec (count dashboards))))))
+                          (when (pos? n)
+                              (nth
+                                (vals dashboards)
+                                (min (:idx @local) (dec n)))))
             charts-pos (let [ts (:timestamp dashboard)
                              new-entry @(:new-entry (eu/entry-reaction ts))
                              entry (or new-entry dashboard)
@@ -83,7 +85,6 @@
                                     :last-h (:h cfg 25)
                                     :charts (conj (:charts acc) cfg)}))]
                          (reduce f acc items))
-            n (count dashboards)
             next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
             prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
             cycle (fn [f _] (swap! local update-in [:idx] f))
