@@ -155,3 +155,5 @@
                                             :initial true}]}]])))
 
 (.on app "ready" start)
+(.on app "activate" start)
+
