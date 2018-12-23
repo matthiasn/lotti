@@ -155,5 +155,6 @@
                                             :initial true}]}]])))
 
 (.on app "ready" start)
-(.on app "activate" start)
-
+(.on app "activate" (fn [_ev hasVisibleWindows]
+                      (when-not hasVisibleWindows
+                        (start))))
