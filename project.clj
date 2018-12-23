@@ -111,7 +111,6 @@
                                  ["test"]
                                  ["cljs-main"]
                                  ["cljs-renderer"]
-                                 ["cljs-updater"]
                                  ["sass4clj" "once"]
                                  ["jlink" "assemble"]]}
 
