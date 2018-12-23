@@ -107,10 +107,13 @@
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
             map-id (str ts (when qid (name qid)))
-            errors (cfc/validate-cfg @new-entry backend-cfg)]
+            errors (cfc/validate-cfg @new-entry backend-cfg)
+            on-drag-start (a/drag-start-fn entry put-fn)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
-                     :on-drag-enter h/prevent-default}
+                     :on-drag-enter h/prevent-default
+                     :draggable     true
+                     :on-drag-start on-drag-start}
          [:div.header-1
           [:div [es/story-select merged tab-group put-fn]]
           [linked-btn merged local-cfg active put-fn]]

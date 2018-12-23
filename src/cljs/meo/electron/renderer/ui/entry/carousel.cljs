@@ -68,7 +68,8 @@
       [:li.thumb
        {:on-click click
         :class    (when (= entry selected) "selected")}
-       [:img {:src thumb}]])))
+       [:img {:src       thumb
+              :draggable false}]])))
 
 (defn stars-filter [local]
   (let [selected (:filter @local)

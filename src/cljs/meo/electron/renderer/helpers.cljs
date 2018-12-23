@@ -26,7 +26,9 @@
                      :latitude  (.-latitude coords)
                      :longitude (.-longitude coords)}]
         (put-fn [:entry/update-local updated])))
-    (fn [err] (prn err))))
+    (fn [err]
+      (error "while getting geolocation:" err)
+      (.log js/console err))))
 
 (def timezone
   (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]

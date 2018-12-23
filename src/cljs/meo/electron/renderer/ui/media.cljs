@@ -29,4 +29,5 @@
                        (map :name)
                        (interpose ", ")
                        (apply str))]
-     [:img {:src (:image spotify)}]]))
+     [:img {:src       (:image spotify)
+            :draggable false}]]))
