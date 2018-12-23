@@ -56,6 +56,7 @@
     (s/dashboard-cfg-query current-state put-fn)
     (run-query "count-stats.gql" :count-stats 20 nil)
     (put-fn [:startup/progress?])
+    (put-fn [:update/auto-check])
     {}))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]

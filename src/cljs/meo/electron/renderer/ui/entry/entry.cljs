@@ -17,6 +17,7 @@
             [meo.electron.renderer.ui.entry.story :as es]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.entry.carousel :as cl]
+            [meo.electron.renderer.ui.entry.img.carousel :as icl]
             [meo.electron.renderer.ui.entry.wavesurfer :as ws]
             [meo.common.utils.misc :as u]
             [meo.electron.renderer.ui.entry.conflict :as ec]
@@ -205,7 +206,11 @@
         [:div.entry-with-comments
          [journal-entry entry put-fn local-cfg]
          (when thumbnails?
+           [icl/gallery (icl/gallery-entries entry) local-cfg put-fn])
+
+         (when thumbnails?
            [cl/gallery (cl/gallery-entries entry) local-cfg put-fn])
+
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

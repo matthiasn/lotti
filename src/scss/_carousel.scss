@@ -225,13 +225,17 @@
   color: #fff;
   padding: 6px 15px;
   font-size: $font-size-small;
-  text-align: left;
+  text-align: center;
   opacity: 0.25;
   -webkit-transition: opacity 0.35s ease-in-out;
   transition: opacity 0.35s ease-in-out;
 
   ul {
     margin-left: 25px;
+  }
+
+  div {
+    margin-bottom: 3px;
   }
 
   a {

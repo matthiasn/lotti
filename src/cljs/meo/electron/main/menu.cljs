@@ -152,8 +152,9 @@
                {:label       "New Window"
                 :accelerator "CmdOrCtrl+Alt+N"
                 :click       new-window}
-               {:label "Main View"
-                :click #(open :main)}
+               {:label       "Back to Main View"
+                :accelerator "Escape"
+                :click       #(open :main)}
                (when (contains? capabilities :countries)
                  {:label "Countries"
                   :click #(open :countries)})
