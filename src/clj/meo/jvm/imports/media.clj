@@ -153,12 +153,10 @@
       (info "Importing " filename)
       (try (let [file-info (import-image file)]
              (when file-info
-               (put-fn (with-meta [:entry/import file-info] msg-meta))))
+               (put-fn (with-meta [:entry/update file-info] msg-meta))))
            (catch Exception ex (error (str "Error while importing "
                                            filename) ex)))))
-  {:emit-msg [:cmd/schedule-new
-              {:message (with-meta [:search/refresh] msg-meta)
-               :timeout 3000}]})
+  {})
 
 (defn gen-cache [{:keys [put-fn]}]
   (let [files (file-seq (io/file fu/img-path))

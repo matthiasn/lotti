@@ -47,7 +47,7 @@
 
 (defn entry-import-fn
   "Handler function for persisting an imported journal entry."
-  [{:keys [current-state msg-payload put-fn]}]
+  [{:keys [current-state msg-payload put-fn msg-meta]}]
   (let [id (or (:id msg-payload) (uuid/v1))
         entry (merge msg-payload {:last_saved (st/now) :id id})
         ts (:timestamp entry)
@@ -64,9 +64,16 @@
                                                          :horizontal-accuracy
                                                          :gps-timestamp
                                                          :linked-entries])))
-                      entry)]
+                      entry)
+        broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
     (when-not (= existing node-to-add)
-      (append-daily-log cfg node-to-add put-fn))
+      (append-daily-log cfg node-to-add put-fn)
+      (put-fn (with-meta [:entry/saved entry] broadcast-meta))
+      (put-fn [:cmd/schedule-new
+               {:message [:gql/run-registered]
+                :timeout 250
+                :id      :imported-entry}]))
+
     {:new-state (ga/add-node current-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 

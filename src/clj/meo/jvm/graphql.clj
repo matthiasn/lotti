@@ -28,7 +28,7 @@
     (info "Running registered GraphQL queries" queries)
     (doseq [[id _q] queries]
       (exec/run-query (merge m {:msg-payload {:id id}
-                           :msg-meta    msg-meta}))))
+                                :msg-meta    msg-meta}))))
   {})
 
 (defn start-stop [{:keys [current-state msg-payload]}]

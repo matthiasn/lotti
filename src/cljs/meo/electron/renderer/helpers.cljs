@@ -169,7 +169,7 @@
 
 (defn media-path [path file]
   (normalize (str (if repo-dir
-                    (.cwd process)
+                    "/tmp/meo"
                     user-data)
                   path file)))
 

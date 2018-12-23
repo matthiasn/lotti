@@ -60,6 +60,9 @@
                           :backend/playground}
                   :to   :backend/store}]
 
+     [:cmd/route {:from #{:backend/imports}
+                  :to   :backend/ws}]
+
      [:cmd/route {:from :backend/upload
                   :to   #{:backend/store
                           :backend/scheduler
