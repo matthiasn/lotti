@@ -91,26 +91,6 @@
       (aset dt "effectAllowed" "move")
       (aset dt "dropEffect" "link"))))
 
-(defn new-link
-  "Renders input for adding link entry."
-  [entry put-fn create-linked-entry]
-  (let [local (r/atom {:visible false})
-        toggle-visible (fn [_]
-                         (swap! local update-in [:visible] not)
-                         (.setTimeout js/window
-                                      #(swap! local assoc-in [:visible] false)
-                                      5000))
-        on-drag-start (drag-start-fn entry put-fn)]
-    (fn [entry put-fn create-linked-entry]
-      [:span.new-link-btn
-       [:i.fa.fa-link.toggle {:on-click      toggle-visible
-                              :draggable     true
-                              :on-drag-start on-drag-start}]
-       (when (:visible @local)
-         [:span.new-link
-          {:on-click #(do (create-linked-entry) (toggle-visible %))}
-          [:i.fas.fa-plus-square] "add linked"])])))
-
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
@@ -167,17 +147,7 @@
             star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
             flag-entry #(put-fn [:entry/update-local (update-in entry [:flagged] not)])
             starred (:starred entry)
-            flagged (:flagged entry)
-            story (get-in entry [:story :timestamp])
-            open-new (fn [x]
-                       (put-fn [:search/add
-                                {:tab-group (if (= tab-group :left) :right :left)
-                                 :query     (up/parse-search (:timestamp x))}]))
-            create-linked (h/new-entry put-fn
-                                       {:linked_entries #{ts}
-                                        :primary_story  story
-                                        :linked_stories #{story}}
-                                       open-new)]
+            flagged (:flagged entry)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items                                        ;{:style {:opacity opacity}}
@@ -192,10 +162,9 @@
                           "fa-arrow-alt-from-left"
                           "fa-arrow-alt-from-right")
               :on-click move-over}])
-          (when (and (contains? #{:left :right} tab-group) (not comment?))
-            [new-link entry put-fn create-linked])
           [trash-icon trash-entry]
-          (when (contains? (:capabilities @backend-cfg) :debug)
+          (when (or (contains? (:capabilities @backend-cfg) :debug)
+                    h/repo-dir)
             [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
          [:i.fa.toggle
           {:on-click star-entry
