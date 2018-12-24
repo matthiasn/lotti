@@ -4,19 +4,20 @@
             [taoensso.timbre :refer-macros [info debug]]
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [clojure.set :as set]
             [clojure.pprint :as pp]
             [meo.electron.renderer.ui.ui-components :as uc]))
 
-(defn task-details [entry local-cfg put-fn edit-mode?]
+(defn task-details [entry local-cfg edit-mode?]
   (let [local (r/atom {:show false})]
-    (fn [entry local-cfg put-fn edit-mode?]
+    (fn [entry local-cfg edit-mode?]
       (let [prio-select (fn [entry]
                           (fn [ev]
                             (let [sel (keyword (h/target-val ev))
                                   updated (assoc-in entry [:task :priority] sel)]
-                              (put-fn [:entry/update-local updated]))))
+                              (emit [:entry/update-local updated]))))
             clear (fn [entry]
                     (let [ks #{:done :closed :on_hold :completion_ts :closed_ts :hold_ts}]
                       (-> entry
@@ -37,7 +38,7 @@
                            entry (-> entry
                                      (update-in [:perm_tags] set-fn #{"#done"})
                                      (update-in [:tags] set-fn #{"#done"}))]
-                       (put-fn [:entry/update entry]))))
+                       (emit [:entry/update entry]))))
             close (fn [entry]
                     (fn [_ev]
                       (let [rejection-ts (.format (moment))
@@ -52,7 +53,7 @@
                             entry (-> entry
                                       (update-in [:perm_tags] set-fn #{"#closed"})
                                       (update-in [:tags] set-fn #{"#closed"}))]
-                        (put-fn [:entry/update entry]))))
+                        (emit [:entry/update entry]))))
             allocation (or (get-in entry [:task :estimate_m]) 0)
             priority (get-in entry [:task :priority])
             done-checked (get-in entry [:task :done])
@@ -74,7 +75,7 @@
              [:label " Priority: "]
              [:select {:value       (if priority (keyword priority) "")
                        :on-change   (prio-select entry)
-                       :on-key-down (h/key-down-save entry put-fn)}
+                       :on-key-down (h/key-down-save entry)}
               [:option ""]
               [:option {:value :A} "A"]
               [:option {:value :B} "B"]
@@ -84,30 +85,27 @@
             [:div.row
              [:label "Done? "]
              [uc/switch {:entry    entry
-                         :put-fn   put-fn
                          :path     [:task :done]
                          :on-click (done entry)}]]
             [:div.row
              [:label "Closed? "]
              [uc/switch {:entry    entry
-                         :put-fn   put-fn
                          :path     [:task :closed]
                          :on-click (close entry)}]]
             [:div.row
              [:label "On hold? "]
              [uc/switch {:entry    entry
-                         :put-fn   put-fn
                          :path     [:task :on_hold]
                          :msg-type :entry/update}]]
             [:div.row
              [:label "Reward points: "]
              [:input {:type        :number
-                      :on-change   (h/update-numeric entry [:task :points] put-fn)
-                      :on-key-down (h/key-down-save entry put-fn)
+                      :on-change   (h/update-numeric entry [:task :points] emit)
+                      :on-key-down (h/key-down-save entry)
                       :value       (get-in entry [:task :points] 0)}]]
             [:div.row
              [:label "Allocation: "]
-             [:input {:on-change   (h/update-time entry [:task :estimate_m] put-fn)
-                      :on-key-down (h/key-down-save entry put-fn)
+             [:input {:on-change   (h/update-time entry [:task :estimate_m] emit)
+                      :on-key-down (h/key-down-save entry)
                       :value       (when allocation (h/m-to-hh-mm allocation))
                       :type        :time}]]])]))))

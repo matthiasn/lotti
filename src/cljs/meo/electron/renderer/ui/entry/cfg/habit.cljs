@@ -5,6 +5,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.misc :as m]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.entry.cfg.shared :as cs]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]

@@ -2,6 +2,7 @@
   (:require [wavesurfer.js :as wavesurfer]
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.core :as r]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.helpers :as h]))
 
 (def intersection-observer (aget js/window "IntersectionObserver"))
@@ -76,7 +77,7 @@
                                          :max      100
                                          :value    (:zoom @local)}]]]))}))
 
-(defn wavesurfer [entry local-cfg put-fn]
+(defn wavesurfer [entry local-cfg]
   (when-let [audio-file (:audio_file entry)]
     (let [id (str "wavesurfer" (:timestamp entry)
                   (when-let [tab-grp (:tab-group local-cfg)] (name tab-grp)))
@@ -105,5 +106,4 @@
                         :ts         (:timestamp entry)
                         :skip-fwd   skip-fwd
                         :skip-back  skip-back
-                        :play-pause play-pause
-                        :put-fn     put-fn}]])))
+                        :play-pause play-pause}]])))

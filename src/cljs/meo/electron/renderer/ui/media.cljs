@@ -1,9 +1,10 @@
 (ns meo.electron.renderer.ui.media
   (:require [clojure.string :as s]
             [reagent.core :as r]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.pprint :as pp]))
 
-(defn imdb-view [entry put-fn]
+(defn imdb-view [entry]
   (when-let [imdb-id (get-in entry [:custom-fields "#imdb" :imdb-id])]
     (let [imdb (:imdb entry)
           series (:series imdb)]
@@ -18,12 +19,12 @@
          (when-let [series-poster (:poster series)]
            [:img {:src series-poster}])
          [:img {:src (:poster imdb)}]]
-        (put-fn [:import/movie {:entry   entry
-                                :imdb-id imdb-id}])))))
+        (emit [:import/movie {:entry   entry
+                              :imdb-id imdb-id}])))))
 
-(defn spotify-view [entry put-fn]
+(defn spotify-view [entry]
   (when-let [spotify (get-in entry [:spotify])]
-    [:div.spotify {:on-click #(put-fn [:spotify/play {:uri (:uri spotify)}])}
+    [:div.spotify {:on-click #(emit [:spotify/play {:uri (:uri spotify)}])}
      [:div.title (:name spotify)]
      [:div.artist (->> (:artists spotify)
                        (map :name)

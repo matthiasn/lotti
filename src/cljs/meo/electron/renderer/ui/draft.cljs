@@ -4,6 +4,7 @@
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
             [meo.common.utils.parse :as p]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.common.utils.misc :as u]
             [draft-js :as Draft]
             [draftjs-md-converter :as md-converter]
@@ -107,7 +108,7 @@
   (fn [props]
     [editor props]))
 
-(defn entry-editor [entry2 errors put-fn]
+(defn entry-editor [entry2 errors]
   (let [ts (:timestamp entry2)
         {:keys [new-entry]} (eu/entry-reaction ts)
         cb-atom (atom {:last-sent 0})
@@ -131,7 +132,7 @@
                          (when (and (not= md (:md entry2))
                                     (or (not @new-entry)
                                         (not= md (:md @new-entry))))
-                           (put-fn [:entry/update-local x])
+                           (emit [:entry/update-local x])
                            (debug "update-local" (:timestamp x) md
                                   "-" (- (st/now) start) "ms"))))
         change-cb (fn [editor-state]
@@ -154,16 +155,16 @@
                       (swap! cb-atom dissoc :timeout))
                     (when (and (= (:comment_for cleaned) (:active @status))
                                (= ts (:current @status)))
-                      (put-fn [:window/progress {:v 0}])
-                      (put-fn [:blink/busy {:color :green}])
-                      (put-fn [:cmd/pomodoro-stop updated]))
+                      (emit [:window/progress {:v 0}])
+                      (emit [:blink/busy {:color :green}])
+                      (emit [:cmd/pomodoro-stop updated]))
                     (when (empty? errors)
-                      (put-fn [:entry/update updated]))))
+                      (emit [:entry/update updated]))))
         start-fn #(let [latest-entry (merge (dissoc entry2 :comments)
                                             @new-entry)]
                     (when (= (:entry_type latest-entry) :pomodoro)
-                      (put-fn [:cmd/pomodoro-start latest-entry])))]
-    (fn [entry2 errors _put-fn]
+                      (emit [:cmd/pomodoro-start latest-entry])))]
+    (fn [entry2 errors]
       (let [unsaved (when (and @new-entry (empty? errors))
                       (compare-entries entry2 @new-entry))
             err (seq errors)]

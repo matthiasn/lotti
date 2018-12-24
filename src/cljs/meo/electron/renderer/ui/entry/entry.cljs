@@ -5,6 +5,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meo.common.utils.parse :as up]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.entry.datetime :as dt]
             [meo.electron.renderer.ui.entry.actions :as a]
             [taoensso.timbre :refer-macros [info error debug]]
@@ -50,7 +51,7 @@
                                                  :first-line   tag
                                                  :query-string tag} put-fn)} tag])]))
 
-(defn linked-btn [entry local-cfg active put-fn]
+(defn linked-btn [entry local-cfg active]
   (when (pos? (:linked_cnt entry))
     (let [ts (:timestamp entry)
           text (eu/first-line entry)
@@ -60,7 +61,7 @@
                                       :story-name   story-name
                                       :first-line   (str "linked for: " text)
                                       :query-string (str "l:" ts)}
-                                     put-fn)
+                                     emit)
           entry-active? (when-let [query-id (:query-id local-cfg)]
                           (= (query-id @active) ts))]
       [:div
@@ -68,9 +69,9 @@
                         :class    (when entry-active? "active")}
         (str "linked: " (:linked_cnt entry))]])))
 
-(defn git-commit [_entry _put-fn]
+(defn git-commit [_entry]
   (let [repos (subscribe [:repos])]
-    (fn [entry put-fn]
+    (fn [entry]
       (when-let [gc (:git_commit entry)]
         (let [{:keys [repo_name refs commit subject abbreviated_commit]} gc
               cfg (get-in @repos [repo_name])
@@ -88,73 +89,74 @@
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
    showing the warning that the entry is not saved yet."
-  [entry put-fn local-cfg]
-  (let [ts (:timestamp entry)
+  [entry local-cfg]
+  (let [
+        ts (:timestamp entry)
         cfg (subscribe [:cfg])
         {:keys [edit-mode new-entry]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
         tab-group (:tab-group local-cfg)
-        drop-fn (a/drop-linked-fn entry cfg put-fn)
+        drop-fn (a/drop-linked-fn entry cfg emit)
         local (r/atom {:scroll-disabled true
                        :show-adjust-ts  false})]
-    (fn journal-entry-render [entry put-fn local-cfg]
+    (fn journal-entry-render [entry emit local-cfg]
       (let [merged (merge entry @new-entry)
             {:keys [latitude longitude]} merged
             edit-mode? @edit-mode
-            toggle-edit #(if @edit-mode (put-fn [:entry/remove-local entry])
-                                        (put-fn [:entry/update-local entry]))
+            toggle-edit #(if @edit-mode (emit [:entry/remove-local entry])
+                                        (emit [:entry/update-local entry]))
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
             map-id (str ts (when qid (name qid)))
             errors (cfc/validate-cfg @new-entry backend-cfg)
-            on-drag-start (a/drag-start-fn entry put-fn)]
+            on-drag-start (a/drag-start-fn entry emit)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default
                      :draggable     true
                      :on-drag-start on-drag-start}
          [:div.header-1
-          [:div [es/story-select merged tab-group put-fn]]
-          [linked-btn merged local-cfg active put-fn]]
+          [:div [es/story-select merged tab-group]]
+          [linked-btn merged local-cfg active]]
          [:div.header
           (when (:show-adjust-ts @local)
-            [dt/datetime-edit merged local put-fn])
+            [dt/datetime-edit merged local])
           [:div.action-row
-           [dt/datetime-header merged local put-fn]
-           [a/entry-actions merged local put-fn edit-mode? toggle-edit local-cfg]]]
+           [dt/datetime-header merged local ]
+           [a/entry-actions merged local emit edit-mode? toggle-edit local-cfg]]]
          (when (= :custom-field-cfg (:entry_type merged))
-           [cfc/custom-field-config merged put-fn])
+           [cfc/custom-field-config merged])
          (when-not (:spotify entry)
-           [d/entry-editor entry errors put-fn])
-         [es/story-form merged put-fn]
-         [es/saga-name-field merged edit-mode? put-fn]
+           [d/entry-editor entry errors emit])
+         [es/story-form merged]
+         [es/saga-name-field merged edit-mode?]
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
-           [task/task-details merged local-cfg put-fn edit-mode?])
+           [task/task-details merged local-cfg edit-mode?])
          (when (or (= :habit (:entry-type merged))
                    (= :habit (:entry_type merged)))
-           [habit/habit-details merged put-fn])
+           [habit/habit-details merged emit])
          (when (= :dashboard-cfg (:entry_type merged))
-           [db/dashboard-config merged put-fn])
+           [db/dashboard-config merged emit])
          (when (contains? (set (:tags entry)) "#reward")
-           [reward/reward-details merged put-fn])
+           [reward/reward-details merged emit])
          (let [pomodoro (= :pomodoro (:entry_type entry))]
            [:div.entry-footer
             (when pomodoro
-              [pomo/pomodoro-btn merged edit-mode? put-fn])
+              [pomo/pomodoro-btn merged edit-mode? emit])
             (when pomodoro
-              [pomo/pomodoro-time merged edit-mode? put-fn])
+              [pomo/pomodoro-time merged edit-mode? emit])
             (when-not pomodoro
-              [pomo/pomodoro-footer entry put-fn])
-            [hashtags-mentions entry tab-group put-fn]
+              [pomo/pomodoro-footer entry emit])
+            [hashtags-mentions entry tab-group emit]
             [:div.word-count (u/count-words-formatted merged)]])
-         [ec/conflict-view merged put-fn]
-         [c/custom-fields-div merged put-fn edit-mode?]
+         [ec/conflict-view merged emit]
+         [c/custom-fields-div merged emit edit-mode?]
          (when (:git_commit entry)
-           [git-commit merged put-fn])
-         [ws/wavesurfer merged local-cfg put-fn]
+           [git-commit merged])
+         [ws/wavesurfer merged local-cfg]
          (when (and @show-map?
                     latitude
                     longitude
@@ -169,11 +171,11 @@
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
                               :mapbox-token    mapbox-token
-                              :put-fn          put-fn}]]
-             [l/leaflet-map merged @show-map? local-cfg put-fn]))
-         [m/imdb-view merged put-fn]
-         [m/spotify-view merged put-fn]
-         [c/questionnaire-div merged put-fn edit-mode?]
+                              :put-fn          emit}]]
+             [l/leaflet-map merged @show-map? local-cfg emit]))
+         [m/imdb-view merged emit]
+         [m/spotify-view merged]
+         [c/questionnaire-div merged edit-mode?]
          (when (:debug @local)
            [:div.debug
             [:h3 "from backend"]
@@ -190,23 +192,23 @@
    content component used in edit mode also sends a modified entry to the store
    component, which is useful for displaying updated hashtags, or also for
    showing that the entry is not saved yet."
-  [entry put-fn local-cfg]
+  [entry local-cfg]
   (let [ts (:timestamp entry)
         cfg (subscribe [:cfg])
         show-comments-for? (reaction (get-in @cfg [:show-comments-for ts]))
         query-id (:query-id local-cfg)
-        toggle-comments #(put-fn [:cmd/assoc-in
+        toggle-comments #(emit [:cmd/assoc-in
                                   {:path  [:cfg :show-comments-for ts]
                                    :value (when-not (= @show-comments-for? query-id)
                                             query-id)}])]
-    (fn entry-with-comments-render [entry put-fn local-cfg]
+    (fn entry-with-comments-render [entry local-cfg]
       (let [comments (:comments entry)
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))
                              (:thumbnails @cfg))]
         [:div.entry-with-comments
-         [journal-entry entry put-fn local-cfg]
+         [journal-entry entry emit local-cfg]
          (when thumbnails?
-           [icl/gallery (icl/gallery-entries entry) local-cfg put-fn])
+           [icl/gallery (icl/gallery-entries entry) local-cfg emit])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments
@@ -217,7 +219,7 @@
                     (str "hide " n " comment" (when (> n 1) "s"))])])
               (for [comment comments]
                 ^{:key (str "c" comment)}
-                [journal-entry comment put-fn local-cfg])]
+                [journal-entry comment emit local-cfg])]
              [:div.show-comments
               (let [n (count comments)]
                 [:span {:on-click toggle-comments}

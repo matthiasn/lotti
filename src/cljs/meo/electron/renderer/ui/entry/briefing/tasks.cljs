@@ -6,6 +6,7 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.parse :as up]
             [moment]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.set :as set]
             [meo.electron.renderer.helpers :as h]
             [clojure.string :as s]
@@ -46,12 +47,12 @@
   (let [dur (.duration moment ms-ago)]
     (s/replace (.humanize dur false) "a few " "")))
 
-(defn task-row [entry _put-fn _cfg]
+(defn task-row [entry _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged? show-age
-                              show-estimate show-points show-last-updated]}]
+    (fn [entry {:keys [tab-group search-text unlink show-logged? show-age
+                       show-estimate show-points show-last-updated]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -71,7 +72,7 @@
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :first-line   text
-                                             :query-string ts} put-fn)
+                                             :query-string ts} emit)
                    :class    cls}
          [:td
           (if (or done closed)
@@ -107,10 +108,10 @@
          [:td.last (when unlink
                      [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
 
-(defn open-task-row [entry _put-fn _cfg]
+(defn open-task-row [entry _cfg]
   (let [ts (:timestamp entry)]
-    (fn [entry put-fn {:keys [tab-group search-text unlink show-logged?
-                              show-points]}]
+    (fn [entry {:keys [tab-group search-text unlink show-logged?
+                       show-points]}]
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
             estimate (get-in entry [:task :estimate_m] 0)
@@ -119,7 +120,7 @@
                                              :story-name   (-> entry :story :story_name)
                                              :query-string ts
                                              :first-line   text}
-                                            put-fn)
+                                            emit)
                    :class    cls}
          [:td (when-let [prio (some-> entry :task :priority (name))]
                 [:span.prio {:class prio} prio])]
@@ -141,7 +142,7 @@
 
 (defn started-tasks
   "Renders table with open entries, such as started tasks and open habits."
-  [local local-cfg put-fn]
+  [local local-cfg]
   (let [gql-res (subscribe [:gql-res])
         started-tasks (reaction (->> @gql-res
                                      :started-tasks
@@ -167,7 +168,7 @@
                                     (filter saga-filter)
                                     (filter open-filter)
                                     (sort task-sorter)))]
-    (fn started-tasks-list-render [local local-cfg put-fn]
+    (fn started-tasks-list-render [local local-cfg]
       (let [entries-list @entries-list
             tab-group (:tab-group local-cfg)
             search-text @search-text
@@ -190,11 +191,11 @@
                 ]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-row entry put-fn {:tab-group         tab-group
-                                       :search-text       search-text
-                                       :show-points       false
-                                       :show-last-updated true
-                                       :show-logged?      true}])]]])))))
+               [task-row entry {:tab-group         tab-group
+                                :search-text       search-text
+                                :show-points       false
+                                :show-last-updated true
+                                :show-logged?      true}])]]])))))
 
 (defn open-task-sorter [x y]
   (let [c0 (compare (or (get-in x [:task :priority]) :X)
@@ -204,7 +205,7 @@
 
 (defn open-tasks
   "Renders table with open tasks."
-  [local local-cfg put-fn]
+  [local local-cfg]
   (let [gql-res (subscribe [:gql-res])
         open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))
         started-tasks (reaction (->> @gql-res
@@ -234,7 +235,7 @@
                                     (filter open-filter)
                                     (filter closed-filter)))
         on-change #(swap! local assoc-in [:task-search] (h/target-val %))]
-    (fn open-tasks-render [local local-cfg put-fn]
+    (fn open-tasks-render [local local-cfg]
       (let [tab-group (:tab-group local-cfg)
             entries-list (filter #(not (contains? @started-tasks (:timestamp %))) @entries-list)
             task-search (:task-search @local "")
@@ -256,14 +257,14 @@
            (doall
              (for [entry (sort open-task-sorter entries-list)]
                ^{:key (:timestamp entry)}
-               [open-task-row entry put-fn {:tab-group    tab-group
-                                            :search-text  @search-text
-                                            :show-points  show-points
-                                            :show-logged? true}]))]]]))))
+               [open-task-row entry {:tab-group    tab-group
+                                     :search-text  @search-text
+                                     :show-points  show-points
+                                     :show-logged? true}]))]]]))))
 
 (defn open-linked-tasks
   "Show open tasks that are also linked with the briefing entry."
-  [local _local-cfg _put-fn]
+  [local _local-cfg]
   (let [gql-res (subscribe [:gql-res])
         started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
         briefing (reaction (-> @gql-res :briefing :data :briefing))
@@ -282,7 +283,7 @@
                      [:span.filter {:class    (when (= fk (:filter @local)) "current")
                                     :on-click #(swap! local assoc-in [:filter] fk)}
                       (name fk) (when (= fk (:filter @local)) text)])]
-    (fn open-linked-tasks-render [local local-cfg put-fn]
+    (fn open-linked-tasks-render [local local-cfg]
       (let [{:keys [tab-group]} local-cfg
             linked-entries (:linked @briefing)
             current-filter (get linked-filters (:filter @local))
@@ -305,7 +306,7 @@
             unlink (when-not (= filter-k :activity)
                      (fn [ts]
                        (let [timestamps [ts (:timestamp @briefing)]]
-                         (put-fn [:entry/unlink timestamps]))))
+                         (emit [:entry/unlink timestamps]))))
             search-text @search-text
             show-points (:show-points @local)]
         [:div.linked-tasks
@@ -325,9 +326,9 @@
             [:th.xs [:i.fa.far.fa-link]]]
            (for [entry (sort task-sorter linked-tasks)]
              ^{:key (:timestamp entry)}
-             [task-row entry put-fn {:tab-group     tab-group
-                                     :search-text   search-text
-                                     :show-points   show-points
-                                     :show-estimate false
-                                     :show-age      true
-                                     :unlink        unlink}])]]]))))
+             [task-row entry {:tab-group     tab-group
+                              :search-text   search-text
+                              :show-points   show-points
+                              :show-estimate false
+                              :show-age      true
+                              :unlink        unlink}])]]]))))

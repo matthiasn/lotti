@@ -3,6 +3,7 @@
             [taoensso.timbre :refer [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [react-list :as rl]
             [reagent.core :as r]
             [matthiasn.systems-toolbox.component :as st]
@@ -10,7 +11,7 @@
 
 (def react-list (r/adapt-react-class rl))
 
-(defn entry-wrapper [idx local-cfg _put-fn]
+(defn entry-wrapper [idx local-cfg ]
   (let [tab-group (:tab-group local-cfg)
         gql-res (subscribe [:gql-res2])
         entry (reaction (-> @gql-res
@@ -18,29 +19,29 @@
                             :res
                             vals
                             (nth idx)))]
-    (fn entry-wrapper-render [_idx local-cfg put-fn]
+    (fn entry-wrapper-render [_idx local-cfg ]
       ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
        (when @entry
-         [e/entry-with-comments @entry put-fn local-cfg])])))
+         [e/entry-with-comments @entry local-cfg])])))
 
-(defn item [local-cfg put-fn]
+(defn item [local-cfg]
   (fn [idx]
     (r/as-element
       [:div {:key idx}
        [h/error-boundary
-        [entry-wrapper idx local-cfg put-fn]]])))
+        [entry-wrapper idx local-cfg]]])))
 
 (defn journal-view
   "Renders journal div, one entry per item, with map if geo data exists in the
    entry."
-  [local-cfg _put-fn]
+  [local-cfg]
   (let [gql-res (subscribe [:gql-res2])
         local (r/atom {:last-cnt   0
                        :last-fetch 0})
         tab-group (:tab-group local-cfg)
         entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
-    (fn journal-view-render [local-cfg put-fn]
+    (fn journal-view-render [local-cfg]
       (let [query-id (:query-id local-cfg)
             tg (:tab-group local-cfg)
             cnt (count @entries-list)
@@ -54,9 +55,9 @@
                                      (> (- (st/now) (:last-fetch @local)) 1000))
                             (reset! local {:last-cnt   cnt
                                            :last-fetch (st/now)})
-                            (put-fn [:show/more {:query-id  query-id
+                            (emit [:show/more {:query-id  query-id
                                                  :tab-group tg}]))))
-            on-mouse-enter #(put-fn [:search/cmd {:t         :active-tab
+            on-mouse-enter #(emit [:search/cmd {:t         :active-tab
                                                   :tab-group tg}])]
         ^{:key (str query-id)}
         [:div.journal {:on-mouse-enter on-mouse-enter}
@@ -64,7 +65,7 @@
           [:div.journal-entries {:on-scroll on-scroll
                                  :id        (name tab-group)}
            [react-list {:length       (count @entries-list)
-                        :itemRenderer (item local-cfg put-fn)}]]]]))))
+                        :itemRenderer (item local-cfg)}]]]]))))
 
 (def interval (atom nil))
 (defn scroll-down [id h]

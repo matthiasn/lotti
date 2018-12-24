@@ -10,6 +10,7 @@
             [meo.electron.renderer.helpers :as h]
             [clojure.data.avl :as avl]
             [meo.common.utils.misc :as u]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.string :as s]
             [mapbox-gl]
             [turndown :as turndown]
@@ -18,13 +19,13 @@
             [clojure.set :as set]
             [clojure.string :as str]))
 
-(defn stars-view [entry local put-fn]
+(defn stars-view [entry local]
   (let [star (fn [idx n]
                (let [click (fn [ev]
                              (let [updated (assoc-in entry [:stars] idx)]
                                (debug "stars click" updated)
                                (swap! local assoc :selected updated)
-                               (put-fn [:entry/update updated])))]
+                               (emit [:entry/update updated])))]
                  [:i.fa-star {:class    (if (<= idx n) "fas" "fal")
                               :on-click click}]))
         stars (:stars entry 0)]
@@ -38,7 +39,7 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry locale local put-fn]
+  [entry locale local]
   (when-let [file (:img_file entry)]
     (let [resized-rotated (h/thumbs-2048 file)]
       [:div.slide
@@ -91,18 +92,17 @@
    has given me more problems than I anticipated. Working mostly fine now,
    but won't hurt to have a potential alternative. Curious about your
    experience with either."
-  [entry put-fn]
+  [entry]
   (let [local (r/atom entry)]
-    (fn [entry put-fn]
+    (fn [entry]
       (let [html (md/md->html (:md @local))
             td (turndown. (clj->js {:headingStyle "atx"}))
             on-change (fn [x html]
                         (let [md (.turndown td html)
                               updated (assoc-in @local [:md] md)]
                           (reset! local updated)
-                          (put-fn [:entry/update-local updated])))
-            on-save (fn [_]
-                      (put-fn [:entry/update @local]))]
+                          (emit [:entry/update-local updated])))
+            on-save (fn [_] (emit [:entry/update @local]))]
         [:div.gallery-editor
          [q/editor {:id           :quill-editor
                     :content      html
@@ -114,10 +114,10 @@
              [:i.fas.fa-save]
              "save"])]]))))
 
-(defn info-drawer [selected locale put-fn]
+(defn info-drawer [selected locale]
   (let [local (r/atom {})
         backend-cfg (subscribe [:backend-cfg])]
-    (fn [selected locale put-fn]
+    (fn [selected locale]
       (let [ts (:timestamp selected)
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
@@ -133,18 +133,18 @@
                              :id           (str ts)
                              :selected     selected
                              :mapbox-token mapbox-token
-                             :put-fn       put-fn}]
-             [l/leaflet-map selected true {} put-fn]))
+                             :put-fn       emit}]
+             [l/leaflet-map selected true {} emit]))
          [:time (h/localize-datetime-full ts locale)]
-         [text-editor selected put-fn]
-         [stars-view selected local put-fn]
+         [text-editor selected]
+         [stars-view selected local]
          [:div.stars
           [:span original-filename]
           [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]]))))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click]}]
+    (fn [{:keys [filtered local selected-idx prev-click next-click]}]
       (let [locale @locale
             selected (or (:selected @local)
                          (first filtered))
@@ -157,10 +157,10 @@
           [:div.slider-wrapper.axis-horizontal
            (when two-or-more
              [:button.control-arrow.control-prev {:on-click prev-click}])
-           [image-view selected locale local put-fn]
+           [image-view selected locale local]
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
-          [info-drawer selected locale put-fn]
+          [info-drawer selected locale]
           (when two-or-more
             [:p.carousel-status (inc selected-idx) "/" n])]
          [:div.carousel
@@ -172,7 +172,7 @@
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entries put-fn]
+  [entries]
   (let [local (r/atom {:filter #{}})
         filter-by-stars (fn [entry]
                           (or (empty? (:filter @local))
@@ -198,7 +198,7 @@
                                     (let [selected @selected
                                           updated (assoc-in selected [:stars] n)]
                                       (debug updated)
-                                      (put-fn [:entry/update updated])))]
+                                      (emit [:entry/update updated])))]
                     (info key-code meta-key)
                     (when (= key-code 37) (prev-click))
                     (when (= key-code 39) (next-click))
@@ -211,7 +211,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [entries put-fn]
+    (fn gallery-render [entries]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery.page.fullscreen {:on-mouse-enter start-watch
@@ -221,18 +221,16 @@
                     :local        local
                     :selected-idx selected-idx
                     :next-click   next-click
-                    :prev-click   prev-click
-                    :put-fn       put-fn}]]))))
+                    :prev-click   prev-click}]]))))
 
 (defn gallery-entries [entry]
   (filter :img_file (concat [entry]
                             (:comments entry)
                             (:linked entry))))
 
-(defn gallery-page [put-fn]
+(defn gallery-page []
   (let [res (subscribe [:gql-res2])
         entries (reaction (gallery-entries (first (vals (get-in @res [:gallery :res])))))]
-    (fn [put-fn]
-      (let []
-        [:div.flex-container
-         [gallery entries put-fn]]))))
+    (fn []
+      [:div.flex-container
+       [gallery entries]])))

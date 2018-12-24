@@ -4,12 +4,13 @@
             [meo.electron.renderer.helpers :as h]
             [taoensso.timbre :refer-macros [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.string :as s]
             [reagent.core :as r]
             [moment]
             [clojure.set :as set]))
 
-(defn field-input [entry edit-mode? field tag k put-fn]
+(defn field-input [entry edit-mode? field tag k]
   (let [input-cfg (:cfg field)
         input-type (:type input-cfg)
         path [:custom_fields tag k]
@@ -26,13 +27,13 @@
                                  (.asMinutes (.duration moment v)))
                          v)
                 updated (assoc-in entry path parsed)]
-            (put-fn [:entry/update-local updated])))
+            (emit [:entry/update-local updated])))
         input-cfg (merge
                     input-cfg
                     {:on-change   on-change-fn
                      :class       (when (= input-type :time) "time")
                      :type        input-type
-                     :on-key-down (h/key-down-save entry put-fn)
+                     :on-key-down (h/key-down-save entry)
                      :value       value})]
     (when-not value
       (when (and (= input-type :number) edit-mode?)
@@ -40,24 +41,24 @@
               last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
           (when last-n
             (let [updated (assoc-in entry path (js/parseFloat last-n))]
-              (put-fn [:entry/update-local updated])))))
+              (emit [:entry/update-local updated])))))
       (when (and (= input-type :time) edit-mode?)
         (let [p1 (-> (:md entry) (s/split tag) first)
               v (last (re-seq #"\d+:\d{2}" p1))]
           (when v
             (let [m (.asMinutes (.duration moment v))
                   updated (assoc-in entry path m)]
-              (put-fn [:entry/update-local updated]))))))
+              (emit [:entry/update-local updated]))))))
     [:tr
      [:td [:label (:label field)]]
      [:td [:input input-cfg]]]))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
-  [entry put-fn edit-mode?]
+  [entry edit-mode?]
   (let [options (subscribe [:options])
         custom-fields (reaction (:custom-fields @options))]
-    (fn custom-fields-render [entry put-fn edit-mode?]
+    (fn custom-fields-render [entry edit-mode?]
       (when-let [custom-fields @custom-fields]
         (let [ts (:timestamp entry)
               tags (set/union (set (:tags entry)) (set (:perm_tags entry)))
@@ -67,7 +68,7 @@
                                  (filter identity)
                                  first)]
           (when (and edit-mode? default-story (not (:primary_story entry)))
-            (put-fn [:entry/update-local (merge entry
+            (emit [:entry/update-local (merge entry
                                                 {:primary_story  default-story
                                                  :linked-stories #{default-story}})]))
           [:form.custom-fields
@@ -78,15 +79,15 @@
                [:tbody
                 (for [[k field] (:fields conf)]
                   ^{:key (str "cf" ts tag k)}
-                  [field-input entry edit-mode? field tag k put-fn])]]])])))))
+                  [field-input entry edit-mode? field tag k])]]])])))))
 
 (defn questionnaire-div
   "In edit mode, allow editing of questionnaire, otherwise show a summary."
-  [entry put-fn edit-mode?]
+  [entry edit-mode?]
   (let [options (subscribe [:options])
         local (r/atom {:expanded false})
         questionnaires (reaction (:questionnaires @options))]
-    (fn questionnaire-render [entry put-fn edit-mode?]
+    (fn questionnaire-render [entry edit-mode?]
       (when-let [questionnaires @questionnaires]
         (let [ts (:timestamp entry)
               questionnaire-tags (:mapping questionnaires)
@@ -137,7 +138,7 @@
                                  click (fn [_ev]
                                          (let [new-val (when-not (= value v) v)
                                                updated (assoc-in entry path new-val)]
-                                           (put-fn [:entry/update-local updated])))]
+                                           (emit [:entry/update-local updated])))]
                              ^{:key (str "q" ts k path v)}
                              [:span.opt.tooltip
                               {:on-click click

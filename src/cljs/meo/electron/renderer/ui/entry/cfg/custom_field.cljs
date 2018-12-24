@@ -4,6 +4,7 @@
             [re-frame.core :refer [subscribe]]
             [meo.electron.renderer.ui.entry.cfg.shared :as cs]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [moment]
@@ -71,14 +72,14 @@
                                 :path  step-path} put-fn])]))))
 
 
-(defn item [{:keys [entry idx put-fn] :as params}]
+(defn item [{:keys [entry idx] :as params}]
   (let [items-path [:custom_field_cfg :items]
         n (count (get-in entry items-path))
         rm-click (fn []
                    (let [items (get-in entry items-path)
                          items (vec (concat (take idx items) (drop (inc idx) items)))
                          updated (assoc-in entry items-path items)]
-                     (put-fn [:entry/update-local updated])))
+                     (emit [:entry/update-local updated])))
         mv-click (fn [f _]
                    (let [items (get-in entry items-path)
                          item (get-in entry [:custom_field_cfg :items idx])
@@ -87,7 +88,7 @@
                                             [item]
                                             (drop (f idx) items)))
                          updated (assoc-in entry items-path items)]
-                     (put-fn [:entry/update-local updated])))]
+                     (emit [:entry/update-local updated])))]
     [:div.criterion
      [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
      (when (and (< idx (dec n)) (> n 1))
@@ -105,16 +106,16 @@
                 "already defined"))]
     (if res [res] [])))
 
-(defn custom-field-config [entry put-fn]
+(defn custom-field-config [entry]
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:custom_field_cfg :items] #(vec (conj % {})))]
-                       (put-fn [:entry/update-local updated]))))
+                       (emit [:entry/update-local updated]))))
         tag-path [:custom_field_cfg :tag]
         backend-cfg (subscribe [:backend-cfg])
         ts (:timestamp entry)
         {:keys [edit-mode]} (eu/entry-reaction ts)]
-    (fn [entry put-fn]
+    (fn [entry]
       (let [items (get-in entry [:custom_field_cfg :items])
             tag-err (first (validate-cfg entry backend-cfg))]
         [:div.habit-details
@@ -123,13 +124,13 @@
          [cs/input-row entry {:validate is-tag?
                               :label    "Tag:"
                               :path     tag-path
-                              :error    tag-err} put-fn]
+                              :error    tag-err} emit]
          [:div.row
           [:label "Active? "]
-          [uc/switch {:entry entry :put-fn put-fn :path [:custom_field_cfg :active]}]]
+          [uc/switch {:entry entry :put-fn emit :path [:custom_field_cfg :active]}]]
          [:div.row
           [:label "Private? "]
-          [uc/switch {:entry entry :put-fn put-fn :path [:custom_field_cfg :pvt]}]]
+          [uc/switch {:entry entry :put-fn emit :path [:custom_field_cfg :pvt]}]]
          [:div.row.space-between
           [:h3 "Fields"]
           [:div.add-criterion {:on-click (add-item entry)}
@@ -138,5 +139,4 @@
          (for [[i c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry  entry
-                  :put-fn put-fn
                   :idx    i}])]))))

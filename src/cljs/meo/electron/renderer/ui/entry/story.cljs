@@ -5,6 +5,7 @@
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.helpers :as h]
             [clojure.set :as set]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [react-color :as react-color]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.ui.ui-components :as uc]
@@ -18,21 +19,21 @@
       :on-key-down      on-keydown-fn}
      text]))
 
-(defn input-fn [entry k put-fn]
+(defn input-fn [entry k]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
           updated (assoc-in entry [k] text)]
-      (put-fn [:entry/update-local updated]))))
+      (emit [:entry/update-local updated]))))
 
 (declare saga-select)
 
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
 
-(defn color-picker [entry path label put-fn]
+(defn color-picker [entry path label]
   (let [set-color (fn [data]
                     (let [hex (aget data "hex")
                           updated (assoc-in entry path hex)]
-                      (put-fn [:entry/update-local updated])))]
+                      (emit [:entry/update-local updated])))]
     [:div.row
      [:label.wide label]
      [chrome-picker {:disableAlpha     true
@@ -42,17 +43,17 @@
 (defn story-form
   "Renders editable field for story name when the entry is of type :story.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
-  [entry put-fn]
+  [entry]
   (when (= (:entry_type entry) :story)
-    (let [on-input-fn (input-fn entry :story_name put-fn)
-          on-keydown-fn (h/keydown-fn entry :story_name put-fn)
+    (let [on-input-fn (input-fn entry :story_name)
+          on-keydown-fn (h/keydown-fn entry :story_name)
           initial-story-name (:story_name entry)]
-      (fn story-form-render [entry put-fn]
-        (let [sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}
+      (fn story-form-render [entry]
+        (let [sw-common {:entry entry :msg-type :entry/update}
               font-color-path [:story_cfg :font_color]
               badge-color-path [:story_cfg :badge_color]]
           [:div.story
-           [saga-select entry put-fn]
+           [saga-select entry]
            [:label "Story Name:"]
            [:div.story-edit-field
             {:content-editable true
@@ -65,22 +66,22 @@
            [:div.row
             [:label "Private? "]
             [uc/switch (merge sw-common {:path [:story_cfg :pvt]})]]
-           [color-picker entry font-color-path "Text Color:" put-fn]
+           [color-picker entry font-color-path "Text Color:"]
            [:div.badge
             [:span.story-badge
              {:style {:background-color (get-in entry badge-color-path :white)
                       :color            (get-in entry font-color-path :black)}}
              (:story_name entry)]]
-           [color-picker entry badge-color-path "Badge Color:" put-fn]])))))
+           [color-picker entry badge-color-path "Badge Color:"]])))))
 
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
-  [entry edit-mode? put-fn]
+  [entry edit-mode?]
   (when (= (:entry_type entry) :saga)
-    (let [on-input-fn (input-fn entry :saga_name put-fn)
-          on-keydown-fn (h/keydown-fn entry :saga_name put-fn)
-          sw-common {:entry entry :put-fn put-fn :msg-type :entry/update}]
+    (let [on-input-fn (input-fn entry :saga_name)
+          on-keydown-fn (h/keydown-fn entry :saga_name)
+          sw-common {:entry entry :msg-type :entry/update}]
       [:div.story.saga
        [:label "Saga:"]
        [editable-field on-input-fn on-keydown-fn (:saga_name entry)]
@@ -92,10 +93,10 @@
         [uc/switch (merge sw-common {:path [:saga_cfg :pvt]})]]])))
 
 (defn saga-select
-  [entry put-fn]
+  [entry]
   (let [sagas (subscribe [:sagas])
         ts (:timestamp entry)]
-    (fn saga-select-render [entry put-fn]
+    (fn saga-select-render [entry]
       (let [linked-saga (:linked_saga entry)
             entry-type (:entry_type entry)
             select-handler
@@ -103,7 +104,7 @@
               (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
                     updated (assoc-in entry [:linked_saga] selected)]
                 (info "saga-select" selected)
-                (put-fn [:entry/update-local updated])))]
+                (emit [:entry/update-local updated])))]
         (when (= entry-type :story)
           (when-not (:comment_for entry)
             [:div.saga
@@ -125,7 +126,7 @@
       (concat ranked without-predictions)
       stories)))
 
-(defn story-select [entry tab-group put-fn]
+(defn story-select [entry tab-group]
   (let [stories (subscribe [:stories])
         show-pvt (subscribe [:show-pvt])
         ts (:timestamp entry)
@@ -145,7 +146,7 @@
                          (map-indexed (fn [i v] [i v])))))
         assign-story (fn [story]
                        (swap! local assoc-in [:show] false)
-                       (put-fn [:entry/update-merged
+                       (emit [:entry/update-merged
                                 {:primary_story (:timestamp story)
                                  :timestamp     ts}]))
         keydown (fn [ev]
@@ -165,7 +166,7 @@
                     (.stopPropagation ev)))
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
-    (fn story-select-filter-render [entry tab-group put-fn]
+    (fn story-select-filter-render [entry tab-group]
       (let [linked-story (get-in entry [:story :timestamp])
             story (get @stories linked-story)
             story-name (get-in entry [:story :story_name])
@@ -177,7 +178,7 @@
             open-story (up/add-search {:tab-group    tab-group
                                        :story-name   story-name
                                        :first-line   story-name
-                                       :query-string linked-story} put-fn)
+                                       :query-string linked-story} emit)
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
                          (swap! local assoc-in [:idx] 0)

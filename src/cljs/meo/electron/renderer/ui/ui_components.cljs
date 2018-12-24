@@ -1,5 +1,6 @@
 (ns meo.electron.renderer.ui.ui-components
   (:require [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer-macros [info error debug]]))
 
 
@@ -15,18 +16,18 @@
        ^{:key v}
        [:option {:value v} t])]))
 
-(defn select-update [{:keys [entry path xf put-fn]}]
+(defn select-update [{:keys [entry path xf]}]
   (let [xf (or xf identity)]
     (fn [ev]
       (let [tv (h/target-val ev)
             sel (if (empty? tv) tv (xf tv))
             updated (assoc-in entry path sel)]
-        (put-fn [:entry/update-local updated])))))
+        (emit [:entry/update-local updated])))))
 
-(defn switch [{:keys [path put-fn entry msg-type on-click]}]
+(defn switch [{:keys [path entry msg-type on-click]}]
   (let [msg-type (or msg-type :entry/update-local)
         toggle (or on-click
-                   #(put-fn [msg-type (update-in entry path not)]))
+                   #(emit [msg-type (update-in entry path not)]))
         v (get-in entry path)]
     [:div.on-off {:on-click toggle}
      [:div {:class (when-not v "inactive")} "no"]

@@ -4,6 +4,7 @@
             [goog.dom.Range]
             [reagent.core :as rc]
             [taoensso.timbre :refer-macros [info debug error]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [path :refer [normalize]]
             [globalize :as globalize]
             [cldr-data :as cldr-data]
@@ -17,7 +18,7 @@
 
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the callback function"
-  [entry put-fn]
+  [entry]
   (.getCurrentPosition
     (.-geolocation js/navigator)
     (fn [pos]
@@ -25,7 +26,7 @@
             updated {:timestamp (:timestamp entry)
                      :latitude  (.-latitude coords)
                      :longitude (.-longitude coords)}]
-        (put-fn [:entry/update-local updated])))
+        (emit [:entry/update-local updated])))
     (fn [err]
       (error "while getting geolocation:" err)
       (.log js/console err))))
@@ -65,8 +66,8 @@
                       :timezone   timezone
                       :utc-offset (.getTimezoneOffset (new js/Date))}
                      opts)]
-    (put-fn [:entry/update entry])
-    (send-w-geolocation entry put-fn)
+    (emit [:entry/update entry])
+    (send-w-geolocation entry)
     entry))
 
 (defn new-entry
@@ -74,9 +75,9 @@
    entry, thus keys can be overwritten here.
    Caveat: the timezone detection currently only works in Chrome. TODO: check"
   ([put-fn]
-    (new-entry put-fn {} nil))
+   (new-entry put-fn {} nil))
   ([put-fn opts]
-    (new-entry put-fn opts nil))
+   (new-entry put-fn opts nil))
   ([put-fn opts run-fn]
    (fn [_ev]
      (let [entry (create-entry put-fn opts)]
@@ -173,9 +174,9 @@
                     user-data)
                   path file)))
 
-(defn thumbs-256 [file] (media-path  "/data/thumbs/256/" file))
-(defn thumbs-512 [file] (media-path  "/data/thumbs/512/" file))
-(defn thumbs-2048 [file] (media-path  "/data/thumbs/2048/" file))
+(defn thumbs-256 [file] (media-path "/data/thumbs/256/" file))
+(defn thumbs-512 [file] (media-path "/data/thumbs/512/" file))
+(defn thumbs-2048 [file] (media-path "/data/thumbs/2048/" file))
 
 (defn audio-path [file] (media-path "/data/audio/" file))
 
@@ -207,21 +208,21 @@
                                     [:div "Something went wrong."])
                                 comp))})))
 
-(defn keydown-fn [entry k put-fn]
+(defn keydown-fn [entry k]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
           updated (assoc-in entry [k] text)
           key-code (.. ev -keyCode)
           meta-key (.. ev -metaKey)]
       (when (and meta-key (= key-code 83))                  ; CMD-s pressed
-        (put-fn [:entry/update updated])
+        (emit [:entry/update updated])
         (.preventDefault ev)))))
 
 
-(defn key-down-save [entry put-fn]
+(defn key-down-save [entry]
   (fn [ev]
     (let [key-code (.. ev -keyCode)
           meta-key (.. ev -metaKey)]
       (when (and meta-key (= key-code 83))                  ; CMD-s pressed
-        (put-fn [:entry/update entry])
+        (emit [:entry/update entry])
         (.preventDefault ev)))))

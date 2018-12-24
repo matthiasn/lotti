@@ -7,6 +7,7 @@
             [meo.electron.renderer.ui.entry.briefing.tasks :as tasks]
             [meo.electron.renderer.ui.entry.briefing.habits :as habits]
             [meo.electron.renderer.ui.entry.briefing.time :as time]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
             [moment]
@@ -117,18 +118,18 @@
                  [uc/switch2 {:v selected?}]
                  (s/trim (:saga_name saga))]))])]))))
 
-(defn add-task [ts put-fn]
+(defn add-task [ts]
   (let [open-new (fn [x]
-                   (put-fn
+                   (emit
                      [:cmd/schedule-new
                       {:message [:search/add
                                  {:tab-group :left
                                   :query     (up/parse-search (:timestamp x))}]
                        :timeout 100}]))]
-    (fn add-task-render [ts put-fn]
-      (let [new-task (h/new-entry put-fn {:linked_entries #{ts}
-                                          :starred        true
-                                          :perm_tags      #{"#task"}}
+    (fn add-task-render [ts]
+      (let [new-task (h/new-entry emit {:linked_entries #{ts}
+                                        :starred        true
+                                        :perm_tags      #{"#task"}}
                                   open-new)]
         [:div.add-task
          [:div.toggle-visible
@@ -136,12 +137,12 @@
           "task"
           [:i.fas.fa-plus-square]]]))))
 
-(defn all-entries-for-day [put-fn]
+(defn all-entries-for-day []
   (let [cal-day (subscribe [:cal-day])
-        click #(put-fn [:search/add
-                        {:tab-group :left
-                         :query     (up/parse-search @cal-day)}])]
-    (fn [_put-fn]
+        click #(emit [:search/add
+                      {:tab-group :left
+                       :query     (up/parse-search @cal-day)}])]
+    (fn []
       (let []
         [:div.add-task
          [:div.toggle-visible
@@ -149,7 +150,7 @@
           "show all"
           [:i.fas.fa-chevron-square-right]]]))))
 
-(defn briefing-view [put-fn local-cfg]
+(defn briefing-view [local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
         day-stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))
@@ -161,8 +162,8 @@
                        :show-points             false
                        :on-hold                 false})
         pvt (subscribe [:show-pvt])]
-    (h/to-day (h/ymd (st/now)) pvt put-fn)
-    (fn briefing-render [put-fn local-cfg]
+    (h/to-day (h/ymd (st/now)) pvt emit)
+    (fn briefing-render [local-cfg]
       (let [ts (:timestamp @briefing)
             excluded (:excluded (:briefing @cfg))
             logged-s (->> @day-stats
@@ -176,22 +177,22 @@
                           (apply +))
             dur (u/duration-string logged-s)
             n (count (:by_ts @day-stats))
-            drop-fn (a/drop-on-briefing @briefing cfg put-fn)]
+            drop-fn (a/drop-on-briefing @briefing cfg emit)]
         [:div.briefing {:on-drop       drop-fn
                         :on-drag-over  h/prevent-default
                         :on-drag-enter h/prevent-default}
          [:div.briefing-header
           [h/error-boundary
-           [all-entries-for-day put-fn]]
+           [all-entries-for-day]]
           [h/error-boundary
            [sagas-filter local]]
           [h/error-boundary
-           [add-task ts put-fn]]]
+           [add-task ts]]]
          [:div.scroll
           [h/error-boundary
-           [tasks/started-tasks local local-cfg put-fn]]
+           [tasks/started-tasks local local-cfg emit]]
           [h/error-boundary
-           [tasks/open-linked-tasks local local-cfg put-fn]]
+           [tasks/open-linked-tasks local local-cfg emit]]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary
@@ -207,12 +208,12 @@
            [:div.comments
             (for [comment (:comments @briefing)]
               ^{:key (str "c" comment)}
-              [e/journal-entry comment put-fn local-cfg])]]
+              [e/journal-entry comment emit local-cfg])]]
           [h/error-boundary
-           [tasks/open-tasks local local-cfg put-fn]]]]))))
+           [tasks/open-tasks local local-cfg]]]]))))
 
 (defn briefing-column-view
-  [tab-group put-fn]
+  [tab-group]
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         story (reaction (get-in @query-cfg [:queries @query-id :story]))
@@ -221,9 +222,9 @@
                              :search-text @search-text
                              :tab-group   tab-group
                              :story       @story})]
-    (fn briefing-column-view-render [tab-group put-fn]
+    (fn briefing-column-view-render [tab-group]
       [:div.briefing
        [:div.tile-tabs
         [:div.journal
          [:div.journal-entries
-          [briefing-view put-fn @local-cfg]]]]])))
+          [briefing-view @local-cfg]]]]])))
