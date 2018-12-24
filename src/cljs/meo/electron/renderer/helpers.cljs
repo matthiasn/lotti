@@ -59,7 +59,7 @@
   (when-let [locale (get locales locale)]
     (.formatDate locale (.toDate (moment. s)) (clj->js {:skeleton "yMMMEdHm"}))))
 
-(defn create-entry [put-fn opts]
+(defn create-entry [opts]
   (let [ts (st/now)
         entry (merge (p/parse-entry "")
                      {:timestamp  ts
@@ -74,13 +74,13 @@
   "Create a new, empty entry. The opts map is merged last with the generated
    entry, thus keys can be overwritten here.
    Caveat: the timezone detection currently only works in Chrome. TODO: check"
-  ([put-fn]
-   (new-entry put-fn {} nil))
-  ([put-fn opts]
-   (new-entry put-fn opts nil))
-  ([put-fn opts run-fn]
+  ([]
+   (new-entry {}))
+  ([opts]
+   (new-entry opts nil))
+  ([opts run-fn]
    (fn [_ev]
-     (let [entry (create-entry put-fn opts)]
+     (let [entry (create-entry opts)]
        (when run-fn (run-fn entry))
        entry))))
 
@@ -88,21 +88,21 @@
 
 (defn add [x y] (+ (or x 0) (or y 0)))
 
-(defn update-numeric [entry path put-fn]
+(defn update-numeric [entry path]
   (fn [ev]
     (let [v (.. ev -target -value)
           parsed (when (seq v) (js/parseFloat v))
           updated (assoc-in entry path parsed)]
       (when parsed
-        (put-fn [:entry/update-local updated])))))
+        (emit [:entry/update-local updated])))))
 
-(defn update-time [entry path put-fn]
+(defn update-time [entry path]
   (fn [ev]
     (let [v (.. ev -target -value)
           parsed (when (seq v) (.asMinutes (.duration moment v)))
           updated (assoc-in entry path parsed)]
       (when parsed
-        (put-fn [:entry/update-local updated])))))
+        (emit [:entry/update-local updated])))))
 
 (def ymd-format "YYYY-MM-DD")
 (defn n-days-ago [n] (.subtract (moment.) n "d"))
@@ -140,21 +140,21 @@
 
 (defn get-stats
   "Retrieves stats for the last n days."
-  [stats-key n m put-fn]
+  [stats-key n m]
   (let [days (map n-days-ago-fmt (reverse (range n)))]
-    (put-fn (with-meta
-              [:stats/get {:days (mapv (fn [d] {:date_string d}) days)
-                           :type stats-key}]
-              m))))
+    (emit (with-meta
+            [:stats/get {:days (mapv (fn [d] {:date_string d}) days)
+                         :type stats-key}]
+            m))))
 
-(defn keep-updated [stats-key n local last-update put-fn]
+(defn keep-updated [stats-key n local last-update]
   (let [last-fetched (get-in @local [:last-fetched stats-key] 0)
         last-update (:last-update last-update)]
     (when (or (>= last-update last-fetched)
               (not= n (get-in @local [stats-key :n])))
       (swap! local assoc-in [stats-key :n] n)
       (swap! local assoc-in [:last-fetched stats-key] (st/now))
-      (get-stats stats-key n (:meta last-update {}) put-fn))))
+      (get-stats stats-key n (:meta last-update {})))))
 
 (defn str-contains-lc?
   "Tests if string s contains substring. Both are converted to lowercase.
@@ -182,16 +182,16 @@
 
 (def export (str (if repo-dir ".." user-data) "/data/export/"))
 
-(defn to-day [ymd pvt put-fn]
-  (put-fn [:cal/to-day {:day ymd}])
-  (put-fn [:gql/query {:file "logged-by-day.gql"
-                       :id   :logged-by-day
-                       :prio 13
-                       :args [ymd]}])
-  (put-fn [:gql/query {:file "briefing.gql"
-                       :id   :briefing
-                       :prio 12
-                       :args [ymd @pvt]}]))
+(defn to-day [ymd pvt]
+  (emit [:cal/to-day {:day ymd}])
+  (emit [:gql/query {:file "logged-by-day.gql"
+                     :id   :logged-by-day
+                     :prio 13
+                     :args [ymd]}])
+  (emit [:gql/query {:file "briefing.gql"
+                     :id   :briefing
+                     :prio 12
+                     :args [ymd @pvt]}]))
 
 (defn error-boundary
   "Error boundary for isolating React components. From:

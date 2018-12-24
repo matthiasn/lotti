@@ -127,9 +127,9 @@
                                   :query     (up/parse-search (:timestamp x))}]
                        :timeout 100}]))]
     (fn add-task-render [ts]
-      (let [new-task (h/new-entry emit {:linked_entries #{ts}
-                                        :starred        true
-                                        :perm_tags      #{"#task"}}
+      (let [new-task (h/new-entry {:linked_entries #{ts}
+                                   :starred        true
+                                   :perm_tags      #{"#task"}}
                                   open-new)]
         [:div.add-task
          [:div.toggle-visible
@@ -162,7 +162,7 @@
                        :show-points             false
                        :on-hold                 false})
         pvt (subscribe [:show-pvt])]
-    (h/to-day (h/ymd (st/now)) pvt emit)
+    (h/to-day (h/ymd (st/now)) pvt)
     (fn briefing-render [local-cfg]
       (let [ts (:timestamp @briefing)
             excluded (:excluded (:briefing @cfg))

@@ -4,6 +4,7 @@
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.config.custom-fields :as cf]
             [meo.electron.renderer.ui.config.sagas :as cs]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.config.stories :as cst]
             [meo.electron.renderer.ui.config.habits :as ch]
             [meo.electron.renderer.ui.config.dashboards :as cd]
@@ -16,7 +17,7 @@
             [reagent.core :as r]
             [moment]))
 
-(defn config [put-fn]
+(defn config []
   (let [local (r/atom {:search          ""
                        :new-field-input ""
                        :highlighted     :sagas
@@ -35,7 +36,7 @@
         next-item (fn [coll] (first (rest (drop-while #(not= (:highlighted @local) %) coll))))
         next-page #(swap! local assoc :highlighted (next-item sections))
         prev-page #(swap! local assoc :highlighted (next-item (reverse sections)))
-        exit #(do (swap! local dissoc :page) (put-fn [:nav/to {:page :main}]))
+        exit #(do (swap! local dissoc :page) (emit [:nav/to {:page :main}]))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         arrow-up (= key-code 38)
@@ -65,7 +66,7 @@
                    [:div.flex-container
                     [:div.grid
                      [:div.wrapper
-                      [menu/menu-view put-fn]
+                      [menu/menu-view]
                       [:div.config
                        [:div.menu
                         [:h1 "Settings"]
@@ -83,29 +84,29 @@
                           :class    (when (= :exit (:highlighted @local)) "highlight")}
                          "Exit"]]
                        (when (= :sagas page)
-                         [cs/sagas local put-fn])
+                         [cs/sagas local])
                        (when (= :stories page)
-                         [cst/stories local put-fn])
+                         [cst/stories local])
                        (when (= :custom-fields page)
                          [h/error-boundary
-                          [cf/custom-fields-list local put-fn]])
+                          [cf/custom-fields-list local]])
                        (when (and (= :custom-fields page) (:selected @local))
                          [h/error-boundary
-                          [cf/custom-field-tab :custom_field_cfg put-fn]])
+                          [cf/custom-field-tab :custom_field_cfg]])
                        (when (= :localization page)
-                         [cl/locale-preferences put-fn])
+                         [cl/locale-preferences])
                        (when (= :habits page)
-                         [ch/habits-row local put-fn])
+                         [ch/habits-row local])
                        (when (= :dashboards page)
-                         [cd/dashboards-row local put-fn])
+                         [cd/dashboards-row local])
                        (when (= :sync page)
-                         [sync/sync put-fn])
+                         [sync/sync])
                        (when (= :metrics page)
-                         [cm/metrics put-fn])
+                         [cm/metrics])
                        (when (= :photos page)
                          [:div.photos.col
                           [:h2 "Photo Settings"]
-                          [:button {:on-click #(put-fn [:photos/gen-cache])}
+                          [:button {:on-click #(emit [:photos/gen-cache])}
                            "regenerate cache"]])]
                       [:div.cfg.footer [stats/stats-text true]]]]]))]
     (r/create-class

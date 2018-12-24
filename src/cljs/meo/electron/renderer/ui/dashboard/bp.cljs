@@ -3,6 +3,7 @@
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [meo.common.utils.parse :as up]
             [clojure.string :as s]))
@@ -10,9 +11,9 @@
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
 
-(defn chart-line [scores point-mapper cfg put-fn]
+(defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg put-fn]
+    (fn chart-line-render [scores point-mapper cfg]
       (let [{:keys [color fill glow local]} cfg
             points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) (apply concat points))
@@ -51,18 +52,18 @@
                         :on-click       (up/add-search
                                           {:tab-group    :right
                                            :first-line   (str "#BP " bp)
-                                           :query-string (:ts p)} put-fn)
+                                           :query-string (:ts p)} emit)
                         :fill           fill
                         :r              (:circle_radius cfg 3)
                         :style          {:stroke       color
                                          :stroke-width (:circle_stroke_width cfg 2)}}]))]]))))
 
-(defn bp-chart [_ _put-fn]
+(defn bp-chart [_]
   (let [show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
         bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
     (fn [{:keys [y k h start span mn mx x-offset w systolic_color systolic_fill
-                 diastolic_color diastolic_fill] :as m} put-fn]
+                 diastolic_color diastolic_fill] :as m}]
       (debug :bp-chart m)
       (let [mx (or mx 200)
             mn (or mn 200)
@@ -109,8 +110,8 @@
          [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 2]
          [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 2]
 
-         [chart-line @bp-data (mapper :bp_systolic) systolic-cfg put-fn]
-         [chart-line @bp-data (mapper :bp_diastolic) diastolic-cfg put-fn]
+         [chart-line @bp-data (mapper :bp_systolic) systolic-cfg ]
+         [chart-line @bp-data (mapper :bp_diastolic) diastolic-cfg ]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]

@@ -51,7 +51,7 @@
     (fn [chart-h put-fn]
       (let [indexed (map-indexed (fn [idx [k v]] [idx v]) @stats)
             stacked-bars (stacked-bars-fn indexed local put-fn)]
-        (h/keep-updated :stats/media 60 local @last-update put-fn)
+        (h/keep-updated :stats/media 60 local @last-update)
         [:div
          [:svg
           {:viewBox (str "0 0 600 " chart-h)}

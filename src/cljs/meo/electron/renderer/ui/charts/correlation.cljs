@@ -58,7 +58,7 @@
              :fill        "#333"}
       (name yk)]]))
 
-(defn scatter-matrix [put-fn]
+(defn scatter-matrix []
   (let [gql-res (subscribe [:gql-res])
         dashboard-data (reaction (get-in @gql-res [:dashboard :data]))
         questionnaire-data (reaction (get-in @gql-res [:dashboard-questionnaires :data]))
@@ -127,7 +127,7 @@
             :entry-count :completed-tasks]
         matrix (partition (count ks) (sh/cartesian-product ks ks))
         idx (fn [idx v] [idx v])]
-    (fn scatter-matrix-render [put-fn]
+    (fn scatter-matrix-render []
       [:div.flex-container
        [:div.stats
         [:svg

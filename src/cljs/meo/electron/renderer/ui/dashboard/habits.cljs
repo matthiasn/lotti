@@ -9,12 +9,12 @@
             [moment]))
 
 (defn habits-chart
-  [{:keys [habit]} _put-fn]
+  [{:keys [habit]} ]
   (let [show-pvt (subscribe [:show-pvt])
         habits (subscribe [:habits])
         habit-entry (reaction (get-in @habits [habit :habit_entry]))
         completions (reaction (->> (get-in @habits [habit :completed]) reverse))]
-    (fn habits-chart-render [{:keys [y w h start end x-offset days]} put-fn]
+    (fn habits-chart-render [{:keys [y w h start end x-offset days]}]
       (let [label (eu/first-line @habit-entry)
             h (or h 25)
             btm-y (+ y h)

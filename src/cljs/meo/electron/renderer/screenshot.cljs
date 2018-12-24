@@ -2,8 +2,8 @@
   (:require [taoensso.timbre :refer-macros [info debug]]
             [meo.electron.renderer.helpers :as h]))
 
-(defn screenshot [{:keys [put-fn msg-payload]}]
-  (let [new-fn (h/new-entry put-fn msg-payload)]
+(defn screenshot [{:keys [msg-payload]}]
+  (let [new-fn (h/new-entry msg-payload)]
     (new-fn)
     {}))
 

@@ -4,6 +4,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [matthiasn.systems-toolbox.component :as stc]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
             [cljs.reader :refer [read-string]]
@@ -13,12 +14,12 @@
             [meo.common.utils.misc :as m]
             [meo.electron.renderer.ui.charts.award :as ca]))
 
-(defn toggle-option-view [{:keys [option cls]} put-fn]
+(defn toggle-option-view [{:keys [option cls]}]
   (let [cfg (subscribe [:cfg])]
-    (fn toggle-option-render [{:keys [option cls]} put-fn]
+    (fn toggle-option-render [{:keys [option cls]}]
       (let [show-option? (option @cfg)
-            toggle-option #(do (put-fn [:cmd/toggle-key {:path [:cfg option]}])
-                               (put-fn [:startup/query]))]
+            toggle-option #(do (emit [:cmd/toggle-key {:path [:cfg option]}])
+                               (emit [:startup/query]))]
         [:i.far.toggle
          {:class    (str cls (when-not show-option? " inactive"))
           :on-click toggle-option}]))))
@@ -27,35 +28,25 @@
   (let [spellcheck-handler (.-spellCheckHandler js/window)]
     (.switchLanguage spellcheck-handler cc)))
 
-(defn new-import-view [put-fn]
+(defn new-import-view []
   (let [local (r/atom {:show false})
         open-new (fn [x]
-                   (put-fn [:search/add
-                            {:tab-group :left
-                             :query     (up/parse-search (:timestamp x))}]))]
-    (def ^:export new-entry (h/new-entry put-fn {} open-new))
-    (def ^:export new-story (h/new-entry put-fn {:entry_type :story} open-new))
-    (def ^:export new-saga (h/new-entry put-fn {:entry_type :saga} open-new))
-    (def ^:export new-habit (h/new-entry put-fn {:entry_type :habit} open-new))
-    (def ^:export new-custom-field (h/new-entry put-fn {:entry_type :custom-field-cfg
-                                                        :perm_tags  #{"#custom-field-cfg"}
-                                                        :tags       #{"#custom-field-cfg"}} open-new))
-    (def ^:export new-dashboard
-      (h/new-entry put-fn {:entry_type :dashboard-cfg
-                           :perm_tags  #{"#dashboard-cfg"}} open-new))
-    (fn [put-fn]
+                   (emit [:search/add
+                          {:tab-group :left
+                           :query     (up/parse-search (:timestamp x))}]))]
+    (fn []
       (when (:show @local)
         [:div.new-import
-         [:button.menu-new {:on-click (h/new-entry put-fn {})}
+         [:button.menu-new {:on-click (h/new-entry {})}
           [:span.fa.fa-plus-square] " new"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry_type :saga})}
+          {:on-click (h/new-entry {:entry_type :saga})}
           [:span.fa.fa-plus-square] " new saga"]
          [:button.menu-new
-          {:on-click (h/new-entry put-fn {:entry_type :story})}
+          {:on-click (h/new-entry {:entry_type :story})}
           [:span.fa.fa-plus-square] " new story"]
-         [:button {:on-click #(do (put-fn [:import/photos])
-                                  (put-fn [:import/spotify]))}
+         [:button {:on-click #(do (emit [:import/photos])
+                                  (emit [:import/spotify]))}
           [:span.fa.fa-map] " import"]]))))
 
 (defn upload-view []
@@ -86,7 +77,7 @@
       (/ (apply + by-criteria)
          cnt))))
 
-(defn habit-monitor [put-fn]
+(defn habit-monitor []
   (let [gql-res (subscribe [:gql-res])
         pvt (subscribe [:show-pvt])
         habits (reaction (->> @gql-res
@@ -114,7 +105,7 @@
                             {:tab-group    :right
                              :story-name   (-> habit :habit_entry :story :story_name)
                              :first-line   text
-                             :query-string ts} put-fn)
+                             :query-string ts} emit)
                  started (and percent-completed (not success))]
              ^{:key ts}
              [:div.tooltip
@@ -131,24 +122,23 @@
                   [:span.status {:class (when (:success c) "success")
                                  :key   i}])]]]))]))))
 
-(defn busy-status [put-fn]
+(defn busy-status []
   (let [status (subscribe [:busy-status])
         click (fn [_]
                 (let [q (up/parse-search (str (:active @status)))]
-                  (put-fn [:search/add {:tab-group :left :query q}])))]
+                  (emit [:search/add {:tab-group :left :query q}])))]
     (fn busy-status-render [_]
       (let [cls (name (or (:color @status) :green))]
         [:div.busy-status.rec-indicator {:class    cls
                                          :on-click click}]))))
 
-(defn menu-view [put-fn]
+(defn menu-view []
   [:div.menu
    [:div.menu-header
     [toggle-option-view {:cls    "fa-user-secret"
-                         :option :show-pvt} put-fn]
-    [habit-monitor put-fn]
-    [new-import-view put-fn]
+                         :option :show-pvt}]
+    [habit-monitor]
+    [new-import-view]
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
-    [upload-view]
-    #_[ca/award-points put-fn]]])
+    [upload-view]]])

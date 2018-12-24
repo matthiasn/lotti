@@ -5,13 +5,14 @@
             [taoensso.timbre :refer-macros [info error debug]]
             [cljs.nodejs :refer [process]]
             [mapbox-gl]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.impl.component :as ric]))
 
 
 (defn mapbox-did-mount [props]
   (fn []
     (info "component did mount")
-    (let [{:keys [put-fn local id selected scroll-disabled]} props
+    (let [{:keys [local id selected scroll-disabled]} props
           {:keys [latitude longitude]} selected
           opts {:container id
                 :zoom      14
@@ -55,11 +56,11 @@
       (.addTo marker mb-map))))
 
 (defn render [props]
-  (let [{:keys [put-fn id selected]} props
-        rm-location #(put-fn [:entry/update
-                              (merge selected
-                                     {:longitude 0
-                                      :latitude  0})])]
+  (let [{:keys [id selected]} props
+        rm-location #(emit [:entry/update
+                            (merge selected
+                                   {:longitude 0
+                                    :latitude  0})])]
     [:div.mapbox {:id id}
      [:i.fas.fa-trash-alt {:on-click rm-location}]]))
 

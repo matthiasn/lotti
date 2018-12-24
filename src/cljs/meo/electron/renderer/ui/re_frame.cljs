@@ -3,7 +3,9 @@
   (:require [reagent.core :as rc]
             [re-frame.core :refer [reg-sub subscribe]]
             [meo.electron.renderer.ui.re-frame.db :as rfd]
+            [meo.electron.renderer.ui.re-frame.subscriptions]
             [re-frame.db :as rdb]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [electron :refer [remote]]
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.ui.menu :as menu]
@@ -23,41 +25,41 @@
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.electron.renderer.ui.help :as help]))
 
-(defn main-page [put-fn]
+(defn main-page []
   (let [cfg (subscribe [:cfg])
         single-column (reaction (:single-column @cfg))]
-    (fn [put-fn]
+    (fn []
       [:div.flex-container
        [:div.grid
         [:div.wrapper.col-3
-         [h/error-boundary [menu/menu-view put-fn]]
-         [h/error-boundary [menu/busy-status put-fn]]
-         [h/error-boundary [cal/infinite-cal put-fn]]
-         [h/error-boundary [cal/calendar-view put-fn]]
-         [h/error-boundary [b/briefing-column-view :briefing put-fn]]
+         [h/error-boundary [menu/menu-view]]
+         [h/error-boundary [menu/busy-status]]
+         [h/error-boundary [cal/infinite-cal]]
+         [h/error-boundary [cal/calendar-view]]
+         [h/error-boundary [b/briefing-column-view :briefing]]
          [:div {:class (if @single-column "single" "left")}
-          [h/error-boundary [g/tabs-view :left put-fn]]]
+          [h/error-boundary [g/tabs-view :left]]]
          (when-not @single-column
            [:div.right
-            [h/error-boundary [g/tabs-view :right put-fn]]])
+            [h/error-boundary [g/tabs-view :right]]])
          [h/error-boundary
-          [f/dashboard put-fn]]]]
+          [f/dashboard]]]]
        [h/error-boundary
         [stats/stats-text]]
        [h/error-boundary
-        [upd/updater put-fn]]])))
+        [upd/updater]]])))
 
-(defn countries-page [put-fn]
+(defn countries-page []
   [:div.flex-container
    [loc/location-chart]])
 
-(defn cal [put-fn]
+(defn cal []
   [:div.flex-container
-   [cal/calendar-view put-fn]])
+   [cal/calendar-view]])
 
-(defn load-progress [put-fn]
+(defn load-progress []
   (let [startup-progress (subscribe [:startup-progress])]
-    (fn [put-fn]
+    (fn []
       (let [startup-progress @startup-progress
             percent (Math/floor (* 100 startup-progress))]
         [:div.loader
@@ -66,12 +68,12 @@
           [:div.meter
            [:span {:style {:width (str percent "%")}}]]]]))))
 
-(defn re-frame-ui [put-fn]
+(defn re-frame-ui []
   (let [current-page (subscribe [:current-page])
         startup-progress (subscribe [:startup-progress])
         cfg (subscribe [:cfg])
         data-explorer (reaction (:data-explorer @cfg))]
-    (fn [put-fn]
+    (fn []
       (let [current-page @current-page
             startup-progress @startup-progress]
         (when-not @data-explorer
@@ -79,22 +81,22 @@
         (if (= 1 startup-progress)
           [:div
            (case (:page current-page)
-             :config [cfg/config put-fn]
-             :countries [countries-page put-fn]
-             :calendar [cal put-fn]
-             :correlation [corr/scatter-matrix put-fn]
-             :heatmap [hm/heatmap put-fn]
+             :config [cfg/config]
+             :countries [countries-page ]
+             :calendar [cal]
+             :correlation [corr/scatter-matrix]
+             :heatmap [hm/heatmap]
              :gallery [ic/gallery-page]
-             :help [help/help put-fn]
+             :help [help/help]
              :empty [:div.flex-container]
-             [main-page put-fn])
+             [main-page])
            (when @data-explorer
              [dex/data-explorer])]
-          [load-progress put-fn])))))
+          [load-progress ])))))
 
 (defn state-fn [put-fn]
   (reset! rfd/emit-atom put-fn)
-  (rc/render [re-frame-ui put-fn] (.getElementById js/document "reframe"))
+  (rc/render [re-frame-ui] (.getElementById js/document "reframe"))
   {:observed rdb/app-db})
 
 (defn cmp-map [cmp-id]

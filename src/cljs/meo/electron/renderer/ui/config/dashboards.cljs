@@ -5,6 +5,7 @@
             [meo.electron.renderer.helpers :as h]
             [clojure.string :as s]
             [reagent.core :as r]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [meo.electron.renderer.graphql :as gql]
             [meo.common.utils.misc :as m]
@@ -15,20 +16,20 @@
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
 
-(defn gql-query [pvt search-text put-fn]
+(defn gql-query [pvt search-text]
   (let [queries [[:dashboards_cfg
                   {:search-text search-text
                    :n           1000}]]
         query (gql/tabs-query queries false pvt)]
-    (put-fn [:gql/query {:q        query
-                         :id       :dashboards_cfg
-                         :res-hash nil
-                         :prio     11}])))
+    (emit [:gql/query {:q        query
+                       :id       :dashboards_cfg
+                       :res-hash nil
+                       :prio     11}])))
 
-(defn dashboard-line [_habit local put-fn]
+(defn dashboard-line [_habit local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
-    (fn habit-line-render [entry local put-fn]
+    (fn habit-line-render [entry local]
       (let [ts (:timestamp entry)
             text (eu/first-line entry)
             text (or (when-not (empty? text)
@@ -39,7 +40,7 @@
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (gql-query @show-pvt (str ts) put-fn))
+                         (gql-query @show-pvt (str ts)))
             pvt (get-in entry [:dashboard_cfg :pvt])
             active (get-in entry [:dashboard_cfg :active])]
         [:tr {:key      ts
@@ -50,7 +51,7 @@
          [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
          [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
-(defn dashboards [local put-fn]
+(defn dashboards [local]
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
@@ -58,11 +59,11 @@
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
-                     (gql-query @pvt (str ts) put-fn)))
-        add-click (h/new-entry put-fn {:entry_type    :dashboard-cfg
-                                       :perm_tags     #{"#dashboard-cfg"}
-                                       :tags          #{"#dashboard-cfg"}
-                                       :dashboard_cfg {:active true}}
+                     (gql-query @pvt (str ts))))
+        add-click (h/new-entry {:entry_type    :dashboard-cfg
+                                :perm_tags     #{"#dashboard-cfg"}
+                                :tags          #{"#dashboard-cfg"}
+                                :dashboard_cfg {:active true}}
                                open-new)
         gql-res2 (subscribe [:gql-res2])
         pvt (subscribe [:show-pvt])
@@ -70,7 +71,7 @@
         by-text #(get-in % [:text])
         by-pvt #(get-in % [:dashboard_cfg :pvt])
         by-active #(get-in % [:dashboard_cfg :active])]
-    (fn dashboards-render [local put-fn]
+    (fn dashboards-render [local]
       (let [pvt @pvt
             search-text (:search @local "")
             sort-fn (get-in @local [:dashboards_cfg :sorted-by] by-ts)
@@ -106,29 +107,29 @@
             [:th {:on-click (sort-click by-pvt)} "private"]]
            (for [dashboard (vals dashboards)]
              ^{:key (:timestamp dashboard)}
-             [dashboard-line dashboard local put-fn])]]]))))
+             [dashboard-line dashboard local])]]]))))
 
-(defn dashboards-tab [tab-group _put-fn]
+(defn dashboards-tab [tab-group]
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
                              :tab-group   tab-group})]
-    (fn tabs-render [_tab-group put-fn]
+    (fn tabs-render [_tab-group]
       [:div.tile-tabs
-       [j/journal-view @local-cfg put-fn]])))
+       [j/journal-view @local-cfg]])))
 
-(defn dashboards-row [local put-fn]
+(defn dashboards-row [local]
   [:div.dashboards-cfg
    [:div.habit-cfg-row
     [h/error-boundary
-     [dashboards local put-fn]]
+     [dashboards local emit]]
     (when (:selected @local)
       [h/error-boundary
-       [dashboards-tab :dashboards_cfg put-fn]])]
+       [dashboards-tab :dashboards_cfg emit]])]
    (when (:selected @local)
      [h/error-boundary
       [db/dashboard {:days         90
                      :dashboard-ts (:selected @local)}
-       put-fn]])])
+       emit]])])

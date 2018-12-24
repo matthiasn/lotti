@@ -3,6 +3,7 @@
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info debug]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [camel-snake-kebab.core :refer [->kebab-case]]
             [meo.electron.renderer.ui.dashboard.common :as dc]
             [clojure.string :as s]
@@ -17,12 +18,12 @@
        (map (fn [[ts m]] (assoc-in m [:timestamp] ts)))))
 
 (defn scatter-chart
-  [{:keys [k score-k]} _put-fn]
+  [{:keys [k score-k]}]
   (let [stats (subscribe [:stats])
         show-pvt (subscribe [:show-pvt])
         scores (reaction (filter score-k (scores-fn @stats k)))]
     (fn scores-chart-render [{:keys [y k w h score-k start end mn mx color
-                                     x-offset label scatter]} put-fn]
+                                     x-offset label scatter]}]
       (let [span (- end start)
             rng (- mx mn)
             scale (/ h rng)
@@ -51,9 +52,9 @@
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))
 
-(defn chart-line [scores point-mapper cfg put-fn]
+(defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg put-fn]
+    (fn chart-line-render [scores point-mapper cfg ]
       (let [points (map-indexed point-mapper scores)
             {:keys [color fill glow label]} cfg
             line-points (s/join " " (map :s points))
@@ -82,17 +83,17 @@
                       :on-click (up/add-search
                                   {:tab-group    :left
                                    :first-line   label
-                                   :query-string (:ts p)} put-fn)
+                                   :query-string (:ts p)} emit)
                       :r        (:circle_radius cfg 3)
                       :fill     fill
                       :style    {:stroke       color
                                  :stroke-width (:circle_stroke_width cfg 2)}}])]]))))
 
 (defn scores-chart
-  [{:keys []} _put-fn]
+  [{:keys []}]
   (let [gql-res (subscribe [:gql-res])]
     (fn scores-chart-render [{:keys [y k w h score_k start end mn mx
-                                     x-offset label] :as cfg} put-fn]
+                                     x-offset label] :as cfg}]
       (let [qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
@@ -119,7 +120,7 @@
          (for [n lines]
            ^{:key (str k score_k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
-         [chart-line data mapper cfg put-fn]
+         [chart-line data mapper cfg]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))

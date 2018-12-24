@@ -32,8 +32,8 @@
             [reagent.core :as r]
             [matthiasn.systems-toolbox.component :as st]))
 
-(defn hashtags-mentions [entry tab-group put-fn]
-  (let [clear-import #(put-fn [:entry/update (update entry :tags disj "#import")])
+(defn hashtags-mentions [entry tab-group]
+  (let [clear-import #(emit [:entry/update (update entry :tags disj "#import")])
         tags (set/union (:tags entry) (:perm_tags entry))]
     [:div.hashtags
      (when (contains? tags "#import")
@@ -43,13 +43,13 @@
        [:span.mention {:on-click (up/add-search {:tab-group    tab-group
                                                  :story-name   mention
                                                  :first-line   mention
-                                                 :query-string mention} put-fn)} mention])
+                                                 :query-string mention} emit)} mention])
      (for [tag (disj tags "#import")]
        ^{:key (str "tag-" tag)}
        [:span.hashtag {:on-click (up/add-search {:tab-group    tab-group
                                                  :story-name   tag
                                                  :first-line   tag
-                                                 :query-string tag} put-fn)} tag])]))
+                                                 :query-string tag} emit)} tag])]))
 
 (defn linked-btn [entry local-cfg active]
   (when (pos? (:linked_cnt entry))
@@ -124,7 +124,7 @@
           (when (:show-adjust-ts @local)
             [dt/datetime-edit merged local])
           [:div.action-row
-           [dt/datetime-header merged local ]
+           [dt/datetime-header merged local]
            [a/entry-actions merged local emit edit-mode? toggle-edit local-cfg]]]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
@@ -145,14 +145,14 @@
          (let [pomodoro (= :pomodoro (:entry_type entry))]
            [:div.entry-footer
             (when pomodoro
-              [pomo/pomodoro-btn merged edit-mode? emit])
+              [pomo/pomodoro-btn merged edit-mode?])
             (when pomodoro
-              [pomo/pomodoro-time merged edit-mode? emit])
+              [pomo/pomodoro-time merged edit-mode?])
             (when-not pomodoro
-              [pomo/pomodoro-footer entry emit])
-            [hashtags-mentions entry tab-group emit]
+              [pomo/pomodoro-footer entry])
+            [hashtags-mentions entry tab-group]
             [:div.word-count (u/count-words-formatted merged)]])
-         [ec/conflict-view merged emit]
+         [ec/conflict-view merged]
          [c/custom-fields-div merged emit edit-mode?]
          (when (:git_commit entry)
            [git-commit merged])
@@ -170,10 +170,9 @@
                               :selected        merged
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
-                              :mapbox-token    mapbox-token
-                              :put-fn          emit}]]
+                              :mapbox-token    mapbox-token}]]
              [l/leaflet-map merged @show-map? local-cfg emit]))
-         [m/imdb-view merged emit]
+         [m/imdb-view merged]
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]
          (when (:debug @local)
@@ -198,9 +197,9 @@
         show-comments-for? (reaction (get-in @cfg [:show-comments-for ts]))
         query-id (:query-id local-cfg)
         toggle-comments #(emit [:cmd/assoc-in
-                                  {:path  [:cfg :show-comments-for ts]
-                                   :value (when-not (= @show-comments-for? query-id)
-                                            query-id)}])]
+                                {:path  [:cfg :show-comments-for ts]
+                                 :value (when-not (= @show-comments-for? query-id)
+                                          query-id)}])]
     (fn entry-with-comments-render [entry local-cfg]
       (let [comments (:comments entry)
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))

@@ -44,7 +44,7 @@
                                 tags (disj (set/union cf-tags q-tags) nil)
                                 completion-entry (merge {:perm_tags     tags
                                                          :primary_story story})
-                                f (h/new-entry put-fn completion-entry open-new)
+                                f (h/new-entry completion-entry open-new)
                                 new-entry (f)]
                             (debug entry)
                             (debug new-entry))]
@@ -85,8 +85,7 @@
             habit-default {:entry_type :habit
                            :starred    true
                            :perm_tags  #{"#habit"}}
-            new-habit (h/new-entry put-fn habit-default
-                                   open-new)]
+            new-habit (h/new-entry habit-default open-new)]
         [:div.waiting-habits
          [:table.habits
           [:tbody

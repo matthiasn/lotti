@@ -1,17 +1,18 @@
 (ns meo.electron.renderer.ui.entry.conflict
   (:require [taoensso.timbre :refer-macros [info error debug]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [cljs.pprint :as pp]))
 
-(defn conflict-view [entry put-fn]
+(defn conflict-view [entry]
   (let [local (r/atom {})]
-    (fn [entry put-fn]
+    (fn [entry]
       (when-let [conflict (:conflict entry)]
         (when-not (contains? #{:resolved-theirs :resolved-ours} conflict)
           (let [ours (fn [_]
                        (let [updated (assoc entry :conflict :resolved-ours)]
                          (debug updated)
-                         (put-fn [:entry/update updated])))
+                         (emit [:entry/update updated])))
                 theirs (fn [_]
                          (let [updated (assoc entry :conflict :resolved-theirs)
                                merge-fn (fn [a b]
@@ -20,7 +21,7 @@
                                             b))
                                updated (merge-with merge-fn updated conflict)]
                            (debug updated)
-                           (put-fn [:entry/update updated])))]
+                           (emit [:entry/update updated])))]
             [:div.conflict
              [:div.warn [:span.fa.fa-exclamation] "Conflict"]
              [:div

@@ -108,11 +108,11 @@
   [:svg {:viewBox (str "0 0 600 " chart-h)}
    [:g
     [:g (for [[idx v] indexed]
-       (let [h (* y-scale (:total-time v))
-             mouse-enter-fn (cc/mouse-enter-fn local v)
-             mouse-leave-fn (cc/mouse-leave-fn local v)]
-         ^{:key (str idx)}
-         [day-bars-by-saga v local idx chart-h y-scale put-fn]))]
+          (let [h (* y-scale (:total-time v))
+                mouse-enter-fn (cc/mouse-enter-fn local v)
+                mouse-leave-fn (cc/mouse-leave-fn local v)]
+            ^{:key (str idx)}
+            [day-bars-by-saga v local idx chart-h y-scale put-fn]))]
     [cc/chart-title "by saga"]]])
 
 (defn time-by-stories-list [day-stats]
@@ -172,7 +172,7 @@
                              (sort-by second >))
             dur (u/duration-string (:total-time day-stats))
             fmt-date (.format (moment (:date_string day-stats)) "ddd YY-MM-DD")]
-        (h/keep-updated :stats/pomodoro 60 local @last-update put-fn)
+        (h/keep-updated :stats/pomodoro 60 local @last-update)
         [:div
          [:div.times-by-day
           [:div.story-time {:class (when expanded? "expanded")}

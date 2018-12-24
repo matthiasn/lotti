@@ -379,16 +379,16 @@
             copy-opts {:dashboard_cfg (:dashboard_cfg entry)
                        :entry_type    :dashboard-cfg
                        :perm_tags     #{"#dashboard-cfg"}}
-            copy-click (h/new-entry put-fn copy-opts open-new)]
+            copy-click (h/new-entry copy-opts open-new)]
         [:div.habit-details
          [:h3.header
           "Dashboard Configuration"]
          [:div.row
           [:label "Active? "]
-          [uc/switch {:entry entry :put-fn put-fn :path [:dashboard_cfg :active]}]]
+          [uc/switch {:entry entry :path [:dashboard_cfg :active]}]]
          [:div.row
           [:label "Private? "]
-          [uc/switch {:entry entry :put-fn put-fn :path [:dashboard_cfg :pvt]}]]
+          [uc/switch {:entry entry :path [:dashboard_cfg :pvt]}]]
          [:div.row
           [:h3 "Criteria"]
           [:div.add-criterion {:on-click (add-item entry)}

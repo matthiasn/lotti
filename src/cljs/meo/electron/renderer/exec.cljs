@@ -20,7 +20,7 @@
                (put-fn [:search/add
                              {:tab-group :left
                               :query     (up/parse-search (:timestamp x))}]))
-        f (h/new-entry put-fn msg-payload open)]
+        f (h/new-entry msg-payload open)]
     (f)
 
     {}))

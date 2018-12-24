@@ -110,10 +110,9 @@
                                      {:path  [:cfg :show-comments-for ts]
                                       :value %}])
         show-comments #(show-hide-comments query-id)
-        create-comment (h/new-entry put-fn {:comment_for ts} show-comments)
+        create-comment (h/new-entry {:comment_for ts} show-comments)
         new-pomodoro (fn [_ev]
-                       (let [new-entry-fn (h/new-entry put-fn
-                                                       (p/pomodoro-defaults ts)
+                       (let [new-entry-fn (h/new-entry (p/pomodoro-defaults ts)
                                                        show-comments)
                              new-entry (new-entry-fn)]
                          (put-fn [:cmd/schedule-new
@@ -185,12 +184,12 @@
 
 (defn briefing-actions [ts put-fn]
   (let [create-comment (fn [_ev]
-                         (let [create (h/new-entry put-fn {:comment_for ts})
+                         (let [create (h/new-entry {:comment_for ts})
                                new-entry (create)]
                            (info "created comment" new-entry)
                            (put-fn [:entry/update new-entry])))
         new-pomodoro (fn [_ev]
-                       (let [create (h/new-entry put-fn (p/pomodoro-defaults ts))
+                       (let [create (h/new-entry (p/pomodoro-defaults ts))
                              new-entry (create)]
                          (info "new-pomodoro" new-entry)
                          (put-fn [:cmd/schedule-new

@@ -1,20 +1,21 @@
 (ns meo.electron.renderer.ui.config.metrics
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer-macros [info error]]
             [reagent.core :as r]
             [moment]))
 
-(defn metrics [put-fn]
+(defn metrics []
   (let [metrics (subscribe [:metrics])
         td-fmt (fn [v] [:td.data (.toFixed v 2)])
-        get-metrics #(put-fn [:metrics/get])
+        get-metrics #(emit [:metrics/get])
         sort-fn #(let [data (second %)] (* (:mean data) (:n data)))]
     (get-metrics)
-    (fn [put-fn]
+    (fn []
       [:div.metrics.col
        [:h2 "Backend Metrics"]
-       [:span.btn {:on-click #(put-fn [:metrics/get])} "update"]
+       [:span.btn {:on-click #(emit [:metrics/get])} "update"]
        (when (seq @metrics)
          (let [metrics (reverse (sort-by sort-fn @metrics))]
            [:table

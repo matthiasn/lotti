@@ -31,9 +31,9 @@
                    :text-anchor "middle"}
             v])]))))
 
-(defn commits-chart [_ _]
+(defn commits-chart [_]
   (let [gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span start h y color]} put-fn]
+    (fn barchart-row [{:keys [days span start h y color]}]
       (let [btm-y (+ y h)
             data (get-in @gql-res [:dashboard :data :git_stats])
             indexed (map-indexed (fn [i x] [i x]) data)

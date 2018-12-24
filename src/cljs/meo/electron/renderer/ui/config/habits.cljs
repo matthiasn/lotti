@@ -3,6 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.helpers :as h]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.string :as s]
             [reagent.core :as r]
             [moment]
@@ -14,20 +15,20 @@
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
 
-(defn gql-query [pvt search-text put-fn]
+(defn gql-query [pvt search-text]
   (let [queries [[:habits_cfg
                   {:search-text search-text
                    :n           1000}]]
         query (gql/tabs-query queries false pvt)]
-    (put-fn [:gql/query {:q        query
-                         :id       :habits_cfg
-                         :res-hash nil
-                         :prio     11}])))
+    (emit [:gql/query {:q        query
+                       :id       :habits_cfg
+                       :res-hash nil
+                       :prio     11}])))
 
-(defn habit-line [_habit local put-fn]
+(defn habit-line [_habit local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
-    (fn habit-line-render [habit local put-fn]
+    (fn habit-line-render [habit local]
       (let [entry (:habit_entry habit)
             ts (:timestamp entry)
             text (eu/first-line entry)
@@ -36,7 +37,7 @@
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (gql-query @show-pvt (str ts) put-fn))
+                         (gql-query @show-pvt (str ts) emit))
             pvt (get-in habit [:habit_entry :habit :pvt])
             active (get-in habit [:habit_entry :habit :active])]
         [:tr {:key      ts
@@ -51,7 +52,7 @@
          [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
          [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
-(defn habits [local put-fn]
+(defn habits [local]
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
@@ -59,11 +60,11 @@
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
-                     (gql-query @pvt (str ts) put-fn)))
-        add-click (h/new-entry put-fn {:entry_type :habit
-                                       :perm_tags  #{"#habit-cfg"}
-                                       :tags       #{"#habit-cfg"}
-                                       :habit      {:active true}}
+                     (gql-query @pvt (str ts))))
+        add-click (h/new-entry {:entry_type :habit
+                                :perm_tags  #{"#habit-cfg"}
+                                :tags       #{"#habit-cfg"}
+                                :habit      {:active true}}
                                open-new)
         gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
@@ -73,7 +74,7 @@
         by-pvt #(get-in % [:habit_entry :habit :pvt])
         by-active #(get-in % [:habit_entry :habit :active])
         by-success #(->> % :completed (take 10) (filter :success) count)]
-    (fn habits-render [local put-fn]
+    (fn habits-render [local]
       (let [pvt @pvt
             search-text (:search @local "")
             habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt])))
@@ -109,23 +110,23 @@
             [:th {:on-click (sort-click by-pvt)} "private"]]
            (for [habit habits]
              ^{:key (:timestamp (:habit_entry habit))}
-             [habit-line habit local put-fn])]]]))))
+             [habit-line habit local])]]]))))
 
-(defn habits-tab [tab-group _put-fn]
+(defn habits-tab [tab-group]
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
                              :tab-group   tab-group})]
-    (fn tabs-render [_tab-group put-fn]
+    (fn tabs-render [_tab-group]
       [:div.tile-tabs
-       [j/journal-view @local-cfg put-fn]])))
+       [j/journal-view @local-cfg]])))
 
-(defn habits-row [local put-fn]
+(defn habits-row [local]
   [:div.habit-cfg-row
    [h/error-boundary
-    [habits local put-fn]]
+    [habits local]]
    (when (:selected @local)
      [h/error-boundary
-      [habits-tab :habits_cfg put-fn]])])
+      [habits-tab :habits_cfg]])])

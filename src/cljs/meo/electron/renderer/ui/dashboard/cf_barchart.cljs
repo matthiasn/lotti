@@ -47,12 +47,12 @@
                              rng)]
     indexed))
 
-(defn barchart-row [_ _]
+(defn barchart-row [_]
   (let [gql-res (subscribe [:gql-res])
         backend-cfg (subscribe [:backend-cfg])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn barchart-row [{:keys [days span mx tag h y field color local
-                              cls threshold success-cls] :as m} put-fn]
+                              cls threshold success-cls] :as m}]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))

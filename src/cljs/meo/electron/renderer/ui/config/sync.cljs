@@ -3,6 +3,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as rc]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer-macros [info error]]
             [matthiasn.systems-toolbox.component :as stc]
             [clojure.pprint :as pp]))
@@ -27,15 +28,15 @@
                :autotls     true
                :tls         true})
 
-(defn sync [put-fn]
+(defn sync []
   (let [iww-host (.-iwwHOST js/window)
         imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
         local (rc/atom (or @imap-cfg {}))
-        save (fn [_] (info "save") (put-fn [:imap/save-cfg @local]))]
-    (fn config-render [put-fn]
+        save (fn [_] (info "save") (emit [:imap/save-cfg @local]))]
+    (fn config-render []
       (let [connected (= (:status @imap-status) :read-mailboxes)
-            verify-account #(put-fn [:imap/get-status @local])]
+            verify-account #(emit [:imap/get-status @local])]
         [:div.sync-cfg
          [:div.settings
           [:h2 "Sync Settings"]

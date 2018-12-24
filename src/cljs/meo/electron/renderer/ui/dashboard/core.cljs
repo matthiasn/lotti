@@ -7,6 +7,7 @@
             [meo.electron.renderer.ui.dashboard.cf-linechart :as cfl]
             [meo.electron.renderer.ui.dashboard.bp :as bp]
             [meo.electron.renderer.ui.dashboard.earlybird :as eb]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.dashboard.scores :as ds]
             [meo.electron.renderer.ui.dashboard.commits :as c]
             [meo.electron.renderer.ui.dashboard.habits :as h]
@@ -18,7 +19,7 @@
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.ui.dashboard.cf_barchart :as db]))
 
-(defn gql-query [charts-pos days local put-fn]
+(defn gql-query [charts-pos days local]
   (when-not (and (= (:days @local) days)
                  (= (:charts-pos @local) charts-pos))
     (swap! local assoc :days days)
@@ -30,27 +31,27 @@
                     (concat ["#BP"]))]
       (when-let [query-string (gql/graphql-query (inc days) tags)]
         (debug "dashboard tags" query-string)
-        (put-fn [:gql/query {:q        query-string
-                             :res-hash nil
-                             :id       :dashboard
-                             :prio     15}])))
+        (emit [:gql/query {:q        query-string
+                           :res-hash nil
+                           :id       :dashboard
+                           :prio     15}])))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))]
       (when-let [query-string (gql/dashboard-questionnaires days items)]
         (debug "dashboard" query-string)
-        (put-fn [:gql/query {:q        query-string
-                             :res-hash nil
-                             :id       :dashboard-questionnaires
-                             :prio     15}])))))
+        (emit [:gql/query {:q        query-string
+                           :res-hash nil
+                           :id       :dashboard-questionnaires
+                           :prio     15}])))))
 
-(defn dashboard [cfg put-fn]
+(defn dashboard [cfg]
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
                        :play         true
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
-    (fn dashboard-render [{:keys [days controls dashboard-ts]} put-fn]
+    (fn dashboard-render [{:keys [days controls dashboard-ts]}]
       (let [now (st/now)
             pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
             active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
@@ -65,9 +66,9 @@
             n (count dashboards)
             dashboard (or (get dashboards dashboard-ts)
                           (when (pos? n)
-                              (nth
-                                (vals dashboards)
-                                (min (:idx @local) (dec n)))))
+                            (nth
+                              (vals dashboards)
+                              (min (:idx @local) (dec n)))))
             charts-pos (let [ts (:timestamp dashboard)
                              new-entry @(:new-entry (eu/entry-reaction ts))
                              entry (or new-entry dashboard)
@@ -117,7 +118,7 @@
         (when (and (:play @local)
                    (not (:timer @local)))
           (play nil))
-        (gql-query charts-pos days local put-fn)
+        (gql-query charts-pos days local)
         (when dashboard
           [:div.dashboard
            [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
@@ -146,7 +147,7 @@
                                nil)]
                 (when chart-fn
                   ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
-                  [rh/error-boundary [chart-fn (merge common chart-cfg) put-fn]])))
+                  [rh/error-boundary [chart-fn (merge common chart-cfg) emit]])))
             (for [n (range (inc days))]
               (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
                     scaled (* 1800 (/ offset span))

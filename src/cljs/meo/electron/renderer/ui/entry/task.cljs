@@ -100,12 +100,12 @@
             [:div.row
              [:label "Reward points: "]
              [:input {:type        :number
-                      :on-change   (h/update-numeric entry [:task :points] emit)
+                      :on-change   (h/update-numeric entry [:task :points])
                       :on-key-down (h/key-down-save entry)
                       :value       (get-in entry [:task :points] 0)}]]
             [:div.row
              [:label "Allocation: "]
-             [:input {:on-change   (h/update-time entry [:task :estimate_m] emit)
+             [:input {:on-change   (h/update-time entry [:task :estimate_m])
                       :on-key-down (h/key-down-save entry)
                       :value       (when allocation (h/m-to-hh-mm allocation))
                       :type        :time}]]])]))))

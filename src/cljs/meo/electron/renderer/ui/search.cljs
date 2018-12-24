@@ -3,6 +3,7 @@
             [meo.electron.renderer.ui.draft :as d]
             [taoensso.timbre :refer-macros [info]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [meo.electron.renderer.ui.entry.briefing.calendar :as ebc]
@@ -16,7 +17,7 @@
     (d/editor-state-from-raw (clj->js editor-state))
     (d/editor-state-from-text (or (:search-text q) ""))))
 
-(defn infinite-cal-search [query local put-fn]
+(defn infinite-cal-search [query local]
   (let [onSelect (fn [ev]
                    (let [selected (js->clj ev :keywordize-keys true)
                          start (h/ymd (:start selected))
@@ -29,9 +30,9 @@
                                       {:from start
                                        :to   end})]
                          ;(swap! local assoc-in [:show-range-picker] false)
-                         (put-fn [:search/update q])))
+                         (emit [:search/update q])))
                      (info "selected" selected)))]
-    (fn [query local put-fn]
+    (fn [query local]
       (let [selected (:selected @local)
             from (:start selected)
             to (:end selected)]
@@ -64,13 +65,13 @@
 
 (defn search-field-view
   "Renders search field for current tab."
-  [_tab-group query-id _put-fn]
+  [_tab-group query-id]
   (let [query-cfg (subscribe [:query-cfg])
         query (reaction (when-let [qid @query-id] (qid (:queries @query-cfg))))
         local (r/atom {:show-range-picker false
                        :selected          {:start (h/ymd (st/now))
                                            :end   (h/ymd (st/now))}})]
-    (fn [tab-group _query-id put-fn]
+    (fn [tab-group _query-id]
       (let [search-send (fn [text editor-state]
                           (when text
                             (let [story (first (d/entry-stories editor-state))
@@ -79,12 +80,12 @@
                                            {:story        story
                                             :tab-group    tab-group
                                             :editor-state editor-state})]
-                              (put-fn [:search/update s]))))
+                              (emit [:search/update s]))))
             query-deref @query
             starred (:starred query-deref)
-            star-fn #(put-fn [:search/update (update-in query-deref [:starred] not)])
+            star-fn #(emit [:search/update (update-in query-deref [:starred] not)])
             flagged (:flagged query-deref)
-            flag-fn #(put-fn [:search/update (update-in query-deref [:flagged] not)])
+            flag-fn #(emit [:search/update (update-in query-deref [:flagged] not)])
             toggle-range-picker #(swap! local update-in [:show-range-picker] not)
             from (:from query-deref)
             to (:to query-deref)
@@ -113,4 +114,4 @@
             [:div.cal
              [:i.fa-calendar-alt {:class    (if range-set? "fas" "fal")
                                   :on-click toggle-range-picker}]]]
-           [infinite-cal-search query local put-fn]])))))
+           [infinite-cal-search query local]])))))

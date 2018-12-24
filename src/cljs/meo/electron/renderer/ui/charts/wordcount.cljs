@@ -18,7 +18,7 @@
     (fn [chart-h put-fn daily-target]
       (let [indexed (map-indexed (fn [idx [_k v]] [idx v]) @stats)
             max-cnt (apply max (map (fn [[_idx v]] (:word-count v)) indexed))]
-        (h/keep-updated :stats/wordcount 60 local @last-update put-fn)
+        (h/keep-updated :stats/wordcount 60 local @last-update)
         [:div
          [:svg
           {:viewBox (str "0 0 600 " chart-h)}

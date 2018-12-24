@@ -3,6 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info error debug]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [cljs.nodejs :refer [process]]
             [mapbox-gl]
             [meo.electron.renderer.ui.entry.carousel :as carousel]
@@ -50,7 +51,7 @@
 
 (defn heatmap-did-mount [props]
   (fn []
-    (let [{:keys [put-fn local]} props
+    (let [{:keys [local]} props
           opts {:container "heatmap"
                 :zoom      1
                 :center    [10.1 53.56]
@@ -75,7 +76,7 @@
                                                      :height           "100vh"
                                                      :background-color "#333"}}]))}))
 
-(defn heatmap [put-fn]
+(defn heatmap []
   (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
         local (r/atom {:gallery true})
@@ -94,9 +95,9 @@
                                [:timestamp :img_file :latitude :longitude
                                 :md :starred :stars :text]])]
                       (info "heatmap gql" q zoom center)
-                      (put-fn [:gql/query {:q        q
-                                           :res-hash nil
-                                           :id       :heatmap}]))
+                      (emit [:gql/query {:q        q
+                                         :res-hash nil
+                                         :id       :heatmap}]))
         entries (reaction (->> @gql-res
                                :heatmap
                                :data
@@ -120,7 +121,7 @@
               (.flyTo mb-map (clj->js {:center [96.17530739999074
                                                 16.802089304852103]
                                        :zoom   12.743812567839447})))]
-    (fn [put-fn]
+    (fn []
       (let [mapbox-token (:mapbox-token @backend-cfg)]
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
@@ -136,10 +137,10 @@
               (str (if (:gallery @local) "hide " "show ")
                    (count @entries)
                    " photos")]]
-            [heatmap-cls {:local local :put-fn put-fn}]
+            [heatmap-cls {:local local}]
             (when (:gallery @local)
               [:div.fixed-gallery
-               [carousel/gallery @entries {} put-fn]])]]
+               [carousel/gallery @entries {} emit]])]]
           [:div.flex-container
            [:div.error
             [:h1

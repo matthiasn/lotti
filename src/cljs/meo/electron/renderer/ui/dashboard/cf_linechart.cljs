@@ -39,12 +39,12 @@
                        :style          {:stroke       color
                                         :stroke-width (:circle_stroke_width cfg 2)}}]))]))))
 
-(defn linechart-row [_ _]
+(defn linechart-row [_]
   (let [gql-res (subscribe [:gql-res])
         backend-cfg (subscribe [:backend-cfg])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn linechart-row-render
-      [{:keys [span start x-offset w tag h y field] :as m} _]
+      [{:keys [span start x-offset w tag h y field] :as m}]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
