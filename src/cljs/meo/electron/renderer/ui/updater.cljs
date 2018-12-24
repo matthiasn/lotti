@@ -5,10 +5,13 @@
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.pprint :as pp]))
 
+(defn cancel [put-fn]
+  (put-fn [:update/status {:status :update/closed}]))
+
 (defn cancel-btn [put-fn]
   (let [cancel (fn [_]
                  (info "Cancel button clicked")
-                 (put-fn [:update/status {:status :update/closed}]))]
+                 (cancel put-fn))]
     [:button {:on-click cancel} "cancel"]))
 
 (defn checking [put-fn]
@@ -16,20 +19,23 @@
    [:h2 "Checking for latest version of meo..."]
    [cancel-btn put-fn]])
 
-(defn no-update [put-fn]
-  (let [check (fn [_]
-                (info "Check button clicked")
-                (put-fn [:update/check]))
-        check-beta (fn [_]
-                     (info "Check beta versions")
-                     (put-fn [:update/check-beta]))]
-    [:div.updater
-     [:h2 "You already have the latest version of meo."]
-     [cancel-btn put-fn]
-     " "
-     [:button {:on-click check} "check"]
-     " "
-     [:button {:on-click check-beta} "check for beta version"]]))
+(defn no-update [local put-fn]
+  (js/setTimeout #(cancel put-fn) 12000)
+  ((fn [local put-fn]
+     (let [check (fn [_]
+                   (info "Check button clicked")
+                   (put-fn [:update/check]))
+           check-beta (fn [_]
+                        (info "Check beta versions")
+                        (put-fn [:update/check-beta]))]
+
+       [:div.updater
+        [:h2 "You already have the latest version of meo."]
+        [cancel-btn put-fn]
+        " "
+        [:button {:on-click check} "check"]
+        " "
+        [:button {:on-click check-beta} "check for beta version"]]))))
 
 (defn update-available [status-msg put-fn]
   (let [download (fn [_] (put-fn [:update/download]))
@@ -55,9 +61,9 @@
         expanded (:expanded @local)]
     [:div.updater
      [:i.fas
-      {:class (if expanded
-                "fa-chevron-double-down"
-                "fa-chevron-double-up")
+      {:class    (if expanded
+                   "fa-chevron-double-down"
+                   "fa-chevron-double-up")
        :on-click #(swap! local update :expanded not)}]
      (when expanded
        [:h2 "Downloading new meo version."])
@@ -102,7 +108,7 @@
           [:div.updater
            (case status
              :update/checking [checking put-fn]
-             :update/not-available [no-update put-fn]
+             :update/not-available [no-update local put-fn]
              :update/available [update-available status-msg put-fn]
              :update/downloading [downloading status-msg local put-fn]
              :update/downloaded [update-downloaded put-fn]
