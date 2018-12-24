@@ -51,9 +51,11 @@
               external (str h/photos file)
               cfg (subscribe [:cfg])
               md (:md entry)
-              md (if fullscreen md (str (first (str/split-lines md))))
               html (md/md->html md)
-              toggle-expanded #(swap! local update-in [:fullscreen] not)
+              toggle-expanded  (fn [_]
+                                 (info :toggle-expanded)
+                                 (gql-query true (str ts) put-fn)
+                                 (put-fn [:nav/to {:page :gallery}]))
               original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
           [:div.slide
            [:img {:src           resized-rotated
