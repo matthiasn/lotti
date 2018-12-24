@@ -16,7 +16,8 @@
             [markdown.core :as md]
             [reagent.core :as r]
             [clojure.set :as set]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [meo.electron.renderer.ui.entry.actions :as a]))
 
 (defn stars-view [entry put-fn]
   (let [star (fn [idx n]
@@ -39,29 +40,24 @@
    when JPEG file requested."
   [entry locale local put-fn]
   (when-let [file (:img_file entry)]
-    (let [fullscreen (:fullscreen @local)
-          resized-rotated (if fullscreen (h/thumbs-2048 file) (h/thumbs-512 file))
+    (let [resized-rotated (h/thumbs-512 file)
           ts (:timestamp entry)
-          external (str h/photos file)
-          md (:md entry)
-          md (if fullscreen md (str (first (str/split-lines md))))
+          md (str (first (s/split-lines (:md entry))))
           html (md/md->html md)
-          toggle-expanded #(swap! local update-in [:fullscreen] not)
+          toggle-expanded (fn [_]
+                            (info :toggle-expanded)
+                            (put-fn [:nav/to {:page :gallery}]))
           original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
       [:div.slide
        [:img {:src resized-rotated}]
-       (when-not fullscreen
-         [:div.legend
-          (h/localize-datetime-full ts locale)
-          [stars-view entry put-fn]
-          [:span {:on-click toggle-expanded}
-           (if fullscreen
-             [:i.fas.fa-compress]
-             [:i.fas.fa-expand])]
-          [:span original-filename]
-          (when fullscreen
-            [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
-          [:div {:dangerouslySetInnerHTML {:__html html}}]])])))
+       [:div.legend
+        [:div (h/localize-datetime-full ts locale)]
+        [:div
+         [stars-view entry put-fn]
+         [:span {:on-click toggle-expanded}
+          [:i.fas.fa-expand]]]
+        [:div original-filename]
+        [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
 
 (defn thumb-view [entry selected local]
   (when-let [file (:img_file entry)]

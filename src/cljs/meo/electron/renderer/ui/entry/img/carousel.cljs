@@ -7,7 +7,9 @@
             [clojure.string :as s]
             [markdown.core :as md]
             [reagent.core :as r]
-            [meo.electron.renderer.graphql :as gql]))
+            [meo.electron.renderer.graphql :as gql]
+            [meo.electron.renderer.ui.entry.actions :as a]
+            [clojure.string :as str]))
 
 (defn stars-view [entry put-fn]
   (let [star (fn [idx n]
@@ -39,26 +41,38 @@
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
   [entry locale local put-fn]
-  (when-let [file (:img_file entry)]
-    (let [resized-rotated (h/thumbs-512 file)
-          ts (:timestamp entry)
-          md (str (first (s/split-lines (:md entry))))
-          html (md/md->html md)
-          toggle-expanded (fn [_]
-                            (info :toggle-expanded)
-                            (gql-query true (str ts) put-fn)
-                            (put-fn [:nav/to {:page :gallery}]))
-          original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
-      [:div.slide
-       [:img {:src resized-rotated}]
-       [:div.legend
-        [:div (h/localize-datetime-full ts locale)]
-        [:div
-         [stars-view entry put-fn]
-         [:span {:on-click toggle-expanded}
-          [:i.fas.fa-expand]]]
-        [:div original-filename]
-        [:div {:dangerouslySetInnerHTML {:__html html}}]]])))
+  (let [cfg (subscribe [:cfg])]
+    (fn [entry locale local put-fn]
+      (when-let [file (:img_file entry)]
+        (let [fullscreen (:fullscreen @local)
+              resized-rotated (if fullscreen (h/thumbs-2048 file) (h/thumbs-512 file))
+              ts (:timestamp entry)
+              external (str h/photos file)
+              cfg (subscribe [:cfg])
+              md (:md entry)
+              md (if fullscreen md (str (first (str/split-lines md))))
+              html (md/md->html md)
+              toggle-expanded #(swap! local update-in [:fullscreen] not)
+              original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
+          [:div.slide
+           [:img {:src           resized-rotated
+                  :draggable     true
+                  :on-drag-start (a/drag-start-fn entry put-fn)
+                  :on-drop       (a/drop-linked-fn entry cfg put-fn)
+                  :on-drag-over  h/prevent-default
+                  :on-drag-enter h/prevent-default}]
+           (when-not fullscreen
+             [:div.legend
+              (h/localize-datetime-full ts locale)
+              [stars-view entry put-fn]
+              [:span {:on-click toggle-expanded}
+               (if fullscreen
+                 [:i.fas.fa-compress]
+                 [:i.fas.fa-expand])]
+              [:span original-filename]
+              (when fullscreen
+                [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
+              [:div {:dangerouslySetInnerHTML {:__html html}}]])])))))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
