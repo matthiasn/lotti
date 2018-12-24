@@ -71,7 +71,10 @@
                                     :tags       #{"#custom-field-cfg"}}])
         new-dashboard #(put-fn [:entry/create
                                 {:entry_type :dashboard-cfg
-                                 :perm_tags  #{"#dashboard-cfg"}}])]
+                                 :perm_tags  #{"#dashboard-cfg"}}])
+        new-album #(put-fn [:entry/create
+                            {:entry_type :dashboard-cfg
+                             :perm_tags  #{"#album"}}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
@@ -81,6 +84,7 @@
                 :submenu [{:label "Story" :click new-story}
                           {:label "Saga" :click new-saga}
                           {:label "Habit" :click new-habit}
+                          {:label "Album" :click new-album}
                           {:label "Dashboard" :click new-dashboard}
                           {:label "Custom Field" :click new-custom-field}]}
 

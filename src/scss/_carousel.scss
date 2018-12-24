@@ -279,8 +279,14 @@
     width: auto;
   }
 
+  .row {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
+  }
+
   .stars {
-    margin: 0 10px 0 25px;
+    margin: 0 10px 0 10px;
 
     i {
       margin-left: 3px;

@@ -242,10 +242,19 @@
         white-space: nowrap;
       }
 
+      i {
+        &.album-activated {
+          color: $green;
+        }
+      }
       .fa {
         margin: 0;
         padding: 1px 0 5px 3px;
         font-size: 11px;
+
+        &.album-activated {
+          color: $green;
+        }
       }
     }
 

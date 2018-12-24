@@ -9,7 +9,8 @@
             [reagent.core :as r]
             [meo.electron.renderer.graphql :as gql]
             [meo.electron.renderer.ui.entry.actions :as a]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.set :as set]))
 
 (defn stars-view [entry put-fn]
   (let [star (fn [idx n]
@@ -63,12 +64,13 @@
                   :on-drag-enter h/prevent-default}]
            (when-not fullscreen
              [:div.legend
-              (h/localize-datetime-full ts locale)
-              [stars-view entry put-fn]
-              [:span {:on-click toggle-expanded}
-               (if fullscreen
-                 [:i.fas.fa-compress]
-                 [:i.fas.fa-expand])]
+              [:div.row
+               (h/localize-datetime ts locale)
+               [stars-view entry put-fn]
+               [:span {:on-click toggle-expanded}
+                (if fullscreen
+                  [:i.fas.fa-compress]
+                  [:i.fas.fa-expand])]]
               [:span original-filename]
               (when fullscreen
                 [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]])
@@ -147,6 +149,10 @@
                     :put-fn       put-fn}]]))))
 
 (defn gallery-entries [entry]
-  (filter :img_file (concat [entry]
-                            (:comments entry)
-                            (:linked entry))))
+  (let [res (filter :img_file (concat [entry]
+                                      (:comments entry)
+                                      (:linked entry)))
+        album (contains? (set/union (set (:tags entry))
+                                    (set (:perm_tags entry)))
+                         "#album")]
+    (if album res (take 1 res))))
