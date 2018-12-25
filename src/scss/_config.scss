@@ -97,7 +97,7 @@
     flex: 2;
 
     .journal {
-      width: 350px;
+      min-width: 350px;
     }
   }
 
@@ -105,9 +105,9 @@
   }
 
   .tile-tabs {
-    max-width: 350px;
     margin-left: 8px;
     margin-top: 12px;
+    width: 100%;
   }
 
   .menu {
