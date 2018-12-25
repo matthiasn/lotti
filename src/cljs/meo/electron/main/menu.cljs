@@ -72,9 +72,7 @@
         new-dashboard #(put-fn [:entry/create
                                 {:entry_type :dashboard-cfg
                                  :perm_tags  #{"#dashboard-cfg"}}])
-        new-album #(put-fn [:entry/create
-                            {:entry_type :dashboard-cfg
-                             :perm_tags  #{"#album"}}])]
+        new-album #(put-fn [:entry/create {:perm_tags  #{"#album"}}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
