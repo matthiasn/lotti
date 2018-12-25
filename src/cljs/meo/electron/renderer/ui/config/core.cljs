@@ -4,6 +4,7 @@
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.config.custom-fields :as cf]
             [meo.electron.renderer.ui.config.sagas :as cs]
+            [meo.electron.renderer.ui.config.albums :as ca]
             [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.config.stories :as cst]
             [meo.electron.renderer.ui.config.habits :as ch]
@@ -72,6 +73,7 @@
                         [:h1 "Settings"]
                         [menu-item :sagas "Sagas" page]
                         [menu-item :stories "Stories" page]
+                        [menu-item :albums "Albums" page]
                         [menu-item :custom-fields "Custom Fields" page]
                         [menu-item :habits "Habits" page]
                         [menu-item :dashboards "Dashboards" page]
@@ -85,6 +87,8 @@
                          "Exit"]]
                        (when (= :sagas page)
                          [cs/sagas local])
+                       (when (= :albums page)
+                         [ca/albums local])
                        (when (= :stories page)
                          [cst/stories local])
                        (when (= :custom-fields page)
