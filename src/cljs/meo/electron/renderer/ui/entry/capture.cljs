@@ -8,7 +8,8 @@
             [clojure.string :as s]
             [reagent.core :as r]
             [moment]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.electron.renderer.ui.ui-components :as uc]))
 
 (defn field-input [entry edit-mode? field tag k]
   (let [input-cfg (:cfg field)
@@ -51,7 +52,12 @@
               (emit [:entry/update-local updated]))))))
     [:tr
      [:td [:label (:label field)]]
-     [:td [:input input-cfg]]]))
+     [:td
+      (if (= input-type :switch)
+        [uc/switch {:entry    entry
+                    :msg-type :entry/update
+                    :path     path}]
+        [:input input-cfg])]]))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
@@ -69,8 +75,8 @@
                                  first)]
           (when (and edit-mode? default-story (not (:primary_story entry)))
             (emit [:entry/update-local (merge entry
-                                                {:primary_story  default-story
-                                                 :linked-stories #{default-story}})]))
+                                              {:primary_story  default-story
+                                               :linked-stories #{default-story}})]))
           [:form.custom-fields
            (for [[tag conf] (sort-by first entry-field-tags)]
              ^{:key (str "cf" ts tag)}

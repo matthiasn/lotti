@@ -44,23 +44,27 @@
 (def fmt (ctf/formatter "yyyy-MM-dd'T'HH:mm" dtz))
 (defn parse [dt] (ctf/parse fmt dt))
 
+(defn bool-conv [x]
+  (if (boolean? x)
+    (if x 1 0)
+    x))
 
 (defn val-mapper [k field entry]
   (let [path [:custom_fields k field]
         ts (or (:adjusted_ts entry)
                (:timestamp entry))]
-    {:v  (get-in entry path)
+    {:v  (bool-conv (get-in entry path))
      :ts ts}))
 
 (defn stats-mapper [tag nodes [k fields]]
   (let [field-mapper
         (fn [[field v]]
-          (let [op (when (contains? #{:number :time} (:type (:cfg v)))
+          (let [op (when (contains? #{:number :time :switch} (:type (:cfg v)))
                      (case (:agg (:cfg v))
                        :min #(when (seq %) (apply min (map :v %)))
                        :max #(when (seq %) (apply max (map :v %)))
-                       :sum #(apply + (map :v %))
-                       #(when (seq %) (double (/ (apply + (map :v %)) (count %))))))
+                       :mean #(when (seq %) (double (/ (apply + (map :v %)) (count %))))
+                       #(apply + (map :v %))))
                 res (vec (filter #(:v %) (mapv (partial val-mapper k field) nodes)))]
             [field {:v   (if op
                            (try (op res)
@@ -80,7 +84,7 @@
 (defn fields-mapper [[k {:keys [v tag vs]}]]
   {:field  (name k)
    :tag    tag
-   :value  v
+   :value  (bool-conv v)
    :values vs})
 
 (defn custom-fields-mapper

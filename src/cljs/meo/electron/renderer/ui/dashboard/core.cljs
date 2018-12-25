@@ -91,7 +91,7 @@
             cycle (fn [f _] (swap! local update-in [:idx] f))
             play (fn [_]
                    (let [f #(swap! local update-in [:idx] next-item)
-                         t (js/setInterval f 60000)]
+                         t (js/setInterval f (* 15 60 1000))]
                      (swap! local assoc-in [:play] true)
                      (swap! local assoc-in [:timer] t)))
             pause (fn []

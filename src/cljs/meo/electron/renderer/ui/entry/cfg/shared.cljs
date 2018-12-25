@@ -12,7 +12,9 @@
         t (:type cfg)
         v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
         on-change (fn [ev]
-                    (let [xf (or xf (if (= :number t) js/parseFloat identity))
+                    (let [xf (or xf (if (contains? #{:number :switch} t)
+                                      js/parseFloat
+                                      identity))
                           v (xf (h/target-val ev))
                           v (if (= :time t)
                               (.asMinutes (.duration moment v))

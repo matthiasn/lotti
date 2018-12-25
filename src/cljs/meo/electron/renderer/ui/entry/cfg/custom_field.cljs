@@ -49,7 +49,8 @@
                       :xf        keyword
                       :options   {:number "Number"
                                   :text   "Text"
-                                  :time   "Time"}}]]
+                                  :time   "Time"
+                                  :switch "Switch"}}]]
          (when (contains? #{:number :time} t)
            [:div.row
             [:label.wide "Aggregation:"]
