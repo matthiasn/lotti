@@ -37,7 +37,7 @@
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (gql-query @show-pvt (str ts) emit))
+                         (gql-query @show-pvt (str ts)))
             pvt (get-in habit [:habit_entry :habit :pvt])
             active (get-in habit [:habit_entry :habit :active])]
         [:tr {:key      ts

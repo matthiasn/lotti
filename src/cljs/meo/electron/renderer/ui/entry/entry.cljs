@@ -139,7 +139,7 @@
                    (= :habit (:entry_type merged)))
            [habit/habit-details merged emit])
          (when (= :dashboard-cfg (:entry_type merged))
-           [db/dashboard-config merged emit])
+           [db/dashboard-config merged])
          (when (contains? (set (:tags entry)) "#reward")
            [reward/reward-details merged emit])
          (let [pomodoro (= :pomodoro (:entry_type entry))]

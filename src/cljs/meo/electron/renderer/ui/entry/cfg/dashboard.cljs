@@ -3,6 +3,7 @@
             [meo.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.common.utils.misc :as m]
             [taoensso.timbre :refer-macros [info error debug]]
             [meo.electron.renderer.ui.entry.cfg.shared :as cs]
@@ -17,7 +18,7 @@
 (defn habit-success [_]
   (let [habits (subscribe [:habits])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx] :as habit}]
+    (fn [{:keys [entry idx] :as habit}]
       (let [path [:dashboard_cfg :items idx :habit]
             pvt-filter #(-> % second :habit_entry :habit :pvt not)
             habits (if @pvt
@@ -33,16 +34,15 @@
           [uc/select {:entry     entry
                       :on-change uc/select-update
                       :path      path
-                      :put-fn    put-fn
                       :xf        js/parseInt
                       :options   options}]]]))))
 
-(defn color-picker [entry idx k label put-fn]
+(defn color-picker [entry idx k label]
   (let [color-path [:dashboard_cfg :items idx k]
         set-color (fn [data]
                     (let [hex (aget data "hex")
                           updated (assoc-in entry color-path hex)]
-                      (put-fn [:entry/update-local updated])))]
+                      (emit [:entry/update-local updated])))]
     [:div.row
      [:label.wide label]
      [chrome-picker {:disableAlpha     true
@@ -51,7 +51,7 @@
 
 (defn bp-chart [_]
   (let []
-    (fn [{:keys [put-fn entry idx collapsed]}]
+    (fn [{:keys [entry idx collapsed]}]
       (let [h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
@@ -65,36 +65,36 @@
            [:div
             [cs/input-row entry {:type  :number
                                  :label "Heigth:"
-                                 :path  h-path} put-fn]
+                                 :path  h-path}]
             [cs/input-row entry {:label "Min:"
                                  :type  :number
-                                 :path  mn-path} put-fn]
+                                 :path  mn-path}]
             [cs/input-row entry {:type  :number
                                  :label "Max:"
-                                 :path  mx-path} put-fn]
+                                 :path  mx-path}]
             [cs/input-row entry {:type  :number
                                  :label "Stroke:"
-                                 :path  sw-path} put-fn]
+                                 :path  sw-path}]
             [cs/input-row entry {:type  :number
                                  :label "Circle Radius:"
-                                 :path  cr-path} put-fn]
+                                 :path  cr-path}]
             [cs/input-row entry {:type  :number
                                  :label "Circle Stroke:"
-                                 :path  csw-path} put-fn]
+                                 :path  csw-path}]
 
-            [color-picker entry idx :systolic_color "Systolic Stroke:" put-fn]
-            [color-picker entry idx :systolic_fill "Systolic Fill:" put-fn]
+            [color-picker entry idx :systolic_color "Systolic Stroke:"]
+            [color-picker entry idx :systolic_fill "Systolic Fill:"]
 
-            [color-picker entry idx :diastolic_color "Diastolic Stroke:" put-fn]
-            [color-picker entry idx :diastolic_fill "Diastolic Fill:" put-fn]
+            [color-picker entry idx :diastolic_color "Diastolic Stroke:"]
+            [color-picker entry idx :diastolic_fill "Diastolic Fill:"]
 
             [:div.row
              [:label "Glow? "]
-             [uc/switch {:entry entry :put-fn put-fn :path glow-path}]]])]))))
+             [uc/switch {:entry entry :path glow-path}]]])]))))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
-    (fn [{:keys [put-fn entry idx collapsed]}]
+    (fn [{:keys [entry idx collapsed]}]
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
             tag-path [:dashboard_cfg :items idx :tag]
             k-path [:dashboard_cfg :items idx :k]
@@ -108,14 +108,14 @@
             cr-path [:dashboard_cfg :items idx :circle_radius]
             show-details (and (not (empty? (str (get-in entry k-path))))
                               (not collapsed))
-            select-q (fn [{:keys [entry xf put-fn options]}]
+            select-q (fn [{:keys [entry xf options]}]
                        (let [xf (or xf identity)]
                          (fn [ev]
                            (let [tv (h/target-val ev)
                                  sel (if (empty? tv) tv (xf tv))
                                  updated (assoc-in entry k-path sel)
                                  updated (assoc-in updated tag-path (get options sel))]
-                             (put-fn [:entry/update-local updated])))))]
+                             (emit [:entry/update-local updated])))))]
         [:div
          [:h4 "Questionnaire"]
          [:div.row
@@ -123,7 +123,6 @@
           [uc/select {:entry     entry
                       :on-change select-q
                       :path      k-path
-                      :put-fn    put-fn
                       :xf        keyword
                       :options   (zipmap (vals q-tags) (keys q-tags))}]]
          (when show-details
@@ -136,48 +135,47 @@
                           :on-change uc/select-update
                           :path      [:dashboard_cfg :items idx :score_k]
                           :xf        keyword
-                          :put-fn    put-fn
                           :options   options}]]))
          (when show-details
            [cs/input-row entry {:type  :number
                                 :label "Height:"
-                                :path  h-path} put-fn])
+                                :path  h-path}])
          (when show-details
            [cs/input-row entry {:label "Label:"
-                                :path  label-path} put-fn])
+                                :path  label-path}])
          (when show-details
            [cs/input-row entry {:label "Min:"
                                 :type  :number
-                                :path  mn-path} put-fn])
+                                :path  mn-path}])
          (when show-details
            [cs/input-row entry {:label "Max:"
                                 :type  :number
-                                :path  mx-path} put-fn])
+                                :path  mx-path}])
          (when show-details
            [cs/input-row entry {:label "Stroke:"
                                 :type  :number
-                                :path  sw-path} put-fn])
+                                :path  sw-path}])
          (when show-details
            [cs/input-row entry {:label "Circle Radius:"
                                 :type  :number
-                                :path  cr-path} put-fn])
+                                :path  cr-path}])
          (when show-details
            [cs/input-row entry {:label "Circle Stroke:"
                                 :type  :number
-                                :path  csw-path} put-fn])
+                                :path  csw-path}])
          (when show-details
            [:div.row
             [:label "Glow? "]
-            [uc/switch {:entry entry :put-fn put-fn :path glow-path}]])
+            [uc/switch {:entry entry :path glow-path}]])
          (when show-details
-           [color-picker entry idx :color "Stroke:" put-fn])
+           [color-picker entry idx :color "Stroke:"])
          (when show-details
-           [color-picker entry idx :fill "Fill:" put-fn])]))))
+           [color-picker entry idx :fill "Fill:"])]))))
 
 (defn barchart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx collapsed]}]
+    (fn [{:keys [entry idx collapsed]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
             tag-path [:dashboard_cfg :items idx :tag]
             h-path [:dashboard_cfg :items idx :h]
@@ -200,7 +198,6 @@
           [uc/select {:entry     entry
                       :on-change uc/select-update
                       :path      tag-path
-                      :put-fn    put-fn
                       :options   (map first custom-fields)}]]
          (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
                options (zipmap (keys fields) (map :label (vals fields)))]
@@ -210,42 +207,41 @@
                         :on-change uc/select-update
                         :path      field-path
                         :xf        keyword
-                        :put-fn    put-fn
                         :options   options}]])
          (when (and show-details field)
-           [color-picker entry idx :color "Stroke:" put-fn])
+           [color-picker entry idx :color "Stroke:"])
          (when (and show-details field)
            [cs/input-row entry (merge field-cfg
                                       {:label "Min:"
-                                       :path  mn-path}) put-fn])
+                                       :path  mn-path})])
          (when (and show-details field)
            [cs/input-row entry (merge field-cfg
                                       {:label "Max:"
-                                       :path  mx-path}) put-fn])
+                                       :path  mx-path})])
          (when (and show-details field)
            [cs/input-row entry {:label "Height:"
                                 :type  :number
-                                :path  h-path} put-fn])]))))
+                                :path  h-path}])]))))
 
 (defn gitstats-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx collapsed]}]
+    (fn [{:keys [entry idx collapsed]}]
       (let [h-path [:dashboard_cfg :items idx :h]
             show-details (not collapsed)]
         [:div
          [:h4 "Git Stats Bar Chart"]
          (when show-details
-           [color-picker entry idx :color "Stroke:" put-fn])
+           [color-picker entry idx :color "Stroke:"])
          (when show-details
            [cs/input-row entry {:label "Height:"
                                 :type  :number
-                                :path  h-path} put-fn])]))))
+                                :path  h-path}])]))))
 
 (defn linechart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [put-fn entry idx collapsed]}]
+    (fn [{:keys [entry idx collapsed]}]
       (let [custom-fields (get-in @backend-cfg [:custom-fields])
             tag-path [:dashboard_cfg :items idx :tag]
             h-path [:dashboard_cfg :items idx :h]
@@ -268,7 +264,6 @@
           [uc/select {:entry     entry
                       :on-change uc/select-update
                       :path      tag-path
-                      :put-fn    put-fn
                       :options   (map first custom-fields)}]]
          (let [fields (get-in @backend-cfg [:custom-fields tag :fields])
                options (zipmap (keys fields) (map :label (vals fields)))]
@@ -278,33 +273,32 @@
                         :on-change uc/select-update
                         :path      field-path
                         :xf        keyword
-                        :put-fn    put-fn
                         :options   options}]])
          (when show-fields
-           [color-picker entry idx :color "Stroke:" put-fn])
+           [color-picker entry idx :color "Stroke:"])
          (when show-fields
-           [color-picker entry idx :fill "Fill:" put-fn])
+           [color-picker entry idx :fill "Fill:"])
          (when show-fields
            [cs/input-row entry {:label "Height:"
                                 :type  :number
-                                :path  h-path} put-fn])
+                                :path  h-path}])
          (when show-fields
            [cs/input-row entry {:label "Stroke:"
                                 :type  :number
-                                :path  sw-path} put-fn])
+                                :path  sw-path}])
          (when show-fields
            [cs/input-row entry {:label "Circle Radius:"
                                 :type  :number
-                                :path  cr-path} put-fn])
+                                :path  cr-path}])
          (when show-fields
            [cs/input-row entry {:label "Circle Stroke:"
                                 :type  :number
-                                :path  csw-path} put-fn])]))))
+                                :path  csw-path}])]))))
 
 
 (defn item [_]
   (let [local (r/atom {:collapsed true})]
-    (fn item-render [{:keys [entry idx put-fn] :as params}]
+    (fn item-render [{:keys [entry idx] :as params}]
       (let [path [:dashboard_cfg :items idx :type]
             habit-type (get-in entry path)
             items-path [:dashboard_cfg :items]
@@ -313,7 +307,7 @@
                        (let [items (get-in entry items-path)
                              items (vec (concat (take idx items) (drop (inc idx) items)))
                              updated (assoc-in entry items-path items)]
-                         (put-fn [:entry/update-local updated])))
+                         (emit [:entry/update-local updated])))
             mv-click (fn [f _]
                        (let [items (get-in entry items-path)
                              item (get-in entry [:dashboard_cfg :items idx])
@@ -322,7 +316,7 @@
                                                 [item]
                                                 (drop (f idx) items)))
                              updated (assoc-in entry items-path items)]
-                         (put-fn [:entry/update-local updated])))
+                         (emit [:entry/update-local updated])))
             params (merge @local params)]
         [:div.criterion
          [:i.fas.fa-trash-alt.fr {:on-click rm-click}]
@@ -341,7 +335,6 @@
             [:label "Chart Type:"]
             [uc/select {:on-change uc/select-update
                         :entry     entry
-                        :put-fn    put-fn
                         :path      path
                         :xf        keyword
                         :sorted-by second
@@ -365,16 +358,16 @@
            [quest-details params])]))))
 
 
-(defn dashboard-config [entry put-fn]
+(defn dashboard-config [entry]
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:dashboard_cfg :items] #(vec (conj % {})))]
-                       (put-fn [:entry/update-local updated]))))
+                       (emit [:entry/update-local updated]))))
         open-new (fn [x]
-                   (put-fn [:search/add
-                            {:tab-group :left
-                             :query     (up/parse-search (:timestamp x))}]))]
-    (fn [entry put-fn]
+                   (emit [:search/add
+                          {:tab-group :left
+                           :query     (up/parse-search (:timestamp x))}]))]
+    (fn [entry]
       (let [items (get-in entry [:dashboard_cfg :items])
             copy-opts {:dashboard_cfg (:dashboard_cfg entry)
                        :entry_type    :dashboard-cfg
@@ -400,6 +393,5 @@
            "copy"]]
          (for [[i c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
-           [item {:entry  entry
-                  :put-fn put-fn
-                  :idx    i}])]))))
+           [item {:entry entry
+                  :idx   i}])]))))

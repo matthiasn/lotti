@@ -19,7 +19,7 @@
 
 (defn field-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
-    (fn [{:keys [put-fn entry idx]}]
+    (fn [{:keys [entry idx]}]
       (let [tag-path [:custom_field_cfg :items idx :tag]
             agg-path [:custom_field_cfg :items idx :agg]
             step-path [:custom_field_cfg :items idx :step]
@@ -37,17 +37,16 @@
          [cs/input-row entry (merge field-cfg
                                     {:label    "Name:"
                                      :validate valid-name?
-                                     :path     name-path}) put-fn]
+                                     :path     name-path})]
          [cs/input-row entry (merge field-cfg
                                     {:label "Label:"
-                                     :path  label-path}) put-fn]
+                                     :path  label-path})]
          [:div.row
           [:label.wide "Type:"]
           [uc/select {:entry     entry
                       :on-change uc/select-update
                       :path      type-path
                       :xf        keyword
-                      :put-fn    put-fn
                       :options   {:number "Number"
                                   :text   "Text"
                                   :time   "Time"}}]]
@@ -58,7 +57,6 @@
                         :on-change uc/select-update
                         :path      agg-path
                         :xf        keyword
-                        :put-fn    put-fn
                         :sort-fn   identity
                         :options   {:min  "Minimum"
                                     :max  "Maximum"
@@ -69,7 +67,7 @@
            [cs/input-row entry {:label "Increment:"
                                 :type  :number
                                 :step  0.01
-                                :path  step-path} put-fn])]))))
+                                :path  step-path}])]))))
 
 
 (defn item [{:keys [entry idx] :as params}]
@@ -127,10 +125,10 @@
                               :error    tag-err} emit]
          [:div.row
           [:label "Active? "]
-          [uc/switch {:entry entry :put-fn emit :path [:custom_field_cfg :active]}]]
+          [uc/switch {:entry entry :path [:custom_field_cfg :active]}]]
          [:div.row
           [:label "Private? "]
-          [uc/switch {:entry entry :put-fn emit :path [:custom_field_cfg :pvt]}]]
+          [uc/switch {:entry entry :path [:custom_field_cfg :pvt]}]]
          [:div.row.space-between
           [:h3 "Fields"]
           [:div.add-criterion {:on-click (add-item entry)}
