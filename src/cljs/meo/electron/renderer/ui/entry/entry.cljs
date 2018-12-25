@@ -12,6 +12,7 @@
             [meo.electron.renderer.ui.entry.capture :as c]
             [meo.electron.renderer.ui.entry.task :as task]
             [meo.electron.renderer.ui.entry.cfg.habit :as habit]
+            [meo.electron.renderer.ui.entry.cfg.album :as ca]
             [meo.electron.renderer.ui.entry.cfg.dashboard :as db]
             [meo.electron.renderer.ui.entry.cfg.custom-field :as cfc]
             [meo.electron.renderer.ui.entry.reward :as reward]
@@ -135,6 +136,9 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged local-cfg edit-mode?])
+         (when (or (contains? (set (:perm_tags entry)) "#album")
+                   (contains? (set (:tags entry)) "#album"))
+           [ca/album-config merged])
          (when (or (= :habit (:entry-type merged))
                    (= :habit (:entry_type merged)))
            [habit/habit-details merged emit])

@@ -3,7 +3,7 @@
 
 .habit-details {
   font-size: $font-size-medium;
-  margin: 1.2em 0 0.5em 0;
+  margin: 0.5em 0;
   background-color: white;
   border-radius: $entry-border-radius;
 
@@ -209,10 +209,14 @@
     &.url {
       width: 330px;
     }
-    &.time {
-      width: 60px;
+  }
+
+  &.album {
+    input {
+      width: 180px;
     }
   }
+
   input[type="checkbox"] {
     width: 15px;
     margin-right: 7px;
