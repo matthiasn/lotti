@@ -25,16 +25,19 @@
       (let [uri (-> item :spotify :uri)]
         (swap! local update-in [:id-cnt uri :played_cnt] #(if (number? %) (inc %) 1))
         (swap! local assoc-in [:by-cnt uri] (let [n (get-in @local [:id-cnt uri :played_cnt])]
-                                               (assoc-in item [:spotify :played_cnt] n)))))
+                                              (assoc-in item [:spotify :played_cnt] n)))))
     @local))
 
-(defn menu-view []
+(defn menu-view [local]
   [:div.menu
    [:div.menu-header
     [:h2 "Songs I listened to on Spotify"]]])
 
 (defn spotify-view []
-  (let [local (atom {})
+  (let [local (r/atom {:img-size 120})
+        change (fn [ev]
+                 (info (h/target-val ev) @local)
+                 (swap! local assoc :img-size (js/parseInt (h/target-val ev))))
         gql-res (subscribe [:gql-res2])
         ; one image per song
         entries (reaction (->> @gql-res
@@ -49,24 +52,31 @@
                                 count-spotify))
         sorted (reaction
                  (sort-by #(-> % second :spotify :played_cnt)
-                          (:by-cnt @entries2)) )
+                          (:by-cnt @entries2)))
         cmp-did-mount (fn [props] (gql-query))
         render (fn [props]
-                 [:div.spotify
-                  (for [[ts entry] (reverse @sorted)]
-                    [:span.img-container.tooltip
-                     [:img {:key      (:timestamp entry)
-                            :on-click #(emit [:spotify/play {:uri (-> entry :spotify :uri)}])
-                            :src      (:image (:spotify entry))}]
-                     [:span.cnt (:played_cnt (:spotify entry))]
-                     [:div.tooltiptext
-                      (-> entry :spotify :name)
-
-                      ]
-                     ])])
+                 (let [img-size (:img-size @local)]
+                   [:div.spotify-list
+                    [:div.controls
+                     [:strong "Image size:"]
+                     [:input {:type      :range
+                              :min       40
+                              :max       250
+                              :value     img-size
+                              :on-change change}]]
+                    (for [[ts entry] (reverse @sorted)]
+                      [:span.img-container.tooltip
+                       {:key (:timestamp entry)}
+                       [:img {:on-click #(emit [:spotify/play {:uri (-> entry :spotify :uri)}])
+                              :src      (:image (:spotify entry))
+                              :style    {:width  img-size
+                                         :height img-size}}]
+                       [:span.cnt (:played_cnt (:spotify entry))]
+                       [:div.tooltiptext
+                        (-> entry :spotify :name)]])]))
         spotify (r/create-class {:component-did-mount cmp-did-mount
                                  :reagent-render      render})]
     (fn spotify-render [put-fn]
-      [:div.flex-container.spotify
-       [menu-view]
+      [:div.flex-container
+       [menu-view local]
        [spotify {}]])))

@@ -1,7 +1,7 @@
 @import "variables.scss";
 
 
-.spotify {
+.spotify-list {
   font-size: $font-size-medium;
   border-radius: $entry-border-radius;
   align-items: center;
@@ -9,12 +9,33 @@
   height: 100vh;
   text-align: center;
 
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 30px;
+    user-select: none;
+
+    strong {
+      font-weight: bold;
+      display: block;
+      padding-bottom: 2px;
+    }
+    input {
+      box-shadow: none;
+      width: 450px;
+      margin-left: 16px;
+    }
+
+  }
+
   .menu-header {
     width: 100vw;
     height: 40px;
     h2 {
       text-align: center;
       width: 90vw;
+      padding-left: 60px;
     }
   }
 
@@ -54,7 +75,5 @@
     font-family: $header-font-family;
     font-size: $font-size-medium;
   }
-
-
 
 }
