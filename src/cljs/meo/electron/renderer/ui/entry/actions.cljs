@@ -4,6 +4,7 @@
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.ui.entry.utils :as eu]
             [meo.common.utils.misc :as u]
             [clojure.set :as set]
@@ -51,7 +52,7 @@
   "Creates handler function for drop event, which takes the timestamp of the
    currently dragged element and links that entry to the one onto which it is
    dropped."
-  [entry cfg put-fn]
+  [entry cfg]
   (fn [_ev]
     (if (= :story (:entry_type entry))
       ; assign story
@@ -63,7 +64,7 @@
                                (assoc-in [:primary_story] story))
                            (up/parse-entry (:md dropped)))]
         (when (and ts (not= ts story))
-          (put-fn [:entry/update updated])))
+          (emit [:entry/update updated])))
       ; link two entries
       (let [dropped (:currently-dragged @cfg)
             ts (:timestamp dropped)
@@ -75,29 +76,32 @@
                       updated)
             updated (assoc-in updated [:primary_story] story)]
         (when (and ts (not= ts (:timestamp updated)))
-          (put-fn [:entry/update (u/clean-entry updated)]))))))
+          (emit [:entry/update (u/clean-entry updated)]))
+        (when (and story (not (:primary_story dropped)))
+          (let [updated (assoc-in dropped [:primary_story] story)]
+            (emit [:entry/update (u/clean-entry updated)])))))))
 
-(defn drop-on-briefing [entry cfg put-fn]
+(defn drop-on-briefing [entry cfg]
   (fn [_ev]
     (let [dropped (:currently-dragged @cfg)
           ts (:timestamp dropped)
           updated (update-in entry [:linked_entries] #(set (conj % ts)))
           dropped-updated (update-in dropped [:perm_tags] #(set/union % #{"#task"}))]
       (when (and ts (not= ts (:timestamp updated)))
-        (put-fn [:entry/update (u/clean-entry updated)])
-        (put-fn [:entry/update (u/clean-entry dropped-updated)])))))
+        (emit [:entry/update (u/clean-entry updated)])
+        (emit [:entry/update (u/clean-entry dropped-updated)])))))
 
-(defn drag-start-fn [entry put-fn]
+(defn drag-start-fn [entry]
   (fn [ev]
     (let [dt (.-dataTransfer ev)]
-      (put-fn [:cmd/set-dragged entry])
+      (emit [:cmd/set-dragged entry])
       (aset dt "effectAllowed" "move")
       (aset dt "dropEffect" "link"))))
 
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
-  [entry local put-fn edit-mode? toggle-edit local-cfg]
+  [entry local edit-mode? toggle-edit local-cfg]
   (let [visible (r/atom false)
         backend-cfg (subscribe [:backend-cfg])
         ts (:timestamp entry)
@@ -106,53 +110,53 @@
         tab-group (:tab-group local-cfg)
         story-name (get-in entry [:story :story_name])
         text (eu/first-line entry)
-        toggle-map #(put-fn [:cmd/toggle
-                             {:timestamp ts
-                              :path      [:cfg :show-maps-for]}])
-        show-hide-comments #(put-fn [:cmd/assoc-in
-                                     {:path  [:cfg :show-comments-for ts]
-                                      :value %}])
+        toggle-map #(emit [:cmd/toggle
+                           {:timestamp ts
+                            :path      [:cfg :show-maps-for]}])
+        show-hide-comments #(emit [:cmd/assoc-in
+                                   {:path  [:cfg :show-comments-for ts]
+                                    :value %}])
         show-comments #(show-hide-comments query-id)
         create-comment (h/new-entry {:comment_for ts} show-comments)
         new-pomodoro (fn [_ev]
                        (let [new-entry-fn (h/new-entry (p/pomodoro-defaults ts)
                                                        show-comments)
                              new-entry (new-entry-fn)]
-                         (put-fn [:cmd/schedule-new
-                                  {:message [:cmd/pomodoro-start new-entry]
-                                   :timeout 1000}])))
+                         (emit [:cmd/schedule-new
+                                {:message [:cmd/pomodoro-start new-entry]
+                                 :timeout 1000}])))
         trash-entry (fn [_]
-                      (put-fn [:search/remove-all
-                               {:story       (get-in entry [:story :timestamp])
-                                :search-text (str ts)}])
-                      (if edit-mode?
-                        (put-fn [:entry/remove-local {:timestamp ts}])
-                        (put-fn [:entry/trash entry])))
-        move-over (fn [_]
-                    (put-fn [:search/remove-all
+                      (emit [:search/remove-all
                              {:story       (get-in entry [:story :timestamp])
                               :search-text (str ts)}])
+                      (if edit-mode?
+                        (emit [:entry/remove-local {:timestamp ts}])
+                        (emit [:entry/trash entry])))
+        move-over (fn [_]
+                    (emit [:search/remove-all
+                           {:story       (get-in entry [:story :timestamp])
+                            :search-text (str ts)}])
                     ((up/add-search {:tab-group    tab-group
                                      :story-name   story-name
                                      :first-line   text
                                      :query-string ts}
-                                    put-fn)))
+                                    emit)))
         mouse-enter #(reset! visible true)
-        toggle-album #(put-fn [:entry/update
-                               (update entry :perm_tags (fn [pt]
-                                                          (if (contains? pt "#album")
-                                                            (disj pt "#album")
-                                                            (conj pt "#album"))))])
+        toggle-album #(emit [:entry/update
+                             (update entry :perm_tags (fn [pt]
+                                                        (if (contains? pt "#album")
+                                                          (disj pt "#album")
+                                                          (conj pt "#album"))))])
         toggle-debug #(swap! local update-in [:debug] not)]
-    (fn entry-actions-render [entry local put-fn edit-mode? toggle-edit local-cfg]
+    (fn entry-actions-render [entry local edit-mode? toggle-edit local-cfg]
       (let [{:keys [latitude longitude]} entry
             map? (and latitude longitude
                       (not (and (zero? latitude)
                                 (zero? longitude))))
             prev-saved? (or (:last_saved entry) (< ts 1479563777132))
             comment? (:comment_for entry)
-            star-entry #(put-fn [:entry/update-local (update-in entry [:starred] not)])
-            flag-entry #(put-fn [:entry/update-local (update-in entry [:flagged] not)])
+            star-entry #(emit [:entry/update-local (update-in entry [:starred] not)])
+            flag-entry #(emit [:entry/update-local (update-in entry [:flagged] not)])
             starred (:starred entry)
             flagged (:flagged entry)
             album (contains? (set/union (set (:tags entry))
@@ -184,21 +188,3 @@
          [:i.fa.toggle
           {:on-click flag-entry
            :class    (if flagged "fa-flag flagged" "fa-flag")}]]))))
-
-(defn briefing-actions [ts put-fn]
-  (let [create-comment (fn [_ev]
-                         (let [create (h/new-entry {:comment_for ts})
-                               new-entry (create)]
-                           (info "created comment" new-entry)
-                           (put-fn [:entry/update new-entry])))
-        new-pomodoro (fn [_ev]
-                       (let [create (h/new-entry (p/pomodoro-defaults ts))
-                             new-entry (create)]
-                         (info "new-pomodoro" new-entry)
-                         (put-fn [:cmd/schedule-new
-                                  {:message [:cmd/pomodoro-start new-entry]
-                                   :timeout 1000}])))]
-    [:div.actions {}
-     [:div.items
-      [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}]
-      [:i.fa.fa-comment.toggle {:on-click create-comment}]]]))

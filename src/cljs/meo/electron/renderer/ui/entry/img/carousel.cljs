@@ -60,8 +60,8 @@
           [:div.slide
            [:img {:src           resized-rotated
                   :draggable     true
-                  :on-drag-start (a/drag-start-fn entry put-fn)
-                  :on-drop       (a/drop-linked-fn entry cfg put-fn)
+                  :on-drag-start (a/drag-start-fn entry)
+                  :on-drop       (a/drop-linked-fn entry cfg)
                   :on-drag-over  h/prevent-default
                   :on-drag-enter h/prevent-default}]
            (when-not fullscreen

@@ -177,7 +177,7 @@
                           (apply +))
             dur (u/duration-string logged-s)
             n (count (:by_ts @day-stats))
-            drop-fn (a/drop-on-briefing @briefing cfg emit)]
+            drop-fn (a/drop-on-briefing @briefing cfg)]
         [:div.briefing {:on-drop       drop-fn
                         :on-drag-over  h/prevent-default
                         :on-drag-enter h/prevent-default}

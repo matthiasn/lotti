@@ -91,15 +91,14 @@
    component, which is useful for displaying updated hashtags, or also for
    showing the warning that the entry is not saved yet."
   [entry local-cfg]
-  (let [
-        ts (:timestamp entry)
+  (let [ts (:timestamp entry)
         cfg (subscribe [:cfg])
         {:keys [edit-mode new-entry]} (eu/entry-reaction ts)
         show-map? (reaction (contains? (:show-maps-for @cfg) ts))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
         tab-group (:tab-group local-cfg)
-        drop-fn (a/drop-linked-fn entry cfg emit)
+        drop-fn (a/drop-linked-fn entry cfg)
         local (r/atom {:scroll-disabled true
                        :show-adjust-ts  false})]
     (fn journal-entry-render [entry emit local-cfg]
@@ -112,7 +111,7 @@
             qid (:query-id local-cfg)
             map-id (str ts (when qid (name qid)))
             errors (cfc/validate-cfg @new-entry backend-cfg)
-            on-drag-start (a/drag-start-fn entry emit)]
+            on-drag-start (a/drag-start-fn entry)]
         [:div.entry {:on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default
@@ -126,7 +125,7 @@
             [dt/datetime-edit merged local])
           [:div.action-row
            [dt/datetime-header merged local]
-           [a/entry-actions merged local emit edit-mode? toggle-edit local-cfg]]]
+           [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
          (when-not (:spotify entry)
