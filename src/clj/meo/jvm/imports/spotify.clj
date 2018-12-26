@@ -70,6 +70,7 @@
 (defn spotify-play [{:keys [msg-payload]}]
   (let [play-url "https://api.spotify.com/v1/me/player/play?access_token="
         token (:access-token (get-access-token))
+
         body (hc/json-encode {:uris [(:uri msg-payload)]})
         res (hc/put (str play-url token)
                     {:body         body

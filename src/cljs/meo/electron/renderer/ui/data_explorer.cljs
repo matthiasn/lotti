@@ -1,4 +1,4 @@
-(ns meo.electron.renderer.ui.data-explorer
+  (ns meo.electron.renderer.ui.data-explorer
   "Slightly modified from https://github.com/kamituel/systems-toolbox-chrome"
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [re-frame.core :refer [subscribe]]
@@ -52,7 +52,7 @@
        [:span.nil "nil"]
 
        (or (true? data) (false? data))
-       [:span.boolean (str data)]
+       [:Boolean.boolean (str data)]
 
        :else
        (str data)))))

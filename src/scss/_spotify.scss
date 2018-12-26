@@ -1,0 +1,60 @@
+@import "variables.scss";
+
+
+.spotify {
+  font-size: $font-size-medium;
+  border-radius: $entry-border-radius;
+  align-items: center;
+  overflow: auto;
+  height: 100vh;
+  text-align: center;
+
+  .menu-header {
+    width: 100vw;
+    height: 40px;
+    h2 {
+      text-align: center;
+      width: 90vw;
+    }
+  }
+
+  .img-container {
+    position: relative;
+    img {
+      width: 120px;
+      height: 120px;
+      padding-top: 0;
+      cursor: pointer;
+    }
+
+    .cnt {
+      position: absolute;
+      right: 4px;
+      top: 2px;
+      color: #EEE;
+      font-weight: bold;
+      font-family: $header-font-family;
+      //mix-blend-mode: exclusion;
+      font-size: $font-size-small;
+      background-color: #999;
+      border-radius: 1px;
+      padding: 1px 2px 2px 2px;
+    }
+  }
+
+
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+
+  .tooltip .tooltiptext {
+    width: 102px!important;
+    margin-top: -30px;
+    font-family: $header-font-family;
+    font-size: $font-size-medium;
+  }
+
+
+
+}

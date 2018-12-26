@@ -10,6 +10,7 @@
             [taoensso.timbre :refer [info error debug]]
             [meo.electron.renderer.ui.menu :as menu]
             [meo.electron.renderer.ui.heatmap :as hm]
+            [meo.electron.renderer.ui.spotify :as sp]
             [meo.electron.renderer.ui.grid :as g]
             [meo.electron.renderer.ui.stats :as stats]
             [meo.electron.renderer.ui.footer :as f]
@@ -88,6 +89,7 @@
              :heatmap [hm/heatmap]
              :gallery [ic/gallery-page]
              :help [help/help]
+             :spotify [sp/spotify-view]
              :empty [:div.flex-container]
              [main-page])
            (when @data-explorer

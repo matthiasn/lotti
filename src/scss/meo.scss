@@ -116,7 +116,7 @@ i {
 /* Tooltip text */
 .tooltip .tooltiptext {
   visibility: hidden;
-  min-width: 120px;
+  min-width: 102px;
   background-color: #FAFAFA;
   color: #333;
   text-align: left;
@@ -164,6 +164,7 @@ i {
 @import "config";
 @import "stats";
 @import "grid";
+@import "spotify";
 @import "dashboard";
 @import "calendar";
 @import "carousel";

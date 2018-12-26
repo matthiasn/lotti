@@ -163,6 +163,8 @@
                (when (contains? capabilities :heatmap)
                  {:label "Heatmap"
                   :click #(open :heatmap)})
+               {:label "Spotify"
+                :click #(open :spotify)}
                (when (contains? capabilities :scatter-matrix)
                  {:label "Scatter Matrix"
                   :click #(open :correlation)})
