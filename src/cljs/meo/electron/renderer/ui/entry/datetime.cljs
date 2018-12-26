@@ -43,7 +43,6 @@
         [:div.datetime
          [:div.adjust
           [:div
-           [:i.far.fa-pencil-alt]
            [:input {:type        :datetime-local
                     :on-change   on-change
                     :on-key-down (h/key-down-save entry)

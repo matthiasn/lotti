@@ -7,11 +7,18 @@
             [cljs.reader :refer [read-string]]
             [path :refer [join normalize]]
             [meo.electron.main.runtime :as rt]
-            [fs :refer [existsSync renameSync readFileSync]]
+            [fs :refer [existsSync renameSync readFileSync writeFileSync]]
             [clojure.string :as str]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [cljs.reader :as edn]))
 
 (def PORT (:port rt/runtime-info))
+(def data-path (:data-path rt/runtime-info))
+(def cfg-path (str data-path "/window.edn"))
+
+(defn window-cfg []
+  (when (existsSync cfg-path)
+    (edn/read-string (readFileSync cfg-path "utf-8"))))
 
 (defn spawn-process [cmd args opts]
   (info "STARTUP: spawning" cmd args opts)
@@ -55,6 +62,12 @@
                (kill (.-pid proc))))]
     (.then find cb)))
 
+(defn window-resized [{:keys [msg-payload]}]
+  (let [bounds (pr-str msg-payload)]
+    (info "window was resized" msg-payload)
+    (writeFileSync cfg-path bounds))
+  {})
+
 (defn jvm-up? [{:keys [put-fn current-state cmp-state msg-payload]}]
   (info "JVM up?" (:attempt current-state) msg-payload)
   (let [{:keys [version icon]} rt/runtime-info
@@ -81,6 +94,7 @@
         (fn [res]
           (let [status-code (.-statusCode res)
                 msg (merge
+                      (window-cfg)
                       {:url  index-page
                        :opts {:titleBarStyle   "hidden"
                               :backgroundColor "#282828"
@@ -192,6 +206,7 @@
                  :spotify/start       start-spotify
                  :app/shutdown        shutdown
                  :wm/open-external    open-external
+                 :window/resized      window-resized
                  :app/shutdown-jvm    shutdown-jvm
                  :app/clear-iww-cache clear-iww-cache
                  :app/clear-cache     clear-cache}})
