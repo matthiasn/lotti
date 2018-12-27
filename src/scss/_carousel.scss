@@ -328,13 +328,20 @@
     .info-drawer {
       background-color: #111;
       height: calc(100vh - 116px);
-      color: #ccc;
-      width: 300px;
+      width: 360px;
+
+      .entry-with-comments {
+        max-height: 36vh;
+        overflow-y: scroll;
+        margin-top: 6px;
+        padding: 4px 6px;
+      }
 
       .stars {
         margin: 7px;
         display: inline-block;
         width: 300px;
+        color: #ccc;
       }
 
       time {
@@ -361,22 +368,21 @@
         }
       }
 
-      .md {
-        margin: 10px;
-
-        ul {
-          margin-left: 25px;
-        }
-      }
-
       h1, h2, h3 {
         font-size: 1em;
       }
 
       .map, .mapbox {
         background-color: #333;
-        height: 50vh;
-        width: 300px;
+        height: 40vh;
+        width: 360px;
+        position: relative;
+        i {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          z-index: 1111;
+        }
       }
     }
 

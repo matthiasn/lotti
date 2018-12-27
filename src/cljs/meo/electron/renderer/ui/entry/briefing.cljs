@@ -208,7 +208,7 @@
            [:div.comments
             (for [comment (:comments @briefing)]
               ^{:key (str "c" comment)}
-              [e/journal-entry comment emit local-cfg])]]
+              [e/journal-entry comment local-cfg])]]
           [h/error-boundary
            [tasks/open-tasks local local-cfg]]]]))))
 

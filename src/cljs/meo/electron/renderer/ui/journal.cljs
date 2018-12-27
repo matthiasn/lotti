@@ -80,5 +80,5 @@
   (when @interval
     (js/clearInterval @interval)))
 
-(def ^:export scrollStart playback)
-(def ^:export scrollStop stop-playback)
+;(def ^:export scrollStart playback)
+;(def ^:export scrollStop stop-playback)

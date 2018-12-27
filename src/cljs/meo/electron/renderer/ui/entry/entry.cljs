@@ -94,14 +94,15 @@
   (let [ts (:timestamp entry)
         cfg (subscribe [:cfg])
         {:keys [edit-mode new-entry]} (eu/entry-reaction ts)
-        show-map? (reaction (contains? (:show-maps-for @cfg) ts))
+        show-map? (reaction (and (not (:hide-map local-cfg))
+                                 (contains? (:show-maps-for @cfg) ts)))
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
         tab-group (:tab-group local-cfg)
         drop-fn (a/drop-linked-fn entry cfg)
         local (r/atom {:scroll-disabled true
                        :show-adjust-ts  false})]
-    (fn journal-entry-render [entry emit local-cfg]
+    (fn journal-entry-render [entry local-cfg]
       (let [merged (merge entry @new-entry)
             {:keys [latitude longitude]} merged
             edit-mode? @edit-mode
@@ -206,9 +207,10 @@
     (fn entry-with-comments-render [entry local-cfg]
       (let [comments (:comments entry)
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))
-                             (:thumbnails @cfg))]
+                             (:thumbnails @cfg)
+                             (not (:gallery-view local-cfg)))]
         [:div.entry-with-comments
-         [journal-entry entry emit local-cfg]
+         [journal-entry entry local-cfg]
          (when thumbnails?
            [icl/gallery entry (icl/gallery-entries entry) local-cfg emit])
          (when (seq comments)
@@ -221,7 +223,7 @@
                     (str "hide " n " comment" (when (> n 1) "s"))])])
               (for [comment comments]
                 ^{:key (str "c" comment)}
-                [journal-entry comment emit local-cfg])]
+                [journal-entry comment local-cfg])]
              [:div.show-comments
               (let [n (count comments)]
                 [:span {:on-click toggle-comments}

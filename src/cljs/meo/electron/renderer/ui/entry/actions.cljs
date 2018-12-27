@@ -152,7 +152,8 @@
       (let [{:keys [latitude longitude]} entry
             map? (and latitude longitude
                       (not (and (zero? latitude)
-                                (zero? longitude))))
+                                (zero? longitude)))
+                      (not (:hide-map local-cfg)))
             prev-saved? (or (:last_saved entry) (< ts 1479563777132))
             comment? (:comment_for entry)
             star-entry #(emit [:entry/update-local (update-in entry [:starred] not)])

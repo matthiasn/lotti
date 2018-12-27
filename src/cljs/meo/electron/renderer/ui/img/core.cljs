@@ -17,7 +17,8 @@
             [markdown.core :as md]
             [reagent.core :as r]
             [clojure.set :as set]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [meo.electron.renderer.ui.entry.entry :as e]))
 
 (defn stars-view [entry local]
   (let [star (fn [idx n]
@@ -135,8 +136,10 @@
                              :mapbox-token mapbox-token
                              :put-fn       emit}]
              [l/leaflet-map selected true {} emit]))
-         [:time (h/localize-datetime-full ts locale)]
-         ;[text-editor selected]
+         [:div.journal
+          [:div.journal-entries
+           [e/entry-with-comments selected {:gallery-view true
+                                            :hide-map     true}]]]
          [stars-view selected local]
          [:div.stars
           [:span original-filename]
