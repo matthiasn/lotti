@@ -50,7 +50,7 @@
               ts (:timestamp entry)
               external (str h/photos file)
               cfg (subscribe [:cfg])
-              md (:md entry)
+              md (-> entry :md s/split-lines first)
               html (md/md->html md)
               toggle-expanded  (fn [_]
                                  (info :toggle-expanded)

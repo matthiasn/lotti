@@ -99,7 +99,8 @@
 
 .carousel .thumbs-wrapper {
   margin: 16px;
-  overflow: hidden;
+  overflow-x: scroll;
+  white-space: nowrap;
 }
 
 .carousel .thumbs {
@@ -258,7 +259,6 @@
 }
 
 .gallery {
-  overflow-y: auto;
   margin: 0;
   background-color: black;
 

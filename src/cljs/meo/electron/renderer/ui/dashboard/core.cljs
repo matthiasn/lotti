@@ -48,7 +48,7 @@
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
-                       :play         true
+                       :play         false
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]

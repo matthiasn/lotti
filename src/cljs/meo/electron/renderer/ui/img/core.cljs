@@ -136,7 +136,7 @@
                              :put-fn       emit}]
              [l/leaflet-map selected true {} emit]))
          [:time (h/localize-datetime-full ts locale)]
-         [text-editor selected]
+         ;[text-editor selected]
          [stars-view selected local]
          [:div.stars
           [:span original-filename]
