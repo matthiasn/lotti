@@ -224,9 +224,10 @@
                     :prev-click   prev-click}]]))))
 
 (defn gallery-entries [entry]
-  (filter :img_file (concat [entry]
-                            (:comments entry)
-                            (:linked entry))))
+  (filter :img_file
+          (if (contains? (set/union (:tags entry) (:perm_tags entry)) "#album")
+            (concat [entry] (:linked entry))
+            [entry])))
 
 (defn gallery-page []
   (let [res (subscribe [:gql-res2])

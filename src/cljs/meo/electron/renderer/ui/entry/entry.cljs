@@ -210,7 +210,7 @@
         [:div.entry-with-comments
          [journal-entry entry emit local-cfg]
          (when thumbnails?
-           [icl/gallery (icl/gallery-entries entry) local-cfg emit])
+           [icl/gallery entry (icl/gallery-entries entry) local-cfg emit])
          (when (seq comments)
            (if (= query-id @show-comments-for?)
              [:div.comments

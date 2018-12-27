@@ -41,9 +41,9 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry locale local put-fn]
+  [album-ts entry locale local put-fn]
   (let [cfg (subscribe [:cfg])]
-    (fn [entry locale local put-fn]
+    (fn [album-ts entry locale local put-fn]
       (when-let [file (:img_file entry)]
         (let [fullscreen (:fullscreen @local)
               resized-rotated (if fullscreen (h/thumbs-2048 file) (h/thumbs-512 file))
@@ -54,7 +54,7 @@
               html (md/md->html md)
               toggle-expanded  (fn [_]
                                  (info :toggle-expanded)
-                                 (gql-query true (str ts) put-fn)
+                                 (gql-query true (str album-ts) put-fn)
                                  (put-fn [:nav/to {:page :gallery}]))
               original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
           [:div.slide
@@ -80,7 +80,8 @@
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click]}]
+    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click
+                 album-ts]}]
       (let [locale @locale
             selected (or (:selected @local) (first filtered))
             n (count filtered)
@@ -90,7 +91,7 @@
           [:div.slider-wrapper.axis-horizontal
            (when two-or-more
              [:button.control-arrow.control-prev {:on-click prev-click}])
-           [image-view selected locale local put-fn]
+           [image-view album-ts selected locale local put-fn]
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when two-or-more
@@ -98,7 +99,7 @@
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entries local-cfg put-fn]
+  [entry entries local-cfg put-fn]
   (let [local (r/atom {:filter #{}})
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
         sorted (reaction
@@ -136,7 +137,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [entries local-cfg put-fn]
+    (fn gallery-render [entry entries local-cfg put-fn]
       (let [sorted-filtered @sorted
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery {:on-mouse-enter start-watch
@@ -145,6 +146,7 @@
          [carousel {:filtered     sorted-filtered
                     :local-cfg    local-cfg
                     :local        local
+                    :album-ts     (:timestamp entry)
                     :selected-idx selected-idx
                     :next-click   next-click
                     :prev-click   prev-click
