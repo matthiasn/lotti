@@ -9,10 +9,10 @@
             [meo.electron.renderer.graphql :as gql]
             [clojure.pprint :as pp]))
 
-(defn gql-query []
+(defn gql-query [n]
   (let [queries [[:spotify
                   {:search-text "#spotify"
-                   :n           10000}]]
+                   :n           n}]]
         query (gql/tabs-query queries false true)]
     (emit [:gql/query {:q        query
                        :id       :spotify
@@ -39,21 +39,17 @@
                  (info (h/target-val ev) @local)
                  (swap! local assoc :img-size (js/parseInt (h/target-val ev))))
         gql-res (subscribe [:gql-res2])
-        ; one image per song
+        ; one image image for any number of times a song was played
         entries (reaction (->> @gql-res
                                :spotify
                                :res
-                               vals))
-        ; one image image for any number of times a song was played
-        entries2 (reaction (->> @gql-res
-                                :spotify
-                                :res
-                                vals
-                                count-spotify))
+                               vals
+                               count-spotify))
         sorted (reaction
                  (sort-by #(-> % second :spotify :played_cnt)
-                          (:by-cnt @entries2)))
-        cmp-did-mount (fn [props] (gql-query))
+                          (:by-cnt @entries)))
+        cmp-did-mount (fn [props] (gql-query 2000))
+        will-unmount (fn [] (gql-query 0))
         render (fn [props]
                  (let [img-size (:img-size @local)]
                    [:div.spotify-list
@@ -74,8 +70,9 @@
                        [:span.cnt (:played_cnt (:spotify entry))]
                        [:div.tooltiptext
                         (-> entry :spotify :name)]])]))
-        spotify (r/create-class {:component-did-mount cmp-did-mount
-                                 :reagent-render      render})]
+        spotify (r/create-class {:component-did-mount    cmp-did-mount
+                                 :component-will-unmount will-unmount
+                                 :reagent-render         render})]
     (fn spotify-render [put-fn]
       [:div.flex-container
        [menu-view local]

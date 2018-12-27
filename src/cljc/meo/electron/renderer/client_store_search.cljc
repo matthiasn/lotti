@@ -175,6 +175,7 @@
           new-state (if query-id
                       (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))
                       new-state)]
+      (info "remove query" tab-group query-id)
       (update-query-cfg new-state put-fn)
       {:new-state new-state})
     {}))

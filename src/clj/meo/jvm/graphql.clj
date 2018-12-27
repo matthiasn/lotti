@@ -20,12 +20,17 @@
 
 (defn search-remove [{:keys [current-state msg-payload]}]
   (let [tab-group (:tab-group msg-payload)
-        new-state (assoc-in current-state [:prev tab-group] {})]
+        queries (-> (into {} (:queries current-state))
+                    (dissoc tab-group))
+        new-state (-> current-state
+                      (assoc-in [:prev tab-group] {})
+                      (assoc-in [:queries] queries))]
+    (info "removing query" msg-payload (keys queries))
     {:new-state new-state}))
 
 (defn run-registered [{:keys [current-state msg-meta] :as m}]
   (let [queries (sort-by #(:prio (second %)) (:queries current-state))]
-    (info "Running registered GraphQL queries" queries)
+    (info "Running registered GraphQL queries" (keys queries))
     (doseq [[id _q] queries]
       (exec/run-query (merge m {:msg-payload {:id id}
                                 :msg-meta    msg-meta}))))

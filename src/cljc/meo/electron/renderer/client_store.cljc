@@ -106,6 +106,16 @@
                                                            :query query})]
     {:new-state new-state}))
 
+(defn gql-remove [{:keys [current-state msg-payload]}]
+  (let [tab-group (:tab-group msg-payload)
+        new-state (-> current-state
+                      (assoc-in [:gql-res2 tab-group] {})
+                      (update-in [:gql-res] dissoc tab-group))]
+    (info "removing result for query" tab-group)
+    (info "gql-res2 keys" (-> new-state :gql-res2 keys))
+    {:new-state new-state}
+    {}))
+
 (defn imap-status [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:imap-status] msg-payload)]
     {:new-state new-state}))
@@ -139,6 +149,7 @@
                        {:cfg/save         c/save-cfg
                         :gql/res          gql-res
                         :gql/res2         gql-res2
+                        :gql/remove       gql-remove
                         :startup/progress progress
                         :startup/query    initial-queries
                         :ws/ping          ping

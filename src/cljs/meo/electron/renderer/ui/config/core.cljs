@@ -61,7 +61,7 @@
         did-mount (fn [_]
                     (info "adding event listener")
                     (.addEventListener js/document "keydown" keydown))
-        did-unmount #(.removeEventListener js/document "keydown" keydown)
+        will-unmount #(.removeEventListener js/document "keydown" keydown)
         render (fn [_]
                  (let [page (:page @local)]
                    [:div.flex-container
@@ -114,7 +114,7 @@
                            "regenerate cache"]])]
                       [:div.cfg.footer [stats/stats-text true]]]]]))]
     (r/create-class
-      {:component-did-mount         did-mount
-       :component-will-will-unmount did-unmount
-       :display-name                "Preferences"
-       :reagent-render              render})))
+      {:component-did-mount    did-mount
+       :component-will-unmount will-unmount
+       :display-name           "Preferences"
+       :reagent-render         render})))
