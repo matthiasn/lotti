@@ -39,7 +39,8 @@
       (v/graphql-query {:venia/queries queries}))))
 
 (defn tabs-query [queries incremental pvt]
-  (let [fields [:timestamp
+  (let [incremental false    ;; had problems with empty results otherwise
+        fields [:timestamp
                 :adjusted_ts
                 :text
                 :md
