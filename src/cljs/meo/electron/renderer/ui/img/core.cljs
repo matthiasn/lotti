@@ -40,11 +40,12 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry locale local]
+  [entry fullscreen locale local]
   (when-let [file (:img_file entry)]
     (let [resized-rotated (h/thumbs-2048 file)]
       [:div.slide
-       [:img {:src resized-rotated}]])))
+       [:img {:class (when fullscreen "full")
+              :src   resized-rotated}]])))
 
 (defn thumb-view [album-ts entry selected local]
   (when-let [file (:img_file entry)]
@@ -156,31 +157,38 @@
             selected (or (:selected @local)
                          (first filtered))
             n (count filtered)
-            two-or-more (< 1 n)]
+            two-or-more (< 1 n)
+            fullscreen (or (:fullscreen @local)
+                           (not two-or-more))]
         [:div
          [:div.carousel.carousel-slider {:style {:width "100%"}}
-          [:div.filters
-           [stars-filter local]]
+          (when-not fullscreen
+            [:div.filters
+             [stars-filter local]])
           [:div.slider-wrapper.axis-horizontal
-           (when two-or-more
+           (when-not fullscreen
              [:button.control-arrow.control-prev {:on-click prev-click}])
-           [image-view selected locale local]
-           (when two-or-more
+
+           [image-view selected fullscreen locale local]
+           (when-not fullscreen
              [:button.control-arrow.control-next {:on-click next-click}])]
-          [info-drawer selected locale]
-          (when two-or-more
+          (when-not fullscreen
+            [info-drawer selected locale])
+          (when-not fullscreen
             [:p.carousel-status (inc selected-idx) "/" n])]
-         [:div.carousel
-          [:div.thumbs-wrapper.axis-horizontal
-           [:ul
-            (for [entry filtered]
-              ^{:key (:timestamp entry)}
-              [thumb-view album-ts entry selected local])]]]]))))
+         (when-not fullscreen
+           [:div.carousel
+            [:div.thumbs-wrapper.axis-horizontal
+             [:ul
+              (for [entry filtered]
+                ^{:key (:timestamp entry)}
+                [thumb-view album-ts entry selected local])]]])]))))
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
   [album-ts entries]
-  (let [local (r/atom {:filter #{}})
+  (let [local (r/atom {:filter     #{}
+                       :fullscreen false})
         filter-by-stars (fn [entry]
                           (or (empty? (:filter @local))
                               (contains? (:filter @local)
@@ -209,6 +217,7 @@
                     (info key-code meta-key)
                     (when (= key-code 37) (prev-click))
                     (when (= key-code 39) (next-click))
+                    (when (= key-code 32) (swap! local update :fullscreen not))
                     (when (and meta-key (= key-code 49)) (set-stars 1))
                     (when (and meta-key (= key-code 50)) (set-stars 2))
                     (when (and meta-key (= key-code 51)) (set-stars 3))
