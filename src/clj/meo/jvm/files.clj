@@ -124,7 +124,7 @@
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
         prev (when (uc/has-node? g ts) (uc/attrs g ts))
-        entry (remove-nils (merge prev entry))
+        ;entry (remove-nils (merge prev entry))
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
