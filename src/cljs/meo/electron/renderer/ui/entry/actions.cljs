@@ -114,9 +114,10 @@
                        (filter active-filter)
                        (map-indexed (fn [i v] [i v]))))
         assign-tag (fn [tag]
-                     (let [toggle-tag #(if (contains? (:perm_tags entry) tag)
-                                         (disj % tag)
-                                         (conj % tag))
+                     (let [pt (set (:perm_tags entry))
+                           toggle-tag #(if (contains? pt tag)
+                                         (disj (set %) tag)
+                                         (conj (set %) tag))
                            updated (update-in entry [:perm_tags] toggle-tag)]
                        (swap! local assoc-in [:show] false)
                        (emit [:entry/update updated])))
@@ -156,39 +157,38 @@
                              (if (:show @local) (start-watch) (stop-watch)))
             icon-cls (str (when (:show @local) "show"))
             indexed @indexed]
-        (when-not (or (:comment_for entry)
-                      (contains? #{:story :saga} (:entry_type entry)))
-          [:span.cf-hashtag-select
-           [:span
-            [:i.fal.fa-hashtag
-             (merge
-               {:on-click toggle-visible
-                :class    (str icon-cls)})]]
-           (when (:show @local)
-             (let [curr-idx (:idx @local)
-                   match (fn [[i [tag x]]]
-                                     (h/str-contains-lc? tag (:search @local "")))
-                   items (take 20 (filter match indexed))]
-               [:div.story-search {:on-mouse-leave mouse-leave
-                                   :on-mouse-enter mouse-enter}
-                [:div
-                 [:i.fal.fa-search]
-                 [:input {:type       :text
-                          :on-change  input-fn
-                          :auto-focus true
-                          :value      (:search @local)}]]
-                [:table
-                 [:tbody
-                  (for [[idx [tag entry]] items]
-                    (let [active (= linked-story (:timestamp entry))
-                          cls (cond active "current"
-                                    (= idx curr-idx) "idx"
-                                    :else "")
-                          click #(assign-tag tag)]
-                      ^{:key (:timestamp entry)}
-                      [:tr {:on-click click}
-                       [:td {:class cls}
-                        tag]]))]]]))])))))
+
+        [:span.cf-hashtag-select
+         [:span
+          [:i.fa.fa-hashtag
+           (merge
+             {:on-click toggle-visible
+              :class    (str icon-cls)})]]
+         (when (:show @local)
+           (let [curr-idx (:idx @local)
+                 match (fn [[i [tag x]]]
+                         (h/str-contains-lc? tag (:search @local "")))
+                 items (take 20 (filter match indexed))]
+             [:div.story-search {:on-mouse-leave mouse-leave
+                                 :on-mouse-enter mouse-enter}
+              [:div
+               [:i.fal.fa-search]
+               [:input {:type       :text
+                        :on-change  input-fn
+                        :auto-focus true
+                        :value      (:search @local)}]]
+              [:table
+               [:tbody
+                (for [[idx [tag entry]] items]
+                  (let [active (= linked-story (:timestamp entry))
+                        cls (cond active "current"
+                                  (= idx curr-idx) "idx"
+                                  :else "")
+                        click #(assign-tag tag)]
+                    ^{:key (:timestamp entry)}
+                    [:tr {:on-click click}
+                     [:td {:class cls}
+                      tag]]))]]]))]))))
 
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
@@ -236,9 +236,10 @@
         mouse-enter #(reset! visible true)
         toggle-album #(emit [:entry/update
                              (update entry :perm_tags (fn [pt]
-                                                        (if (contains? pt "#album")
-                                                          (disj pt "#album")
-                                                          (conj pt "#album"))))])
+                                                        (let [pt (set pt)]
+                                                          (if (contains? pt "#album")
+                                                            (disj pt "#album")
+                                                            (conj pt "#album")))))])
         toggle-debug #(swap! local update-in [:debug] not)]
     (fn entry-actions-render [entry local edit-mode? toggle-edit local-cfg]
       (let [{:keys [latitude longitude]} entry
