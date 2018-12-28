@@ -48,7 +48,7 @@
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
-                       :play         false
+                       :play         true
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
@@ -91,7 +91,7 @@
             cycle (fn [f _] (swap! local update-in [:idx] f))
             play (fn [_]
                    (let [f #(swap! local update-in [:idx] next-item)
-                         t (js/setInterval f (* 15 60 1000))]
+                         t (js/setInterval f (* 5 60 1000))]
                      (swap! local assoc-in [:play] true)
                      (swap! local assoc-in [:timer] t)))
             pause (fn []

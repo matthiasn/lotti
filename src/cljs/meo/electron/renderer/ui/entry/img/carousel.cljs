@@ -2,6 +2,7 @@
   (:require [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer [info error debug]]
+            [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [meo.electron.renderer.helpers :as h]
             [clojure.data.avl :as avl]
             [clojure.string :as s]

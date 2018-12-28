@@ -46,15 +46,19 @@
       [:div.slide
        [:img {:src resized-rotated}]])))
 
-(defn thumb-view [entry selected local]
+(defn thumb-view [album-ts entry selected local]
   (when-let [file (:img_file entry)]
     (let [thumb (h/thumbs-256 file)
-          click (fn [_] (swap! local assoc-in [:selected] entry))]
+          click (fn [_] (swap! local assoc-in [:selected] entry))
+          unlink (fn [_]
+                   (let [timestamps [album-ts (:timestamp entry)]]
+                     (emit [:entry/unlink timestamps])))]
       [:li.thumb
        {:on-click click
         :class    (when (= entry selected) "selected")}
        [:img {:src       thumb
-              :draggable false}]])))
+              :draggable false}]
+       [:i.fas.fa-times {:on-click unlink}]])))
 
 (defn stars-filter [local]
   (let [selected (:filter @local)
@@ -147,7 +151,7 @@
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered local selected-idx prev-click next-click]}]
+    (fn [{:keys [filtered album-ts local selected-idx prev-click next-click]}]
       (let [locale @locale
             selected (or (:selected @local)
                          (first filtered))
@@ -171,11 +175,11 @@
            [:ul
             (for [entry filtered]
               ^{:key (:timestamp entry)}
-              [thumb-view entry selected local])]]]]))))
+              [thumb-view album-ts entry selected local])]]]]))))
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entries]
+  [album-ts entries]
   (let [local (r/atom {:filter #{}})
         filter-by-stars (fn [entry]
                           (or (empty? (:filter @local))
@@ -214,7 +218,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [entries]
+    (fn gallery-render [album-ts entries]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery.page.fullscreen {:on-mouse-enter start-watch
@@ -223,6 +227,7 @@
          [carousel {:filtered     sorted-filtered
                     :local        local
                     :selected-idx selected-idx
+                    :album-ts     album-ts
                     :next-click   next-click
                     :prev-click   prev-click}]]))))
 
@@ -234,7 +239,8 @@
 
 (defn gallery-page []
   (let [res (subscribe [:gql-res2])
-        entries (reaction (gallery-entries (first (vals (get-in @res [:gallery :res])))))]
+        album (reaction (first (vals (get-in @res [:gallery :res]))))
+        entries (reaction (gallery-entries @album))]
     (fn []
       [:div.flex-container
-       [gallery entries]])))
+       [gallery (:timestamp @album) entries]])))

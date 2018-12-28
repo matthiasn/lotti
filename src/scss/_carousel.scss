@@ -122,6 +122,15 @@
   overflow: hidden;
   border: 3px solid #444;
   padding: 2px;
+  position: relative;
+
+  .fa-times {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    color: $orange;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  }
 }
 
 .carousel .thumb.selected, .carousel .thumb:hover {
