@@ -275,7 +275,8 @@
               :on-click move-over}])
           [trash-icon trash-entry]
           (when (or (contains? (:capabilities @backend-cfg) :debug)
-                    h/repo-dir)
+                    h/repo-dir
+                    true)
             [:i.fa.fa-bug.toggle {:on-click toggle-debug}])]
          [:i.fa.toggle
           {:on-click star-entry
