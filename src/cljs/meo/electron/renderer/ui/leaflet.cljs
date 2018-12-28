@@ -37,6 +37,7 @@
   [entry show? local-cfg put-fn]
   (let [{:keys [latitude longitude timestamp map-zoom]} entry]
     (when (and show? latitude)
+      ^{:key (str latitude longitude)}
       [leaflet-component {:id     (str "map" timestamp (:query-id local-cfg))
                           :lat    latitude
                           :lon    longitude
