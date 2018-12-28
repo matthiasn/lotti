@@ -19,7 +19,7 @@
            :n    Integer/MAX_VALUE}
         res (:entries-list (gq/get-filtered state q))
         f (fn [entry]
-            (let [{:keys [tag items pvt]} (:custom_field_cfg entry)
+            (let [{:keys [tag items pvt active]} (:custom_field_cfg entry)
                   story (:primary_story entry)
                   fm (fn [field]
                        (let [k (keyword (:name field))
@@ -30,6 +30,7 @@
               [tag {:default-story story
                     :timestamp     (:timestamp entry)
                     :pvt           pvt
+                    :active        active
                     :fields        fields}]))
         res (->> (map f res)
                  (sort-by #(:timestamp (second %)))

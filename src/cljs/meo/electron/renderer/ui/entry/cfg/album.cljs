@@ -16,7 +16,6 @@
                               :type  "text"} emit]
          [:div.row
           [:label "Active? "]
-          [uc/switch {:entry entry :path [:album_cfg :active]}]]
-         [:div.row
+          [uc/switch {:entry entry :path [:album_cfg :active]}]
           [:label "Private? "]
           [uc/switch {:entry entry :path [:album_cfg :pvt]}]]]))))

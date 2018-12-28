@@ -99,7 +99,6 @@
         active (reaction (:active @cfg))
         backend-cfg (subscribe [:backend-cfg])
         tab-group (:tab-group local-cfg)
-        drop-fn (a/drop-linked-fn entry cfg)
         local (r/atom {:scroll-disabled true
                        :show-adjust-ts  false})]
     (fn journal-entry-render [entry local-cfg]
@@ -110,6 +109,7 @@
                                         (emit [:entry/update-local entry]))
             mapbox-token (:mapbox-token @backend-cfg)
             qid (:query-id local-cfg)
+            drop-fn (a/drop-linked-fn entry cfg)
             map-id (str ts (when qid (name qid)))
             errors (cfc/validate-cfg @new-entry backend-cfg)
             on-drag-start (a/drag-start-fn entry)]

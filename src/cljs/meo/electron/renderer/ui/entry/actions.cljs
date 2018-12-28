@@ -1,6 +1,8 @@
 (ns meo.electron.renderer.ui.entry.actions
   (:require [meo.electron.renderer.ui.pomodoro :as p]
             [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [meo.electron.renderer.ui.charts.common :as cc]
             [meo.common.utils.parse :as up]
             [meo.electron.renderer.helpers :as h]
             [reagent.core :as r]
@@ -9,7 +11,8 @@
             [meo.common.utils.misc :as u]
             [clojure.set :as set]
             [taoensso.timbre :refer-macros [info]]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [clojure.string :as s]))
 
 (defn trash-icon [trash-fn]
   (let [local (r/atom {:visible false})
@@ -71,9 +74,9 @@
             story (or (-> entry :story :timestamp)
                       (-> dropped :story :timestamp))
             updated (update-in entry [:linked_entries] #(set (conj % ts)))
-            updated (if (:img_file dropped)
-                      (update-in updated [:perm_tags] #(set (conj % "#album")))
-                      updated)
+            #_#_updated (if (:img_file dropped)
+                          (update-in updated [:perm_tags] #(set (conj % "#album")))
+                          updated)
             updated (assoc-in updated [:primary_story] story)]
         (when (and ts (not= ts (:timestamp updated)))
           (emit [:entry/update (u/clean-entry updated)]))
@@ -97,6 +100,95 @@
       (emit [:cmd/set-dragged entry])
       (aset dt "effectAllowed" "move")
       (aset dt "dropEffect" "link"))))
+
+(defn cf-tag-select [entry tab-group]
+  (let [show-pvt (subscribe [:show-pvt])
+        local (r/atom {:search "" :show false :idx 0})
+        active-filter (fn [[tag x]] (:active x))
+        backend-cfg (subscribe [:backend-cfg])
+        cfg (reaction (:custom-fields @backend-cfg))
+        indexed (reaction
+                  (->> (sort-by #(s/lower-case (first %)) @cfg)
+                       (filter (fn [[tag x]]
+                                 (if @show-pvt true (not (:pvt x)))))
+                       (filter active-filter)
+                       (map-indexed (fn [i v] [i v]))))
+        assign-tag (fn [tag]
+                     (let [toggle-tag #(if (contains? (:perm_tags entry) tag)
+                                         (disj % tag)
+                                         (conj % tag))
+                           updated (update-in entry [:perm_tags] toggle-tag)]
+                       (swap! local assoc-in [:show] false)
+                       (emit [:entry/update updated])))
+        keydown (fn [ev]
+                  (let [key-code (.. ev -keyCode)
+                        n (count @indexed)
+                        idx-inc #(if (< % (dec n)) (inc %) 0)
+                        idx-dec #(if (pos? %) (dec %) (dec n))]
+                    (when (:show @local)
+                      (when (= key-code 27)
+                        (swap! local assoc-in [:show] false))
+                      (when (= key-code 40)
+                        (swap! local update-in [:idx] idx-inc))
+                      (when (= key-code 38)
+                        (swap! local update-in [:idx] idx-dec))
+                      (when (= key-code 13)
+                        (assign-tag (first (second (nth @indexed (:idx @local)))))))
+                    (.stopPropagation ev)))
+        start-watch #(.addEventListener js/document "keydown" keydown)
+        stop-watch #(.removeEventListener js/document "keydown" keydown)]
+    (fn story-select-filter-render [entry tab-group]
+      (let [linked-story (get-in entry [:story :timestamp])
+            input-fn (fn [ev]
+                       (let [s (-> ev .-nativeEvent .-target .-value)]
+                         (info s (:search @local))
+                         (swap! local assoc-in [:idx] 0)
+                         (swap! local assoc-in [:search] s)))
+            mouse-leave (fn [_]
+                          (let [t (js/setTimeout
+                                    #(swap! local assoc-in [:show] false)
+                                    2000)]
+                            (swap! local assoc-in [:timeout] t)
+                            (stop-watch)))
+            mouse-enter #(when-let [t (:timeout @local)] (js/clearTimeout t))
+            toggle-visible (fn [_]
+                             (swap! local update-in [:show] not)
+                             (if (:show @local) (start-watch) (stop-watch)))
+            icon-cls (str (when (:show @local) "show"))
+            indexed @indexed]
+        (when-not (or (:comment_for entry)
+                      (contains? #{:story :saga} (:entry_type entry)))
+          [:span.cf-hashtag-select
+           [:span
+            [:i.fal.fa-hashtag
+             (merge
+               {:on-click toggle-visible
+                :class    (str icon-cls)})]]
+           (when (:show @local)
+             (let [curr-idx (:idx @local)
+                   match (fn [[i [tag x]]]
+                                     (h/str-contains-lc? tag (:search @local "")))
+                   items (take 20 (filter match indexed))]
+               [:div.story-search {:on-mouse-leave mouse-leave
+                                   :on-mouse-enter mouse-enter}
+                [:div
+                 [:i.fal.fa-search]
+                 [:input {:type       :text
+                          :on-change  input-fn
+                          :auto-focus true
+                          :value      (:search @local)}]]
+                [:table
+                 [:tbody
+                  (for [[idx [tag entry]] items]
+                    (let [active (= linked-story (:timestamp entry))
+                          cls (cond active "current"
+                                    (= idx curr-idx) "idx"
+                                    :else "")
+                          click #(assign-tag tag)]
+                      ^{:key (:timestamp entry)}
+                      [:tr {:on-click click}
+                       [:td {:class cls}
+                        tag]]))]]]))])))))
 
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
@@ -165,7 +257,8 @@
                              "#album")]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
-         [:div.items                                        ;{:style {:opacity opacity}}
+         [:div.items
+          [cf-tag-select entry tab-group]
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])

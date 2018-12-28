@@ -1,0 +1,171 @@
+@import "variables.scss";
+
+.cf-hashtag {
+  font-family: $header-font-family;
+  font-size: 12px;
+  color: #5d7186;
+
+  .row {
+    display: flex;
+    margin-bottom: 8px;
+  }
+
+  &.story-name {
+    font-size: $font-size-medium;
+    font-weight: normal;
+    display: flex;
+    cursor: pointer;
+    margin-bottom: 4px;
+    padding: 2px 4px;
+    border-radius: $entry-border-radius;
+
+    i {
+      margin-right: 6px;
+    }
+
+    span {
+      &:hover {
+        color: $link-color;
+      }
+    }
+  }
+
+  .badge {
+    text-align: center;
+    .story-badge {
+      font-size: $header-font-family;
+      font-weight: bold;
+      display: inline-block;
+      padding: 8px 12px;
+      margin: 12px 0 20px 12px;
+      border-radius: $entry-border-radius;
+    }
+  }
+
+
+  label {
+    display: inline-block;
+    width: 60px;
+  }
+
+  h3 {
+    font-size: 12px;
+  }
+
+  .saga {
+    select {
+      min-width: 200px;
+      margin: 10px 0 20px 0;
+    }
+
+    .fa-toggle-on {
+      color: $green;
+    }
+  }
+
+  .name {
+    padding-right: 1em;
+  }
+
+  label {
+    font-weight: bold;
+    padding: 4px 0;
+  }
+
+  .stories {
+    margin-bottom: 0.5em;
+    line-height: 1.4em;
+    font-size: 2em;
+    position: relative;
+  }
+
+  .story-list {
+    position: absolute;
+    background-color: white;
+    z-index: 1002;
+    padding: 2px 4px 4px 4px;
+    white-space: nowrap;
+    border: #BBB 1px solid;
+  }
+}
+
+.cf-hashtag-select {
+  position: relative;
+
+  i {
+    padding: 0 1px;
+
+    &.show {
+      cursor: none;
+    }
+
+    &.predicted {
+      background-color: lightgreen;
+      color: black;
+    }
+
+    &:hover {
+      color: $link-color;
+    }
+  }
+
+  .story-search {
+    position: absolute;
+    background-color: white;
+    top: 0;
+    right: -50px;
+    z-index: 1002;
+    padding: 4px 0;
+    white-space: nowrap;
+    border: #aaa 1px solid;
+    border-radius: 5px;
+    box-shadow: 0 0 1px 1px #AAA;
+    font-size: 0.8em;
+
+    table {
+      max-width: 260px;
+      border-spacing: 0;
+      font-size: $font-size-small;
+    }
+
+    tr:nth-child(even) {
+      background-color: lighten($hashtag-blue, 40%);
+    }
+
+    tr {
+      cursor: pointer;
+
+      td {
+        min-width: 115px;
+        padding: 1px 8px;
+      }
+
+      .current {
+        background-color: lighten($hashtag-blue, 10%);
+      }
+
+      .idx {
+        background-color: lighten($orange, 30%);
+      }
+    }
+
+    input {
+      width: 100px;
+      outline: none;
+      margin-right: 10px;
+      background-color: #EEE;
+      border: none;
+      box-shadow: none;
+      padding: 0 6px;
+      margin-bottom: 5px;
+    }
+
+    i {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 0 4px;
+      opacity: 1;
+      color: #777;
+    }
+  }
+}
