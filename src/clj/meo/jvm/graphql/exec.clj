@@ -62,9 +62,11 @@
         on-deliver
         (fn [res]
           (try
-            (let [res (merge merged
+            (let [size (count (pr-str res))
+                  res (merge merged
                              (xf/simplify res)
                              {:ts   (stc/now)
+                              :size size
                               :prio (:prio merged 100)})]
               (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
               (info "GraphQL query" id "finished in" (- (stc/now) start) "ms "
