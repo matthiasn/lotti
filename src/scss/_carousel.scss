@@ -339,9 +339,12 @@
       height: calc(100vh - 116px);
       width: 360px;
 
-      .entry-with-comments {
+      .journal {
         max-height: 36vh;
         overflow-y: scroll;
+      }
+
+      .entry-with-comments {
         margin-top: 6px;
         padding: 4px 6px;
       }
@@ -349,7 +352,7 @@
       .stars {
         margin: 7px;
         display: inline-block;
-        width: 300px;
+        width: 360px;
         color: #ccc;
       }
 
@@ -397,22 +400,22 @@
 
     .carousel .slide img {
       height: calc(100vh - 116px);
-      width: calc(100vw - 400px);
+      width: calc(100vw - 480px);
       object-fit: contain;
       margin-left: 5px;
       margin-right: 5px;
     }
 
     .carousel .control-prev.control-arrow {
-      left: 110px;
+      left: 115px;
     }
 
     .carousel .control-next.control-arrow {
-      right: 300px;
+      right: 365px;
     }
 
     .carousel .carousel-status {
-      right: 300px;
+      right: 360px;
     }
   }
 
