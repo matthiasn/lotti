@@ -12,7 +12,7 @@
             [meo.electron.renderer.ui.dashboard.commits :as c]
             [meo.electron.renderer.ui.dashboard.habits :as h]
             [meo.electron.renderer.graphql :as gql]
-            [taoensso.timbre :refer-macros [info debug]]
+            [taoensso.timbre :refer-macros [info debug error]]
             [matthiasn.systems-toolbox.component :as st]
             [meo.electron.renderer.helpers :as rh]
             [meo.electron.renderer.ui.entry.utils :as eu]
@@ -65,11 +65,14 @@
                             (filter not-empty-filter)
                             (into {}))
             n (count dashboards)
+            dashboard-idx (min (:idx @local) (dec n))
             dashboard (or (get dashboards dashboard-ts)
                           (when (pos? n)
-                            (nth
-                              (vals dashboards)
-                              (min (:idx @local) (dec n)))))
+                            (try
+                              (nth (vals dashboards) dashboard-idx)
+                              (catch js/Object e (do
+                                                   (error dashboard-idx e)
+                                                   (first dashboards))))))
             charts-pos (let [ts (:timestamp dashboard)
                              new-entry @(:new-entry (eu/entry-reaction ts))
                              entry (or new-entry dashboard)
