@@ -68,14 +68,6 @@
   width: 100%;
 }
 
-.carousel * {
-  margin: 0;
-  padding: 0;
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-}
-
 .carousel button {
   outline: 0;
   border: 0;
@@ -228,8 +220,8 @@
   position: absolute;
   bottom: 10px;
   left: 50%;
-  margin-left: -45%;
-  width: 90%;
+  margin-left: -37%;
+  width: 74%;
   border-radius: 3px;
   background: #000;
   color: #fff;
@@ -350,12 +342,27 @@
 
       .journal {
         max-height: 36vh;
-        overflow-y: scroll;
+
+        .journal-entries {
+          overflow-y: hidden;
+        }
       }
 
       .entry-with-comments {
-        margin-top: 6px;
-        padding: 4px 6px;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+
+        .entry {
+
+          .story-name {
+            margin-bottom: 0;
+          }
+
+          .header {
+            line-height: 8px;
+            height: 20px;
+          }
+        }
       }
 
       .stars {

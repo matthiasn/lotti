@@ -120,10 +120,10 @@
              [:i.fas.fa-save]
              "save"])]]))))
 
-(defn info-drawer [selected locale]
+(defn info-drawer [selected locale stop-watch]
   (let [local (r/atom {})
         backend-cfg (subscribe [:backend-cfg])]
-    (fn [selected locale]
+    (fn [selected locale stop-watch]
       (let [ts (:timestamp selected)
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
@@ -141,8 +141,9 @@
                              :mapbox-token mapbox-token
                              :put-fn       emit}]
              [l/leaflet-map selected true {} emit]))
-         [:div.journal
+         [:div.journal {:on-mouse-enter stop-watch}
           [:div.journal-entries
+           ^{:key (:timestamp selected)}
            [e/entry-with-comments selected {:gallery-view true
                                             :hide-map     true}]]]
          [stars-view selected local]
@@ -152,7 +153,8 @@
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered album-ts local selected-idx prev-click next-click]}]
+    (fn [{:keys [filtered album-ts local start-watch stop-watch selected-idx
+                 prev-click next-click]}]
       (let [locale @locale
             selected (or (:selected @local)
                          (first filtered))
@@ -165,7 +167,9 @@
           (when-not fullscreen
             [:div.filters
              [stars-filter local]])
-          [:div.slider-wrapper.axis-horizontal
+          [:div.slider-wrapper.axis-horizontal {:on-mouse-enter start-watch
+                                                :on-mouse-over  start-watch
+                                                :on-mouse-leave stop-watch}
            (when-not fullscreen
              [:button.control-arrow.control-prev {:on-click prev-click}])
 
@@ -173,7 +177,7 @@
            (when-not fullscreen
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when-not fullscreen
-            [info-drawer selected locale])
+            [info-drawer selected locale stop-watch])
           (when-not fullscreen
             [:p.carousel-status (inc selected-idx) "/" n])]
          (when-not fullscreen
@@ -230,13 +234,13 @@
     (fn gallery-render [album-ts entries]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
-        [:div.gallery.page.fullscreen {:on-mouse-enter start-watch
-                                       :on-mouse-over  start-watch
-                                       :on-mouse-leave stop-watch}
+        [:div.gallery.page.fullscreen
          [carousel {:filtered     sorted-filtered
                     :local        local
                     :selected-idx selected-idx
                     :album-ts     album-ts
+                    :start-watch  start-watch
+                    :stop-watch   stop-watch
                     :next-click   next-click
                     :prev-click   prev-click}]]))))
 
