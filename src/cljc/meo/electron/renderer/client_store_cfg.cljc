@@ -12,6 +12,7 @@
    :show-comments-for {}
    :show-pvt          true
    :mute              true
+   :dashboard-banner  true
    :locale            :de
    :thumbnails        true
    :dashboard         {:active :general}

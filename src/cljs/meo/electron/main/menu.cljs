@@ -98,7 +98,7 @@
                             {:label "Git repos"
                              :click #(put-fn [:import/git])})
                           (when (contains? capabilities :spotify)
-                            {:label "Spotify"
+                            {:label "Spotify Most Listened"
                              :click #(put-fn [:import/spotify])})]}
                #_{:label "Export"
                   :click #(put-fn [:export/geojson])}]}))
