@@ -120,6 +120,7 @@
                    (not (:timer @local)))
           (play nil))
         (when dashboard
+          (gql-query charts-pos days local)
           [:div.dashboard
            [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
                   :style   {:background :white}
@@ -146,8 +147,8 @@
                                ;:points-lost-by-day dc/points-lost-by-day-chart
                                nil)]
                 (when chart-fn
-                  ^{:key (str (:label chart-cfg) (:tag chart-cfg) (:k chart-cfg))}
-                  [rh/error-boundary [chart-fn (merge common chart-cfg) emit]])))
+                  ^{:key (str chart-cfg)}
+                  [rh/error-boundary [chart-fn (merge common chart-cfg)]])))
             (for [n (range (inc days))]
               (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
                     scaled (* 1800 (/ offset span))

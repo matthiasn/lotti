@@ -131,5 +131,4 @@
    (when (:selected @local)
      [h/error-boundary
       [db/dashboard {:days         90
-                     :dashboard-ts (:selected @local)}
-       emit]])])
+                     :dashboard-ts (:selected @local)}]])])

@@ -137,13 +137,15 @@
         active-filter (fn [x] (:active x))
         indexed (reaction
                   (let [s (:search @local "")
+                        stories @stories
                         filter-fn #(h/str-contains-lc? (:story_name %) s)]
-                    (->> (merged-stories @predictions (keys @stories))
-                         (map #(get @stories %))
+                    (->> (merged-stories @predictions (keys stories))
+                         (map #(get stories %))
                          (filter filter-fn)
                          (filter pvt-filter)
                          (filter active-filter)
-                         (map-indexed (fn [i v] [i v])))))
+                         (map-indexed (fn [i v] [i v]))
+                         vec)))
         assign-story (fn [story]
                        (swap! local assoc-in [:show] false)
                        (emit [:entry/update-merged
