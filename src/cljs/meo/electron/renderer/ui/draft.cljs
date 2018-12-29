@@ -174,8 +174,8 @@
           {:md       (or (:md @new-entry) (:md entry2) "")
            :ts       ts
            :changed  unsaved
-           :mentions @mentions
-           :hashtags @hashtags
+           :mentions (distinct @mentions)
+           :hashtags (distinct @hashtags)
            :saveFn   save-fn
            :startFn  start-fn
            :onChange change-cb}]]))))

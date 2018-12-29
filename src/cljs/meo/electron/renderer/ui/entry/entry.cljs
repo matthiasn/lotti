@@ -131,7 +131,7 @@
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
          (when-not (:spotify entry)
-           [d/entry-editor entry errors emit])
+           [d/entry-editor entry errors])
          [es/story-form merged]
          [es/saga-name-field merged edit-mode?]
          (when (or (contains? (set (:perm_tags entry)) "#task")
