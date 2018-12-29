@@ -118,15 +118,16 @@
                      :on-drag-enter h/prevent-default
                      :draggable     true
                      :on-drag-start on-drag-start}
-         [:div.header-1
-          [:div [es/story-select merged tab-group]]
-          [linked-btn merged local-cfg active]]
-         [:div.header
-          (when (:show-adjust-ts @local)
-            [dt/datetime-edit merged local])
-          [:div.action-row
-           [dt/datetime-header merged local]
-           [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]
+         [:div.drag
+          [:div.header-1
+           [:div [es/story-select merged tab-group]]
+           [linked-btn merged local-cfg active]]
+          [:div.header
+           (when (:show-adjust-ts @local)
+             [dt/datetime-edit merged local])
+           [:div.action-row
+            [dt/datetime-header merged local]
+            [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
          (when-not (:spotify entry)
