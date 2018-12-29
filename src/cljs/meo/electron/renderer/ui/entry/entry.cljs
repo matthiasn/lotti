@@ -123,10 +123,10 @@
            [:div [es/story-select merged tab-group]]
            [linked-btn merged local-cfg active]]
           [:div.header
-           (when (:show-adjust-ts @local)
-             [dt/datetime-edit merged local])
            [:div.action-row
-            [dt/datetime-header merged local]
+            (if (:show-adjust-ts @local)
+              [dt/datetime-edit merged local]
+              [dt/datetime-header merged local])
             [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
