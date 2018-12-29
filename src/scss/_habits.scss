@@ -212,9 +212,18 @@
   }
 
   &.album {
+    .detail-switch {
+      color: #AAA;
+      font-size: $font-size-small;
+    }
+
     input {
       width: 180px;
     }
+    i {
+      margin-left: 6px;
+    }
+
   }
 
   input[type="checkbox"] {

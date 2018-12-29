@@ -74,9 +74,10 @@
             story (or (-> entry :story :timestamp)
                       (-> dropped :story :timestamp))
             updated (update-in entry [:linked_entries] #(set (conj % ts)))
-            #_#_updated (if (:img_file dropped)
-                          (update-in updated [:perm_tags] #(set (conj % "#album")))
-                          updated)
+            updated (if (and (:img_file dropped)
+                             (not (:img_file updated)))
+                      (update-in updated [:perm_tags] #(set (conj % "#album")))
+                      updated)
             updated (assoc-in updated [:primary_story] story)]
         (when (and ts (not= ts (:timestamp updated)))
           (emit [:entry/update (u/clean-entry updated)]))

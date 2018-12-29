@@ -30,7 +30,7 @@
                     (mapv :tag)
                     (concat ["#BP"]))]
       (when-let [query-string (gql/graphql-query (inc days) tags)]
-        (debug "dashboard tags" query-string)
+        (info "dashboard tags" query-string)
         (emit [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard
@@ -38,7 +38,7 @@
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))]
       (when-let [query-string (gql/dashboard-questionnaires days items)]
-        (debug "dashboard" query-string)
+        (info "dashboard" query-string)
         (emit [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard-questionnaires
@@ -52,6 +52,7 @@
                        :display-text ""})
         pvt (subscribe [:show-pvt])]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
+      (info "dashboard render")
       (let [now (st/now)
             pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
             active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
@@ -118,7 +119,6 @@
         (when (and (:play @local)
                    (not (:timer @local)))
           (play nil))
-        (gql-query charts-pos days local)
         (when dashboard
           [:div.dashboard
            [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
