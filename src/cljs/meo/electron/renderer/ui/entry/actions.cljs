@@ -234,12 +234,6 @@
                                      :query-string ts}
                                     emit)))
         mouse-enter #(reset! visible true)
-        toggle-album #(emit [:entry/update
-                             (update entry :perm_tags (fn [pt]
-                                                        (let [pt (set pt)]
-                                                          (if (contains? pt "#album")
-                                                            (disj pt "#album")
-                                                            (conj pt "#album")))))])
         toggle-debug #(swap! local update-in [:debug] not)]
     (fn entry-actions-render [entry local edit-mode? toggle-edit local-cfg]
       (let [{:keys [latitude longitude]} entry
@@ -252,10 +246,7 @@
             star-entry #(emit [:entry/update-local (update-in entry [:starred] not)])
             flag-entry #(emit [:entry/update-local (update-in entry [:flagged] not)])
             starred (:starred entry)
-            flagged (:flagged entry)
-            album (contains? (set/union (set (:tags entry))
-                                        (set (:perm_tags entry)))
-                             "#album")]
+            flagged (:flagged entry)]
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items
@@ -263,8 +254,6 @@
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
-          (when-not comment? [:i.fa-images.toggle {:class    (if album "album-activated fas" "fa")
-                                                   :on-click toggle-album}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
           (when (and (contains? #{:left :right} tab-group) (not comment?))
