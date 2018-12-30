@@ -158,10 +158,9 @@
                              (if (:show @local) (start-watch) (stop-watch)))
             icon-cls (str (when (:show @local) "show"))
             indexed @indexed]
-
         [:span.cf-hashtag-select
          [:span
-          [:i.fa.fa-hashtag
+          [:i.fa.fa-hashtag.toggle
            (merge
              {:on-click toggle-visible
               :class    (str icon-cls)})]]
