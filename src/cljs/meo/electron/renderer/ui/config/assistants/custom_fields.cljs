@@ -72,7 +72,13 @@
               :label "Elevation gain:"
               :type  :number
               :agg   :sum
-              :step  1}]}])
+              :step  1}]}
+   {:tag    "#floss"
+    :active true
+    :items  [{:name  "completion"
+              :label "Flossed?"
+              :type  :switch}]}
+   ])
 
 (defn assistant []
   (let []
