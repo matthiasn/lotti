@@ -97,8 +97,8 @@
                         "fa-angle-double-up")}]]
             [:th "Stuff I said I'd do."]
             [:th
-             [:div.add-habit {:on-click new-habit}
-              [:i.fas.fa-plus]]]]
+             #_
+             [:div.add-habit {:on-click new-habit} [:i.fas.fa-plus]]]]
            (for [habit habits]
              ^{:key (:timestamp (:habit_entry habit))}
              [habit-line habit tab-group put-fn])]]]))))

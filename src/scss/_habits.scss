@@ -3,7 +3,7 @@
 
 .habit-details {
   font-size: $font-size-medium;
-  margin: 0.5em 0;
+  margin: 8px 0;
   background-color: white;
   border-radius: $entry-border-radius;
 
@@ -46,7 +46,6 @@
 
   table {
     border-collapse: collapse;
-    margin-bottom: 4px;
 
     .prio {
       min-width: 12px;

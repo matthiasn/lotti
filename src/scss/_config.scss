@@ -17,7 +17,7 @@
 
   .assistant {
     color: white;
-    margin-bottom: 10px;
+    margin-bottom: 40px;
 
     .tag {
       background-color: $hashtag-blue;
@@ -221,9 +221,11 @@
   }
 
   .cfg-items {
+    overflow-x: hidden;
     overflow-y: scroll;
     flex: 1;
-    width: 320px;
+    width: 340px;
+    height: 50vh;
 
     .story {
       font-size: $font-size-small;

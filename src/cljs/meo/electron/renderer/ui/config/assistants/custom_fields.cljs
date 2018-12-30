@@ -19,6 +19,11 @@
               :label "BP diastolic/mmHg"
               :type  :number
               :agg   :max
+              :step  1}
+             {:name  "heart_rate"
+              :label "Heart rate"
+              :type  :number
+              :agg   :max
               :step  1}]}
    {:tag    "#steps"
     :active true
@@ -45,6 +50,18 @@
     :active true
     :items  [{:name  "duration"
               :label "Sleep:"
+              :type  :time
+              :agg   :sum}]}
+   {:tag    "#workout"
+    :active true
+    :items  [{:name  "duration"
+              :label "Workout:"
+              :type  :time
+              :agg   :sum}]}
+   {:tag    "#driving"
+    :active true
+    :items  [{:name  "duration"
+              :label "Driving:"
               :type  :time
               :agg   :sum}]}
    {:tag    "#running"
