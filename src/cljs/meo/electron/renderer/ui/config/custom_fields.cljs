@@ -3,6 +3,7 @@
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info error]]
             [meo.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meo.electron.renderer.ui.config.assistants.custom-fields :as ac]
             [meo.electron.renderer.helpers :as h]
             [clojure.string :as s]
             [reagent.core :as r]
@@ -76,7 +77,8 @@
                [:ul
                 (for [[k v] (:fields cfg)]
                   ^{:key (str tag k)}
-                  [:li (:label v)])]]))]]))))
+                  [:li (:label v)])]]))]
+         [ac/assistant]]))))
 
 
 (defn custom-field-tab [tab-group]

@@ -1,6 +1,7 @@
 (ns meo.jvm.log
   (:require [taoensso.timbre :as timbre :refer [info]]
             [taoensso.timbre.appenders.3rd-party.rolling :as tr]
+            [taoensso.timbre.appenders.core :as appenders]
             [taoensso.encore :as enc]))
 
 (defn ns-filter
@@ -31,7 +32,14 @@
                 logfile
                 "./log/meo.log"))
 
+(def spit-appender
+  (merge
+    (appenders/spit-appender {:fname "/tmp/"})
+    {:async? true}))
+
 (timbre/set-config!
   {:level          :info
    :timestamp-opts {:pattern "yyyy-MM-dd HH:mm:ss.SSS"}
-   :appenders      {:rolling (tr/rolling-appender {:path filename})}})
+   :appenders      {:rolling (tr/rolling-appender {:path filename})
+                    ;                    :spit    spit-appender
+                    }})

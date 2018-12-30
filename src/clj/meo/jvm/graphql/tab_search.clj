@@ -1,6 +1,7 @@
 (ns meo.jvm.graphql.tab-search
   (:require [meo.jvm.datetime :as dt]
             [meo.common.utils.parse :as p]
+            [taoensso.timbre :refer [info error warn debug]]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graphql.common :as gc]
             [clojure.set :as set]))
