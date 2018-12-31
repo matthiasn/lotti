@@ -78,7 +78,7 @@
                 (for [[k v] (:fields cfg)]
                   ^{:key (str tag k)}
                   [:li (:label v)])]]))]
-         [ac/assistant]]))))
+         [ac/assistant items]]))))
 
 
 (defn custom-field-tab [tab-group]

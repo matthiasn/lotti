@@ -79,7 +79,7 @@
               :label "Calories:"
               :type  :number
               :agg   :sum
-              :step  1.06}
+              :step  1}
              {:name  "sprints"
               :type  :number
               :label "Sprints:"
@@ -97,16 +97,18 @@
               :type  :switch}]}
    ])
 
-(defn assistant []
-  (let []
-    [:div.assistant
-     [:h2 "Create commonly used fields with one click."]
-     (for [cfd custom-field-definitions]
-       (let [tag (:tag cfd)
-             click (h/new-entry {:entry_type       :custom-field-cfg
-                                 :perm_tags        #{"#custom-field-cfg"}
-                                 :tags             #{"#custom-field-cfg"}
-                                 :custom_field_cfg cfd})]
-         ^{:key tag}
-         [:span.tag {:on-click click}
-          tag]))]))
+(defn assistant [items]
+  (let [existing (set (map first items))
+        remaining (filter #(not (existing (:tag %))) custom-field-definitions)]
+    (when (seq remaining)
+      [:div.assistant
+       [:h2 "Create commonly used fields with one click."]
+       (for [cfd remaining]
+         (let [tag (:tag cfd)
+               click (h/new-entry {:entry_type       :custom-field-cfg
+                                   :perm_tags        #{"#custom-field-cfg"}
+                                   :tags             #{"#custom-field-cfg"}
+                                   :custom_field_cfg cfd})]
+           ^{:key tag}
+           [:span.tag {:on-click click}
+            tag]))])))
