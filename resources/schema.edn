@@ -175,6 +175,7 @@
   :BloodPressureStatsItem
   {:description "Blood Pressure item."
    :fields      {:timestamp    {:type (non-null ID)}
+                 :adjusted_ts  {:type ID}
                  :bp_systolic  {:type Float}
                  :bp_diastolic {:type Float}}}
 

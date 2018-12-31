@@ -23,12 +23,15 @@
         q (merge (p/parse-search "#BP"))
         nodes (:entries-list (gq/get-filtered @state q))
         f (fn [entry] {:timestamp    (:timestamp entry)
+                       :adjusted_ts  (or (:adjusted_ts entry) (:timestamp entry))
                        :bp_systolic  (get-in entry [:custom_fields "#BP" :bp_systolic])
                        :bp_diastolic (get-in entry [:custom_fields "#BP" :bp_diastolic])})
         bp-entries (mapv f nodes)
         filtered (->> bp-entries
                       (filter #(every? identity (vals %)))
-                      (filter #(> (:timestamp %) from)))]
+                      (filter #(> (:timestamp %) from))
+                      (filter #(or (> (:timestamp %) from)
+                                   (> (:adjusted_ts %) from))))]
     filtered))
 
 (defn git-stats [state context args value]

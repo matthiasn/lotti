@@ -1,6 +1,7 @@
 {
    bp_field_stats(days:"%d") {
       timestamp
+      adjusted_ts
       bp_diastolic
       bp_systolic
     }

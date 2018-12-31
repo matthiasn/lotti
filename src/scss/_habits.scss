@@ -196,7 +196,7 @@
     color: #666;
   }
   input {
-    width: 90px;
+    min-width: 90px;
     padding: 4px 8px;
     font-size: $font-size-small;
   }
@@ -204,7 +204,7 @@
     width: 65px;
   }
   input[type="text"] {
-    width: 120px;
+    min-width: 120px;
     &.url {
       width: 330px;
     }
@@ -217,7 +217,7 @@
     }
 
     input {
-      width: 170px;
+      min-width: 170px;
     }
     i {
       margin-left: 6px;
@@ -230,10 +230,10 @@
     margin-right: 7px;
   }
   input[type="date"] {
-    width: 130px;
+    min-width: 130px;
   }
   input[type="datetime-local"] {
-    width: 150px;
+    min-width: 150px;
   }
   div {
     line-height: 16px;

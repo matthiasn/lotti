@@ -37,12 +37,17 @@
                       :xf        js/parseInt
                       :options   options}]]]))))
 
-(defn color-picker [entry idx k label]
+(defn color-picker [entry idx k label default-color]
   (let [color-path [:dashboard_cfg :items idx k]
+        update-entry (fn [entry v]
+                       (let [updated (assoc-in entry color-path v)]
+                         (emit [:entry/update-local updated])))
         set-color (fn [data]
                     (let [hex (aget data "hex")
                           updated (assoc-in entry color-path hex)]
                       (emit [:entry/update-local updated])))]
+    (when (and default-color (not (get-in entry color-path)))
+      (update-entry entry default-color))
     [:div.row
      [:label.wide label]
      [chrome-picker {:disableAlpha     true
@@ -63,30 +68,36 @@
          [:h4 "Blood pressure chart"]
          (when-not collapsed
            [:div
-            [cs/input-row entry {:type  :number
-                                 :label "Heigth:"
-                                 :path  h-path}]
-            [cs/input-row entry {:label "Min:"
-                                 :type  :number
-                                 :path  mn-path}]
-            [cs/input-row entry {:type  :number
-                                 :label "Max:"
-                                 :path  mx-path}]
-            [cs/input-row entry {:type  :number
-                                 :label "Stroke:"
-                                 :path  sw-path}]
-            [cs/input-row entry {:type  :number
-                                 :label "Circle Radius:"
-                                 :path  cr-path}]
-            [cs/input-row entry {:type  :number
-                                 :label "Circle Stroke:"
-                                 :path  csw-path}]
+            [cs/input-row entry {:type    :number
+                                 :label   "Height:"
+                                 :path    h-path
+                                 :default 130}]
+            [cs/input-row entry {:label   "Min:"
+                                 :type    :number
+                                 :path    mn-path
+                                 :default 60}]
+            [cs/input-row entry {:type    :number
+                                 :label   "Max:"
+                                 :path    mx-path
+                                 :default 220}]
+            [cs/input-row entry {:type    :number
+                                 :label   "Stroke:"
+                                 :path    sw-path
+                                 :default 3}]
+            [cs/input-row entry {:type    :number
+                                 :label   "Circle Radius:"
+                                 :path    cr-path
+                                 :default 5}]
+            [cs/input-row entry {:type    :number
+                                 :label   "Circle Stroke:"
+                                 :path    csw-path
+                                 :default 1}]
 
-            [color-picker entry idx :systolic_color "Systolic Stroke:"]
-            [color-picker entry idx :systolic_fill "Systolic Fill:"]
+            [color-picker entry idx :systolic_color "Systolic Stroke:" "#CA3C3C"]
+            [color-picker entry idx :systolic_fill "Systolic Fill:" "#CA3C3C"]
 
-            [color-picker entry idx :diastolic_color "Diastolic Stroke:"]
-            [color-picker entry idx :diastolic_fill "Diastolic Fill:"]
+            [color-picker entry idx :diastolic_color "Diastolic Stroke:" "#1f8dd6"]
+            [color-picker entry idx :diastolic_fill "Diastolic Fill:" "#1f8dd6"]
 
             [:div.row
              [:label "Glow? "]

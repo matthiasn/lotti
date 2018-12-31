@@ -9,7 +9,7 @@
             [meo.jvm.graphql.common :as gc]))
 
 (defn custom-fields-cfg
-  "Generates the custom custom fields config map as required by the
+  "Generates the custom fields config map as required by the
    user interface. The usage of custom fields in the UI predates the
    definition of custom fields in a specialized entry. The data
    format should be adjusted subsequently."
@@ -29,11 +29,13 @@
                   fields (into {} (map fm items))]
               [tag {:default-story story
                     :timestamp     (:timestamp entry)
+                    :adjusted_ts   (:adjusted_ts entry)
                     :pvt           pvt
                     :active        active
                     :fields        fields}]))
         res (->> (map f res)
-                 (sort-by #(:timestamp (second %)))
+                 (sort-by #(or (:adjusted_ts (second %))
+                               (:timestamp (second %))))
                  (filter first)
                  reverse
                  (into {}))]

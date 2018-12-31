@@ -7,7 +7,10 @@
             [moment]))
 
 (defn input-row [entry cfg]
-  (let [{:keys [label validate path xf error]} cfg
+  (let [{:keys [label validate path xf error default]} cfg
+        update-entry (fn [entry v]
+                       (let [updated (assoc-in entry path v)]
+                         (emit [:entry/update-local updated])))
         v (get-in entry path)
         t (:type cfg)
         v (if (and v (= :time t)) (h/m-to-hh-mm v) v)
@@ -22,6 +25,8 @@
                           updated (assoc-in entry path v)]
                       (emit [:entry/update-local updated])))
         valid? (if validate (validate v) true)]
+    (when (and default (not v))
+      (update-entry entry default))
     [:div.row
      [:label label]
      [:input (merge {:on-change on-change

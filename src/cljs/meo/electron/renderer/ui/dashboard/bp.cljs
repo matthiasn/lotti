@@ -11,6 +11,15 @@
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
 
+(defn line [y s w]
+  [:line {:x1           195
+          :x2           2000
+          :y1           y
+          :y2           y
+          :opacity 0.5
+          :stroke-width w
+          :stroke       s}])
+
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg]
@@ -80,7 +89,8 @@
             lines (filter #(zero? (mod % line-inc)) (range 1 rng))
             mapper (fn [k]
                      (fn [idx data]
-                       (let [ts (:timestamp data)
+                       (let [ts (or (:adjusted_ts data)
+                                    (:timestamp data))
                              v (get data k)
                              from-beginning (- ts start)
                              x (+ x-offset
@@ -107,8 +117,9 @@
                    :text-anchor "start"}
             (+ n mn)])
 
-         [dc/line (- btm-y (* (- 80 mn) scale)) "#33F" 2]
-         [dc/line (- btm-y (* (- 120 mn) scale)) "#F33" 2]
+
+         [line (- btm-y (* (- 80 mn) scale)) diastolic_color 6]
+         [line (- btm-y (* (- 120 mn) scale)) systolic_color 6]
 
          [chart-line @bp-data (mapper :bp_systolic) systolic-cfg ]
          [chart-line @bp-data (mapper :bp_diastolic) diastolic-cfg ]
