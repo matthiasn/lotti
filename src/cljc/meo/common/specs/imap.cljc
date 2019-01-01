@@ -35,6 +35,7 @@
 (s/def :meo.imap.sync/last-read integer?)
 (s/def :meo.imap.sync/body-part string?)
 
+#_
 (s/def :meo.imap.sync/read
   (s/keys :req-un [:meo.imap.sync/mailbox
                    :meo.imap.sync/secret

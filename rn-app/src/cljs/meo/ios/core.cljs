@@ -4,6 +4,7 @@
             [meo.ios.healthkit :as hk]
             [meo.ios.sync :as sync]
             [meo.ios.store :as store]
+            [meo.ios.photos :as photos]
             [meo.ui :as ui]
             [meo.ui.shared :refer [view text app-registry]]
             [matthiasn.systems-toolbox.switchboard :as sb]
@@ -28,6 +29,7 @@
   (dispatch-sync [:initialize-db])
   (let [components #{(hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
+                     (photos/cmp-map :app/photos)
                      (sync/cmp-map :app/sync)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
@@ -49,6 +51,12 @@
 
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/store}]
+
+       [:cmd/route {:from :app/ui-cmp
+                    :to   :app/store}]
+
+       [:cmd/route {:from :app/ui-cmp
+                    :to   :app/photos}]
 
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/healthkit}]

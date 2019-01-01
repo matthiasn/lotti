@@ -32,8 +32,8 @@
       (let [conn (imap. (clj->js (:server cfg)))]
         (.once conn "ready" #(.openBox conn mailbox-name false (partial open-mb-cb conn)))
         (.once conn "error" #(error "IMAP connection" %))
-        (.once conn "end" #(info "IMAP connection ended"))
-        (info "imap-open" mailbox-name)
+        (.once conn "end" #(info "IMAP connection ended:" mailbox-name))
+        (debug "imap-open" mailbox-name)
         (.connect conn)
         (js/setTimeout #(.end conn) 60000))
       (catch :default e (error e))))
@@ -83,7 +83,8 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))))]
+                  (catch :default e (error e))
+                  (finally (.end conn))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-audio [mailbox uid partID filename put-fn]
@@ -121,7 +122,8 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))))]
+                  (catch :default e (error e))
+                  (finally (.end conn))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-mailbox [[k mb-cfg] put-fn]
@@ -198,7 +200,8 @@
                                    (.once f "end" cb)))))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))))]
+                  (catch :default e (error e))
+                  (finally (.end conn))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-email [{:keys [put-fn]}]
@@ -231,7 +234,8 @@
                        (.setContent cipher-hex)
                        (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
                        (.build cb)))
-                 (catch :default e (error e))))]
+                 (catch :default e (error e))
+                 (finally (.end conn))))]
       (imap-open mailbox cb)))
   {:emit-msg [:imap/cfg (imap-cfg)]})
 
@@ -243,7 +247,8 @@
                                    (.log js/console boxes)
                                    (put-fn [:imap/status {:status k :detail d}])
                                    (info "read mailboxes")))
-                 (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
+                 (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))
+                 (finally (.end conn))))
           conn (imap. (clj->js (:server cfg)))]
       (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
       (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))

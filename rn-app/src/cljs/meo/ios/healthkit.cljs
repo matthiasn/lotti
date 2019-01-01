@@ -57,7 +57,7 @@
 
 (defn get-weight [{:keys [put-fn]}]
   (let [weight-opts (clj->js {:unit      "gram"
-                              :startDate (days-ago 180)})
+                              :startDate (days-ago 7)})
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
@@ -81,7 +81,7 @@
 
 (defn blood-pressure [{:keys [put-fn]}]
   (let [bp-opts (clj->js {:unit      "mmHg"
-                          :startDate (days-ago 180)})
+                          :startDate (days-ago 7)})
         bp-cb (fn [err res]
                 (doseq [sample (js->clj res)]
                   (let [bp-systolic (get-in sample ["bloodPressureSystolicValue"])
@@ -107,7 +107,7 @@
   {})
 
 (defn get-sleep-samples [{:keys [put-fn]}]
-  (let [sleep-opts (clj->js {:startDate (days-ago 180)})
+  (let [sleep-opts (clj->js {:startDate (days-ago 7)})
         sleep-cb (fn [err res]
                    (doseq [sample (js->clj res)]
                      (let [value (get-in sample ["value"])

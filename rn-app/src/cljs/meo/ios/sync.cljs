@@ -83,7 +83,7 @@
 (defn schedule-read [cmp-state put-fn]
   (when (seq (:not-fetched @cmp-state))
     (put-fn [:cmd/schedule-new
-             {:timeout 100
+             {:timeout 1000
               :message [:sync/read]}])))
 
 (defn sync-get-uids [{:keys [put-fn cmp-state current-state]}]
@@ -178,7 +178,7 @@
   {:cmp-id      cmp-id
    :state-fn    state-fn
    :handler-map {:entry/sync  sync-write
-                 :sync/fetch  sync-get-uids
+                 ;:sync/fetch  sync-get-uids
                  :sync/retry  retry-write
-                 :sync/read   sync-read-msg
+                 ;:sync/read   sync-read-msg
                  :secrets/set set-secrets}})
