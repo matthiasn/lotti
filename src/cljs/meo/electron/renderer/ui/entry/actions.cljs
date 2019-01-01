@@ -70,6 +70,7 @@
           (emit [:entry/update updated])))
       ; link two entries
       (let [dropped (:currently-dragged @cfg)
+            dropped (update dropped :tags disj "#import")
             ts (:timestamp dropped)
             story (or (-> entry :story :timestamp)
                       (-> dropped :story :timestamp))
@@ -81,9 +82,10 @@
             updated (assoc-in updated [:primary_story] story)]
         (when (and ts (not= ts (:timestamp updated)))
           (emit [:entry/update (u/clean-entry updated)]))
-        (when (and story (not (:primary_story dropped)))
+        (if (and story (not (:primary_story dropped)))
           (let [updated (assoc-in dropped [:primary_story] story)]
-            (emit [:entry/update (u/clean-entry updated)])))))))
+            (emit [:entry/update (u/clean-entry updated)]))
+          (emit [:entry/update (u/clean-entry dropped)]))))))
 
 (defn drag-start-fn [entry]
   (fn [ev]
