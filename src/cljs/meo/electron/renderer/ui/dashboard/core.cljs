@@ -125,7 +125,7 @@
         (when dashboard
           (gql-query charts-pos days local)
           [:div.dashboard
-           [:svg {:viewBox (str "0 0 2100 " (+ end-y 6))
+           [:svg {:viewBox (str "0 0 " (* days 23) " " (+ end-y 6))
                   :style   {:background :white}
                   :key     (str (:timestamp dashboard) (:idx @local))}
             [:filter#blur1

@@ -13,12 +13,12 @@
             [clojure.string :as str]
             [clojure.set :as set]))
 
-(defn stars-view [entry put-fn]
+(defn stars-view [entry]
   (let [star (fn [idx n]
                (let [click (fn [ev]
                              (let [updated (assoc-in entry [:stars] idx)]
                                (debug "stars click" updated)
-                               (put-fn [:entry/update updated])))]
+                               (emit [:entry/update updated])))]
                  [:i.fa-star {:class    (if (<= idx n) "fas" "fal")
                               :on-click click}]))
         stars (:stars entry 0)]
@@ -29,22 +29,22 @@
      [star 4 stars]
      [star 5 stars]]))
 
-(defn gql-query [pvt search-text put-fn]
+(defn gql-query [pvt search-text]
   (let [queries [[:gallery
                   {:search-text search-text
                    :n           1000}]]
         query (gql/tabs-query queries false pvt)]
-    (put-fn [:gql/query {:q        query
-                         :id       :gallery
-                         :res-hash nil
-                         :prio     11}])))
+    (emit [:gql/query {:q        query
+                       :id       :gallery
+                       :res-hash nil
+                       :prio     11}])))
 
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [album-ts entry locale local put-fn]
+  [album-ts entry locale local]
   (let [cfg (subscribe [:cfg])]
-    (fn [album-ts entry locale local put-fn]
+    (fn [album-ts entry locale local]
       (when-let [file (:img_file entry)]
         (let [fullscreen (:fullscreen @local)
               resized-rotated (if fullscreen (h/thumbs-2048 file) (h/thumbs-512 file))
@@ -53,10 +53,10 @@
               cfg (subscribe [:cfg])
               md (-> entry :md s/split-lines first)
               html (md/md->html md)
-              toggle-expanded  (fn [_]
-                                 (info :toggle-expanded)
-                                 (gql-query true (str album-ts) put-fn)
-                                 (put-fn [:nav/to {:page :gallery}]))
+              toggle-expanded (fn [_]
+                                (info :toggle-expanded)
+                                (gql-query true (str album-ts))
+                                (emit [:nav/to {:page :gallery}]))
               original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
           [:div.slide
            [:img {:src           resized-rotated
@@ -69,7 +69,7 @@
              [:div.legend
               [:div.row
                (h/localize-datetime ts locale)
-               [stars-view entry put-fn]
+               [stars-view entry]
                [:span {:on-click toggle-expanded}
                 (if fullscreen
                   [:i.fas.fa-compress]
@@ -81,7 +81,7 @@
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click
+    (fn [{:keys [filtered local selected-idx prev-click next-click
                  album-ts]}]
       (let [locale @locale
             selected (or (:selected @local) (first filtered))
@@ -92,7 +92,7 @@
           [:div.slider-wrapper.axis-horizontal
            (when two-or-more
              [:button.control-arrow.control-prev {:on-click prev-click}])
-           [image-view album-ts selected locale local put-fn]
+           [image-view album-ts selected locale local]
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when two-or-more
@@ -100,7 +100,7 @@
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entry entries local-cfg put-fn]
+  [entry entries local-cfg]
   (let [local (r/atom {:filter #{}})
         cmp (fn [a b] (compare (:timestamp a) (:timestamp b)))
         sorted (reaction
@@ -126,7 +126,7 @@
                                     (let [selected @selected
                                           updated (assoc-in selected [:stars] n)]
                                       (debug updated)
-                                      (put-fn [:entry/update updated])))]
+                                      (emit [:entry/update updated])))]
                     (when (= key-code 37) (prev-click))
                     (when (= key-code 39) (next-click))
                     (when (and meta-key (= key-code 49)) (set-stars 1))
@@ -138,7 +138,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [entry entries local-cfg put-fn]
+    (fn gallery-render [entry entries local-cfg]
       (let [sorted-filtered @sorted
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery {:on-mouse-enter start-watch
@@ -150,8 +150,7 @@
                     :album-ts     (:timestamp entry)
                     :selected-idx selected-idx
                     :next-click   next-click
-                    :prev-click   prev-click
-                    :put-fn       put-fn}]]))))
+                    :prev-click   prev-click}]]))))
 
 (defn gallery-entries [entry]
   (let [res (filter :img_file (concat [entry]

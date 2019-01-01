@@ -138,8 +138,7 @@
              [mb/mapbox-cls {:local        local
                              :id           (str ts)
                              :selected     selected
-                             :mapbox-token mapbox-token
-                             :put-fn       emit}]
+                             :mapbox-token mapbox-token}]
              [l/leaflet-map selected true {} emit]))
          [:div.journal {:on-mouse-enter stop-watch}
           [:div.journal-entries
