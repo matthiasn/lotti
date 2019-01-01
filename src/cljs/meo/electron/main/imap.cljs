@@ -35,7 +35,7 @@
         (.once conn "end" #(info "IMAP connection ended:" mailbox-name))
         (debug "imap-open" mailbox-name)
         (.connect conn)
-        (js/setTimeout #(.end conn) 60000))
+        (js/setTimeout #(.end conn) 120000))
       (catch :default e (error e))))
   {})
 
@@ -122,8 +122,7 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))
-                  (finally (.end conn))))]
+                  (catch :default e (error e))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-mailbox [[k mb-cfg] put-fn]
@@ -200,8 +199,7 @@
                                    (.once f "end" cb)))))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))
-                  (finally (.end conn))))]
+                  (catch :default e (error e))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-email [{:keys [put-fn]}]
@@ -254,7 +252,7 @@
       (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))
       (.once conn "end" #(info "IMAP connection ended"))
       (.connect conn)
-      (js/setTimeout #(.end conn) 60000))
+      (js/setTimeout #(.end conn) 120000))
     (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
 
 (defn read-mailboxes [{:keys [put-fn msg-payload]}]
@@ -265,7 +263,7 @@
 
 (defn start-sync [{:keys []}]
   (info "starting IMAP sync")
-  {:emit-msg [:cmd/schedule-new {:timeout (* 15 1000)
+  {:emit-msg [:cmd/schedule-new {:timeout 120000
                                  :id      :imap-schedule
                                  :message [:sync/read-imap]
                                  :initial true
