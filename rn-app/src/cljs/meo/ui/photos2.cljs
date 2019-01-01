@@ -67,6 +67,7 @@
                                      :background-color "#FF3B30"
                                      :justify-content  "center"
                                      :align-items      "center"
+                                     :border-radius    4
                                      :height           40
                                      :flex-direction   "row"}}
        [text {:style {:color     "white"
@@ -77,6 +78,7 @@
                                      :width            150
                                      :background-color "#4CD964"
                                      :justify-content  "center"
+                                     :border-radius    4
                                      :align-items      "center"
                                      :height           40
                                      :flex-direction   "row"}}

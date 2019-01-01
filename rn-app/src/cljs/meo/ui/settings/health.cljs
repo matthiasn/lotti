@@ -9,9 +9,8 @@
   (let [weight-fn #(put-fn [:healthkit/weight])
         bp-fn #(put-fn [:healthkit/bp])
         theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 10] (put-fn [:healthkit/steps n]))
+        steps-fn #(dotimes [n 7] (put-fn [:healthkit/steps n]))
         sleep-fn #(put-fn [:healthkit/sleep])
-        activity-fn #(put-fn [:activity/monitor])
         current-activity (subscribe [:current-activity])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -49,13 +48,7 @@
                                :icon             (settings-icon "bed" text-color)
                                :background-color item-bg
                                :titleStyle       {:color text-color}
-                               :on-press         sleep-fn}]
-          [settings-list-item {:title            "Monitor Activities"
-                               :hasNavArrow      false
-                               :icon             (settings-icon "camera" text-color)
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         activity-fn}]]
+                               :on-press         sleep-fn}]]
          [text {:style {:margin-top    5
                         :margin-left   10
                         :margin-bottom 40

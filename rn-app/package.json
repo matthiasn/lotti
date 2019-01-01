@@ -1,6 +1,6 @@
 {
 	"name": "meo",
-	"version": "0.5.213",
+	"version": "0.5.584",
 	"private": true,
 	"scripts": {
 		"start": "node node_modules/react-native/local-cli/cli.js start",
@@ -21,7 +21,6 @@
 		"querystring": "0.2.0",
 		"react": "16.4.1",
 		"react-native": "0.50.3",
-		"react-native-activity-recognition": "3.2.0",
 		"react-native-audio-recorder-player": "^2.0.8",
 		"react-native-camera": "0.13.0",
 		"react-native-contacts": "2.2.2",

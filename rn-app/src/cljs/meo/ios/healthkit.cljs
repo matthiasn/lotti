@@ -22,23 +22,31 @@
              "DistanceWalkingRunning" "SleepAnalysis" "RespiratoryRate"]}}))
 
 (defn get-steps [{:keys [msg-payload put-fn]}]
-  (let [opts (clj->js {:date (days-ago (inc msg-payload))})
+  (let [dt (days-ago msg-payload)
+        opts (clj->js {:date dt})
         cb (fn [tag]
              (fn [err res]
                (let [sample (js->clj res)
                      v (get-in sample ["value"])
                      end-date (get-in sample ["endDate"])]
                  (when v
-                   (let [end-ts (- (.valueOf (moment end-date))
-                                   (* 90 60 1000))
+                   (let [end-ts (.valueOf (moment end-date))
+                         adjusted_ts (-> (moment dt)
+                                         (.set "hour" 23)
+                                         (.set "minute" 59)
+                                         (.set "second" 59)
+                                         (.set "millisecond" 747)
+                                         .valueOf)
                          cnt (js/parseInt v)
-                         entry {:timestamp      end-ts
-                                :md             (str cnt " " tag)
-                                :tags           #{tag}
-                                :sample         sample
-                                :linked_stories #{1475314976880}
-                                :primary_story  1475314976880
-                                :custom_fields  {tag {:cnt cnt}}}]
+                         entry (merge
+                                 {:timestamp     end-ts
+                                  :md            (str cnt " " tag)
+                                  :tags          #{tag}
+                                  :perm_tags     #{tag}
+                                  :sample        sample
+                                  :custom_fields {tag {:cnt cnt}}}
+                                 (when (> end-ts adjusted_ts)
+                                   {:adjusted_ts adjusted_ts}))]
                      (put-fn (with-meta [:entry/update entry] {:silent true}))
                      (put-fn [:entry/persist entry]))))))
         init-cb (fn [err res]

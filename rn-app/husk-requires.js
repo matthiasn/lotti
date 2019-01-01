@@ -19,7 +19,6 @@ var modules = {
     'react-native-snap-carousel': require('react-native-snap-carousel'),
     'react-native-swipeout': require('react-native-swipeout'),
     'react-native-deck-swiper': require('react-native-deck-swiper'),
-    'react-native-activity-recognition': require('react-native-activity-recognition'),
     'querystring': require('querystring'),
     'crypto-js': require('crypto-js'),
     'buffer': require('buffer'),
