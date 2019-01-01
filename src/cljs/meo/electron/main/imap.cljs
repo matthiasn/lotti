@@ -83,8 +83,7 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))
-                  (finally (.end conn))))]
+                  (catch :default e (do (error e) (.end conn)))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-audio [mailbox uid partID filename put-fn]
@@ -122,7 +121,7 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))))]
+                  (catch :default e (do (error e) (.end conn)))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-mailbox [[k mb-cfg] put-fn]
@@ -199,7 +198,7 @@
                                    (.once f "end" cb)))))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (error e))))]
+                  (catch :default e (do (error e) (.end conn)))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-email [{:keys [put-fn]}]
