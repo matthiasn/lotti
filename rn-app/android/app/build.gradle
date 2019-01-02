@@ -137,7 +137,6 @@ android {
 dependencies {
     compile project(':react-native-audio-recorder-player')
     compile project(':react-native-mailcore')
-    compile project(':react-native-activity-recognition')
     compile project(':react-native-contacts')
     compile project(':react-native-vector-icons')
     compile project(':react-native-camera')

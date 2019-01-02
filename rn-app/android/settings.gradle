@@ -3,8 +3,6 @@ include ':react-native-audio-recorder-player'
 project(':react-native-audio-recorder-player').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-audio-recorder-player/android')
 include ':react-native-mailcore'
 project(':react-native-mailcore').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-mailcore/android')
-include ':react-native-activity-recognition'
-project(':react-native-activity-recognition').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-activity-recognition/android')
 include ':react-native-contacts'
 project(':react-native-contacts').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-contacts/android')
 include ':react-native-vector-icons'

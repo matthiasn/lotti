@@ -7,7 +7,7 @@
 		"test": "jest"
 	},
 	"dependencies": {
-		"@mapbox/react-native-mapbox-gl": "6.1.2-beta2",
+		"@mapbox/react-native-mapbox-gl": "^6.1.3",
 		"babel-plugin-transform-es2015-block-scoping": "6.15.0",
 		"buffer": "5.1.0",
 		"create-react-class": "15.6.3",
@@ -35,7 +35,7 @@
 		"react-native-tabbar-bottom": "1.0.4",
 		"react-native-vector-icons": "4.6.0",
 		"react-navigation": "1.0.3",
-		"rn-apple-healthkit": "0.6.3",
+		"rn-apple-healthkit": "0.6.4",
 		"s": "0.1.1",
 		"stream": "0.0.2",
 		"timers": "0.1.1"

@@ -6,7 +6,6 @@ import com.facebook.react.ReactApplication;
 import com.dooboolab.RNAudioRecorderPlayerPackage;
 import com.reactlibrary.RNMailCorePackage;
 import com.rnfs.RNFSPackage;
-import com.xebia.activityrecognition.RNActivityRecognitionPackage;
 import com.rt2zz.reactnativecontacts.ReactNativeContacts;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
@@ -33,7 +32,6 @@ public class MainApplication extends Application implements ReactApplication {
             new RNAudioRecorderPlayerPackage(),
             new RNMailCorePackage(),
             new RNFSPackage(),
-            new RNActivityRecognitionPackage(),
             new ReactNativeContacts(),
             new VectorIconsPackage(),
             new RCTCameraPackage()

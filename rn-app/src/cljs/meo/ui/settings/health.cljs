@@ -32,11 +32,12 @@
           label]]))))
 
 (defn health-settings [local put-fn]
-  (let [weight-fn #(put-fn [:healthkit/weight])
-        bp-fn #(put-fn [:healthkit/bp])
-        theme (subscribe [:active-theme])
-        steps-fn #(dotimes [n 7] (put-fn [:healthkit/steps n]))
-        sleep-fn #(put-fn [:healthkit/sleep])]
+  (let [weight-fn (fn [n] #(put-fn [:healthkit/weight {:n n}]))
+        bp-fn     (fn [n] #(put-fn [:healthkit/bp {:n n}]))
+        hrv-fn    (fn [n] #(put-fn [:healthkit/hrv {:n n}]))
+        steps-fn  (fn [n] #(dotimes [i n] (put-fn [:healthkit/steps i])))
+        sleep-fn  (fn [n] #(put-fn [:healthkit/sleep {:n n}]))
+        theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             bg (get-in c/colors [:list-bg @theme])]
@@ -45,7 +46,12 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
-         [import-item weight-fn "Weight" "balance-scale"]
-         [import-item bp-fn "Blood Pressure" "heartbeat"]
-         [import-item steps-fn "Steps" "forward"]
-         [import-item sleep-fn "Sleep" "bed"]]))))
+         [import-item (weight-fn 3) "Weight 3d" "balance-scale"]
+         [import-item (weight-fn 365) "Weight 1y" "balance-scale"]
+         [import-item (bp-fn 3) "Blood Pressure 3d" "heartbeat"]
+         [import-item (bp-fn 365) "Blood Pressure 1y" "heartbeat"]
+         [import-item (steps-fn 3) "Steps 3d" "forward"]
+         [import-item (steps-fn 365) "Steps 1y" "forward"]
+         [import-item (sleep-fn 3) "Sleep 3d" "bed"]
+         [import-item (sleep-fn 365) "Sleep 1y" "bed"]
+         [import-item (hrv-fn 7) "Heart Rate Variability" "heartbeat"]]))))
