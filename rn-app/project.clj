@@ -15,11 +15,11 @@
                  [core-async-storage "0.3.1"]
                  [re-frame "0.10.6"]]
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-figwheel "0.5.18"]]
+            [lein-figwheel "0.5.17"]]
   :clean-targets ["target/" "index.ios.js" "index.android.js" #_($PLATFORM_CLEAN$)]
   :aliases {"prod-build" ["do" "clean" ["with-profile" "prod" "cljsbuild" "once" "ios"]]
             "prod-auto"  ["with-profile" "prod" "cljsbuild" "auto" "ios"]}
-  :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.18"]
+  :profiles {:dev  {:dependencies [[figwheel-sidecar "0.5.17"]
                                    [com.cemerick/piggieback "0.2.2"]]
                     :source-paths ["src" "env/dev"]
                     :cljsbuild    {:builds [{:id           "ios"

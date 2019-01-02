@@ -44,55 +44,68 @@
                            :id       :dashboard-questionnaires
                            :prio     15}])))))
 
-(defn dashboard [cfg]
+(defn charts-positions [dashboard habits]
+  (let [ts (:timestamp dashboard)
+        new-entry @(:new-entry (eu/entry-reaction ts))
+        entry (or new-entry dashboard)
+        items (:items (:dashboard_cfg entry))
+        item-filter #(if (= :habit_success (:type %))
+                       (get-in @habits [(:habit %) :habit_entry :habit :active])
+                       true)
+        items (filter item-filter items)
+        acc {:last-y 50
+             :last-h 0}
+        f (fn [acc m]
+            (let [{:keys [last-y last-h]} acc
+                  cfg (assoc-in m [:y] (+ last-y last-h))]
+              {:last-y (:y cfg)
+               :last-h (:h cfg 25)
+               :charts (conj (:charts acc) cfg)}))]
+    (reduce f acc items)))
+
+(defn dashboard [{:keys [days controls dashboard-ts]}]
   (let [gql-res2 (subscribe [:gql-res2])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
                        :play         true
                        :display-text ""})
-        pvt (subscribe [:show-pvt])]
+        pvt (subscribe [:show-pvt])
+        pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
+        active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
+        not-empty-filter (fn [x] (seq (get-in x [1 :dashboard_cfg :items])))
+        dashboards (reaction (->> @gql-res2
+                                  :dashboard_cfg
+                                  :res
+                                  (filter pvt-filter)
+                                  (filter active-filter)
+                                  (filter not-empty-filter)
+                                  (into {})))
+        dashboard (reaction
+                    (let [n (count @dashboards)
+                          dashboard-idx (min (:idx @local) (dec n))]
+                      (when (pos? n)
+                        (try
+                          (nth (vals @dashboards) dashboard-idx)
+                          (catch js/Object e (do
+                                               (error dashboard-idx e)
+                                               (first @dashboards)))))))
+        charts-pos (reaction (charts-positions @dashboard habits))
+        run-query #(let [dashboard-ts (:timestamp @dashboard)]
+                     (when (not= dashboard-ts (:dashboard-ts @local))
+                       (swap! local assoc :dashboard-ts dashboard-ts)
+                       (gql-query @charts-pos days local)))]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
+      (run-query)
       (info "dashboard render")
       (let [now (st/now)
-            pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
-            active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
-            not-empty-filter (fn [x] (seq (get-in x [1 :dashboard_cfg :items])))
-            dashboards (->> @gql-res2
-                            :dashboard_cfg
-                            :res
-                            (filter pvt-filter)
-                            (filter active-filter)
-                            (filter not-empty-filter)
-                            (into {}))
-            n (count dashboards)
-            dashboard-idx (min (:idx @local) (dec n))
-            dashboard (or (get dashboards dashboard-ts)
-                          (when (pos? n)
-                            (try
-                              (nth (vals dashboards) dashboard-idx)
-                              (catch js/Object e (do
-                                                   (error dashboard-idx e)
-                                                   (first dashboards))))))
-            charts-pos (let [ts (:timestamp dashboard)
-                             new-entry @(:new-entry (eu/entry-reaction ts))
-                             entry (or new-entry dashboard)
-                             items (:items (:dashboard_cfg entry))
-                             item-filter #(if (= :habit_success (:type %))
-                                            (get-in @habits [(:habit %) :habit_entry :habit :active])
-                                            true)
-                             items (filter item-filter items)
-                             acc {:last-y 50
-                                  :last-h 0}
-                             f (fn [acc m]
-                                 (let [{:keys [last-y last-h]} acc
-                                       cfg (assoc-in m [:y] (+ last-y last-h))]
-                                   {:last-y (:y cfg)
-                                    :last-h (:h cfg 25)
-                                    :charts (conj (:charts acc) cfg)}))]
-                         (reduce f acc items))
+            n (count @dashboards)
+            dashboard (or (get @dashboards dashboard-ts)
+                          @dashboard)
             next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
             prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
-            cycle (fn [f _] (swap! local update-in [:idx] f))
+            cycle (fn [f _]
+                    (run-query)
+                    (swap! local update-in [:idx] f))
             play (fn [_]
                    (let [f #(swap! local update-in [:idx] next-item)
                          t (js/setInterval f (* 5 60 1000))]
@@ -114,7 +127,7 @@
                     :local    local
                     :span     span
                     :days     days}
-            end-y (+ (:last-y charts-pos) (:last-h charts-pos))
+            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))
             text (eu/first-line dashboard)
             text (or (when-not (empty? text)
                        text)
@@ -123,7 +136,6 @@
                    (not (:timer @local)))
           (play nil))
         (when dashboard
-          (gql-query charts-pos days local)
           [:div.dashboard
            [:svg {:viewBox (str "0 0 " (* days 23) " " (+ end-y 6))
                   :style   {:background :white}
@@ -137,7 +149,7 @@
                      x (+ 200 scaled)]
                  ^{:key n}
                  [dc/tick x "#CCC" 1 30 end-y]))]
-            (for [chart-cfg (:charts charts-pos)]
+            (for [chart-cfg (:charts @charts-pos)]
               (let [chart-fn (case (:type chart-cfg)
                                :habit_success h/habits-chart
                                :questionnaire ds/scores-chart
@@ -171,7 +183,7 @@
            [:div.controls
             [:h2 text]
             [:span.display-text (:display-text @local)]
-            (when (and controls (< 1 (count dashboards)))
+            (when (and controls (< 1 (count @dashboards)))
               [:div.btns
                ;[:i.fas.fa-cog {:on-click open-cfg}]
                [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
