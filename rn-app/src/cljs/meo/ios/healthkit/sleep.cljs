@@ -24,9 +24,7 @@
                                   :md             text
                                   :tags           #{tag}
                                   :perm_tags      #{tag}
-                                  :custom_fields  {tag {:duration minutes}}
-                                  :linked_stories #{1479889430353}
-                                  :primary_story  1479889430353}]
+                                  :custom_fields  {tag {:duration minutes}}}]
                        (put-fn (with-meta [:entry/update entry] {:silent true}))
                        (put-fn [:entry/persist entry]))))
         init-cb (fn [err res] (.getSleepSamples hc/health-kit sleep-opts sleep-cb))]

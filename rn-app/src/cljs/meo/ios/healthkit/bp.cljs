@@ -34,7 +34,21 @@
 
 (defn heart-rate-variability [{:keys [put-fn msg-payload]}]
   (let [hrv-opts (clj->js {:startDate (hc/days-ago (:n msg-payload))})
-        hrv-cb (fn [err res] (.warn js/console res))
+        hrv-cb (fn [err res]
+                 (.warn js/console res)
+                 (doseq [sample (js->clj res)]
+                   (let [v (get-in sample ["value"])
+                         end-date (get-in sample ["endDate"])
+                         end-ts (.valueOf (hc/moment end-date))
+                         v (* 1000 (js/parseFloat v))
+                         entry {:timestamp     end-ts
+                                :md            (str (int v) "ms")
+                                :tags          #{"#HRV"}
+                                :perm_tags     #{"#HRV"}
+                                :sample        sample
+                                :custom_fields {"#HRV" {:sdnn v}}}]
+                     (put-fn (with-meta [:entry/update entry] {:silent true}))
+                     (put-fn [:entry/persist entry]))))
         init-cb (fn [err res]
                   (.getHeartRateVariabilitySamples hc/health-kit hrv-opts hrv-cb))]
     (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))

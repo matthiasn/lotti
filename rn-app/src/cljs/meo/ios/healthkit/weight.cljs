@@ -7,12 +7,9 @@
 
 (defn get-weight [{:keys [put-fn msg-payload]}]
   (let [n (:n msg-payload)
-        weight-opts (clj->js {:unit      "gram"
-                              :startDate (hc/days-ago n)})
-        bodyfat-opts (clj->js {:unit      "percent"
-                               :startDate (hc/days-ago n)})
-        bmi-opts (clj->js {:unit      "count"
-                           :startDate (hc/days-ago n)})
+        weight-opts  (clj->js {:unit "gram"    :startDate (hc/days-ago n)})
+        bodyfat-opts (clj->js {:unit "percent" :startDate (hc/days-ago n)})
+        bmi-opts     (clj->js {:unit "count"   :startDate (hc/days-ago n)})
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
@@ -20,11 +17,11 @@
                             end-ts (.valueOf (hc/moment end-date))
                             grams (js/parseInt v)
                             kg (/ grams 1000)
-                            entry {:timestamp      end-ts
-                                   :md             (str kg " #weight")
-                                   :tags           #{"#weight"}
-                                   :sample         sample
-                                   :custom_fields  {"#weight" {:weight kg}}}]
+                            entry {:timestamp     (+ end-ts 100)
+                                   :md            (str kg " #weight")
+                                   :tags          #{"#weight"}
+                                   :sample        sample
+                                   :custom_fields {"#weight" {:weight kg}}}]
                         (put-fn (with-meta [:entry/update entry] {:silent true}))
                         (put-fn [:entry/persist entry]))))
         bodyfat-cb (fn [err res]
@@ -33,7 +30,7 @@
                            v (get-in sample ["value"])
                            end-date (get-in sample ["endDate"])
                            end-ts (.valueOf (hc/moment end-date))
-                           entry {:timestamp     end-ts
+                           entry {:timestamp     (+ end-ts 110)
                                   :md            (str v "% #body-fat")
                                   :tags          #{"#body-fat"}
                                   :perm_tags     #{"#body-fat"}
@@ -45,17 +42,16 @@
                  (.warn js/console "bmi" res)
                  (let [sample (js->clj res)
                        v (get-in sample ["value"])
-                       start-date (get-in sample ["startDate"])
                        end-date (get-in sample ["endDate"])
-                       start-ts (.valueOf (hc/moment start-date))
-                       entry {:timestamp     start-ts
-                              :md            (str v "% #bmi")
+                       end-ts (.valueOf (hc/moment end-date))
+                       entry {:timestamp     (+ end-ts 120)
+                              :md            (str v " #bmi")
                               :tags          #{"#bmi"}
                               :perm_tags     #{"#bmi"}
                               :sample        sample
                               :custom_fields {"#bmi" {:bmi v}}}]
                    (put-fn (with-meta [:entry/update entry] {:silent true}))
-                   (put-fn [:entry/persist entry])) )
+                   (put-fn [:entry/persist entry])))
         init-cb (fn [err res]
                   (.getWeightSamples hc/health-kit weight-opts weight-cb)
                   (.getLatestBodyFatPercentage hc/health-kit bodyfat-opts bodyfat-cb)

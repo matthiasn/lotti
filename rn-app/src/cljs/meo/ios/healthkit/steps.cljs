@@ -1,7 +1,7 @@
 (ns meo.ios.healthkit.steps
   (:require [meo.ios.healthkit.common :as hc]))
 
-(defn cb [dt tag k xf put-fn err res]
+(defn cb [dt tag k xf offset put-fn err res]
   (let [sample (js->clj res)
         v (get-in sample ["value"])
         end-date (get-in sample ["endDate"])]
@@ -11,12 +11,12 @@
                             (.set "hour" 23)
                             (.set "minute" 59)
                             (.set "second" 59)
-                            (.set "millisecond" 747)
+                            (.set "millisecond" offset)
                             .valueOf)
             v (js/parseInt v)
             v (if xf (xf v) v)
             entry (merge
-                    {:timestamp     end-ts
+                    {:timestamp     (+ end-ts offset)
                      :md            (str v " " tag)
                      :tags          #{tag}
                      :perm_tags     #{tag}
@@ -30,10 +30,10 @@
 (defn get-steps [{:keys [msg-payload put-fn]}]
   (let [dt (hc/days-ago msg-payload)
         opts (clj->js {:date dt})
-        distance-cb (partial cb dt "#DistanceWalkingRunning" :distance_walking_running #(/ % 1000) put-fn)
-        cycling-cb (partial cb dt "#DistanceCycling" :distance_cycling  #(/ % 1000) put-fn)
-        steps-cb (partial cb dt "#steps" :cnt nil put-fn)
-        flights-of-stairs-cb (partial cb dt "#flights-of-stairs" :cnt nil put-fn)
+        distance-cb (partial cb dt "#DistanceWalkingRunning" :distance_walking_running #(/ % 1000) 10 put-fn)
+        cycling-cb (partial cb dt "#DistanceCycling" :distance_cycling  #(/ % 1000) 20 put-fn)
+        steps-cb (partial cb dt "#steps" :cnt nil 30 put-fn)
+        flights-of-stairs-cb (partial cb dt "#flights-of-stairs" :cnt nil 40 put-fn)
         init-cb (fn [err res]
                   (.getStepCount hc/health-kit opts steps-cb)
                   (.getFlightsClimbed hc/health-kit opts flights-of-stairs-cb)
