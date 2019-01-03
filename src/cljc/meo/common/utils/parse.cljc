@@ -12,7 +12,7 @@
 (def search-opts-regex (re-pattern "(?m)(:[-a-zA-Z]{4,12})"))
 (def cc-regex (re-pattern "(?m)(cc:)([a-zA-Z]{2})"))
 (def entry-tag-regex
-  (re-pattern (str "(?m)(?!^) ?#" tag-char-cls "+(?!" tag-char-cls ")")))
+  (re-pattern (str "(?m) ?#" tag-char-cls "+(?!" tag-char-cls ")")))
 (def entry-mentions-regex
   (re-pattern (str "(?m) ?@" tag-char-cls "+(?!" tag-char-cls ")")))
 (def date-regex #"(?m)(?:^|[^:])([0-9]{4}-[0-9]{2}-[0-9]{2})")

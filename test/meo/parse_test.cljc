@@ -24,8 +24,13 @@
 
 (def test-entry3
   {:mentions #{"@myself" "@JohnDoe"}
-   :tags     #{"#tag2" "#tag3"}
+   :tags     #{"#tag1" "#tag2" "#tag3"}
    :md       "#tag1 #tag2 #tag3 @JohnDoe @myself"})
+
+(def test-entry4
+  {:mentions #{"@myself" "@JohnDoe"}
+   :tags     #{"#tag1"}
+   :md       "# foo bar headline #tag1 @JohnDoe @myself"})
 
 (deftest parse-entry-test
   (testing "empty entry is parsed correctly"
@@ -34,9 +39,10 @@
     (is (= (p/parse-entry (:md test-entry)) test-entry)))
   (testing "test-entry2 is parsed correctly"
     (is (= (p/parse-entry (:md test-entry2)) test-entry2)))
-  (testing "test-entry3 is parsed correctly: # at
-            beginning of line not parsed as that's reserved for markdown headlines."
-    (is (= (p/parse-entry (:md test-entry3)) test-entry3))))
+  (testing "test-entry3 is parsed correctly: # at beginning of line, too"
+    (is (= (p/parse-entry (:md test-entry3)) test-entry3)))
+  (testing "test-entry4 is parsed correctly: # in headline ignored"
+    (is (= (p/parse-entry (:md test-entry4)) test-entry4))))
 
 
 (def empty-search
