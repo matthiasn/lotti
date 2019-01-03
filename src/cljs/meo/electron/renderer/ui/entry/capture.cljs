@@ -19,6 +19,7 @@
         value (if (and value (= :time input-type))
                 (h/m-to-hh-mm value)
                 value)
+        local (r/atom {:value value})
         on-change-fn
         (fn [ev]
           (let [v (.. ev -target -value)
@@ -28,6 +29,7 @@
                                  (.asMinutes (.duration moment v)))
                          v)
                 updated (assoc-in entry path parsed)]
+            (swap! local assoc :value v)
             (emit [:entry/update-local updated])))
         input-cfg (merge
                     input-cfg
@@ -50,14 +52,16 @@
             (let [m (.asMinutes (.duration moment v))
                   updated (assoc-in entry path m)]
               (emit [:entry/update-local updated]))))))
-    [:tr
-     [:td [:label (:label field)]]
-     [:td
-      (if (= input-type :switch)
-        [uc/switch {:entry    entry
-                    :msg-type :entry/update
-                    :path     path}]
-        [:input input-cfg])]]))
+    (fn [entry edit-mode? field tag k]
+      [:tr
+       [:td [:label (:label field)]]
+       [:td
+        (if (= input-type :switch)
+          [uc/switch {:entry    entry
+                      :msg-type :entry/update
+                      :path     path}]
+          [:input (merge input-cfg
+                         @local)])]])))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."

@@ -3,20 +3,25 @@
             [meo.utils.misc :as um]
             [meo.helpers :as h]
             [matthiasn.systems-toolbox.component :as st]
-            [meo.ios.healthkit.common :as hc]))
+            [meo.ios.healthkit.common :as hc]
+            [cljs.pprint :as pprint]))
+
+(defn round [n d]
+  (let [fmt (str "~," d "f")]
+    (js/parseFloat (pprint/cl-format nil fmt n))))
 
 (defn get-weight [{:keys [put-fn msg-payload]}]
   (let [n (:n msg-payload)
-        weight-opts  (clj->js {:unit "gram"    :startDate (hc/days-ago n)})
+        weight-opts (clj->js {:unit "gram" :startDate (hc/days-ago n)})
         bodyfat-opts (clj->js {:unit "percent" :startDate (hc/days-ago n)})
-        bmi-opts     (clj->js {:unit "count"   :startDate (hc/days-ago n)})
+        bmi-opts (clj->js {:unit "count" :startDate (hc/days-ago n)})
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
                             end-date (get-in sample ["endDate"])
                             end-ts (.valueOf (hc/moment end-date))
                             grams (js/parseInt v)
-                            kg (/ grams 1000)
+                            kg (round (/ grams 1000) 1)
                             entry {:timestamp     (+ end-ts 100)
                                    :md            (str kg " #weight")
                                    :tags          #{"#weight"}
@@ -28,6 +33,7 @@
                      (.warn js/console "bodyfat" res)
                      (let [sample (js->clj res)
                            v (get-in sample ["value"])
+                           v (round v 1)
                            end-date (get-in sample ["endDate"])
                            end-ts (.valueOf (hc/moment end-date))
                            entry {:timestamp     (+ end-ts 110)
@@ -44,6 +50,7 @@
                        v (get-in sample ["value"])
                        end-date (get-in sample ["endDate"])
                        end-ts (.valueOf (hc/moment end-date))
+                       v (round v 1)
                        entry {:timestamp     (+ end-ts 120)
                               :md            (str v " #bmi")
                               :tags          #{"#bmi"}
