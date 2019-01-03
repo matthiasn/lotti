@@ -19,4 +19,5 @@
              "BloodPressureDiastolic" "BloodPressureSystolic" "HeartRate"
              "DistanceWalkingRunning" "SleepAnalysis" "RespiratoryRate"
              "DistanceCycling" "MindfulSession" "ActiveEnergyBurned"
-             "BodyFatPercentage" "HeartRateVariability"]}}))
+             "BodyFatPercentage" "HeartRateVariability"
+             "WalkingHeartRateAverage" "RestingHeartRate"]}}))
