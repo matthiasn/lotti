@@ -57,9 +57,9 @@
                    (let [v (get-in sample ["value"])
                          end-date (get-in sample ["endDate"])
                          end-ts (.valueOf (hc/moment end-date))
-                         v (* 1000 (js/parseFloat v))
+                         v (int (* 1000 v))
                          entry {:timestamp     end-ts
-                                :md            (str (int v) "ms")
+                                :md            (str v " ms #HRV")
                                 :tags          #{"#HRV"}
                                 :perm_tags     #{"#HRV"}
                                 :sample        sample
