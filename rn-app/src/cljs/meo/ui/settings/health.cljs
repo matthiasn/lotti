@@ -13,12 +13,12 @@
             text-color (get-in c/colors [:text @theme])]
         [touchable-opacity {:on-press click
                             :style    {:margin-top       3
-                                       :padding          20
+                                       :padding          16
                                        :width            "100%"
                                        :background-color item-bg
                                        :justify-content  "flex-start"
                                        :align-items      "center"
-                                       :height           60
+                                       :height           50
                                        :flex-direction   "row"}}
          [view {:style {:width      44
                         :text-align :center}}
@@ -33,10 +33,12 @@
 
 (defn health-settings [local put-fn]
   (let [weight-fn (fn [n] #(put-fn [:healthkit/weight {:n n}]))
-        bp-fn     (fn [n] #(put-fn [:healthkit/bp {:n n}]))
-        hrv-fn    (fn [n] #(put-fn [:healthkit/hrv {:n n}]))
-        steps-fn  (fn [n] #(dotimes [i n] (put-fn [:healthkit/steps i])))
-        sleep-fn  (fn [n] #(put-fn [:healthkit/sleep {:n n}]))
+        bp-fn (fn [n] #(put-fn [:healthkit/bp {:n n}]))
+        hrv-fn (fn [n] #(put-fn [:healthkit/hrv {:n n}]))
+        steps-fn (fn [n] #(dotimes [i n] (put-fn [:healthkit/steps i])))
+        energy-fn (fn [n] #(put-fn [:healthkit/energy {:n n}]))
+        sleep-fn (fn [n] #(put-fn [:healthkit/sleep {:n n}]))
+        exercise-fn (fn [n] #(put-fn [:healthkit/exercise {:n n}]))
         theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -50,8 +52,11 @@
          [import-item (weight-fn 365) "Weight 1y" "balance-scale"]
          [import-item (bp-fn 3) "Blood Pressure 3d" "heartbeat"]
          [import-item (bp-fn 365) "Blood Pressure 1y" "heartbeat"]
+         [import-item (exercise-fn 90) "Exercise 3d" "forward"]
          [import-item (steps-fn 3) "Steps 3d" "forward"]
          [import-item (steps-fn 365) "Steps 1y" "forward"]
+         [import-item (energy-fn 3) "Energy 3d" "bolt"]
+         [import-item (energy-fn 365) "Energy 1y" "bolt"]
          [import-item (sleep-fn 3) "Sleep 3d" "bed"]
          [import-item (sleep-fn 365) "Sleep 1y" "bed"]
          [import-item (hrv-fn 7) "Heart Rate Variability" "heartbeat"]]))))
