@@ -1,14 +1,16 @@
 (ns meo.ios.healthkit.energy
-  (:require [meo.ios.healthkit.common :as hc]))
+  (:require [meo.ios.healthkit.common :as hc]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn res-cb [tag k offset put-fn err res]
   (when err (.error js/console err))
   (doseq [sample (js->clj res)]
     (let [v (get-in sample ["value"])
           end-date (get-in sample ["endDate"])
-          end-ts (.valueOf (hc/moment end-date))
+          end-ts (- (.valueOf (hc/moment end-date)) offset)
+          now (st/now)
           v (int v)
-          entry {:timestamp     (- end-ts offset)
+          entry {:timestamp     (if (> end-ts now) (- now offset) end-ts)
                  :md            (str v " kcal " tag)
                  :tags          #{tag}
                  :perm_tags     #{tag}
