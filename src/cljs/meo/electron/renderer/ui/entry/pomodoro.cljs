@@ -10,7 +10,8 @@
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn pomodoro-time [entry _edit-mode?]
-  (let [local (r/atom {:edit false})
+  (let [local (r/atom {:edit  false
+                       :value (h/s-to-hh-mm (:completed_time entry 0))})
         time-click #(swap! local assoc-in [:edit] true)
         busy-status (subscribe [:busy-status])
         running-pomodoro (subscribe [:running-pomodoro])]
@@ -22,13 +23,14 @@
                               parsed (when (seq v)
                                        (* 60 (.asMinutes (.duration moment v))))
                               updated (assoc-in entry [:completed_time] parsed)]
+                          (swap! local assoc :value v)
                           (emit [:entry/update-local updated])))
             running? (and (:pomodoro-running entry)
                           (= @running-pomodoro (:timestamp entry))
                           (< (- (st/now) (or (:last @busy-status) 0)) 2000))]
         [:div.pomodoro
          (if (and edit-mode? (:edit @local) (not running?))
-           [:input {:value     (h/s-to-hh-mm completed-time)
+           [:input {:value     (:value @local)
                     :type      :time
                     :on-change on-change}]
            [:div.dur {:on-click time-click}

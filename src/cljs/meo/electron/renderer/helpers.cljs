@@ -102,7 +102,8 @@
           parsed (when (seq v) (.asMinutes (.duration moment v)))
           updated (assoc-in entry path parsed)]
       (when parsed
-        (emit [:entry/update-local updated])))))
+        (emit [:entry/update-local updated]))
+      v)))
 
 (def ymd-format "YYYY-MM-DD")
 (defn n-days-ago [n] (.subtract (moment.) n "d"))

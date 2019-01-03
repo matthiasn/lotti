@@ -10,6 +10,21 @@
             [clojure.pprint :as pp]
             [meo.electron.renderer.ui.ui-components :as uc]))
 
+(defn allocation-row [entry]
+  (let [allocation (h/m-to-hh-mm (or (get-in entry [:task :estimate_m]) 0))
+        local (r/atom {:value allocation})]
+    (fn [entry]
+      (let [on-change (fn [ev]
+                        (let [f (h/update-time entry [:task :estimate_m])
+                              v (f ev)]
+                          (swap! local assoc :value v)))]
+        [:div.row
+         [:label "Allocation: "]
+         [:input {:on-change   on-change
+                  :on-key-down (h/key-down-save entry)
+                  :value       (:value @local)
+                  :type        :time}]]))))
+
 (defn task-details [entry local-cfg edit-mode?]
   (let [local (r/atom {:show false})]
     (fn [entry local-cfg edit-mode?]
@@ -103,9 +118,4 @@
                       :on-change   (h/update-numeric entry [:task :points])
                       :on-key-down (h/key-down-save entry)
                       :value       (get-in entry [:task :points] 0)}]]
-            [:div.row
-             [:label "Allocation: "]
-             [:input {:on-change   (h/update-time entry [:task :estimate_m])
-                      :on-key-down (h/key-down-save entry)
-                      :value       (when allocation (h/m-to-hh-mm allocation))
-                      :type        :time}]]])]))))
+            [allocation-row entry]])]))))
