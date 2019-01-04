@@ -85,11 +85,6 @@
                           {:label "Album" :click new-album}
                           {:label "Dashboard" :click new-dashboard}
                           {:label "Custom Field" :click new-custom-field}]}
-
-               (when (contains? capabilities :sync-swift)
-                 {:label       "Upload"
-                  :accelerator "CmdOrCtrl+U"
-                  :click       #(put-fn [:import/listen])})
                {:label   "Import"
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"

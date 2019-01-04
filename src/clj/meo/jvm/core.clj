@@ -10,7 +10,6 @@
             [meo.jvm.firehose :as fh]
             [meo.jvm.store :as st]
             [meo.jvm.fulltext-search :as ft]
-            [meo.jvm.upload :as up]
             [meo.jvm.playground :as pg]
             [meo.jvm.backup :as bak]
             [meo.jvm.imports :as i]
@@ -29,7 +28,6 @@
     (st/cmp-map :backend/store)
     (pg/cmp-map :backend/playground)
     (bak/cmp-map :backend/backup)
-    (up/cmp-map :backend/upload switchboard)
     (ft/cmp-map :backend/ft)})
 
 (defn make-observable [components]
@@ -52,7 +50,6 @@
      [:cmd/route {:from :backend/ws
                   :to   #{:backend/store
                           :backend/export
-                          :backend/upload
                           :backend/playground
                           :backend/imports}}]
 
@@ -63,11 +60,6 @@
      [:cmd/route {:from #{:backend/imports}
                   :to   :backend/ws}]
 
-     [:cmd/route {:from :backend/upload
-                  :to   #{:backend/store
-                          :backend/scheduler
-                          :backend/ws}}]
-
      [:cmd/route {:from :backend/store
                   :to   #{:backend/ws
                           :backend/ft}}]
@@ -76,11 +68,9 @@
                   :to   #{:backend/store
                           :backend/backup
                           :backend/imports
-                          :backend/upload
                           :backend/ws}}]
 
      [:cmd/route {:from #{:backend/store
-                          :backend/upload
                           :backend/backup
                           :backend/imports}
                   :to   :backend/scheduler}]

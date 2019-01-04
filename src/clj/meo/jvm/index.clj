@@ -19,8 +19,6 @@
 (defn routes-fn [_put-fn]
   [(r/files "/audio" {:root (str fu/data-path "/audio/")})
    (GET "/package.json" [] package-json)
-   qr/address-route
-   qr/ws-address-route
    qr/secrets-route
    mt/map-tile-route
    h/help-img-route

@@ -9,28 +9,6 @@
             [clj-time.core :as t]
             [clj-time.coerce :as c]))
 
-(defn import-visits-fn
-  [rdr put-fn msg-meta filename]
-  (try
-    (let [lines (line-seq rdr)]
-      (doseq [line lines]
-        (let [raw-visit (cc/parse-string line keyword)
-              {:keys [arrival_ts departure_ts]} (u/visit-timestamps raw-visit)
-              fmt (f/formatters :hour-minute-second)
-              dur (when departure_ts
-                    (f/unparse fmt (c/from-long (- departure_ts arrival_ts))))
-              visit (merge raw-visit
-                           {:timestamp arrival_ts
-                            :md        (if dur
-                                         (str "Duration: " dur " #visit")
-                                         "No departure recorded #visit")
-                            :tags      #{"#import"}
-                            :perm_tags #{"#visit"}})]
-          (if-not (neg? (:timestamp visit))
-            (put-fn (with-meta [:entry/import visit] msg-meta))
-            (warn "negative timestamp?" visit)))))
-    (catch Exception ex (error "Error while importing " filename ex))))
-
 (defn update-audio-tag [entry]
   (if (:audio_file entry)
     (assoc-in entry [:perm_tags] #{"#audio"})
