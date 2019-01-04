@@ -6,30 +6,49 @@
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]))
 
+(defn start-watching [])
+
 (defn import-item [click label icon-name]
   (let [theme (subscribe [:active-theme])]
     (fn [click label icon-name]
       (let [item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
-        [touchable-opacity {:on-press click
-                            :style    {:margin-top       3
-                                       :padding          16
-                                       :width            "100%"
-                                       :background-color item-bg
-                                       :justify-content  "flex-start"
-                                       :align-items      "center"
-                                       :height           50
-                                       :flex-direction   "row"}}
-         [view {:style {:width      44
-                        :text-align :center}}
-          [icon {:name  icon-name
+        [view {:style {:margin-top       3
+                       :width            "100%"
+                       :background-color item-bg
+                       :justify-content  "space-between"
+                       :align-items      "center"
+                       :flex-direction   "row"}}
+         [touchable-opacity {:on-press click
+                             :style    {:text-align       :left
+                                        :display          :flex
+                                        :flex-direction   :row
+                                        :margin-top       3
+                                        :padding          16
+                                        :background-color item-bg
+                                        :justify-content  "start"
+                                        :align-items      :center
+                                        :height           50}}
+          [view {:style {:width      44
+                         :text-align :center}}
+           [icon {:name  icon-name
+                  :size  20
+                  :style {:color      text-color
+                          :text-align :center}}]]
+          [text {:style {:color       text-color
+                         :font-size   20
+                         :margin-left 20}}
+           label]]
+         [touchable-opacity {:on-press click
+                             :style    {:width       80
+                                        :height      50
+                                        :display     :flex
+                                        :align-items :center}}
+          [icon {:name  "refresh"
                  :size  20
                  :style {:color      text-color
-                         :text-align :center}}]]
-         [text {:style {:color       text-color
-                        :font-size   20
-                        :margin-left 20}}
-          label]]))))
+                         :text-align :center
+                         :padding    16}}]]]))))
 
 (defn health-settings [local put-fn]
   (let [weight-fn (fn [n] #(put-fn [:healthkit/weight {:n n}]))
