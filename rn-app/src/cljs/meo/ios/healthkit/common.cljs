@@ -7,10 +7,13 @@
 (def health-kit (js/require "rn-apple-healthkit"))
 (def moment (js/require "moment"))
 
-(defn days-ago [n]
-  (let [offset (* n 24 60 60 1000)
-        date (js/Date. (- (st/now) offset))]
+(defn date-from-ts [ts]
+  (let [date (js/Date. ts)]
     (.toISOString date)))
+
+(defn days-ago [n]
+  (let [offset (* n 24 60 60 1000)]
+    (date-from-ts (- (st/now) offset))))
 
 (def health-kit-opts
   (clj->js

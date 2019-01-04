@@ -1,43 +1,40 @@
 (ns meo.ios.healthkit.steps
-  (:require [meo.ios.healthkit.common :as hc]))
+  (:require [meo.ios.healthkit.common :as hc]
+            [matthiasn.systems-toolbox.component :as st]))
 
-(defn cb [dt tag k xf offset put-fn err res]
-  (let [sample (js->clj res)
-        v (get-in sample ["value"])
-        end-date (get-in sample ["endDate"])]
-    (when v
-      (let [end-ts (.valueOf (hc/moment end-date))
-            adjusted_ts (-> (hc/moment dt)
-                            (.set "hour" 23)
-                            (.set "minute" 59)
-                            (.set "second" 59)
-                            (.set "millisecond" offset)
-                            .valueOf)
-            v (js/parseInt v)
-            v (if xf (xf v) v)
-            entry (merge
-                    {:timestamp     (+ end-ts offset)
-                     :md            (str v " " tag)
-                     :tags          #{tag}
-                     :perm_tags     #{tag}
-                     :sample        sample
-                     :custom_fields {tag {k v}}}
-                    (when (> end-ts adjusted_ts)
-                      {:adjusted_ts adjusted_ts}))]
-        (put-fn (with-meta [:entry/update entry] {:silent true}))
-        (put-fn [:entry/persist entry])))))
+(defn cb [tag k xf offset put-fn err res]
+  (when err (.error js/console err))
+  (doseq [sample (js->clj res)]
+    (let [v (get-in sample ["value"])
+          end-date (get-in sample ["endDate"])
+          end-ts (.valueOf (hc/moment end-date))
+          now (st/now)
+          v (int v)
+          v (if xf (xf v) v)
+          entry {:timestamp     (if (> end-ts now) (- now offset) (- end-ts offset))
+                 :md            (str v " " tag)
+                 :tags          #{tag}
+                 :perm_tags     #{tag}
+                 :sample        sample
+                 :custom_fields {tag {k v}}}]
+      (put-fn (with-meta [:entry/update entry] {:silent true}))
+      (put-fn [:entry/persist entry]))))
 
-(defn get-steps [{:keys [msg-payload put-fn]}]
-  (let [dt (hc/days-ago msg-payload)
-        opts (clj->js {:date dt})
-        distance-cb (partial cb dt "#DistanceWalkingRunning" :distance_walking_running #(/ % 1000) 10 put-fn)
-        cycling-cb (partial cb dt "#DistanceCycling" :distance_cycling  #(/ % 1000) 20 put-fn)
-        steps-cb (partial cb dt "#steps" :cnt nil 30 put-fn)
-        flights-of-stairs-cb (partial cb dt "#flights-of-stairs" :cnt nil 40 put-fn)
+(defn get-steps [{:keys [msg-payload put-fn current-state]}]
+  (let [store-k :last-read-steps
+        start (or (store-k current-state)
+                  (hc/days-ago (:n msg-payload)))
+        opts (clj->js {:startDate start})
+        now-dt (hc/date-from-ts (st/now))
+        distance-cb (partial cb  "#DistanceWalkingRunning" :distance_walking_running #(/ % 1000) 10 put-fn)
+        cycling-cb (partial cb "#DistanceCycling" :distance_cycling #(/ % 1000) 20 put-fn)
+        steps-cb (partial cb "#steps" :cnt nil 30 put-fn)
+        flights-of-stairs-cb (partial cb "#flights-of-stairs" :cnt nil 40 put-fn)
         init-cb (fn [err res]
-                  (.getStepCount hc/health-kit opts steps-cb)
-                  (.getFlightsClimbed hc/health-kit opts flights-of-stairs-cb)
-                  (.getDistanceWalkingRunning hc/health-kit opts distance-cb)
-                  (.getDistanceCycling hc/health-kit opts cycling-cb))]
-    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))
-  {})
+                  (.getDailyStepCountSamples hc/health-kit opts steps-cb)
+                  (.getDailyFlightsClimbedSamples hc/health-kit opts flights-of-stairs-cb)
+                  (.getDailyDistanceWalkingRunningSamples hc/health-kit opts distance-cb)
+                  (.getDailyDistanceCyclingSamples hc/health-kit opts cycling-cb))
+        new-state (assoc current-state store-k now-dt)]
+    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb)
+    {:new-state new-state}))

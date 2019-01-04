@@ -35,7 +35,7 @@
   (let [weight-fn (fn [n] #(put-fn [:healthkit/weight {:n n}]))
         bp-fn (fn [n] #(put-fn [:healthkit/bp {:n n}]))
         hrv-fn (fn [n] #(put-fn [:healthkit/hrv {:n n}]))
-        steps-fn (fn [n] #(dotimes [i n] (put-fn [:healthkit/steps i])))
+        steps-fn (fn [n] #(put-fn [:healthkit/steps {:n n}]))
         energy-fn (fn [n] #(put-fn [:healthkit/energy {:n n}]))
         sleep-fn (fn [n] #(put-fn [:healthkit/sleep {:n n}]))
         exercise-fn (fn [n] #(put-fn [:healthkit/exercise {:n n}]))
@@ -48,15 +48,10 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
-         [import-item (weight-fn 3) "Weight 3d" "balance-scale"]
-         [import-item (weight-fn 365) "Weight 1y" "balance-scale"]
-         [import-item (bp-fn 3) "Blood Pressure 3d" "heartbeat"]
-         [import-item (bp-fn 365) "Blood Pressure 1y" "heartbeat"]
-         [import-item (exercise-fn 90) "Exercise 3d" "forward"]
-         [import-item (steps-fn 3) "Steps 3d" "forward"]
-         [import-item (steps-fn 365) "Steps 1y" "forward"]
-         [import-item (energy-fn 3) "Energy 3d" "bolt"]
-         [import-item (energy-fn 365) "Energy 1y" "bolt"]
-         [import-item (sleep-fn 3) "Sleep 3d" "bed"]
-         [import-item (sleep-fn 365) "Sleep 1y" "bed"]
-         [import-item (hrv-fn 7) "Heart Rate Variability" "heartbeat"]]))))
+         [import-item (weight-fn 30) "Weight" "balance-scale"]
+         [import-item (bp-fn 30) "Blood Pressure" "heartbeat"]
+         [import-item (exercise-fn 30) "Exercise" "forward"]
+         [import-item (steps-fn 30) "Steps" "forward"]
+         [import-item (energy-fn 30) "Energy" "bolt"]
+         [import-item (sleep-fn 30) "Sleep" "bed"]
+         [import-item (hrv-fn 30) "Heart Rate Variability" "heartbeat"]]))))

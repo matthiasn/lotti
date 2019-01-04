@@ -19,12 +19,16 @@
       (put-fn (with-meta [:entry/update entry] {:silent true}))
       (put-fn [:entry/persist entry]))))
 
-(defn get-energy [{:keys [msg-payload put-fn]}]
-  (let [opts (clj->js {:startDate (hc/days-ago (:n msg-payload))})
+(defn get-energy [{:keys [msg-payload put-fn current-state]}]
+  (let [start (or (:last-read-energy current-state)
+                  (hc/days-ago (:n msg-payload)))
+        now-dt (hc/date-from-ts (st/now))
+        opts (clj->js {:startDate start})
         basal-energy-cb (partial res-cb "#BasalEnergyBurned" :kcal 500 put-fn)
         active-energy-cb (partial res-cb "#ActiveEnergyBurned" :kcal 499 put-fn)
         init-cb (fn [err res]
                   (.getBasalEnergyBurned hc/health-kit opts basal-energy-cb)
-                  (.getActiveEnergyBurned hc/health-kit opts active-energy-cb))]
-    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))
-  {})
+                  (.getActiveEnergyBurned hc/health-kit opts active-energy-cb))
+        new-state (assoc current-state :last-read-energy now-dt)]
+    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb)
+    {:new-state new-state}))

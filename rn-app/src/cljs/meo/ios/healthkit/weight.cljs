@@ -10,11 +10,13 @@
   (let [fmt (str "~," d "f")]
     (js/parseFloat (pprint/cl-format nil fmt n))))
 
-(defn get-weight [{:keys [put-fn msg-payload]}]
-  (let [n (:n msg-payload)
-        weight-opts (clj->js {:unit "gram" :startDate (hc/days-ago n)})
-        bodyfat-opts (clj->js {:unit "percent" :startDate (hc/days-ago n)})
-        bmi-opts (clj->js {:unit "count" :startDate (hc/days-ago n)})
+(defn get-weight [{:keys [put-fn msg-payload current-state]}]
+  (let [start (or (:last-read-weight current-state)
+                  (hc/days-ago (:n msg-payload)))
+        weight-opts (clj->js {:unit "gram" :startDate start})
+        bodyfat-opts (clj->js {:unit "percent" :startDate start})
+        bmi-opts (clj->js {:unit "count" :startDate start})
+        now-dt (hc/date-from-ts (st/now))
         weight-cb (fn [err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
@@ -62,6 +64,7 @@
         init-cb (fn [err res]
                   (.getWeightSamples hc/health-kit weight-opts weight-cb)
                   (.getLatestBodyFatPercentage hc/health-kit bodyfat-opts bodyfat-cb)
-                  (.getLatestBmi hc/health-kit bmi-opts bmi-cb))]
-    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))
-  {})
+                  (.getLatestBmi hc/health-kit bmi-opts bmi-cb))
+        new-state (assoc current-state :last-read-weight now-dt)]
+    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb)
+    {:new-state new-state}))

@@ -5,9 +5,11 @@
             [meo.ios.healthkit.common :as hc]
             [matthiasn.systems-toolbox.component :as st]))
 
-(defn get-sleep-samples [{:keys [put-fn msg-payload]}]
-  (let [n (:n msg-payload)
-        sleep-opts (clj->js {:startDate (hc/days-ago n)})
+(defn get-sleep-samples [{:keys [put-fn msg-payload current-state]}]
+  (let [start (or (:last-read-sleep current-state)
+                  (hc/days-ago (:n msg-payload)))
+        sleep-opts (clj->js {:startDate start})
+        now-dt (hc/date-from-ts (st/now))
         sleep-cb (fn [err res]
                    (doseq [sample (js->clj res)]
                      (let [value (get-in sample ["value"])
@@ -19,14 +21,15 @@
                            seconds (/ (- end-ts start-ts) 1000)
                            minutes (js/parseInt (/ seconds 60))
                            text (str (h/s-to-hh-mm seconds) " " tag)
-                           entry {:timestamp      end-ts
-                                  :sample         sample
-                                  :md             text
-                                  :tags           #{tag}
-                                  :perm_tags      #{tag}
-                                  :custom_fields  {tag {:duration minutes}}}]
+                           entry {:timestamp     end-ts
+                                  :sample        sample
+                                  :md            text
+                                  :tags          #{tag}
+                                  :perm_tags     #{tag}
+                                  :custom_fields {tag {:duration minutes}}}]
                        (put-fn (with-meta [:entry/update entry] {:silent true}))
                        (put-fn [:entry/persist entry]))))
-        init-cb (fn [err res] (.getSleepSamples hc/health-kit sleep-opts sleep-cb))]
-    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))
-  {})
+        init-cb (fn [err res] (.getSleepSamples hc/health-kit sleep-opts sleep-cb))
+        new-state (assoc current-state :last-read-sleep now-dt)]
+    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb)
+    {:new-state new-state}))

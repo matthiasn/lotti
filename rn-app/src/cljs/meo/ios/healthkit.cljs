@@ -1,7 +1,5 @@
 (ns meo.ios.healthkit
-  (:require [clojure.pprint :as pp]
-            [meo.utils.misc :as um]
-            [meo.helpers :as h]
+  (:require [meo.ios.healthkit.storage :as hs]
             [meo.ios.healthkit.bp :as hb]
             [meo.ios.healthkit.weight :as hw]
             [meo.ios.healthkit.energy :as he]
@@ -12,8 +10,17 @@
 
 (enable-console-print!)
 
+(defn state-fn [put-fn]
+  (let [state (atom {})]
+    (add-watch state :watcher
+               (fn [key atom old-state new-state]
+                 (hs/set-async :healthkit new-state)))
+    (hs/get-async :healthkit #(reset! state %))
+    {:state state}))
+
 (defn cmp-map [cmp-id]
-  {:cmp-id      cmp-id
+  {:state-fn    state-fn
+   :cmp-id      cmp-id
    :handler-map {:healthkit/weight   hw/get-weight
                  :healthkit/steps    hst/get-steps
                  :healthkit/sleep    hsl/get-sleep-samples

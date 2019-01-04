@@ -1,5 +1,6 @@
 (ns meo.ios.healthkit.exercise
-  (:require [meo.ios.healthkit.common :as hc]))
+  (:require [meo.ios.healthkit.common :as hc]
+            [matthiasn.systems-toolbox.component :as st]))
 
 (defn res-cb [tag k offset put-fn err res]
   (when err (.error js/console err))
@@ -17,10 +18,14 @@
       (put-fn (with-meta [:entry/update entry] {:silent true}))
       (put-fn [:entry/persist entry]))))
 
-(defn get-exercise [{:keys [msg-payload put-fn]}]
-  (let [opts (clj->js {:startDate (hc/days-ago (:n msg-payload))})
+(defn get-exercise [{:keys [msg-payload put-fn current-state]}]
+  (let [start (or (:last-read-exercise current-state)
+                  (hc/days-ago (:n msg-payload)))
+        opts (clj->js {:startDate start})
+        now-dt (hc/date-from-ts (st/now))
         exercise-cb (partial res-cb "#exercise" :minutes 400 put-fn)
         init-cb (fn [err res]
-                  (.getBasalEnergyBurned hc/health-kit opts exercise-cb))]
-    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb))
-  {})
+                  (.getBasalEnergyBurned hc/health-kit opts exercise-cb))
+        new-state (assoc current-state :last-read-exercise now-dt)]
+    (.initHealthKit hc/health-kit hc/health-kit-opts init-cb)
+    {:new-state new-state}))
