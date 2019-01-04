@@ -73,9 +73,9 @@
                                   {})))
         ca-path (str data-path "/capabilities.edn")
         capabilities (try (edn/read-string (slurp ca-path))
-                            (catch Exception _
-                              (do (warn "No capabilities config found.")
-                                  {})))
+                          (catch Exception _
+                            (do (warn "No capabilities config found.")
+                                {})))
         conf (try (edn/read-string (slurp conf-path))
                   (catch Exception ex
                     (let [default (edn/read-string
@@ -94,6 +94,27 @@
 (defn read-secrets []
   (try
     (edn/read-string (slurp (str data-path "/app.edn")))
+    (catch Exception ex (warn "No secrets found." ex))))
+
+(defn imap-to-app-cfg [imap-cfg]
+  (let [server-cfg (:server imap-cfg)
+        write-folder (-> imap-cfg :sync :read first second :mailbox)
+        write-secret (-> imap-cfg :sync :read first second :secret)
+        read-folder (-> imap-cfg :sync :write :mailbox)
+        read-secret (-> imap-cfg :sync :write :secret)]
+    {:server {:hostname (:host server-cfg)
+              :port     (:port server-cfg)
+              :username (:user server-cfg)
+              :password (:password server-cfg)}
+     :sync   {:write {:folder write-folder
+                      :secret write-secret}
+              :read  {:folder read-folder
+                      :secret read-secret}}}))
+
+(defn read-secrets []
+  (try
+    (let [imap-cfg (edn/read-string (slurp (str data-path "/imap.edn")))]
+      (imap-to-app-cfg imap-cfg))
     (catch Exception ex (warn "No secrets found." ex))))
 
 (defn write-cfg [{:keys [msg-payload]}]

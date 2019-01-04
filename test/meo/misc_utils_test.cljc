@@ -4,7 +4,8 @@
    namespace."
   (:require #?(:clj  [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-            [meo.common.utils.misc :as u]))
+            [meo.common.utils.misc :as u]
+            [meo.jvm.file-utils :as fu]))
 
 (deftest duration-string-test
   (testing "test output for some different durations"
@@ -85,7 +86,7 @@
 
 (def clean-test-entry
   {:mentions         #{},
-   :tags             #{"#PSS"},
+   :tags             #{"#PSS"}
    :linked-stories   #{}
    :timezone         "CET"
    :utc_offset       -60
@@ -126,3 +127,34 @@
             :timezone       "CET"
             :utc_offset     -60}
            (u/clean-entry clean-test-entry)))))
+
+(def app-cfg
+  {:server {:hostname "host"
+            :password "password"
+            :username "user"
+            :port     993}
+   :sync   {:write {:folder "INBOX.mobile-write"
+                    :secret "secret"}
+            :read  {:folder "INBOX.desktop-write"
+                    :secret "secret"}}})
+
+(def imap-cfg
+  {:server {:host        "host"
+            :password    "password"
+            :user        "user"
+            :authTimeout 15000
+            :connTimeout 30000
+            :port        993
+            :autotls     true
+            :tls         true}
+   :sync   {:write {:mailbox "INBOX.desktop-write"
+                    :secret  "secret"}
+            :read  {:fred
+                    {:mailbox   "INBOX.mobile-write"
+                     :body-part "1"
+                     :secret    "secret"
+                     :last-read 1}}}})
+
+(deftest imap-to-app-cfg-test
+  (testing "converts imap config as required by app"
+    (is (= app-cfg (fu/imap-to-app-cfg imap-cfg)))))
