@@ -269,11 +269,9 @@
                                  :repeat  true}]})
 
 (defn get-cfg [{:keys []}]
-  (info "get-cfg")
   {:emit-msg [:imap/cfg (imap-cfg)]})
 
 (defn save-cfg [{:keys [msg-payload put-fn]}]
-  (info "save-cfg" msg-payload)
   (let [s (pp-str msg-payload)]
     (when (read-mb :saved (str "saved: " cfg-path) msg-payload put-fn)
       (writeFileSync cfg-path s)))

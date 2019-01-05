@@ -15,7 +15,7 @@
     (fn stats-text-render []
       [:div.stats-string
        [:div
-        "meo " [:span.highlight version] " | "
+        "meins " [:span.highlight version] " beta | "
         (:entry_count @stats) " entries | "
         (:tag_count @stats) " tags | "
         (count @stories) " stories | "

@@ -21,19 +21,27 @@
             span (- end start)
             mapper (fn [idx itm]
                      (let [prior (< (+ start (* idx (/ span days))) habit)
-                           current (= idx days)]
-                       {:cx      (+ x-offset 8 (* idx (/ w (inc days))))
-                        :cy      (- btm-y 12)
-                        :r       8
-                        :idx     idx
-                        :opacity (if prior 0.3 (if current 0.5 1))
-                        :fill    (if (:success itm) "green" "red")}))
+                           current (= idx days)
+                           common {:idx     idx
+                                   :key (str label idx)
+                                   :opacity (if prior 0.3 (if current 0.5 1))
+                                   :fill    (if (:success itm) "green" "red")}]
+                       (if (:success itm)
+                         [:circle
+                          (merge common
+                                 {:cx (+ x-offset 8 (* idx (/ w (inc days))))
+                                  :cy (- btm-y 12)
+                                  :r  8})]
+                         [:rect
+                          (merge common
+                                 {:x (+ x-offset (* idx (/ w (inc days))))
+                                  :y (- btm-y 20)
+                                  :width 16
+                                  :height 16
+                                  })])))
             points (map-indexed mapper @completions)]
         [:g
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
-         ;[:rect {:fill :white :x 0 :y y :height (+ h 5) :width 190}]
          [dc/row-label label y h]
-         (for [p points]
-           ^{:key (str label (:idx p))}
-           [:circle p])]))))
+         (for [p points] p)]))))
