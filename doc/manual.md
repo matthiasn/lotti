@@ -1,40 +1,40 @@
 # What is **meo** and how do I **use** it?
 
-**Meo** is a data-driven, multi-platform journal that helps you **get your life in order**. First, you define what you want to capture, e.g., how long you **sleep**, how many **steps** you take, how much **beer** you drink. Variables you have some influence on. Then you define **habits**, where a set of rules determines habit success (or failure). Then you record the data or have meo recorded it for you. A dashboard finally shows you where you **succeed** and where you **fail**. Your only job then is to keep everything **green**, for as long as you possibly can. **Don’t break the chain**, pretty much. Here’s my example of recent success and failure for some of the habits I defined for myself:
+
+The Clojure/Script application *meo* is an experimentation tool for designing your life. It helps you collect relevant information,  design, and then implement change. Most importantly, it does so without leaking data, because everything stays within your realm of control, and you can always verify this claim in the source code. You start by defining what you want to capture, e.g., how long you **sleep**, how many **steps** you take, how much **beer** you drink. Variables you have some influence on. Then you define **habits**, where a set of rules determines habit success (or failure). Then you record the data or have meo record it for you. A dashboard finally shows you where you **succeed** and where you **fail**. Your only job then is to keep everything **green**, for as long as you possibly can. **Don’t break the chain**, pretty much. Here’s my example of recent success and failure for some of the habits I defined for myself:
 
 ![screenshot](./images/20181217_2238_habits.png) 
 
-The dots are only fully saturated after the habit was defined. For some, like steps, I have data far further back, imported on the mobile app. On others, I have nothing before the definition, so it does make sense to show them the same color, and imply endless failure.
+The dots are only fully saturated from the definition of the habit. For some sources, like steps, I have data far further back, imported on the mobile app. On others, I have nothing before the definition, so it does not make sense to show them in the same color, and imply long stretches of failure.
 
-The habits, together with text notes and photos, and time spent, are a part of the journal of your life. After all, you are in large part what you, and you can capture that in meo, with a timer that you keep running while working on anything. 
+The habits, together with text notes and photos, and time spent, are a part of the journal of your life. After all, you are in large part what you do, and you can capture that in meo, with a timer that you keep running while you're working on anything. 
 
 Besides, I reserve say fifteen minutes a day for some text about how I am doing and how things are going. I created a habit to monitor that, see the second last line above. Maybe not surprisingly, compliance has gone up after I put this dashboard in plain view, and that’s my general experience. The habits work by far best when I’m forced to look at them, and meo happily shines daylight on the things I said I would do.
 
 ## Privacy of YOUR Data
 
-Some of the data I record in meo is not private, in the sense that I would not mind if anyone saw those entries (such as those in the screenshots here). However, there are also those where I decidedly would mind if anyone saw them. So why would I share these if I did not have to? I believe that everybody should be able to gather data about their lives themselves – without having to **donate** said data to Silicon Valley, or anyone else. 
+With **meo**, it is straightforward. **Your data stays with you**. Meo does **not share of any of your data with anyone**. I strongly believe that everybody should be able to gather data about their lives themselves – without having to **donate** said data to Silicon Valley, or anyone else.
 
-With **meo**, it is straightforward. **Your data stays with you**. Meo does **not share of any of your data with anyone**. Meo might at some point give you a way to actively share data with others, but there will **not ever be any sharing of anything with anyone without your consent**, and only ever at your explicit command. That’s all. **No fine print, and you can verify all this in the source code**. You have no reason to trust anyone’s word when it comes to your private data.
+Meo might at some point give you a way to actively share data with others, but there will **not ever be any sharing of anything with anyone without your consent**, and only ever at your explicit command. That’s all. **No fine print, and you can verify all this in the source code**. You have no reason to trust anyone’s word when it comes to your private data.
 
-
-
+Now, I also like to use meo in the presence of other people, even at work, and not everything I record in meo is compatible with that. For this purpose, there is the private mode, which hides the things you would not want to show. More about that later.
 
 ## High-level concepts
 Let’s look at the core concepts first, before looking into each of them in detail. The main view of the application currently looks like this:
 
 ![screenshot](./images/20181217_2250_overview.png) 
 
-On the far left, the **calendar view** shows recorded time. Most of the time is manually recorded, as in, a timer running while completing a task, or recording something that already happened with the **#duration** tag. However, there is an integration with Apple Health. This allows the meo app to read this data, and import for example sleep duration and the number of steps and stairs per day, or also blood pressure and pulse. This mobile app is not quite ready for beta testing; please reach out though if you think you can help in one way or another. The are many different things to do, including helping me get this React Native application work on Android as well. 
+On the far left, the **calendar view** shows recorded time. Most of the time is user-recorded, as in, starting a timer while completing a task, or recording something that already happened with the **#duration** tag. However, there is an integration with Apple Health. This allows the meo app to read this data, and import for example sleep duration and the number of steps and stairs per day, or also blood pressure and pulse. This mobile app is not quite ready for beta testing; please reach out though if you think you can help in one way or another. The are many different things to do, including helping me get this React Native application work on Android as well. 
 
 The next column right shows an **infinitely scrolling calendar** where you can select the current day. Below that is a list of habits I committed to and that are still open for today. Each of them shows the success for the past 5 days including today and disappears once successfully completed for the day. 
 
-At the top of the application window, the **success of the habits** is shown differently, giving me a reason to celebrate as more and more of the squares become green.
+At the top of the application window, the **success of the habits** is shown differently, giving me a reason to celebrate as more and more of the squares become green. When moving the mouse over one of the squares, you get a view of the last 30 days.
 
-In the next column, which is the **briefing** for the day, a list of tasks that are in progress is shown. Here, I can highly recommend limiting work in progress to anywhere between five and ten tasks and not more. More about that later.
+In the next column, which is the **briefing** for the day, a list of tasks that are in progress is shown. Here, I recommend limiting work in progress to anywhere between three and ten tasks. More about that later.
 
-Below, there are **tasks for the selected day**. These can either be open or finished or rejected. In-progress tasks do not appear here, as they are already shown directly above. Below that is a searchable list for **all your open tasks**. 
+Below, there are **tasks for the selected day**. These can either be open or finished or rejected. In-progress tasks do not appear here, as they are already shown directly above. Below that is a searchable list for **all your open tasks**.
 
-The next and last two columns are the actual **journal**, with the result of journal entry searches and showing them in a timeline view with the newest one on top, as we have become accustomed to from social media. You can choose if you want one or two of these columns, see "Toggle Split View" in the view menu. However, I hardly ever use that as I find it too handy to have both available, and look for something in one while recording the process of something in the other. If no tab view with a search field is there, you can add a tab pressing the large `add tab` button. Here, you can search for hashtags and mentions, like this:
+The next and last two columns are the actual **journal**, each with the result of a journal entry search, and showing them in a timeline view with the newest one on top, as we have become accustomed to from social media. You can choose if you want one or two of these columns, see "Toggle Split View" in the view menu. However, I hardly ever use one column as I find it too handy to have both available. With two columns, I can look for something in one while recording the process of something in the other. If no tab view with a search field is there, you can add a tab pressing the large `add tab` button. Here, you can search for hashtags and mentions, like this:
 
 ![screenshot](./images/20181219_1039_search.png)
 
@@ -42,21 +42,29 @@ The next and last two columns are the actual **journal**, with the result of jou
 
 Also, you can add a story to the search using `$` before starting to type a substring match from the story name. You can also select a date range if you want to narrow down the results by clicking on the calendar at the right of the search bar:
 
-
-
 ![screenshot](./images/20181219_1046_search.png)
 
-In theory, you would also be able to do a full-text search is currently broken, see [issue #17](https://github.com/matthiasn/meo/issues/17). Help is much appreciated.
+In theory, you would also be able to do a full-text search, but that is currently broken, see [issue #17](https://github.com/matthiasn/meo/issues/17). Help is much appreciated.
 
-Below briefing and entry timeline view, there is the **dashboard**. One way I think of it is a **banner ad for information about myself** that, insofar as if I choose the right information, it helps me improve something in my life. Then, since I came back often to track progress on my tasks or take notes of one kind or another, I see this and, even if subconsciously, might do something I said I would, like do my push-ups or whatnot. I found that these banner ads about myself have a **better impact on my life** than those banner ads the Internet forces me to look at every day. Here's another one, with a combination of habit completions and captured data:
+Below briefing and entry timeline view, there is the **dashboard**. One way I think of it is a **banner ad for information about myself** that, insofar as if I choose the right information, it helps me improve something in my life. What information you choose is entirely up to you, and showing even seemingly random data source can be interesting, and useful to spot connections.
+
+Then, since I come back often to track progress on my tasks or take notes of one kind or another, I see this banner ad  and, even if subconsciously, might do something I said I would, like do my push-ups or whatnot. 
+
+I found that these banner ads about myself have a **better impact on my life** than those banner ads the Internet forces me to look at every day. Here's another one, with a combination of habit completions and captured data:
 
 ![screenshot](./images/20181219_1052_dashboard.png)
 
 
 
+## Concepts
 
-### Entry
-Think of it as an **entry in the logbook of a ship**. Only replace the ship with yourself. When available, an entry has your geolocation and associated time zone, the capture time, and whatever you capture. Entries have text, and they can also have attached photos and audio files. They can also capture numeric data and durations in **custom fields**. Custom fields are linked to a **hashtag**, and the data capture section becomes visible after using the respective hashtag in an entry:
+### Journal Entry
+Think of it as an **entry in the logbook of a ship**. Only replace the ship with yourself. When available, an entry has your geolocation and associated time zone, the capture time, and whatever you capture. Entries have text, and they can also have attached photos and audio files. 
+
+[screenshot of entry with arrows and labels]
+
+
+They can also capture numeric data and durations in **custom fields**. Custom fields are linked to a **hashtag**, and the data capture section becomes visible after using the respective hashtag in an entry.
 
 
 There’s also a map section. Also, photos can be imported as entries, and linked to entries as well. Here’s an example:
@@ -97,7 +105,7 @@ Once created, all open tasks appear in the open tasks list of the briefing, plus
 
 ![screenshot](./images/20181219_1449_task.png)
 
-You start working on a task by clicking the timer button,which will start a new timer comment, in which I take not of what I am doing and what I still want to achieve. Usually, bullet points work best for me here, whereas I use a plain comment more often for full sentences. But that is just my preference. The time from multiple timers will then be summed up and shown both at the bottom of the parent entry and in the briefing under started tasks, where the color turns to red when I am above my time allocation already.
+You start working on a task by clicking the timer button,which will start a new timer comment, in which I take note of what I am doing and what I still want to achieve. Usually, bullet points work best for me here, whereas I use a plain comment more often for full sentences. But that is just my preference. The time from multiple timers will then be summed up and shown both at the bottom of the parent entry and in the briefing under started tasks, where the color turns to red when I am above my time allocation already.
 
 
 
@@ -172,12 +180,14 @@ A saga is an overarching kind of story. Stories can belong to a saga, but this i
 
 Think of a story as something that has its own timeline. When I query for something inside a story, I only get to see what happened there, without being overwhelmed by unrelated stuff. Stories will also allow for monitoring weekly or daily goals in terms of time spent.
 
-Stories get their own colors, and everything in one story will have the same color, for example in the tabs in the journal, or in the calendar when the time is logged. Also, the tabs get grouped together by story.
+Stories get their own colors, and everything the same story will have the same color, for example in the tabs in the journal, or in the calendar when the time is logged. The colors can be selected in the stories section of the preferences page, which I'll describe in detail later.
+
+Also, the tabs in the two journal sections get grouped together by story.
 
 
 
 ### Private mode
-There is plenty of stuff in my journal that I would not freely share with colleagues, friends, and family. I do however need to be able to open meo when other people are around. Also, I need to be able to take screenshots, for example for this manual, without having to blur out anything.
+There is plenty of stuff in my journal that I would not freely share with colleagues, friends, or family. I do however need to be able to open meo when other people are around. Also, I need to be able to take screenshots, for example for this manual, without having to blur out anything.
 
 For this, there is the private mode. This ensures that once activating the little detective button at the top. Then, all the entities described above that do have a private mode switch will be hidden as desired and made safe for work, if you will.
 
