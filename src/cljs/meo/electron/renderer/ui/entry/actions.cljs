@@ -87,6 +87,18 @@
             (emit [:entry/update (u/clean-entry updated)]))
           (emit [:entry/update (u/clean-entry dropped)]))))))
 
+(defn drop-on-briefing [entry cfg]
+  (fn [_ev]
+    (let [dropped (:currently-dragged @cfg)
+          ts (:timestamp dropped)
+          updated (update-in entry [:linked_entries] #(set (conj % ts)))
+          dropped-updated (update-in dropped [:perm_tags] #(set/union % #{"#task"}))]
+      (when (and ts
+                 (not= ts (:timestamp updated))
+                 (:task dropped))
+        (emit [:entry/update (u/clean-entry updated)])
+        (emit [:entry/update (u/clean-entry dropped-updated)])))))
+
 (defn drag-start-fn [entry]
   (fn [ev]
     (let [dt (.-dataTransfer ev)]

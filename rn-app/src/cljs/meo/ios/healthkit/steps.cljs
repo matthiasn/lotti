@@ -22,7 +22,6 @@
       (put-fn [:entry/persist entry]))))
 
 (defn get-steps [{:keys [msg-payload put-fn current-state]}]
-  (.log js/console "get-steps")
   (let [store-k :last-read-steps
         start (or (store-k current-state)
                   (hc/days-ago (:n msg-payload)))
