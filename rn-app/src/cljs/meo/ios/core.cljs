@@ -50,7 +50,8 @@
                     :to   :app/store}]
 
        [:cmd/route {:from :app/ui-cmp
-                    :to   :app/store}]
+                    :to   #{:app/store
+                            :app/scheduler}}]
 
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/store}]
@@ -69,10 +70,11 @@
 
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store
-                            :app/sync}}]
+                            :app/sync
+                            :app/healthkit}}]
 
        [:cmd/send {:to  :app/scheduler
-                   :msg [:cmd/schedule-new {:timeout 10000
+                   :msg [:cmd/schedule-new {:timeout 60000
                                             :message [:sync/fetch]
                                             :repeat  true
                                             :initial false}]}]

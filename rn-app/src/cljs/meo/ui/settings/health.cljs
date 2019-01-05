@@ -8,9 +8,18 @@
 
 (defn start-watching [])
 
-(defn import-item [click label icon-name]
-  (let [theme (subscribe [:active-theme])]
-    (fn [click label icon-name]
+(defn import-item [msg-type label icon-name put-fn]
+  (let [theme (subscribe [:active-theme])
+        n 30
+        click (fn [_] (put-fn [msg-type {:n n}]))
+        auto-check (fn [_]
+                     (put-fn [:cmd/schedule-new
+                              {:timeout (* 15 60 1000)
+                               :message [msg-type {:n n}]
+                               :id      msg-type
+                               :repeat  true
+                               :initial true}]))]
+    (fn [msg-type label icon-name]
       (let [item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
         [view {:style {:margin-top       3
@@ -39,7 +48,7 @@
                          :font-size   20
                          :margin-left 20}}
            label]]
-         [touchable-opacity {:on-press click
+         [touchable-opacity {:on-press auto-check
                              :style    {:width       80
                                         :height      50
                                         :display     :flex
@@ -51,14 +60,7 @@
                          :padding    16}}]]]))))
 
 (defn health-settings [local put-fn]
-  (let [weight-fn (fn [n] #(put-fn [:healthkit/weight {:n n}]))
-        bp-fn (fn [n] #(put-fn [:healthkit/bp {:n n}]))
-        hrv-fn (fn [n] #(put-fn [:healthkit/hrv {:n n}]))
-        steps-fn (fn [n] #(put-fn [:healthkit/steps {:n n}]))
-        energy-fn (fn [n] #(put-fn [:healthkit/energy {:n n}]))
-        sleep-fn (fn [n] #(put-fn [:healthkit/sleep {:n n}]))
-        exercise-fn (fn [n] #(put-fn [:healthkit/exercise {:n n}]))
-        theme (subscribe [:active-theme])]
+  (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             bg (get-in c/colors [:list-bg @theme])]
@@ -67,10 +69,10 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
-         [import-item (weight-fn 30) "Weight" "balance-scale"]
-         [import-item (bp-fn 30) "Blood Pressure" "heartbeat"]
-         [import-item (exercise-fn 30) "Exercise" "forward"]
-         [import-item (steps-fn 30) "Steps" "forward"]
-         [import-item (energy-fn 30) "Energy" "bolt"]
-         [import-item (sleep-fn 30) "Sleep" "bed"]
-         [import-item (hrv-fn 30) "Heart Rate Variability" "heartbeat"]]))))
+         [import-item :healthkit/weight "Weight" "balance-scale" put-fn]
+         [import-item :healthkit/bp "Blood Pressure" "heartbeat" put-fn]
+         [import-item :healthkit/exercise "Exercise" "forward" put-fn]
+         [import-item :healthkit/steps "Steps" "forward" put-fn]
+         [import-item :healthkit/energy "Energy" "bolt" put-fn]
+         [import-item :healthkit/sleep "Sleep" "bed" put-fn]
+         [import-item :healthkit/hrv "Heart Rate Variability" "heartbeat" put-fn]]))))

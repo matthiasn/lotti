@@ -13,5 +13,5 @@
                      :dark  "#D8D8D8"}
    :search-text     {:light "#666"
                      :dark  "#7F7F7F"}
-   :list-bg         {:light "#ECECEC"
+   :list-bg         {:light "#DDD"
                      :dark  "#141414"}})

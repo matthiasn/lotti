@@ -44,53 +44,44 @@
             delete #(put-fn [:entry/persist
                              (assoc-in (:entry @local) [:deleted] true)])]
         [view {:style {:flex             1
-                       :margin-top       8
+                       :margin-top       4
                        :flex-direction   :row
                        :background-color text-bg
                        :width            "100%"}}
          [touchable-opacity {:on-press to-detail
-                             :style    {:width            120
-                                        :height           120
-                                        :background-color "#888"}}
-          (if-let [media (:media entry)]
+                             :style    {:display         "flex"
+                                        :flex-direction  "row"
+                                        :width           "100%"
+                                        :justify-content "space-between"}}
+          [view {:style {:flex             1
+                         :flex-direction   :column
+                         :background-color text-bg
+                         :padding-top      4
+                         :padding-left     8
+                         :padding-right    6
+                         :padding-bottom   4
+                         :width            "100%"}}
+           [view {:style {:padding-top    2
+                          :padding-left   4
+                          :padding-right  4
+                          :padding-bottom 2}}
+            [text {:style {:color       text-color
+                           :text-align  "left"
+                           :font-size   9
+                           :font-weight "100"}}
+             (h/format-time ts)]]
+           [view {:style {:padding-top    1
+                          :padding-left   4
+                          :padding-right  4
+                          :padding-bottom 4}}
+            [text {:style {:color       text-color
+                           :text-align  "left"
+                           :font-weight "normal"}}
+             md]]]
+          (when-let [media (:media entry)]
             [image {:style  {:width  120
                              :height 120}
-                    :source {:uri (-> media :image :uri)}}]
-            (if latitude
-              [image {:style  {:width  120
-                               :height 120}
-                      :source {:uri   (map-url latitude longitude)
-                               :cache "force-cache"}}]
-              [icon {:name  "file-text-o"
-                     :size  40
-                     :color "#CCC"
-                     :style {:padding 40}}]))]
-         [view {:style {:flex             1
-                        :flex-direction   :column
-                        :background-color text-bg
-                        :padding-top      8
-                        :padding-left     10
-                        :padding-right    10
-                        :padding-bottom   8
-                        :width            "100%"}}
-          [view {:style {:padding-top    4
-                         :padding-left   12
-                         :padding-right  12
-                         :padding-bottom 2}}
-           [text {:style {:color       text-color
-                          :text-align  "left"
-                          :font-size   9
-                          :font-weight "100"
-                          :margin-top  5}}
-            (h/format-time ts)]]
-          [view {:style {:padding-top    4
-                         :padding-left   12
-                         :padding-right  12
-                         :padding-bottom 8}}
-           [text {:style {:color       text-color
-                          :text-align  "left"
-                          :font-weight "normal"}}
-            md]]]]))))
+                    :source {:uri (-> media :image :uri)}}])]]))))
 
 (defn render-item [put-fn navigate]
   (fn [item]
@@ -239,7 +230,7 @@
                [text {:style {:color       "#0078e7"
                               :font-size   30
                               :margin-left 25
-                              :font-family  "Courier"}}
+                              :font-family "Courier"}}
                 (if (= :play status) "Stop" "Play")]
                [text {:style {:font-size    30
                               :color        "#888"
