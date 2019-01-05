@@ -23,8 +23,8 @@
                  [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
 
-                 [com.walmartlabs/lacinia "0.30.0"]
-                 [com.walmartlabs/lacinia-pedestal "0.10.0"]
+                 [com.walmartlabs/lacinia "0.31.0"]
+                 [com.walmartlabs/lacinia-pedestal "0.11.0"]
 
                  [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
                  [org.eclipse.jetty.websocket/websocket-api "9.4.7.v20170914"]
