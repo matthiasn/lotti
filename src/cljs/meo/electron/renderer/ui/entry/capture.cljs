@@ -13,12 +13,10 @@
 
 (defn parse-and-set [entry path tag input-type]
   (let [value (get-in entry path)]
-    (info value)
     (when-not value
       (when (and (= input-type :number))
         (let [p1 (-> (:md entry) (s/split tag) first)
               last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
-          (info p1 last-n)
           (when last-n
             (let [updated (assoc-in entry path (js/parseFloat last-n))]
               (emit [:entry/update updated])))))

@@ -126,11 +126,19 @@
                            updated (update-in entry [:perm_tags] toggle-tag)]
                        (swap! local assoc-in [:show] false)
                        (emit [:entry/update updated])))
+        match (fn [[i [tag x]]]
+                (h/str-contains-lc? tag (:search @local "")))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
-                        n (count @indexed)
-                        idx-inc #(if (< % (dec n)) (inc %) 0)
-                        idx-dec #(if (pos? %) (dec %) (dec n))]
+                        matched (filter match @indexed)
+                        idx-inc (fn [i]
+                                  (let [idxs (map first matched)
+                                        ni (first (drop-while #(<= % i) idxs))]
+                                    (if ni ni (apply min idxs))))
+                        idx-dec (fn [i]
+                                  (let [idxs (map first matched)
+                                        ni (first (drop-while #(>= % i) (reverse idxs)))]
+                                    (if ni ni (apply max idxs))))]
                     (when (:show @local)
                       (when (= key-code 27)
                         (swap! local assoc-in [:show] false))
@@ -147,7 +155,6 @@
       (let [linked-story (get-in entry [:story :timestamp])
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
-                         (info s (:search @local))
                          (swap! local assoc-in [:idx] 0)
                          (swap! local assoc-in [:search] s)))
             mouse-leave (fn [_]
@@ -170,8 +177,6 @@
               :class    (str icon-cls)})]]
          (when (:show @local)
            (let [curr-idx (:idx @local)
-                 match (fn [[i [tag x]]]
-                         (h/str-contains-lc? tag (:search @local "")))
                  items (take 20 (filter match indexed))]
              [:div.story-search {:on-mouse-leave mouse-leave
                                  :on-mouse-enter mouse-enter}
@@ -183,16 +188,17 @@
                         :value      (:search @local)}]]
               [:table
                [:tbody
-                (for [[idx [tag entry]] items]
-                  (let [active (= linked-story (:timestamp entry))
-                        cls (cond active "current"
-                                  (= idx curr-idx) "idx"
-                                  :else "")
-                        click #(assign-tag tag)]
-                    ^{:key (:timestamp entry)}
-                    [:tr {:on-click click}
-                     [:td {:class cls}
-                      tag]]))]]]))]))))
+                (doall
+                  (for [[idx [tag entry]] items]
+                    (let [active (= linked-story (:timestamp entry))
+                          cls (cond active "current"
+                                    (= idx curr-idx) "idx"
+                                    :else "")
+                          click #(assign-tag tag)]
+                      ^{:key (:timestamp entry)}
+                      [:tr {:on-click click}
+                       [:td {:class cls}
+                        tag]])))]]]))]))))
 
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
