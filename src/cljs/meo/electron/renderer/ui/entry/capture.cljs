@@ -11,6 +11,25 @@
             [clojure.set :as set]
             [meo.electron.renderer.ui.ui-components :as uc]))
 
+(defn parse-and-set [entry path tag input-type]
+  (let [value (get-in entry path)]
+    (info value)
+    (when-not value
+      (when (and (= input-type :number))
+        (let [p1 (-> (:md entry) (s/split tag) first)
+              last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
+          (info p1 last-n)
+          (when last-n
+            (let [updated (assoc-in entry path (js/parseFloat last-n))]
+              (emit [:entry/update updated])))))
+      (when (and (= input-type :time))
+        (let [p1 (-> (:md entry) (s/split tag) first)
+              v (last (re-seq #"\d+:\d{2}" p1))]
+          (when v
+            (let [m (.asMinutes (.duration moment v))
+                  updated (assoc-in entry path m)]
+              (emit [:entry/update updated]))))))))
+
 (defn field-input [entry edit-mode? field tag k]
   (let [input-cfg (:cfg field)
         input-type (:type input-cfg)
@@ -33,35 +52,23 @@
             (emit [:entry/update-local updated])))
         input-cfg (merge
                     input-cfg
-                    {:on-change   on-change-fn
-                     :class       (when (= input-type :time) "time")
-                     :type        input-type
-                     :on-key-down (h/key-down-save entry)
-                     :value       value})]
-    (when-not value
-      (when (and (= input-type :number) edit-mode?)
-        (let [p1 (-> (:md entry) (s/split tag) first)
-              last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
-          (when last-n
-            (let [updated (assoc-in entry path (js/parseFloat last-n))]
-              (emit [:entry/update-local updated])))))
-      (when (and (= input-type :time) edit-mode?)
-        (let [p1 (-> (:md entry) (s/split tag) first)
-              v (last (re-seq #"\d+:\d{2}" p1))]
-          (when v
-            (let [m (.asMinutes (.duration moment v))
-                  updated (assoc-in entry path m)]
-              (emit [:entry/update-local updated]))))))
+                    {:on-change on-change-fn
+                     :class     (when (= input-type :time) "time")
+                     :type      input-type
+                     :value     value})]
     (fn [entry edit-mode? field tag k]
-      [:tr
-       [:td [:label (:label field)]]
-       [:td
-        (if (= input-type :switch)
-          [uc/switch {:entry    entry
-                      :msg-type :entry/update
-                      :path     path}]
-          [:input (merge input-cfg
-                         @local)])]])))
+      (parse-and-set entry path tag input-type)
+      (let [input-cfg (merge input-cfg
+                             {:on-key-down (h/key-down-save entry)})]
+        [:tr
+         [:td [:label (:label field)]]
+         [:td
+          (if (= input-type :switch)
+            [uc/switch {:entry    entry
+                        :msg-type :entry/update
+                        :path     path}]
+            [:input (merge input-cfg
+                           @local)])]]))))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
