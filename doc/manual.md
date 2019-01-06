@@ -15,7 +15,7 @@ Besides, I reserve say fifteen minutes a day for some text about how I am doing 
 
 With **meo**, it is straightforward. **Your data stays with you**. Meo does **not share of any of your data with anyone**. I strongly believe that everybody should be able to gather data about their lives themselves – without having to **donate** said data to Silicon Valley, or anyone else.
 
-Meo might at some point give you a way to actively share data with others, but there will **not ever be any sharing of anything with anyone without your consent**, and only ever at your explicit command. That’s all. **No fine print, and you can verify all this in the source code**. You have no reason to trust anyone’s word when it comes to your private data.
+Meo might at some point give you a way to actively share data with others, but there will **not ever be any sharing of anything with anyone without your consent**, and only ever at your explicit command. That’s all. **No fine print, and you can verify all this in the [source code](https://github.com/matthiasn)**. You have no reason to trust anyone’s word when it comes to your private data.
 
 Now, I also like to use meo in the presence of other people, even at work, and not everything I record in meo is compatible with that. For this purpose, there is the private mode, which hides the things you would not want to show. More about that later.
 
@@ -132,7 +132,7 @@ Then, you can add fields, as described above. A more detailed description will c
 
 
 ### Habit
-A Habit defines a **set of rules** or **success criteria** that unambiguously let **meo** determine if you’ve either succeeded or failed in **achieving something you said you would do**. Sounds more complicated than it is. Here are some examples from my life:
+A Habit defines a **set of rules** or **success criteria** that unambiguously let **meo** determine if you’ve either succeeded or failed in **achieving something you said you would do**. Sounds complicated​? ...here's an example from my own entries:
 
 - 10K **#steps** per day: if I manage to walk more than 10,000 steps per day, this habit is green, otherwise it is red
 - Morning exercises: all of 70 **#sit-ups**, 20 **#push-ups**, 30 **#lunges**, 70s **#plank** – or else it’s red
