@@ -10,7 +10,7 @@
 .tabs-header {
   display: flex;
   flex: 0 0 auto;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 
   .tab-items {
     display: flex;
@@ -81,7 +81,7 @@
     }
   }
   .active {
-    border-bottom: 3px inset $green;
+    border-bottom: 4px inset gold;
     font-weight: 400;
   }
 }

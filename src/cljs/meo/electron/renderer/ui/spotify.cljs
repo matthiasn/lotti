@@ -67,7 +67,7 @@
                       [:strong "Image size:"]
                       [:input {:type      :range
                                :min       40
-                               :max       250
+                               :max       400
                                :value     img-size
                                :on-change change}]]
                      [:div.spotify-search
