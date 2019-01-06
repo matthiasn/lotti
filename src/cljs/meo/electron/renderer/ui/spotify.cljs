@@ -7,7 +7,8 @@
             [cljs.nodejs :refer [process]]
             [meo.electron.renderer.helpers :as h]
             [meo.electron.renderer.graphql :as gql]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [clojure.string :as s]))
 
 (defn gql-query [n]
   (let [queries [[:spotify
@@ -50,17 +51,29 @@
                           (:by-cnt @entries)))
         cmp-did-mount (fn [props] (gql-query 2000))
         will-unmount (fn [] (gql-query 0))
+        change-search #(swap! local assoc :search (h/target-val %))
         render (fn [props]
-                 (let [img-size (:img-size @local)]
+                 (let [img-size (:img-size @local)
+                       search-filter
+                       (fn [[_ entry]]
+                         (let [spt (:spotify entry)]
+                           (s/includes?
+                             (s/lower-case (str (map :name (:artists spt))
+                                                (:name spt)))
+                             (s/lower-case (str (:search @local))))))]
                    [:div.spotify-list
                     [:div.controls
-                     [:strong "Image size:"]
-                     [:input {:type      :range
-                              :min       40
-                              :max       250
-                              :value     img-size
-                              :on-change change}]]
-                    (for [[ts entry] (reverse @sorted)]
+                     [:div.size
+                      [:strong "Image size:"]
+                      [:input {:type      :range
+                               :min       40
+                               :max       250
+                               :value     img-size
+                               :on-change change}]]
+                     [:div.spotify-search
+                      [:i.fas.fa-search]
+                      [:input {:on-change change-search}]]]
+                    (for [[ts entry] (reverse (filter search-filter @sorted))]
                       [:span.img-container.tooltip
                        {:key (:timestamp entry)}
                        [:img {:on-click #(emit [:spotify/play {:uri (-> entry :spotify :uri)}])
@@ -69,7 +82,11 @@
                                          :height img-size}}]
                        [:span.cnt (:played_cnt (:spotify entry))]
                        [:div.tooltiptext
-                        (-> entry :spotify :name)]])]))
+                        [:div.title (-> entry :spotify :name)]
+                        [:div.artist (->> (:artists (:spotify entry))
+                                          (map :name)
+                                          (interpose ", ")
+                                          (apply str))]]])]))
         spotify (r/create-class {:component-did-mount    cmp-did-mount
                                  :component-will-unmount will-unmount
                                  :reagent-render         render})]

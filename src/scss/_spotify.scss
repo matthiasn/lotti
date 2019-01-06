@@ -16,15 +16,41 @@
     padding-left: 30px;
     user-select: none;
 
-    strong {
-      font-weight: bold;
-      display: block;
-      padding-bottom: 2px;
+    .size {
+      display: flex;
+      align-items: center;
+      margin-right: 50px;
+
+      strong {
+        font-weight: bold;
+        display: block;
+        padding-bottom: 2px;
+        color: #AAA;
+      }
+      input {
+        box-shadow: none;
+        width: 450px;
+        margin-left: 10px;
+      }
     }
-    input {
-      box-shadow: none;
-      width: 450px;
-      margin-left: 16px;
+
+
+    .spotify-search {
+      display: flex;
+      margin: 5px 0;
+      align-items: center;
+
+      i {
+        padding: 5px;
+        font-size: 20px;
+        color: #AAA;
+      }
+
+
+      input {
+        width: 250px;
+        box-shadow: none;
+      }
     }
 
   }
@@ -73,7 +99,11 @@
     width: 102px!important;
     margin-top: -30px;
     font-family: $header-font-family;
-    font-size: $font-size-medium;
+    font-size: $font-size-small;
+
+    .title {
+      font-weight: bold;
+    }
   }
 
 }
