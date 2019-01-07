@@ -23,7 +23,7 @@
     background-color: white;
     padding: 3px;
     margin: 0 2px 0 0;
-    min-width: 12px;
+    min-width: 14px;
     cursor: pointer;
     font-size: 0.8em;
     font-family: $header-font-family;
@@ -81,7 +81,9 @@
     }
   }
   .active {
-    border-bottom: 4px inset gold;
+    border-bottom-width: 6px;
+    height: 13px;
+    border-bottom-style: inset;
     font-weight: 400;
   }
 }

@@ -3,6 +3,7 @@
             [meo.electron.renderer.ui.journal :as j]
             [clojure.string :as s]
             [moment]
+            [tinycolor2 :as tinycolor]
             [meo.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer [info error debug]]
             [reagent.ratom :refer-macros [reaction]]
@@ -58,12 +59,16 @@
                                 :else search-text)
                   query-coord {:query-id q :tab-group tab-group}
                   on-drag-start #(emit [:search/set-dragged query-coord])
-                  tooltip-text (:first-line query)]
+                  tooltip-text (:first-line query)
+                  color (cc/item-color search-text)
+                  active (= active-query q)
+                  complement (when active (.complement (new tinycolor color)))]
               ^{:key (str "tab-header" q)}
               [:div.tooltip
                [:div.tab-item
-                {:class         (when (= active-query q) "active")
-                 :style         {:background-color (cc/item-color search-text)}
+                {:class         (when active "active")
+                 :style         {:background-color color
+                                 :border-bottom-color complement}
                  :on-click      #(emit [:search/set-active query-coord])
                  :draggable     true
                  :on-drag-start on-drag-start}
