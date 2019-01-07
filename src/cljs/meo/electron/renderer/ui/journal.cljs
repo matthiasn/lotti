@@ -15,6 +15,7 @@
   (let [tab-group (:tab-group local-cfg)
         gql-res (subscribe [:gql-res2])
         show-hidden (subscribe [:show-hidden])
+        show-pvt (subscribe [:show-pvt])
         entry (reaction (-> @gql-res
                             (get tab-group)
                             :res
@@ -24,7 +25,12 @@
       ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
        (when (and @entry (or (not (:hidden @entry))
-                             @show-hidden))
+                             @show-hidden)
+                  (or (not (or (:pvt @entry)
+                               (:pvt (:story @entry))
+                               (-> @entry :story :saga :pvt)
+                               (contains? (:tags @entry) "#pvt")))
+                             @show-pvt))
          [e/entry-with-comments @entry local-cfg])])))
 
 (defn item [local-cfg]
