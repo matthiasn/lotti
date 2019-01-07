@@ -96,6 +96,7 @@
                 msg (merge
                       (window-cfg)
                       {:url  index-page
+                       :save-bounds            true
                        :opts {:titleBarStyle   "hidden"
                               :backgroundColor "#282828"
                               :icon            icon}}

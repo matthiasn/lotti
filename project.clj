@@ -70,7 +70,7 @@
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
                                            [cljsjs/moment "2.22.2-2"]
-                                           [matthiasn/systems-toolbox-electron "0.6.27"]
+                                           [matthiasn/systems-toolbox-electron "0.6.28"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
 
