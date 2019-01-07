@@ -44,12 +44,18 @@
     (spit full-path serialized :append true)
     #_(put-fn [:file/encrypt {:filename filename
                               :node-id  node-id}])))
+(defn enrich-story [state entry]
+  (let [custom-fields (get-in state [:options :custom_fields])
+        tag (first (:perm_tags entry))
+        story (get-in custom-fields [tag :default-story])]
+    (assoc entry :linked-story story)))
 
 (defn entry-import-fn
   "Handler function for persisting an imported journal entry."
   [{:keys [current-state msg-payload put-fn msg-meta]}]
   (let [id (or (:id msg-payload) (uuid/v1))
         entry (merge msg-payload {:last_saved (st/now) :id id})
+        entry  (enrich-story current-state entry)
         ts (:timestamp entry)
         graph (:graph current-state)
         cfg (:cfg current-state)
