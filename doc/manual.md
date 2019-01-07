@@ -3,7 +3,7 @@
 
 The Clojure/Script application *meo* is an experimentation tool for designing your life. It helps you collect relevant information,  design, and then implement change. Most importantly, it does so without leaking data, because everything stays within your realm of control, and you can always verify this claim in the source code. You start by defining what you want to capture, e.g., how long you **sleep**, how many **steps** you take, how much **beer** you drink. Variables you have some influence on. Then you define **habits**, where a set of rules determines habit success (or failure). Then you record the data or have meo record it for you. A dashboard finally shows you where you **succeed** and where you **fail**. Your only job then is to keep everything **green**, for as long as you possibly can. **Don’t break the chain**, pretty much. Here’s my example of recent success and failure for some of the habits I defined for myself:
 
-![screenshot](./images/20181217_2238_habits.png) 
+![screenshot](./images/20190107_1907_habits.png) 
 
 The dots are only fully saturated from the definition of the habit. For some sources, like steps, I have data far further back, imported on the mobile app. On others, I have nothing before the definition, so it does not make sense to show them in the same color, and imply long stretches of failure.
 
