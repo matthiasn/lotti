@@ -8,9 +8,11 @@
     story {
       timestamp
       story_name
+      pvt
       saga {
         timestamp
         saga_name
+        pvt
       }
     }
     task {
@@ -29,7 +31,6 @@
       completed_time
       custom_fields
       last_saved
-
     }
   }
 }

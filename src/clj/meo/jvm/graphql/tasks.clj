@@ -5,6 +5,10 @@
 
 (def d (* 24 60 60 1000))
 
+(defn cfg-mapper [entry]
+  (let [story (:story entry)
+        story (merge story (:story_cfg story))]
+    (assoc entry :story story)))
 
 (defn started-tasks [state context args value]
   (let [q {:tags     #{"#task"}
@@ -17,7 +21,8 @@
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (gc/entries-w-logged g)
-                   (mapv #(gq/entry-w-story g %))
+                   (map #(gq/entry-w-story g %))
+                   (map cfg-mapper)
                    (filter #(not (:on_hold (:task %))))
                    (mapv (partial gc/entry-w-comments g)))]
     tasks))
@@ -32,6 +37,7 @@
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (gc/entries-w-logged g)
-                   (mapv #(gq/entry-w-story g %))
+                   (map #(gq/entry-w-story g %))
+                   (map cfg-mapper)
                    (mapv (partial gc/entry-w-comments g)))]
     tasks))

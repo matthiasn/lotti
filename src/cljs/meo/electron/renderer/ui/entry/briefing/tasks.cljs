@@ -21,6 +21,14 @@
         c4 (compare (:timestamp x) (:timestamp y))]
     (if (not= c0 0) c0 (if (not= c1 0) c1 (if (not= c2 0) c2 (if (not= c3 0) c3 c4))))))
 
+(defn pvt-filter [show-pvt entry]
+  (info (:story entry))
+  (or (not (or (:pvt entry)
+               (:pvt (:story entry))
+               (-> entry :story :saga :pvt)
+               (contains? (:tags entry) "#pvt")))
+      @show-pvt))
+
 (defn m-to-hhmm
   [minutes]
   (let [dur (.duration moment minutes "minutes")
@@ -144,6 +152,7 @@
   "Renders table with open entries, such as started tasks and open habits."
   [local local-cfg]
   (let [gql-res (subscribe [:gql-res])
+        show-pvt (subscribe [:show-pvt])
         started-tasks (reaction (->> @gql-res
                                      :started-tasks
                                      :data
@@ -167,6 +176,7 @@
                                     (filter on-hold-filter)
                                     (filter saga-filter)
                                     (filter open-filter)
+                                    (filter (partial pvt-filter show-pvt))
                                     (sort task-sorter)))]
     (fn started-tasks-list-render [local local-cfg]
       (let [entries-list @entries-list
@@ -207,6 +217,7 @@
   "Renders table with open tasks."
   [local local-cfg]
   (let [gql-res (subscribe [:gql-res])
+        show-pvt (subscribe [:show-pvt])
         open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))
         started-tasks (reaction (->> @gql-res
                                      :started-tasks
@@ -233,6 +244,7 @@
                                     (filter on-hold-filter)
                                     (filter saga-filter)
                                     (filter open-filter)
+                                    (filter (partial pvt-filter show-pvt))
                                     (filter closed-filter)))
         on-change #(swap! local assoc-in [:task-search] (h/target-val %))]
     (fn open-tasks-render [local local-cfg]
@@ -266,6 +278,7 @@
   "Show open tasks that are also linked with the briefing entry."
   [local _local-cfg]
   (let [gql-res (subscribe [:gql-res])
+        show-pvt (subscribe [:show-pvt])
         started-tasks (reaction (-> @gql-res :started-tasks :data :started_tasks))
         briefing (reaction (-> @gql-res :briefing :data :briefing))
         query-cfg (subscribe [:query-cfg])
@@ -298,6 +311,7 @@
                               (filter task-filter)
                               (filter current-filter)
                               (filter saga-filter)
+                              (filter (partial pvt-filter show-pvt))
                               (filter #(not (contains? started-tasks (:timestamp %)))))
             filter-k (:filter @local)
             linked-tasks (if (= filter-k :activity)

@@ -5,9 +5,11 @@
     story {
       timestamp
       story_name
+      pvt
       saga {
         timestamp
         saga_name
+        pvt
       }
     }
     task {
