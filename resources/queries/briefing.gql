@@ -9,6 +9,7 @@
       story {
         story_name
         timestamp
+        pvt
         saga {
           saga_name
           timestamp
