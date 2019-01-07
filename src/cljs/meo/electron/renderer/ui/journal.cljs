@@ -14,6 +14,7 @@
 (defn entry-wrapper [idx local-cfg ]
   (let [tab-group (:tab-group local-cfg)
         gql-res (subscribe [:gql-res2])
+        show-hidden (subscribe [:show-hidden])
         entry (reaction (-> @gql-res
                             (get tab-group)
                             :res
@@ -22,7 +23,8 @@
     (fn entry-wrapper-render [_idx local-cfg ]
       ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
-       (when @entry
+       (when (and @entry (or (not (:hidden @entry))
+                             @show-hidden))
          [e/entry-with-comments @entry local-cfg])])))
 
 (defn item [local-cfg]

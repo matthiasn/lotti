@@ -55,6 +55,7 @@
 (reg-sub :story-predict (fn [db _] (:story-predict db)))
 (reg-sub :current-page (fn [db _] (:current-page db)))
 (reg-sub :show-pvt (fn [db _] (:show-pvt (:cfg db))))
+(reg-sub :show-hidden (fn [db _] (:show-hidden (:cfg db))))
 (reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))
 (reg-sub :busy-status (fn [db _] (:busy-status db)))
 (reg-sub :query-cfg (fn [db _] (:query-cfg db)))

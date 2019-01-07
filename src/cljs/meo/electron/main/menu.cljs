@@ -169,6 +169,9 @@
                {:label       "Toggle Private Mode"
                 :accelerator "CmdOrCtrl+Shift+P"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :show-pvt]}])}
+               {:label       "Toggle Hidden Entries"
+                :accelerator "CmdOrCtrl+Shift+P"
+                :click       #(put-fn [:cmd/toggle-key {:path [:cfg :show-hidden]}])}
                {:label       "Toggle Dashboard"
                 :accelerator "CmdOrCtrl+Shift+D"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}

@@ -14,6 +14,7 @@
                  :md            (str v " kcal " tag)
                  :tags          #{tag}
                  :perm_tags     #{tag}
+                 :hidden        true
                  :sample        sample
                  :custom_fields {tag {k v}}}]
       (put-fn (with-meta [:entry/update entry] {:silent true}))
