@@ -27,6 +27,8 @@
           matched (set/intersection tags only-pvt-tags)
           pvt-cfg (or (:pvt (:custom_field_cfg entry))
                       (:pvt (:habit entry))
+                      (-> entry :story :story_cfg :pvt)
+                      (-> entry :story :saga :saga_cfg :pvt)
                       (:pvt (:dashboard_cfg entry)))]
       (and (empty? matched)
            (not pvt-cfg)))))

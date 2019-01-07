@@ -4,7 +4,8 @@
             [taoensso.timbre :refer [info error warn debug]]
             [meo.jvm.graph.query :as gq]
             [meo.jvm.graphql.common :as gc]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meo.common.utils.misc :as um]))
 
 
 (defn res-diff [prev res]
@@ -51,7 +52,11 @@
                    (filter :timestamp)
                    (filter #(< (:timestamp %) to))
                    (filter #(> (:timestamp %) from))
-                   (take (or n 100)))]
+                   (take (or n 100)))
+          pvt-filter (um/pvt-filter (:options current-state))
+          res (if pvt
+                res
+                (filter pvt-filter res))]
       (swap! state assoc-in [:prev tab] {:res         res
                                          :lazy-res    lazy-res
                                          :prev-vclock global-vclock

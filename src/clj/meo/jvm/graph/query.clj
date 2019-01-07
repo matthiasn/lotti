@@ -528,16 +528,11 @@
       (filter pvt-filter entries))))
 
 (defn get-filtered-lazy [current-state query]
-  (let [pvt (:pvt query)
-        g (:graph current-state)
+  (let [g (:graph current-state)
         entries (filter (entries-filter-fn query g)
                         (lazy-seq (extract-sorted-entries current-state query)))
-        comments-linked (comments-linked-for-entry g)
-        pvt-filter (um/pvt-filter (:options current-state))
-        entries (map comments-linked entries)]
-    (if pvt
-      entries
-      (filter pvt-filter entries))))
+        comments-linked (comments-linked-for-entry g)]
+    (map comments-linked entries)))
 
 (defn query-fn [{:keys [current-state put-fn]}]
   (let [progress (:startup-progress current-state)]
