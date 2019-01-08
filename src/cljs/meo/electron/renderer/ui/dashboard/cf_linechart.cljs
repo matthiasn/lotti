@@ -61,8 +61,16 @@
               mn (- mn (mod mn 5) 5)
               mx (apply max (map :v values))
               mx (+ (- mx (mod mx 5)) 10)
-              range (- mx mn)
-              scale (if (pos? mx) (/ (- h 3) range) 1)
+              rng (- mx mn)
+              scale (if (pos? mx) (/ (- h 3) rng) 1)
+              line-inc (cond
+                         (> rng 2000) 1000
+                         (> rng 1000) 500
+                         (> rng 500) 250
+                         (> rng 100) 50
+                         (> rng 40) 25
+                         :default 10)
+              lines (filter #(zero? (mod % line-inc)) (range 1 rng))
               mapper (fn [idx data]
                        (let [ts (:ts data)
                              v (:v data)
@@ -79,5 +87,16 @@
               cfg (merge m {:label label})]
           [:g
            [dc/row-label (or label tag) y h]
+           (for [n lines]
+             ^{:key (str qid n)}
+             [dc/line (- btm-y (* n scale)) "#888" 1])
+           (for [n lines]
+             ^{:key (str qid n)}
+             [:text {:x           2008
+                     :y           (- (+ btm-y 5) (* n scale))
+                     :font-size   10
+                     :fill        "black"
+                     :text-anchor "start"}
+              n])
            [chart-line values mapper (merge {:color "red"} cfg)]
            [dc/line (+ y h) "#000" 2]])))))

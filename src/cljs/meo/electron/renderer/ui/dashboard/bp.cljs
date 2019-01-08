@@ -75,7 +75,7 @@
                  diastolic_color diastolic_fill] :as m}]
       (debug :bp-chart m)
       (let [mx (or mx 200)
-            mn (or mn 200)
+            mn (or mn 50)
             w (or w 500)
             rng (- mx mn)
             label "Blood Pressure"
@@ -111,7 +111,7 @@
            ^{:key (str "bp" k n)}
            [:text {:x           2008
                    :y           (- (+ btm-y 5) (* n scale))
-                   :font-size   8
+                   :font-size  10
                    :fill        "black"
                    :font-weight (when (contains? #{80 120} (+ n mn)) :bold)
                    :text-anchor "start"}

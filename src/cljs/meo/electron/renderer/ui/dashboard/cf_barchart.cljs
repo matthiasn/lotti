@@ -68,9 +68,32 @@
                                                      (:fields x)))
                                       0))
                                   data)))
-              scale (if (pos? mx) (/ (- h 3) mx) 1)]
+              scale (if (pos? mx) (/ (- h 3) mx) 1)
+              line-inc (cond
+                         (> mx 12000) 10000
+                         (> mx 8000) 5000
+                         (> mx 4000) 2500
+                         (> mx 2000) 1000
+                         (> mx 1500) 1000
+                         (> mx 800) 500
+                         (> mx 400) 250
+                         (> mx 100) 50
+                         (> mx 40) 25
+                         :default 10)
+              lines (filter #(zero? (mod % line-inc)) (range 1 mx))]
           [:g
            [dc/row-label (or label tag) y h]
+           (for [n lines]
+             ^{:key (str qid n)}
+             [dc/line (- btm-y (* n scale)) "#888" 1])
+           (for [n lines]
+             ^{:key (str qid n)}
+             [:text {:x           2008
+                     :y           (- (+ btm-y 5) (* n scale))
+                     :font-size   10
+                     :fill        "black"
+                     :text-anchor "start"}
+              (+ n )])
            (for [[n {:keys [date_string fields]}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
@@ -90,7 +113,7 @@
                ^{:key (str tag field n)}
                [rect {:v     display-v
                       :x     x
-                      :w     (/ 1500 days)
+                      :w     (- (/ 1500 days) 1)
                       :ymd   date_string
                       :y     btm-y
                       :h     h

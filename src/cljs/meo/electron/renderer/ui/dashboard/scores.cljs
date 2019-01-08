@@ -98,11 +98,11 @@
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
             span (- end start)
+            line-inc 5
             rng (- mx mn)
             scale (/ h rng)
             btm-y (+ y h)
-            line-inc (if (> mx 100) 50 10)
-            lines (butlast (filter #(zero? (mod % line-inc)) (range 1 rng)))
+            lines (filter #(zero? (mod % line-inc)) (range mn mx))
             mapper (fn [idx itm]
                      (let [ts (:timestamp itm)
                            from-beginning (- ts start)
@@ -119,7 +119,15 @@
         [:g
          (for [n lines]
            ^{:key (str k score_k n)}
-           [dc/line (- btm-y (* n scale)) "#888" 1])
+           [dc/line (- btm-y (* (- n mn) scale)) "#888" 1])
+         (for [n lines]
+           ^{:key (str score_k k n)}
+           [:text {:x           2008
+                   :y           (- (+ btm-y 5) (* (- n mn) scale))
+                   :font-size   10
+                   :fill        "black"
+                   :text-anchor "start"}
+            n])
          [chart-line data mapper cfg]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
