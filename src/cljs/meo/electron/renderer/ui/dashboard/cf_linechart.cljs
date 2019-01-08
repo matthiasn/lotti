@@ -58,18 +58,22 @@
                           (map :values)
                           (mapcat identity))
               mn (apply min (map :v values))
-              mn (- mn (mod mn 5) 5)
               mx (apply max (map :v values))
-              mx (+ (- mx (mod mx 5)) 10)
               rng (- mx mn)
-              scale (if (pos? mx) (/ (- h 3) rng) 1)
               line-inc (cond
                          (> rng 2000) 1000
                          (> rng 1000) 500
                          (> rng 500) 250
-                         (> rng 100) 50
-                         (> rng 40) 25
-                         :default 10)
+                         (> rng 180) 100
+                         (> rng 90) 50
+                         (> rng 30) 20
+                         (> rng 15) 10
+                         (> rng 5) 5
+                         :default 1)
+              mn (- mn (mod mn line-inc) )
+              mx (+ (- mx (mod mx line-inc)) line-inc)
+              rng (- mx mn)
+              scale (if (pos? mx) (/ (- h 3) rng) 1)
               lines (filter #(zero? (mod % line-inc)) (range 1 rng))
               mapper (fn [idx data]
                        (let [ts (:ts data)
@@ -97,6 +101,6 @@
                      :font-size   10
                      :fill        "black"
                      :text-anchor "start"}
-              n])
+              (+ mn n)])
            [chart-line values mapper (merge {:color "red"} cfg)]
            [dc/line (+ y h) "#000" 2]])))))

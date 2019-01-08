@@ -16,7 +16,6 @@
           :x2           2000
           :y1           y
           :y2           y
-          :opacity 0.5
           :stroke-width w
           :stroke       s}])
 
@@ -118,8 +117,8 @@
             (+ n mn)])
 
 
-         [line (- btm-y (* (- 80 mn) scale)) diastolic_color 6]
-         [line (- btm-y (* (- 120 mn) scale)) systolic_color 6]
+         [line (- btm-y (* (- 80 mn) scale)) :black 1]
+         [line (- btm-y (* (- 120 mn) scale)) :black 1]
 
          [chart-line @bp-data (mapper :bp_systolic) systolic-cfg ]
          [chart-line @bp-data (mapper :bp_diastolic) diastolic-cfg ]
