@@ -1,7 +1,7 @@
 {
-  "name": "meo",
+  "name": "meins",
   "version": "0.6.23",
-  "description": "meo - a personal information manager",
+  "description": "meins - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
     "start": "electron .",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/matthiasn/meo.git"
+    "url": "git+https://github.com/matthiasn/meins.git"
   },
   "author": "Matthias Nehlsen",
   "license": "AGPL-1.0",
   "bugs": {
-    "url": "https://github.com/matthiasn/meo/issues"
+    "url": "https://github.com/matthiasn/meins/issues"
   },
-  "homepage": "https://github.com/matthiasn/meo",
+  "homepage": "https://github.com/matthiasn/meins",
   "dependencies": {
     "@cljs-oss/module-deps": "1.1.1",
     "asar": "0.14.6",

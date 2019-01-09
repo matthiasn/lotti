@@ -1,4 +1,4 @@
-# meo
+# meins
 
 **meo** is a **personal information manager** for recording and improving my life. It starts with a **geo-aware journal** where each entry captures your geo-location and whatever you want to note about that moment. You can use hashtags and mentions to better organize your information. You can also track your **tasks** and **habits**.
 

@@ -1,0 +1,137 @@
+(ns meins.electron.renderer.graphql
+  (:require [venia.core :as v]
+            #?(:clj
+                     [taoensso.timbre :refer [info debug warn]]
+               :cljs [taoensso.timbre :refer-macros [info debug warn]])
+            [clojure.string :as s]))
+
+(defn graphql-query [days tags]
+  (let [qfn (fn [t]
+              {:query/data  [:custom_field_stats {:days days :tag t}
+                             [:date_string
+                              [:fields [:field :value
+                                        [:values [:ts :v]]]]]]
+               :query/alias (keyword (s/replace (subs (str t) 1) "-" "_"))})
+        queries (mapv qfn tags)
+        git-query {:query/data [:git_stats {:days days}
+                                [:date_string :commits]]}
+        award-query {:query/data [:award_points {:days (inc days)}
+                                  [:total :claimed
+                                   [:by_day [:date_string :task]]]]}
+        queries (conj queries git-query)]
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))
+
+(defn dashboard-questionnaires [days items]
+  (let [qfn (fn [{:keys [tag score_k] :as cfg}]
+              (if tag
+                (let [kn (name score_k)
+                      alias (keyword
+                              (str (s/replace (subs (str tag) 1) "-" "_") "_" kn))]
+                  {:query/data  [:questionnaires {:days days
+                                                  :tag  tag
+                                                  :k    kn}
+                                 [:timestamp :score]]
+                   :query/alias alias})
+                (warn "no tag:" cfg)))
+        queries (filter identity (mapv qfn items))]
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))
+
+(defn tabs-query [queries incremental pvt]
+  (let [fields [:timestamp
+                :adjusted_ts
+                :text
+                :md
+                :latitude
+                :longitude
+                :starred
+                :linked_cnt
+                :arrival_timestamp
+                :departure_timestamp
+                :img_file
+                :img_rel_path
+                :last_saved
+                :audio_file
+                :tags
+                :perm_tags
+                :mentions
+                :habit
+                :story_name
+                :saga_name
+                :linked_saga
+                :stars
+                :questionnaires
+                :custom_fields
+                :entry_type
+                [:vclock [:node :clock]]
+                [:task [:completed_s
+                        :completion_ts
+                        :done
+                        :closed
+                        :closed_ts
+                        :estimate_m
+                        :on_hold
+                        :points
+                        :priority]]
+                [:git_commit [:repo_name
+                              :refs
+                              :commit
+                              :subject
+                              :abbreviated_commit]]
+                [:comments [:timestamp
+                            :md
+                            :tags
+                            :mentions
+                            :latitude
+                            :longitude
+                            :img_file
+                            :img_rel_path
+                            :starred
+                            :adjusted_ts
+                            :comment_for
+                            :entry_type
+                            :completed_time
+                            :custom_fields
+                            :questionnaires]]
+                [:linked [:timestamp
+                          :adjusted_ts
+                          :md
+                          :tags
+                          :mentions
+                          :stars
+                          :latitude
+                          :longitude
+                          :img_file
+                          :img_rel_path]]
+                [:reward [:claimed
+                          :claimed_ts
+                          :points]]
+                [:spotify [:name
+                           :uri
+                           :image
+                           [:artists [:name]]]]
+                [:story [:timestamp
+                         :story_name
+                         [:saga [:saga_name]]]]]
+        f (fn [[k {:keys [n search-text story flagged starred from to]}]]
+            {:query/data  [:tab_search {:query       search-text
+                                        :from        from
+                                        :to          to
+                                        :pvt         pvt
+                                        :incremental incremental
+                                        :starred     starred
+                                        :flagged     flagged
+                                        :story       story
+                                        :prio        1
+                                        :tab         (name k)
+                                        :n           n} fields]
+             :query/alias k})
+        queries (mapv f queries)]
+    (when (seq queries)
+      (v/graphql-query {:venia/queries queries}))))
+
+(defn gen-query [q]
+  (let [q [{:query/data q}]]
+    (when (seq q)
+      (v/graphql-query {:venia/queries q}))))

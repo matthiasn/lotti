@@ -1,5 +1,5 @@
-(defproject matthiasn/meo "0.0-SNAPSHOT"
-  :description "meo - a personal information manager"
+(defproject matthiasn/meins "0.0-SNAPSHOT"
+  :description "meins - a personal information manager"
   :url "https://github.com/matthiasn/systems-toolbox"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
@@ -57,9 +57,9 @@
                                     "out"
                                     "dev/renderer"]
   :auto-clean false
-  :uberjar-name "meo.jar"
+  :uberjar-name "meins.jar"
 
-  :main meo.jvm.core
+  :main meins.jvm.core
 
   :profiles {:uberjar      {:aot :all}
              :test-reagent {:dependencies [[cljsjs/react "16.6.0-0"]
@@ -74,7 +74,7 @@
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
 
-  :repl-options {:init-ns meo.jvm.core}
+  :repl-options {:init-ns meins.jvm.core}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 
@@ -120,7 +120,7 @@
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
               :builds        [{:id           "main"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           meo.electron.main.core
+                               :compiler     {:main           meins.electron.main.core
                                               :target         :nodejs
                                               :output-to      "prod/main/main.js"
                                               :output-dir     "out/main"
@@ -131,7 +131,7 @@
 
                               {:id           "geocoder"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           meo.electron.geocoder.core
+                               :compiler     {:main           meins.electron.geocoder.core
                                               :target         :nodejs
                                               :output-to      "prod/geocoder/geocoder.js"
                                               :output-dir     "out/geocoder"
@@ -140,7 +140,7 @@
 
                               {:id           "renderer"
                                :source-paths ["src/cljc" "src/cljs"]
-                               :compiler     {:main           meo.electron.renderer.core
+                               :compiler     {:main           meins.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
                                               :target         :nodejs
                                               :output-dir     "out/renderer"
@@ -150,7 +150,7 @@
                               {:id           "renderer-dev"
                                :source-paths ["src/cljc" "src/cljs" "env"]
                                :figwheel     true
-                               :compiler     {:main           meo.dev
+                               :compiler     {:main           meins.dev
                                               :output-to      "dev/renderer/renderer.js"
                                               :output-dir     "dev/renderer"
                                               :language-in    :ecmascript6
@@ -163,6 +163,6 @@
                                :source-paths ["src/cljs" "src/cljc" "test"]
                                :compiler     {:output-to     "out/testable.js"
                                               :output-dir    "out/"
-                                              :main          meo.jvm.runner
+                                              :main          meins.jvm.runner
                                               :process-shim  false
                                               :optimizations :whitespace}}]})

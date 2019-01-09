@@ -1,4 +1,4 @@
-appId: "matthiasn.meo"
+appId: "matthiasn.meins"
 asar: false
 files:
     - "bin/jlink/**"
