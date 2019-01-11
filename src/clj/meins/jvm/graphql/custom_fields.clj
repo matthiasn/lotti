@@ -112,6 +112,25 @@
                 :tag         tag}
                fields)))))
 
+(defn custom-fields-mapper2
+  "Creates mapper function for custom field stats. Takes current state. Returns
+   function that takes date string, such as '2016-10-10', and returns map with
+   results for the defined custom fields, plus the date string. Performs
+   operation specified for field, such as sum, min, max."
+  [current-state tag]
+  (let [custom-fields (-> current-state :options :custom_fields)
+        fields-def (into {} (map (fn [[k v]] [k (:fields v)])
+                                 (select-keys custom-fields [tag])))]
+    (fn [day nodes]
+      (let [nodes (filter :custom_fields nodes)
+            nodes (filter (partial adjusted-ts-filter day) nodes)
+            fields (mapv (partial stats-mapper tag nodes) fields-def)]
+        (apply merge
+               {:date_string day
+                :fields      (mapv fields-mapper (first fields))
+                :tag         tag}
+               fields)))))
+
 (defn custom-field-stats [state context args value]
   (let [{:keys [days tag]} args
         days (reverse (range days))

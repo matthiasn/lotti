@@ -11,15 +11,15 @@
 
 (def d (* 24 60 60 1000))
 
-(defn success? [day state [idx c]]
+(defn success? [day nodes state [idx c]]
   (let [g (:graph state)]
     (case (:type c)
 
       :min-max-sum
       (let [tag (:cf-tag c)
             k (:cf-key c)
-            m (cf/custom-fields-mapper state tag)
-            res (m day)
+            m (cf/custom-fields-mapper2 state tag)
+            res (m day nodes)
             min-val (:min-val c)
             max-val (:max-val c)
             x (:v (k res))]
@@ -33,9 +33,7 @@
       (let [{:keys [story min-time max-time]} c
             stories (gq/find-all-stories state)
             sagas (gq/find-all-sagas state)
-            day-nodes (gq/get-nodes-for-day g {:date_string day})
-            day-nodes-attrs (map #(uc/attrs g %) day-nodes)
-            day-stats (gsd/day-stats g day-nodes-attrs [] stories sagas day)
+            day-stats (gsd/day-stats g nodes [] stories sagas day)
             actual (get-in day-stats [:by_story_m story] 0)]
         {:success (when (number? actual)
                     (and (if (number? min-time) (>= actual (* 60 min-time)) true)
@@ -45,9 +43,7 @@
 
       :questionnaire
       (let [{:keys [quest-k req-n]} c
-            day-nodes (gq/get-nodes-for-day g {:date_string day})
-            day-nodes (map #(uc/attrs g %) day-nodes)
-            q-nodes (filter #(get-in % [:questionnaires quest-k]) day-nodes)
+            q-nodes (filter #(get-in % [:questionnaires quest-k]) nodes)
             res (count q-nodes)]
         {:success (<= req-n res)
          :idx     idx
@@ -55,12 +51,12 @@
 
       false)))
 
-(defn habit-success [habit day state]
+(defn habit-success [habit [day nodes] state]
   (try
     (let [habit-ts (:timestamp habit)
           path [:stats-cache day :habits habit-ts]]
       (or (get-in @state path)
-          (let [success? (partial success? day @state)
+          (let [success? (partial success? day nodes @state)
                 criteria (m/idxd (-> habit :habit :criteria))
                 by-criterion (mapv success? criteria)
                 res {:success (every? #(true? (:success %)) by-criterion)
@@ -75,13 +71,17 @@
     (let [days (range (:days args 5))
           now (stc/now)
           pvt (:pvt args)
-          day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+          g (:graph @state)
+          days-nodes (map (fn [day]
+                            (let [nodes (gq/get-nodes-for-day g {:date_string day})]
+                              [day (map #(uc/attrs g %) nodes)]))
+                          (mapv #(dt/ts-to-ymd (- now (* % d))) days))
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))
           f (fn [habit]
               (let [completed (when (:active (:habit habit))
-                                (mapv #(habit-success habit % state) day-strings))]
+                                (mapv #(habit-success habit % state) days-nodes))]
                 {:completed   completed
                  :habit_entry habit}))
           res (mapv f habits)]
