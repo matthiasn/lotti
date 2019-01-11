@@ -34,6 +34,8 @@ bak/
 bin/
 codox/
 
+docs/build
+
 log/
 
 blink1-tool
