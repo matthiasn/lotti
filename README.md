@@ -90,8 +90,8 @@ or
     $ lein test2junit
 
 
-[![CircleCI Build Status](https://circleci.com/gh/matthiasn/meins.svg?&style=shield)](https://circleci.com/gh/matthiasn/meo)
-[![TravisCI Build Status](https://travis-ci.org/matthiasn/meins.svg?branch=master)](https://travis-ci.org/matthiasn/meo)
+[![CircleCI Build Status](https://circleci.com/gh/matthiasn/meins.svg?&style=shield)](https://circleci.com/gh/matthiasn/meins)
+[![TravisCI Build Status](https://travis-ci.org/matthiasn/meins.svg?branch=master)](https://travis-ci.org/matthiasn/meins)
 
 
 ## How to help
