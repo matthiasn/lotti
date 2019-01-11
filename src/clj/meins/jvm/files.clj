@@ -46,8 +46,9 @@
                               :node-id  node-id}])))
 (defn enrich-story [state entry]
   (let [custom-fields (get-in state [:options :custom_fields])
-        tag (first (:perm_tags entry))
-        story (get-in custom-fields [tag :default-story])]
+        tag (or (first (:perm_tags entry))
+                (first (:tags entry)))
+        story (get-in custom-fields [tag :primary_story])]
     (assoc entry :linked-story story)))
 
 (defn entry-import-fn
