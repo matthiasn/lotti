@@ -262,11 +262,11 @@
               :click       #(put-fn [:window/dev-tools])}]})
 
 (defn help-menu [put-fn]
-  (let [help-page (:help-page rt/runtime-info)
+  (let [help-page "https://meins.readthedocs.io/en/latest/"
         new-window #(put-fn [:window/new {:url       help-page
                                           :window-id :help
-                                          :width     600
-                                          :height    800}])]
+                                          :width     1024
+                                          :height    768}])]
     {:label   "Help"
      :submenu [{:label       "Show Manual"
                 :accelerator "CmdOrCtrl+?"

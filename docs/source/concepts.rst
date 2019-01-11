@@ -1,8 +1,6 @@
 Concepts
 ========
 
-
-
 Let’s look at the core concepts first, before looking into each of them in detail. The main view of the application currently looks like this:
 
 .. image:: ./images/20181217_2250_overview.png
@@ -25,7 +23,8 @@ Also, you can add a story to the search using `$` before starting to type a subs
 
 .. image:: ./images/20181219_1046_search.png
 
-In theory, you would also be able to do a full-text search, but that is currently broken, see [issue #17](https://github.com/matthiasn/meins/issues/17). Help is much appreciated.
+In theory, you would also be able to do a full-text search, but that is currently broken, see
+`issue #17 <https://github.com/matthiasn/meins/issues/17>`. Help is much appreciated.
 
 Below briefing and entry timeline view, there is the **dashboard**. One way I think of it is a **banner ad for information about myself** that, insofar as if I choose the right information, it helps me improve something in my life. What information you choose is entirely up to you, and showing even seemingly random data source can be interesting, and useful to spot connections.
 
@@ -134,7 +133,8 @@ In the definition entry, you can add different criteria. The rule is simple: **A
 
 
 
-### Dashboard
+Dashboard
+---------
 
 Above, you saw a dashboard with some of my habits. However, dashboards are more versatile than just habits. Also, the can display information about logged data from custom fields, your blood pressure as a variation on that, and the result of questionnaires.
 
@@ -180,3 +180,4 @@ Private mode
 There is stuff in my journal that I would not freely share with colleagues, friends, or family. I do however need to be able to open meins when other people are around. Also, I need to be able to take screenshots, for example for this manual, without having to blur out anything.
 
 For this, there is the private mode. This ensures that once activating the little detective button at the top. Then, all the entities described above that do have a private mode switch will be hidden as desired and made safe for work, if you will.
+
