@@ -58,6 +58,8 @@
         entry (merge msg-payload {:last_saved (st/now) :id id})
         entry  (enrich-story current-state entry)
         ts (:timestamp entry)
+        day (dt/ts-to-ymd (or (:adjusted_ts entry) ts))
+        new-state (assoc-in current-state [:stats-cache day] nil)
         graph (:graph current-state)
         cfg (:cfg current-state)
         exists? (uc/has-node? graph ts)
@@ -81,7 +83,7 @@
                 :timeout 250
                 :id      :imported-entry}]))
 
-    {:new-state (ga/add-node current-state node-to-add)
+    {:new-state (ga/add-node new-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
 (defn persist-state! [{:keys [current-state]}]
@@ -135,10 +137,12 @@
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
+        day (dt/ts-to-ymd (or (:adjusted_ts entry) ts))
         new-state (ga/add-node current-state entry)
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
+        new-state (assoc-in new-state [:stats-cache day] nil)
         broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
     (when (not= (dissoc prev :last_saved :vclock)
                 (dissoc entry :last_saved :vclock))
