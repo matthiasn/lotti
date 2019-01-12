@@ -118,7 +118,7 @@
    results for the defined custom fields, plus the date string. Performs
    operation specified for field, such as sum, min, max."
   [current-state tag]
-  (let [custom-fields (-> current-state :options :custom_fields)
+  (let [custom-fields (-> current-state :cfg :custom-fields)
         fields-def (into {} (map (fn [[k v]] [k (:fields v)])
                                  (select-keys custom-fields [tag])))]
     (fn [day nodes]
