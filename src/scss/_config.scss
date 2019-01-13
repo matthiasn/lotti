@@ -32,7 +32,6 @@
   table {
     background-color: white;
     color: $font-color;
-    width: 400px;
     line-height: 22px;
     border-collapse: collapse;
 
@@ -48,7 +47,7 @@
     }
 
     .completion {
-      width: 140px;
+      width: 100px;
       text-align: left;
     }
 
@@ -59,7 +58,7 @@
     }
 
     &.sagas-stories, &.habit_cfg {
-      min-width: 400px;
+      min-width: 300px;
       font-family: $header-font-family;
       font-size: $font-size-medium;
       white-space: nowrap;
@@ -123,11 +122,11 @@
   }
 
   .custom-fields, .habits {
-    min-width: 400px;
+    min-width: 300px;
   }
 
   .tile-tabs {
-    margin-left: 8px;
+    margin-left: 4px;
     margin-top: 12px;
     width: 400px;
   }

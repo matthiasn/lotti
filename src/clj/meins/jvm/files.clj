@@ -126,7 +126,7 @@
 
 (defn geo-entry-persist-fn
   "Handler function for persisting journal entry."
-  [{:keys [current-state msg-payload msg-meta put-fn cmp-state]}]
+  [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         cfg (:cfg current-state)
         g (:graph current-state)
