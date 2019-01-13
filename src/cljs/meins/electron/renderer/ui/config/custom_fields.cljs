@@ -43,9 +43,11 @@
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
                      (gql-query @pvt (str ts))))
-        add-click (h/new-entry {:entry_type :custom-field-cfg
-                                :perm_tags  #{"#custom-field-cfg"}
-                                :tags       #{"#custom-field-cfg"}} open-new)]
+        add-click (h/new-entry {:entry_type       :custom-field-cfg
+                                :perm_tags        #{"#custom-field-cfg"}
+                                :tags             #{"#custom-field-cfg"}
+                                :custom_field_cfg {:active true}}
+                               open-new)]
     (fn custom-fields-list-render [local]
       (let [stories @stories
             search-text (:search @local "")

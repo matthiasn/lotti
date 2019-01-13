@@ -24,7 +24,8 @@
             [meins.jvm.graph.query :as gq]
             [clojure.walk :as walk]
             [meins.jvm.datetime :as dt]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [clojure.set :as set])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name
@@ -125,7 +126,7 @@
 
 (defn geo-entry-persist-fn
   "Handler function for persisting journal entry."
-  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  [{:keys [current-state msg-payload msg-meta put-fn cmp-state]}]
   (let [ts (:timestamp msg-payload)
         cfg (:cfg current-state)
         g (:graph current-state)
@@ -143,7 +144,9 @@
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
         new-state (assoc-in new-state [:stats-cache :days day] nil)
-        new-state (if (contains? (:perm_tags entry) "#custom-field-cfg")
+        new-state (if (set/intersection (:perm_tags entry)
+                                        #{"#custom-field-cfg"
+                                          "#habit-cfg"})
                     (dissoc new-state :stats-cache)
                     new-state)
         broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]

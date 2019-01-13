@@ -68,7 +68,12 @@
         background-color: #00a699;
         text-align: left;
       }
+
       th, td {
+        padding-left: 8px;
+      }
+
+      td {
         padding-left: 8px;
         background-color: white;
       }
