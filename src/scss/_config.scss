@@ -59,9 +59,10 @@
     }
 
     &.sagas-stories, &.habit_cfg {
-      width: 450px;
+      min-width: 400px;
       font-family: $header-font-family;
       font-size: $font-size-medium;
+      white-space: nowrap;
 
       th {
         background-color: #00a699;
@@ -69,6 +70,7 @@
       }
       th, td {
         padding-left: 8px;
+        background-color: white;
       }
 
       .fa-toggle-on {
@@ -83,6 +85,7 @@
 
   .stories, .sagas, .habits {
     overflow-y: scroll;
+    width: auto;
 
     i {
       font-size: $font-size-large;
@@ -95,7 +98,6 @@
     height: 100%;
     width: 100%;
     overflow-y: auto;
-    margin-left: 8px;
 
     .dashboards {
       flex: 1;
@@ -108,7 +110,7 @@
 
   .habit-cfg-row {
     display: flex;
-    flex: 2;
+    flex: 1;
 
     .journal {
       min-width: 350px;
@@ -116,12 +118,13 @@
   }
 
   .custom-fields, .habits {
+    min-width: 400px;
   }
 
   .tile-tabs {
     margin-left: 8px;
     margin-top: 12px;
-    width: 100%;
+    width: 400px;
   }
 
   .menu {
@@ -224,7 +227,6 @@
     overflow-x: hidden;
     overflow-y: scroll;
     flex: 1;
-    width: 340px;
     height: 50vh;
 
     .story {
@@ -235,14 +237,13 @@
   }
 
   .custom-field {
-    min-width: 300px;
     flex: 1;
     background-color: #fafafa;
     padding: 6px 15px;
     margin: 0 6px 5px 0;
     cursor: pointer;
     user-select: none;
-    border-radius: $entry-border-radius;
+    border-radius: 2px;
 
     h3 {
       margin: 2px 0;
