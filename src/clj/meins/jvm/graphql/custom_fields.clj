@@ -117,8 +117,12 @@
    function that takes date string, such as '2016-10-10', and returns map with
    results for the defined custom fields, plus the date string. Performs
    operation specified for field, such as sum, min, max."
-  [current-state tag]
-  (let [custom-fields (-> current-state :cfg :custom-fields)
+  [cmp-state tag]
+  (let [path [:stats-cache :custom-fields]
+        custom-fields (or (get-in @cmp-state path)
+                          (let [cfc (custom-fields-cfg @cmp-state)]
+                            (swap! cmp-state assoc-in path cfc)
+                            cfc))
         fields-def (into {} (map (fn [[k v]] [k (:fields v)])
                                  (select-keys custom-fields [tag])))]
     (fn [day nodes]

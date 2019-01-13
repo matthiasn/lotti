@@ -11,14 +11,15 @@
 
 (def d (* 24 60 60 1000))
 
-(defn success? [day nodes state [idx c]]
-  (let [g (:graph state)]
+(defn success? [day nodes cmp-state [idx c]]
+  (let [state @cmp-state
+        g (:graph state)]
     (case (:type c)
 
       :min-max-sum
       (let [tag (:cf-tag c)
             k (:cf-key c)
-            m (cf/custom-fields-mapper2 state tag)
+            m (cf/custom-fields-mapper2 cmp-state tag)
             res (m day nodes)
             min-val (:min-val c)
             max-val (:max-val c)
@@ -54,9 +55,9 @@
 (defn habit-success [habit [day nodes] state]
   (try
     (let [habit-ts (:timestamp habit)
-          path [:stats-cache day :habits habit-ts]]
+          path [:stats-cache :days day :habits habit-ts]]
       (or (get-in @state path)
-          (let [success? (partial success? day nodes @state)
+          (let [success? (partial success? day nodes state)
                 criteria (m/idxd (-> habit :habit :criteria))
                 by-criterion (mapv success? criteria)
                 res {:success (every? #(true? (:success %)) by-criterion)
