@@ -60,6 +60,7 @@
   :uberjar-name "meins.jar"
 
   :main meins.jvm.core
+  :jvm-opts ["-Xmx2g"]
 
   :profiles {:uberjar      {:aot :all}
              :test-reagent {:dependencies [[cljsjs/react "16.6.0-0"]

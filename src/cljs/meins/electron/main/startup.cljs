@@ -128,7 +128,7 @@
 (defn start-jvm [{:keys [current-state msg-payload]}]
   (let [{:keys [user-data java jar app-path data-path
                 gql-port logdir playground-path]} rt/runtime-info
-        args ["-Dapple.awt.UIElement=true" "-XX:+AggressiveOpts" "-jar" jar]
+        args ["-Dapple.awt.UIElement=true" "-Xmx2g" "-jar" jar]
         environment (:environment msg-payload)
         port (if (= environment :live) PORT (:pg-port rt/runtime-info))
         data-path (if (= environment :live) data-path playground-path)
