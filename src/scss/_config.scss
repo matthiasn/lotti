@@ -37,12 +37,14 @@
 
     tr {
       cursor: pointer;
+      background-color: white;
+
       &:hover {
         background-color: desaturate(lighten($orange, 40%), 10%);
       }
       &.active {
-        background-color: lighten($orange, 25%);
-        font-weight: bold;
+        background-color: $orange;
+        color: white;
       }
 
       td {
@@ -79,9 +81,9 @@
       text-align: left;
     }
 
-    .habit {
+    .title {
       font-family: $header-font-family;
-      padding-left: 8px;
+      font-weight: bold;
     }
 
     &.sagas-stories, &.habit_cfg {
@@ -100,7 +102,6 @@
 
       td {
         padding-left: 8px;
-        background-color: white;
       }
 
       .fa-toggle-on {

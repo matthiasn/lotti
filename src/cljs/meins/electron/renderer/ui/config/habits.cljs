@@ -44,7 +44,7 @@
               :class    (when (= sel ts) "active")
               :on-click line-click}
          [:td date-str]
-         [:td.habit text]
+         [:td.title text]
          [:td.completion
           (for [[i c] (m/idxd (reverse (take 10 (:completed habit))))]
             [:span.status {:class (when (:success c) "success")
