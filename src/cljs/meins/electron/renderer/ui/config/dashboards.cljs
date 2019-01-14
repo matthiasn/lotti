@@ -48,8 +48,8 @@
               :on-click line-click}
          [:td date-str]
          [:td.habit text]
-         [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
-         [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
+         [:td.c [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
+         [:td.c [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
 (defn dashboards [local]
   (let [pvt (subscribe [:show-pvt])

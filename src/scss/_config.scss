@@ -10,7 +10,7 @@
 
   h2 {
     margin-top: 18px;
-    font-size: 18px;
+    font-size: $font-size-meins-header;
     color: #EEE;
     font-weight: lighter;
   }
@@ -30,10 +30,10 @@
   }
 
   table {
-    background-color: white;
     color: $font-color;
     line-height: 22px;
     border-collapse: collapse;
+    margin-bottom: 20px;
 
     tr {
       cursor: pointer;
@@ -44,21 +44,47 @@
         background-color: lighten($orange, 25%);
         font-weight: bold;
       }
+
+      td {
+        &.c {
+          text-align: center;
+        }
+        &:last-child {
+          padding-right: 8px;
+        }
+      }
+
+      th:first-child {
+        border-top-left-radius: 3px;
+      }
+
+      th:last-child {
+        border-top-right-radius: 3px;
+        padding-right: 8px;
+      }
+
+      &:last-child {
+
+        td:first-child {
+          border-bottom-left-radius: 3px;
+        }
+
+        td:last-child {
+          border-bottom-right-radius: 3px;
+        }
+      }
     }
 
     .completion {
-      width: 100px;
       text-align: left;
     }
 
     .habit {
-      font-size: $font-size-large;
       font-family: $header-font-family;
       padding-left: 8px;
     }
 
     &.sagas-stories, &.habit_cfg {
-      min-width: 300px;
       font-family: $header-font-family;
       font-size: $font-size-medium;
       white-space: nowrap;
@@ -117,24 +143,23 @@
     flex: 1;
 
     .journal {
-      min-width: 350px;
+      min-width: 320px;
     }
   }
 
   .custom-fields, .habits {
-    min-width: 300px;
+    padding-right: 16px;
   }
 
   .tile-tabs {
     margin-left: 4px;
     margin-top: 12px;
-    width: 400px;
+    width: 380px;
   }
 
   .menu {
     background-color: white;
     height: 100%;
-    width: 2180px;
     max-width: 180px;
     min-width: 180px;
     z-index: 11;
@@ -160,6 +185,7 @@
         background-color: $hashtag-blue;
         color: white;
       }
+
       &.exit {
         font-weight: bold;
       }
@@ -414,10 +440,8 @@
     }
 
     table {
-      padding: 60px 40px 0 40px;
-      padding-right: 30px;
       background-color: $tab-bg;
-      margin-top: 30px;
+      margin-top: 20px;
 
       tr.spacer {
         height: 20px;
@@ -452,7 +476,7 @@
         margin-left: 20px;
         color: orange;
         &.r {
-          align-content: right;
+          align-content: flex-end;
         }
 
         &.success {
