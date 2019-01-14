@@ -125,7 +125,7 @@
                                          (conj (set %) tag))
                            updated (update-in entry [:perm_tags] toggle-tag)]
                        (swap! local assoc-in [:show] false)
-                       (emit [:entry/update updated])))
+                       (emit [:entry/update-local updated])))
         match (fn [[i [tag x]]]
                 (h/str-contains-lc? tag (:search @local "")))
         keydown (fn [ev]
