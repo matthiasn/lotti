@@ -25,14 +25,7 @@
                  :y              (- y h)
                  :width          w
                  :height         h
-                 :fill           color}]
-         (when (:show-label @local)
-           [:text {:x           (+ x 11)
-                   :y           (- y 5)
-                   :font-size   8
-                   :fill        "#777"
-                   :text-anchor "middle"}
-            v])]))))
+                 :fill           color}]]))))
 
 (defn indexed-days [stats tag k start days]
   (let [d (* 24 60 60 1000)
@@ -50,6 +43,7 @@
 (defn barchart-row [_]
   (let [gql-res (subscribe [:gql-res])
         backend-cfg (subscribe [:backend-cfg])
+        pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn barchart-row [{:keys [days span mx tag h y field color local
                               cls threshold success-cls] :as m}]
@@ -86,14 +80,15 @@
            (for [n lines]
              ^{:key (str qid n)}
              [dc/line (- btm-y (* n scale)) "#888" 1])
-           (for [n lines]
-             ^{:key (str qid n)}
-             [:text {:x           2008
-                     :y           (- (+ btm-y 5) (* n scale))
-                     :font-size   10
-                     :fill        "black"
-                     :text-anchor "start"}
-              (+ n )])
+           (when @pvt
+             (for [n lines]
+               ^{:key (str qid n)}
+               [:text {:x           2008
+                       :y           (- (+ btm-y 5) (* n scale))
+                       :font-size   10
+                       :fill        "black"
+                       :text-anchor "start"}
+                (+ n)]))
            (for [[n {:keys [date_string fields]}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)

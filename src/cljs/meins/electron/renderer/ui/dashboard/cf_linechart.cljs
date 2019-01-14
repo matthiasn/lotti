@@ -41,6 +41,7 @@
 
 (defn linechart-row [_]
   (let [gql-res (subscribe [:gql-res])
+        pvt (subscribe [:show-pvt])
         backend-cfg (subscribe [:backend-cfg])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn linechart-row-render
@@ -94,13 +95,14 @@
            (for [n lines]
              ^{:key (str qid n)}
              [dc/line (- btm-y (* n scale)) "#888" 1])
-           (for [n lines]
-             ^{:key (str qid n)}
-             [:text {:x           2008
-                     :y           (- (+ btm-y 5) (* n scale))
-                     :font-size   10
-                     :fill        "black"
-                     :text-anchor "start"}
-              (+ mn n)])
+           (when @pvt
+             (for [n lines]
+               ^{:key (str qid n)}
+               [:text {:x           2008
+                       :y           (- (+ btm-y 5) (* n scale))
+                       :font-size   10
+                       :fill        "black"
+                       :text-anchor "start"}
+                (+ mn n)]))
            [chart-line values mapper (merge {:color "red"} cfg)]
            [dc/line (+ y h) "#000" 2]])))))

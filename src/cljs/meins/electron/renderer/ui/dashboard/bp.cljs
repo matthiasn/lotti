@@ -67,7 +67,7 @@
                                          :stroke-width (:circle_stroke_width cfg 2)}}]))]]))))
 
 (defn bp-chart [_]
-  (let [show-pvt (subscribe [:show-pvt])
+  (let [pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
         bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
     (fn [{:keys [y k h start span mn mx x-offset w systolic_color systolic_fill
@@ -106,16 +106,16 @@
          (for [n lines]
            ^{:key (str "bp" k n)}
            [dc/line (- btm-y (* n scale)) "#888" 1])
-         (for [n lines]
-           ^{:key (str "bp" k n)}
-           [:text {:x           2008
-                   :y           (- (+ btm-y 5) (* n scale))
-                   :font-size  10
-                   :fill        "black"
-                   :font-weight (when (contains? #{80 120} (+ n mn)) :bold)
-                   :text-anchor "start"}
-            (+ n mn)])
-
+         (when @pvt
+           (for [n lines]
+             ^{:key (str "bp" k n)}
+             [:text {:x           2008
+                     :y           (- (+ btm-y 5) (* n scale))
+                     :font-size   10
+                     :fill        "black"
+                     :font-weight (when (contains? #{80 120} (+ n mn)) :bold)
+                     :text-anchor "start"}
+              (+ n mn)]))
 
          [line (- btm-y (* (- 80 mn) scale)) :black 1]
          [line (- btm-y (* (- 120 mn) scale)) :black 1]
