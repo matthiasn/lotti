@@ -10,6 +10,7 @@
             [cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
             [moment]
+            [moment-duration-format]
             [electron :refer [remote]]
             [cljs.nodejs :refer [process]]
             [clojure.string :as s]))
@@ -120,9 +121,9 @@
   (let [t (moment (* s 1000))]
     (.format (.utc t) "HH:mm")))
 
-(defn s-to-hh-mm-ss [s]
-  (let [t (moment (* s 1000))]
-    (.format (.utc t) "HH:mm:ss")))
+(defn s-to-hh-mm-ss [seconds]
+  (let [dur (.duration moment seconds "seconds")]
+    (.format dur "d:HH:mm:ss")))
 
 (defn s-to-mm-ss-ms [ms]
   (let [t (moment ms)]

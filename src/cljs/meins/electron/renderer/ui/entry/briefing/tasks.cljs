@@ -6,6 +6,7 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.common.utils.parse :as up]
             [moment]
+            [moment-duration-format]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [clojure.set :as set]
             [meins.electron.renderer.helpers :as h]
@@ -34,13 +35,6 @@
         ms (.asMilliseconds dur)
         utc (.utc moment ms)
         fmt (.format utc "HH:mm")]
-    fmt))
-
-(defn s-to-hhmmss [seconds]
-  (let [dur (.duration moment seconds "seconds")
-        ms (.asMilliseconds dur)
-        utc (.utc moment ms)
-        fmt (.format utc "HH:mm:ss")]
     fmt))
 
 (defn s-to-hhmm [seconds]
@@ -110,7 +104,7 @@
                   remaining (- seconds actual)
                   cls (when (neg? remaining) "neg")]
               [:span {:class cls}
-               (s-to-hhmmss actual)])])
+               (h/s-to-hh-mm-ss actual)])])
          [:td.text text]
          [:td.last (when unlink
                      [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
