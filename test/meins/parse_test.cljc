@@ -63,7 +63,7 @@
    :n           n})
 
 (def fulltext-search
-  {:search-text "\"travel AND aircraft\""
+  {:search-text "'travel AND aircraft'"
    :ft-search   "travel AND aircraft"
    :country     nil
    :tags        #{}

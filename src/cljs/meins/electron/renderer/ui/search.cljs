@@ -96,8 +96,7 @@
         (when-not (or (:briefing query-deref)
                       (:timestamp query-deref))
           [:div.search
-           [:div.search-row {:class (when (or (:show-range-picker @local)
-                                              range-set?)
+           [:div.search-row {:class (when (:show-range-picker @local)
                                       "cal-open")}
             [:div [:i.far.fa-search]]
             [d/draft-search-field (editor-state query-deref) search-send]

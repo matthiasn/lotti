@@ -44,8 +44,8 @@
   [text]
   (let [text (s/trim (str text))]
     {:search-text text
-     :ft-search   (when-let [ft-search (re-find #"\".*\"" text)]
-                    (s/replace ft-search "\"" ""))
+     :ft-search   (when-let [ft-search (re-find #"'.*'" text)]
+                    (s/replace ft-search "'" ""))
      :tags        (set (map second (re-seq search-tag-regex text)))
      :not-tags    (set (map #(s/replace % "~" "")
                             (re-seq search-not-tags-regex text)))
