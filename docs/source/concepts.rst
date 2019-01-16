@@ -1,4 +1,4 @@
-Concepts
+Overview
 ========
 
 Let’s look at the core concepts first, before looking into each of them in detail. The main view of the application currently looks like this:
