@@ -46,12 +46,17 @@
         pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn barchart-row [{:keys [days span mx tag h y field color local
-                              cls threshold success-cls] :as m}]
+                              cls threshold success-cls start end] :as m}]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
               data (get-in @gql-res [:dashboard :data qid])
-              indexed (map-indexed (fn [i x] [i x]) data)
+              indexed (map-indexed (fn [i x]
+                                     [i (merge x {:day-ts (h/ymd-to-ts (:date_string x))})])
+                                   data)
+              indexed (->> indexed
+                          (filter #(< (:day-ts (second %)) end))
+                          (filter #(> (:day-ts (second %)) start)))
               label (get-in @custom-fields [tag :fields (keyword field) :label])
               field-type (get-in @custom-fields [tag :fields (keyword field) :cfg :type])
               mx (or mx
@@ -89,11 +94,11 @@
                        :fill        "black"
                        :text-anchor "start"}
                 (+ n)]))
-           (for [[n {:keys [date_string fields]}] indexed]
+           (for [[n {:keys [date_string day-ts fields] :as m}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
                    d (* 24 60 60 1000)
-                   offset (* n d)
+                   offset (- day-ts start)
                    span (if (zero? span) 1 span)
                    scaled (* 1800 (/ offset span))
                    x (+ 201 scaled)

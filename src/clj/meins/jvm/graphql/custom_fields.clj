@@ -136,10 +136,13 @@
                fields)))))
 
 (defn custom-field-stats [state context args value]
-  (let [{:keys [days tag]} args
+  (let [{:keys [days tag offset]} args
+        offset (* offset 24 60 60 1000)
         days (reverse (range days))
         now (stc/now)
         custom-fields-mapper (custom-fields-mapper @state tag)
-        day-strings (mapv #(dt/ts-to-ymd (- now (* % gc/d))) days)
+        day-mapper #(dt/ts-to-ymd
+                      (+ (- now (* % gc/d)) offset))
+        day-strings (mapv day-mapper days)
         stats (mapv custom-fields-mapper day-strings)]
     stats))

@@ -5,15 +5,18 @@
                :cljs [taoensso.timbre :refer-macros [info debug warn]])
             [clojure.string :as s]))
 
-(defn graphql-query [days tags]
+(defn graphql-query [days offset tags]
   (let [qfn (fn [t]
-              {:query/data  [:custom_field_stats {:days days :tag t}
+              {:query/data  [:custom_field_stats {:days   days
+                                                  :offset offset
+                                                  :tag    t}
                              [:date_string
                               [:fields [:field :value
                                         [:values [:ts :v]]]]]]
                :query/alias (keyword (s/replace (subs (str t) 1) "-" "_"))})
         queries (mapv qfn tags)
-        git-query {:query/data [:git_stats {:days days}
+        git-query {:query/data [:git_stats {:days   days
+                                            :offset offset}
                                 [:date_string :commits]]}
         award-query {:query/data [:award_points {:days (inc days)}
                                   [:total :claimed
@@ -22,15 +25,16 @@
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 
-(defn dashboard-questionnaires [days items]
+(defn dashboard-questionnaires [days offset items]
   (let [qfn (fn [{:keys [tag score_k] :as cfg}]
               (if tag
                 (let [kn (name score_k)
                       alias (keyword
                               (str (s/replace (subs (str tag) 1) "-" "_") "_" kn))]
-                  {:query/data  [:questionnaires {:days days
-                                                  :tag  tag
-                                                  :k    kn}
+                  {:query/data  [:questionnaires {:days   days
+                                                  :offset offset
+                                                  :tag    tag
+                                                  :k      kn}
                                  [:timestamp :score]]
                    :query/alias alias})
                 (warn "no tag:" cfg)))

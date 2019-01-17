@@ -45,7 +45,7 @@
         backend-cfg (subscribe [:backend-cfg])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn linechart-row-render
-      [{:keys [span start x-offset w tag h y field] :as m}]
+      [{:keys [span start end x-offset w tag h y field] :as m}]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
@@ -58,6 +58,9 @@
                           (filter #(= (name field) (:field %)))
                           (map :values)
                           (mapcat identity))
+              values (->> values
+                          (filter #(< (:ts %) end))
+                          (filter #(> (:ts %) start)))
               mn (apply min (map :v values))
               mx (apply max (map :v values))
               rng (- mx mn)
@@ -71,7 +74,7 @@
                          (> rng 15) 10
                          (> rng 5) 5
                          :default 1)
-              mn (- mn (mod mn line-inc) )
+              mn (- mn (mod mn line-inc))
               mx (+ (- mx (mod mx line-inc)) line-inc)
               rng (- mx mn)
               scale (if (pos? mx) (/ (- h 3) rng) 1)

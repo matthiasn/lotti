@@ -19,7 +19,7 @@
 
 (defn bp-field-stats [state context args value]
   (let [{:keys [days]} args
-        from (- (stc/now) (* days d))
+        from (- (stc/now) (* (+ days (* -1 (:offset args 0))) d))
         q (merge (p/parse-search "#BP"))
         nodes (:entries-list (gq/get-filtered @state q))
         f (fn [entry] {:timestamp    (:timestamp entry)
@@ -29,7 +29,6 @@
         bp-entries (mapv f nodes)
         filtered (->> bp-entries
                       (filter #(every? identity (vals %)))
-                      (filter #(> (:timestamp %) from))
                       (filter #(or (> (:timestamp %) from)
                                    (> (:adjusted_ts %) from))))]
     filtered))
@@ -45,11 +44,13 @@
     stats))
 
 (defn questionnaires [state context args value]
-  (let [{:keys [days tag k]} args
-        newer-than (- (stc/now) (* d (or days 90)))
+  (let [{:keys [days tag k offset]} args
+        newer-than (- (stc/now) (* d (or (+ days (* -1 offset)) 90)))
+        older-than (- (stc/now) (* d (* -1 offset) 0))
         stats (q/questionnaires-by-tag @state tag (keyword k))
         stats (filter #(:score %) stats)
-        stats (vec (filter #(> (:timestamp %) newer-than) stats))]
+        stats (vec (filter #(> (:timestamp %) newer-than) stats))
+        stats (vec (filter #(< (:timestamp %) older-than) stats))]
     (debug stats)
     stats))
 

@@ -70,7 +70,7 @@
   (let [pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
         bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
-    (fn [{:keys [y k h start span mn mx x-offset w systolic_color systolic_fill
+    (fn [{:keys [y k h start end span mn mx x-offset w systolic_color systolic_fill
                  diastolic_color diastolic_fill] :as m}]
       (debug :bp-chart m)
       (let [mx (or mx 200)
@@ -101,7 +101,10 @@
                            :x    x
                            :y    y
                            :ts   ts
-                           :s    s}])))]
+                           :s    s}])))
+            values (->> @bp-data
+                        (filter #(< (:timestamp %) end))
+                        (filter #(> (:timestamp %) start)))]
         [:g
          (for [n lines]
            ^{:key (str "bp" k n)}
@@ -120,8 +123,8 @@
          [line (- btm-y (* (- 80 mn) scale)) :black 1]
          [line (- btm-y (* (- 120 mn) scale)) :black 1]
 
-         [chart-line @bp-data (mapper :bp_systolic) systolic-cfg ]
-         [chart-line @bp-data (mapper :bp_diastolic) diastolic-cfg ]
+         [chart-line values (mapper :bp_systolic) systolic-cfg ]
+         [chart-line values (mapper :bp_diastolic) diastolic-cfg ]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]

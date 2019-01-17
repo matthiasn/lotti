@@ -92,11 +92,13 @@
 (defn scores-chart
   [{:keys []}]
   (let [gql-res (subscribe [:gql-res])]
-    (fn scores-chart-render [{:keys [y k w h score_k start end mn mx
+    (fn scores-chart-render [{:keys [y k w h score_k start end mn mx offset
                                      x-offset label] :as cfg}]
       (let [qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
             data (sort-by :timestamp
                           (get-in @gql-res [:dashboard-questionnaires :data qid]))
+            data (filter #(< (:timestamp %) end) data)
+            data (filter #(> (:timestamp %) start) data)
             span (- end start)
             line-inc 5
             rng (- mx mn)
@@ -105,7 +107,8 @@
             lines (filter #(zero? (mod % line-inc)) (range mn mx))
             mapper (fn [idx itm]
                      (let [ts (:timestamp itm)
-                           from-beginning (- ts start)
+                           offset (* offset (* 24 60 60 1000))
+                           from-beginning (- ts start offset)
                            x (+ x-offset (* w (/ from-beginning span)))
                            v (:score itm)
                            y (- btm-y (* (- v mn) scale))

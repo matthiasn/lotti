@@ -112,6 +112,7 @@
 (defn format-time [m] (.format (moment m) "YYYY-MM-DDTHH:mm"))
 (defn hh-mm [m] (.format (moment m) "HH:mm"))
 (defn ymd [m] (.format (moment m) ymd-format))
+(defn ymd-to-ts [s] (.valueOf (moment s ymd-format)))
 
 (defn m-to-hh-mm [m]
   (let [t (moment (* m 60 1000))]

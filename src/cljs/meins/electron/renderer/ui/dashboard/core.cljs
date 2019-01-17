@@ -19,17 +19,21 @@
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.ui.dashboard.cf_barchart :as db]))
 
-(defn gql-query [charts-pos days local]
+(def d (* 24 60 60 1000))
+
+(defn gql-query [charts-pos days offset local]
   (when-not (and (= (:days @local) days)
-                 (= (:charts-pos @local) charts-pos))
+                 (= (:charts-pos @local) charts-pos)
+                 (= (:offset-last @local) offset))
     (swap! local assoc :days days)
+    (swap! local assoc :offset-last offset)
     (swap! local assoc :charts-pos charts-pos)
     (let [tags (->> (:charts charts-pos)
                     (filter #(contains? #{:barchart_row
                                           :linechart_row} (:type %)))
                     (mapv :tag)
                     (concat ["#BP"]))]
-      (when-let [query-string (gql/graphql-query (inc days) tags)]
+      (when-let [query-string (gql/graphql-query (inc days) offset tags)]
         (info "dashboard tags" query-string)
         (emit [:gql/query {:q        query-string
                            :res-hash nil
@@ -37,7 +41,7 @@
                            :prio     15}])))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))]
-      (when-let [query-string (gql/dashboard-questionnaires days items)]
+      (when-let [query-string (gql/dashboard-questionnaires days offset items)]
         (info "dashboard" query-string)
         (emit [:gql/query {:q        query-string
                            :res-hash nil
@@ -68,7 +72,8 @@
         habits (subscribe [:habits])
         local (r/atom {:idx          0
                        :play         true
-                       :display-text ""})
+                       :display-text ""
+                       :offset       0})
         pvt (subscribe [:show-pvt])
         pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
         active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
@@ -93,11 +98,22 @@
         run-query #(let [dashboard-ts (:timestamp @dashboard)]
                      (when (not= dashboard-ts (:dashboard-ts @local))
                        (swap! local assoc :dashboard-ts dashboard-ts)
-                       (gql-query @charts-pos days local)))]
+                       (gql-query @charts-pos days (:offset @local) local)))
+        on-wheel (fn [ev]
+                   (let [delta-x (.-deltaX ev)
+                         offset (+ (:offset @local) delta-x)]
+                     (swap! local update :offset + delta-x)
+                     (when-not (:timeout @local)
+                       (swap! local assoc :timeout
+                              (js/setTimeout
+                                #(do (info offset (:offset @local))
+                                     (gql-query @charts-pos days offset local)
+                                     (swap! local assoc :timeout nil))
+                                500)))))]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
       (run-query)
       (info "dashboard render")
-      (let [now (st/now)
+      (let [last-ts (+ (st/now) (* (:offset @local) d))
             n (count @dashboards)
             dashboard (or (get @dashboards dashboard-ts)
                           @dashboard)
@@ -115,9 +131,11 @@
                     (js/clearInterval (:timer @local))
                     (swap! local assoc-in [:play] false))
             d (* 24 60 60 1000)
-            within-day (mod now d)
-            start (+ dc/tz-offset (- now within-day (* days d)))
-            end (+ (- now within-day) d dc/tz-offset)
+            within-day (mod last-ts d)
+
+            start (+ dc/tz-offset (- last-ts within-day (* days d)))
+            end (+ (- last-ts within-day) d dc/tz-offset)
+
             span (- end start)
             common {:start    start
                     :end      end
@@ -131,12 +149,13 @@
             text (eu/first-line dashboard)
             text (or (when-not (empty? text)
                        text)
-                     "YOUR DASHBOARD DESCRIPTION HERE")]
+                     "YOUR DASHBOARD DESCRIPTION HERE")
+            offset (:offset @local)]
         (when (and (:play @local)
                    (not (:timer @local)))
           (play nil))
         (when dashboard
-          [:div.dashboard
+          [:div.dashboard {:on-wheel on-wheel}
            [:svg {:viewBox (str "0 0 " (* days 23) " " (+ end-y 6))
                   :style   {:background :white}
                   :key     (str (:timestamp dashboard) (:idx @local))}
@@ -165,10 +184,10 @@
                   ^{:key (str chart-cfg)}
                   [rh/error-boundary [chart-fn (merge common chart-cfg)]])))
             (for [n (range (inc days))]
-              (let [offset (+ (* (+ n 0.5) d) dc/tz-offset)
-                    scaled (* 1800 (/ offset span))
+              (let [x-offset (+ (* (+ n 0.5) d) dc/tz-offset)
+                    scaled (* 1800 (/ x-offset span))
                     x (+ 201 scaled)
-                    ts (+ start offset)
+                    ts (+ start x-offset)
                     weekday (dc/df ts dc/weekday)
                     weekend? (get #{"Sat" "Sun"} weekday)]
                 ^{:key n}
@@ -183,6 +202,10 @@
            [:div.controls
             [:h2 text]
             [:span.display-text (:display-text @local)]
+            (when-not (zero? (:offset @local))
+              [:span {:on-click #(do (gql-query @charts-pos days 0 local)
+                                     (swap! local assoc :offset 0))}
+               (:offset @local)])
             (when (and controls (< 1 (count @dashboards)))
               [:div.btns
                ;[:i.fas.fa-cog {:on-click open-cfg}]

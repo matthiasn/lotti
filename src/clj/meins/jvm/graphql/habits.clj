@@ -70,13 +70,15 @@
 (defn habits-success [state context args value]
   (try
     (let [days (range (:days args 5))
+          offset (* (:offset args 0) 24 60 60 1000)
           now (stc/now)
           pvt (:pvt args)
           g (:graph @state)
+          day-mapper #(dt/ts-to-ymd (+ (- now (* % d)) offset))
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
                               [day (map #(uc/attrs g %) nodes)]))
-                          (mapv #(dt/ts-to-ymd (- now (* % d))) days))
+                          (mapv day-mapper days))
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))
