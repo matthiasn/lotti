@@ -122,9 +122,12 @@
   (let [t (moment (* s 1000))]
     (.format (.utc t) "HH:mm")))
 
-(defn s-to-hh-mm-ss [seconds]
-  (let [dur (.duration moment seconds "seconds")]
-    (.format dur "d:HH:mm:ss")))
+(defn s-to-hh-mm-ss [s]
+  (if (< s (* 24 60 60))
+    (let [t (moment (* s 1000))]
+      (.format (.utc t) "HH:mm:ss"))
+    (let [dur (.duration moment s "seconds")]
+      (.format dur "d:HH:mm:ss"))))
 
 (defn s-to-mm-ss-ms [ms]
   (let [t (moment ms)]
