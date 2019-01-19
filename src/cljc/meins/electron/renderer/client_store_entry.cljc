@@ -109,7 +109,7 @@
             {:new-state new-state
              :emit-msg  [[:cmd/schedule-new
                           {:timeout 1000
-                           :id      (keyword (str "timer-") ts)
+                           :id      (keyword (str "timer-" ts))
                            :message [:cmd/pomodoro-inc
                                      {:started        started
                                       :completed_time completed-time
@@ -135,7 +135,7 @@
                              :completed_time (:completed_time new-entry)
                              :timestamp      ts}]
                   :timeout 1
-                  :id      (keyword (str "timer-") ts)}]}))
+                  :id      (keyword (str "timer-" ts))}]}))
 
 (defn pomodoro-stop [{:keys [current-state]}]
   (let [new-state (-> current-state

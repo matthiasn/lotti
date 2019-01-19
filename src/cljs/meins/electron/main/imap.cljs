@@ -255,7 +255,7 @@
     (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
 
 (defn read-mailboxes [{:keys [put-fn msg-payload]}]
-  (info "read-mailboxes" msg-payload)
+  (info "read-mailboxes" (update-in msg-payload [:server :password] #(str (subs % 0 2) "...")))
   (when-let [cfg msg-payload]
     (read-mb :read-mailboxes "" cfg put-fn))
   {})

@@ -15,6 +15,9 @@
   .tab-items {
     display: flex;
     overflow-x: auto;
+    overflow-y: hidden;
+    margin-right: 5px;
+    width: 100%;
   }
 
   .tab-item {
