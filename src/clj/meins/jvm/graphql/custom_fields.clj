@@ -146,3 +146,13 @@
         day-strings (mapv day-mapper days)
         stats (mapv custom-fields-mapper day-strings)]
     stats))
+
+(defn custom-field-stats-by-day [state context args value]
+  (let [{:keys [day tag]} args
+        custom-fields-fn (custom-fields-mapper @state tag)]
+    (custom-fields-fn day)))
+
+(defn custom-fields-by-days [state context args value]
+  (let [{:keys [day_strings tag]} args
+        custom-fields-fn (custom-fields-mapper @state tag)]
+    (mapv custom-fields-fn day_strings)))

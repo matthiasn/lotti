@@ -55,35 +55,37 @@
         schema (-> (edn/read-string (slurp (io/resource "schema.edn")))
                    (util/attach-resolvers
                      (attach-state
-                       {:query/entry-count        opts/entry-count
-                        :query/hours-logged       opts/hours-logged
-                        :query/word-count         opts/word-count
-                        :query/tag-count          opts/tag-count
-                        :query/mention-count      opts/mention-count
-                        :query/completed-count    opts/completed-count
-                        :query/match-count        gms/match-count
-                        :query/active-threads     opts/thread-count
-                        :query/pid                opts/pid
-                        :query/tab-search         (gts/tab-search put-fn)
-                        :query/hashtags           opts/hashtags
-                        :query/pvt-hashtags       opts/pvt-hashtags
-                        :query/logged-time        gbl/logged-time
-                        :query/day-stats          gbl/day-stats
-                        :query/habits-success     gh/habits-success
-                        :query/started-tasks      gt/started-tasks
-                        :query/open-tasks         gt/open-tasks
-                        :query/waiting-habits     gh/waiting-habits
-                        :query/mentions           opts/mentions
-                        :query/stories            opts/stories
-                        :query/sagas              opts/sagas
-                        :query/geo-photos         geo/photos-within-bounds
-                        :query/custom-field-stats gcf/custom-field-stats
-                        :query/bp-field-stats     gms/bp-field-stats
-                        :query/git-stats          gms/git-stats
-                        :query/briefings          opts/briefings
-                        :query/questionnaires     gms/questionnaires
-                        :query/award-points       gms/award-points
-                        :query/briefing           gbl/briefing}))
+                       {:query/entry-count               opts/entry-count
+                        :query/hours-logged              opts/hours-logged
+                        :query/word-count                opts/word-count
+                        :query/tag-count                 opts/tag-count
+                        :query/mention-count             opts/mention-count
+                        :query/completed-count           opts/completed-count
+                        :query/match-count               gms/match-count
+                        :query/active-threads            opts/thread-count
+                        :query/pid                       opts/pid
+                        :query/tab-search                (gts/tab-search put-fn)
+                        :query/hashtags                  opts/hashtags
+                        :query/pvt-hashtags              opts/pvt-hashtags
+                        :query/logged-time               gbl/logged-time
+                        :query/day-stats                 gbl/day-stats
+                        :query/habits-success            gh/habits-success
+                        :query/started-tasks             gt/started-tasks
+                        :query/open-tasks                gt/open-tasks
+                        :query/waiting-habits            gh/waiting-habits
+                        :query/mentions                  opts/mentions
+                        :query/stories                   opts/stories
+                        :query/sagas                     opts/sagas
+                        :query/geo-photos                geo/photos-within-bounds
+                        :query/custom-field-stats        gcf/custom-field-stats
+                        :query/custom-field-stats-by-day gcf/custom-field-stats-by-day
+                        :query/custom-fields-by-days     gcf/custom-fields-by-days
+                        :query/bp-field-stats            gms/bp-field-stats
+                        :query/git-stats                 gms/git-stats
+                        :query/briefings                 opts/briefings
+                        :query/questionnaires            gms/questionnaires
+                        :query/award-points              gms/award-points
+                        :query/briefing                  gbl/briefing}))
                    schema/compile)
         server (-> schema
                    (lp/service-map {:graphiql true

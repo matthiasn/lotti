@@ -17,7 +17,8 @@
             [meins.electron.renderer.helpers :as rh]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.common.utils.parse :as up]
-            [meins.electron.renderer.ui.dashboard.cf_barchart :as db]))
+            [meins.electron.renderer.ui.dashboard.cf_barchart :as db]
+            [clojure.string :as s]))
 
 (def d (* 24 60 60 1000))
 
@@ -38,7 +39,14 @@
         (emit [:gql/query {:q        query-string
                            :res-hash nil
                            :id       :dashboard
-                           :prio     15}])))
+                           :prio     15}])
+        (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 90))))]
+          (doseq [tag tags]
+            (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))]
+              (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tag alias)
+                                 :res-hash nil
+                                 :id       :custom-fields-by-days
+                                 :prio     15}]))))))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))]
       (when-let [query-string (gql/dashboard-questionnaires days offset items)]
@@ -100,14 +108,12 @@
                        (swap! local assoc :dashboard-ts dashboard-ts)
                        (gql-query @charts-pos days (:offset @local) local)))
         on-wheel (fn [ev]
-                   (let [delta-x (.-deltaX ev)
-                         offset (+ (:offset @local) delta-x)]
+                   (let [delta-x (.-deltaX ev)]
                      (swap! local update :offset + delta-x)
                      (when-not (:timeout @local)
                        (swap! local assoc :timeout
                               (js/setTimeout
-                                #(do (info offset (:offset @local))
-                                     (gql-query @charts-pos days offset local)
+                                #(do (gql-query @charts-pos days (:offset @local) local)
                                      (swap! local assoc :timeout nil))
                                 500)))))]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]

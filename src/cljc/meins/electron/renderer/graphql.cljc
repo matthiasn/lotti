@@ -25,6 +25,26 @@
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 
+(defn graphql-query-by-day [day tag alias]
+  (let [q {:query/data  [:custom_field_stats_by_day {:day day
+                                                     :tag tag}
+                         [:date_string
+                          [:fields [:field :value
+                                    [:values [:ts :v]]]]]]
+           :query/alias alias}]
+    (v/graphql-query {:venia/queries [q]})))
+
+(defn graphql-query-by-days [day-strings tag alias]
+  (let [q {:query/data  [:custom_fields_by_days
+                         {:day_strings day-strings
+                          :tag         tag}
+                         [:date_string
+                          :tag
+                          [:fields [:field :value
+                                    [:values [:ts :v]]]]]]
+           :query/alias alias}]
+    (v/graphql-query {:venia/queries [q]})))
+
 (defn dashboard-questionnaires [days offset items]
   (let [qfn (fn [{:keys [tag score_k] :as cfg}]
               (if tag

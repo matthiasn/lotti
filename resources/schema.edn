@@ -381,6 +381,22 @@
                  :prio   {:type Int}}
    :resolve     :query/custom-field-stats}
 
+  :custom_field_stats_by_day
+  {:type        :CustomFieldStatsItem
+   :description "Custom field stats for tag and day"
+   :args        {:day  {:type String}
+                 :tag  {:type String}
+                 :prio {:type Int}}
+   :resolve     :query/custom-field-stats-by-day}
+
+  :custom_fields_by_days
+  {:type        (list :CustomFieldStatsItem)
+   :description "Custom field stats for tag and day"
+   :args        {:day_strings {:type (list String)}
+                 :tag         {:type String}
+                 :prio        {:type Int}}
+   :resolve     :query/custom-fields-by-days}
+
   :bp_field_stats
   {:type        (list :BloodPressureStatsItem)
    :description "Blood Pressure for number of days"
@@ -423,10 +439,10 @@
 
   :habits_success
   {:type    (list :HabitSuccess)
-   :args    {:days {:type Int}
+   :args    {:days   {:type Int}
              :offset {:type Int}
-             :prio {:type Int}
-             :pvt  {:type Boolean}}
+             :prio   {:type Int}
+             :pvt    {:type Boolean}}
    :resolve :query/habits-success}
 
   :logged_time

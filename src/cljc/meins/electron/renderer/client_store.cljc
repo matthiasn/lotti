@@ -7,7 +7,8 @@
             [meins.electron.renderer.client-store-search :as s]
             [meins.electron.renderer.client-store-cfg :as c]
             [meins.common.utils.misc :as u]
-            [meins.electron.renderer.graphql :as gql]))
+            [meins.electron.renderer.graphql :as gql]
+            [clojure.data.avl :as avl]))
 
 (defn initial-state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
@@ -20,6 +21,7 @@
                      :pomodoro-stats   (sorted-map)
                      :task-stats       (sorted-map)
                      :wordcount-stats  (sorted-map)
+                     :dashboard-data   (avl/sorted-map)
                      :gql-res2         {:left  {:res (sorted-map-by >)}
                                         :right {:res (sorted-map-by >)}}
                      :options          {:pvt-hashtags #{"#pvt"}}
@@ -87,9 +89,22 @@
   (let [new-state (assoc-in current-state [:metrics] msg-payload)]
     {:new-state new-state}))
 
+(defn save-dashboard-data-by-tag [state coll]
+  (let [f (fn [acc {:keys [tag date_string fields]}]
+            (let [path [:dashboard-data date_string tag]]
+              (assoc-in acc path fields)))]
+    (reduce f state coll)))
+
+(defn save-dashboard-data [state res]
+  (let [data (-> res :data vals)
+        f (fn [acc coll] (save-dashboard-data-by-tag acc coll))]
+    (reduce f state data)))
+
 (defn gql-res [{:keys [current-state msg-payload]}]
   (let [{:keys [id]} msg-payload
-        new-state (assoc-in current-state [:gql-res id] msg-payload)]
+        new-state (if (= :custom-fields-by-days id)
+                    (save-dashboard-data current-state msg-payload)
+                    (assoc-in current-state [:gql-res id] msg-payload))]
     (when-not (contains? #{:left :right} id)
       {:new-state new-state})))
 
