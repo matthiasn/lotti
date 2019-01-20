@@ -7,7 +7,8 @@
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.electron.renderer.ui.dashboard.common :as dc]))
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [clojure.data.avl :as avl]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
@@ -41,7 +42,7 @@
     indexed))
 
 (defn barchart-row [_]
-  (let [gql-res (subscribe [:gql-res])
+  (let [dashboard-data (subscribe [:dashboard-data])
         backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
@@ -50,13 +51,16 @@
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
-              data (get-in @gql-res [:dashboard :data qid])
+              start-ymd (h/ymd start)
+              end-ymd (h/ymd end)
+              data (->> @dashboard-data
+                        (filter #(< start-ymd (first %)))
+                        (filter #(> end-ymd (first %)))
+                        (map second)
+                        (map #(get % tag)))
               indexed (map-indexed (fn [i x]
                                      [i (merge x {:day-ts (h/ymd-to-ts (:date_string x))})])
                                    data)
-              indexed (->> indexed
-                          (filter #(< (:day-ts (second %)) end))
-                          (filter #(> (:day-ts (second %)) start)))
               label (get-in @custom-fields [tag :fields (keyword field) :label])
               field-type (get-in @custom-fields [tag :fields (keyword field) :cfg :type])
               mx (or mx

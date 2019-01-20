@@ -16,6 +16,7 @@
 ;; Subscription Handlers
 (reg-sub :gql-res (fn [db _] (:gql-res db)))
 (reg-sub :gql-res2 (fn [db _] (:gql-res2 db)))
+(reg-sub :dashboard-data (fn [db _] (:dashboard-data db)))
 
 (reg-sub :manual (fn [db _] (:manual db)))
 

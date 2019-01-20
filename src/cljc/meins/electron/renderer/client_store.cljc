@@ -21,7 +21,7 @@
                      :pomodoro-stats   (sorted-map)
                      :task-stats       (sorted-map)
                      :wordcount-stats  (sorted-map)
-                     :dashboard-data   (avl/sorted-map)
+                     :dashboard-data   (sorted-map)
                      :gql-res2         {:left  {:res (sorted-map-by >)}
                                         :right {:res (sorted-map-by >)}}
                      :options          {:pvt-hashtags #{"#pvt"}}
@@ -90,9 +90,9 @@
     {:new-state new-state}))
 
 (defn save-dashboard-data-by-tag [state coll]
-  (let [f (fn [acc {:keys [tag date_string fields]}]
+  (let [f (fn [acc {:keys [tag date_string] :as m}]
             (let [path [:dashboard-data date_string tag]]
-              (assoc-in acc path fields)))]
+              (assoc-in acc path m)))]
     (reduce f state coll)))
 
 (defn save-dashboard-data [state res]
@@ -104,7 +104,8 @@
   (let [{:keys [id]} msg-payload
         new-state (if (= :custom-fields-by-days id)
                     (save-dashboard-data current-state msg-payload)
-                    (assoc-in current-state [:gql-res id] msg-payload))]
+                    current-state)
+        new-state (assoc-in new-state [:gql-res id] msg-payload)]
     (when-not (contains? #{:left :right} id)
       {:new-state new-state})))
 
