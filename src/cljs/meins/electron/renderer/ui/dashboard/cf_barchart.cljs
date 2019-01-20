@@ -54,7 +54,7 @@
               start-ymd (h/ymd start)
               end-ymd (h/ymd end)
               data (->> @dashboard-data
-                        (filter #(< start-ymd (first %)))
+                        (filter #(<= start-ymd (first %)))
                         (filter #(> end-ymd (first %)))
                         (map second)
                         (map #(get % tag)))

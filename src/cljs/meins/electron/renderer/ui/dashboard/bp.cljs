@@ -78,9 +78,7 @@
 
 (defn bp-chart [_]
   (let [pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])
-        dashboard-data (subscribe [:dashboard-data])
-        bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
+        dashboard-data (subscribe [:dashboard-data])]
     (fn [{:keys [y k h start end span mn mx x-offset w systolic_color systolic_fill
                  diastolic_color diastolic_fill] :as m}]
       (let [mx (or mx 200)
@@ -108,24 +106,8 @@
                       (map :fields))
             systolic (fields "bp_systolic" data)
             diastolic (fields "bp_diastolic" data)
-            values2 (map vector systolic diastolic)
-            mapper (fn [k]
-                     (fn [idx data]
-                       (let [ts (or (:adjusted_ts data)
-                                    (:timestamp data))
-                             v (get data k)
-                             from-beginning (- ts start)
-                             x (+ x-offset
-                                  (* w (/ from-beginning span)))
-                             y (- btm-y (* (- v mn) scale))
-                             s (str x "," y)]
-                         [{:v    v
-                           :data data
-                           :x    x
-                           :y    y
-                           :ts   ts
-                           :s    s}])))
-            mapper2 (fn [pos idx both]
+            values (map vector systolic diastolic)
+            mapper (fn [pos idx both]
                       (let [data (pos both)
                             ts (:ts data)
                             v (:v data)
@@ -139,13 +121,7 @@
                           :x    x
                           :y    y
                           :ts   ts
-                          :s    s}]))
-            values (->> @bp-data
-                        (filter #(< (:timestamp %) end))
-                        (filter #(> (:timestamp %) start)))]
-        (info values)
-        (info data)
-        (info systolic)
+                          :s    s}]))]
         [:g
          (for [n lines]
            ^{:key (str "bp" k n)}
@@ -164,10 +140,8 @@
          [line (- btm-y (* (- 80 mn) scale)) :black 1]
          [line (- btm-y (* (- 120 mn) scale)) :black 1]
 
-         ;[chart-line values (mapper :bp_systolic) systolic-cfg]
-         ;[chart-line values (mapper :bp_diastolic) diastolic-cfg]
-         [chart-line values2 (partial mapper2 first) systolic-cfg]
-         [chart-line values2 (partial mapper2 second) diastolic-cfg]
+         [chart-line values (partial mapper first) systolic-cfg]
+         [chart-line values (partial mapper second) diastolic-cfg]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]

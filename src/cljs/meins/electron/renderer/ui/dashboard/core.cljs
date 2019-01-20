@@ -34,20 +34,14 @@
                                           :linechart_row} (:type %)))
                     (mapv :tag)
                     (concat ["#BP"]))]
-      (when-let [query-string (gql/graphql-query (inc days) offset tags)]
-        (info "dashboard tags" query-string)
-        (emit [:gql/query {:q        query-string
-                           :res-hash nil
-                           :id       :dashboard
-                           :prio     15}])
-        (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 90))))]
-          (doseq [tag tags]
-            (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
-                  day-strings (filter #(not (get-in dashboard-data [% tag])) day-strings)]
-              (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tag alias)
-                                 :res-hash nil
-                                 :id       :custom-fields-by-days
-                                 :prio     15}]))))))
+      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 180))))]
+        (doseq [tag tags]
+          (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
+                day-strings (filter #(not (get-in dashboard-data [% tag])) day-strings)]
+            (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tag alias)
+                               :res-hash nil
+                               :id       :custom-fields-by-days
+                               :prio     15}])))))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))]
       (when-let [query-string (gql/dashboard-questionnaires days offset items)]

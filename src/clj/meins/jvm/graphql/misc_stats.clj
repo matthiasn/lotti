@@ -54,6 +54,14 @@
     (debug stats)
     stats))
 
+(defn questionnaires-by-days [state context args value]
+  (let [{:keys [day_strings tag k]} args
+        f #(q/questionnaires-by-tag-day @state tag % (keyword k))
+        stats (mapcat f day_strings)
+        stats (filter #(:score %) stats)]
+    (debug stats)
+    stats))
+
 (defn award-points [state context args value]
   (let [{:keys [days]} args
         newer-than (dt/ts-to-ymd (- (stc/now) (* d (or days 90))))

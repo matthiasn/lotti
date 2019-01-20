@@ -133,11 +133,13 @@
 
   :QuestionnaireItem
   {:description "An aggregration for a filled out questionnaire."
-   :fields      {:timestamp {:type (non-null ID)}
-                 :starred   {:type Boolean}
-                 :score     {:type Int}
-                 :agg       {:type String}
-                 :label     {:type String}}}
+   :fields      {:timestamp   {:type (non-null ID)}
+                 :adjusted_ts {:type ID}
+                 :date_string {:type String}
+                 :starred     {:type Boolean}
+                 :score       {:type Int}
+                 :agg         {:type String}
+                 :label       {:type String}}}
 
   :LoggedCalItem
   {:description "Logged time item."
@@ -422,6 +424,15 @@
                  :k      {:type String}
                  :prio   {:type Int}}
    :resolve     :query/questionnaires}
+
+  :questionnaires_by_days
+  {:type        (list :QuestionnaireItem)
+   :description "filled out questionnaires for array of date strings"
+   :args        {:tag         {:type String}
+                 :day_strings {:type (list String)}
+                 :k           {:type String}
+                 :prio        {:type Int}}
+   :resolve     :query/questionnaires-by-days}
 
   :award_points
   {:type        :AwardPoints

@@ -84,6 +84,7 @@
                         :query/git-stats                 gms/git-stats
                         :query/briefings                 opts/briefings
                         :query/questionnaires            gms/questionnaires
+                        :query/questionnaires-by-days    gms/questionnaires-by-days
                         :query/award-points              gms/award-points
                         :query/briefing                  gbl/briefing}))
                    schema/compile)
