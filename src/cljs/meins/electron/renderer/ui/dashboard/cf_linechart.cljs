@@ -5,7 +5,8 @@
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
-            [meins.electron.renderer.ui.dashboard.common :as dc]))
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [meins.electron.renderer.helpers :as h]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
@@ -40,7 +41,7 @@
                                         :stroke-width (:circle_stroke_width cfg 2)}}]))]))))
 
 (defn linechart-row [_]
-  (let [gql-res (subscribe [:gql-res])
+  (let [dashboard-data (subscribe [:dashboard-data])
         pvt (subscribe [:show-pvt])
         backend-cfg (subscribe [:backend-cfg])
         custom-fields (reaction (:custom-fields @backend-cfg))]
@@ -49,7 +50,13 @@
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
-              data (get-in @gql-res [:dashboard :data qid])
+              start-ymd (h/ymd start)
+              end-ymd (h/ymd end)
+              data (->> @dashboard-data
+                        (filter #(< start-ymd (first %)))
+                        (filter #(> end-ymd (first %)))
+                        (map second)
+                        (map #(get % tag)))
               label (get-in @custom-fields [tag :fields (keyword field) :label])
               values (->> data
                           (map :fields)

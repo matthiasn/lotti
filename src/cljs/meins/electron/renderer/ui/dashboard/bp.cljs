@@ -6,7 +6,8 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.common.utils.parse :as up]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meins.electron.renderer.helpers :as h]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
@@ -46,7 +47,8 @@
                                :stroke-width (:stroke_width cfg 1.5)
                                :fill         :none}}]
           (for [p points]
-            (let [{:keys [bp_systolic bp_diastolic]} (:data p)
+            (let [bp_systolic (-> p :data first :v)
+                  bp_diastolic (-> p :data second :v)
                   ymd (df (:ts p) ymd)
                   bp (str bp_systolic "/" bp_diastolic " mmHG")
                   t [:span ymd ": " [:strong bp]]
@@ -66,13 +68,21 @@
                         :style          {:stroke       color
                                          :stroke-width (:circle_stroke_width cfg 2)}}]))]]))))
 
+(defn fields [field data]
+  (->> data
+       (mapcat identity)
+       (filter #(seq (:values %)))
+       (filter #(= (name field) (:field %)))
+       (map :values)
+       (mapcat identity)))
+
 (defn bp-chart [_]
   (let [pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
+        dashboard-data (subscribe [:dashboard-data])
         bp-data (reaction (get-in @gql-res [:bp :data :bp_field_stats]))]
     (fn [{:keys [y k h start end span mn mx x-offset w systolic_color systolic_fill
                  diastolic_color diastolic_fill] :as m}]
-      (debug :bp-chart m)
       (let [mx (or mx 200)
             mn (or mn 50)
             w (or w 500)
@@ -81,11 +91,24 @@
             scale (/ h rng)
             btm-y (+ y h)
             line-inc 10
-            systolic-cfg (merge {:color (or systolic_color "red") :fill
-                                        (or systolic_fill "red")} m)
-            diastolic-cfg (merge {:color (or diastolic_color "blue") :fill
-                                         (or diastolic_fill "blue")} m)
+            systolic-cfg (merge {:color (or systolic_color "red")
+                                 :fill  (or systolic_fill "red")}
+                                m)
+            diastolic-cfg (merge {:color (or diastolic_color "blue")
+                                  :fill  (or diastolic_fill "blue")}
+                                 m)
             lines (filter #(zero? (mod % line-inc)) (range 1 rng))
+            start-ymd (h/ymd start)
+            end-ymd (h/ymd end)
+            data (->> @dashboard-data
+                      (filter #(< start-ymd (first %)))
+                      (filter #(> end-ymd (first %)))
+                      (map second)
+                      (map #(get % "#BP"))
+                      (map :fields))
+            systolic (fields "bp_systolic" data)
+            diastolic (fields "bp_diastolic" data)
+            values2 (map vector systolic diastolic)
             mapper (fn [k]
                      (fn [idx data]
                        (let [ts (or (:adjusted_ts data)
@@ -102,9 +125,27 @@
                            :y    y
                            :ts   ts
                            :s    s}])))
+            mapper2 (fn [pos idx both]
+                      (let [data (pos both)
+                            ts (:ts data)
+                            v (:v data)
+                            from-beginning (- ts start)
+                            x (+ x-offset
+                                 (* w (/ from-beginning span)))
+                            y (- btm-y (* (- v mn) scale))
+                            s (str x "," y)]
+                        [{:v    v
+                          :data both
+                          :x    x
+                          :y    y
+                          :ts   ts
+                          :s    s}]))
             values (->> @bp-data
                         (filter #(< (:timestamp %) end))
                         (filter #(> (:timestamp %) start)))]
+        (info values)
+        (info data)
+        (info systolic)
         [:g
          (for [n lines]
            ^{:key (str "bp" k n)}
@@ -123,8 +164,10 @@
          [line (- btm-y (* (- 80 mn) scale)) :black 1]
          [line (- btm-y (* (- 120 mn) scale)) :black 1]
 
-         [chart-line values (mapper :bp_systolic) systolic-cfg ]
-         [chart-line values (mapper :bp_diastolic) diastolic-cfg ]
+         ;[chart-line values (mapper :bp_systolic) systolic-cfg]
+         ;[chart-line values (mapper :bp_diastolic) diastolic-cfg]
+         [chart-line values2 (partial mapper2 first) systolic-cfg]
+         [chart-line values2 (partial mapper2 second) diastolic-cfg]
 
          [dc/line y "#000" 3]
          [dc/line (+ y h) "#000" 3]
