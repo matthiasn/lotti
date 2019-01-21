@@ -37,5 +37,6 @@
                          (merge entry {:agg         (name score-k)
                                        :label       (:label score)
                                        :score       (:score score)
+                                       :tag         tag
                                        :date_string day})))]
     (mapv score-mapper entries-map)))

@@ -95,16 +95,26 @@
               (assoc-in acc path m)))]
     (reduce f state coll)))
 
+(defn save-questionnaire-data-by-tag [state coll]
+  (let [f (fn [acc {:keys [tag agg date_string] :as m}]
+            (let [path [:dashboard-data date_string tag agg]]
+              (update-in acc path #(conj (set %) m))))]
+    (reduce f state coll)))
+
 (defn save-dashboard-data [state res]
   (let [data (-> res :data vals)
-        f (fn [acc coll] (save-dashboard-data-by-tag acc coll))]
-    (reduce f state data)))
+        id (:id res)
+        f (case id
+                :custom-fields-by-days save-dashboard-data-by-tag
+                :questionnaires-by-days save-questionnaire-data-by-tag
+                nil)]
+    (if f
+      (reduce f state data)
+      state)))
 
 (defn gql-res [{:keys [current-state msg-payload]}]
   (let [{:keys [id]} msg-payload
-        new-state (if (= :custom-fields-by-days id)
-                    (save-dashboard-data current-state msg-payload)
-                    current-state)
+        new-state (save-dashboard-data current-state msg-payload)
         new-state (assoc-in new-state [:gql-res id] msg-payload)]
     (when-not (contains? #{:left :right} id)
       {:new-state new-state})))

@@ -138,6 +138,7 @@
                  :date_string {:type String}
                  :starred     {:type Boolean}
                  :score       {:type Int}
+                 :tag         {:type String}
                  :agg         {:type String}
                  :label       {:type String}}}
 

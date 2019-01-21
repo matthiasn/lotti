@@ -45,20 +45,25 @@
            :query/alias alias}]
     (v/graphql-query {:venia/queries [q]})))
 
-(defn dashboard-questionnaires [days offset items]
+(defn dashboard-questionnaires-by-days [day-strings item]
   (let [qfn (fn [{:keys [tag score_k] :as cfg}]
               (if tag
                 (let [kn (name score_k)
                       alias (keyword
                               (str (s/replace (subs (str tag) 1) "-" "_") "_" kn))]
-                  {:query/data  [:questionnaires {:days   days
-                                                  :offset offset
-                                                  :tag    tag
-                                                  :k      kn}
-                                 [:timestamp :score]]
+                  {:query/data  [:questionnaires_by_days
+                                 {:day_strings day-strings
+                                  :tag         tag
+                                  :k           kn}
+                                 [:timestamp
+                                  :adjusted_ts
+                                  :date_string
+                                  :score
+                                  :agg
+                                  :tag]]
                    :query/alias alias})
                 (warn "no tag:" cfg)))
-        queries (filter identity (mapv qfn items))]
+        queries (filter identity [(qfn item)])]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))
 

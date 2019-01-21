@@ -34,7 +34,7 @@
                                           :linechart_row} (:type %)))
                     (mapv :tag)
                     (concat ["#BP"]))]
-      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 180))))]
+      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 120))))]
         (doseq [tag tags]
           (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
                 day-strings (filter #(not (get-in dashboard-data [% tag])) day-strings)]
@@ -43,13 +43,14 @@
                                :id       :custom-fields-by-days
                                :prio     15}])))))
     (let [items (->> (:charts charts-pos)
-                     (filter #(= :questionnaire (:type %))))]
-      (when-let [query-string (gql/dashboard-questionnaires days offset items)]
-        (info "dashboard" query-string)
-        (emit [:gql/query {:q        query-string
-                           :res-hash nil
-                           :id       :dashboard-questionnaires
-                           :prio     15}])))))
+                     (filter #(= :questionnaire (:type %))))
+          day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* offset) 120))))]
+      (doseq [item items]
+        (let [day-strings (filter #(not (get-in dashboard-data [% (:tag item)])) day-strings)]
+          (emit [:gql/query {:q        (gql/dashboard-questionnaires-by-days day-strings item)
+                             :res-hash nil
+                             :id       :questionnaires-by-days
+                             :prio     15}]))))))
 
 (defn charts-positions [dashboard habits]
   (let [ts (:timestamp dashboard)
@@ -104,7 +105,7 @@
                        (swap! local assoc :dashboard-ts dashboard-ts)
                        (gql-query @charts-pos days (:offset @local) local @dashboard-data)))
         on-wheel (fn [ev]
-                   (let [delta-x (.-deltaX ev)]
+                   (let [delta-x (int (/ (.-deltaX ev) 4))]
                      (swap! local update :offset + delta-x)
                      (when-not (:timeout @local)
                        (swap! local assoc :timeout

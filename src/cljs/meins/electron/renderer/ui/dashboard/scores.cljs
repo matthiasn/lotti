@@ -7,7 +7,8 @@
             [camel-snake-kebab.core :refer [->kebab-case]]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [clojure.string :as s]
-            [meins.common.utils.parse :as up]))
+            [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]))
 
 (defn scores-fn [stats k]
   (->> stats
@@ -52,9 +53,9 @@
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))
 
-(defn chart-line [scores point-mapper cfg]
+(defn chart-line [scores point-mapper cfg start-ymd]
   (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg ]
+    (fn chart-line-render [scores point-mapper cfg start-ymd]
       (let [points (map-indexed point-mapper scores)
             {:keys [color fill glow label]} cfg
             line-points (s/join " " (map :s points))
@@ -77,9 +78,9 @@
                                :stroke-width stroke
                                :fill         :none}}]
           (for [p points]
-            ^{:key (str active-dashboard p)}
             [:circle {:cx       (:x p)
                       :cy       (:y p)
+                      :id       (str active-dashboard p start-ymd)
                       :on-click (up/add-search
                                   {:tab-group    :left
                                    :first-line   label
@@ -87,18 +88,23 @@
                       :r        (:circle_radius cfg 3)
                       :fill     fill
                       :style    {:stroke       color
-                                 :stroke-width (:circle_stroke_width cfg 2)}}])]]))))
+                                 :stroke-width (:circle_stroke_width cfg 3)}}])]]))))
 
 (defn scores-chart
   [{:keys []}]
-  (let [gql-res (subscribe [:gql-res])]
+  (let [dashboard-data (subscribe [:dashboard-data])]
     (fn scores-chart-render [{:keys [y k w h score_k start end mn mx offset
-                                     x-offset label] :as cfg}]
-      (let [qid (keyword (str (s/upper-case (name k)) "_" (name score_k)))
-            data (sort-by :timestamp
-                          (get-in @gql-res [:dashboard-questionnaires :data qid]))
-            data (filter #(< (:timestamp %) end) data)
-            data (filter #(> (:timestamp %) start) data)
+                                     x-offset label tag] :as cfg}]
+      (let [start-ymd (h/ymd start)
+            end-ymd (h/ymd end)
+            data (->> @dashboard-data
+                      (filter #(<= start-ymd (first %)))
+                      (filter #(> end-ymd (first %)))
+                      (map second)
+                      (mapcat #(get-in % [tag (name score_k)]))
+                      (sort-by :timestamp)
+                      (filter #(< (:timestamp %) end))
+                      (filter #(> (:timestamp %) start)))
             span (- end start)
             line-inc 5
             rng (- mx mn)
@@ -131,7 +137,7 @@
                    :fill        "black"
                    :text-anchor "start"}
             n])
-         [chart-line data mapper cfg]
+         [chart-line data mapper cfg start-ymd]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))
