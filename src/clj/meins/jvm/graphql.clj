@@ -70,6 +70,7 @@
                         :query/logged-time               gbl/logged-time
                         :query/day-stats                 gbl/day-stats
                         :query/habits-success            gh/habits-success
+                        :query/habits-success-by-day     gh/habits-success-by-day
                         :query/started-tasks             gt/started-tasks
                         :query/open-tasks                gt/open-tasks
                         :query/waiting-habits            gh/waiting-habits

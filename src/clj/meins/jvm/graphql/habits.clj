@@ -60,9 +60,10 @@
           (let [success? (partial success? day nodes state)
                 criteria (m/idxd (-> habit :habit :criteria))
                 by-criterion (mapv success? criteria)
-                res {:success (every? #(true? (:success %)) by-criterion)
-                     :day     day
-                     :values  by-criterion}]
+                res {:success  (every? #(true? (:success %)) by-criterion)
+                     :day      day
+                     :habit_ts habit-ts
+                     :values   by-criterion}]
             (swap! state assoc-in path res)
             res)))
     (catch Exception ex (error ex))))
@@ -79,6 +80,26 @@
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
                               [day (map #(uc/attrs g %) nodes)]))
                           (mapv day-mapper days))
+          habits (gq/find-all-habits @state)
+          pvt-filter (um/pvt-filter (:options @state))
+          habits (if pvt habits (filter pvt-filter habits))
+          f (fn [habit]
+              (let [completed (when (:active (:habit habit))
+                                (mapv #(habit-success habit % state) days-nodes))]
+                {:completed   completed
+                 :habit_entry habit}))
+          res (mapv f habits)]
+      res)
+    (catch Exception ex (error ex))))
+
+(defn habits-success-by-day [state context args value]
+  (try
+    (let [pvt (:pvt args)
+          g (:graph @state)
+          days-nodes (map (fn [day]
+                            (let [nodes (gq/get-nodes-for-day g {:date_string day})]
+                              [day (map #(uc/attrs g %) nodes)]))
+                          (:day_strings args))
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))

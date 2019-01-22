@@ -18,6 +18,7 @@
                                                         :ts
                                                         :comment_for
                                                         :linked_saga
+                                                        :habit_ts
                                                         :last_saved} k))
                                     [k (Long/parseLong v)]
 
