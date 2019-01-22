@@ -213,10 +213,11 @@
 
   :HabitCriteria
   {:description "Habit success for criteria"
-   :fields      {:success  {:type Boolean}
-                 :day      {:type String}
-                 :habit_ts {:type ID}
-                 :values   {:type (list :HabitCriterion)}}}
+   :fields      {:success    {:type Boolean}
+                 :day        {:type String}
+                 :habit_ts   {:type ID}
+                 :habit_text {:type String}
+                 :values     {:type (list :HabitCriterion)}}}
 
   :HabitSuccess
   {:description "Single habit status for day."
@@ -459,7 +460,7 @@
    :resolve :query/habits-success}
 
   :habits_success_by_day
-  {:type    (list :HabitSuccess)
+  {:type    (list :HabitCriteria)
    :args    {:day_strings {:type (list String)}
              :prio        {:type Int}
              :pvt         {:type Boolean}}

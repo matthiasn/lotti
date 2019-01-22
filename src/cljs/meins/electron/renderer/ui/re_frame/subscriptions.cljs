@@ -29,6 +29,7 @@
                         :habits_success
                         (map (fn [x] [(:timestamp (:habit_entry x)) x]))
                         (into {}))))
+
 (reg-sub :metrics (fn [db _] (:metrics db)))
 (reg-sub :db (fn [db _] db))
 (reg-sub :stories (fn [db _]

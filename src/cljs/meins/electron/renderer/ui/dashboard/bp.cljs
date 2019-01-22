@@ -102,7 +102,7 @@
                       (filter #(< start-ymd (first %)))
                       (filter #(> end-ymd (first %)))
                       (map second)
-                      (map #(get % "#BP"))
+                      (map #(get-in % [:custom-fields "#BP"]))
                       (map :fields))
             systolic (fields "bp_systolic" data)
             diastolic (fields "bp_diastolic" data)

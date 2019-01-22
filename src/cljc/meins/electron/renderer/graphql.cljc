@@ -45,6 +45,15 @@
            :query/alias alias}]
     (v/graphql-query {:venia/queries [q]})))
 
+(defn habits-query-by-days [day-strings pvt]
+  (let [q {:query/data  [:habits_success_by_day
+                         {:day_strings day-strings
+                          :pvt pvt}
+                         [:day
+                          :habit_ts
+                          :success]]}]
+    (v/graphql-query {:venia/queries [q]})))
+
 (defn dashboard-questionnaires-by-days [day-strings item]
   (let [qfn (fn [{:keys [tag score_k] :as cfg}]
               (if tag

@@ -46,7 +46,7 @@
     (put-fn [:gql/query {:file "habits-success.gql"
                          :id   :habits-success
                          :prio 13
-                         :args [91 pvt]}])
+                         :args [30 pvt]}])
     (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
     (run-query "bp.gql" :bp 14 [365])
     ;(run-query "award-points.gql" :award-points 14 [])
@@ -91,14 +91,20 @@
 
 (defn save-dashboard-data-by-tag [state coll]
   (let [f (fn [acc {:keys [tag date_string] :as m}]
-            (let [path [:dashboard-data date_string tag]]
+            (let [path [:dashboard-data date_string :custom-fields tag]]
               (assoc-in acc path m)))]
     (reduce f state coll)))
 
 (defn save-questionnaire-data-by-tag [state coll]
   (let [f (fn [acc {:keys [tag agg date_string] :as m}]
-            (let [path [:dashboard-data date_string tag agg]]
+            (let [path [:dashboard-data date_string :questionnaires tag agg]]
               (update-in acc path #(conj (set %) m))))]
+    (reduce f state coll)))
+
+(defn save-habits-by-day [state coll]
+  (let [f (fn [acc {:keys [day habit_ts success] :as m}]
+            (let [path [:dashboard-data day :habits habit_ts]]
+              (assoc-in acc path m)))]
     (reduce f state coll)))
 
 (defn save-dashboard-data [state res]
@@ -107,6 +113,7 @@
         f (case id
                 :custom-fields-by-days save-dashboard-data-by-tag
                 :questionnaires-by-days save-questionnaire-data-by-tag
+                :habits-by-days save-habits-by-day
                 nil)]
     (if f
       (reduce f state data)

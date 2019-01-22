@@ -22,7 +22,7 @@
 
 (def d (* 24 60 60 1000))
 
-(defn gql-query [charts-pos days offset local dashboard-data]
+(defn gql-query [charts-pos days offset local dashboard-data pvt]
   (when-not (and (= (:days @local) days)
                  (= (:charts-pos @local) charts-pos)
                  (= (:offset-last @local) offset))
@@ -37,7 +37,7 @@
       (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 120))))]
         (doseq [tag tags]
           (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
-                day-strings (filter #(not (get-in dashboard-data [% tag])) day-strings)]
+                day-strings (filter #(not (get-in dashboard-data [% :custom-fields tag])) day-strings)]
             (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tag alias)
                                :res-hash nil
                                :id       :custom-fields-by-days
@@ -50,7 +50,14 @@
           (emit [:gql/query {:q        (gql/dashboard-questionnaires-by-days day-strings item)
                              :res-hash nil
                              :id       :questionnaires-by-days
-                             :prio     15}]))))))
+                             :prio     15}]))))
+    (let [day-strings (->> (range 0 (- 120 offset))
+                           (mapv rh/n-days-ago-fmt)
+                           (filter #(not (get-in dashboard-data [% :habits]))))]
+      (emit [:gql/query {:q        (gql/habits-query-by-days day-strings pvt)
+                         :res-hash nil
+                         :id       :habits-by-days
+                         :prio     15}]))))
 
 (defn charts-positions [dashboard habits]
   (let [ts (:timestamp dashboard)
@@ -103,14 +110,14 @@
         run-query #(let [dashboard-ts (:timestamp @dashboard)]
                      (when (not= dashboard-ts (:dashboard-ts @local))
                        (swap! local assoc :dashboard-ts dashboard-ts)
-                       (gql-query @charts-pos days (:offset @local) local @dashboard-data)))
+                       (gql-query @charts-pos days (:offset @local) local @dashboard-data @pvt)))
         on-wheel (fn [ev]
                    (let [delta-x (int (/ (.-deltaX ev) 4))]
                      (swap! local update :offset + delta-x)
                      (when-not (:timeout @local)
                        (swap! local assoc :timeout
                               (js/setTimeout
-                                #(do (gql-query @charts-pos days (:offset @local) local @dashboard-data)
+                                #(do (gql-query @charts-pos days (:offset @local) local @dashboard-data @pvt)
                                      (swap! local assoc :timeout nil))
                                 100)))))]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
@@ -205,7 +212,7 @@
             [:h2 text]
             [:span.display-text (:display-text @local)]
             (when-not (zero? (:offset @local))
-              [:span {:on-click #(do (gql-query @charts-pos days 0 local @dashboard-data)
+              [:span {:on-click #(do (gql-query @charts-pos days 0 local @dashboard-data @pvt)
                                      (swap! local assoc :offset 0))}
                (:offset @local)])
             (when (and controls (< 1 (count @dashboards)))

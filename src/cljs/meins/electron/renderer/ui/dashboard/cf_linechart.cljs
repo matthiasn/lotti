@@ -56,7 +56,7 @@
                         (filter #(< start-ymd (first %)))
                         (filter #(> end-ymd (first %)))
                         (map second)
-                        (map #(get % tag)))
+                        (map #(get-in % [:custom-fields tag])))
               label (get-in @custom-fields [tag :fields (keyword field) :label])
               values (->> data
                           (map :fields)

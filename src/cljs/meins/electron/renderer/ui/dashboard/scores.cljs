@@ -101,7 +101,7 @@
                       (filter #(<= start-ymd (first %)))
                       (filter #(> end-ymd (first %)))
                       (map second)
-                      (mapcat #(get-in % [tag (name score_k)]))
+                      (mapcat #(get-in % [:questionnaires tag (name score_k)]))
                       (sort-by :timestamp)
                       (filter #(< (:timestamp %) end))
                       (filter #(> (:timestamp %) start)))

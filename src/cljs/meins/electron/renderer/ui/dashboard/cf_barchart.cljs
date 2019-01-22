@@ -57,7 +57,7 @@
                         (filter #(<= start-ymd (first %)))
                         (filter #(> end-ymd (first %)))
                         (map second)
-                        (map #(get % tag)))
+                        (map #(get-in % [:custom-fields tag])))
               indexed (map-indexed (fn [i x]
                                      [i (merge x {:day-ts (h/ymd-to-ts (:date_string x))})])
                                    data)
