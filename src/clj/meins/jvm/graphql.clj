@@ -28,11 +28,11 @@
     (info "removing query" msg-payload (keys queries))
     {:new-state new-state}))
 
-(defn run-registered [{:keys [current-state msg-meta] :as m}]
+(defn run-registered [{:keys [current-state msg-payload msg-meta] :as m}]
   (let [queries (sort-by #(:prio (second %)) (:queries current-state))]
     (info "Running registered GraphQL queries" (keys queries))
     (doseq [[id _q] queries]
-      (exec/run-query (merge m {:msg-payload {:id id}
+      (exec/run-query (merge m {:msg-payload (merge {:id id} msg-payload)
                                 :msg-meta    msg-meta}))))
   {})
 

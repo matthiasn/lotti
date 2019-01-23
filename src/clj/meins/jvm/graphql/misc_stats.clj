@@ -55,7 +55,8 @@
     stats))
 
 (defn questionnaires-by-days [state context args value]
-  (let [{:keys [day_strings tag k]} args
+  (let [args (merge args (-> context :msg-payload :new-args))
+        {:keys [day_strings tag k]} args
         f #(q/questionnaires-by-tag-day @state tag % (keyword k))
         stats (mapcat f day_strings)
         stats (filter #(:score %) stats)]

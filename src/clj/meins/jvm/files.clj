@@ -57,9 +57,10 @@
   [{:keys [current-state msg-payload put-fn msg-meta]}]
   (let [id (or (:id msg-payload) (uuid/v1))
         entry (merge msg-payload {:last_saved (st/now) :id id})
-        entry  (enrich-story current-state entry)
+        entry (enrich-story current-state entry)
         ts (:timestamp entry)
-        day (dt/ts-to-ymd (or (:adjusted_ts entry) ts))
+        day (dt/ts-to-ymd ts)
+        adjusted-day (dt/ts-to-ymd (:adjusted_ts msg-payload))
         new-state (assoc-in current-state [:stats-cache :days day] nil)
         graph (:graph current-state)
         cfg (:cfg current-state)
@@ -80,10 +81,10 @@
       (append-daily-log cfg node-to-add put-fn)
       (put-fn (with-meta [:entry/saved entry] broadcast-meta))
       (put-fn [:cmd/schedule-new
-               {:message [:gql/run-registered]
+               {:message [:gql/run-registered
+                          {:new-args {:day_strings [day adjusted-day]}}]
                 :timeout 250
                 :id      :imported-entry}]))
-
     {:new-state (ga/add-node new-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
@@ -138,12 +139,14 @@
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
-        day (dt/ts-to-ymd (or (:adjusted_ts entry) ts))
+        day-strings (filter identity [(dt/ts-to-ymd ts)
+                                      (dt/ts-to-ymd (:adjusted_ts msg-payload))
+                                      (dt/ts-to-ymd (:adjusted_ts prev))])
         new-state (ga/add-node current-state entry)
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
-        new-state (assoc-in new-state [:stats-cache :days day] nil)
+        new-state (update-in new-state [:stats-cache :days] #(apply dissoc % day-strings))
         new-state (if (set/intersection (:perm_tags entry)
                                         #{"#custom-field-cfg"
                                           "#habit-cfg"})
@@ -156,16 +159,15 @@
       (put-fn [:cmd/schedule-new {:timeout 5000
                                   :message [:options/gen]
                                   :id      :generate-opts}])
-      #_(put-fn [:cmd/schedule-new {:timeout (* 60 60 1000)
-                                    :message [:state/persist]
-                                    :id      :persist-state}])
       (when-not (s/includes? fu/data-path "playground")
         (put-fn (with-meta [:sync/imap entry] broadcast-meta)))
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
-        (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                    :timeout 10
-                                    :id      :saved-entry}]))
+        (put-fn [:cmd/schedule-new
+                 {:message [:gql/run-registered
+                            {:new-args {:day_strings day-strings}}]
+                  :timeout 10
+                  :id      :saved-entry}]))
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
 
@@ -235,22 +237,29 @@
       (info "Moved file to trash:" filename))))
 
 (defn trash-entry-fn [{:keys [current-state msg-payload put-fn]}]
-  (let [entry-ts (:timestamp msg-payload)
-        new-state (ga/remove-node current-state entry-ts)
+  (let [ts (:timestamp msg-payload)
+        g (:graph current-state)
+        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        new-state (ga/remove-node current-state ts)
         cfg (:cfg current-state)
         node-id (:node-id cfg)
+        day-strings (filter identity [(dt/ts-to-ymd ts)
+                                      (dt/ts-to-ymd (:adjusted_ts msg-payload))
+                                      (dt/ts-to-ymd (:adjusted_ts prev))])
         new-global-vclock (vc/next-global-vclock current-state)
         vclock-offset (get-in new-global-vclock [node-id])
-        new-state (assoc-in new-state [:global-vclock] new-global-vclock)]
-    (info "Entry" entry-ts "marked as deleted.")
+        new-state (assoc-in new-state [:global-vclock] new-global-vclock)
+        new-state (update-in new-state [:stats-cache :days] #(apply dissoc % day-strings))]
+    (info "Entry" ts "marked as deleted.")
     (append-daily-log cfg {:timestamp (:timestamp msg-payload)
                            :vclock    {node-id vclock-offset}
                            :deleted   true}
                       put-fn)
-    (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                :timeout 10}])
+    (put-fn [:cmd/schedule-new
+             {:message [:gql/run-registered {:new-args {:day_strings day-strings}}]
+              :timeout 10}])
     (move-attachment-to-trash cfg msg-payload "images" :img_file)
     (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
     (move-attachment-to-trash cfg msg-payload "videos" :video-file)
     {:new-state new-state
-     :emit-msg  [:ft/remove {:timestamp entry-ts}]}))
+     :emit-msg  [:ft/remove {:timestamp ts}]}))

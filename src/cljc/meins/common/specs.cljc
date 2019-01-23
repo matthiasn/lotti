@@ -333,7 +333,7 @@
                                  :meins.gql/data
                                  :meins.gql/error]))
 
-(s/def :gql/run-registered nil?)
+(s/def :gql/run-registered (s/nilable map?))
 (s/def :options/gen nil?)
 
 (s/def :backend-cfg/new map?)

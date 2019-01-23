@@ -4,6 +4,7 @@
             [meins.common.utils.misc :as u]
             #?(:clj  [taoensso.timbre :refer [info debug]]
                :cljs [taoensso.timbre :refer-macros [info debug]])
+            #?(:cljs [moment])
             [meins.common.utils.parse :as p]))
 
 #?(:clj  (defonce new-entries-ls (atom {}))
@@ -40,9 +41,12 @@
     (update-local-storage new-state)
     {:new-state new-state}))
 
+(defn entry-day [adjusted_ts]
+  #?(:cljs (.format (moment adjusted_ts) "YYYY-MM-DD")))
+
 (defn entry-saved-fn
   "Remove new entry from local when saving is confirmed by backend."
-  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         curr-local (get-in current-state [:new-entries ts])
         new-state (if (or (= (:md curr-local)

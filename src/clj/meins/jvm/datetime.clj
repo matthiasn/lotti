@@ -17,7 +17,7 @@
   (ctf/unparse dt-local-fmt (c/from-long ts)))
 
 (def ymd-fmt (ctf/formatter "yyyy-MM-dd" dtz))
-(defn ts-to-ymd [ts] (ctf/unparse ymd-fmt (c/from-long ts)))
+(defn ts-to-ymd [ts] (when (number? ts) (ctf/unparse ymd-fmt (c/from-long ts))))
 (defn ymd-to-ts [s] (c/to-long (ctf/parse ymd-fmt s)))
 
 (defn days-before [ymd n]

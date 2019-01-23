@@ -153,6 +153,7 @@
     (custom-fields-fn day)))
 
 (defn custom-fields-by-days [state context args value]
-  (let [{:keys [day_strings tag]} args
+  (let [args (merge args (-> context :msg-payload :new-args))
+        {:keys [day_strings tag]} args
         custom-fields-fn (custom-fields-mapper @state tag)]
     (mapv custom-fields-fn day_strings)))

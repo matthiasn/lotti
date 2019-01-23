@@ -95,12 +95,13 @@
 
 (defn habits-success-by-day [state context args value]
   (try
-    (let [pvt (:pvt args)
+    (let [args (merge args (-> context :msg-payload :new-args))
+          {:keys [day_strings pvt]} args
           g (:graph @state)
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
                               [day (map #(uc/attrs g %) nodes)]))
-                          (:day_strings args))
+                          day_strings)
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
           habits (if pvt habits (filter pvt-filter habits))

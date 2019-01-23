@@ -34,7 +34,7 @@
                                           :linechart_row} (:type %)))
                     (mapv :tag)
                     (concat ["#BP"]))]
-      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) 120))))]
+      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) days days))))]
         (doseq [tag tags]
           (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
                 day-strings (filter #(not (get-in dashboard-data [% :custom-fields tag])) day-strings)]
@@ -44,16 +44,16 @@
                                :prio     15}])))))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))
-          day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* offset) 120))))]
+          day-strings (mapv rh/n-days-ago-fmt (range 0 (+ (* -1 offset) days days)))]
       (doseq [item items]
         (let [day-strings (filter #(not (get-in dashboard-data [% (:tag item)])) day-strings)]
           (emit [:gql/query {:q        (gql/dashboard-questionnaires-by-days day-strings item)
                              :res-hash nil
                              :id       :questionnaires-by-days
                              :prio     15}]))))
-    (let [day-strings (->> (range 0 (- 120 offset))
+    (let [day-strings (->> (range 0 (+ (* -1 offset) days days))
                            (mapv rh/n-days-ago-fmt)
-                           (filter #(not (get-in dashboard-data [% :habits]))))]
+                           (filter #(empty? (get-in dashboard-data [% :habits]))))]
       (emit [:gql/query {:q        (gql/habits-query-by-days day-strings pvt)
                          :res-hash nil
                          :id       :habits-by-days
@@ -122,7 +122,6 @@
                                 100)))))]
     (fn dashboard-render [{:keys [days controls dashboard-ts]}]
       (run-query)
-      (info "dashboard render")
       (let [last-ts (+ (st/now) (* (:offset @local) d))
             n (count @dashboards)
             dashboard (or (get @dashboards dashboard-ts)
