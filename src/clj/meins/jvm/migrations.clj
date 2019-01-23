@@ -286,7 +286,7 @@
                 (error "Exception" ex "when parsing line:\n" line))))
           (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
 
-;(m/migrate-to-versioned-habits "./data/migrations/versioned-habits" "./data/migrations/versioned-habits")
+;(m/migrate-to-versioned-habits "./data/migrations/versioned-habits" "./data/migrations/versioned-habits-out")
 (defn migrate-to-versioned-habits [path out-path]
   (let [files (file-seq (clojure.java.io/file path))
         ts-uuids (atom #{})
