@@ -7,6 +7,12 @@
   background-color: white;
   border-radius: $entry-border-radius;
 
+  .btn {
+    background-color: $green;
+    font-weight: bold;
+    border-radius: 3px;
+  }
+
   .err {
     color: $red;
     font-weight: bold;

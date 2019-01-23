@@ -285,3 +285,33 @@
               (catch Exception ex
                 (error "Exception" ex "when parsing line:\n" line))))
           (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
+
+;(m/migrate-to-versioned-habits "./data/migrations/versioned-habits" "./data/migrations/versioned-habits")
+(defn migrate-to-versioned-habits [path out-path]
+  (let [files (file-seq (clojure.java.io/file path))
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)]
+    (fs/mkdirs out-path)
+    (doseq [f sorted-files]
+      (with-open [reader (clojure.java.io/reader f)]
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (swap! line-count inc)
+              (let [entry (clojure.edn/read-string line)
+                    id (:timestamp entry)
+                    entry (if (:habit entry)
+                            (let [criteria (get-in entry [:habit :criteria])]
+                              (-> entry
+                                  (assoc-in [:habit :versions 0 :criteria] criteria)
+                                  (assoc-in [:habit :versions 0 :valid_from] "1970-01-01")))
+                            entry)
+                    serialized (str (pr-str entry) "\n")]
+                (swap! ts-uuids conj id)
+                (spit (str out-path "/" filename) serialized :append true))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))

@@ -1,6 +1,7 @@
 (ns meins.electron.renderer.ui.entry.cfg.habit
   (:require [matthiasn.systems-toolbox.component :as st]
             [moment]
+            [reagent.core :as r]
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
@@ -9,15 +10,16 @@
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [taoensso.timbre :refer-macros [info error debug]]
             [meins.electron.renderer.helpers :as h]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn a-z [x] (s/lower-case (second x)))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
-    (fn [{:keys [entry idx]}]
+    (fn [{:keys [entry idx version]}]
       (let [q-tags (-> @backend-cfg :questionnaires :mapping)
-            path [:habit :criteria idx :quest-k]]
+            path [:habit:versions version :criteria idx :quest-k]]
         [:div
          [:h4 "Questionnaire filled on desired schedule"]
          [:div.row
@@ -33,7 +35,7 @@
           [:label.wide "Required n:"]
           [uc/select {:entry     entry
                       :on-change uc/select-update
-                      :path      [:habit :criteria idx :req-n]
+                      :path      [:habit :criteria version idx :req-n]
                       :xf        js/parseInt
                       :options   [1 2 3 4 5 6 7]}]]]))))
 
@@ -41,14 +43,14 @@
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
-    (fn [{:keys [entry idx] :as params}]
-      (let [cf-path [:habit :criteria idx :cf-tag]
+    (fn [{:keys [entry idx version] :as params}]
+      (let [cf-path [:habit :versions version  :criteria idx :cf-tag]
             cf-tag (get-in entry cf-path "")
-            cfk-path [:habit :criteria idx :cf-key]
+            cfk-path [:habit :versions version :criteria idx :cf-key]
             k (get-in entry cfk-path)
             fields (get-in @custom-fields [cf-tag :fields])
-            min-path [:habit :criteria idx :min-val]
-            max-path [:habit :criteria idx :max-val]
+            min-path [:habit :versions version :criteria idx :min-val]
+            max-path [:habit :versions version :criteria  idx :max-val]
             field-cfg (get-in fields [k :cfg])
             custom-fields (vec @custom-fields)
             tags (if @pvt
@@ -85,16 +87,16 @@
   (let [sagas (subscribe [:sagas])
         pvt (subscribe [:show-pvt])
         stories (subscribe [:stories])]
-    (fn [{:keys [entry idx] :as params}]
-      (let [saga-path [:habit :criteria idx :saga]
+    (fn [{:keys [entry idx version] :as params}]
+      (let [saga-path [:habit :versions version :criteria idx :saga]
             saga (get-in entry saga-path "")
             sagas (filter #(:active (second %)) @sagas)
             sagas (if @pvt sagas (filter #(not (:pvt (second %))) sagas))
             sagas (into {} (map (fn [[k v]] [k (:saga_name v)]) sagas))
-            story-path [:habit :criteria idx :story]
+            story-path [:habit :versions version :criteria idx :story]
             story (get-in entry story-path)
-            min-path [:habit :criteria idx :min-time]
-            max-path [:habit :criteria idx :max-time]]
+            min-path [:habit :versions version :criteria idx :min-time]
+            max-path [:habit :versions version :criteria idx :max-time]]
         [:div
          [:h4 "Time spent as desired, within range"]
          [:div.row
@@ -128,8 +130,8 @@
                                 :type  :time
                                 :path  max-path} emit])]))))
 
-(defn criterion [{:keys [entry idx] :as params}]
-  (let [path [:habit :criteria idx :type]
+(defn criterion [{:keys [entry idx version] :as params}]
+  (let [path [:habit :versions version :criteria idx :type]
         habit-type (get-in entry path)
         rm-click (fn []
                    (let [rm #(let [criteria %]
@@ -159,12 +161,9 @@
        [quest-details params])]))
 
 (defn habit-details [entry]
-  (let [add-criterion (fn [entry]
-                        (fn [_]
-                          (let [updated (update-in entry [:habit :criteria] #(vec (conj % {})))]
-                            (emit [:entry/update-local updated]))))
-        ts (:timestamp entry)
+  (let [ts (:timestamp entry)
         habits (subscribe [:habits])
+        local (r/atom {})
         completions (reaction (->> (get-in @habits [ts :completed])
                                    (take 28)
                                    reverse))]
@@ -173,9 +172,35 @@
                                (dissoc :entry-type)
                                (assoc :entry_type :habit))]))
     (fn [entry]
-      (let [criteria (get-in entry [:habit :criteria])]
+      (let [versions-map (get-in entry [:habit :versions])
+            mx-version (apply max (keys versions-map))
+            version (or (:selected-v @local) mx-version 0)
+            add-criterion (fn [entry]
+                            (fn [_]
+                              (let [path [:habit :versions version :criteria]
+                                    updated (update-in entry path #(vec (conj % {})))]
+                                (emit [:entry/update-local updated]))))
+            criteria (get-in entry [:habit :versions version :criteria])
+            new-version (fn [_]
+                          (let [latest (get-in entry [:habit :versions mx-version])
+                                path [:habit :versions (inc mx-version)]
+                                updated (assoc-in entry path latest)
+                                today (h/ymd (stc/now))
+                                updated (assoc-in updated (conj path :valid_from) today)]
+                            (emit [:entry/update updated])))]
         [:div.habit-details
-         [:h3.header "Habit details"]
+         [:div.row
+          [:h3.header "Habit details"]
+          [:label "Version:"]
+          [:select {:value     version
+                    :on-change #(swap! local assoc :selected-v (js/parseInt (h/target-val %)))}
+           (for [v (sort (keys versions-map))]
+             ^{:key v}
+             [:option v])]
+          [:span.btn {:on-click new-version} "new"]]
+         [cs/input-row entry {:label "Valid from:"
+                              :path  [:habit :versions version :valid_from]
+                              :type  :date} emit]
          [:div.row
           [:label "Active? "]
           [uc/switch {:entry entry :path [:habit :active]}]]
@@ -197,8 +222,9 @@
            [:i.fas.fa-plus]]]
          (for [[i c] (map-indexed (fn [i v] [i v]) criteria)]
            ^{:key i}
-           [criterion {:entry entry
-                       :idx   i}])
+           [criterion {:entry   entry
+                       :version version
+                       :idx     i}])
          [:div.completion
           (for [[i c] (m/idxd @completions)]
             [:span.status {:class (when (:success c) "success")

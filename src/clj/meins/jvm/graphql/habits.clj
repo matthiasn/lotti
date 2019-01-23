@@ -58,7 +58,14 @@
           path [:stats-cache :days day :habits habit-ts]]
       (or (get-in @state path)
           (let [success? (partial success? day nodes state)
-                criteria (m/idxd (-> habit :habit :criteria))
+                versions (-> habit :habit :versions)
+                version (->> versions
+                             (filter (fn [[k v]]
+                                       (> (compare day (:valid_from v)) -1)))
+                             (sort-by first)
+                             last
+                             first)
+                criteria (m/idxd (get-in versions [version :criteria]))
                 by-criterion (mapv success? criteria)
                 res {:success    (every? #(true? (:success %)) by-criterion)
                      :day        day
