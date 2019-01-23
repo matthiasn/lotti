@@ -4,7 +4,6 @@
             [meins.electron.renderer.client-store :as store]
             [meins.electron.renderer.ui.re-frame :as rf]
             [meins.electron.renderer.router :as router]
-            [meins.electron.renderer.ws :as ws]
             [meins.electron.renderer.screenshot :as screenshot]
             [meins.electron.renderer.spellcheck :as spellcheck]
             [taoensso.timbre :refer-macros [info debug error]]
