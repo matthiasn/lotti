@@ -16,7 +16,7 @@
                  [enlive "1.1.6"]
                  [buddy/buddy-sign "3.0.0"]
                  [me.raynes/fs "1.4.6"]
-                 [markdown-clj "1.0.5"]
+                 [markdown-clj "1.0.7"]
                  [progrock "0.1.2"]
                  [cheshire "5.8.1"]
                  [me.raynes/conch "0.8.0"]
@@ -66,7 +66,7 @@
              :test-reagent {:dependencies [[cljsjs/react "16.6.0-0"]
                                            [cljsjs/react-dom "16.6.0-0"]
                                            [cljsjs/create-react-class "15.6.3-1"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.339"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.439"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
@@ -123,6 +123,7 @@
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meins.electron.main.core
                                               :target         :nodejs
+                                              :npm-deps       true
                                               :output-to      "prod/main/main.js"
                                               :output-dir     "out/main"
                                               :language-in    :ecmascript5
@@ -134,6 +135,7 @@
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meins.electron.geocoder.core
                                               :target         :nodejs
+                                              :npm-deps       true
                                               :output-to      "prod/geocoder/geocoder.js"
                                               :output-dir     "out/geocoder"
                                               :optimizations  :simple
@@ -144,6 +146,7 @@
                                :compiler     {:main           meins.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
                                               :target         :nodejs
+                                              :npm-deps       true
                                               :output-dir     "out/renderer"
                                               :language-in    :ecmascript6
                                               :optimizations  :simple
@@ -156,6 +159,7 @@
                                               :output-dir     "dev/renderer"
                                               :language-in    :ecmascript6
                                               :source-map     true
+                                              :npm-deps       true
                                               :target         :nodejs
                                               :optimizations  :none
                                               :parallel-build true}}
@@ -164,6 +168,7 @@
                                :source-paths ["src/cljs" "src/cljc" "test"]
                                :compiler     {:output-to     "out/testable.js"
                                               :output-dir    "out/"
+                                              :npm-deps       true
                                               :main          meins.jvm.runner
                                               :process-shim  false
                                               :optimizations :whitespace}}]})

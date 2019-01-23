@@ -23,6 +23,7 @@ Besides, I reserve say fifteen minutes a day for some text about how I am doing 
 
    overview
    concepts
+   motivation
    privacy
    storage
 
