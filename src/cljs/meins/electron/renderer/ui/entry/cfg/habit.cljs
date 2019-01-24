@@ -121,11 +121,11 @@
                           :xf        js/parseInt
                           :sorted-by a-z
                           :options   stories}]]))
-         (when (number? story)
+         (when (number? saga)
            [cs/input-row entry {:label "Minimum:"
                                 :type  :time
                                 :path  min-path} emit])
-         (when (number? story)
+         (when (number? saga)
            [cs/input-row entry {:label "Maximum:"
                                 :type  :time
                                 :path  max-path} emit])]))))

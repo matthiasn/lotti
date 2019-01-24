@@ -6,8 +6,6 @@
             [taoensso.timbre :refer [info error warn]]
             [camel-snake-kebab.core :refer [->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
-            [meins.jvm.datetime :as dt]
-            [clj-time.coerce :as c]
             [meins.common.utils.misc :as u]
             [clj-time.core :as ct]
             [clj-time.coerce :as ctc]))
@@ -51,16 +49,34 @@
                               parent (when (and comment-for
                                                 (uc/has-node? g comment-for))
                                        (uc/attrs g comment-for))
-                              story (or (:primary_story parent)
-                                        (:primary_story entry)
-                                        0)
-                              acc-time (or (get acc story) 0)
+                              story-id (or (:primary_story parent)
+                                           (:primary_story entry)
+                                           0)
+                              acc-time (or (get acc story-id) 0)
                               completed (or (get entry :completed_time) 0)
                               manual (manually-logged entry date-string)
                               summed (+ acc-time completed manual)]
                           (if (pos? summed)
-                            (assoc-in acc [story] summed)
+                            (assoc-in acc [story-id] summed)
                             acc)))
+        saga-reducer (fn [acc entry]
+                       (let [comment-for (:comment_for entry)
+                             parent (when (and comment-for
+                                               (uc/has-node? g comment-for))
+                                      (uc/attrs g comment-for))
+                             story-id (or (:primary_story parent)
+                                          (:primary_story entry)
+                                          0)
+                             story (get stories story-id)
+                             saga (get sagas (:linked_saga story))
+                             saga-id (:timestamp saga)
+                             acc-time (or (get acc saga-id) 0)
+                             completed (or (get entry :completed_time) 0)
+                             manual (manually-logged entry date-string)
+                             summed (+ acc-time completed manual)]
+                         (if (pos? summed)
+                           (assoc-in acc [saga-id] summed)
+                           acc)))
         by-ts-mapper (fn [entry]
                        (let [{:keys [timestamp comment_for primary_story md
                                      text adjusted_ts]} entry
@@ -96,7 +112,8 @@
                                    saga (get sagas (:linked_saga story))]
                                {:logged v
                                 :story  (assoc-in story [:linked_saga] saga)}))
-                           by-story)]
+                           by-story)
+        by-saga (reduce saga-reducer {} nodes)]
     (merge
       (tasks nodes)
       {:day         date-string
@@ -106,4 +123,5 @@
        :by_ts       by-ts
        :by_ts_cal   by-ts-cal
        :by_story_m  by-story
+       :by_saga_m   by-saga
        :by_story    by-story-list})))

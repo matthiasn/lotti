@@ -31,14 +31,16 @@
          :v       x})
 
       :min-max-time
-      (let [{:keys [story min-time max-time]} c
+      (let [{:keys [story saga min-time max-time]} c
             stories (gq/find-all-stories state)
             sagas (gq/find-all-sagas state)
             day-stats (gsd/day-stats g nodes [] stories sagas day)
-            actual (get-in day-stats [:by_story_m story] 0)]
-        {:success (when (number? actual)
-                    (and (if (number? min-time) (>= actual (* 60 min-time)) true)
-                         (if (number? max-time) (<= actual (* 60 max-time)) true)))
+            actual-by-story (get-in day-stats [:by_story_m story] 0)
+            actual-by-saga (get-in day-stats [:by_saga_m saga] 0)
+            actual (if (number? story) actual-by-story actual-by-saga)]
+        {:success (and (if (number? min-time) (>= actual (* 60 min-time)) true)
+                       (if (number? max-time) (<= actual (* 60 max-time)) true)
+                       (or (number? min-time) (number? max-time)))
          :idx     idx
          :v       actual})
 

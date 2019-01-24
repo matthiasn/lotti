@@ -38,13 +38,14 @@
     border-bottom: 3px inset $tab-bg;
 
     &.full {
-      border-radius: 3px;
-      padding: 8px 16px;
+      border-radius: $entry-border-radius;
+      padding: 8px 12px;
       font-size: $font-size-large;
       margin: 6px;
 
       .fa-plus {
         margin-left: 6px!important;
+        margin-right: 16px;
       }
     }
 
@@ -52,11 +53,7 @@
       background-color: lighten($green, 30);
       font-weight: bold;
       color: #889;
-
-      .fa-plus {
-        margin-left: 3px;
-        margin-right: 3px;
-      }
+      min-width: 9px;
     }
 
     &.close-all {
