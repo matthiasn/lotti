@@ -1,6 +1,6 @@
 (ns meins.electron.main.menu
   (:require [taoensso.timbre :refer-macros [info debug]]
-            [electron :refer [app Menu dialog globalShortcut]]
+            [electron :refer [app Menu dialog globalShortcut shell]]
             [meins.electron.main.runtime :as rt]
             [clojure.walk :as walk]))
 
@@ -263,14 +263,11 @@
 
 (defn help-menu [put-fn]
   (let [help-page "https://meins.readthedocs.io/en/latest/"
-        new-window #(put-fn [:window/new {:url       help-page
-                                          :window-id :help
-                                          :width     1024
-                                          :height    768}])]
+        open-help #(.openExternal shell help-page)]
     {:label   "Help"
      :submenu [{:label       "Show Manual"
                 :accelerator "CmdOrCtrl+?"
-                :click       new-window}]}))
+                :click       open-help}]}))
 
 (defn menu [{:keys [cmp-state put-fn]}]
   (let [put-fn (fn [msg]
