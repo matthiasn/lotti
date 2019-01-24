@@ -7,6 +7,7 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
+            [meins.common.habits.util :as hu]
             [cljs.reader :refer [read-string]]
             [meins.common.utils.parse :as up]
             [meins.common.utils.misc :as u]
@@ -71,7 +72,8 @@
                           (or min-val req-n))]
               (when (pos? min-v)
                 (min (* 100 (/ v min-v)) 100))))
-        by-criteria (map f (u/idxd (get-in habit [:habit_entry :habit :criteria])))
+        criteria (hu/get-criteria (:habit_entry habit) (h/ymd (stc/now)))
+        by-criteria (map f (u/idxd criteria))
         cnt (count by-criteria)]
     (when (pos? cnt)
       (/ (apply + by-criteria)
@@ -93,12 +95,11 @@
            (let [completed (first (:completed habit))
                  success (:success completed)
                  cls (when success "completed")
-                 min-time (get-in habit [:habit_entry :habit :criteria 0 :min-time])
+                 criteria (hu/get-criteria (:habit_entry habit) (h/ymd (stc/now)))
+                 min-time (-> criteria first :min-time)
                  v (get-in completed [:values 0 :v])
                  text (eu/first-line (:habit_entry habit))
-                 text2 (if min-time
-                         (h/s-to-hh-mm v)
-                         v)
+                 text2 (if min-time (h/s-to-hh-mm v) v)
                  percent-completed (percent-achieved habit)
                  ts (-> habit :habit_entry :timestamp)
                  on-click (up/add-search

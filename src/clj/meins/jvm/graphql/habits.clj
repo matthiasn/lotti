@@ -4,6 +4,7 @@
             [meins.jvm.graphql.custom-fields :as cf]
             [ubergraph.core :as uc]
             [meins.jvm.datetime :as dt]
+            [meins.common.habits.util :as hu]
             [meins.common.utils.misc :as m]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.jvm.graph.stats.day :as gsd]
@@ -54,24 +55,13 @@
 
       false)))
 
-(defn get-criteria [entry day]
-  (if-let [versions (-> entry :habit :versions)]
-    (let [version (->> versions
-                       (filter (fn [[_k v]]
-                                 (> (compare day (:valid_from v)) -1)))
-                       (sort-by first)
-                       last
-                       first)]
-      (m/idxd (get-in versions [version :criteria])))
-    (-> entry :habit :criteria)))
-
 (defn habit-success [habit [day nodes] state]
   (try
     (let [habit-ts (:timestamp habit)
           path [:stats-cache :days day :habits habit-ts]]
       (or (get-in @state path)
           (let [success? (partial success? day nodes state)
-                criteria (get-criteria habit day)
+                criteria (m/idxd (hu/get-criteria habit day))
                 by-criterion (mapv success? criteria)
                 res {:success    (every? #(true? (:success %)) by-criterion)
                      :day        day
