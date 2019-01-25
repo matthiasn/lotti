@@ -27,7 +27,8 @@
             [meins.electron.renderer.ui.grid :as g]
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.ui.journal :as j]
-            [meins.electron.renderer.graphql :as gql]))
+            [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.ui.stats :as stats]))
 
 (def timeline (r/adapt-react-class ret/Timeline))
 (def timeline-event (r/adapt-react-class ret/TimelineEvent))
@@ -129,5 +130,7 @@
           [h/error-boundary [tabs-view :left]]]
          [:div.right
           [h/error-boundary [g/tabs-view :right]]]]]
+       [h/error-boundary
+        [stats/stats-text]]
        [h/error-boundary
         [upd/updater]]])))

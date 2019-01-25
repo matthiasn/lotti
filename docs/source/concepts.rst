@@ -58,6 +58,15 @@ Once created, all open tasks appear in the open tasks list of the briefing, plus
 You start working on a task by clicking the timer button,which will start a new timer comment, in which I take note of what I am doing and what I still want to achieve. Usually, bullet points work best for me here, whereas I use a plain comment more often for full sentences. But that is just my preference. The time from multiple timers will then be summed up and shown both at the bottom of the parent entry and in the briefing under started tasks, where the color turns to red when I am above my time allocation already.
 
 
+Focus Mode
+----------
+
+While working on a task, and recording the time spent, the user interface is best reduced to show only relevant information and as few distractions as possible. Focus mode only shows the task being worked on, plus a timeline that contains everything from the story that the task belongs to, plus all linked entries. Then on the right side, there's the right journal tab that shows entries from the timeline, or anything else that comes up.
+
+.. image:: ./images/20190125_2251_focus_mode.png
+
+The focus mode can be accessed by having the respective task open in the left column and then clicking **View > Focus Mode** in the menu or via **CMD-F** on Mac and **CTRL-F** on other platforms. You get back with **Escape** or **View > Back to Main View**.
+
 
 Custom Field
 ------------
