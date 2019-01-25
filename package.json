@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.52",
+  "version": "0.6.53",
   "description": "meins - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {

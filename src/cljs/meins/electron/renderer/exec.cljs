@@ -18,7 +18,7 @@
   (let [open (fn [x]
                (info x)
                (put-fn [:search/add
-                             {:tab-group :left
+                             {:tab-group :right
                               :query     (up/parse-search (:timestamp x))}]))
         f (h/new-entry msg-payload open)]
     (f)
