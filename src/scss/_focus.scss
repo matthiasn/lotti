@@ -11,6 +11,10 @@
       font-size: $font-size-xs;
     }
 
+    img {
+      width: 100%;
+    }
+
     &.green {
       background-color: lighten($green, 40);
     }

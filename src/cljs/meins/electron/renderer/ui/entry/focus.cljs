@@ -40,16 +40,18 @@
       (let [ts (:timestamp entry)
             linked-entries (set (:linked_entries_list @left-entry))
             status (cond
-                          (-> entry :task :done) "completed"
-                          (-> entry :task :closed) "rejected"
-                          (:task entry) "open"
-                          (:git_commit entry) "commit"
-                          :default nil)
+                     (-> entry :task :done) "completed"
+                     (-> entry :task :closed) "rejected"
+                     (:task entry) "open"
+                     (:git_commit entry) "commit"
+                     (:img_file entry) "img"
+                     :default nil)
             status-cls (case status
                          "rejected" "fa-times red"
                          "completed" "fa-check green"
                          "open" "fa-check"
                          "commit" "fa-code-commit"
+                         "img" "fa-image"
                          "fa-sticky-note")
             on-click (up/add-search2
                        {:tab-group    :right
@@ -67,6 +69,8 @@
           (when (:task entry)
             [:div.task-status
              [:div status " task"]])
+          (when-let [file (:img_file entry)]
+            [:img {:src (h/thumbs-512 file)}])
           [e/git-commit entry]]]))))
 
 (defn timeline-query [s pvt]
