@@ -1,0 +1,51 @@
+@import "variables.scss";
+
+.focus {
+  overflow-y: auto;
+  background-color: #eee;
+  padding-right: 10px;
+
+  .card {
+    padding: 6px 12px;
+
+    time {
+      font-size: $font-size-xs;
+    }
+
+    &.green {
+      background-color: lighten($green, 40);
+    }
+
+    &.blue {
+      background-color: lighten($hashtag-blue, 20);
+    }
+
+    .git-commit {
+      margin-top: 5px;
+      font-size: $font-size-xs;
+      line-height: 12px;
+    }
+  }
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .task-status {
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+  }
+  i {
+    color: #BBB;
+    font-size: $font-size-medium;
+
+    &.fa-times {
+      color: $red;
+    }
+    &.green {
+      color: $green;
+    }
+  }
+}

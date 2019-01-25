@@ -152,6 +152,9 @@
                {:label       "Back to Main View"
                 :accelerator "Escape"
                 :click       #(open :main)}
+               {:label "Focus Mode"
+                :accelerator "CmdOrCtrl+F"
+                :click #(open :focus)}
                (when (contains? capabilities :countries)
                  {:label "Countries"
                   :click #(open :countries)})

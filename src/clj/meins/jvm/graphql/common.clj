@@ -13,7 +13,9 @@
                      0))
         task-total-t (fn [t]
                        (let [logged (apply + (map logged-t (:comments t)))]
-                         (assoc-in t [:task :completed_s] logged)))]
+                         (if (:task t)
+                           (assoc-in t [:task :completed_s] logged)
+                           t)))]
     (map task-total-t entries)))
 
 

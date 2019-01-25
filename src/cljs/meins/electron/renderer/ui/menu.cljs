@@ -143,3 +143,12 @@
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
     [upload-view]]])
+
+(defn menu-view2 []
+  [:div.menu
+   [:div.menu-header
+    [toggle-option-view {:cls    "fa-user-secret"
+                         :option :show-pvt}]
+    (when (.-PLAYGROUND js/window)
+      [:h1.playground "Playground"])
+    [upload-view]]])

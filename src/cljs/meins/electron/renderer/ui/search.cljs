@@ -80,6 +80,7 @@
                                            {:story        story
                                             :tab-group    tab-group
                                             :editor-state editor-state})]
+                              (info s)
                               (emit [:search/update s]))))
             query-deref @query
             starred (:starred query-deref)

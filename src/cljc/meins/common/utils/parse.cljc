@@ -64,7 +64,7 @@
 (defn add-search
   "Adds search by sending a message that'll open the specified search in a new
    tab."
-  [{:keys [query-string tab-group first-line story-name]} put-fn]
+  [{:keys [query-string tab-group first-line story-name story]} put-fn]
   (fn [_ev]
     (let [q (merge (parse-search query-string)
                    {:story-name story-name
@@ -73,7 +73,22 @@
                                          :off :off
                                          :briefing :left
                                          :left :right
+                                         :timeline :timeline
                                          :left)
+                            :story     story
+                            :query     q}]]
+      (put-fn msg))))
+
+(defn add-search2
+  "Adds search by sending a message that'll open the specified search in
+   target tab."
+  [{:keys [query-string tab-group first-line story-name story]} put-fn]
+  (fn [_ev]
+    (let [q (merge (parse-search query-string)
+                   {:story-name story-name
+                    :first-line first-line})
+          msg [:search/add {:tab-group tab-group
+                            :story     story
                             :query     q}]]
       (put-fn msg))))
 
