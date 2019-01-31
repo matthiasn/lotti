@@ -74,18 +74,18 @@
             [:img {:src (h/thumbs-512 file)}])
           [e/git-commit entry]]]))))
 
-(defn timeline-query [s pvt]
-  (let [queries [[:timeline {:story s :n 1000}]]
+(defn timeline-query [tab-group s pvt]
+  (let [queries [[:timeline {:story s :n 100}]]
         gql-query (gql/tabs-query queries false pvt)]
     (emit [:gql/query {:q        gql-query
-                       :id       :timeline
+                       :id       tab-group
                        :res-hash nil
                        :prio     3}])))
 
 (defn timeline-column [tab-group]
   (let [gql-res (subscribe [:gql-res2])
         pvt (subscribe [:show-pvt])
-        entries-list (reaction (get-in @gql-res [:timeline :res]))
+        entries-list (reaction (get-in @gql-res [tab-group :res]))
         left-entry (reaction (first (vals (get-in @gql-res [:left :res]))))
         linked (reaction (->> (:linked @left-entry)
                               (filter #(not (:briefing %)))
@@ -94,14 +94,19 @@
         combined (reaction (->> (merge @entries-list @linked)
                                 vals
                                 (sort-by :timestamp)
-                                reverse))]
-    (fn timeline-column-render [tab-group]
-      (timeline-query (:primary_story @left-entry) @pvt)
-      [:div.focus
-       [timeline
-        (for [entry @combined]
-          ^{:key (:timestamp entry)}
-          [entry-card entry])]])))
+                                reverse))
+        did-mount (fn [_props] (timeline-query tab-group (:primary_story @left-entry) @pvt))
+        will-unmount #(emit [:search/remove {:query-id  tab-group
+                                             :tab-group tab-group}])]
+    (r/create-class
+      {:component-did-mount    did-mount
+       :component-will-unmount will-unmount
+       :reagent-render         (fn [_props]
+                                 [:div.focus
+                                  [timeline
+                                   (for [entry @combined]
+                                     ^{:key (:timestamp entry)}
+                                     [entry-card entry])]])})))
 
 (defn tabs-view [tab-group]
   (let [query-cfg (subscribe [:query-cfg])
@@ -125,9 +130,9 @@
         [:div.focus-wrapper
          [h/error-boundary [menu/menu-view2]]
          [h/error-boundary [menu/busy-status]]
-         [h/error-boundary [timeline-column :focus]]
          [:div.left
           [h/error-boundary [tabs-view :left]]]
+         [h/error-boundary [timeline-column :focus]]
          [:div.right
           [h/error-boundary [g/tabs-view :right]]]]]
        [h/error-boundary

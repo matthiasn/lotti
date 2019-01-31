@@ -3,6 +3,7 @@
 .focus {
   overflow-y: auto;
   background-color: #eee;
+  border-radius: $entry-border-radius;
 
   .card {
     padding: 6px 12px;
