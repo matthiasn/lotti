@@ -52,7 +52,7 @@
     ;(run-query "award-points.gql" :award-points 14 [])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])
     (run-query "options.gql" :options 10 nil)
-    (run-query "day-stats.gql" :day-stats 15 [90])
+    (run-query "day-stats.gql" :day-stats 15 [180])
     (s/gql-query :left current-state false put-fn)
     (s/gql-query :right current-state false put-fn)
     (s/dashboard-cfg-query current-state put-fn)

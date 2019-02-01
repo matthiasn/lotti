@@ -41,19 +41,18 @@
                                     data)
             label      (get-in @sagas [saga :saga_name])
             field-type :time
-            mx         (or mx
-                           (apply max (map :v data)))
-            scale      (if (pos? mx) (/ (- h 3) mx) 1)
+            mx2 (apply max (map :v data))
+            scale      (if (pos? mx2) (/ (- h 3) mx2) 1)
             line-inc   (cond
-                         (> mx 12000) 10800
-                         (> mx 8000) 7200
-                         (> mx 4000) 3600
-                         (> mx 2000) 1800
-                         (> mx 1500) 900
-                         (> mx 800) 450
-                         (> mx 400) 250
-                         (> mx 100) 50
-                         (> mx 40) 25
+                         (> mx2 12000) 10800
+                         (> mx2 8000) 7200
+                         (> mx2 4000) 3600
+                         (> mx2 2000) 1800
+                         (> mx2 1500) 900
+                         (> mx2 800) 450
+                         (> mx2 400) 250
+                         (> mx2 100) 50
+                         (> mx2 40) 25
                          :default 10)
             lines      (filter #(zero? (mod % line-inc)) (range 1 mx))]
         [:g
@@ -80,9 +79,10 @@
                  cls       (if (and threshold (> v threshold))
                              success-cls
                              cls)
-                 color (if (> v (* mn 60))
-                           color
-                           fail-color)
+                 color     (if (and (> v (* (or mn 0) 60))
+                                    (< v (* (or mx 1440) 60)))
+                             color
+                             fail-color)
                  display-v (if (= :time field-type)
                              (h/s-to-hh-mm v)
                              v)]

@@ -127,6 +127,7 @@
             n (count @dashboards)
             dashboard (or (get @dashboards dashboard-ts)
                           @dashboard)
+            charts-pos (charts-positions dashboard habits)
             next-item #(if (= % (dec n)) 0 (min (dec n) (inc %)))
             prev-item #(if (zero? %) (dec n) (max 0 (dec %)))
             cycle (fn [f _]
@@ -155,7 +156,7 @@
                     :local    local
                     :span     span
                     :days     days}
-            end-y (+ (:last-y @charts-pos) (:last-h @charts-pos))
+            end-y (+ (:last-y charts-pos) (:last-h charts-pos))
             text (eu/first-line dashboard)
             text (or (when-not (empty? text)
                        text)
@@ -177,7 +178,7 @@
                      x (+ 200 scaled)]
                  ^{:key n}
                  [dc/tick x "#CCC" 1 30 end-y]))]
-            (for [chart-cfg (:charts @charts-pos)]
+            (for [chart-cfg (:charts charts-pos)]
               (let [chart-fn (case (:type chart-cfg)
                                :habit_success h/habits-chart
                                :questionnaire ds/scores-chart
@@ -213,7 +214,7 @@
             [:h2 text]
             [:span.display-text (:display-text @local)]
             (when-not (zero? (:offset @local))
-              [:span {:on-click #(do (gql-query @charts-pos days 0 local @dashboard-data @pvt)
+              [:span {:on-click #(do (gql-query charts-pos days 0 local @dashboard-data @pvt)
                                      (swap! local assoc :offset 0))}
                (:offset @local)])
             (when (and controls (< 1 (count @dashboards)))
