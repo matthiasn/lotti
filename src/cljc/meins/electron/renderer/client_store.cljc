@@ -107,22 +107,34 @@
               (assoc-in acc path m)))]
     (reduce f state coll)))
 
+(defn save-day-stats-by-day [state coll]
+  (let [f (fn [acc {:keys [day by_saga] :as m}]
+            (let [path [:dashboard-data day :by-saga]
+                  by-saga (reduce (fn [acc x]
+                                    (let [ts (:timestamp (:saga x))
+                                          logged (:logged x)]
+                                      (assoc acc ts logged)))
+                                  {} by_saga)]
+              (assoc-in acc path by-saga)))]
+    (reduce f state coll)))
+
 (defn save-dashboard-data [state res]
   (let [data (-> res :data vals)
         id (:id res)
         f (case id
-                :custom-fields-by-days save-dashboard-data-by-tag
-                :questionnaires-by-days save-questionnaire-data-by-tag
-                :habits-by-days save-habits-by-day
-                nil)]
+            :custom-fields-by-days save-dashboard-data-by-tag
+            :questionnaires-by-days save-questionnaire-data-by-tag
+            :habits-by-days save-habits-by-day
+            :day-stats save-day-stats-by-day
+            nil)]
     (if f
       (reduce f state data)
       state)))
 
 (defn gql-res [{:keys [current-state msg-payload]}]
   (let [{:keys [id]} msg-payload
-        new-state (save-dashboard-data current-state msg-payload)
-        new-state (assoc-in new-state [:gql-res id] msg-payload)]
+        new-state (assoc-in current-state [:gql-res id] msg-payload)
+        new-state (save-dashboard-data new-state msg-payload)]
     (when-not (contains? #{:left :right} id)
       {:new-state new-state})))
 

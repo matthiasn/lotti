@@ -43,6 +43,26 @@
      :done_tasks_cnt   (count done-nodes)
      :closed_tasks_cnt (count closed-nodes)}))
 
+(defn saga-reducer [date-string g stories sagas]
+  (fn [acc entry]
+    (let [comment-for (:comment_for entry)
+          parent (when (and comment-for
+                            (uc/has-node? g comment-for))
+                   (uc/attrs g comment-for))
+          story-id (or (:primary_story parent)
+                       (:primary_story entry)
+                       0)
+          story (get stories story-id)
+          saga (get sagas (:linked_saga story))
+          saga-id (:timestamp saga)
+          acc-time (or (get acc saga-id) 0)
+          completed (or (get entry :completed_time) 0)
+          manual (manually-logged entry date-string)
+          summed (+ acc-time completed manual)]
+      (if (pos? summed)
+        (assoc-in acc [saga-id] summed)
+        acc))))
+
 (defn day-stats [g nodes cal-nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
                         (let [comment-for (:comment_for entry)
@@ -59,24 +79,7 @@
                           (if (pos? summed)
                             (assoc-in acc [story-id] summed)
                             acc)))
-        saga-reducer (fn [acc entry]
-                       (let [comment-for (:comment_for entry)
-                             parent (when (and comment-for
-                                               (uc/has-node? g comment-for))
-                                      (uc/attrs g comment-for))
-                             story-id (or (:primary_story parent)
-                                          (:primary_story entry)
-                                          0)
-                             story (get stories story-id)
-                             saga (get sagas (:linked_saga story))
-                             saga-id (:timestamp saga)
-                             acc-time (or (get acc saga-id) 0)
-                             completed (or (get entry :completed_time) 0)
-                             manual (manually-logged entry date-string)
-                             summed (+ acc-time completed manual)]
-                         (if (pos? summed)
-                           (assoc-in acc [saga-id] summed)
-                           acc)))
+        saga-reducer (saga-reducer date-string g stories sagas)
         by-ts-mapper (fn [entry]
                        (let [{:keys [timestamp comment_for primary_story md
                                      text adjusted_ts]} entry
@@ -113,7 +116,10 @@
                                {:logged v
                                 :story  (assoc-in story [:linked_saga] saga)}))
                            by-story)
-        by-saga (reduce saga-reducer {} nodes)]
+        by-saga-m (reduce saga-reducer {} nodes)
+        by-saga (map (fn [[k v]] {:logged v
+                                  :saga   (get sagas k)})
+                     by-saga-m)]
     (merge
       (tasks nodes)
       {:day         date-string
@@ -123,5 +129,6 @@
        :by_ts       by-ts
        :by_ts_cal   by-ts-cal
        :by_story_m  by-story
-       :by_saga_m   by-saga
+       :by_saga_m   by-saga-m
+       :by_saga     by-saga
        :by_story    by-story-list})))

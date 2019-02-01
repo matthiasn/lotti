@@ -234,6 +234,47 @@
                                 :type  :number
                                 :path  h-path}])]))))
 
+(defn time-barchart-row [_]
+  (let [sagas (subscribe [:sagas])]
+    (fn [{:keys [entry idx collapsed]}]
+      (let [saga-path [:dashboard_cfg :items idx :saga]
+            h-path [:dashboard_cfg :items idx :h]
+            mn-path [:dashboard_cfg :items idx :mn]
+            mx-path [:dashboard_cfg :items idx :mx]
+            show-details (and (not (empty? (str (get-in entry saga-path))))
+                              (not collapsed))
+            saga (get-in entry saga-path)
+            field-cfg {:type :time}
+            sagas (into {}
+                        (->> @sagas
+                             (map (fn [[ts m]] [ts (:saga_name m)]))
+                             (filter #(not (empty? (second %))))))]
+        [:div
+         [:h4 "Recorded Time Bar Chart"]
+         [:div.row
+          [:label.wide "Saga:"]
+          [uc/select {:entry     entry
+                      :on-change uc/select-update
+                      :path      saga-path
+                      :xf        js/parseInt
+                      :options   sagas}]]
+         (when (and show-details saga)
+           [color-picker entry idx :color "Sucess Stroke:"])
+         (when (and show-details saga)
+           [color-picker entry idx :fail-color "Fail Stroke:"])
+         (when (and show-details saga)
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Min:"
+                                       :path  mn-path})])
+         (when (and show-details saga)
+           [cs/input-row entry (merge field-cfg
+                                      {:label "Max:"
+                                       :path  mx-path})])
+         (when (and show-details saga)
+           [cs/input-row entry {:label "Height:"
+                                :type  :number
+                                :path  h-path}])]))))
+
 (defn gitstats-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])]
@@ -354,7 +395,8 @@
                                     :commits-chart "Git Stats Bar Chart"
                                     :habit_success "Habit Success"
                                     :questionnaire "Questionnaire"
-                                    :bp_chart      "Blood Pressure"}}]])
+                                    :bp_chart      "Blood Pressure"
+                                    :time_barchart "Recorded Time Bar Chart"}}]])
          (when (= :habit_success habit-type)
            [habit-success params])
          (when (= :bp_chart habit-type)
@@ -366,8 +408,9 @@
          (when (= :linechart_row habit-type)
            [linechart-row params])
          (when (= :questionnaire habit-type)
-           [quest-details params])]))))
-
+           [quest-details params])
+         (when (= :time_barchart habit-type)
+           [time-barchart-row params])]))))
 
 (defn dashboard-config [entry]
   (let [add-item (fn [entry]

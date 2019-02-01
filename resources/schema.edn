@@ -193,6 +193,12 @@
                           :description "Logged time in seconds"}
                  :story  {:type :Story}}}
 
+  :LoggedBySaga
+  {:description "Logged time by story."
+   :fields      {:logged {:type        Int
+                          :description "Logged time in seconds"}
+                 :saga   {:type :Saga}}}
+
   :AwardPointItem
   {:description "Custom field stats item."
    :fields      {:date_string {:type (non-null String)}
@@ -230,6 +236,7 @@
                  :by_ts            {:type (list :LoggedCalItem)}
                  :by_ts_cal        {:type (list :LoggedCalItem)}
                  :by_story         {:type (list :LoggedByStory)}
+                 :by_saga          {:type (list :LoggedBySaga)}
                  :word_count       {:type Int}
                  :entry_count      {:type Int}
                  :tasks_cnt        {:type Int}

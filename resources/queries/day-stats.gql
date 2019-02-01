@@ -7,6 +7,13 @@
     tasks_cnt
     word_count
     total_time
+    by_saga {
+      logged
+      saga {
+        saga_name
+        timestamp
+      }
+    }
     by_ts {
       timestamp
       comment_for

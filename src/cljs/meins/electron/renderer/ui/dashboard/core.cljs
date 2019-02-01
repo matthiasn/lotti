@@ -18,6 +18,7 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.ui.dashboard.cf_barchart :as db]
+            [meins.electron.renderer.ui.dashboard.time_barchart :as dt]
             [clojure.string :as s]))
 
 (def d (* 24 60 60 1000))
@@ -181,6 +182,7 @@
                                :habit_success h/habits-chart
                                :questionnaire ds/scores-chart
                                :barchart_row db/barchart-row
+                               :time_barchart dt/barchart-row
                                :linechart_row cfl/linechart-row
                                :bp_chart bp/bp-chart
                                :commits-chart c/commits-chart

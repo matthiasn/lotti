@@ -144,11 +144,14 @@
       [:h1.playground "Playground"])
     [upload-view]]])
 
-(defn menu-view2 []
+(defn menu-view2 [title]
   [:div.menu
    [:div.menu-header
     [toggle-option-view {:cls    "fa-user-secret"
                          :option :show-pvt}]
+    (when title
+      [:h1 title])
+    [:h1 title]
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
     [upload-view]]])
