@@ -66,6 +66,16 @@
     (js/setTimeout #(.scrollTo js/window 0 300) 100)
     (fn data-explorer-render [data]
       (aset js/document "body" "style" "overflow" "scroll")
-      [:div.edn-tree.light
+      [:div.edn-tree.light.full
        [:h2 "Client-side State Explorer"]
+       (data->hiccup (or data @db) @local expand-fn)])))
+
+(defn data-explorer2 [_data]
+  (let [local (r/atom {})
+        db (subscribe [:db])
+        expand-fn (fn [path]
+                    (fn [_]
+                      (reset! local path)))]
+    (fn data-explorer-render [data]
+      [:div.edn-tree.light
        (data->hiccup (or data @db) @local expand-fn)])))

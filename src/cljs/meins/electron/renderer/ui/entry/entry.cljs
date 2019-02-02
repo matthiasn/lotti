@@ -19,6 +19,7 @@
             [meins.electron.renderer.ui.entry.story :as es]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.entry.carousel :as cl]
+            [meins.electron.renderer.ui.entry.post-mortem :as pm]
             [meins.electron.renderer.ui.entry.img.carousel :as icl]
             [meins.electron.renderer.ui.entry.wavesurfer :as ws]
             [meins.common.utils.misc :as u]
@@ -31,7 +32,8 @@
             [meins.electron.renderer.ui.entry.pomodoro :as pomo]
             [clojure.pprint :as pp]
             [reagent.core :as r]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.ui.data-explorer :as dex]))
 
 (defn hashtags-mentions [entry tab-group]
   (let [clear-import #(emit [:entry/update (update entry :tags disj "#import")])
@@ -140,6 +142,9 @@
          (when (or (contains? (set (:perm_tags entry)) "#album")
                    (contains? (set (:tags entry)) "#album"))
            [ca/album-config merged])
+         (when (or (contains? (set (:perm_tags entry)) "#post-mortem")
+                   (contains? (set (:tags entry)) "#post-mortem"))
+           [pm/post-mortem merged])
          (when (or (= :habit (:entry-type merged))
                    (= :habit (:entry_type merged)))
            [habit/habit-details merged emit])
@@ -183,11 +188,11 @@
          (when (:debug @local)
            [:div.debug
             [:h3 "from backend"]
-            [:pre [:code (with-out-str (pp/pprint entry))]]
+            [dex/data-explorer2 entry]
             [:h3 "@new-entry"]
-            [:pre [:code (with-out-str (pp/pprint @new-entry))]]
+            [dex/data-explorer2 @new-entry]
             [:h3 "diff"]
-            [:pre [:code (with-out-str (pp/pprint (cd/diff entry @new-entry)))]]])]))))
+            [dex/data-explorer2 (cd/diff entry @new-entry)]])]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

@@ -29,8 +29,10 @@
   font-size: 10px;
   display: flex;
   flex-direction: column;
-  min-height: 800px;
-  padding: 25px 40px;
+
+  &.full {
+    padding: 25px 40px;
+  }
 
   h2 {
     margin-top : 0;

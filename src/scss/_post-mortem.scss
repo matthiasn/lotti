@@ -1,0 +1,15 @@
+@import "variables.scss";
+
+.post-mortem {
+  margin: 20px 0;
+
+  .input {
+    &.time {
+      width: 60px!important;
+
+    }
+  }
+  select {
+    width: 90px;
+  }
+}
