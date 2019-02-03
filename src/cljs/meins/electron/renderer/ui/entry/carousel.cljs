@@ -131,7 +131,9 @@
 
 (defn info-drawer [selected locale put-fn]
   (let [local (r/atom {})
-        backend-cfg (subscribe [:backend-cfg])]
+        backend-cfg (subscribe [:backend-cfg])
+        cfg       (subscribe [:cfg])
+        satellite (reaction (:satellite-view @cfg))]
     (fn [selected locale put-fn]
       (let [ts (:timestamp selected)
             file (:img_file selected)

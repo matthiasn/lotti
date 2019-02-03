@@ -180,6 +180,8 @@
                {:label       "Toggle Dashboard"
                 :accelerator "CmdOrCtrl+Shift+D"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
+               {:label       "Toggle Satellite View"
+                :click       #(put-fn [:cmd/toggle-key {:path [:cfg :satellite-view]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}
