@@ -83,6 +83,7 @@
     "electron": "3.0.13",
     "electron-builder": "20.38.5",
     "module-deps": "6.2.0",
-    "resolve": "1.10.0"
+    "resolve": "1.10.0",
+    "webpack": "4.29.0"
   }
 }

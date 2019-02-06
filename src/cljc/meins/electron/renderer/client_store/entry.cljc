@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.client-store-entry
+(ns meins.electron.renderer.client-store.entry
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as u]

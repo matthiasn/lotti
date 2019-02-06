@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.client-store-cfg
+(ns meins.electron.renderer.client-store.cfg
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
     #?(:clj [taoensso.timbre :refer [info debug]]
        :cljs [taoensso.timbre :refer-macros [info debug]])

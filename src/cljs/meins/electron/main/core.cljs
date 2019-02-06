@@ -26,7 +26,7 @@
 
 (aset process "env" "GOOGLE_API_KEY" "AIzaSyD78NTnhgt--LCGBdIGPEg8GtBYzQl0gKU")
 
-(defonce switchboard (sb/component :electron/switchboard))
+(defonce switchboard (sb/component :main/switchboard))
 
 (def OBSERVER (:repo-dir rt/runtime-info))
 
@@ -71,84 +71,84 @@
 
 (defn start []
   (info "Starting CORE:" (with-out-str (pp/pprint rt/runtime-info)))
-  (let [components #{(wm/cmp-map :electron/window-manager wm-relay app-path)
-                     (st/cmp-map :electron/startup)
-                     (ipc/cmp-map :electron/ipc-cmp)
-                     (bl/cmp-map :electron/blink)
-                     (screen/cmp-map :electron/screenshot)
-                     (imap/cmp-map :electron/sync)
-                     (help/cmp-map :electron/help)
-                     (upd/cmp-map :electron/updater)
-                     (sched/cmp-map :electron/scheduler)
-                     (menu/cmp-map :electron/menu-cmp)
-                     (geocoder/cmp-map :electron/geocoder #{:geonames/lookup})}
+  (let [components #{(wm/cmp-map :main/window-manager wm-relay app-path)
+                     (st/cmp-map :main/startup)
+                     (ipc/cmp-map :main/ipc-cmp)
+                     (bl/cmp-map :main/blink)
+                     (screen/cmp-map :main/screenshot)
+                     (imap/cmp-map :main/sync)
+                     (help/cmp-map :main/help)
+                     (upd/cmp-map :main/updater)
+                     (sched/cmp-map :main/scheduler)
+                     (menu/cmp-map :main/menu-cmp)
+                     (geocoder/cmp-map :main/geocoder #{:geonames/lookup})}
         components (make-observable components)]
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp components]
 
-       [:cmd/route {:from :electron/menu-cmp
-                    :to   #{:electron/window-manager
-                            :electron/startup
-                            :electron/scheduler
-                            :electron/screenshot
-                            :electron/geocoder
-                            :electron/updater}}]
+       [:cmd/route {:from :main/menu-cmp
+                    :to   #{:main/window-manager
+                            :main/startup
+                            :main/scheduler
+                            :main/screenshot
+                            :main/geocoder
+                            :main/updater}}]
 
-       [:cmd/route {:from :electron/scheduler
-                    :to   #{:electron/updater
-                            :electron/window-manager
-                            :electron/menu-cmp
-                            :electron/geocoder
-                            :electron/sync
-                            :electron/blink
-                            :electron/startup}}]
+       [:cmd/route {:from :main/scheduler
+                    :to   #{:main/updater
+                            :main/window-manager
+                            :main/menu-cmp
+                            :main/geocoder
+                            :main/sync
+                            :main/blink
+                            :main/startup}}]
 
-       [:cmd/route {:from :electron/ipc-cmp
-                    :to   #{:electron/startup
-                            :electron/updater
-                            :electron/geocoder
-                            :electron/blink
-                            :electron/help
-                            :electron/screenshot
-                            :electron/sync
-                            :electron/scheduler
-                            :electron/window-manager}}]
+       [:cmd/route {:from :main/ipc-cmp
+                    :to   #{:main/startup
+                            :main/updater
+                            :main/geocoder
+                            :main/blink
+                            :main/help
+                            :main/screenshot
+                            :main/sync
+                            :main/scheduler
+                            :main/window-manager}}]
 
-       [:cmd/route {:from :electron/blink
-                    :to   :electron/scheduler}]
+       [:cmd/route {:from :main/blink
+                    :to   :main/scheduler}]
 
-       [:cmd/route {:from :electron/window-manager
-                    :to   :electron/startup}]
+       [:cmd/route {:from :main/window-manager
+                    :to   :main/startup}]
 
-       [:cmd/route {:from :electron/geocoder
-                    :to   :electron/window-manager}]
+       [:cmd/route {:from :main/geocoder
+                    :to   :main/window-manager}]
 
-       [:cmd/route {:from :electron/help
-                    :to   :electron/window-manager}]
+       [:cmd/route {:from :main/help
+                    :to   :main/window-manager}]
 
-       [:cmd/route {:from :electron/screenshot
-                    :to   :electron/window-manager}]
+       [:cmd/route {:from :main/screenshot
+                    :to   :main/window-manager}]
 
-       [:cmd/route {:from :electron/sync
-                    :to   #{:electron/window-manager
-                            :electron/scheduler}}]
+       [:cmd/route {:from :main/sync
+                    :to   #{:main/window-manager
+                            :main/scheduler}}]
 
-       [:cmd/route {:from :electron/updater
-                    :to   #{:electron/scheduler
-                            :electron/window-manager
-                            :electron/startup}}]
+       [:cmd/route {:from :main/updater
+                    :to   #{:main/scheduler
+                            :main/window-manager
+                            :main/startup}}]
 
-       [:cmd/route {:from :electron/startup
-                    :to   #{:electron/scheduler
-                            :electron/window-manager}}]
+       [:cmd/route {:from :main/startup
+                    :to   #{:main/scheduler
+                            :main/window-manager}}]
 
        (when OBSERVER
-         [:cmd/attach-to-firehose :electron/window-manager])
+         [:cmd/attach-to-firehose :main/window-manager])
 
-       [:cmd/send {:to :electron/startup :msg [:jvm/loaded? {:environment :live}]}]
+       [:cmd/send {:to :main/startup :msg [:jvm/loaded? {:environment :live}]}]
 
-       [:cmd/send {:to  :electron/scheduler
+       [:cmd/send {:to  :main/scheduler
                    :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
                                             :message [:update/auto-check]
                                             :repeat  true

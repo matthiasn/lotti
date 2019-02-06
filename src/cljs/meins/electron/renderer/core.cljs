@@ -14,8 +14,6 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]))
 
-(defonce switchboard (sb/component :renderer/switchboard))
-
 (def sente-base-cfg
   {:sente-opts {:host     (.-iwwHOST js/window)
                 :protocol "http:"}
@@ -60,20 +58,24 @@
                        :update/install :window/close
                        :blink/busy})
 
+(defonce switchboard (sb/component :renderer/switchboard))
+
+(def components
+  #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
+    (spellcheck/cmp-map :renderer/spellcheck)
+    (screenshot/cmp-map :renderer/screenshot)
+    (sente/cmp-map :renderer/ws-cmp sente-cfg)
+    (when OBSERVER
+      (sente/cmp-map :renderer/ws-firehose sente-base-cfg))
+    (router/cmp-map :renderer/router)
+    (store/cmp-map :renderer/store)
+    (sched/cmp-map :renderer/scheduler)
+    (rf/cmp-map :renderer/ui-cmp)
+    (exec/cmp-map :renderer/exec-cmp #{})})
+
 (defn init []
   (info "Starting SYSTEM")
-  (let [components #{(ipc/cmp-map :renderer/ipc-cmp ipc-relay-types)
-                     (spellcheck/cmp-map :renderer/spellcheck)
-                     (screenshot/cmp-map :renderer/screenshot)
-                     (sente/cmp-map :renderer/ws-cmp sente-cfg)
-                     (when OBSERVER
-                       (sente/cmp-map :renderer/ws-firehose sente-base-cfg))
-                     (router/cmp-map :renderer/router)
-                     (store/cmp-map :renderer/store)
-                     (sched/cmp-map :renderer/scheduler)
-                     (rf/cmp-map :renderer/ui-cmp)
-                     (exec/cmp-map :renderer/exec-cmp #{})}
-        components (make-observable components)]
+  (let [components (make-observable components)]
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp components]
@@ -124,9 +126,6 @@
 
        [:cmd/observe-state {:from :renderer/store
                             :to   :renderer/ui-cmp}]
-
-       [:cmd/observe-state {:from :renderer/store
-                            :to   :renderer/screenshot}]
 
        (when OBSERVER
          [:cmd/attach-to-firehose :renderer/ws-firehose])
