@@ -12,6 +12,12 @@
       font-size: $font-size-xs;
     }
 
+    &.selected-day {
+      border-left: rgb(123, 157, 111);
+      border-left-width: 4px;
+      border-left-style: solid;
+    }
+
     img {
       width: 100%;
     }
@@ -50,6 +56,21 @@
     }
     &.green {
       color: $green;
+    }
+  }
+
+  .timeline {
+    background-color: white;
+    height: 65px;
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 0;
+      text-align: center;
+    }
+
+    .events-wrapper {
+      margin: 0 50px!important;
     }
   }
 }

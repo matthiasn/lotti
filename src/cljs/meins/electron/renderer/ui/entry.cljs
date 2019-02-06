@@ -115,7 +115,8 @@
             map-id (str ts (when qid (name qid)))
             errors (cfc/validate-cfg @new-entry backend-cfg)
             on-drag-start (a/drag-start-fn entry)]
-        [:div.entry {:on-drop       drop-fn
+        [:div.entry {:id (str tab-group ts)
+                     :on-drop       drop-fn
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default
                      :draggable     true
