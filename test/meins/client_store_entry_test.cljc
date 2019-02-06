@@ -2,7 +2,7 @@
   "Here, we test the handler functions of the server side store component."
   (:require #?(:clj  [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-            [meins.electron.renderer.client-store.initial :as csi]
+            [meins.electron.renderer.client-store :as cs]
             [meins.electron.renderer.client-store.entry :as cse]))
 
 (def test-entry
@@ -34,7 +34,7 @@
 (deftest new-entry-test
   "Test that local entry is properly set in state."
   (with-redefs [cse/new-entries-ls (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (cse/new-entry-fn {:current-state current-state
                                                    :msg-payload   test-entry}))]
       (testing
@@ -48,7 +48,7 @@
 (deftest update-local-test
   "Test that local entry is properly attached to state."
   (with-redefs [cse/new-entries-ls (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload   test-entry}))
@@ -70,7 +70,7 @@
 (deftest remove-local-test
   "Test that local entry is properly removed from state after delete message."
   (with-redefs [cse/new-entries-ls (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload   test-entry}))
@@ -91,7 +91,7 @@
 (deftest entry-saved-test
   "New entry removed after backend confirms save."
   (with-redefs [cse/new-entries-ls (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (cse/update-local
                                   {:current-state current-state
                                    :msg-payload   test-entry}))

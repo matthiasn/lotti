@@ -2,7 +2,7 @@
   "Here, we test the handler functions of the server side store component."
   (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-                    [meins.electron.renderer.client-store.initial :as csi]
+                    [meins.electron.renderer.client-store :as cs]
                     [meins.electron.renderer.client-store.cfg :as c]))
 
 (def empty-query
@@ -84,7 +84,7 @@
    :md         ""})
 
 #_(deftest new-state-test
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (csi/new-state-fn
                                   {:current-state current-state
                                    :msg-payload   state-from-backend
@@ -103,7 +103,7 @@
 
 (deftest toggle-key-test
   "toggle key messages flip boolean value"
-  (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+  (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
         new-state (:new-state (c/toggle-key-fn
                                 {:current-state current-state
                                  :msg-payload   {:path [:cfg :sort-by-upvotes]}}))
@@ -124,7 +124,7 @@
   "toggle key messages flip boolean value"
   (let [test-ts 1465059139281
         path [:cfg :show-maps-for]
-        current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+        current-state @(:state (cs/state-fn (fn [_put-fn])))
         new-state (:new-state (c/toggle-set-fn
                                 {:current-state current-state
                                  :msg-payload   {:timestamp test-ts :path path}}))

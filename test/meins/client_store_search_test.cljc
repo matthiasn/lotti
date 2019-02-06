@@ -3,14 +3,14 @@
    component."
   (:require #?(:clj  [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer-macros [deftest testing is]])
-            [meins.electron.renderer.client-store.initial :as csi]
+            [meins.electron.renderer.client-store :as cs]
             [meins.electron.renderer.client-store.search :as search]
             [meins.client-store-test :as st]))
 
 (deftest update-query-test
   "Test that new query is updated properly in store component state"
   (with-redefs [search/query-cfg (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           handler-res (search/update-query-fn {:current-state current-state
                                                :put-fn        (fn [_])
                                                :msg-payload   st/empty-query})
@@ -36,7 +36,7 @@
 (deftest show-more-test
   "Ensure that query is properly updated when more results are desired."
   (with-redefs [search/query-cfg (atom {})]
-    (let [current-state @(:state (csi/initial-state-fn (fn [_put-fn])))
+    (let [current-state @(:state (cs/state-fn (fn [_put-fn])))
           new-state (:new-state (search/update-query-fn
                                   {:current-state current-state
                                    :put-fn        (fn [_])
