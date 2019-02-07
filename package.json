@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.62",
+  "version": "0.6.63",
   "description": "meins - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -83,7 +83,6 @@
     "electron": "3.0.13",
     "electron-builder": "20.38.5",
     "module-deps": "6.2.0",
-    "resolve": "1.10.0",
-    "webpack": "4.29.0"
+    "resolve": "1.10.0"
   }
 }

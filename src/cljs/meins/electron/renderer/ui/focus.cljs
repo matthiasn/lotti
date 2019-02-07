@@ -62,7 +62,9 @@
             on-click (fn [ev]
                        (let [el (.getElementById js/document (str ":left" ts))]
                          (if el
-                           (.scrollIntoView el (clj->js {:behavior "smooth"}))
+                           (do
+                             (.scrollIntoViewIfNeeded el (clj->js {:behavior "smooth"}))
+                             (.scroll js/window 0 0))
                            ((up/add-search2
                               {:tab-group    :right
                                :query-string ts} emit)))))
@@ -159,7 +161,9 @@
                          (swap! local assoc :tl-idx i)
                          (swap! local assoc :day day)
                          (when-let [el  (aget (.getElementsByClassName js/document day) 0)]
-                           (.scrollIntoView el (clj->js {:behavior "smooth"}))) ))]
+                           (.scrollIntoViewIfNeeded el (clj->js {:behavior "smooth"}))
+                           ;(.scroll js/window 0 0)
+                           ) ))]
     (fn [_local]
       [:div.post-mortem-timeline
        [horizontal-timeline
