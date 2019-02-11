@@ -7,7 +7,8 @@
             [me.raynes.fs :as fs]
             [meins.jvm.files :as f]
             [clojure.set :as set]
-            [meins.jvm.file-utils :as fu]))
+            [meins.jvm.file-utils :as fu]
+            [meins.jvm.store.startup :as startup]))
 
 (def some-test-entry
   {:mentions   #{"@SantaClaus"}
@@ -49,12 +50,11 @@
         test-path (str "./test-data")]
     (fs/mkdirs test-daily-logs-path)
     (with-redefs [fu/data-path test-path
-                  fu/daily-logs-path test-daily-logs-path
-                  s/state-fn (fn [_put-fn] {:state (s/make-state)})]
+                  fu/daily-logs-path test-daily-logs-path]
       (let [put-fn (fn [_])
-            state (:state (s/state-fn put-fn))]
+            state (s/make-state)]
         (swap! state assoc-in [:startup-progress] 1)
-        (s/read-entries {:cmp-state state :put-fn put-fn})
+        (startup/read-entries {:cmp-state state :put-fn put-fn})
         {:current-state @state
          :logs-path     test-daily-logs-path
          :test-path     test-path}))))
