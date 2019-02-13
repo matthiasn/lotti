@@ -11,7 +11,8 @@
             [clojure.set :as set]
             [meins.electron.renderer.helpers :as h]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [clojure.pprint :as pp]))
 
 (defn task-sorter [x y]
   (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))
@@ -48,12 +49,48 @@
   (let [dur (.duration moment ms-ago)]
     (s/replace (.humanize dur false) "a few " "")))
 
+(defn progress-svg [allocated actual]
+  (let [w 50
+        progress (/ actual allocated)
+        stroke (if (> progress 1) "red" "green")
+        x2 (min (* progress w) w)
+        end-x (if (> progress 1)
+                (* 50 (/ allocated actual))
+                50)]
+    (when (pos? allocated)
+      [:svg
+       {:shape-rendering "crispEdges"
+        :style           {:height       "12px"
+                          :width        "52px"
+                          :margin-left  "5px"
+                          :margin-right "5px"
+                          :padding-top  "3px"}}
+       [:g
+        [:line {:x1           1
+                :x2           w
+                :y1           6
+                :y2           6
+                :stroke-width 6
+                :stroke       "#DDD"}]
+        [:line {:x1           1
+                :x2           x2
+                :y1           6
+                :y2           6
+                :stroke-width 6
+                :stroke       stroke}]
+        [:line {:x1           end-x
+                :x2           end-x
+                :y1           1
+                :y2           11
+                :stroke-width 2
+                :stroke       "#666"}]]])))
+
 (defn task-row [entry _cfg]
   (let [ts (:timestamp entry)
         new-entries (subscribe [:new-entries])
         busy-status (subscribe [:busy-status])]
-    (fn [entry {:keys [tab-group search-text unlink show-logged? show-age
-                       show-estimate show-points show-last-updated]}]
+    (fn [entry {:keys [tab-group search-text unlink show-logged? show-age show-prio
+                       show-estimate show-progress show-points show-last-updated]}]
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
@@ -69,19 +106,44 @@
             done (get-in entry [:task :done])
             closed (get-in entry [:task :closed])
             last-updated (time-ago (:since-update entry))
-            age (time-ago (- (stc/now) (:timestamp entry)))]
+            age (time-ago (- (stc/now) (:timestamp entry)))
+            actual (if (and active busy)
+                     logged-time
+                     (:completed_s (:task entry)))
+            allocated (* 60 estimate)
+            remaining (- allocated actual)
+            cls (when (neg? remaining) "neg")
+            story (:story entry)]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
                                              :first-line   text
                                              :query-string ts} emit)
                    :class    cls}
-         [:td
-          (if (or done closed)
-            [:span.checked
-             (when done [:i.fas.fa-check])
-             (when closed [:i.fas.fa-times])]
-            (when-let [prio (some-> entry :task :priority (name))]
-              [:span.prio {:class prio} prio]))]
+         [:td.tooltip
+          [:i.fal.fa-info-circle]
+          [:div.tooltiptext
+           ;[:pre [:code (with-out-str (pp/pprint story))]]
+           (when story
+             [:div
+              [:span.story {:style {:color            (:font_color story)
+                                    :background-color (or (:badge_color story) "#DDD")}}
+               (:story_name story)]])
+           [:h4 text]
+           (when-let [prio (some-> entry :task :priority (name))]
+             [:div [:label "Task priority: "] [:strong prio]])
+           [:div [:label "Task idle for: "] [:strong age]]
+           [:div [:label "Time allocated: "] [:strong (h/s-to-hh-mm-ss allocated)]]
+           [:div [:label "Time logged: "] [:strong (h/s-to-hh-mm-ss actual)]]
+           (when (pos? allocated)
+             [:div [:label "Time remaining: "] [:strong (h/s-to-hh-mm-ss remaining)]])]]
+         (when show-prio
+           [:td
+            (if (or done closed)
+              [:span.checked
+               (when done [:i.fas.fa-check])
+               (when closed [:i.fas.fa-times])]
+              (when-let [prio (some-> entry :task :priority (name))]
+                [:span.prio {:class prio} prio]))])
          (when show-points
            [:td.award-points
             (when-let [points (-> entry :task :points)]
@@ -91,20 +153,8 @@
             (let [seconds (* 60 estimate)]
               [:span {:class cls}
                (s-to-hhmm (.abs js/Math seconds))])])
-         (when show-last-updated
-           [:td.time last-updated])
-         (when show-age
-           [:td.time age])
-         (when show-logged?
-           [:td.estimate.time
-            (let [actual (if (and active busy)
-                           logged-time
-                           (:completed_s (:task entry)))
-                  seconds (* 60 estimate)
-                  remaining (- seconds actual)
-                  cls (when (neg? remaining) "neg")]
-              [:span {:class cls}
-               (h/s-to-hh-mm-ss actual)])])
+         (when show-progress
+           [:td.progress [progress-svg allocated actual]])
          [:td.text text]
          [:td.last (when unlink
                      [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))
@@ -181,12 +231,11 @@
            [:table.tasks
             [:tbody
              [:tr
-              [:th.xs [:i.far.fa-exclamation-triangle]]
+              [:th.xs]
               (when show-points
                 [:th {:on-click #(swap! local assoc :show-points false)}
                  [:i.fa.far.fa-gem]])
-              [:th "idle for"]
-              [:th "time spent"]
+              [:th "progress"]
               [:th
                [:div
                 "started tasks"
@@ -198,6 +247,7 @@
                                 :search-text       search-text
                                 :show-points       false
                                 :show-last-updated true
+                                :show-progress     true
                                 :show-logged?      true}])]]])))))
 
 (defn open-task-sorter [x y]
@@ -325,10 +375,10 @@
          [:table.tasks
           [:tbody
            [:tr
-            [:th.xs [:i.far.fa-exclamation-triangle]]
+            [:th.xs]
             (when show-points
               [:th [:i.fa.far.fa-gem]])
-            [:th "age"]
+            [:th.xs]
             [:th "linked tasks"]
             [:th.xs [:i.fa.far.fa-link]]]
            (for [entry (sort task-sorter linked-tasks)]
@@ -338,4 +388,6 @@
                               :show-points   show-points
                               :show-estimate false
                               :show-age      true
+                              :show-progress false
+                              :show-prio     true
                               :unlink        unlink}])]]]))))

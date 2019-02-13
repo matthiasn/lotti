@@ -9,6 +9,8 @@
       story {
         story_name
         timestamp
+        font_color
+        badge_color
         pvt
         saga {
           saga_name

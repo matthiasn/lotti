@@ -8,6 +8,8 @@
     story {
       timestamp
       story_name
+      font_color
+      badge_color
       pvt
       saga {
         timestamp

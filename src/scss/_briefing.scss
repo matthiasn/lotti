@@ -125,7 +125,7 @@
     font-size: $font-size-medium;
     margin: 0;
     background-color: white;
-    line-height: 1.35em;
+    line-height: 1.2em;
 
     table {
       border-collapse: collapse;
@@ -135,16 +135,16 @@
         min-width: 12px;
         text-align: center;
         display: inline-block;
-        color: white;
+        color: $font-color;
         font-weight: bold;
-        background-color: #BBB;
-        padding: 0 2px;
+        font-size: $font-size-medium;
+        padding-left: 3px;
       }
       .A {
-        background-color: $red;
+        color: $red;
       }
       .B {
-        background-color: $link-color;
+        color: $link-color;
       }
 
       th {
@@ -157,6 +157,32 @@
 
         .fa-unlink {
           opacity: 0;
+        }
+
+        .progress {
+          width: 55px;
+        }
+
+        .tooltip {
+          line-height: 1.6em;
+
+          label {
+            display: inline-block;
+            min-width: 100px;
+          }
+
+          .story {
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 3px;
+            padding: 1px 3px;
+            border-radius: 3px;
+            text-align: right;
+            font-size: $font-size-small;
+          }
+          .tooltiptext {
+            z-index: 1111;
+          }
         }
 
         &:hover {
