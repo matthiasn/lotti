@@ -80,7 +80,8 @@
     (reduce f acc items)))
 
 (defn dashboard [{:keys [days controls dashboard-ts]}]
-  (let [gql-res2 (subscribe [:gql-res2])
+  (let [gql-res (subscribe [:gql-res])
+        dashboard-entries (reaction (get-in @gql-res [:dashboard_cfg :data :dashboard_cfg]))
         dashboard-data (subscribe [:dashboard-data])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
@@ -88,22 +89,19 @@
                        :display-text ""
                        :offset       0})
         pvt (subscribe [:show-pvt])
-        pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
-        active-filter (fn [x] (get-in x [1 :dashboard_cfg :active]))
-        not-empty-filter (fn [x] (seq (get-in x [1 :dashboard_cfg :items])))
-        dashboards (reaction (->> @gql-res2
-                                  :dashboard_cfg
-                                  :res
+        pvt-filter (fn [x] (if @pvt true (not (get-in x [:dashboard_cfg :pvt]))))
+        active-filter (fn [x] (get-in x [:dashboard_cfg :active]))
+        not-empty-filter (fn [x] (seq (get-in x [:dashboard_cfg :items])))
+        dashboards (reaction (->> @dashboard-entries
                                   (filter pvt-filter)
                                   (filter active-filter)
-                                  (filter not-empty-filter)
-                                  (into {})))
+                                  (filter not-empty-filter)))
         dashboard (reaction
                     (let [n (count @dashboards)
                           dashboard-idx (min (:idx @local) (dec n))]
                       (when (pos? n)
                         (try
-                          (nth (vals @dashboards) dashboard-idx)
+                          (nth @dashboards dashboard-idx)
                           (catch js/Object e (do
                                                (error dashboard-idx e)
                                                (first @dashboards)))))))

@@ -155,8 +155,6 @@
                {:label "Focus Mode"
                 :accelerator "CmdOrCtrl+F"
                 :click #(open :focus)}
-               {:label "Post Mortems"
-                :click #(open :post-mortem)}
                (when (contains? capabilities :countries)
                  {:label "Countries"
                   :click #(open :countries)})

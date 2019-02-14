@@ -77,31 +77,7 @@
   (let [{:keys [id]} msg-payload
         new-state (assoc-in current-state [:gql-res id] msg-payload)
         new-state (save-dashboard-data new-state msg-payload)]
-    (when-not (contains? #{:left :right} id)
-      {:new-state new-state})))
-
-(defn gql-res2 [{:keys [current-state msg-payload]}]
-  (let [{:keys [tab res del incremental query]} msg-payload
-        prev (get-in current-state [:gql-res2 tab])
-        prev-res (if (and incremental
-                          (= query (:query prev)))
-                   (:res prev)
-                   (sorted-map-by >))
-        cleaned (apply dissoc prev-res del)
-        res-map (into cleaned (mapv (fn [entry] [(:timestamp entry) entry]) res))
-        new-state (assoc-in current-state [:gql-res2 tab] {:res   res-map
-                                                           :query query})]
     {:new-state new-state}))
-
-(defn gql-remove [{:keys [current-state msg-payload]}]
-  (let [tab-group (:tab-group msg-payload)
-        new-state (-> current-state
-                      (assoc-in [:gql-res2 tab-group] {})
-                      (update-in [:gql-res] dissoc tab-group))]
-    (info "removing result for query" tab-group)
-    (info "gql-res2 keys" (-> new-state :gql-res2 keys))
-    {:new-state new-state}
-    {}))
 
 (defn imap-status [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:imap-status] msg-payload)]

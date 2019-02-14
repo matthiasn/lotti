@@ -101,8 +101,11 @@
                 :stars
                 :questionnaires
                 :custom_fields
+                :custom_field_cfg
+                :dashboard_cfg
+                :album_cfg
                 :entry_type
-                [:vclock [:node :clock]]
+                :vclock
                 [:task [:completed_s
                         :completion_ts
                         :done

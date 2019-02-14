@@ -20,9 +20,7 @@
     (.format (moment (js/parseInt ts)) "YY-MM-DD HH:mm")))
 
 (defn tabs-header-view [tab-group]
-  (let [query-cfg (subscribe [:query-cfg])
-        gql-res (subscribe [:gql-res2])
-        first-res (reaction (first (vals (get-in @gql-res [tab-group :res]))))]
+  (let [query-cfg (subscribe [:query-cfg])]
     (fn tabs-header-view-render [tab-group]
       (let [query-config @query-cfg
             queries (-> query-config :tab-groups tab-group :all)

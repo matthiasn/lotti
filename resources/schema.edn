@@ -87,7 +87,10 @@
                  :git_commit          {:type :GitCommit}
                  :custom_fields       {:type String}
                  :questionnaires      {:type String}
-                 :vclock              {:type (list :Vclock)}
+                 :vclock              {:type String}
+                 :custom_field_cfg    {:type String}
+                 :album_cfg           {:type String}
+                 :dashboard_cfg       {:type String}
                  :latitude            {:type Float}
                  :longitude           {:type Float}
                  :starred             {:type Boolean}

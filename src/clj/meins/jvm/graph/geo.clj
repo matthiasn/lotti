@@ -18,5 +18,5 @@
                    (when (and latitude longitude img_file)
                      (let [point (sp/point latitude longitude)]
                        (sp/intersects? rect point)))))
-        res (mapv xf/vclock-xf (filter nearby entries))]
+        res (mapv xf/edn-xf (filter nearby entries))]
     res))

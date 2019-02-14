@@ -187,13 +187,16 @@
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]
          (when (:debug @local)
+           (info @new-entry)
            [:div.debug
             [:h3 "from backend"]
             [dex/data-explorer2 entry]
-            [:h3 "@new-entry"]
-            [dex/data-explorer2 @new-entry]
-            [:h3 "diff"]
-            [dex/data-explorer2 (cd/diff entry @new-entry)]])]))))
+            (when @new-entry
+              [:div
+               [:h3 "@new-entry"]
+               [dex/data-explorer2 @new-entry]
+               [:h3 "diff"]
+               [dex/data-explorer2 (cd/diff entry @new-entry)]])])]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

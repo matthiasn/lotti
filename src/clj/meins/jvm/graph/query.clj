@@ -19,7 +19,7 @@
 
 (defn get-entry [g ts]
   (when (and ts (uc/has-node? g ts))
-    (xf/vclock-xf (uc/attrs g ts))))
+    (xf/edn-xf (uc/attrs g ts))))
 
 (defn entry-w-story [g entry]
   (let [story (get-entry g (:primary_story entry))

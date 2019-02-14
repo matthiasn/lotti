@@ -29,7 +29,7 @@
                          :import/movie :entry/unlink :startup/progress?
                          :import/listen :spotify/play :import/gen-thumbs
                          :spotify/pause :cfg/refresh :state/persist
-                         :sync/start-server :sync/stop-server :gql/remove
+                         :sync/start-server :sync/stop-server
                          :tf/learn-stories :gql/query :search/remove
                          :gql/cmd :firehose/cmd :playground/gen}}))
 

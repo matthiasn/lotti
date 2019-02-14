@@ -11,8 +11,7 @@
 
 (defn state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
-        state (atom {:entries          []
-                     :startup-progress 0
+        state (atom {:startup-progress 0
                      :last-alive       (st/now)
                      :busy-color       :green
                      :new-entries      @cse/new-entries-ls
@@ -21,8 +20,6 @@
                      :task-stats       (sorted-map)
                      :wordcount-stats  (sorted-map)
                      :dashboard-data   (sorted-map)
-                     :gql-res2         {:left  {:res (sorted-map-by >)}
-                                        :right {:res (sorted-map-by >)}}
                      :options          {:pvt-hashtags #{"#pvt"}}
                      :cfg              cfg})]
     (put-fn [:imap/get-cfg])
@@ -36,8 +33,6 @@
                        s/search-handler-map
                        {:cfg/save         c/save-cfg
                         :gql/res          csh/gql-res
-                        :gql/res2         csh/gql-res2
-                        :gql/remove       csh/gql-remove
                         :startup/progress csh/progress
                         :startup/query    csi/initial-queries
                         :ws/ping          csh/ping

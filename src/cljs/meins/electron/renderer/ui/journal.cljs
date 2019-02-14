@@ -11,17 +11,14 @@
 
 (def react-list (r/adapt-react-class rl))
 
-(defn entry-wrapper [idx local-cfg ]
+(defn entry-wrapper [idx local-cfg]
   (let [tab-group (:tab-group local-cfg)
-        gql-res (subscribe [:gql-res2])
+        gql-res (subscribe [:gql-res])
+        entries-list (reaction (get-in @gql-res [tab-group :data tab-group]))
         show-hidden (subscribe [:show-hidden])
         show-pvt (subscribe [:show-pvt])
-        entry (reaction (-> @gql-res
-                            (get tab-group)
-                            :res
-                            vals
-                            (nth idx)))]
-    (fn entry-wrapper-render [_idx local-cfg ]
+        entry (reaction (nth @entries-list idx))]
+    (fn entry-wrapper-render [_idx local-cfg]
       ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
        (when (and @entry (or (not (:hidden @entry))
@@ -30,7 +27,7 @@
                                (:pvt (:story @entry))
                                (-> @entry :story :saga :pvt)
                                (contains? (:tags @entry) "#pvt")))
-                             @show-pvt))
+                      @show-pvt))
          [e/entry-with-comments @entry local-cfg])])))
 
 (defn item [local-cfg]
@@ -44,11 +41,11 @@
   "Renders journal div, one entry per item, with map if geo data exists in the
    entry."
   [local-cfg]
-  (let [gql-res (subscribe [:gql-res2])
+  (let [gql-res (subscribe [:gql-res])
         local (r/atom {:last-cnt   0
                        :last-fetch 0})
         tab-group (:tab-group local-cfg)
-        entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
+        entries-list (reaction (get-in @gql-res [tab-group :data tab-group]))]
     (fn journal-view-render [local-cfg]
       (let [query-id (:query-id local-cfg)
             tg (:tab-group local-cfg)
@@ -64,15 +61,15 @@
                             (reset! local {:last-cnt   cnt
                                            :last-fetch (st/now)})
                             (emit [:show/more {:query-id  query-id
-                                                 :tab-group tg}]))))
+                                               :tab-group tg}]))))
             on-mouse-enter #(emit [:search/cmd {:t         :active-tab
-                                                  :tab-group tg}])]
+                                                :tab-group tg}])]
         ^{:key (str query-id)}
         [:div.journal {:on-mouse-enter on-mouse-enter}
          [h/error-boundary
           [:div.journal-entries {:on-scroll on-scroll
                                  :id        (name tab-group)}
-           [react-list {:length       (count @entries-list)
+           [react-list {:length       cnt
                         :itemRenderer (item local-cfg)}]]]]))))
 
 (def interval (atom nil))
