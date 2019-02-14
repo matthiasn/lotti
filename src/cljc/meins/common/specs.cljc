@@ -226,7 +226,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Client Store State Spec
-(s/def :meins.client-state/entries (s/* possible-timestamp?))
 (s/def :meins.client-state/entries-map (s/map-of possible-timestamp? entry-spec))
 (s/def :meins.client-state/last-alive possible-timestamp?)
 
@@ -273,8 +272,7 @@
                    :meins.client-state.cfg/show-hashtags]))
 
 (s/def :state/client-store-spec
-  (s/keys :req-un [:meins.client-state/entries
-                   :meins.client-state/last-alive
+  (s/keys :req-un [:meins.client-state/last-alive
                    :meins.client-state/new-entries
                    :meins.client-state/query-cfg
                    :meins.client-state/cfg]))
