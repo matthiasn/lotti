@@ -1,5 +1,11 @@
 {:objects
  {
+  :Album_cfg
+  {:description "album details"
+   :fields      {:active {:type Boolean}
+                 :pvt    {:type Boolean}
+                 :title  {:type String}}}
+
   :Task
   {:description "task details for entry."
    :fields      {:estimate_m    {:type Int}
@@ -89,7 +95,7 @@
                  :questionnaires      {:type String}
                  :vclock              {:type String}
                  :custom_field_cfg    {:type String}
-                 :album_cfg           {:type String}
+                 :album_cfg           {:type :Album_cfg}
                  :dashboard_cfg       {:type String}
                  :latitude            {:type Float}
                  :longitude           {:type Float}

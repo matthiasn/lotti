@@ -29,8 +29,6 @@
                                                         :entry_type
                                                         :priority
                                                         :vclock
-                                                        :task
-                                                        :album_cfg
                                                         :dashboard_cfg
                                                         :questionnaires} k))
                                     [k (edn/read-string (str v))]
@@ -50,17 +48,12 @@
                      :else node))
                  m))
 
-(defn vclock-xf [entry]
-  (update-in entry [:vclock] #(mapv (fn [[k v]] {:node k :clock v}) %)))
-
 (defn edn-xf [entry]
   (-> entry
       (update-in [:habit] pr-str)
-      (update-in [:task] pr-str)
       (update-in [:album] pr-str)
       (update-in [:custom_fields] pr-str)
       (update-in [:custom_field_cfg] pr-str)
-      (update-in [:album_cfg] pr-str)
       (update-in [:dashboard_cfg] pr-str)
       (update-in [:vclock] pr-str)
       (update-in [:questionnaires] pr-str)))

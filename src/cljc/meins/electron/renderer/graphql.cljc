@@ -103,7 +103,7 @@
                 :custom_fields
                 :custom_field_cfg
                 :dashboard_cfg
-                :album_cfg
+                [:album_cfg [:title :pvt :active]]
                 :entry_type
                 :vclock
                 [:task [:completed_s
