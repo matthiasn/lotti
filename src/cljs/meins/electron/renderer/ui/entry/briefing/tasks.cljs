@@ -153,6 +153,20 @@
             (let [seconds (* 60 estimate)]
               [:span {:class cls}
                (s-to-hhmm (.abs js/Math seconds))])])
+         (when show-last-updated
+           [:td.time last-updated])
+         (when show-age
+           [:td.time age])
+         (when show-logged?
+           [:td.estimate.time
+            (let [actual (if (and active busy)
+                           logged-time
+                           (:completed_s (:task entry)))
+                  seconds (* 60 estimate)
+                  remaining (- seconds actual)
+                  cls (when (neg? remaining) "neg")]
+              [:span {:class cls}
+               (h/s-to-hh-mm-ss actual)])])
          (when show-progress
            [:td.progress [progress-svg allocated actual]])
          [:td.text text]
@@ -246,9 +260,9 @@
                [task-row entry {:tab-group         tab-group
                                 :search-text       search-text
                                 :show-points       false
-                                :show-last-updated true
+                                :show-last-updated false
                                 :show-progress     true
-                                :show-logged?      true}])]]])))))
+                                :show-logged?      false}])]]])))))
 
 (defn open-task-sorter [x y]
   (let [c0 (compare (or (get-in x [:task :priority]) :X)
@@ -379,15 +393,16 @@
             (when show-points
               [:th [:i.fa.far.fa-gem]])
             [:th.xs]
-            [:th "linked tasks"]
+            [:th [:i.fa.far.fa-clock]]
+            [:th "pinned tasks"]
             [:th.xs [:i.fa.far.fa-link]]]
            (for [entry (sort task-sorter linked-tasks)]
              ^{:key (:timestamp entry)}
              [task-row entry {:tab-group     tab-group
                               :search-text   search-text
                               :show-points   show-points
-                              :show-estimate false
-                              :show-age      true
+                              :show-estimate true
+                              :show-age      false
                               :show-progress false
                               :show-prio     true
                               :unlink        unlink}])]]]))))

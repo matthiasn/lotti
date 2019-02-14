@@ -79,7 +79,7 @@
           now (stc/now)
           pvt (:pvt args)
           g (:graph @state)
-          day-mapper #(dt/ts-to-ymd (+ (- now (* % d)) offset))
+          day-mapper #(dt/ymd (+ (- now (* % d)) offset))
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
                               [day (map #(uc/attrs g %) nodes)]))

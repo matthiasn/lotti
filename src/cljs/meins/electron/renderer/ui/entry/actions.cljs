@@ -93,9 +93,7 @@
           ts (:timestamp dropped)
           updated (update-in entry [:linked_entries] #(set (conj % ts)))
           dropped-updated (update-in dropped [:perm_tags] #(set/union % #{"#task"}))]
-      (when (and ts
-                 (not= ts (:timestamp updated))
-                 (:task dropped))
+      (when (and ts (not= ts (:timestamp updated)))
         (emit [:entry/update (u/clean-entry updated)])
         (emit [:entry/update (u/clean-entry dropped-updated)])))))
 

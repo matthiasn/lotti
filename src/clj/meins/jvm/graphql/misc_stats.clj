@@ -38,7 +38,7 @@
         days (reverse (range days))
         now (stc/now)
         git-mapper (g/git-mapper @state)
-        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+        day-strings (mapv #(dt/ymd (- now (* % d))) days)
         stats (mapv git-mapper day-strings)]
     (debug stats)
     stats))
@@ -65,7 +65,7 @@
 
 (defn award-points [state context args value]
   (let [{:keys [days]} args
-        newer-than (dt/ts-to-ymd (- (stc/now) (* d (or days 90))))
+        newer-than (dt/ymd (- (stc/now) (* d (or days 90))))
         stats (aw/award-points @state)
         sort-filter (fn [k]
                       (sort-by first (filter #(pos? (compare (first %) newer-than))

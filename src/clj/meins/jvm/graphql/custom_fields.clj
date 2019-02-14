@@ -141,7 +141,7 @@
         days (reverse (range days))
         now (stc/now)
         custom-fields-mapper (custom-fields-mapper @state tag)
-        day-mapper #(dt/ts-to-ymd
+        day-mapper #(dt/ymd
                       (+ (- now (* % gc/d)) offset))
         day-strings (mapv day-mapper days)
         stats (mapv custom-fields-mapper day-strings)]

@@ -59,8 +59,8 @@
         entry (merge msg-payload {:last_saved (st/now) :id id})
         entry (enrich-story current-state entry)
         ts (:timestamp entry)
-        day (dt/ts-to-ymd ts)
-        adjusted-day (dt/ts-to-ymd (:adjusted_ts msg-payload))
+        day (dt/ymd ts)
+        adjusted-day (dt/ymd (:adjusted_ts msg-payload))
         new-state (assoc-in current-state [:stats-cache :days day] nil)
         graph (:graph current-state)
         cfg (:cfg current-state)
@@ -91,7 +91,7 @@
 (defn persist-state! [{:keys [current-state]}]
   (let [ks [:sorted-entries :graph :global-vclock :vclock-map :cfg :conflict]
         relevant (select-keys current-state ks)
-        w-date (assoc-in relevant [:persisted] (dt/ts-to-ymd (st/now)))]
+        w-date (assoc-in relevant [:persisted] (dt/ymd (st/now)))]
     (try
       (info "Persisting application state as Nippy file")
       (let [file-path (:app-cache (fu/paths))
@@ -139,9 +139,9 @@
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
         entry (vc/set-latest-vclock entry node-id new-global-vclock)
-        day-strings (filter identity [(dt/ts-to-ymd ts)
-                                      (dt/ts-to-ymd (:adjusted_ts msg-payload))
-                                      (dt/ts-to-ymd (:adjusted_ts prev))])
+        day-strings (filter identity [(dt/ymd ts)
+                                      (dt/ymd (:adjusted_ts msg-payload))
+                                      (dt/ymd (:adjusted_ts prev))])
         new-state (ga/add-node current-state entry)
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         vclock-offset (get-in entry [:vclock node-id])
@@ -243,9 +243,9 @@
         new-state (ga/remove-node current-state ts)
         cfg (:cfg current-state)
         node-id (:node-id cfg)
-        day-strings (filter identity [(dt/ts-to-ymd ts)
-                                      (dt/ts-to-ymd (:adjusted_ts msg-payload))
-                                      (dt/ts-to-ymd (:adjusted_ts prev))])
+        day-strings (filter identity [(dt/ymd ts)
+                                      (dt/ymd (:adjusted_ts msg-payload))
+                                      (dt/ymd (:adjusted_ts prev))])
         new-global-vclock (vc/next-global-vclock current-state)
         vclock-offset (get-in new-global-vclock [node-id])
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)

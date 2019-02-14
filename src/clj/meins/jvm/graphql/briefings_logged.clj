@@ -66,7 +66,7 @@
         sagas (gq/find-all-sagas current-state)
         days (reverse (range (:days args 90)))
         now (stc/now)
-        day-strings (mapv #(dt/ts-to-ymd (- now (* % d))) days)
+        day-strings (mapv #(dt/ymd (- now (* % d))) days)
         f (fn [day]
             (let [day-nodes (gq/get-nodes-for-day g {:date_string day})
                   day-nodes-attrs (map #(gq/get-entry g %) day-nodes)]

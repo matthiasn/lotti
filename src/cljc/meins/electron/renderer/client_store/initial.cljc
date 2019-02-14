@@ -4,7 +4,10 @@
                :cljs [taoensso.timbre :refer-macros [info debug]])
             [meins.electron.renderer.client-store.entry :as cse]
             [meins.electron.renderer.client-store.search :as s]
-            [meins.electron.renderer.client-store.cfg :as c]))
+            #?(:clj  [meins.jvm.datetime :as h]
+               :cljs [meins.electron.renderer.helpers :as h])
+            [meins.electron.renderer.client-store.cfg :as c]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn initial-queries [{:keys [current-state put-fn] :as m}]
   (info "performing initial queries")
@@ -14,12 +17,12 @@
                                          :res-hash nil
                                          :prio     prio
                                          :args     args}]))
+        ymd (get-in current-state [:cfg :cal-day] (h/ymd (stc/now)))
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
     (put-fn [:help/get-manual])
-    (when-let [ymd (get-in current-state [:cfg :cal-day])]
-      (run-query "briefing.gql" :briefing 12 [ymd pvt])
-      (run-query "logged-by-day.gql" :logged-by-day 13 [ymd]))
+    (run-query "briefing.gql" :briefing 12 [ymd pvt])
+    (run-query "logged-by-day.gql" :logged-by-day 13 [ymd])
     (put-fn [:gql/query {:file "habits-success.gql"
                          :id   :habits-success
                          :prio 13
