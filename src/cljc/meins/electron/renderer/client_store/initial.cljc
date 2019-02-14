@@ -17,7 +17,7 @@
                                          :res-hash nil
                                          :prio     prio
                                          :args     args}]))
-        ymd (get-in current-state [:cfg :cal-day] (h/ymd (stc/now)))
+        ymd (or (get-in current-state [:cfg :cal-day]) (h/ymd (stc/now)))
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
     (put-fn [:help/get-manual])
