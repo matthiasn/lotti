@@ -112,7 +112,6 @@
                      (:completed_s (:task entry)))
             allocated (* 60 estimate)
             remaining (- allocated actual)
-            cls (when (neg? remaining) "neg")
             story (:story entry)]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
