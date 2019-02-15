@@ -2,6 +2,7 @@
   open_tasks(pvt: %s) {
     timestamp
     md
+    tags
     story {
       timestamp
       story_name

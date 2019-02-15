@@ -20,7 +20,7 @@
                     (gq/get-done g :done)
                     (gq/get-done g :closed)))]
     (->> entries
-         (map #(gq/entry-w-story g (gq/get-entry g %)))
+         (map #(gq/entry-w-story g (gq/get-entry-xf g %)))
          (map gt/cfg-mapper)
          (filter :timestamp)
          (set))))
@@ -29,14 +29,14 @@
   (let [g (:graph @state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
-    (when-let [briefing (gq/get-entry g ts)]
+    (when-let [briefing (gq/get-entry-xf g ts)]
       (let [briefing (gc/linked-for g briefing)
             linked-completed (fn [xs]
                                (let [xs (map gt/cfg-mapper xs)]
                                  (vec (set/union (set xs) (completed-for-day g d)))))
             briefing (update-in briefing [:linked] linked-completed)
             comments (:comments (gq/get-comments briefing g ts))
-            comments (mapv #(update-in (gq/get-entry g %) [:questionnaires :pomo1] vec)
+            comments (mapv #(update-in (gq/get-entry-xf g %) [:questionnaires :pomo1] vec)
                            comments)
             briefing (merge briefing {:comments comments
                                       :day      d})]

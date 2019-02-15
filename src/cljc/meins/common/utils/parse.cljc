@@ -59,7 +59,7 @@
      :id          (re-find id-regex text)
      :timestamp   (second (re-find #"(?:^|[^:])([0-9]{13})" text))
      :linked      (second (re-find #"l:([0-9]{13})" text))
-     :n           100}))
+     :n           25}))
 
 (defn add-search
   "Adds search by sending a message that'll open the specified search in a new

@@ -19,11 +19,15 @@
 
 (defn get-entry [g ts]
   (when (and ts (uc/has-node? g ts))
+    (uc/attrs g ts)))
+
+(defn get-entry-xf [g ts]
+  (when (and ts (uc/has-node? g ts))
     (xf/edn-xf (uc/attrs g ts))))
 
 (defn entry-w-story [g entry]
-  (let [story (get-entry g (:primary_story entry))
-        saga (get-entry g (:linked_saga story))]
+  (let [story (get-entry-xf g (:primary_story entry))
+        saga (get-entry-xf g (:linked_saga story))]
     (merge entry
            {:story (when story
                      (assoc-in story [:saga] saga))})))
