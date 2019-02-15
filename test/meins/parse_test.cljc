@@ -5,7 +5,7 @@
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]))
 
-(def n 100)
+(def n 25)
 
 (def empty-entry
   {:mentions #{}
