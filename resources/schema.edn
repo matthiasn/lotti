@@ -74,6 +74,7 @@
                  :adjusted_ts         {:type ID}
                  :last_saved          {:type ID}
                  :comment_for         {:type ID}
+                 :primary_story       {:type ID}
                  :md                  {:type String}
                  :text                {:type String}
                  :tags                {:type (list String)}
@@ -100,6 +101,7 @@
                  :latitude            {:type Float}
                  :longitude           {:type Float}
                  :starred             {:type Boolean}
+                 :hidden              {:type Boolean}
                  :completed_time      {:type Int}
                  :spotify             {:type :Spotify}
                  :linked_cnt          {:type Int}

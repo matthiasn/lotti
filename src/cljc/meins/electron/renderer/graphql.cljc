@@ -95,6 +95,8 @@
                 :perm_tags
                 :mentions
                 :habit
+                :hidden
+                :primary_story
                 :story_name
                 :saga_name
                 :linked_saga
