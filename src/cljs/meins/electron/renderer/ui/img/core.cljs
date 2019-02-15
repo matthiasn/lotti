@@ -250,8 +250,8 @@
             [entry])))
 
 (defn gallery-page []
-  (let [res (subscribe [:gql-res2])
-        album (reaction (first (vals (get-in @res [:gallery :res]))))
+  (let [res (subscribe [:gql-res])
+        album (reaction (first (get-in @res [:gallery :data :gallery])))
         entries (reaction (gallery-entries @album))]
     (fn []
       [:div.flex-container
