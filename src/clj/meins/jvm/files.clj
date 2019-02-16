@@ -62,11 +62,10 @@
         day (dt/ymd ts)
         adjusted-day (dt/ymd (:adjusted_ts msg-payload))
         new-state (assoc-in current-state [:stats-cache :days day] nil)
-        graph (:graph current-state)
+        g (:graph current-state)
         cfg (:cfg current-state)
-        exists? (uc/has-node? graph ts)
-        existing (when exists? (uc/attrs graph ts))
-        node-to-add (if exists?
+        existing (gq/get-entry g ts)
+        node-to-add (if existing
                       (if (= (:md existing) "No departure recorded #visit")
                         entry
                         (merge existing
@@ -134,7 +133,7 @@
         node-id (:node-id cfg)
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
-        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        prev (gq/get-entry g ts)
         entry (remove-nils (merge prev entry))
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
@@ -179,7 +178,7 @@
         rcv-vclock (:vclock entry)
         cfg (:cfg current-state)
         g (:graph current-state)
-        prev (when (uc/has-node? g ts) (remove-nils (uc/attrs g ts)))
+        prev (when-let [entry (gq/get-entry g ts)] (remove-nils entry))
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
@@ -211,7 +210,7 @@
         received-vclock (:vclock entry)
         cfg (:cfg current-state)
         g (:graph current-state)
-        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        prev (gq/get-entry g ts)
         new-state (ga/add-node current-state entry)
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         broadcast-meta (merge new-meta {:sente-uid :broadcast})
@@ -239,7 +238,7 @@
 (defn trash-entry-fn [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         g (:graph current-state)
-        prev (when (uc/has-node? g ts) (uc/attrs g ts))
+        prev (gq/get-entry g ts)
         new-state (ga/remove-node current-state ts)
         cfg (:cfg current-state)
         node-id (:node-id cfg)

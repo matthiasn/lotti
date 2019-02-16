@@ -166,7 +166,7 @@
             ts-dt (c/from-long ts)
             q {:date_string (ctf/unparse (ctf/formatters :year-month-day) ts-dt)}
             same-day-entry-ids (gq/get-nodes-for-day g q)
-            same-day-entries (mapv #(uc/attrs g %) same-day-entry-ids)
+            same-day-entries (mapv #(gq/get-entry g %) same-day-entry-ids)
             filter-fn (fn [other-entry]
                         (let [other-ts (:timestamp other-entry)]
                           (and (< other-ts departure-ts)
@@ -195,14 +195,13 @@
 
 (defn remove-node [current-state ts]
   (let [g (:graph current-state)]
-    (if (uc/has-node? g ts)
-      (let [entry (uc/attrs g ts)]
-        (-> current-state
-            (update-in [:graph] uc/remove-nodes ts)
-            (update-in [:sorted-entries] disj ts)
-            (update-in [:graph] remove-unused-tags (:mentions entry) :mention)
-            (update-in [:graph] remove-unused-tags (:tags entry) :tag)
-            (update-in [:graph] remove-unused-tags (:tags entry) :ptag)))
+    (if-let [entry (gq/get-entry g ts)]
+      (-> current-state
+          (update-in [:graph] uc/remove-nodes ts)
+          (update-in [:sorted-entries] disj ts)
+          (update-in [:graph] remove-unused-tags (:mentions entry) :mention)
+          (update-in [:graph] remove-unused-tags (:tags entry) :tag)
+          (update-in [:graph] remove-unused-tags (:tags entry) :ptag))
       current-state)))
 
 (defn add-location [graph entry]
@@ -302,9 +301,9 @@
   [current-state entry]
   (let [timer-id ["graph" "add" (name (or (:entry-type entry) "entry"))]
         started-timer (mt/start-timer timer-id)
-        graph (:graph current-state)
+        g (:graph current-state)
         ts (:timestamp entry)
-        old-entry (when (uc/has-node? graph ts) (uc/attrs graph ts))
+        old-entry (gq/get-entry g ts)
         merged (merge old-entry entry)
         old-tags (:tags old-entry)
         old-mentions (:mentions old-entry)

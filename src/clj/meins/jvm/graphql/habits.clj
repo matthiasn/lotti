@@ -82,7 +82,7 @@
           day-mapper #(dt/ymd (+ (- now (* % d)) offset))
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
-                              [day (map #(uc/attrs g %) nodes)]))
+                              [day (map #(gq/get-entry g %) nodes)]))
                           (mapv day-mapper days))
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
@@ -103,7 +103,7 @@
           g (:graph @state)
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
-                              [day (map #(uc/attrs g %) nodes)]))
+                              [day (map #(gq/get-entry g %) nodes)]))
                           day_strings)
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))

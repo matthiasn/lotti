@@ -12,7 +12,7 @@
   (fn [date-string]
     (let [g (:graph current-state)
           day-nodes (gq/get-nodes-for-day g {:date_string date-string})
-          day-nodes-attrs (map #(uber/attrs g %) day-nodes)
+          day-nodes-attrs (map #(gq/get-entry g %) day-nodes)
           nodes (filter :git_commit day-nodes-attrs)
           day-stats {:date_string date-string
                      :commits     (count nodes)}]

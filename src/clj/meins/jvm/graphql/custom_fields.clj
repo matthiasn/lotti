@@ -102,7 +102,7 @@
         g (:graph current-state)]
     (fn [date-string]
       (let [day-nodes (gq/get-nodes-for-day g {:date_string date-string})
-            day-nodes-attrs (map #(uber/attrs g %) day-nodes)
+            day-nodes-attrs (map #(gq/get-entry g %) day-nodes)
             nodes (filter :custom_fields day-nodes-attrs)
             nodes (filter (partial adjusted-ts-filter date-string) nodes)
             fields (mapv (partial stats-mapper tag nodes) fields-def)]

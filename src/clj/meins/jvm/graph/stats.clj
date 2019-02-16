@@ -14,7 +14,7 @@
     (let [g (:graph current-state)
           date-string (:date_string d)
           day-nodes (gq/get-nodes-for-day g {:date_string date-string})
-          day-nodes-attrs (map #(uber/attrs g %) day-nodes)
+          day-nodes-attrs (map #(gq/get-entry g %) day-nodes)
           day-stats {:date_string date-string
                      :photo-cnt   (count (filter :img_file day-nodes-attrs))
                      :audio-cnt   (count (filter :audio-file day-nodes-attrs))
@@ -62,7 +62,7 @@
   "Count total number of words."
   [current-state]
   (let [g (:graph current-state)
-        counts (map #(u/count-words (uber/attrs g %))
+        counts (map #(u/count-words (gq/get-entry g %))
                     (:sorted-entries current-state))]
     (apply + counts)))
 
@@ -70,7 +70,7 @@
   "Count total hours logged."
   [current-state]
   (let [g (:graph current-state)
-        entries (map #(uber/attrs g %) (:sorted-entries current-state))
+        entries (map #(gq/get-entry g %) (:sorted-entries current-state))
         seconds-logged (map (fn [entry]
                               (let [completed (or (get entry :completed_time) 0)
                                     manual (gq/summed-durations entry)

@@ -46,9 +46,7 @@
 (defn saga-reducer [date-string g stories sagas]
   (fn [acc entry]
     (let [comment-for (:comment_for entry)
-          parent (when (and comment-for
-                            (uc/has-node? g comment-for))
-                   (uc/attrs g comment-for))
+          parent (gq/get-entry g comment-for)
           story-id (or (:primary_story parent)
                        (:primary_story entry)
                        0)
@@ -66,9 +64,7 @@
 (defn day-stats [g nodes cal-nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
                         (let [comment-for (:comment_for entry)
-                              parent (when (and comment-for
-                                                (uc/has-node? g comment-for))
-                                       (uc/attrs g comment-for))
+                              parent (gq/get-entry g comment-for)
                               story-id (or (:primary_story parent)
                                            (:primary_story entry)
                                            0)
@@ -83,9 +79,7 @@
         by-ts-mapper (fn [entry]
                        (let [{:keys [timestamp comment_for primary_story md
                                      text adjusted_ts]} entry
-                             parent (when (and comment_for
-                                               (uc/has-node? g comment_for))
-                                      (uc/attrs g comment_for))
+                             parent (gq/get-entry g comment_for)
                              story-id (or (:primary_story parent)
                                           primary_story
                                           :no-story)
