@@ -20,11 +20,11 @@
         g (:graph current-state)
         res (gq/get-filtered2 current-state q)
         tasks (->> res
-                   (gc/entries-w-logged g)
-                   (map #(gq/entry-w-story g %))
+                   (gc/entries-w-logged current-state)
+                   (map #(gq/entry-w-story current-state %))
                    (map cfg-mapper)
                    (filter #(not (:on_hold (:task %))))
-                   (mapv (partial gc/entry-w-comments g)))]
+                   (mapv (partial gc/entry-w-comments current-state)))]
     tasks))
 
 (defn open-tasks [state context args value]
@@ -36,8 +36,8 @@
         g (:graph current-state)
         res (gq/get-filtered2 current-state q)
         tasks (->> res
-                   (gc/entries-w-logged g)
-                   (map #(gq/entry-w-story g %))
+                   (gc/entries-w-logged current-state)
+                   (map #(gq/entry-w-story current-state %))
                    (map cfg-mapper)
-                   (mapv (partial gc/entry-w-comments g)))]
+                   (mapv (partial gc/entry-w-comments current-state)))]
     tasks))

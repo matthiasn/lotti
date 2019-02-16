@@ -3,10 +3,10 @@
 
 (def d (* 24 60 60 1000))
 
-(defn entries-w-logged [g entries]
+(defn entries-w-logged [state entries]
   (let [logged-t (fn [comment-ts]
                    (or
-                     (when-let [c (gq/get-entry-xf g comment-ts)]
+                     (when-let [c (gq/get-entry-xf state comment-ts)]
                        (let [path [:custom_fields "#duration" :duration]]
                          (+ (or (:completed_time c) 0)
                             (* 60 (or (get-in c path) 0)))))
@@ -19,14 +19,15 @@
     (map task-total-t entries)))
 
 
-(defn entry-w-comments [g entry]
-  (let [comments (mapv #(gq/get-entry-xf g %) (:comments entry))]
+(defn entry-w-comments [state entry]
+  (let [comments (mapv #(gq/get-entry-xf state %) (:comments entry))]
     (assoc-in entry [:comments] comments)))
 
 
-(defn linked-for [g entry]
-  (let [ts (:timestamp entry)]
+(defn linked-for [state entry]
+  (let [ts (:timestamp entry)
+        g (:graph state)]
     (assoc-in entry [:linked] (->> (gq/get-linked-for-ts g ts)
-                                   (map #(gq/entry-w-story g (gq/get-entry-xf g %)))
+                                   (map #(gq/entry-w-story state (gq/get-entry-xf state %)))
                                    (filter :timestamp)
                                    (vec)))))

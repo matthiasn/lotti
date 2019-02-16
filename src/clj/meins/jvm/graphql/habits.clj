@@ -122,7 +122,6 @@
            :n    100
            :pvt  (:pvt args)}
         current-state @state
-        g (:graph current-state)
         habits (filter identity (gq/get-filtered2 current-state q))
-        habits (mapv #(gq/entry-w-story g %) habits)]
+        habits (mapv #(gq/entry-w-story current-state %) habits)]
     habits))

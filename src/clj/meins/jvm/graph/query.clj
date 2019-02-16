@@ -21,13 +21,13 @@
   (when (and ts (uc/has-node? g ts))
     (uc/attrs g ts)))
 
-(defn get-entry-xf [g ts]
-  (when-let [entry (get-entry g ts)]
+(defn get-entry-xf [state ts]
+  (when-let [entry (get-entry (:graph state) ts)]
     (xf/edn-xf entry)))
 
-(defn entry-w-story [g entry]
-  (let [story (get-entry-xf g (:primary_story entry))
-        saga (get-entry-xf g (:linked_saga story))]
+(defn entry-w-story [state entry]
+  (let [story (get-entry-xf state (:primary_story entry))
+        saga (get-entry-xf state (:linked_saga story))]
     (merge entry
            {:story (when story
                      (assoc-in story [:saga] saga))})))
@@ -439,7 +439,7 @@
   [current-state]
   (let [g (:graph current-state)
         habit-ids (mapv :dest (uc/find-edges g {:src :habits}))]
-    (mapv (fn [id] (entry-w-story g (get-entry g id))) habit-ids)))
+    (mapv (fn [id] (entry-w-story current-state (get-entry g id))) habit-ids)))
 
 (defn find-all-sagas
   "Finds all :saga entries in graph and returns map with the id of the saga
