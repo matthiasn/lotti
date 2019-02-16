@@ -35,7 +35,7 @@
       (let [{:keys [story saga min-time max-time]} c
             stories (gq/find-all-stories state)
             sagas (gq/find-all-sagas state)
-            day-stats (gsd/day-stats g nodes [] stories sagas day)
+            day-stats (gsd/day-stats state nodes [] stories sagas day)
             actual-by-story (get-in day-stats [:by_story_m story] 0)
             actual-by-saga (get-in day-stats [:by_saga_m saga] 0)
             actual (if (number? story) actual-by-story actual-by-saga)]
@@ -82,7 +82,7 @@
           day-mapper #(dt/ymd (+ (- now (* % d)) offset))
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
-                              [day (map #(gq/get-entry g %) nodes)]))
+                              [day (map #(gq/get-entry @state %) nodes)]))
                           (mapv day-mapper days))
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))
@@ -103,7 +103,7 @@
           g (:graph @state)
           days-nodes (map (fn [day]
                             (let [nodes (gq/get-nodes-for-day g {:date_string day})]
-                              [day (map #(gq/get-entry g %) nodes)]))
+                              [day (map #(gq/get-entry @state %) nodes)]))
                           day_strings)
           habits (gq/find-all-habits @state)
           pvt-filter (um/pvt-filter (:options @state))

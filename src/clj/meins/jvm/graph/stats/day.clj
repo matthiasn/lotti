@@ -43,10 +43,10 @@
      :done_tasks_cnt   (count done-nodes)
      :closed_tasks_cnt (count closed-nodes)}))
 
-(defn saga-reducer [date-string g stories sagas]
+(defn saga-reducer [date-string state stories sagas]
   (fn [acc entry]
     (let [comment-for (:comment_for entry)
-          parent (gq/get-entry g comment-for)
+          parent (gq/get-entry state comment-for)
           story-id (or (:primary_story parent)
                        (:primary_story entry)
                        0)
@@ -61,10 +61,10 @@
         (assoc-in acc [saga-id] summed)
         acc))))
 
-(defn day-stats [g nodes cal-nodes stories sagas date-string]
+(defn day-stats [state nodes cal-nodes stories sagas date-string]
   (let [story-reducer (fn [acc entry]
                         (let [comment-for (:comment_for entry)
-                              parent (gq/get-entry g comment-for)
+                              parent (gq/get-entry state comment-for)
                               story-id (or (:primary_story parent)
                                            (:primary_story entry)
                                            0)
@@ -75,11 +75,11 @@
                           (if (pos? summed)
                             (assoc-in acc [story-id] summed)
                             acc)))
-        saga-reducer (saga-reducer date-string g stories sagas)
+        saga-reducer (saga-reducer date-string state stories sagas)
         by-ts-mapper (fn [entry]
                        (let [{:keys [timestamp comment_for primary_story md
                                      text adjusted_ts]} entry
-                             parent (gq/get-entry g comment_for)
+                             parent (gq/get-entry state comment_for)
                              story-id (or (:primary_story parent)
                                           primary_story
                                           :no-story)

@@ -17,12 +17,12 @@
             [metrics.timers :as tmr]
             [meins.jvm.graphql.xforms :as xf]))
 
-(defn get-entry [g ts]
-  (when (and ts (uc/has-node? g ts))
-    (uc/attrs g ts)))
+(defn get-entry [state ts]
+  (when (and ts (uc/has-node? (:graph state) ts))
+    (uc/attrs (:graph state) ts)))
 
 (defn get-entry-xf [state ts]
-  (when-let [entry (get-entry (:graph state) ts)]
+  (when-let [entry (get-entry state ts)]
     (xf/edn-xf entry)))
 
 (defn entry-w-story [state entry]
@@ -54,7 +54,7 @@
   "Creates a filter function which ensures that all tags and mentions in the
    query are contained in the filtered entry or any of it's comments, and none
    of the not-tags. Also allows filtering per day."
-  [q g]
+  [q state]
   (fn [entry]
     (let [local-fmt (ctf/with-zone (ctf/formatters :year-month-day)
                                    (ct/default-time-zone))
@@ -80,7 +80,7 @@
           tags (set/union (set (mapv s/lower-case (:tags entry)))
                           (set (mapv s/lower-case (:perm_tags entry))))
 
-          entry-comments (mapv #(get-entry g %) (:comments entry))
+          entry-comments (mapv #(get-entry state %) (:comments entry))
           entry-comments-tags (apply set/union (mapv :tags entry-comments))
           tags (set (mapv s/lower-case (set/union tags entry-comments-tags)))
 
@@ -245,7 +245,7 @@
         g (:graph state)
         n (:n query 20)
         mapper-fn (fn [n]
-                    (if-let [entry (get-entry g n)]
+                    (if-let [entry (get-entry state n)]
                       (-> entry
                           (get-comments g n)
                           (get-linked-entries g n))
@@ -392,7 +392,7 @@
   (let [g (:graph current-state)
         ltags (mapv #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))
         f (fn [lt]
-            (let [tag (:val (get-entry g {:tag lt}))
+            (let [tag (:val (get-entry current-state {:tag lt}))
                   cnt (count (uc/find-edges g {:src {:tag lt}}))]
               [tag cnt]))
         tag-cnt (mapv f ltags)
@@ -407,7 +407,7 @@
   (let [g (:graph current-state)
         ltags (mapv #(-> % :dest :ptag) (uc/find-edges g {:src :pvt-hashtags}))
         f (fn [lt]
-            (let [tag (:val (get-entry g {:ptag lt}))
+            (let [tag (:val (get-entry current-state {:ptag lt}))
                   cnt (count (uc/find-edges g {:src {:ptag lt}}))]
               [tag cnt]))
         tag-cnt (mapv f ltags)
@@ -421,7 +421,7 @@
   (let [g (:graph current-state)
         lmentions (mapv #(-> % :dest :mention)
                         (uc/find-edges g {:src :mentions}))
-        mentions (mapv #(:val (get-entry g {:mention %})) lmentions)]
+        mentions (mapv #(:val (get-entry current-state {:mention %})) lmentions)]
     (set mentions)))
 
 (defn find-all-stories
@@ -430,7 +430,7 @@
   [current-state]
   (let [g (:graph current-state)
         story-ids (mapv :dest (uc/find-edges g {:src :stories}))
-        stories (into {} (mapv (fn [id] [id (get-entry g id)]) story-ids))]
+        stories (into {} (mapv (fn [id] [id (get-entry current-state id)]) story-ids))]
     stories))
 
 (defn find-all-habits
@@ -439,7 +439,7 @@
   [current-state]
   (let [g (:graph current-state)
         habit-ids (mapv :dest (uc/find-edges g {:src :habits}))]
-    (mapv (fn [id] (entry-w-story current-state (get-entry g id))) habit-ids)))
+    (mapv (fn [id] (entry-w-story current-state (get-entry current-state id))) habit-ids)))
 
 (defn find-all-sagas
   "Finds all :saga entries in graph and returns map with the id of the saga
@@ -447,7 +447,7 @@
   [current-state]
   (let [g (:graph current-state)
         saga-ids (mapv :dest (uc/find-edges g {:src :sagas}))
-        sagas (into {} (mapv (fn [id] [id (get-entry g id)]) saga-ids))]
+        sagas (into {} (mapv (fn [id] [id (get-entry current-state id)]) saga-ids))]
     sagas))
 
 (defn find-all-stories2
@@ -457,7 +457,7 @@
         sagas (find-all-sagas current-state)
         story-ids (mapv :dest (uc/find-edges g {:src :stories}))
         xf (fn [id]
-             (let [story (get-entry g id)
+             (let [story (get-entry current-state id)
                    saga (get sagas (:linked_saga story))
                    story (assoc-in story [:saga] saga)]
                (merge story (:story_cfg story))))]
@@ -468,7 +468,7 @@
   [current-state]
   (let [g (:graph current-state)
         story-ids (mapv :dest (uc/find-edges g {:src :sagas}))]
-    (mapv #(let [saga (get-entry g %)]
+    (mapv #(let [saga (get-entry current-state %)]
              (merge saga (:saga_cfg saga)))
           story-ids)))
 
@@ -479,7 +479,7 @@
   (let [g (:graph current-state)
         briefing-ids (mapv :dest (uc/find-edges g {:src :briefings}))
         briefings (into {} (mapv (fn [id]
-                                   (let [entry (get-entry g id)
+                                   (let [entry (get-entry current-state id)
                                          day (-> entry :briefing :day)]
                                      [day id]))
                                  briefing-ids))]
@@ -499,16 +499,16 @@
   (let [n (:n query 20)
         g (:graph current-state)
         entry-mapper (fn [entry] [(:timestamp entry) entry])
-        entries (take n (filter (entries-filter-fn query g)
+        entries (take n (filter (entries-filter-fn query current-state)
                                 (extract-sorted-entries current-state query)))
         comment-timestamps (set (apply concat (mapv :comments entries)))
         linked-timestamps (apply set/union
                                  (mapv #(set (:linked_entries_list %))
                                        entries))
-        linked (mapv #(get-entry g %) linked-timestamps)
+        linked (mapv #(get-entry current-state %) linked-timestamps)
         comments-linked (comments-linked-for-entry g)
         linked (mapv comments-linked linked)
-        comments (mapv #(get-entry g %) comment-timestamps)
+        comments (mapv #(get-entry current-state %) comment-timestamps)
         entry-tuples (concat (mapv entry-mapper entries)
                              (mapv entry-mapper linked)
                              (mapv entry-mapper comments))
@@ -522,7 +522,7 @@
   (let [n (:n query 20)
         pvt (:pvt query)
         g (:graph current-state)
-        entries (take n (filter (entries-filter-fn query g)
+        entries (take n (filter (entries-filter-fn query current-state)
                                 (extract-sorted-entries current-state query)))
         comments-linked (comments-linked-for-entry g)
         pvt-filter (um/pvt-filter (:options current-state))
@@ -533,7 +533,7 @@
 
 (defn get-filtered-lazy [current-state query]
   (let [g (:graph current-state)
-        entries (filter (entries-filter-fn query g)
+        entries (filter (entries-filter-fn query current-state)
                         (lazy-seq (extract-sorted-entries current-state query)))
         comments-linked (comments-linked-for-entry g)]
     (map comments-linked entries)))

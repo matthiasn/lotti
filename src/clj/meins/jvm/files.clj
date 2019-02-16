@@ -62,9 +62,8 @@
         day (dt/ymd ts)
         adjusted-day (dt/ymd (:adjusted_ts msg-payload))
         new-state (assoc-in current-state [:stats-cache :days day] nil)
-        g (:graph current-state)
         cfg (:cfg current-state)
-        existing (gq/get-entry g ts)
+        existing (gq/get-entry current-state ts)
         node-to-add (if existing
                       (if (= (:md existing) "No departure recorded #visit")
                         entry
@@ -133,7 +132,7 @@
         node-id (:node-id cfg)
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
-        prev (gq/get-entry g ts)
+        prev (gq/get-entry current-state ts)
         entry (remove-nils (merge prev entry))
         entry (assoc-in entry [:last_saved] (st/now))
         entry (assoc-in entry [:id] (or (:id msg-payload) (uuid/v1)))
@@ -177,8 +176,7 @@
         entry msg-payload
         rcv-vclock (:vclock entry)
         cfg (:cfg current-state)
-        g (:graph current-state)
-        prev (when-let [entry (gq/get-entry g ts)] (remove-nils entry))
+        prev (when-let [entry (gq/get-entry current-state ts)] (remove-nils entry))
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
@@ -209,8 +207,7 @@
         entry msg-payload
         received-vclock (:vclock entry)
         cfg (:cfg current-state)
-        g (:graph current-state)
-        prev (gq/get-entry g ts)
+        prev (gq/get-entry current-state ts)
         new-state (ga/add-node current-state entry)
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         broadcast-meta (merge new-meta {:sente-uid :broadcast})
@@ -237,8 +234,7 @@
 
 (defn trash-entry-fn [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
-        g (:graph current-state)
-        prev (gq/get-entry g ts)
+        prev (gq/get-entry current-state ts)
         new-state (ga/remove-node current-state ts)
         cfg (:cfg current-state)
         node-id (:node-id cfg)

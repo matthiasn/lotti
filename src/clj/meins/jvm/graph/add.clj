@@ -159,14 +159,15 @@
                                 :id      :saved-entry}])
     {:new-state new-state}))
 
-(defn add-linked-visit [g entry]
+(defn add-linked-visit [state entry]
   (let [{:keys [arrival-ts departure-ts]} (u/visit-timestamps entry)]
     (if departure-ts
       (let [ts (:timestamp entry)
             ts-dt (c/from-long ts)
+            g (:graph state)
             q {:date_string (ctf/unparse (ctf/formatters :year-month-day) ts-dt)}
             same-day-entry-ids (gq/get-nodes-for-day g q)
-            same-day-entries (mapv #(gq/get-entry g %) same-day-entry-ids)
+            same-day-entries (mapv #(gq/get-entry state %) same-day-entry-ids)
             filter-fn (fn [other-entry]
                         (let [other-ts (:timestamp other-entry)]
                           (and (< other-ts departure-ts)
@@ -174,9 +175,10 @@
             matching-entries (filterv filter-fn same-day-entries)
             matching-entry-ids (mapv :timestamp matching-entries)
             reducing-fn (fn [g match]
-                          (uc/add-edges g [ts match {:relationship :LINKED}]))]
-        (reduce reducing-fn g matching-entry-ids))
-      g)))
+                          (uc/add-edges g [ts match {:relationship :LINKED}]))
+            updated-g (reduce reducing-fn g matching-entry-ids)]
+        (assoc-in state [:graph] updated-g))
+      state)))
 
 (defn remove-unused-tags
   "Checks for orphan tags and removes them. Orphan tags would occur when
@@ -195,7 +197,7 @@
 
 (defn remove-node [current-state ts]
   (let [g (:graph current-state)]
-    (if-let [entry (gq/get-entry g ts)]
+    (if-let [entry (gq/get-entry current-state ts)]
       (-> current-state
           (update-in [:graph] uc/remove-nodes ts)
           (update-in [:sorted-entries] disj ts)
@@ -301,9 +303,8 @@
   [current-state entry]
   (let [timer-id ["graph" "add" (name (or (:entry-type entry) "entry"))]
         started-timer (mt/start-timer timer-id)
-        g (:graph current-state)
         ts (:timestamp entry)
-        old-entry (gq/get-entry g ts)
+        old-entry (gq/get-entry current-state ts)
         merged (merge old-entry entry)
         old-tags (:tags old-entry)
         old-mentions (:mentions old-entry)
@@ -333,7 +334,7 @@
                     (update-in new-state [:graph] add-linked new-entry)
                     new-state)
         new-state (if (not= (u/visit-timestamps entry) (u/visit-timestamps old-entry))
-                    (update-in new-state [:graph] add-linked-visit new-entry)
+                    (update new-state add-linked-visit new-entry)
                     new-state)
         new-state (if (not= (:primary_story entry) (:primary_story old-entry))
                     (add-story-set new-state new-entry)
