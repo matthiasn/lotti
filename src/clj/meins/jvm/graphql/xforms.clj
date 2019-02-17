@@ -18,6 +18,7 @@
                                                         :ts
                                                         :comment_for
                                                         :linked_saga
+                                                        :primary_story
                                                         :adjusted_ts
                                                         :habit_ts
                                                         :last_saved} k))
