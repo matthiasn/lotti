@@ -79,6 +79,7 @@
                           {:new-args {:day_strings [day adjusted-day]}}]
                 :timeout 250
                 :id      :imported-entry}])
+      #_
       (put-fn [:cmd/schedule-new {:message [:state/persist]
                                   :id      :persist-state
                                   :timeout 10000}]))
@@ -164,6 +165,7 @@
                             {:new-args {:day_strings day-strings}}]
                   :timeout 10
                   :id      :saved-entry}]))
+      #_
       (put-fn [:cmd/schedule-new {:message [:state/persist]
                                   :id      :persist-state
                                   :timeout 2000}])
