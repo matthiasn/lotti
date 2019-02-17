@@ -29,27 +29,6 @@
   (let [spellcheck-handler (.-spellCheckHandler js/window)]
     (.switchLanguage spellcheck-handler cc)))
 
-(defn new-import-view []
-  (let [local (r/atom {:show false})
-        open-new (fn [x]
-                   (emit [:search/add
-                          {:tab-group :left
-                           :query     (up/parse-search (:timestamp x))}]))]
-    (fn []
-      (when (:show @local)
-        [:div.new-import
-         [:button.menu-new {:on-click (h/new-entry {})}
-          [:span.fa.fa-plus-square] " new"]
-         [:button.menu-new
-          {:on-click (h/new-entry {:entry_type :saga})}
-          [:span.fa.fa-plus-square] " new saga"]
-         [:button.menu-new
-          {:on-click (h/new-entry {:entry_type :story})}
-          [:span.fa.fa-plus-square] " new story"]
-         [:button {:on-click #(do (emit [:import/photos])
-                                  (emit [:import/spotify]))}
-          [:span.fa.fa-map] " import"]]))))
-
 (defn upload-view []
   (let [cfg (subscribe [:cfg])
         iww-host (.-iwwHOST js/window)]
@@ -89,7 +68,8 @@
                               (sort-by #(:success (first (:completed %))))))]
     (fn habit-monitor-render []
       (let [pvt @pvt
-            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits)]
+            habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) @habits)
+            habits (filter #(get-in % [:habit_entry :habit :active]) habits)]
         [:div.habit-monitor
          (for [habit habits]
            (let [completed (first (:completed habit))
@@ -139,7 +119,6 @@
     [toggle-option-view {:cls    "fa-user-secret"
                          :option :show-pvt}]
     [habit-monitor]
-    [new-import-view]
     (when (.-PLAYGROUND js/window)
       [:h1.playground "Playground"])
     [upload-view]]])
