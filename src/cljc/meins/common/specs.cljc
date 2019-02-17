@@ -307,6 +307,7 @@
 (s/def :import/stop-server nil?)
 (s/def :cfg/refresh nil?)
 (s/def :ws/ping nil?)
+(s/def :state/persist nil?)
 
 (s/def :wm.progress/v number?)
 (s/def :window/progress (s/keys :req-un [:wm.progress/v]))

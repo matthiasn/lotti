@@ -17,7 +17,6 @@
            :n        Integer/MAX_VALUE
            :pvt      (:pvt args)}
         current-state @state
-        g (:graph current-state)
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (gc/entries-w-logged current-state)
@@ -33,7 +32,6 @@
            :n        Integer/MAX_VALUE
            :pvt      (:pvt args)}
         current-state @state
-        g (:graph current-state)
         res (gq/get-filtered2 current-state q)
         tasks (->> res
                    (gc/entries-w-logged current-state)

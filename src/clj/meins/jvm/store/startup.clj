@@ -45,7 +45,7 @@
         all-lines (atom [])
         start (st/now)]
     (info "reading logs" read-from (vec newer-than))
-    (doseq [f newer-than]
+    (doseq [f sorted]
       (with-open [reader (io/reader f)]
         (let [lines (line-seq reader)]
           (doseq [line lines]

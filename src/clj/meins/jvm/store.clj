@@ -24,11 +24,12 @@
   {:send-to-self [:sync/initiate 0]})
 
 (defn make-state []
-  (atom {:sorted-entries (sorted-set-by >)
-         :graph          (uber/graph)
-         :global-vclock  {}
-         :vclock-map     (avl/sorted-map)
-         :cfg            (fu/load-cfg)}))
+  (or (f/state-from-file)
+      (atom {:sorted-entries (sorted-set-by >)
+             :graph          (uber/graph)
+             :global-vclock  {}
+             :vclock-map     (avl/sorted-map)
+             :cfg            (fu/load-cfg)})))
 
 (defonce state (make-state))
 

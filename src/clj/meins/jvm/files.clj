@@ -14,10 +14,6 @@
             [clojure.java.io :as io]
             [taoensso.nippy :as nippy]
             [meins.jvm.file-utils :as fu]
-            [buddy.core.hash :as hash]
-            [buddy.core.codecs.base64 :as b64]
-            [buddy.sign.jwe :as jwe]
-            [buddy.core.nonce :as nonce]
             [ubergraph.core :as uc]
             [meins.common.utils.vclock :as vc]
             [meins.common.utils.misc :as u]
@@ -82,7 +78,10 @@
                {:message [:gql/run-registered
                           {:new-args {:day_strings [day adjusted-day]}}]
                 :timeout 250
-                :id      :imported-entry}]))
+                :id      :imported-entry}])
+      (put-fn [:cmd/schedule-new {:message [:state/persist]
+                                  :id      :persist-state
+                                  :timeout 10000}]))
     {:new-state (ga/add-node new-state node-to-add)
      :emit-msg  [[:ft/add entry]]}))
 
@@ -128,7 +127,6 @@
   [{:keys [current-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         cfg (:cfg current-state)
-        g (:graph current-state)
         node-id (:node-id cfg)
         new-global-vclock (vc/next-global-vclock current-state)
         entry (u/clean-entry msg-payload)
@@ -166,6 +164,9 @@
                             {:new-args {:day_strings day-strings}}]
                   :timeout 10
                   :id      :saved-entry}]))
+      (put-fn [:cmd/schedule-new {:message [:state/persist]
+                                  :id      :persist-state
+                                  :timeout 2000}])
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
 

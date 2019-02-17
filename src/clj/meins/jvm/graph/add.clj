@@ -17,6 +17,10 @@
   (let [ts (:timestamp entry)]
     (assoc-in state [:entries-map ts] entry)))
 
+(defn update-entry [state entry]
+  (let [ts (:timestamp entry)]
+    (update-in state [:entries-map ts] merge entry)))
+
 (defn add-hashtags
   "Add hashtag edges to graph for a new entry. When a hashtag exists already,
    an edge to the existing node will be added, otherwise a new hashtag node will
