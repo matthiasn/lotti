@@ -1,7 +1,6 @@
 (ns meins.jvm.graph.add
   "Functions for adding new entries."
   (:require [ubergraph.core :as uc]
-            [clj-time.coerce :as ctc]
             [clj-time.core :as ct]
             [clj-time.format :as ctf]
             [clojure.string :as s]
@@ -14,9 +13,9 @@
             [meins.jvm.metrics :as mt]
             [metrics.timers :as tmr]))
 
-(defn add-entry [graph entry]
+(defn add-entry [state entry]
   (let [ts (:timestamp entry)]
-    (uc/add-nodes-with-attrs graph [ts entry])))
+    (assoc-in state [:entries-map ts] entry)))
 
 (defn add-hashtags
   "Add hashtag edges to graph for a new entry. When a hashtag exists already,
@@ -316,7 +315,7 @@
                                           (when (:audio-file entry) "#audio")
                                           (when (:video entry) "#video")]))
         new-entry (update-in merged [:tags] #(set/union (set %) media-tags))
-        new-state (update-in current-state [:graph] add-entry new-entry)
+        new-state (add-entry current-state new-entry)
         new-state (if (not= (:tags entry) old-tags)
                     (-> new-state
                         (update-in [:graph] remove-tag-edges old-tags :tag)

@@ -17,9 +17,12 @@
             [metrics.timers :as tmr]
             [meins.jvm.graphql.xforms :as xf]))
 
-(defn get-entry [state ts]
+(defn get-node [state ts]
   (when (and ts (uc/has-node? (:graph state) ts))
     (uc/attrs (:graph state) ts)))
+
+(defn get-entry [state ts]
+  (get-in state [:entries-map ts]))
 
 (defn get-entry-xf [state ts]
   (when-let [entry (get-entry state ts)]
@@ -392,7 +395,7 @@
   (let [g (:graph current-state)
         ltags (mapv #(-> % :dest :tag) (uc/find-edges g {:src :hashtags}))
         f (fn [lt]
-            (let [tag (:val (get-entry current-state {:tag lt}))
+            (let [tag (:val (get-node current-state {:tag lt}))
                   cnt (count (uc/find-edges g {:src {:tag lt}}))]
               [tag cnt]))
         tag-cnt (mapv f ltags)
@@ -407,7 +410,7 @@
   (let [g (:graph current-state)
         ltags (mapv #(-> % :dest :ptag) (uc/find-edges g {:src :pvt-hashtags}))
         f (fn [lt]
-            (let [tag (:val (get-entry current-state {:ptag lt}))
+            (let [tag (:val (get-node current-state {:ptag lt}))
                   cnt (count (uc/find-edges g {:src {:ptag lt}}))]
               [tag cnt]))
         tag-cnt (mapv f ltags)
@@ -421,7 +424,7 @@
   (let [g (:graph current-state)
         lmentions (mapv #(-> % :dest :mention)
                         (uc/find-edges g {:src :mentions}))
-        mentions (mapv #(:val (get-entry current-state {:mention %})) lmentions)]
+        mentions (mapv #(:val (get-node current-state {:mention %})) lmentions)]
     (set mentions)))
 
 (defn find-all-stories
