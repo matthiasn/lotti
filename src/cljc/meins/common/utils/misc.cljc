@@ -101,7 +101,6 @@
       (dissoc :last_saved)
       (dissoc :vclock)
       (dissoc :story)
-      (update-in [:task] dissoc :completed_s)
       (update-in [:task] dissoc :due)
       (update-in [:tags] set)
       (dissoc :editor-state)
@@ -132,3 +131,7 @@
 
 (defn idxd [coll]
   (map-indexed (fn [idx v] [idx v]) coll))
+
+(defn connect [from to]
+  [:cmd/route {:from from
+               :to   to}])

@@ -107,11 +107,8 @@
             closed (get-in entry [:task :closed])
             last-updated (time-ago (:since-update entry))
             age (time-ago (- (stc/now) (:timestamp entry)))
-            actual (if (and active busy)
-                     logged-time
-                     (:completed_s (:task entry)))
             allocated (* 60 estimate)
-            remaining (- allocated actual)
+            remaining (- allocated logged-time)
             story (:story entry)]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
@@ -132,7 +129,7 @@
              [:div [:label "Task priority: "] [:strong prio]])
            [:div [:label "Task idle for: "] [:strong age]]
            [:div [:label "Time allocated: "] [:strong (h/s-to-hh-mm-ss allocated)]]
-           [:div [:label "Time logged: "] [:strong (h/s-to-hh-mm-ss actual)]]
+           [:div [:label "Time logged: "] [:strong (h/s-to-hh-mm-ss logged-time)]]
            (when (pos? allocated)
              [:div [:label "Time remaining: "] [:strong (h/s-to-hh-mm-ss remaining)]])]]
          (when show-prio
@@ -158,16 +155,13 @@
            [:td.time age])
          (when show-logged?
            [:td.estimate.time
-            (let [actual (if (and active busy)
-                           logged-time
-                           (:completed_s (:task entry)))
-                  seconds (* 60 estimate)
-                  remaining (- seconds actual)
+            (let [seconds (* 60 estimate)
+                  remaining (- seconds logged-time)
                   cls (when (neg? remaining) "neg")]
               [:span {:class cls}
-               (h/s-to-hh-mm-ss actual)])])
+               (h/s-to-hh-mm-ss logged-time)])])
          (when show-progress
-           [:td.progress [progress-svg allocated actual]])
+           [:td.progress [progress-svg allocated logged-time]])
          [:td.text text]
          [:td.last (when unlink
                      [:i.fa.far.fa-unlink {:on-click #(unlink ts)}])]]))))

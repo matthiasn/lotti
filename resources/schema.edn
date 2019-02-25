@@ -15,8 +15,6 @@
                  :closed_ts     {:type String}
                  :on_hold       {:type Boolean}
                  :priority      {:type String}
-                 :completed_s   {:type        Int
-                                 :description "logged time in seconds"}
                  :completion_ts {:type String}}}
 
   :Habit1

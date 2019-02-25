@@ -108,8 +108,7 @@
                 [:album_cfg [:title :pvt :active]]
                 :entry_type
                 :vclock
-                [:task [:completed_s
-                        :completion_ts
+                [:task [:completion_ts
                         :done
                         :closed
                         :closed_ts

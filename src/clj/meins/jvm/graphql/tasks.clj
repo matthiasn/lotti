@@ -19,7 +19,6 @@
         current-state @state
         res (gq/get-filtered2 current-state q)
         tasks (->> res
-                   (gc/entries-w-logged current-state)
                    (map #(gq/entry-w-story current-state %))
                    (map cfg-mapper)
                    (filter #(not (:on_hold (:task %))))
@@ -34,7 +33,6 @@
         current-state @state
         res (gq/get-filtered2 current-state q)
         tasks (->> res
-                   (gc/entries-w-logged current-state)
                    (map #(gq/entry-w-story current-state %))
                    (map cfg-mapper)
                    (mapv (partial gc/entry-w-comments current-state)))]
