@@ -24,7 +24,6 @@
       done
       closed
       closed_ts
-      completed_s
       priority
     }
 
