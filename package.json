@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.81",
+  "version": "0.6.82",
   "description": "meins - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -22,7 +22,6 @@
     "@cljs-oss/module-deps": "1.1.1",
     "asar": "0.14.6",
     "base-64": "0.1.0",
-    "brain.js": "1.4.2",
     "buildmail": "4.0.1",
     "cldr-data": "34.0.0",
     "cookie-parser": "1.4.3",

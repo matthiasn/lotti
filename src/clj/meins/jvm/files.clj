@@ -41,6 +41,7 @@
     (spit full-path serialized :append true)
     #_(put-fn [:file/encrypt {:filename filename
                               :node-id  node-id}])))
+
 (defn enrich-story [state entry]
   (let [custom-fields (get-in state [:options :custom_fields])
         tag (or (first (:perm_tags entry))
@@ -83,7 +84,7 @@
       (put-fn [:cmd/schedule-new {:message [:state/persist]
                                   :id      :persist-state
                                   :timeout 10000}]))
-    {:new-state (ga/add-node new-state node-to-add)
+    {:new-state (ga/add-node new-state node-to-add {:clean-tags true})
      :emit-msg  [[:ft/add entry]]}))
 
 (defn persist-state! [{:keys [current-state]}]
@@ -139,7 +140,7 @@
         day-strings (filter identity [(dt/ymd ts)
                                       (dt/ymd (:adjusted_ts msg-payload))
                                       (dt/ymd (:adjusted_ts prev))])
-        new-state (ga/add-node current-state entry)
+        new-state (ga/add-node current-state entry {:clean-tags true})
         new-state (assoc-in new-state [:global-vclock] new-global-vclock)
         vclock-offset (get-in entry [:vclock node-id])
         new-state (assoc-in new-state [:vclock-map vclock-offset] entry)
@@ -186,7 +187,7 @@
                            :b>a)]
     (info "sync-fn" vclocks-compared)
     (case vclocks-compared
-      :b>a (let [new-state (ga/add-node current-state entry)]
+      :b>a (let [new-state (ga/add-node current-state entry {:clean-tags true})]
              ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
@@ -195,7 +196,7 @@
                                               :id      :sync-delayed-refresh}]
                           [:ft/add entry]]})
       :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
-                        new-state (ga/add-node current-state with-conflict)]
+                        new-state (ga/add-node current-state with-conflict {:clean-tags true})]
                     (warn "conflict\n" prev "\n" entry)
                     ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
                     (append-daily-log cfg entry put-fn)
@@ -211,7 +212,7 @@
         received-vclock (:vclock entry)
         cfg (:cfg current-state)
         prev (gq/get-entry current-state ts)
-        new-state (ga/add-node current-state entry)
+        new-state (ga/add-node current-state entry {:clean-tags true})
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         broadcast-meta (merge new-meta {:sente-uid :broadcast})
         vclocks-compared (when prev

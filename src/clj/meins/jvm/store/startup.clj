@@ -22,10 +22,8 @@
         local-offset (get-in parsed [:vclock node-id])]
     (if (s/valid? :meins.entry/spec parsed)
       (do (if (:deleted parsed)
-            (do (swap! state ga/remove-node ts)
-                (swap! entries-to-index dissoc ts))
-            (do (swap! entries-to-index assoc-in [ts] parsed)
-                (swap! state ga/add-node parsed)))
+            (swap! entries-to-index dissoc ts)
+            (swap! entries-to-index update-in [ts] merge parsed))
           (swap! state update-in [:global-vclock] vc/new-global-vclock parsed)
           (when local-offset
             (swap! state update-in [:vclock-map] assoc local-offset parsed)))
@@ -79,32 +77,40 @@
           (info "Indexed" (count @entries-to-index) "entries." t))
         (reset! entries-to-index [])))))
 
+(defn add-to-graph [cmp-state entries-to-index broadcast]
+  (let [cnt (count @entries-to-index)
+        bar (pr/progress-bar cnt)
+        start (st/now)]
+    (doseq [[idx [_ts entry]] (map-indexed (fn [idx v] [idx v]) @entries-to-index)]
+      (let [progress (double (/ idx cnt))]
+        (swap! cmp-state ga/add-node entry {})
+        (when (zero? (mod idx 5000))
+          (pr/print (pr/tick bar idx))
+          (broadcast [:startup/progress progress]))))
+    (println)
+    (info (count @entries-to-index) "entries added to Graph in" (- (st/now) start) "ms")))
+
 (defn read-entries [{:keys [cmp-state put-fn]}]
   (let [lines (read-lines cmp-state)
         parsed-lines (parse-lines lines)
         cnt (count parsed-lines)
         indexed (vec (map-indexed (fn [idx v] [idx v]) parsed-lines))
         node-id (-> @cmp-state :cfg :node-id)
-        entries (atom (avl/sorted-map))
         start (st/now)
         broadcast #(put-fn (with-meta % {:sente-uid :broadcast}))
         entries-to-index (atom {})
         bar (pr/progress-bar cnt)]
     (doseq [[idx parsed] indexed]
       (try
-        (let [ts (:timestamp parsed)
-              progress (double (/ idx cnt))]
+        (let [progress (double (/ idx cnt))]
           (swap! cmp-state assoc-in [:startup-progress] progress)
           (process-line parsed node-id cmp-state entries-to-index)
           (when (zero? (mod idx 5000))
-            (pr/print (pr/tick bar idx))
-            (broadcast [:startup/progress progress]))
-          (if (:deleted parsed)
-            (swap! entries dissoc ts)
-            (swap! entries update-in [ts] conj parsed)))
+            (pr/print (pr/tick bar idx))))
         (catch Exception ex (error "reading line" ex parsed))))
     (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
+    (add-to-graph cmp-state entries-to-index broadcast)
     (swap! cmp-state assoc-in [:startup-progress] 1)
     (opts/gen-options {:cmp-state cmp-state})
     (put-fn [:cmd/schedule-new {:timeout 1000
