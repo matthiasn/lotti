@@ -77,6 +77,11 @@
           (info "Indexed" (count @entries-to-index) "entries." t))
         (reset! entries-to-index [])))))
 
+(defn progress-update [idx cnt]
+  (let [x (Math/floor (/ cnt 100))]
+    (and (pos? x)
+         (zero? (mod idx x)))))
+
 (defn add-to-graph [cmp-state entries-to-index broadcast]
   (let [cnt (count @entries-to-index)
         bar (pr/progress-bar cnt)
@@ -84,7 +89,7 @@
     (doseq [[idx [_ts entry]] (map-indexed (fn [idx v] [idx v]) @entries-to-index)]
       (let [progress (double (/ idx cnt))]
         (swap! cmp-state ga/add-node entry {})
-        (when (zero? (mod idx 5000))
+        (when (progress-update idx cnt)
           (pr/print (pr/tick bar idx))
           (broadcast [:startup/progress progress]))))
     (println)
@@ -105,7 +110,7 @@
         (let [progress (double (/ idx cnt))]
           (swap! cmp-state assoc-in [:startup-progress] progress)
           (process-line parsed node-id cmp-state entries-to-index)
-          (when (zero? (mod idx 5000))
+          (when (progress-update idx cnt)
             (pr/print (pr/tick bar idx))))
         (catch Exception ex (error "reading line" ex parsed))))
     (println)
