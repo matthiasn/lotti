@@ -312,7 +312,7 @@
 (s/def :wm.progress/v number?)
 (s/def :window/progress (s/keys :req-un [:wm.progress/v]))
 
-(s/def :startup/progress number?)
+(s/def :startup/progress (s/map-of :keyword number?))
 (s/def :startup/read nil?)
 
 (s/def :meins.enc/filename string?)

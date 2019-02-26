@@ -24,7 +24,7 @@
     {:new-state new-state}))
 
 (defn progress [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:startup-progress] msg-payload)]
+  (let [new-state (update-in current-state [:startup-progress] merge msg-payload)]
     {:new-state new-state}))
 
 (defn save-metrics [{:keys [current-state msg-payload]}]

@@ -63,12 +63,15 @@
   (let [startup-progress (subscribe [:startup-progress])]
     (fn []
       (let [startup-progress @startup-progress
-            percent (Math/floor (* 100 startup-progress))]
+            lines-prog (Math/floor (* 100 (:lines startup-progress)))
+            graph-prog (Math/floor (* 100 (:graph startup-progress)))]
         [:div.loader
          [:div.content
           [:h1 "starting meins v" (.getVersion (aget remote "app")) "..."]
           [:div.meter
-           [:span {:style {:width (str percent "%")}}]]]]))))
+           [:span {:style {:width (str lines-prog "%")}}]]
+          [:div.meter
+           [:span {:style {:width (str graph-prog "%")}}]]]]))))
 
 (defn re-frame-ui []
   (let [current-page (subscribe [:current-page])
@@ -80,7 +83,7 @@
             startup-progress @startup-progress]
         (when-not @data-explorer
           (aset js/document "body" "style" "overflow" "hidden"))
-        (if (= 1 startup-progress)
+        (if (= 1 (:graph startup-progress))
           [:div
            (case (:page current-page)
              :config [cfg/config]
@@ -96,7 +99,7 @@
              [main-page])
            (when @data-explorer
              [dex/data-explorer])]
-          [load-progress ])))))
+          [load-progress])))))
 
 (defn state-fn [put-fn]
   (reset! rfd/emit-atom put-fn)

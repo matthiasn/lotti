@@ -544,7 +544,7 @@
 (defn query-fn [{:keys [current-state put-fn]}]
   (let [progress (:startup-progress current-state)]
     (put-fn [:startup/progress progress])
-    (when (= 1 progress)
+    (when (= 1 (:graph progress))
       (put-fn [:sync/start-imap])))
   {})
 

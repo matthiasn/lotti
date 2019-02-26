@@ -11,7 +11,7 @@
 
 (defn state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)
-        state (atom {:startup-progress 0
+        state (atom {:startup-progress {}
                      :last-alive       (st/now)
                      :busy-color       :green
                      :new-entries      @cse/new-entries-ls

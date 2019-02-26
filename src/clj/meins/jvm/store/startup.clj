@@ -91,9 +91,12 @@
         (swap! cmp-state ga/add-node entry {})
         (when (progress-update idx cnt)
           (pr/print (pr/tick bar idx))
-          (broadcast [:startup/progress progress]))))
+          (swap! cmp-state assoc-in [:startup-progress :graph] progress)
+          (broadcast [:startup/progress {:graph progress}]))))
     (println)
-    (info (count @entries-to-index) "entries added to Graph in" (- (st/now) start) "ms")))
+    (info (count @entries-to-index) "entries added to Graph in" (- (st/now) start) "ms")
+    (broadcast [:startup/progress {:graph 1}])
+    (swap! cmp-state assoc-in [:startup-progress :graph] 1)))
 
 (defn read-entries [{:keys [cmp-state put-fn]}]
   (let [lines (read-lines cmp-state)
@@ -108,20 +111,21 @@
     (doseq [[idx parsed] indexed]
       (try
         (let [progress (double (/ idx cnt))]
-          (swap! cmp-state assoc-in [:startup-progress] progress)
+          (swap! cmp-state assoc-in [:startup-progress :lines] progress)
           (process-line parsed node-id cmp-state entries-to-index)
           (when (progress-update idx cnt)
-            (pr/print (pr/tick bar idx))))
+            (pr/print (pr/tick bar idx))
+            (broadcast [:startup/progress {:lines progress}])))
         (catch Exception ex (error "reading line" ex parsed))))
     (println)
     (info (count @entries-to-index) "entries added in" (- (st/now) start) "ms")
+    (broadcast [:startup/progress {:lines 1}])
+    (swap! cmp-state assoc-in [:startup-progress :lines] 1)
     (add-to-graph cmp-state entries-to-index broadcast)
-    (swap! cmp-state assoc-in [:startup-progress] 1)
     (opts/gen-options {:cmp-state cmp-state})
     (put-fn [:cmd/schedule-new {:timeout 1000
                                 :message [:gql/run-registered]
                                 :id      :run-registered}])
-    (broadcast [:startup/progress 1])
     (broadcast [:sync/start-imap])
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)

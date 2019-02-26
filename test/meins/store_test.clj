@@ -53,7 +53,7 @@
                   fu/daily-logs-path test-daily-logs-path]
       (let [put-fn (fn [_])
             state (s/make-state)]
-        (swap! state assoc-in [:startup-progress] 1)
+        (swap! state assoc-in [:startup-progress] {:lines 1 :graph 1} )
         (startup/read-entries {:cmp-state state :put-fn put-fn})
         {:current-state @state
          :logs-path     test-daily-logs-path
