@@ -86,7 +86,7 @@
                              story (get-in stories [story-id])
                              saga (get sagas (:linked_saga story))
                              completed (or (get entry :completed_time) 0)
-                             manual (manually-logged entry date-string)
+                             manual (gq/summed-durations entry)
                              summed (+ completed manual)]
                          (when (pos? summed)
                            {:story       (when story
