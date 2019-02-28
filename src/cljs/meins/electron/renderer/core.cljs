@@ -71,7 +71,7 @@
     (store/cmp-map :renderer/store)
     (sched/cmp-map :renderer/scheduler)
     (rf/cmp-map :renderer/ui-cmp)
-    (exec/cmp-map :renderer/exec-cmp #{})})
+    (exec/cmp-map :renderer/exec-cmp)})
 
 (defn init []
   (info "Starting SYSTEM")

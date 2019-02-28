@@ -14,6 +14,7 @@
             [meins.jvm.backup :as bak]
             [meins.jvm.imports :as i]
             [meins.common.specs]
+            [meins.common.utils.misc :refer [connect]]
             [clj-pid.core :as pid]
             [taoensso.timbre :refer [info]]
             [meins.jvm.file-utils :as fu]
@@ -74,6 +75,55 @@
                           :backend/backup
                           :backend/imports}
                   :to   :backend/scheduler}]
+
+     [:cmd/attach-to-firehose :backend/firehose]
+
+     (when (:read-logs opts)
+       [:cmd/send {:to  :backend/store
+                   :msg [:startup/read]}])
+
+     (when-not (s/includes? fu/data-path "playground")
+       [:cmd/send {:to  :backend/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
+                                            :message [:import/spotify]
+                                            :repeat  true
+                                            :initial false}]}])]))
+
+
+(defn restart!
+  "Starts or restarts system by asking switchboard to fire up the ws-cmp for
+   serving the client side application and providing bi-directional
+   communication with the client, plus the store and imports components.
+   Then, routes messages to the store and imports components for which those
+   have a handler function. Also route messages from imports to store component.
+   Finally, sends all messages from store component to client via the ws
+   component."
+  [switchboard cmp-maps opts]
+  (sb/send-mult-cmd
+    switchboard
+    [[:cmd/init-comp (make-observable cmp-maps)]
+
+     (connect :backend/ws :backend/store)
+     (connect :backend/ws :backend/export)
+     (connect :backend/ws :backend/playground)
+     (connect :backend/ws :backend/imports)
+
+     (connect :backend/imports :backend/store)
+     (connect :backend/imports :backend/ws)
+     (connect :backend/imports :backend/scheduler)
+
+     (connect :backend/playground :backend/store)
+
+     (connect :backend/store :backend/ws)
+     (connect :backend/store :backend/ft)
+     (connect :backend/store :backend/scheduler)
+
+     (connect :backend/scheduler :backend/store)
+     (connect :backend/scheduler :backend/backup)
+     (connect :backend/scheduler :backend/imports)
+     (connect :backend/scheduler :backend/ws)
+
+     (connect :backend/backup :backend/scheduler)
 
      [:cmd/attach-to-firehose :backend/firehose]
 

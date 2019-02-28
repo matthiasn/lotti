@@ -5,14 +5,6 @@
             [meins.electron.renderer.helpers :as h]
             [meins.common.utils.parse :as up]))
 
-(s/def :exec/js map?)
-
-(defn exec-js [{:keys [current-state msg-payload]}]
-  (info "EXEC:" msg-payload)
-  (let [js (:js msg-payload)]
-    (.eval js/window js)
-    {}))
-
 (defn create-entry [{:keys [msg-payload put-fn]}]
   (info "create entry:" msg-payload)
   (let [open (fn [x]
@@ -25,7 +17,6 @@
 
     {}))
 
-(defn cmp-map [cmp-id relay-types]
+(defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :handler-map {:exec/js      exec-js
-                 :entry/create create-entry}})
+   :handler-map {:entry/create create-entry}})

@@ -9,7 +9,6 @@
             [meins.electron.main.update :as upd]
             [meins.electron.main.blink :as bl]
             [meins.electron.main.imap :as imap]
-            [meins.electron.main.help :as help]
             [meins.electron.main.screenshot :as screen]
             [meins.electron.main.geocoder :as geocoder]
             [meins.electron.main.startup :as st]
@@ -38,8 +37,7 @@
 
 (ecm (clj->js {:showCopyImageAddress true}))
 
-(def wm-relay #{:exec/js
-                :cmd/toggle-key
+(def wm-relay #{:cmd/toggle-key
                 :update/status
                 :screenshot/save
                 :entry/update
@@ -62,7 +60,6 @@
                 :import/spotify
                 :import/git
                 :nav/to
-                :help/manual
                 :playground/gen
                 :firehose/cmp-put
                 :firehose/cmp-recv})
@@ -77,7 +74,6 @@
                      (bl/cmp-map :main/blink)
                      (screen/cmp-map :main/screenshot)
                      (imap/cmp-map :main/sync)
-                     (help/cmp-map :main/help)
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
                      (menu/cmp-map :main/menu-cmp)
@@ -109,7 +105,6 @@
                             :main/updater
                             :main/geocoder
                             :main/blink
-                            :main/help
                             :main/screenshot
                             :main/sync
                             :main/scheduler
@@ -122,9 +117,6 @@
                     :to   :main/startup}]
 
        [:cmd/route {:from :main/geocoder
-                    :to   :main/window-manager}]
-
-       [:cmd/route {:from :main/help
                     :to   :main/window-manager}]
 
        [:cmd/route {:from :main/screenshot

@@ -3,7 +3,6 @@
             #?(:clj [clojure.spec.alpha :as s]
                :cljs [cljs.spec.alpha :as s])
             [meins.common.specs.imap]
-            [meins.common.specs.help]
             [meins.common.specs.updater]))
 
 (defn number-in-range?
@@ -109,6 +108,8 @@
 (s/def :sync/imap entry-spec)
 (s/def :sync/read-imap nil?)
 (s/def :sync/start-imap nil?)
+
+(s/def :entry/create map?)
 
 (s/def :import/entry entry-spec)
 (s/def :entry/sync entry-spec)
