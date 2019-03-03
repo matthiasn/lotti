@@ -4,7 +4,7 @@ The **open-source** application **meins** is an experimentation toolkit for **de
 
 Here's how that currently looks like:
 
-![screenshot](http://matthiasnehlsen.com/images/2018-03-08-meo-charts.png)
+![screenshot](./docs/source/images/20181217_2250_overview.png)
 
 
 # Installers
@@ -27,20 +27,26 @@ All subsystems in meins make use of the **[systems-toolbox](https://github.com/m
 
 Here's how the app currently looks like:
 
-![screenshot](http://matthiasnehlsen.com/images/2018-03-08-mobile.png)
+![screenshot](https://raw.githubusercontent.com/matthiasn/octopress-blog/master/source/images/2018-03-08-mobile.png)
 
 
 ## Installation
 
 There is a `Makefile` that contains all the build targets. You will obviously need **[GNU make](https://www.gnu.org/software/make/)** to run the targets. Alternatively, you can run the commands in there individually. Please have a look at the `Makefile` to see what the commands are.
 
-To prepare your environment and install the required dependencies on a Mac, you can run
+You also need **JDK 10+**, for example **[OpenJDK 11](https://jdk.java.net/11/)**. Please make sure that the `$JAVA_HOME` is set up and that you can run `link` from the command line.
 
-    $ make install-mac
+Then you need **Node.js**. I use **[nvm](https://github.com/creationix/nvm)**. After installing it, run
+
+    $ nvm install 8
+
+To install the required global npm dependencies on a Mac, you can run
+
+    $ make deps-mac
     
 For Ubuntu, run
 
-    $ make install-ubuntu
+    $ make deps-ubuntu
     
 If anything is missing or redundant, please submit a pull request, I am not running these often. **[Leiningen](https://leiningen.org/)** itself is missing, not sure how to best install that from here. Maybe it's best to just use the commands in the install targets as a template for what you need to install. Please have a look at what the target for your platform does before blindly running it.
 

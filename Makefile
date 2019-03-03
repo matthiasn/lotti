@@ -24,10 +24,7 @@ endif
 
 package: install package-only
 
-install-mac:
-	curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
-	source $HOME/.bashrc
-	nvm install 10.2
+deps-mac:
 	npm install -g electron
 	npm install -g electron-builder
 	npm install -g electron-cli
@@ -37,11 +34,8 @@ install-mac:
 	npm install -g webpack
 	mkdir ./bin
 
-install-ubuntu:
-	sudo add-apt-repository ppa:linuxuprising/java
+deps-ubuntu:
 	sudo apt-get update
-	sudo apt-get install oracle-java10-installer
-	sudo apt-get install oracle-java10-set-default
 	sudo apt-get install python2.7
 	sudo apt-get install make
 	sudo apt-get install g++
@@ -50,16 +44,14 @@ install-ubuntu:
 	sudo apt-get install libx11-dev
 	sudo apt-get install libxkbfile-dev
 	sudo apt-get install libgconf-2-4
-	wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
-	source $HOME/.bashrc
-	nvm install 10.2
 	npm install -g electron
-	npm install -g electron-builder@20.14.7
+	npm install -g electron-builder@20.38.5
 	npm install -g electron-cli
 	npm install -g electron-build-env
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
+    mkdir ./bin
 
 build-deps:
 ifndef LEIN
