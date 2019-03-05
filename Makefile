@@ -51,7 +51,7 @@ deps-ubuntu:
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
-    mkdir ./bin
+	mkdir ./bin
 
 build-deps:
 ifndef LEIN
