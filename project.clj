@@ -63,10 +63,10 @@
   :jvm-opts ["-Xmx2g"]
 
   :profiles {:uberjar      {:aot :all}
-             :test-reagent {:dependencies [[cljsjs/react "16.6.0-0"]
-                                           [cljsjs/react-dom "16.6.0-0"]
+             :test-reagent {:dependencies [[cljsjs/react "16.8.3-0"]
+                                           [cljsjs/react-dom "16.8.3-0"]
                                            [cljsjs/create-react-class "15.6.3-1"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.516"]
+             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.520"]
                                            [reagent "0.8.1"
                                             :exclusions [cljsjs/react cljsjs/react-dom]]
                                            [re-frame "0.10.6"]
@@ -83,7 +83,7 @@
              :exclusions [org.apache.commons/commons-compress]]
             [lein-figwheel "0.5.18"]
             [test2junit "1.4.2"]
-            [lein-cloverage "1.0.13"]
+            [lein-cloverage "1.1.0"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.1"]
