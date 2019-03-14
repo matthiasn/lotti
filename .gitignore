@@ -5,6 +5,7 @@ data/
 playground-data/
 test-data/
 /target
+/dev
 /classes
 /checkouts
 pom.xml

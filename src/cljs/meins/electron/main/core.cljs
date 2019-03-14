@@ -19,10 +19,6 @@
             [meins.electron.main.runtime :as rt]
             [cljs.pprint :as pp]))
 
-(when-not (aget js/goog "global" "setTimeout")
-  (info "goog.global.setTimeout not defined - let's change that")
-  (aset js/goog "global" "setTimeout" js/setTimeout))
-
 (aset process "env" "GOOGLE_API_KEY" "AIzaSyD78NTnhgt--LCGBdIGPEg8GtBYzQl0gKU")
 
 (defonce switchboard (sb/component :main/switchboard))
