@@ -52,17 +52,28 @@
                  :main             meins.electron.main.core/init}
 
                 :renderer
-                {:target           :node-script
-                 :main             meins.electron.renderer.core/main
-                 :compiler-options {:optimizations :simple}
-                 :output-dir       "prod/renderer-shadow"
-                 :output-to        "prod/renderer-shadow/renderer.js"
-                 :release          {:js-options {:js-provider          :shadow
+                {:target     :node-script
+                 :main       meins.electron.renderer.core/main
+                 :output-dir "prod/renderer-shadow"
+                 :output-to  "prod/renderer-shadow/renderer.js"
+                 :release    {:compiler-options {:optimizations :simple}
+                              :js-options       {:js-provider          :shadow
                                                  :language-in          :ecmascript6
                                                  :language-out         :ecmascript6
                                                  :keep-native-requires true
                                                  :keep-as-require      #{"draftjs-md-converter" "cldr-data" "globalize"
                                                                          "electron" "jsdom" "draft-js" "react"}}}
-                 :devtools         {:use-document-host false
-                                    :after-load        meins.electron.renderer.core/init
-                                    :watch-dir         "resources/public"}}}}
+                 :devtools   {:use-document-host false
+                              :after-load        meins.electron.renderer.core/init
+                              :watch-dir         "resources/public"}}
+
+                :renderer-dev
+                {:target     :browser
+                 :output-dir "dev/renderer-shadow"
+                 :output-to  "dev/renderer-shadow/renderer.js"
+                 :modules    {:main {:init-fn meins.electron.renderer.core/init}}
+                 :js-options {:js-provider :require}
+                 :devtools   {:use-document-host false
+                              :loader-mode       :eval
+                              :after-load        meins.electron.renderer.core/init
+                              :watch-dir         "resources/public"}}}}
