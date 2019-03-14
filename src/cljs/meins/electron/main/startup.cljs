@@ -70,7 +70,7 @@
 
 (defn jvm-up? [{:keys [put-fn current-state cmp-state msg-payload]}]
   (info "JVM up?" (:attempt current-state) msg-payload)
-  (let [{:keys [version icon]} rt/runtime-info
+  (let [{:keys [version icon repo-dir]} rt/runtime-info
         environment (:environment msg-payload)
         port (if (= environment :live) PORT (:pg-port rt/runtime-info))
         index-page (if (= environment :live)
@@ -93,13 +93,17 @@
         res-handler
         (fn [res]
           (let [status-code (.-statusCode res)
+                opts {:titleBarStyle   "hidden"
+                      :backgroundColor "#282828"
+                      :icon            icon
+                      :webPreferences  (merge {:nodeIntegration true}
+                                              (when repo-dir
+                                                {:webSecurity false}))}
                 msg (merge
                       (window-cfg)
-                      {:url  index-page
-                       :save-bounds            true
-                       :opts {:titleBarStyle   "hidden"
-                              :backgroundColor "#282828"
-                              :icon            icon}}
+                      {:url         index-page
+                       :save-bounds true
+                       :opts        opts}
                       (when (= environment :playground)
                         {:window-id index-page}))
                 data (atom "")

@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.exec
   (:require [taoensso.timbre :refer-macros [info]]
-            [electron :refer [ipcRenderer]]
             [cljs.spec.alpha :as s]
             [meins.electron.renderer.helpers :as h]
             [meins.common.utils.parse :as up]))

@@ -57,13 +57,12 @@
                  :compiler-options {:optimizations :simple}
                  :output-dir       "prod/renderer-shadow"
                  :output-to        "prod/renderer-shadow/renderer.js"
-                 :js-options       {:js-provider          :shadow
-                                    :language-in          :ecmascript6
-                                    :language-out         :ecmascript6
-                                    :keep-native-requires true
-                                    :keep-as-require      #{"draftjs-md-converter" "cldr-data" "globalize" "electron" "jsdom" "draft-js" "react"}}
-                 :dev              {:compiler-options {:closure-defines {re_frame.trace.trace_enabled?        true
-                                                                         day8.re-frame.tracing.trace-enabled? true}}}
-                 :devtools         {:http-root    "public"
-                                    :http-handler shadow.http.push-state/handle
-                                    :http-port    8280}}}}
+                 :release          {:js-options {:js-provider          :shadow
+                                                 :language-in          :ecmascript6
+                                                 :language-out         :ecmascript6
+                                                 :keep-native-requires true
+                                                 :keep-as-require      #{"draftjs-md-converter" "cldr-data" "globalize"
+                                                                         "electron" "jsdom" "draft-js" "react"}}}
+                 :devtools         {:use-document-host false
+                                    :after-load        meins.electron.renderer.core/init
+                                    :watch-dir         "resources/public"}}}}
