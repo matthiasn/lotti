@@ -2,11 +2,10 @@ appId: "matthiasn.meins"
 asar: false
 files:
     - "bin/jlink/**"
-    - "node_modules/**"
-    - "!node_modules/babel-runtime/**"
+    - "node_modules/globalize/**"
+    - "node_modules/lato-font/**"
     - "node_modules/cldr-data/main/@(de|en|fr|es)"
     - "!node_modules/cldr-data/main/!(de|en|fr|es)"
-    - "node_modules/iana-tz-data/**"
     - "prod/**"
     - "electron/**"
     - "src/**"

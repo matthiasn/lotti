@@ -151,3 +151,5 @@
 (.on app "activate" (fn [_ev hasVisibleWindows]
                       (when-not hasVisibleWindows
                         (start))))
+
+(defn main [])

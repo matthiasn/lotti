@@ -115,7 +115,7 @@
                                  ["sass4clj" "once"]
                                  ["jlink" "assemble"]]}
 
-  :figwheel {:css-dirs ["resources/public/css"]
+  :figwheel {:css-dirs    ["resources/public/css"]
              :server-port 3459}
 
   :cljsbuild {:test-commands {"cljs-test" ["phantomjs" "test/phantom/test.js" "test/phantom/test.html"]}
@@ -123,13 +123,119 @@
                                :source-paths ["src/cljc" "src/cljs"]
                                :compiler     {:main           meins.electron.main.core
                                               :target         :nodejs
-                                              :npm-deps       true
+                                              :infer-externs  true
+                                              :npm-deps       false
                                               :output-to      "prod/main/main.js"
                                               :output-dir     "out/main"
                                               :language-in    :ecmascript5
                                               :language-out   :ecmascript5
                                               :optimizations  :simple
-                                              :parallel-build true}}
+                                              :parallel-build true
+                                              :foreign-libs   [{:file           "resources/public/index_bundle.js"
+                                                                :provides       ["base-64"
+                                                                                 "buildmail"
+                                                                                 "create-react-class"
+                                                                                 "crypto-js"
+                                                                                 "draft-js"
+                                                                                 "draft-js-export-html"
+                                                                                 "draft-js-export-markdown"
+                                                                                 "draft-js-linkify-plugin"
+                                                                                 "draft-js-mention-plugin"
+                                                                                 "draft-js-plugins-editor"
+                                                                                 "draftjs-md-converter"
+                                                                                 "electron-context-menu"
+                                                                                 "electron"
+                                                                                 "electron-fetch"
+                                                                                 "electron-log"
+                                                                                 "electron-updater"
+                                                                                 "emoji-flags"
+                                                                                 "find-process"
+                                                                                 "iana-tz-data"
+                                                                                 "imap"
+                                                                                 "immutable"
+                                                                                 "install"
+                                                                                 "leaflet"
+                                                                                 "lodash"
+                                                                                 "lodash.throttle"
+                                                                                 "mapbox-gl"
+                                                                                 "moment"
+                                                                                 "moment-duration-format"
+                                                                                 "quill"
+                                                                                 "randomcolor"
+                                                                                 "react"
+                                                                                 "react-dom"
+                                                                                 "react-addons-css-transition-group"
+                                                                                 "react-addons-shallow-compare"
+                                                                                 "react-big-calendar"
+                                                                                 "react-color"
+
+                                                                                 "react-event-timeline"
+                                                                                 "react-horizontal-timeline"
+                                                                                 "react-infinite-calendar"
+                                                                                 "react-list"
+                                                                                 "react-responsive-carousel"
+                                                                                 "react-with-direction"
+                                                                                 "rome"
+                                                                                 "screenshot-desktop"
+                                                                                 "shell-escape"
+                                                                                 "tcp-port-used"
+                                                                                 "tinycolor"
+                                                                                 "tinycolor2"
+                                                                                 "turndown"
+                                                                                 "wavesurfer.js"
+                                                                                 ]
+                                                                :global-exports {base-64                           Base64
+                                                                                 buildmail                         BuildMail
+                                                                                 create-react-class                CreateReactClass
+                                                                                 crypto-js                         CryptoJs
+                                                                                 draft-js                          DraftJs
+                                                                                 draft-js-export-html              DraftJsExportHtml
+                                                                                 draft-js-export-markdown          DraftJsExportMarkdown
+                                                                                 draft-js-linkify-plugin           DraftJsLinkifyPlugin
+                                                                                 draft-js-mention-plugin           DraftJsMentionPlugin
+                                                                                 draft-js-plugins-editor           DraftJsPluginsEditor
+                                                                                 draftjs-md-converter              DraftJsMdConverter
+                                                                                 electron                          Electron
+                                                                                 electron-context-menu             ElectronContextMenu
+                                                                                 electron-fetch                    ElectronFetch
+                                                                                 electron-log                      ElectronLog
+                                                                                 electron-updater                  ElectronUpdater
+                                                                                 emoji-flags                       EmojiFlags
+                                                                                 find-process                      FindProcess
+                                                                                 iana-tz-data                      IanaTzData
+                                                                                 imap                              Imap
+                                                                                 immutable                         Immutable
+                                                                                 install                           Install
+                                                                                 leaflet                           Leaflet
+                                                                                 lodash                            Lodash
+                                                                                 lodash.throttle                   LodashThrottle
+                                                                                 mapbox-gl                         MapboxGl
+                                                                                 moment                            Moment
+                                                                                 moment-duration-format            MomentDurationFormat
+                                                                                 quill                             Quill
+                                                                                 randomcolor                       RandomColor
+                                                                                 react                             React
+                                                                                 react-dom                         ReactDOM
+                                                                                 react-addons-css-transition-group ReactAddonsCssTransitionGroup
+                                                                                 react-addons-shallow-compare      ReactAddonsShallowCompare
+                                                                                 react-big-calendar                ReactBigCalendar
+                                                                                 react-color                       ReactColor
+
+                                                                                 react-event-timeline              ReactEventTimeline
+                                                                                 react-horizontal-timeline         ReactHorizontalTimeline
+                                                                                 react-infinite-calendar           ReactInfiniteCalendar
+                                                                                 react-list                        ReactList
+                                                                                 react-responsive-carousel         ReactResponsiveCarousel
+                                                                                 react-with-direction              ReactWithDirection
+                                                                                 rome                              Rome
+                                                                                 screenshot-desktop                ScreenshotDesktop
+                                                                                 shell-escape                      ShellEscape
+                                                                                 tcp-port-used                     TcpPortUsed
+                                                                                 tinycolor                         Tinicolor
+                                                                                 tinycolor2                        Tinicolor2
+                                                                                 turndown                          Turndown
+                                                                                 wavesurfer.js                     WavesurferJs
+                                                                                 }}]}}
 
                               {:id           "geocoder"
                                :source-paths ["src/cljc" "src/cljs"]
@@ -146,11 +252,116 @@
                                :compiler     {:main           meins.electron.renderer.core
                                               :output-to      "prod/renderer/renderer.js"
                                               :target         :nodejs
-                                              :npm-deps       true
+                                              :npm-deps       false
+                                              :infer-externs  true
                                               :output-dir     "out/renderer"
                                               :language-in    :ecmascript6
                                               :optimizations  :simple
-                                              :parallel-build true}}
+                                              :parallel-build true
+                                              :foreign-libs   [{:file           "resources/public/index_bundle.js"
+                                                                :provides       ["base-64"
+                                                                                 "buildmail"
+                                                                                 "create-react-class"
+                                                                                 "crypto-js"
+                                                                                 "draft-js"
+                                                                                 "draft-js-export-html"
+                                                                                 "draft-js-export-markdown"
+                                                                                 "draft-js-linkify-plugin"
+                                                                                 "draft-js-mention-plugin"
+                                                                                 "draft-js-plugins-editor"
+                                                                                 "draftjs-md-converter"
+                                                                                 "electron-context-menu"
+                                                                                 "electron"
+                                                                                 "electron-fetch"
+                                                                                 "electron-log"
+                                                                                 "electron-updater"
+                                                                                 "emoji-flags"
+                                                                                 "find-process"
+                                                                                 "iana-tz-data"
+                                                                                 "imap"
+                                                                                 "immutable"
+                                                                                 "install"
+                                                                                 "leaflet"
+                                                                                 "lodash"
+                                                                                 "lodash.throttle"
+                                                                                 "mapbox-gl"
+                                                                                 "moment"
+                                                                                 "moment-duration-format"
+                                                                                 "quill"
+                                                                                 "randomcolor"
+                                                                                 "react"
+                                                                                 "react-dom"
+                                                                                 "react-addons-css-transition-group"
+                                                                                 "react-addons-shallow-compare"
+                                                                                 "react-big-calendar"
+                                                                                 "react-color"
+
+                                                                                 "react-event-timeline"
+                                                                                 "react-horizontal-timeline"
+                                                                                 "react-infinite-calendar"
+                                                                                 "react-list"
+                                                                                 "react-responsive-carousel"
+                                                                                 "react-with-direction"
+                                                                                 "rome"
+                                                                                 "screenshot-desktop"
+                                                                                 "shell-escape"
+                                                                                 "tcp-port-used"
+                                                                                 "tinycolor"
+                                                                                 "tinycolor2"
+                                                                                 "turndown"
+                                                                                 "wavesurfer.js"]
+                                                                :global-exports {base-64                           Base64
+                                                                                 buildmail                         BuildMail
+                                                                                 create-react-class                CreateReactClass
+                                                                                 crypto-js                         CryptoJs
+                                                                                 draft-js                          DraftJs
+                                                                                 draft-js-export-html              DraftJsExportHtml
+                                                                                 draft-js-export-markdown          DraftJsExportMarkdown
+                                                                                 draft-js-linkify-plugin           DraftJsLinkifyPlugin
+                                                                                 draft-js-mention-plugin           DraftJsMentionPlugin
+                                                                                 draft-js-plugins-editor           DraftJsPluginsEditor
+                                                                                 draftjs-md-converter              DraftJsMdConverter
+                                                                                 electron                          Electron
+                                                                                 electron-context-menu             ElectronContextMenu
+                                                                                 electron-fetch                    ElectronFetch
+                                                                                 electron-log                      ElectronLog
+                                                                                 electron-updater                  ElectronUpdater
+                                                                                 emoji-flags                       EmojiFlags
+                                                                                 find-process                      FindProcess
+                                                                                 iana-tz-data                      IanaTzData
+                                                                                 imap                              Imap
+                                                                                 immutable                         Immutable
+                                                                                 install                           Install
+                                                                                 leaflet                           Leaflet
+                                                                                 lodash                            Lodash
+                                                                                 lodash.throttle                   LodashThrottle
+                                                                                 mapbox-gl                         MapboxGl
+                                                                                 moment                            Moment
+                                                                                 moment-duration-format            MomentDurationFormat
+                                                                                 quill                             Quill
+                                                                                 randomcolor                       RandomColor
+                                                                                 react                             React
+                                                                                 react-dom                         ReactDOM
+                                                                                 react-addons-css-transition-group ReactAddonsCssTransitionGroup
+                                                                                 react-addons-shallow-compare      ReactAddonsShallowCompare
+                                                                                 react-big-calendar                ReactBigCalendar
+                                                                                 react-color                       ReactColor
+
+                                                                                 react-event-timeline              ReactEventTimeline
+                                                                                 react-horizontal-timeline         ReactHorizontalTimeline
+                                                                                 react-infinite-calendar           ReactInfiniteCalendar
+                                                                                 react-list                        ReactList
+                                                                                 react-responsive-carousel         ReactResponsiveCarousel
+                                                                                 react-with-direction              ReactWithDirection
+                                                                                 rome                              Rome
+                                                                                 screenshot-desktop                ScreenshotDesktop
+                                                                                 shell-escape                      ShellEscape
+                                                                                 tcp-port-used                     TcpPortUsed
+                                                                                 tinycolor                         Tinicolor
+                                                                                 tinycolor2                        Tinicolor2
+                                                                                 turndown                          Turndown
+                                                                                 wavesurfer.js                     WavesurferJs
+                                                                                 }}]}}
                               {:id           "renderer-dev"
                                :source-paths ["src/cljc" "src/cljs" "env"]
                                :figwheel     true
@@ -168,7 +379,7 @@
                                :source-paths ["src/cljs" "src/cljc" "test"]
                                :compiler     {:output-to     "out/testable.js"
                                               :output-dir    "out/"
-                                              :npm-deps       true
+                                              :npm-deps      true
                                               :main          meins.jvm.runner
                                               :process-shim  false
                                               :optimizations :whitespace}}]})

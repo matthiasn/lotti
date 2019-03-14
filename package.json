@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.88",
+  "version": "0.6.89",
   "description": "meins - a personal information manager",
   "main": "prod/main/main.js",
   "scripts": {
@@ -53,7 +53,6 @@
     "moment": "2.24.0",
     "moment-duration-format": "2.2.2",
     "normalize.css": "8.0.1",
-    "npid": "0.4.0",
     "quill": "1.3.6",
     "randomcolor": "0.5.4",
     "react": "16.8.3",
@@ -80,9 +79,12 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
+    "css-loader": "2.1.1",
     "electron": "3.0.13",
     "electron-builder": "20.38.5",
     "module-deps": "6.2.0",
-    "resolve": "1.10.0"
+    "resolve": "1.10.0",
+    "style-loader": "0.23.1",
+    "webpack-cli": "3.2.3"
   }
 }

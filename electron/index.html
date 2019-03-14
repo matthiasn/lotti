@@ -21,10 +21,14 @@
 </audio>
 </body>
 
+<script src="../resources/public/index_bundle.js" type="text/javascript"></script>
+
 <script>
     window.OBSERVER = true;
     window.iwwHOST = "localhost:7788";
     window.deps = {};
+    window.CldrData = require ('../node_modules/cldr-data');
+    window.Globalize = require ('../node_modules/globalize');
     window.React = require ('../node_modules/react');
     window.Draft = require ('../node_modules/draft-js/dist/Draft');
     window.deps.SearchFieldEditor = require ('../src/js/SearchFieldEditor.js');

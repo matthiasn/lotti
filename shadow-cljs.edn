@@ -1,0 +1,55 @@
+{:dependencies [[reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom]]
+                [re-frame "0.10.6"]
+                [cljsjs/moment "2.24.0-0"]
+                [matthiasn/systems-toolbox-electron "0.6.29"]
+                [matthiasn/systems-toolbox "0.6.38"]
+                [matthiasn/systems-toolbox-sente "0.6.32"]
+                [com.cognitect/transit-cljs "0.8.256"]
+                [secretary "1.2.3"]
+                [org.clojure/clojure "1.10.0"]
+                [org.clojure/tools.logging "0.4.1"]
+                [ch.qos.logback/logback-classic "1.2.3"]
+                [hiccup "1.0.5"]
+                [org.clojure/data.avl "0.0.18"]
+                [org.clojure/test.check "0.10.0-alpha3"]
+                [clj-pid "0.1.2"]
+                [clj-time "0.15.1"]
+                [clj-http "3.9.1"]
+                [ring/ring-core "1.7.1"]
+                [enlive "1.1.6"]
+                [buddy/buddy-sign "3.0.0"]
+                [me.raynes/fs "1.4.6"]
+                [markdown-clj "1.0.7"]
+                [progrock "0.1.2"]
+                [cheshire "5.8.1"]
+                [vincit/venia "0.2.5"]
+                [metrics-clojure "2.10.0"]
+                [metrics-clojure-jvm "2.10.0"]
+                [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
+                [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
+                [com.drewnoakes/metadata-extractor "2.11.0"]
+                [factual/geo "2.1.1"]
+                [camel-snake-kebab "0.4.0"]
+                [matthiasn/systems-toolbox "0.6.38"]
+                [matthiasn/systems-toolbox-sente "0.6.32"]
+                [org.clojure/tools.reader "1.3.2"]
+                ]
+
+ :source-paths ["src/cljc" "src/cljs"]
+
+ :nrepl        {:port 8230}
+
+ :builds       {:main
+                {:target :node-script
+                 :output-to "prod/main-shadow/main.js"
+                 :main meins.electron.main.core/main}
+
+                :renderer
+                {:target     :node-script
+                 :main meins.electron.main.core/main
+                 :output-to "prod/renderer-shadow/renderer.js"
+                 :dev        {:compiler-options {:closure-defines {re_frame.trace.trace_enabled?        true
+                                                                   day8.re-frame.tracing.trace-enabled? true}}}
+                 :devtools   {:http-root    "public"
+                              :http-handler shadow.http.push-state/handle
+                              :http-port    8280}}}}

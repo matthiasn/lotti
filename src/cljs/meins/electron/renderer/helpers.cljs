@@ -6,8 +6,8 @@
             [taoensso.timbre :refer-macros [info debug error]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [path :refer [normalize]]
-            [globalize :as globalize]
-            [cldr-data :as cldr-data]
+    ;[globalize :as globalize]
+    ;[cldr-data :as cldr-data]
             [iana-tz-data :as iana-tz-data]
             [moment]
             [moment-duration-format]
@@ -16,6 +16,8 @@
             [clojure.string :as s]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
+(def globalize (aget js/window "Globalize"))
+(def cldr-data (aget js/window "CldrData"))
 
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the callback function"
