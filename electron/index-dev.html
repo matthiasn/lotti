@@ -26,14 +26,13 @@
     window.OBSERVER = true;
     window.iwwHOST = "localhost:8765";
     window.deps = {};
-    window.CldrData = require ('../node_modules/cldr-data');
-    window.Globalize = require ('../node_modules/globalize');
     window.React = require ('../node_modules/react');
     window.Draft = require ('../node_modules/draft-js/dist/Draft');
     window.deps.SearchFieldEditor = require ('../src/js/SearchFieldEditor.js');
     window.deps.EntryTextEditor = require ('../src/js/EntryTextEditor.js');
     window.deps.BigCalendar = require ('../src/js/BigCalendar.js');
-    require('../dev/renderer/renderer.js');
+    //require('../dev/renderer/renderer.js');
+    require('../prod/renderer-shadow/renderer.js');
 </script>
 
 </html>

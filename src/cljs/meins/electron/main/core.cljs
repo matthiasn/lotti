@@ -152,4 +152,4 @@
                       (when-not hasVisibleWindows
                         (start))))
 
-(defn main [])
+(defn init [])

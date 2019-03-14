@@ -22,7 +22,7 @@
 
 (defn no-update [local]
   (js/setTimeout #(cancel) 12000)
-  ((fn [local]
+  ((fn []
      (let [check (fn [_]
                    (info "Check button clicked")
                    (emit [:update/check]))

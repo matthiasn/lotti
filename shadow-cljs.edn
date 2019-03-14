@@ -35,21 +35,35 @@
                 [org.clojure/tools.reader "1.3.2"]
                 ]
 
- :source-paths ["src/cljc" "src/cljs"]
+ :source-paths ["src/cljc" "src/cljs" "src/cljsjs"]
 
  :nrepl        {:port 8230}
 
  :builds       {:main
-                {:target :node-script
-                 :output-to "prod/main-shadow/main.js"
-                 :main meins.electron.main.core/main}
+                {:target           :node-script
+                 :output-dir       "prod/main-shadow"
+                 :output-to        "prod/main-shadow/main.js"
+                 :js-options       {:js-provider          :shadow
+                                    :language-in          :ecmascript6
+                                    :language-out         :ecmascript6
+                                    :keep-native-requires true
+                                    :keep-as-require      #{"electron-updater" "electron"}}
+                 :compiler-options {:optimizations :simple}
+                 :main             meins.electron.main.core/init}
 
                 :renderer
-                {:target     :node-script
-                 :main meins.electron.main.core/main
-                 :output-to "prod/renderer-shadow/renderer.js"
-                 :dev        {:compiler-options {:closure-defines {re_frame.trace.trace_enabled?        true
-                                                                   day8.re-frame.tracing.trace-enabled? true}}}
-                 :devtools   {:http-root    "public"
-                              :http-handler shadow.http.push-state/handle
-                              :http-port    8280}}}}
+                {:target           :node-script
+                 :main             meins.electron.renderer.core/main
+                 :compiler-options {:optimizations :simple}
+                 :output-dir       "prod/renderer-shadow"
+                 :output-to        "prod/renderer-shadow/renderer.js"
+                 :js-options       {:js-provider          :shadow
+                                    :language-in          :ecmascript6
+                                    :language-out         :ecmascript6
+                                    :keep-native-requires true
+                                    :keep-as-require      #{"draftjs-md-converter" "cldr-data" "globalize" "electron" "jsdom" "draft-js" "react"}}
+                 :dev              {:compiler-options {:closure-defines {re_frame.trace.trace_enabled?        true
+                                                                         day8.re-frame.tracing.trace-enabled? true}}}
+                 :devtools         {:http-root    "public"
+                                    :http-handler shadow.http.push-state/handle
+                                    :http-port    8280}}}}

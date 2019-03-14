@@ -137,4 +137,5 @@
   (info "RENDERER loaded")
   (init))
 
-(.addEventListener js/window "load" load-handler)
+(defn main []
+  (.addEventListener js/window "load" load-handler))
