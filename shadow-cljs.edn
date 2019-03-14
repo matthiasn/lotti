@@ -69,9 +69,10 @@
                 :renderer-dev
                 {:target     :browser
                  :output-dir "dev/renderer-shadow"
-                 :modules    {:main {:init-fn meins.electron.renderer.core/init}}
+                 :modules    {:main {:init-fn meins.electron.renderer.core/main}}
                  :js-options {:js-provider :require}
-                 :devtools   {:use-document-host false
+                 :devtools   {
+                              ;:use-document-host false
                               :loader-mode       :eval
-                              :after-load        meins.electron.renderer.core/init
+                              :after-load        meins.electron.renderer.core/start
                               :watch-dir         "resources/public"}}}}

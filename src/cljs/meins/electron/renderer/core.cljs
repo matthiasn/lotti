@@ -73,7 +73,7 @@
     (rf/cmp-map :renderer/ui-cmp)
     (exec/cmp-map :renderer/exec-cmp)})
 
-(defn init []
+(defn ^:dev/after-load init []
   (info "Starting SYSTEM")
   (let [components (make-observable components)]
     (sb/send-mult-cmd
@@ -139,3 +139,10 @@
 
 (defn main []
   (.addEventListener js/window "load" load-handler))
+
+
+(defn ^:dev/before-load stop []
+  (js/console.log "stop"))
+
+(defn ^:dev/after-load start []
+  (js/console.log "start"))
