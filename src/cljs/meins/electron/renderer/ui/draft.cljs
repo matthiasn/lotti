@@ -8,8 +8,6 @@
             [meins.common.utils.misc :as u]
             [draft-js :as Draft]
             [draftjs-md-converter :as md-converter]
-            ["/meins/electron/renderer/ui/EntryTextEditor.js" :as ete]
-            ["/meins/electron/renderer/ui/SearchFieldEditor.js" :as sfe]
             [meins-draft]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
