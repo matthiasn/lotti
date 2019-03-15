@@ -21,8 +21,6 @@
 </audio>
 </body>
 
-<script src="../resources/public/index_bundle.js" type="text/javascript"></script>
-
 <script>
     window.OBSERVER = true;
     window.iwwHOST = "localhost:7788";
@@ -34,7 +32,8 @@
     window.deps.SearchFieldEditor = require ('../src/js/SearchFieldEditor.js');
     window.deps.EntryTextEditor = require ('../src/js/EntryTextEditor.js');
     window.deps.BigCalendar = require ('../src/js/BigCalendar.js');
-    require('../prod/renderer/renderer.js');
 </script>
+
+<script src="../prod/renderer-shadow/main.js"></script>
 
 </html>
