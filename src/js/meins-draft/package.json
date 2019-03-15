@@ -1,0 +1,25 @@
+{
+	"name": "meins-draft",
+	"version": "0.0.2",
+	"description": "draft editor wrappers for meins",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/matthiasn/meins.git"
+	},
+	"author": {
+		"name": "Matthias Nehlsen",
+		"email": "matthias.nehlsen@gmail.com",
+		"url": "https://github.com/matthiasn/meins"
+	},
+	"files": [
+		"index.js",
+		"EntryTextEditor.js",
+		"SearchFieldEditor.js",
+		"StyleControls.js"
+	],
+	"dependencies": {
+	},
+	"devDependencies": {
+	}
+}

@@ -8,8 +8,9 @@
             [meins.common.utils.misc :as u]
             [draft-js :as Draft]
             [draftjs-md-converter :as md-converter]
-            ["./EntryTextEditor.js" :as ete]
-            ["./SearchFieldEditor.js" :as sfe]
+            ["/meins/electron/renderer/ui/EntryTextEditor.js" :as ete]
+            ["/meins/electron/renderer/ui/SearchFieldEditor.js" :as sfe]
+            [meins-draft]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]
@@ -58,7 +59,7 @@
        (map #(when % (js/parseInt %)))))
 
 (defn draft-search-field [_editor-state update-cb]
-  (let [editor (r/adapt-react-class (aget sfe "default" "default"))
+  (let [editor (r/adapt-react-class meins-draft/SearchFieldEditor)
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -104,7 +105,7 @@
       (debug (second diff)))
     (not eq)))
 
-(def editor (r/adapt-react-class (aget ete "default" "default")))
+(def editor (r/adapt-react-class meins-draft/EntryTextEditor))
 
 (defn editor-wrapper [_]
   (fn [props]

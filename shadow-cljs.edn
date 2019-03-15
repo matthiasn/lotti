@@ -57,12 +57,11 @@
                  :js-options {:js-provider :require}
                  :release    {:compiler-options {:optimizations :simple}
                               :output-dir       "prod/renderer-shadow"
-                              :js-options       {;:js-provider          :shadow
+                              :js-options       {:js-provider          :shadow
                                                  :language-in          :ecmascript6
                                                  :language-out         :ecmascript6
                                                  :keep-native-requires true
-                                                 :keep-as-require      #{"draftjs-md-converter" "cldr-data" "globalize"
-                                                                         "electron" "jsdom" "draft-js" "react"}}}
+                                                 :keep-as-require      #{"draftjs-md-converter" "cldr-data" "electron"}}}
                  :devtools   {:use-document-host false
                               :loader-mode       :eval
                               :ignore-warnings   true
