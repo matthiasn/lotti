@@ -29,6 +29,8 @@
           saga_name
         }
         story_name
+        badge_color
+        font_color
       }
 
       completed
@@ -61,6 +63,8 @@
           saga_name
         }
         story_name
+        badge_color
+        font_color
       }
 
       completed

@@ -47,7 +47,8 @@ package-lock.json
 
 prod/
 dist/
-dev/renderer
+dev/
+.shadow-cljs/
 __pycache__/
 
 SPOTIFY_SECRET

@@ -8,8 +8,11 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.award :as ca]
             [moment :as moment]
+            [globalize :as globalize]
+            [cldr-data :as cldr-data]
+            [iana-tz-data :as iana-tz-data]
             [reagent.ratom :refer-macros [reaction]]
-            [react-big-calendar]
+            [react-big-calendar :as rbc]
             [react-infinite-calendar :as ric]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.common.utils.parse :as p]
@@ -85,12 +88,19 @@
           [:div.habit-details
            [habits/waiting-habits local emit]]]]))))
 
+(.load globalize (.entireSupplemental cldr-data))
+(.load globalize (.entireMainFor cldr-data "en" "de" "fr" "es"))
+(.locale globalize "de")
+
+(defn event-prop-getter [event start end isSelected]
+  (clj->js {:style {:backgroundColor (.-bgColor event)
+                    :color           (.-color event)}}))
+
 (defn calendar-view []
-  (let [rbc (aget js/window "deps" "BigCalendar")
-        default (aget rbc "default")
-        cal (r/adapt-react-class default)
+  (let [cal (r/adapt-react-class rbc)
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
+        stories (subscribe [:stories])
         gql-res (subscribe [:gql-res])
         stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))]
     (fn calendar-view-render []
@@ -109,25 +119,36 @@
                              (+ ts (* completed 1000))
                              ts)
                        text (eu/first-line entry)
+                       linked-story (get-in entry [:story :timestamp])
+                       story (get @stories linked-story)
+                       story-name (get-in entry [:story :story_name])
+                       font-color (or (get-in story [:font_color])
+                                      (cc/item-color story-name "dark"))
+                       badge-color (or (get-in story [:badge_color])
+                                       (cc/item-color story-name "light"))
                        story-name (get-in story [:story_name] "none")
-                       color (cc/item-color story-name)
-                       title (str (when story-name (str story-name " - "))
-                                  text)
+                       title (str (when story-name (str story-name " - ")) text)
                        open-ts (or comment_for timestamp 0)
                        click (up/add-search {:tab-group    :left
                                              :story-name   story-name
                                              :first-line   text
                                              :query-string open-ts} emit)]
-                   {:title title
-                    :click click
-                    :color color
-                    :start (js/Date. start)
-                    :end   (js/Date. end)}))
-            events (map xf (:by_ts_cal @stats))]
+                   {:title   title
+                    :click   click
+                    :bgColor badge-color
+                    :color   font-color
+                    :start   (js/Date. start)
+                    :end     (js/Date. end)}))
+            events (map xf (:by_ts_cal @stats))
+            localizer (rbc/globalizeLocalizer globalize)]
         [:div.cal
          [:div.cal-container
           [:div.big-calendar {:class (when-not @show-pvt "pvt")}
            [cal {:events            events
                  :date              (.toDate (moment. day))
+                 :localizer         localizer
+                 :defaultView       "day"
+                 :eventPropGetter   event-prop-getter
+                 :toolbar           false
                  :onNavigate        #(info :navigate %)
                  :showMultiDayTimes true}]]]]))))
