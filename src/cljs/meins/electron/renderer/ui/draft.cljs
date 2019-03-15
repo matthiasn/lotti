@@ -8,6 +8,8 @@
             [meins.common.utils.misc :as u]
             [draft-js :as Draft]
             [draftjs-md-converter :as md-converter]
+            ["./EntryTextEditor.js" :as ete]
+            ["./SearchFieldEditor.js" :as sfe]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]
@@ -18,12 +20,12 @@
             [meins.electron.renderer.ui.entry.cfg.custom-field :as cfc]))
 
 (defn editor-state-from-text [text]
-  (let [content-from-text (.createFromText Draft.ContentState text)]
-    (.createWithContent Draft.EditorState content-from-text)))
+  (let [content-from-text (.createFromText Draft/ContentState text)]
+    (.createWithContent Draft/EditorState content-from-text)))
 
 (defn editor-state-from-raw [editor-state]
   (let [content-from-raw (.convertFromRaw Draft editor-state)]
-    (.createWithContent Draft.EditorState content-from-raw)))
+    (.createWithContent Draft/EditorState content-from-raw)))
 
 (defn story-mapper [story]
   (when-let [story-name (:story_name story)]
@@ -56,7 +58,7 @@
        (map #(when % (js/parseInt %)))))
 
 (defn draft-search-field [_editor-state update-cb]
-  (let [editor (adapt-react-class "SearchFieldEditor")
+  (let [editor (r/adapt-react-class (aget sfe "default" "default"))
         cfg (subscribe [:cfg])
         gql-res (subscribe [:gql-res])
         mentions (reaction (map (fn [m] {:name m})
@@ -102,7 +104,7 @@
       (debug (second diff)))
     (not eq)))
 
-(def editor (adapt-react-class "EntryTextEditor"))
+(def editor (r/adapt-react-class (aget ete "default" "default")))
 
 (defn editor-wrapper [_]
   (fn [props]
