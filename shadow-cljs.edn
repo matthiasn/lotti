@@ -56,8 +56,8 @@
                  :modules    {:main {:init-fn meins.electron.renderer.core/main}}
                  :js-options {:js-provider :require}
                  :release    {:compiler-options {:optimizations :simple}
-                              :output-dir "prod/renderer-shadow"
-                              :js-options       {:js-provider          :shadow
+                              :output-dir       "prod/renderer-shadow"
+                              :js-options       {;:js-provider          :shadow
                                                  :language-in          :ecmascript6
                                                  :language-out         :ecmascript6
                                                  :keep-native-requires true

@@ -1,14 +1,17 @@
 # OS detection adapted from: https://gist.github.com/sighingnow/deee806603ec9274fd47
 OSFLAG 	:=
 LEIN 	:=
+SHADOW 	:=
 YARN := $(shell command -v yarn 2> /dev/null)
 JLINK := $(shell command -v jlink 2> /dev/null)
 
 ifeq ($(OS),Windows_NT)
 	LEIN := $(shell command -v lein.bat 2> /dev/null)
+	SHADOW := $(shell command -v shadow-cljs.cmd 2> /dev/null)
 	OSFLAG := -w
 else
 	LEIN := $(shell command -v lein 2> /dev/null)
+	SHADOW := $(shell command -v shadow-cljs 2> /dev/null)
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
 		OSFLAG := -l
@@ -18,6 +21,7 @@ else
 	endif
 	ifeq ($(UNAME_S),CYGWIN_NT-10.0)
 		LEIN := $(shell command -v lein.bat 2> /dev/null)
+		SHADOW := $(shell command -v shadow-cljs.cmd 2> /dev/null)
 		OSFLAG := -w
 	endif
 endif
@@ -32,6 +36,7 @@ deps-mac:
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
+	npm install -g shadow-cljs
 	mkdir ./bin
 
 deps-ubuntu:
@@ -51,11 +56,15 @@ deps-ubuntu:
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
+	npm install -g shadow-cljs
 	mkdir ./bin
 
 build-deps:
 ifndef LEIN
 	$(error "Leiningen not found, please install from https://leiningen.org")
+endif
+ifndef SHADOW
+	$(error "shadow-cljs not found, please install from https://shadow-cljs.github.io")
 endif
 ifndef YARN
 	$(error "yarn not found, please install from https://yarnpkg.com")
@@ -89,9 +98,9 @@ sass:
 
 cljs: deps npm-deps
 	@echo Building ClojureScript for main electron process...
-	@eval $(LEIN) cljs-main
+	@eval $(SHADOW) release main
 	@echo Building ClojureScript for electron renderer process...
-	@eval $(LEIN) cljs-renderer
+	@eval $(SHADOW) release renderer
 
 figwheel:
 	@lein cljs-figwheel
