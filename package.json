@@ -77,7 +77,8 @@
     "tinycolor": "0.0.1",
     "turndown": "5.0.3",
     "utf-8-validate": "5.0.2",
-    "wavesurfer.js": "2.2.0"
+    "wavesurfer.js": "2.2.0",
+    "webpack": "^4.29.6"
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
