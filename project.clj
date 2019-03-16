@@ -37,7 +37,6 @@
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.11.0"]
                  [ubergraph "0.5.2"]
-                 [factual/geo "2.1.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.38"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]

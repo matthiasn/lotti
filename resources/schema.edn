@@ -370,16 +370,6 @@
    :args        {:prio {:type Int}}
    :resolve     :query/stories}
 
-  :photos_by_location
-  {:type        (list :Entry)
-   :description "List of photo entries within geo bounds."
-   :args        {:ne_lat {:type Float}
-                 :ne_lon {:type Float}
-                 :sw_lat {:type Float}
-                 :sw_lon {:type Float}
-                 :prio   {:type Int}}
-   :resolve     :query/geo-photos}
-
   :sagas
   {:type        (list :Saga)
    :description "List of all existing sagas."

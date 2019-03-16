@@ -10,7 +10,7 @@
             [me.raynes.conch :refer [programs let-programs]]
             [progrock.core :as pr]
             [meins.jvm.datetime :as dt]
-            [geo [geohash :as geohash] [spatial :as spatial]]
+    ;[geo [geohash :as geohash] [spatial :as spatial]]
             [clojure.string :as str]
             [clojure.set :as set]
             [clojure.edn :as edn]
@@ -55,7 +55,7 @@
 (defn t-day [t]
   (fn [k x]
     (int (/ (rem (:timestamp x) d) t))))
-
+#_
 (defn geohash [bits]
   (fn [k x]
     (let [p (spatial/spatial4j-point (:latitude x) (:longitude x))
@@ -86,12 +86,12 @@
              :longitude        round-geo
              :visit            (has-tag? "#visit")
              :screenshot       (has-tag? "#screenshot")
-             :geohash40        (geohash 40)
-             :geohash35        (geohash 35)
-             :geohash30        (geohash 30)
-             :geohash25        (geohash 25)
-             :geohash20        (geohash 20)
-             :geohash15        (geohash 15)
+             ;:geohash40        (geohash 40)
+             ;:geohash35        (geohash 35)
+             ;:geohash30        (geohash 30)
+             ;:geohash25        (geohash 25)
+             ;:geohash20        (geohash 20)
+             ;:geohash15        (geohash 15)
              :mentions1        join
              :tags1            join})
 

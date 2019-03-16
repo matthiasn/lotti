@@ -13,7 +13,6 @@
             [meins.jvm.graphql.misc-stats :as gms]
             [meins.jvm.graphql.tab-search :as gts]
             [meins.jvm.graphql.briefings-logged :as gbl]
-            [meins.jvm.graph.geo :as geo]
             [taoensso.timbre :refer [info error warn debug]]
             [meins.jvm.graphql.custom-fields :as gcf]))
 
@@ -71,7 +70,6 @@
            :query/mentions                  opts/mentions
            :query/stories                   opts/stories
            :query/sagas                     opts/sagas
-           :query/geo-photos                geo/photos-within-bounds
            :query/custom-field-stats        gcf/custom-field-stats
            :query/custom-field-stats-by-day gcf/custom-field-stats-by-day
            :query/custom-fields-by-days     gcf/custom-fields-by-days
