@@ -60,7 +60,7 @@ let _react = require('react');
 let _react2 = _interopRequireDefault(_react);
 
 let _draftJs = require('draft-js');
-let _draftjsMdConverter = require('draftjs-md-converter');
+let _draftjsMdConverter = require('meins-draftjs-md-converter');
 let _draftJsExportHtml = require('draft-js-export-html');
 
 let _draftJsPluginsEditor = require('draft-js-plugins-editor');

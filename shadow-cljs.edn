@@ -61,7 +61,7 @@
                                                  :language-in          :ecmascript6
                                                  :language-out         :ecmascript6
                                                  :keep-native-requires true
-                                                 :keep-as-require      #{"draftjs-md-converter" "cldr-data" "electron"}}}
+                                                 :keep-as-require      #{"cldr-data" "electron"}}}
                  :devtools   {:use-document-host false
                               :loader-mode       :eval
                               :ignore-warnings   true
