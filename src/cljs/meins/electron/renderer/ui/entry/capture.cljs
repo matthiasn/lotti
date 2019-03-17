@@ -19,24 +19,19 @@
               last-n (last (re-seq #"[0-9]*\.?[0-9]+" p1))]
           (when last-n
             (let [updated (assoc-in entry path (js/parseFloat last-n))]
-              (emit [:entry/update updated])))))
+              (emit [:entry/update-local updated])))))
       (when (and (= input-type :time))
         (let [p1 (-> (:md entry) (s/split tag) first)
               v (last (re-seq #"\d+:\d{2}" p1))]
           (when v
             (let [m (.asMinutes (.duration moment v))
                   updated (assoc-in entry path m)]
-              (emit [:entry/update updated]))))))))
+              (emit [:entry/update-local updated]))))))))
 
 (defn field-input [entry edit-mode? field tag k]
   (let [input-cfg (:cfg field)
         input-type (:type input-cfg)
         path [:custom_fields tag k]
-        value (get-in entry path)
-        value (if (and value (= :time input-type))
-                (h/m-to-hh-mm value)
-                value)
-        local (r/atom {:value value})
         on-change-fn
         (fn [ev]
           (let [v (.. ev -target -value)
@@ -46,18 +41,21 @@
                                  (.asMinutes (.duration moment v)))
                          v)
                 updated (assoc-in entry path parsed)]
-            (swap! local assoc :value v)
             (emit [:entry/update-local updated])))
         input-cfg (merge
                     input-cfg
                     {:on-change on-change-fn
                      :class     (when (= input-type :time) "time")
-                     :type      input-type
-                     :value     value})]
+                     :type      input-type})]
     (fn [entry edit-mode? field tag k]
       (parse-and-set entry path tag input-type)
-      (let [input-cfg (merge input-cfg
-                             {:on-key-down (h/key-down-save entry)})]
+      (let [value (get-in entry path)
+            value (if (and value (= :time input-type))
+                    (h/m-to-hh-mm value)
+                    value)
+            input-cfg (merge input-cfg
+                             {:on-key-down (h/key-down-save entry)
+                              :value       value})]
         [:tr
          [:td [:label (:label field)]]
          [:td
@@ -65,8 +63,7 @@
             [uc/switch {:entry    entry
                         :msg-type :entry/update
                         :path     path}]
-            [:input (merge input-cfg
-                           @local)])]]))))
+            [:input input-cfg])]]))))
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
