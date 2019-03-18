@@ -30,11 +30,10 @@
                  :output-dir       "prod/main-shadow"
                  :output-to        "prod/main-shadow/main.js"
                  :js-options       {:js-provider          :shadow
-                                    :language-in          :ecmascript6
-                                    :language-out         :ecmascript6
                                     :keep-native-requires true
-                                    :keep-as-require      #{"electron-updater" "electron"}}
-                 :compiler-options {:optimizations :simple}
+                                    :keep-as-require      #{"electron"}}
+                 :compiler-options {:optimizations      :simple
+                                    :output-feature-set :es-next}
                  :main             meins.electron.main.core/init}
 
                 :renderer
@@ -42,11 +41,10 @@
                  :output-dir "dev/renderer-shadow"
                  :modules    {:main {:init-fn meins.electron.renderer.core/main}}
                  :js-options {:js-provider :require}
-                 :release    {:compiler-options {:optimizations :simple}
+                 :release    {:compiler-options {:optimizations      :simple
+                                                 :output-feature-set :es-next}
                               :output-dir       "prod/renderer-shadow"
                               :js-options       {:js-provider          :shadow
-                                                 :language-in          :ecmascript6
-                                                 :language-out         :ecmascript6
                                                  :keep-native-requires true
                                                  :keep-as-require      #{"cldr-data" "electron"}}}
                  :devtools   {:use-document-host false
