@@ -98,7 +98,7 @@
     }
 
     td {
-      padding-right: 6px;
+      padding-left: 2px;
       .legend {
         height: 1.3em;
         width: 12px;
@@ -111,6 +111,10 @@
       &.time {
         text-align: center;
         min-width: 50px;
+      }
+
+      &.habit {
+        padding-left: 6px;
       }
     }
   }
@@ -282,7 +286,7 @@
 
   .status {
     width: 16px;
-    height: 16px;
+    height: 10px;
     border-radius: 2px;
     margin-right: 4px;
     background-color: $red;
@@ -314,7 +318,7 @@
     border-radius: 4px;
     background-color: $red;
 
-    &.success {
+    &.completed {
       background-color: $green;
     }
   }

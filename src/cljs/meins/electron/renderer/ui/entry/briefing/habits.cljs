@@ -5,9 +5,13 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.common.utils.parse :as up]
             [moment]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.helpers :as h]
             [meins.common.utils.misc :as m]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meins.common.habits.util :as hu]
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.common.utils.misc :as u]))
 
 (defn habit-sorter
   "Sorts habits."
@@ -16,6 +20,40 @@
                    (or (get-in y [:habit :priority]) :X))]
     (if (not= c 0) c (compare (get-in y [:habit :points])
                               (get-in x [:habit :points])))))
+
+(defn percent-achieved [habit]
+  (let [completed (first (:completed habit))
+        f (fn [[i criterion]]
+            (debug criterion)
+            (let [min-val (:min-val criterion)
+                  req-n (:req-n criterion)
+                  min-time (:min-time criterion)
+                  v (get-in completed [:values i :v])
+                  min-v (if min-time
+                          (* 60 min-time)
+                          (or min-val req-n))]
+              (when (pos? min-v)
+                (min (* 100 (/ v min-v)) 100))))
+        criteria (hu/get-criteria (:habit_entry habit) (h/ymd (stc/now)))
+        by-criteria (map f (u/idxd criteria))
+        cnt (count by-criteria)]
+    (when (pos? cnt)
+      (/ (apply + by-criteria)
+         cnt))))
+
+(defn habit-completion [habit]
+  (let [completed (first (:completed habit))
+        success (:success completed)
+        cls (when success "completed")
+        percent-completed (percent-achieved habit)
+        ts (-> habit :habit_entry :timestamp)
+        started (and percent-completed (not success))]
+    ^{:key ts}
+    [:div.habit-monitor
+     [:div.status {:class cls}
+      (when started
+        [:div.progress
+         {:style {:width (str percent-completed "%")}}])]]))
 
 (defn habit-line [_habit _tab-group put-fn]
   (let [query-cfg (subscribe [:query-cfg])
@@ -55,6 +93,7 @@
             [:span.status {:class (when (:success c) "success")
                            :key   i}])]
          [:td.habit {:on-click create-entry} text]
+         [:td [habit-completion habit]]
          [:td.start
           [:i.fas.fa-cog
            {:on-click (up/add-search {:tab-group    tab-group
@@ -96,9 +135,9 @@
                         "fa-angle-double-down"
                         "fa-angle-double-up")}]]
             [:th "Stuff I said I'd do."]
+            [:th]
             [:th
-             #_
-             [:div.add-habit {:on-click new-habit} [:i.fas.fa-plus]]]]
+             #_[:div.add-habit {:on-click new-habit} [:i.fas.fa-plus]]]]
            (for [habit habits]
              ^{:key (:timestamp (:habit_entry habit))}
              [habit-line habit tab-group put-fn])]]]))))

@@ -69,7 +69,7 @@
                        :on-hold                 false})
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn []
-      (let [h (* (- (aget js/window "innerHeight") 52) 0.45)
+      (let [h (* (- (aget js/window "innerHeight") 52) 0.40)
             locale (:locale @cfg :en)]
         [:div.inf-cal
          [:div.infinite-cal
