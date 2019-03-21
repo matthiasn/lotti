@@ -57,8 +57,10 @@
               :version          (.getVersion app)
               :app-path         app-path}]
     (into {:repo-dir      repo-dir
-           :index-page    (if repo-dir "electron/index-dev.html" "electron/index.html")
-           :index-page-pg (if repo-dir "electron/index-pg-dev.html" "electron/index-pg.html")
+           :index-page    (if repo-dir "resources/index-dev.html"
+                                       "resources/index.html")
+           :index-page-pg (if repo-dir "resources/index-pg-dev.html"
+                                       "resources/index-pg.html")
            :help-page     (if repo-dir
                             "http://localhost:8765/help/manual.html"
                             "http://localhost:7788/help/manual.html")

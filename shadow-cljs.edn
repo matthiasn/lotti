@@ -50,4 +50,5 @@
                  :devtools   {:use-document-host false
                               :loader-mode       :eval
                               :ignore-warnings   true
-                              :watch-dir         "resources/public"}}}}
+                              :watch-dir         "resources"
+                              :autoload          true}}}}

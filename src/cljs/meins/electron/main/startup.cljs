@@ -77,8 +77,8 @@
                      (:index-page rt/runtime-info)
                      (:index-page-pg rt/runtime-info))
         loading-page (if (= environment :live)
-                       "electron/loading.html"
-                       "electron/loading-playground.html")
+                       "resources/loading.html"
+                       "resources/loading-playground.html")
         try-again
         (fn [_]
           (info "- Nope, trying again")

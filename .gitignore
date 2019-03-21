@@ -21,7 +21,8 @@ pom.xml.asc
 .DS_Store
 .shadow-cljs
 
-resources/public/
+resources/public/css/meo.css
+resources/public/css/loader.css
 *.pid
 *.out
 *.zip
