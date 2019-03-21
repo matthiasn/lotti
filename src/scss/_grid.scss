@@ -16,13 +16,13 @@
   .wrapper {
     display: grid;
     height: calc(100vh - 16px);
-    grid-gap: 2px;
+    grid-gap: 3px;
     background-color: $grid-bg;
-    grid-template-columns: 12px 100px 215px $briefing-width minmax(280px, 1fr);
-    grid-template-rows: 22px minmax(0, 2fr) fit-content(95vh);
+    grid-template-columns: 12px 160px $briefing-width minmax(280px, 1fr);
+    grid-template-rows: 22px 250px minmax(0, 2fr) fit-content(95vh);
   }
   .col-3 {
-    grid-template-columns: 12px 100px 225px $briefing-width minmax(280px, 1fr) minmax(280px, 1fr)!important;
+    grid-template-columns: 12px 160px $briefing-width minmax(280px, 1fr) minmax(280px, 1fr)!important;
   }
 
   .menu {
@@ -34,18 +34,18 @@
     grid-row: 2/4;
   }
   .inf-cal {
-    grid-column: 3;
-    grid-row: 2/3;
-    height: calc(100vh - 52px);
+    grid-column: 2;
+    grid-row: 2;
     overflow: hidden;
   }
   .cal {
     grid-column: 2;
-    grid-row: 2/4;
+    grid-row: 3/5;
+    overflow-y: auto;
   }
-  .briefing {
-    grid-column: 4;
-    grid-row: 2 / 3;
+  .briefing-container {
+    grid-column: 3;
+    grid-row: 2 / 5;
   }
   .single {
     grid-column: 5 / 7;
@@ -53,15 +53,15 @@
   }
   .config {
     grid-column: 1 / 7;
-    grid-row: 2;
+    grid-row: 2/4;
   }
   .left {
-    grid-column: 5;
-    grid-row: 2;
+    grid-column: 4;
+    grid-row: 2/4;
   }
   .right {
-    grid-column: 6;
-    grid-row: 2;
+    grid-column: 5;
+    grid-row: 2/4;
   }
 
   .focus-wrapper {
@@ -120,7 +120,7 @@
 
   .footer {
     grid-column: 4 / 7;
-    grid-row: 3;
+    grid-row: 4;
     user-select: none;
 
     &.cfg {

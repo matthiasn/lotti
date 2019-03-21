@@ -193,6 +193,8 @@
            [tasks/started-tasks local local-cfg emit]]
           [h/error-boundary
            [tasks/open-linked-tasks local local-cfg emit]]
+          [:div.habit-details
+           [habits/waiting-habits local emit]]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary
@@ -223,7 +225,7 @@
                              :tab-group   tab-group
                              :story       @story})]
     (fn briefing-column-view-render [tab-group]
-      [:div.briefing
+      [:div.briefing-container
        [:div.tile-tabs
         [:div.journal
          [:div.journal-entries

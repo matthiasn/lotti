@@ -16,7 +16,6 @@
             [react-infinite-calendar :as ric]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.common.utils.parse :as p]
-            [meins.electron.renderer.ui.entry.briefing.habits :as habits]
             [meins.electron.renderer.ui.entry.utils :as eu]))
 
 (def locales
@@ -62,11 +61,6 @@
                       (info "creating briefing" ymd)
                       (emit [:entry/update entry])))
                   (h/to-day ymd pvt))
-        local (r/atom {:filter                  :all
-                       :outstanding-time-filter true
-                       :selected-set            #{}
-                       :show-filter             false
-                       :on-hold                 false})
         onSelect (fn [ev] (data-fn (h/ymd ev)))]
     (fn []
       (let [h (* (- (aget js/window "innerHeight") 52) 0.40)
@@ -81,12 +75,10 @@
             :onSelect        onSelect
             :autoFocus       true
             :keyboardSupport true
-            :theme           {:weekdayColor "#666"
-                              :headerColor  "#778"}
+            :theme           {:weekdayColor "#667"
+                              :headerColor  "#FF8C00"}
             :rowHeight       45
-            :selected        @cal-day}]
-          [:div.habit-details
-           [habits/waiting-habits local emit]]]]))))
+            :selected        @cal-day}]]]))))
 
 (.load globalize (.entireSupplemental cldr-data))
 (.load globalize (.entireMainFor cldr-data "en" "de" "fr" "es"))
@@ -129,11 +121,12 @@
                        story-name (get-in story [:story_name] "none")
                        title (str (when story-name (str story-name " - ")) text)
                        open-ts (or comment_for timestamp 0)
-                       click (up/add-search {:tab-group    :left
+                       click (up/add-search {:tab-group    :right
                                              :story-name   story-name
                                              :first-line   text
                                              :query-string open-ts} emit)]
                    {:title   title
+                    :ts      timestamp
                     :click   click
                     :bgColor badge-color
                     :color   font-color
@@ -151,4 +144,6 @@
                  :eventPropGetter   event-prop-getter
                  :toolbar           false
                  :onNavigate        #(info :navigate %)
+                 :onSelectEvent     #(let [click (:click (js->clj % :keywordize-keys true))]
+                                       (click))
                  :showMultiDayTimes true}]]]]))))
