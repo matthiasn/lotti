@@ -21,7 +21,6 @@
         tasks (->> res
                    (map #(gq/entry-w-story current-state %))
                    (map cfg-mapper)
-                   (filter #(not (:on_hold (:task %))))
                    (mapv (partial gc/entry-w-comments current-state)))]
     tasks))
 

@@ -26,7 +26,7 @@
                          :id   :habits-success
                          :prio 13
                          :args [30 pvt]}])
-    (run-query "started-tasks.gql" :started-tasks 14 [pvt false])
+    (run-query "started-tasks.gql" :started-tasks 14 [pvt])
     (run-query "bp.gql" :bp 14 [365])
     ;(run-query "award-points.gql" :award-points 14 [])
     (run-query "open-tasks.gql" :open-tasks 14 [pvt])

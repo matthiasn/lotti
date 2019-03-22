@@ -200,7 +200,7 @@
 
 (defn started-tasks
   "Renders table with open entries, such as started tasks and open habits."
-  [local local-cfg]
+  [local cfg]
   (let [gql-res (subscribe [:gql-res])
         show-pvt (subscribe [:show-pvt])
         started-tasks (reaction (->> @gql-res
@@ -213,7 +213,7 @@
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))
         on-hold-filter (fn [entry]
                          (let [on-hold (:on_hold (:task entry))]
-                           (if (:on-hold @local)
+                           (if (:on-hold cfg)
                              on-hold
                              (not on-hold))))
         saga-filter (fn [entry]
@@ -228,9 +228,8 @@
                                     (filter open-filter)
                                     (filter (partial pvt-filter show-pvt))
                                     (sort task-sorter)))]
-    (fn started-tasks-list-render [local local-cfg]
+    (fn started-tasks-list-render [local cfg]
       (let [entries-list @entries-list
-            tab-group (:tab-group local-cfg)
             search-text @search-text
             show-points (:show-points @local)]
         (when (seq entries-list)
@@ -245,12 +244,12 @@
               [:th "progress"]
               [:th
                [:div
-                "started tasks"
-                ;[filter-btn :on_hold]
-                ]]]
+                (if (:on-hold cfg)
+                  "on hold"
+                  "started tasks")]]]
              (for [entry entries-list]
                ^{:key (:timestamp entry)}
-               [task-row entry {:tab-group         tab-group
+               [task-row entry {:tab-group         :briefing
                                 :search-text       search-text
                                 :show-points       false
                                 :show-last-updated false

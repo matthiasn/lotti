@@ -1,5 +1,5 @@
 {
-  started_tasks(pvt: %s, on_hold: %s) {
+  started_tasks(pvt: %s) {
     timestamp
     md
     text
