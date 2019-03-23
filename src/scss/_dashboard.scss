@@ -12,22 +12,31 @@
   pre {
     color: white!important;
   }
+
+  h2 {
+    margin-bottom: 4px;
+    padding-top: 10px;
+    flex: 2;
+    color: $font-color;
+    font-size: $font-size-medium;
+    text-align: center;
+  }
+
   .controls {
     align-items: center;
     justify-content: center;
     padding-bottom: 8px;
 
-    h2 {
-      margin: 8px 0 2px 20px;
-      flex: 2;
-      color: $font-color;
-      font-size: $font-size-medium;
-    }
-
     .ctrl {
       display: flex;
       justify-content: center;
       padding-top: 4px;
+      flex-flow: row;
+
+      .offset {
+        padding-left: 20px;
+        width: 30px;
+      }
     }
 
     .btns {

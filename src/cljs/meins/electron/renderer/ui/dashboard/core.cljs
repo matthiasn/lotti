@@ -164,6 +164,7 @@
           (play nil))
         (when dashboard
           [:div.dashboard {:on-wheel on-wheel}
+           [:h2 text]
            [:svg {:viewBox (str "0 0 " (+ w 260) " " (+ end-y 6))
                   :style   {:background :white}
                   :key     (str (:timestamp dashboard) (:idx @local))}
@@ -209,7 +210,6 @@
                          :text-anchor "middle"}
                   (dc/df ts dc/month-day)]]))]
            [:div.controls
-            [:h2 text]
             [:span.display-text (:display-text @local)]
             [:div.ctrl
              (when (and controls (< 1 (count @dashboards)))
@@ -218,9 +218,9 @@
                 [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
                 [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                          :on-click (if (:play @local) pause play)}]
-                [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]
-            (when-not (zero? (:offset @local))
-              [:span {:on-click #(do (gql-query charts-pos days 0 local @dashboard-data @pvt)
-                                     (swap! local assoc :offset 0))}
-               (:offset @local)])]])))))
+                [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])
+             [:div.offset {:on-click #(do (gql-query charts-pos days 0 local @dashboard-data @pvt)
+                                   (swap! local assoc :offset 0))}
+              (when-not (zero? (:offset @local))
+                (:offset @local))]]]])))))
 

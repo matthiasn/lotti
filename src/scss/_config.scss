@@ -142,6 +142,7 @@
   .habit-cfg-row {
     display: flex;
     flex: 1;
+    overflow: hidden;
 
     .journal {
       min-width: 320px;
