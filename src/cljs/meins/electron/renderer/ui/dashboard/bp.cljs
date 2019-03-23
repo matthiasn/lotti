@@ -13,8 +13,8 @@
 (defn df [ts format] (.format (moment ts) format))
 
 (defn line [y s w]
-  [:line {:x1           195
-          :x2           800
+  [:line {:x1           200
+          :x2           620
           :y1           y
           :y2           y
           :stroke-width w
@@ -129,9 +129,9 @@
          (when @pvt
            (for [n lines]
              ^{:key (str "bp" k n)}
-             [:text {:x           2008
+             [:text {:x           624
                      :y           (- (+ btm-y 5) (* n scale))
-                     :font-size   10
+                     :font-size   11
                      :fill        "black"
                      :font-weight (when (contains? #{80 120} (+ n mn)) :bold)
                      :text-anchor "start"}

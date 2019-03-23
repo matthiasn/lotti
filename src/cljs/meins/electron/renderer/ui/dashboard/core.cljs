@@ -16,7 +16,6 @@
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as rh]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [meins.common.utils.parse :as up]
             [meins.electron.renderer.ui.dashboard.cf_barchart :as db]
             [meins.electron.renderer.ui.dashboard.time_barchart :as dt]
             [clojure.string :as s]))
@@ -79,7 +78,7 @@
                :charts (conj (:charts acc) cfg)}))]
     (reduce f acc items)))
 
-(defn dashboard [{:keys [days controls dashboard-ts]}]
+(defn dashboard [{:keys [days]}]
   (let [gql-res (subscribe [:gql-res])
         dashboard-entries (reaction (get-in @gql-res [:dashboard_cfg :data :dashboard_cfg]))
         dashboard-data (subscribe [:dashboard-data])
@@ -165,7 +164,7 @@
           (play nil))
         (when dashboard
           [:div.dashboard {:on-wheel on-wheel}
-           [:svg {:viewBox (str "0 0 " (+ w 270) " " (+ end-y 6))
+           [:svg {:viewBox (str "0 0 " (+ w 260) " " (+ end-y 6))
                   :style   {:background :white}
                   :key     (str (:timestamp dashboard) (:idx @local))}
             [:filter#blur1
@@ -212,15 +211,16 @@
            [:div.controls
             [:h2 text]
             [:span.display-text (:display-text @local)]
+            [:div.ctrl
+             (when (and controls (< 1 (count @dashboards)))
+               [:div.btns
+                ;[:i.fas.fa-cog {:on-click open-cfg}]
+                [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
+                [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
+                         :on-click (if (:play @local) pause play)}]
+                [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]
             (when-not (zero? (:offset @local))
               [:span {:on-click #(do (gql-query charts-pos days 0 local @dashboard-data @pvt)
                                      (swap! local assoc :offset 0))}
-               (:offset @local)])
-            (when (and controls (< 1 (count @dashboards)))
-              [:div.btns
-               ;[:i.fas.fa-cog {:on-click open-cfg}]
-               [:i.fas.fa-step-backward {:on-click (partial cycle prev-item)}]
-               [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
-                        :on-click (if (:play @local) pause play)}]
-               [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]])))))
+               (:offset @local)])]])))))
 

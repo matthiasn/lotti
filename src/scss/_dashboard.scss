@@ -6,6 +6,7 @@
 
   .display-text {
     margin-right: 64px;
+    padding-left: 20px;
   }
 
   pre {
@@ -17,16 +18,20 @@
     padding-bottom: 8px;
 
     h2 {
-      margin: 10px 0 6px 20px;
+      margin: 8px 0 2px 20px;
       flex: 2;
       color: $font-color;
       font-size: $font-size-medium;
     }
 
-    .btns {
-      margin-right: 32px;
-      margin-left: 8px;
+    .ctrl {
+      display: flex;
+      justify-content: center;
+      padding-top: 4px;
+    }
 
+    .btns {
+      padding-bottom: 2px;
       i {
         width: 14px;
         height: 12px;

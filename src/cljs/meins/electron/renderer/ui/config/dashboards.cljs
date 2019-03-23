@@ -1,17 +1,14 @@
 (ns meins.electron.renderer.ui.config.dashboards
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info error]]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.string :as s]
-            [reagent.core :as r]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
-            [meins.electron.renderer.graphql :as gql]
-            [meins.common.utils.misc :as m]
+  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.entry.utils :as eu]
+            [taoensso.timbre :refer-macros [info error]]
             [meins.electron.renderer.ui.journal :as j]
-            [meins.electron.renderer.ui.dashboard.core :as db]))
+            [meins.electron.renderer.graphql :as gql]
+            [reagent.ratom :refer-macros [reaction]]
+            [meins.electron.renderer.helpers :as h]
+            [re-frame.core :refer [subscribe]]
+            [clojure.string :as s]
+            [moment]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
@@ -126,9 +123,4 @@
      [dashboards local emit]]
     (when (:selected @local)
       [h/error-boundary
-       [dashboards-tab :dashboards_cfg emit]])]
-   #_
-   (when (:selected @local)
-     [h/error-boundary
-      [db/dashboard {:days         90
-                     :dashboard-ts (:selected @local)}]])])
+       [dashboards-tab :dashboards_cfg emit]])]])

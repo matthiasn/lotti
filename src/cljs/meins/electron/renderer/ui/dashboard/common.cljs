@@ -39,18 +39,20 @@
                          :opacity 0.5}}])]))
 
 (defn line [y s w]
-  [:line {:x1           195
-          :x2           800
+  [:line {:x1           200
+          :x2           620
           :y1           y
           :y2           y
           :stroke-width w
           :stroke       s}])
 
 (defn row-label [label y h]
-  [:text {:x           180
-          :y           (+ y (+ 5 (/ h 2)))
-          :font-size   20
-          :fill        "#777"
+  [:text {:x           185
+          :y           (+ y (+ 8 (/ h 2)))
+          :font-size   22
+          :font-family "Oswald"
+          :font-weight "444"
+          :fill        "#333"
           :text-anchor "end"}
    label])
 

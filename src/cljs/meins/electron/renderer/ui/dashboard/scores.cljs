@@ -131,9 +131,9 @@
            [dc/line (- btm-y (* (- n mn) scale)) "#888" 1])
          (for [n lines]
            ^{:key (str score_k k n)}
-           [:text {:x           2008
+           [:text {:x           624
                    :y           (- (+ btm-y 5) (* (- n mn) scale))
-                   :font-size   10
+                   :font-size   11
                    :fill        "black"
                    :text-anchor "start"}
             n])

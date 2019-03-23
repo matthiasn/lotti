@@ -108,9 +108,9 @@
            (when @pvt
              (for [n lines]
                ^{:key (str qid n)}
-               [:text {:x           2008
+               [:text {:x           624
                        :y           (- (+ btm-y 5) (* n scale))
-                       :font-size   10
+                       :font-size   11
                        :fill        "black"
                        :text-anchor "start"}
                 (+ mn n)]))

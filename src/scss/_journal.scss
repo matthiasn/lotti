@@ -52,8 +52,8 @@
     &.add-tab {
       background-color: lighten($green, 10);
       font-weight: bold;
-      color: antiquewhite;
-      padding-left: 5px;
+      color: lighten($green, 50);
+      padding-left: 6px;
       min-width: 9px;
     }
 
