@@ -6,12 +6,8 @@
             [reagent.core :as r]))
 
 (defn dashboard []
-  (let [cfg (subscribe [:cfg])
-        dashboard (reaction (:dashboard-banner @cfg))
-        local (r/atom {:days     90
+  (let [local (r/atom {:days     30
                        :controls true})]
     (fn dashboard-render []
-      (when @dashboard
-        [:div.footer
-         [:div {:style {:max-height (:height @local)}}
-          [db/dashboard @local]]]))))
+      [:div.dashboard-column
+       [db/dashboard @local]])))

@@ -104,7 +104,7 @@
                    d (* 24 60 60 1000)
                    offset (- day-ts start)
                    span (if (zero? span) 1 span)
-                   scaled (* 1800 (/ offset span))
+                   scaled (* days 20 (/ offset span))
                    x (+ 201 scaled)
                    v (min mx v)
                    h (* v scale)
@@ -117,7 +117,7 @@
                ^{:key (str tag field n)}
                [rect {:v     display-v
                       :x     x
-                      :w     (- (/ 1500 days) 1)
+                      :w     16
                       :ymd   date_string
                       :y     btm-y
                       :h     h

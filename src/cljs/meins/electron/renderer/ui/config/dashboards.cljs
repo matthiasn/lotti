@@ -127,6 +127,7 @@
     (when (:selected @local)
       [h/error-boundary
        [dashboards-tab :dashboards_cfg emit]])]
+   #_
    (when (:selected @local)
      [h/error-boundary
       [db/dashboard {:days         90

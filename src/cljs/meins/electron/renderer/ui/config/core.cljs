@@ -16,7 +16,8 @@
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.helpers :as h]
             [reagent.core :as r]
-            [moment]))
+            [moment]
+            [meins.electron.renderer.ui.footer :as f]))
 
 (defn config []
   (let [local (r/atom {:search          ""
@@ -112,7 +113,11 @@
                           [:h2 "Photo Settings"]
                           [:button {:on-click #(emit [:photos/gen-cache])}
                            "regenerate cache"]])]
-                      [:div.cfg.footer [stats/stats-text true]]]]]))]
+                      [h/error-boundary
+                       [f/dashboard]]
+                      [:div.cfg.footer [stats/stats-text true]]]
+
+                     ]]))]
     (r/create-class
       {:component-did-mount    did-mount
        :component-will-unmount will-unmount

@@ -2,6 +2,7 @@
 
 .dashboard {
   background-color: white;
+  width: 350px;
 
   .display-text {
     margin-right: 64px;
@@ -11,14 +12,12 @@
     color: white!important;
   }
   .controls {
-    display: flex;
-    flex-flow: row;
     align-items: center;
     justify-content: center;
     padding-bottom: 8px;
 
     h2 {
-      margin: 0 0 6px 100px;
+      margin: 10px 0 6px 20px;
       flex: 2;
       color: $font-color;
       font-size: $font-size-medium;

@@ -139,17 +139,18 @@
             pause (fn []
                     (js/clearInterval (:timer @local))
                     (swap! local assoc-in [:play] false))
-            d (* 24 60 60 1000)
             within-day (mod last-ts d)
 
             start (+ dc/tz-offset (- last-ts within-day (* days d)))
             end (+ (- last-ts within-day) d dc/tz-offset)
 
+            w (* days 20)
+
             span (- end start)
             common {:start    start
                     :end      end
                     :h        25
-                    :w        1800
+                    :w        (* days 20)
                     :x-offset 200
                     :local    local
                     :span     span
@@ -164,7 +165,7 @@
           (play nil))
         (when dashboard
           [:div.dashboard {:on-wheel on-wheel}
-           [:svg {:viewBox (str "0 0 " (* days 23) " " (+ end-y 6))
+           [:svg {:viewBox (str "0 0 " (+ w 270) " " (+ end-y 6))
                   :style   {:background :white}
                   :key     (str (:timestamp dashboard) (:idx @local))}
             [:filter#blur1
@@ -172,7 +173,7 @@
             [:g
              (for [n (range (+ 2 days))]
                (let [offset (+ (* n d) dc/tz-offset)
-                     scaled (* 1800 (/ offset span))
+                     scaled (* w (/ offset span))
                      x (+ 200 scaled)]
                  ^{:key n}
                  [dc/tick x "#CCC" 1 30 end-y]))]
@@ -194,7 +195,7 @@
                   [rh/error-boundary [chart-fn (merge common chart-cfg)]])))
             (for [n (range (inc days))]
               (let [x-offset (+ (* (+ n 0.5) d) dc/tz-offset)
-                    scaled (* 1800 (/ x-offset span))
+                    scaled (* w (/ x-offset span))
                     x (+ 201 scaled)
                     ts (+ start x-offset)
                     weekday (dc/df ts dc/weekday)
@@ -222,3 +223,4 @@
                [:i.fas {:class    (if (:play @local) "fa-pause" "fa-play")
                         :on-click (if (:play @local) pause play)}]
                [:i.fas.fa-step-forward {:on-click (partial cycle next-item)}]])]])))))
+

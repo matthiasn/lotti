@@ -73,7 +73,7 @@
            (let [v         (:v m 0)
                  offset    (- day-ts start)
                  span      (if (zero? span) 1 span)
-                 scaled    (* 1800 (/ offset span))
+                 scaled    (* days 20 (/ offset span))
                  x         (+ 201 scaled)
                  h         (* v scale)
                  cls       (if (and threshold (> v threshold))
@@ -89,7 +89,7 @@
              ^{:key (str saga n)}
              [rect {:v     display-v
                     :x     x
-                    :w     (- (/ 1500 days) 1)
+                    :w     (- (/ (* days 18) days) 1)
                     :ymd   date_string
                     :y     btm-y
                     :h     h

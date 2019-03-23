@@ -14,7 +14,7 @@
 
 (defn line [y s w]
   [:line {:x1           195
-          :x2           2000
+          :x2           800
           :y1           y
           :y2           y
           :stroke-width w

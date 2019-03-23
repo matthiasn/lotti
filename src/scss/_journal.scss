@@ -50,9 +50,10 @@
     }
 
     &.add-tab {
-      background-color: lighten($green, 30);
+      background-color: lighten($green, 10);
       font-weight: bold;
-      color: #889;
+      color: antiquewhite;
+      padding-left: 5px;
       min-width: 9px;
     }
 
@@ -70,7 +71,6 @@
     }
 
     .fa {
-      color: #889;
       padding-top: 1px;
     }
 
