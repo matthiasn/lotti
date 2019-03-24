@@ -51,6 +51,8 @@
     grid-column: 6;
     grid-row: 2/5;
     margin-top: auto;
+    height: 100%;
+    overflow-y: auto;
   }
   .single {
     grid-column: 5 / 7;

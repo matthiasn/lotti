@@ -84,7 +84,7 @@
         dashboard-data (subscribe [:dashboard-data])
         habits (subscribe [:habits])
         local (r/atom {:idx          0
-                       :play         true
+                       :play         false
                        :display-text ""
                        :offset       0})
         pvt (subscribe [:show-pvt])
@@ -159,10 +159,6 @@
             text (or (when-not (empty? text)
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")]
-        #_
-        (when (and (:play @local)
-                   (not (:timer @local)))
-          (play nil))
         (when dashboard
           [:div.dashboard {:on-wheel on-wheel}
            [:h2 text]
