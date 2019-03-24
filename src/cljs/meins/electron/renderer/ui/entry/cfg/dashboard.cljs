@@ -412,21 +412,22 @@
          (when (= :time_barchart habit-type)
            [time-barchart-row params])]))))
 
+(defonce clipboard (r/atom {}))
+
 (defn dashboard-config [entry]
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:dashboard_cfg :items] #(vec (conj % {})))]
-                       (emit [:entry/update-local updated]))))
-        open-new (fn [x]
-                   (emit [:search/add
-                          {:tab-group :left
-                           :query     (up/parse-search (:timestamp x))}]))]
+                       (emit [:entry/update-local updated]))))]
     (fn [entry]
       (let [items (get-in entry [:dashboard_cfg :items])
-            copy-opts {:dashboard_cfg (:dashboard_cfg entry)
-                       :entry_type    :dashboard-cfg
-                       :perm_tags     #{"#dashboard-cfg"}}
-            copy-click (h/new-entry copy-opts open-new)]
+            copy-click #(swap! clipboard assoc :copy-all entry)
+            paste-click (fn []
+                          (let [pasted-items (get-in @clipboard [:copy-all :dashboard_cfg :items])
+                                updated (update-in entry [:dashboard_cfg :items] #(vec (concat % pasted-items)))]
+                            (emit [:entry/update-local updated])
+                            (swap! clipboard dissoc :copy-all)))
+            clipboard-item (:copy-all @clipboard)]
         [:div.habit-details
          [:h3.header
           "Dashboard Configuration"]
@@ -444,7 +445,12 @@
           [:div.copy-dashboard
            {:on-click copy-click}
            [:i.fas.fa-copy]
-           "copy"]]
+           "copy all"]
+          (when clipboard-item
+            [:div.copy-dashboard
+             {:on-click paste-click}
+             [:i.fas.fa-paste]
+             "paste"])]
          (for [[i c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry entry

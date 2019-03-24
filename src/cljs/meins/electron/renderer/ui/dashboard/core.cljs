@@ -159,6 +159,7 @@
             text (or (when-not (empty? text)
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")]
+        #_
         (when (and (:play @local)
                    (not (:timer @local)))
           (play nil))
