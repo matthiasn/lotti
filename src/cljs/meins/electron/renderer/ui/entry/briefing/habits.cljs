@@ -88,12 +88,8 @@
                             (debug new-entry))]
         [:tr {:key   ts
               :class (when (= (str ts) search-text) "selected")}
-         [:td.completion
-          (for [[i c] (m/idxd (reverse (take 5 (:completed habit))))]
-            [:span.status {:class (when (:success c) "success")
-                           :key   i}])]
+         [:td.habit-mon-col [habit-completion habit]]
          [:td.habit {:on-click create-entry} text]
-         [:td [habit-completion habit]]
          [:td.start
           [:i.fas.fa-cog
            {:on-click (up/add-search {:tab-group    tab-group

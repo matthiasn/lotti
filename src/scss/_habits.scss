@@ -282,7 +282,7 @@
   display: flex;
   flex-direction: row;
   flex: 2;
-  margin-left: 20px;
+  margin-left: 4px;
 
   .status {
     width: 16px;
@@ -326,6 +326,10 @@
 
 .waiting-habits {
   white-space: nowrap;
+
+  .habit-mon-col {
+    width: 24px;
+  }
 
   .start {
     opacity: 0.2;
