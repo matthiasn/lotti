@@ -47,21 +47,21 @@
         tab-group (:tab-group local-cfg)
         entries-list (reaction (get-in @gql-res [tab-group :data tab-group]))]
     (fn journal-view-render [local-cfg]
-      (let [query-id (:query-id local-cfg)
-            tg (:tab-group local-cfg)
+      (let [{:keys [show-more tg query-id]} local-cfg
             cnt (count @entries-list)
             on-scroll (fn [ev]
-                        (let [elem (-> ev .-nativeEvent .-srcElement)
-                              sh (.-scrollHeight elem)
-                              st (.-scrollTop elem)
-                              th (+ 1000 (* sh 0.2))]
-                          (when (and (or (< (- sh st) th)
-                                         (< (- sh st) (* 0.2 sh)))
-                                     (> (- (st/now) (:last-fetch @local)) 1000))
-                            (reset! local {:last-cnt   cnt
-                                           :last-fetch (st/now)})
-                            (emit [:show/more {:query-id  query-id
-                                               :tab-group tg}]))))
+                        (when show-more
+                          (let [elem (-> ev .-nativeEvent .-srcElement)
+                                sh (.-scrollHeight elem)
+                                st (.-scrollTop elem)
+                                th (+ 1000 (* sh 0.2))]
+                            (when (and (or (< (- sh st) th)
+                                           (< (- sh st) (* 0.2 sh)))
+                                       (> (- (st/now) (:last-fetch @local)) 1000))
+                              (reset! local {:last-cnt   cnt
+                                             :last-fetch (st/now)})
+                              (emit [:show/more {:query-id  query-id
+                                                 :tab-group tg}])))))
             on-mouse-enter #(emit [:search/cmd {:t         :active-tab
                                                 :tab-group tg}])]
         ^{:key (str query-id)}

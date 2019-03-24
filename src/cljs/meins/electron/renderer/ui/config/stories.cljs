@@ -105,6 +105,7 @@
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
+                             :show-more   false
                              :tab-group   tab-group})]
     (fn tabs-render [_tab-group]
       [:div.tile-tabs

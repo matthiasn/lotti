@@ -86,6 +86,7 @@
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
                              :tab-group   tab-group
+                             :show-more   true
                              :story       @story})]
     (fn tabs-render [tab-group]
       [:div.tile-tabs
