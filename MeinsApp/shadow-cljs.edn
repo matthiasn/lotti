@@ -1,0 +1,20 @@
+{:source-paths ["src/cljc" "src/cljs"]
+
+ :dependencies [[reagent "0.8.1"]
+                [matthiasn/systems-toolbox "0.6.38"]
+                [cljs-react-navigation "0.1.3"]
+                [org.clojure/data.avl "0.0.18"]
+                [core-async-storage "0.3.1"]
+                [re-frame "0.10.6"]]
+
+ :builds       {:app {:target           :react-native
+                      :init-fn          core/init
+                      :output-dir       "app"
+                      :compiler-options {;:infer-externs :auto
+                                         :elide-asserts true
+                                         :closure-defines {"goog.DEBUG" false "goog.LOCALE" "en"}}
+                      :devtools         {:autoload true
+                                         :preloads [shadow.expo.keep-awake]}
+                      :release          {:compiler-options
+                                         {:optimizations      :simple
+                                          :output-feature-set :es-next}}}}}
