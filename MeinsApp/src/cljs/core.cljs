@@ -7,7 +7,8 @@
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             [re-frame.core :refer [reg-sub subscribe]]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [settings :as s]))
 
 (def view (r/adapt-react-class View))
 (def text (r/adapt-react-class Text))
@@ -28,10 +29,11 @@
                   :justifyContent  "center"
                   :alignItems      "center"
                   :backgroundColor "#445"}
-   :welcome      {:fontSize  20
-                  :color     "#FF8C00"
-                  :textAlign "center"
-                  :margin    10,}
+   :welcome      {:fontSize    44
+                  :font-weight "bold"
+                  :color       "#FF8C00"
+                  :textAlign   "center"
+                  :margin      10}
    :instructions {:textAlign    "center"
                   :color        "rgb(66, 184, 221)"
                   :marginBottom 5}})
@@ -82,108 +84,13 @@
 
 (defn put-fn [])
 
-(defn settings-icon [icon-name color]
-  (r/as-element
-    [view {:style {:padding-top  14
-                   :padding-left 14
-                   :width        44}}
-     [fa-icon {:name  icon-name
-               :size  20
-               :style {:color      color
-                       :text-align :center}}]]))
-
-(defn settings-wrapper [props]
-  (let [;all-timestamps (subscribe [:all-timestamps])
-        ;theme (subscribe [:active-theme])
-        ]
-    (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation
-            bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
-            item-bg "#99A"                                  ;(get-in c/colors [:text-bg @theme])
-            text-color "white"                              ;(get-in c/colors [:text @theme])
-            ]
-        [view {:style {:flex-direction   "column"
-                       :padding-top      10
-                       :height           "100%"
-                       :background-color bg}}
-         [settings-list {:border-color bg
-                         :flex         1
-                         :margin-top   200}
-          [settings-list-header
-           {:headerText       "Settings"
-            :background-color item-bg
-            :headerStyle      {:color      text-color
-                               :font-size  33
-                               :margin-top 20}}]
-          [settings-list-item
-           {:hasNavArrow      false
-            :background-color item-bg
-            :title            "Entries"
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "list" text-color)
-            ;:title-info       (str (count @all-timestamps))
-            }]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :title            "Contacts"
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "address-book" text-color)
-            :on-press         #(navigate "contacts")
-            :title-info       (.-length (:contacts @local))}]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :titleStyle       {:color text-color}
-            :title            "Health"
-            :icon             (settings-icon "heartbeat" text-color)
-            :on-press         #(navigate "health")}]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :title            "Theme"
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "font" text-color)
-            :on-press         #(navigate "theme")}]
-          [settings-list-item
-           {:title            "Database"
-            :background-color item-bg
-            :hasNavArrow      true
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "database" text-color)
-            :on-press         #(navigate "db")}]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "bug" text-color)
-            :on-press         #(navigate "dev")
-            :title            "Dev"}]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "microphone" text-color)
-            :on-press         #(navigate "audio")
-            :title            "Audio"}]
-          [settings-list-item
-           {:hasNavArrow      true
-            :background-color item-bg
-            :titleStyle       {:color text-color}
-            :icon             (settings-icon "refresh" text-color)
-            :on-press         #(navigate "sync")
-            :title            "Sync"}]]]))))
-
 (defn opts [title]
   {:title            title
    :headerTitleStyle {:color "white"}
    :animationEnabled false
    :headerStyle      {:backgroundColor "#445"}})
 
-(def settings-stack
-  (createStackNavigator
-    (clj->js {:Settings {:screen (r/reactify-component settings-wrapper)}})
-    ))
+(def bg "#223")
 
 (def app-nav (createBottomTabNavigator
                (clj->js {:Journal  {:screen            (r/reactify-component journal)
@@ -192,12 +99,14 @@
                                     :navigationOptions (nav-options "plus-square-o" 22)}
                          :Photos   {:screen            (r/reactify-component photos)
                                     :navigationOptions (nav-options "film" 22)}
-                         :Settings {:screen            (r/reactify-component (settings-wrapper {}))
+                         :Settings {:screen            s/settings-stack
                                     :navigationOptions (nav-options "cogs" 22)}})
                (clj->js {:initialRouteName "Journal"
-                         :tabBarOptions    {:activeTintColor   "rgb(66, 184, 221)"
-                                            :inactiveTintColor "#999"
-                                            }})))
+                         :tabBarOptions    {:activeTintColor         "rgb(66, 184, 221)"
+                                            :inactiveTintColor       "#999"
+                                            :activeBackgroundColor   bg
+                                            :inactiveBackgroundColor bg
+                                            :style                   {:backgroundColor bg}}})))
 
 (def app-container
   (createAppContainer app-nav))
