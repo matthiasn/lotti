@@ -1,29 +1,15 @@
-(ns settings
-  (:require ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon]]
-            ["react" :as react :refer [Component]]
-            [reagent.core :as r]
+(ns meins.ui.settings
+  (:require [reagent.core :as r]
             ["react-navigation" :refer [createStackNavigator createAppContainer
                                         createBottomTabNavigator]]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
-            ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             [re-frame.core :refer [reg-sub subscribe]]
+            [meins.ui.shared :refer [view text fa-icon settings-list alert
+                                     settings-list-header settings-list-item]]
+            [meins.ui.settings.db :as db]
             [cljs.pprint :as pp]))
 
 (def bg "#223")
-
-(def view (r/adapt-react-class View))
-(def text (r/adapt-react-class Text))
-(def icon (r/adapt-react-class Icon))
-(def fa-icon (r/adapt-react-class (aget FontAwesome "default")))
-
-(def settings-list (r/adapt-react-class rn-settings-list))
-(def settings-list-header (r/adapt-react-class Header))
-(def settings-list-item (r/adapt-react-class Item))
-
-(def instructions
-  (.select Platform
-           (clj->js {:ios     " Press Cmd+R to reload, Cmd+D or shake for dev menu"
-                     :android " Double tap R on your keyboard to reload,\n Shake or press menu button for dev menu"})))
 
 (def styles
   {:container    {:flex            1
@@ -79,13 +65,15 @@
         ;theme (subscribe [:active-theme])
         ]
     (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation
+      (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
             bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
             item-bg "#556"                                  ;(get-in c/colors [:text-bg @theme])
+            header-color "#FF8C00"                          ;(get-in c/colors [:text @theme])
             text-color "white"                              ;(get-in c/colors [:text @theme])
             ]
+        (alert n)
         [view {:style {:flex-direction   "column"
-                       :padding-top      32
+                       :padding-top      40
                        :height           "100%"
                        :background-color bg}}
          [settings-list {:border-color bg
@@ -93,9 +81,10 @@
           [settings-list-header
            {:headerText       "Settings"
             :background-color item-bg
-            :headerStyle      {:color      text-color
-                               :text-align "center"
-                               :font-size  22}}]
+            :headerStyle      {:color       header-color
+                               :font-weight :bold
+                               :text-align  "center"
+                               :font-size   36}}]
           [settings-list-item
            {:hasNavArrow      false
             :background-color item-bg
@@ -157,5 +146,6 @@
 
 (def settings-stack
   (createStackNavigator
-    (clj->js {:Settings {:screen (r/reactify-component settings-wrapper)}})
+    (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
+              :db       {:screen (r/reactify-component db/db-settings)}})
     (clj->js {:headerMode "none"})))

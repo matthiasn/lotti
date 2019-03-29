@@ -8,13 +8,12 @@
                 [re-frame "0.10.6"]]
 
  :builds       {:app {:target           :react-native
-                      :init-fn          core/init
+                      :init-fn          meins.core/init
                       :output-dir       "app"
-                      :compiler-options {;:infer-externs :auto
-                                         :elide-asserts true
-                                         :closure-defines {"goog.DEBUG" false "goog.LOCALE" "en"}}
-                      :devtools         {:autoload true
-                                         :preloads [shadow.expo.keep-awake]}
+                      :compiler-options {:elide-asserts   true
+                                         :closure-defines {"goog.DEBUG"  false
+                                                           "goog.LOCALE" "en"}}
+                      :devtools         {:autoload true}
                       :release          {:compiler-options
                                          {:optimizations      :simple
                                           :output-feature-set :es-next}}}}}

@@ -1,23 +1,13 @@
-(ns core
+(ns meins.core
   (:require ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon]]
             ["react" :as react :refer [Component]]
             [reagent.core :as r]
             ["react-navigation" :refer [createStackNavigator createAppContainer
                                         createBottomTabNavigator]]
-            ["react-native-vector-icons/FontAwesome" :as FontAwesome]
-            ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             [re-frame.core :refer [reg-sub subscribe]]
             [cljs.pprint :as pp]
-            [settings :as s]))
-
-(def view (r/adapt-react-class View))
-(def text (r/adapt-react-class Text))
-(def icon (r/adapt-react-class Icon))
-(def fa-icon (r/adapt-react-class (aget FontAwesome "default")))
-
-(def settings-list (r/adapt-react-class rn-settings-list))
-(def settings-list-header (r/adapt-react-class Header))
-(def settings-list-item (r/adapt-react-class Item))
+            [meins.ui.shared :refer [view text fa-icon]]
+            [meins.ui.settings :as s]))
 
 (def instructions
   (.select Platform
