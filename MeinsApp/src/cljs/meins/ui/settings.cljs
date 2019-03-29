@@ -7,6 +7,7 @@
             [meins.ui.shared :refer [view text fa-icon settings-list alert
                                      settings-list-header settings-list-item]]
             [meins.ui.settings.db :as db]
+            [meins.ui.settings.health :as sh]
             [cljs.pprint :as pp]))
 
 (def bg "#223")
@@ -71,9 +72,9 @@
             header-color "#FF8C00"                          ;(get-in c/colors [:text @theme])
             text-color "white"                              ;(get-in c/colors [:text @theme])
             ]
-        (alert n)
+        ;(alert n)
         [view {:style {:flex-direction   "column"
-                       :padding-top      40
+                       ;:padding-top      40
                        :height           "100%"
                        :background-color bg}}
          [settings-list {:border-color bg
@@ -147,5 +148,9 @@
 (def settings-stack
   (createStackNavigator
     (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
-              :db       {:screen (r/reactify-component db/db-settings)}})
-    (clj->js {:headerMode "none"})))
+              :db       {:screen (r/reactify-component db/db-settings)}
+              :health   {:screen (r/reactify-component sh/health-settings)}
+              })
+    (clj->js {;:headerMode "none"
+              :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
+                                                       :borderBottomWidth 0}}})))

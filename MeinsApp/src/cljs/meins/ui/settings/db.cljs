@@ -1,5 +1,5 @@
 (ns meins.ui.settings.db
-  (:require [meins.ui.shared :refer [view text settings-list settings-list-item]]
+  (:require [meins.ui.shared :refer [view text settings-list settings-list-item alert]]
             [re-frame.core :refer [subscribe]]
     ;[mein.ui.settings.common :refer [settings-icon]]
     ;       [meo.ui.colors :as c]
@@ -10,6 +10,7 @@
         ;theme (subscribe [:active-theme])
         ]
     (fn [{:keys [screenProps navigation] :as props}]
+      ;(alert (js->clj navigation :keywordize-keys true))
       (let [{:keys [navigate goBack]} (js->clj navigation :keywordize-keys true)
             reset-state #(do (put-fn [:state/reset]) (goBack))
             bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
@@ -22,12 +23,14 @@
                        :height           "100%"}}
          [settings-list {:border-color bg
                          :width        "100%"}
+          #_
           [settings-list-item {:title            "Back"
                                :hasNavArrow      false
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                ; :icon             (settings-icon "bolt" "#999")
-                               :on-press         #(navigate "settings")}]
+                               ;:on-press         #(navigate "settings")
+                               :on-press         #(alert "foo")}]
           [settings-list-item {:title            "Reset"
                                :hasNavArrow      false
                                :background-color item-bg
