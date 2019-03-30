@@ -1,15 +1,15 @@
 (ns meins.ui.settings.health
-  (:require                                                 ;[meo.ui.colors :as c]
-    [meins.ui.shared :refer [view settings-list cam text settings-list-item fa-icon
-                             touchable-opacity]]
+  (:require [meins.ui.colors :as c]
+            [meins.ui.shared :refer [view settings-list cam text settings-list-item fa-icon
+                                     touchable-opacity]]
     ;[meo.ui.settings.common :as sc :refer [settings-icon]]
-    [re-frame.core :refer [subscribe]]
-    [cljs.tools.reader.edn :as edn]))
+            [re-frame.core :refer [subscribe]]
+            [cljs.tools.reader.edn :as edn]))
 
 (defn start-watching [])
 
 (defn import-item [msg-type label icon-name put-fn]
-  (let [;theme (subscribe [:active-theme])
+  (let [theme (subscribe [:active-theme])
         n 30
         click (fn [_] (put-fn [msg-type {:n n}]))
         auto-check (fn [_]
@@ -20,9 +20,8 @@
                                :repeat  true
                                :initial true}]))]
     (fn [msg-type label icon-name]
-      (let [item-bg "#556"                                  ;(get-in c/colors [:text-bg @theme])
-            text-color "white"                              ;(get-in c/colors [:text @theme])
-            ]
+      (let [item-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:margin-top       3
                        :width            "100%"
                        :background-color item-bg
@@ -61,12 +60,10 @@
                             :padding    16}}]]]))))
 
 (defn health-settings [local put-fn]
-  (let [;theme (subscribe [:active-theme])
-        ]
+  (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
-            bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
-            ]
+            bg (get-in c/colors [:list-bg @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :padding-bottom   10

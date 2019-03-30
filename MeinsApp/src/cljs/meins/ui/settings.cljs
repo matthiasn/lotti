@@ -8,7 +8,8 @@
                                      settings-list-header settings-list-item]]
             [meins.ui.settings.db :as db]
             [meins.ui.settings.health :as sh]
-            [cljs.pprint :as pp]))
+            [cljs.pprint :as pp]
+            [meins.ui.colors :as c]))
 
 (def bg "#223")
 
@@ -63,18 +64,14 @@
 
 (defn settings-wrapper [props]
   (let [;all-timestamps (subscribe [:all-timestamps])
-        ;theme (subscribe [:active-theme])
-        ]
+        theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
-            bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
-            item-bg "#556"                                  ;(get-in c/colors [:text-bg @theme])
-            header-color "#FF8C00"                          ;(get-in c/colors [:text @theme])
-            text-color "white"                              ;(get-in c/colors [:text @theme])
-            ]
-        ;(alert n)
+            bg (get-in c/colors [:list-bg @theme])
+            item-bg (get-in c/colors [:text-bg @theme])
+            header-color (get-in c/colors [:header-text @theme])
+            text-color (get-in c/colors [:text @theme])]
         [view {:style {:flex-direction   "column"
-                       ;:padding-top      40
                        :height           "100%"
                        :background-color bg}}
          [settings-list {:border-color bg
@@ -101,7 +98,7 @@
             :titleStyle       {:color text-color}
             :icon             (settings-icon "address-book" text-color)
             :on-press         #(navigate "contacts")
-            :title-info       (.-length (:contacts @local))}]
+            :title-info       (str (.-length (:contacts @local)))}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg

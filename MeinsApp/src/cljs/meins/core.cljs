@@ -9,6 +9,8 @@
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]))
 
+(reg-sub :active-theme (fn [db _] :dark))
+
 (def instructions
   (.select Platform
            (clj->js {:ios     " Press Cmd+R to reload, Cmd+D or shake for dev menu"
