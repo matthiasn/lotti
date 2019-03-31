@@ -7,7 +7,8 @@
             [re-frame.core :refer [reg-sub subscribe]]
             [cljs.pprint :as pp]
             [meins.ui.shared :refer [view text fa-icon]]
-            [meins.ui.settings :as s]))
+            [meins.ui.settings :as s]
+            [meins.ui.editor :as ue]))
 
 (reg-sub :active-theme (fn [db _] :dark))
 
@@ -87,7 +88,7 @@
 (def app-nav (createBottomTabNavigator
                (clj->js {:Journal  {:screen            (r/reactify-component journal)
                                     :navigationOptions (nav-options "list" 22)}
-                         :Add      {:screen            (r/reactify-component add-screen)
+                         :Add      {:screen            (r/reactify-component ue/editor)
                                     :navigationOptions (nav-options "plus-square-o" 22)}
                          :Photos   {:screen            (r/reactify-component photos)
                                     :navigationOptions (nav-options "film" 22)}
