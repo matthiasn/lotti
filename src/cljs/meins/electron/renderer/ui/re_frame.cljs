@@ -67,7 +67,7 @@
             graph-prog (Math/floor (* 100 (:graph startup-progress)))]
         [:div.loader
          [:div.content
-          [:h1 "starting meins v" (.getVersion (aget remote "app")) "..."]
+          [:h1 "v" (.getVersion (aget remote "app"))]
           [:div.meter
            [:span {:style {:width (str lines-prog "%")}}]]
           [:div.meter

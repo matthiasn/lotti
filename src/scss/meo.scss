@@ -77,9 +77,11 @@ i {
 .loader {
   -webkit-app-region: drag;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   user-select: none;
-  padding-top: 30vh;
+  padding-top: 36vh;
+  background-color: #445;
+  background-image: url("../images/startscreen_meins.svg");
 
   .content {
     color: white;
