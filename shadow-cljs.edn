@@ -38,7 +38,7 @@
 
                 :renderer
                 {:target     :browser
-                 :output-dir "dev/renderer-shadow"
+                 :output-dir "target/renderer-shadow"
                  :modules    {:main {:init-fn meins.electron.renderer.core/main}}
                  :js-options {:js-provider :require}
                  :release    {:compiler-options {:optimizations      :simple

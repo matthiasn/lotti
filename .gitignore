@@ -5,7 +5,6 @@ data/
 playground-data/
 test-data/
 /target
-/dev
 /classes
 /checkouts
 pom.xml
@@ -48,7 +47,6 @@ package-lock.json
 
 prod/
 dist/
-dev/
 .shadow-cljs/
 __pycache__/
 
