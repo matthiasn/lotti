@@ -72,7 +72,8 @@
                                            [cljsjs/moment "2.24.0-0"]
                                            [matthiasn/systems-toolbox-electron "0.6.29"]
                                            [secretary "1.2.3"]]}
-             :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]}}
+             :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources"]
+                            :dependencies [[io.dgraph/dgraph4j "1.7.1"]]}}
 
   :repl-options {:init-ns meins.jvm.core}
 

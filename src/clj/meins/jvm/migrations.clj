@@ -12,8 +12,12 @@
             [clj-time.core :as ct]
             [me.raynes.fs :as fs]
             [meins.jvm.datetime :as dt]
-            [clj-time.coerce :as c]))
-
+            [clj-time.coerce :as c]
+            [cheshire.core :as cc]
+            [clojure.data.json :as json])
+  (:import (io.dgraph DgraphClient DgraphGrpc DgraphProto$Mutation)
+           (io.grpc ManagedChannelBuilder)
+           (com.google.protobuf ByteString)))
 
 (defn to-snake [k]
   (cond
@@ -315,3 +319,58 @@
               (catch Exception ex
                 (error "Exception" ex "when parsing line:\n" line))))
           (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
+
+
+;(m/migrate-to-dgraph "./data/migrations/dgraph")
+(defn migrate-to-dgraph [path]
+  (let [files (file-seq (clojure.java.io/file path))
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)
+        channel (-> (ManagedChannelBuilder/forAddress "localhost" 9080)
+                    (.usePlaintext true)
+                    (.build))
+        stub (DgraphGrpc/newStub channel)
+        dgraph-client (new DgraphClient (into-array [stub]))]
+    (doseq [f sorted-files]
+      (with-open [reader (clojure.java.io/reader f)]
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (swap! line-count inc)
+            (when (zero? (mod @line-count 100)) (prn @line-count))
+            (try
+              (let [entry (clojure.edn/read-string line)
+                    id (:timestamp entry)
+                    entry (if (:habit entry)
+                            (let [criteria (get-in entry [:habit :criteria])]
+                              (-> entry
+                                  (assoc-in [:habit :versions 0 :criteria] criteria)
+                                  (assoc-in [:habit :versions 0 :valid_from] "1970-01-01")))
+                            entry)]
+                (try
+                  (let [entry (-> entry
+                                  (update :sample pr-str)
+                                  (update :habit pr-str)
+                                  (update :geoname pr-str)
+                                  (dissoc :id)
+                                  (update :questionnaires pr-str)
+                                  (update :linked_entries #(filter identity %))
+                                  (update :linked_stories #(filter identity %))
+                                  (update :vclock pr-str)
+                                  (update :spotify pr-str)
+                                  (update :custom_fields pr-str))
+                        json (cc/generate-string entry)
+                        mu (-> (DgraphProto$Mutation/newBuilder)
+                               (.setSetJson (ByteString/copyFromUtf8 json))
+                               (.build))
+                        txn (.newTransaction dgraph-client)]
+                    (.mutate txn mu)
+                    (.commit txn))
+                  (catch Exception ex (prn :error ex entry)))
+                (swap! ts-uuids conj id))
+              (catch Exception ex
+                (do (prn :error ex) (error "Exception" ex "when parsing line:\n" line)))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))
+    (.shutdown channel)))
