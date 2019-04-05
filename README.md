@@ -56,6 +56,15 @@ Once all the dependencies installed already, you can create a packaged version o
 
 This will download dependencies, both Clojure and **[npm](https://www.npmjs.com/)**, and then run tests, build, and package the entire application for the platform you are running on. This will take The backend of the application is a standalone uberjar that runs with a packaged custom Java runtime that is generated when building meins using **[jlink](https://openjdk.java.net/jeps/282)**. The resulting runtime is only a fraction of the size of a JDK. Packaging the runtime is more reliable than trying to rely on a recent JRE on a non-developer machine. This packaging mechanism is provided by [Project Jigsaw](https://openjdk.java.net/projects/jigsaw/quick-start),
 
+
+## Icons
+
+Convert using electron-icon-generator, then copy to `build/` and rename.
+
+    $ npm install -g electron-icon-generator
+    $ electron-icon-generator ~/Downloads/Logo_meins_RZ.png
+
+
 ## Development
 
 For development, you need to install the JavaScript dependencies:
