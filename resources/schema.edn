@@ -87,6 +87,8 @@
                  :linked_saga         {:type ID}
                  :story_name          {:type String}
                  :saga_name           {:type String}
+                 :saga_cfg            {:type :Saga}
+                 :story_cfg           {:type :Story}
                  :habit               {:type String}
                  :reward              {:type :Reward}
                  :git_commit          {:type :GitCommit}

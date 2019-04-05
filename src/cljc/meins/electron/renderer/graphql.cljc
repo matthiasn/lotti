@@ -99,6 +99,9 @@
                 :primary_story
                 :story_name
                 :saga_name
+                :story_cfg
+                [:story_cfg [:active :pvt :font_color :badge_color]]
+                [:saga_cfg [:active :pvt]]
                 :linked_saga
                 :stars
                 :questionnaires
