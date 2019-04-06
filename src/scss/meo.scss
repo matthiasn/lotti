@@ -81,7 +81,9 @@ i {
   user-select: none;
   padding-top: 36vh;
   background-color: #445;
-  background-image: url("../images/startscreen_meins.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-image: url("../images/startscreen_meins.png");
 
   .content {
     color: white;
