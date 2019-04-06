@@ -146,8 +146,7 @@
   (createStackNavigator
     (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
               :db       {:screen (r/reactify-component db/db-settings)}
-              :health   {:screen (r/reactify-component sh/health-settings)}
-              })
+              :health   {:screen (r/reactify-component sh/health-settings)}})
     (clj->js {;:headerMode "none"
               :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
                                                        :borderBottomWidth 0}}})))
