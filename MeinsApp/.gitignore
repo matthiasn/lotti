@@ -60,3 +60,4 @@ buck-out/
 *.jsbundle
 
 .nrepl-port
+MeinsApp/ios/assets/

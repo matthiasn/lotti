@@ -17,7 +17,7 @@
 {
   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
-                                                   moduleName:@"MeinsApp"
+                                                   moduleName:@"meins"
                                             initialProperties:nil];
 
   rootView.backgroundColor = [UIColor colorWithRed:0.27 green:0.27 blue:0.33 alpha:1.0];
