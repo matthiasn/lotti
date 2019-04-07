@@ -30,8 +30,8 @@
     (xf/edn-xf entry)))
 
 (defn entry-w-story [state entry]
-  (let [story (get-entry-xf state (:primary_story entry))
-        saga (get-entry-xf state (:linked_saga story))]
+  (let [story (get-entry state (:primary_story entry))
+        saga (get-entry state (:linked_saga story))]
     (merge entry
            {:story (when story
                      (assoc-in story [:saga] saga))})))

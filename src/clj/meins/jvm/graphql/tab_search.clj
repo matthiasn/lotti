@@ -29,7 +29,6 @@
           prev-lazy-res (get-in current-state [:prev tab :lazy-res])
           prev-query (get-in current-state [:prev tab :query])
           prev-vclock (get-in current-state [:prev tab :prev-vclock])
-          g (:graph current-state)
           q (merge (update-in (p/parse-search query) [:n] #(or n %))
                    {:story   (when story (Long/parseLong story))
                     :starred starred
