@@ -42,8 +42,7 @@
                      prev-lazy-res
                      (->> (gq/get-filtered-lazy current-state q)
                           (filter #(not (:comment_for %)))
-                          (map (partial gq/entry-w-story g))
-                          (gc/entries-w-logged g)
+                          (map (partial gq/entry-w-story current-state))
                           (map (partial gc/entry-w-comments current-state))
                           (map (partial gc/linked-for current-state))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))

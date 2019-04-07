@@ -262,7 +262,6 @@
       :active-tab (active-tab m))))
 
 (defn show-more [{:keys [current-state msg-payload]}]
-  (info "show-more" msg-payload)
   (let [query-path [:query-cfg :queries (:query-id msg-payload)]
         merged (merge (get-in current-state query-path) msg-payload)
         new-query (-> merged
