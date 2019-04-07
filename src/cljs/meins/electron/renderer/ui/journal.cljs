@@ -11,7 +11,7 @@
 
 (def react-list (r/adapt-react-class rl))
 
-(defn entry-wrapper [idx local-cfg ]
+(defn entry-wrapper [idx local-cfg]
   (let [tab-group (:tab-group local-cfg)
         gql-res (subscribe [:gql-res2])
         show-hidden (subscribe [:show-hidden])
@@ -21,7 +21,7 @@
                             :res
                             vals
                             (nth idx)))]
-    (fn entry-wrapper-render [_idx local-cfg ]
+    (fn entry-wrapper-render [_idx local-cfg]
       ^{:key (str (count (:comments entry)) (:vclock @entry))}
       [:div
        (when (and @entry (or (not (:hidden @entry))
@@ -30,7 +30,7 @@
                                (:pvt (:story @entry))
                                (-> @entry :story :saga :pvt)
                                (contains? (:tags @entry) "#pvt")))
-                             @show-pvt))
+                      @show-pvt))
          [e/entry-with-comments @entry local-cfg])])))
 
 (defn item [local-cfg]
@@ -50,7 +50,7 @@
         tab-group (:tab-group local-cfg)
         entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
     (fn journal-view-render [local-cfg]
-      (let [{:keys [show-more tg query-id]} local-cfg
+      (let [{:keys [show-more query-id]} local-cfg
             cnt (count @entries-list)
             on-scroll (fn [ev]
                         (let [elem (-> ev .-nativeEvent .-srcElement)
@@ -63,9 +63,9 @@
                             (reset! local {:last-cnt   cnt
                                            :last-fetch (st/now)})
                             (emit [:show/more {:query-id  query-id
-                                                 :tab-group tg}]))))
+                                               :tab-group tab-group}]))))
             on-mouse-enter #(emit [:search/cmd {:t         :active-tab
-                                                  :tab-group tg}])]
+                                                :tab-group tab-group}])]
         ^{:key (str query-id)}
         [:div.journal {:on-mouse-enter on-mouse-enter}
          [h/error-boundary

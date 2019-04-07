@@ -86,7 +86,7 @@
             startup-progress @startup-progress]
         (when-not @data-explorer
           (aset js/document "body" "style" "overflow" "hidden"))
-        (if (= 11 (:graph startup-progress))
+        (if (= 1 (:graph startup-progress))
           [:div
            (case (:page current-page)
              :config [cfg/config]
