@@ -79,9 +79,9 @@ i {
   width: 100%;
   height: 100vh;
   user-select: none;
-  padding-top: 36vh;
   background-color: #334;
   background-size: contain;
+  background-position: bottom;
   background-repeat: no-repeat;
   background-image: url("../images/startscreen_meins.png");
 
@@ -89,15 +89,22 @@ i {
     color: white;
     width: 500px;
     margin: 0 auto auto auto;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 
     h1 {
       text-align: center;
+      margin-top: 25px;
       margin-bottom: 20px;
     }
 
     // adapted from https://css-tricks.com/css3-progress-bars/
     .meter {
       height: 20px;
+      width: 100%;
       position: relative;
       background: $body-background-color;
       border-radius: 6px;

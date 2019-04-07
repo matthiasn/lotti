@@ -68,11 +68,13 @@
             graph-prog (Math/floor (* 100 (:graph startup-progress)))]
         [:div.loader
          [:div.content
-          [:h1 "v" (.getVersion (aget remote "app"))]
+          [:img {:src   "public/images/logo.png"
+                 :style {:width 200}}]
           [:div.meter
            [:span {:style {:width (str lines-prog "%")}}]]
           [:div.meter
-           [:span {:style {:width (str graph-prog "%")}}]]]]))))
+           [:span {:style {:width (str graph-prog "%")}}]]
+          [:h1 "v" (.getVersion (aget remote "app"))]]]))))
 
 (defn re-frame-ui []
   (let [current-page (subscribe [:current-page])
@@ -84,11 +86,11 @@
             startup-progress @startup-progress]
         (when-not @data-explorer
           (aset js/document "body" "style" "overflow" "hidden"))
-        (if (= 1 (:graph startup-progress))
+        (if (= 11 (:graph startup-progress))
           [:div
            (case (:page current-page)
              :config [cfg/config]
-             :countries [countries-page ]
+             :countries [countries-page]
              :calendar [cal]
              :correlation [corr/scatter-matrix]
              :heatmap [hm/heatmap]
