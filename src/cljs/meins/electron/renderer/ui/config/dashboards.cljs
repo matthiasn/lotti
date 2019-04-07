@@ -62,8 +62,7 @@
                                 :tags          #{"#dashboard-cfg"}
                                 :dashboard_cfg {:active true}}
                                open-new)
-        gql-res (subscribe [:gql-res])
-        dashboard-entries (reaction (get-in @gql-res [:dashboard_cfg :data :dashboard_cfg]))
+        gql-res2 (subscribe [:gql-res2])
         pvt (subscribe [:show-pvt])
         by-ts #(get-in % [:timestamp])
         by-text #(get-in % [:text])
@@ -78,11 +77,13 @@
                            (if (= f sort-fn)
                              (swap! local update-in [:dashboards_cfg :reverse] not)
                              (swap! local assoc-in [:dashboards_cfg :sorted-by] f))))
-            pvt-filter (fn [x] (if pvt true (not (get-in x [:dashboard_cfg :pvt]))))
+            pvt-filter (fn [x] (if pvt true (not (get-in x [1 :dashboard_cfg :pvt]))))
             search-match #(h/str-contains-lc?
-                            (eu/first-line %)
+                            (eu/first-line (second %))
                             (str search-text))
-            dashboards (->> @dashboard-entries
+            dashboards (->> @gql-res2
+                            :dashboard_cfg
+                            :res
                             (filter pvt-filter)
                             (filter search-match))]
         [:div.col.habits
@@ -101,7 +102,7 @@
             [:th {:on-click (sort-click by-text)} "Dashboard"]
             [:th {:on-click (sort-click by-active)} "active"]
             [:th {:on-click (sort-click by-pvt)} "private"]]
-           (for [dashboard dashboards]
+           (for [dashboard (vals dashboards)]
              ^{:key (:timestamp dashboard)}
              [dashboard-line dashboard local])]]]))))
 

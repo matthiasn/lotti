@@ -1,16 +1,29 @@
 (ns meins.electron.renderer.ui.focus
   (:require [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
+            [meins.electron.renderer.charts.data :as cd]
+            [meins.electron.renderer.ui.charts.common :as cc]
+            [meins.common.utils.misc :as u]
+            [meins.electron.renderer.ui.entry.briefing.tasks :as tasks]
+            [meins.electron.renderer.ui.entry.briefing.habits :as habits]
+            [meins.electron.renderer.ui.entry.briefing.time :as time]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [react-event-timeline :as ret]
             [taoensso.timbre :refer-macros [info debug]]
             [moment]
             [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.actions :as a]
             [meins.electron.renderer.ui.entry.utils :as eu]
+            [clojure.string :as s]
             [meins.electron.renderer.ui.entry.entry :as e]
+            [meins.electron.renderer.ui.entry.briefing.calendar :as cal]
+            [cljs.pprint :as pp]
             [react-horizontal-timeline :as rht]
             [meins.common.utils.parse :as up]
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.ui.ui-components :as uc]
+            [matthiasn.systems-toolbox.component :as stc]
             [meins.electron.renderer.ui.updater :as upd]
             [meins.electron.renderer.ui.grid :as g]
             [meins.electron.renderer.ui.menu :as menu]
@@ -25,8 +38,8 @@
 
 (defn entry-card [entry local]
   (let [locale (subscribe [:locale])
-        gql-res (subscribe [:gql-res])
-        left-entry (reaction (first (get-in @gql-res [:left :data :left])))]
+        gql-res (subscribe [:gql-res2])
+        left-entry (reaction (first (vals (get-in @gql-res [:left :res]))))]
     (fn [entry local]
       (let [ts (:timestamp entry)
             linked-entries (set (:linked_entries_list @left-entry))
@@ -83,17 +96,22 @@
                        :prio     3}])))
 
 (defn timeline-column [tab-group local]
-  (let [gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res2])
         pvt (subscribe [:show-pvt])
-        entries-list (reaction (get-in @gql-res [tab-group :data :timeline]))
-        left-entry (reaction (first (get-in @gql-res [:left :data :left])))
+        entries-list (reaction (get-in @gql-res [tab-group :res]))
+        left-entry (reaction (first (vals (get-in @gql-res [:left :res]))))
         linked (reaction (->> (:linked @left-entry)
-                              (filter #(not (:briefing %)))))
-        comments     (reaction (->> (:comments @left-entry)))
-        combined (reaction (->> (concat @entries-list @linked @comments)
+                              (filter #(not (:briefing %)))
+                              (map (fn [x] [(:timestamp x) x]))
+                              (into {})))
+        comments     (reaction (->> (:comments @left-entry)
+                                    (map (fn [x] [(:timestamp x) x]))
+                                    (into {})))
+        combined (reaction (->> (merge @entries-list @linked @comments)
+                                vals
                                 (sort-by :timestamp)
                                 reverse))
-        did-mount (fn [_props] (timeline-query tab-group (:timestamp (:story @left-entry)) @pvt))
+        did-mount (fn [_props] (timeline-query tab-group (:primary_story @left-entry) @pvt))
         will-unmount #(emit [:search/remove {:query-id  tab-group
                                              :tab-group tab-group}])]
     (r/create-class
@@ -122,13 +140,18 @@
 
 
 (defn timeline-view [local]
-  (let [gql-res      (subscribe [:gql-res])
-        entries-list (reaction (get-in @gql-res [:focus :data :timeline]))
-        left-entry   (reaction (first (get-in @gql-res [:left :data :left])))
+  (let [gql-res      (subscribe [:gql-res2])
+        entries-list (reaction (get-in @gql-res [:focus :res]))
+        left-entry   (reaction (first (vals (get-in @gql-res [:left :res]))))
         linked       (reaction (->> (:linked @left-entry)
-                                    (filter #(not (:briefing %)))))
-        comments     (reaction (:comments @left-entry))
-        combined     (reaction (->> (concat @entries-list @linked @comments)
+                                    (filter #(not (:briefing %)))
+                                    (map (fn [x] [(:timestamp x) x]))
+                                    (into {})))
+        comments     (reaction (->> (:comments @left-entry)
+                                    (map (fn [x] [(:timestamp x) x]))
+                                    (into {})))
+        combined     (reaction (->> (merge @entries-list @linked @comments)
+                                    vals
                                     (sort-by :timestamp)
                                     (map :timestamp)
                                     (map h/ymd)

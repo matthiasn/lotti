@@ -18,8 +18,9 @@
             [meins.jvm.graphql.xforms :as xf]))
 
 (defn get-node [state ts]
-  (when (and ts (uc/has-node? (:graph state) ts))
-    (uc/attrs (:graph state) ts)))
+  (let [g (:graph state)]
+    (when (and ts (uc/has-node? g ts))
+      (xf/vclock-xf (uc/attrs g ts)))))
 
 (defn get-entry [state ts]
   (get-in state [:entries-map ts]))

@@ -56,8 +56,7 @@
 
 (defn albums-list [local]
   (let [pvt (subscribe [:show-pvt])
-        gql-res (subscribe [:gql-res])
-        albums (reaction (get-in @gql-res [:albums :data :albums]))
+        gql-res2 (subscribe [:gql-res2])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
@@ -71,12 +70,15 @@
     (albums-gql true "#album")
     (fn albums-list-render [local]
       (let [search-text (:search @local "")
-            search-match #(h/str-contains-lc? (-> % :album_cfg :title)
+            search-match #(h/str-contains-lc? (-> % second :album_cfg :title)
                                               (str search-text))
-            pvt-filter (fn [x] (if @pvt true (not (get-in x [:album_cfg :pvt]))))
-            albums (->> @albums
+            pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :album_cfg :pvt]))))
+            albums (->> @gql-res2
+                        :albums
+                        :res
                         (filter pvt-filter)
-                        (filter search-match))]
+                        (filter search-match)
+                        vals)]
         [:div.col.habits.sagas
          [:h2 "Photo Albums"]
          [:div.input-line

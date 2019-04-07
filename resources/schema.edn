@@ -94,7 +94,7 @@
                  :git_commit          {:type :GitCommit}
                  :custom_fields       {:type String}
                  :questionnaires      {:type String}
-                 :vclock              {:type String}
+                 :vclock              {:type (list :Vclock)}
                  :custom_field_cfg    {:type String}
                  :album_cfg           {:type :Album_cfg}
                  :dashboard_cfg       {:type String}

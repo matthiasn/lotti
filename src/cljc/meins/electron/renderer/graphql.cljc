@@ -110,7 +110,7 @@
                 :dashboard_cfg
                 [:album_cfg [:title :pvt :active]]
                 :entry_type
-                :vclock
+                [:vclock [:node :clock]]
                 [:task [:completion_ts
                         :done
                         :closed

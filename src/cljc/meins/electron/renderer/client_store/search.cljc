@@ -87,7 +87,8 @@
                       (assoc-in path query-id)
                       (update-in [:query-cfg :tab-groups tab-group :history]
                                  #(conj (take 20 %1) %2)
-                                 query-id))]
+                                 query-id))
+        new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
     (put-fn [:search/remove {:tab-group tab-group}])
     (when (-> current-state :query-cfg :queries query-id)
       (update-query-cfg new-state put-fn)
@@ -107,7 +108,8 @@
         all-path [:query-cfg :tab-groups tab-group :all]]
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
       (let [query-id (:query-id existing)
-            new-state (assoc-in current-state active-path query-id)]
+            new-state (assoc-in current-state active-path query-id)
+            new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
         (put-fn [:search/remove {:tab-group tab-group}])
         (update-query-cfg new-state put-fn)
         {:new-state new-state})
@@ -118,7 +120,8 @@
                           (update-in all-path conj query-id)
                           (update-in [:query-cfg :tab-groups tab-group :history]
                                      #(conj (take 20 %1) %2)
-                                     query-id))]
+                                     query-id))
+            new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
         (put-fn [:search/remove {:tab-group tab-group}])
         (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
@@ -165,7 +168,10 @@
           new-state (-> current-state
                         (update-in all-path #(disj (set %) query-id))
                         (previously-active query-id tab-group)
-                        (update-in query-path dissoc query-id))]
+                        (update-in query-path dissoc query-id))
+          new-state (if query-id
+                      (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))
+                      new-state)]
       (info "remove query" tab-group query-id)
       (update-query-cfg new-state put-fn)
       {:new-state new-state})
@@ -191,7 +197,8 @@
         new-state (-> current-state
                       (assoc-in all-path #{})
                       (assoc-in [:query-cfg :tab-groups tab-group :active] nil)
-                      (update-in query-path #(apply dissoc % queries-in-grp)))]
+                      (update-in query-path #(apply dissoc % queries-in-grp)))
+        new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
     (update-query-cfg new-state put-fn)
     {:new-state new-state}))
 

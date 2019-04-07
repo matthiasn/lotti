@@ -21,6 +21,7 @@
             [meins.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meins.electron.renderer.ui.entry.briefing :as b]
             [meins.electron.renderer.ui.focus :as fc]
+            [meins.electron.renderer.ui.post-mortems :as pm]
             [meins.electron.renderer.ui.data-explorer :as dex]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.updater :as upd]
@@ -96,6 +97,7 @@
              :spotify [sp/spotify-view]
              :empty [:div.flex-container]
              :focus [fc/focus-page]
+             :post-mortem [pm/post-mortem-page]
              [main-page])
            (when @data-explorer
              [dex/data-explorer])]

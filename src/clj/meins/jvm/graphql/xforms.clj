@@ -26,7 +26,6 @@
 
                                     (and v (contains? #{:habit
                                                         :custom_fields
-                                                        :custom_field_cfg
                                                         :entry_type
                                                         :priority
                                                         :vclock
@@ -40,14 +39,15 @@
                                                       :mentions} k))
                                     [k (set v)]
 
-                                    (nil? v) nil
-
                                     :else [k v]))
                                 node))
 
                      (seq? node) (vec node)
                      :else node))
                  m))
+
+(defn vclock-xf [entry]
+  (update-in entry [:vclock] #(mapv (fn [[k v]] {:node k :clock v}) %)))
 
 (defn edn-xf [entry]
   (-> entry

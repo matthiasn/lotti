@@ -62,14 +62,10 @@
         on-deliver
         (fn [res]
           (try
-            (let [simplified (xf/simplify res)
-                  size (count (pr-str simplified))
-                  now (stc/now)
-                  ms (- now start)
+            (let [size (count (pr-str res))
                   res (merge merged
-                             simplified
-                             {:ts   now
-                              :ms   ms
+                             (xf/simplify res)
+                             {:ts   (stc/now)
                               :size size
                               :prio (:prio merged 100)})]
               (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
