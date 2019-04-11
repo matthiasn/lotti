@@ -36,6 +36,7 @@
                                (let [xs (map gt/cfg-mapper xs)]
                                  (vec (set/union (set xs) (completed-for-day @state d)))))
             briefing (update-in briefing [:linked] linked-completed)
+            briefing (update-in briefing [:linked] #(gc/distinct-by :timestamp %))
             comments (:comments (gq/get-comments briefing g ts))
             comments (mapv #(update-in (gq/get-entry-xf @state %) [:questionnaires :pomo1] vec)
                            comments)
