@@ -69,7 +69,7 @@
                      :fill        "black"
                      :text-anchor "start"}
               (h/s-to-hh-mm n)]))
-         (for [[n {:keys [date_string day-ts] :as m}] indexed]
+         (for [[n {:keys [date_string day-ts] :as m}] (rest indexed)]
            (let [v         (:v m 0)
                  offset    (- day-ts start)
                  span      (if (zero? span) 1 span)
