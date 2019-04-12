@@ -40,6 +40,8 @@
 		9ADA757C7870484CADA506D0 /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0FA7E5BE390442AFB6C27E42 /* Zocial.ttf */; };
 		9B49782C09EB4D15B69B80E6 /* libRNAudioRecorderPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C74629DB19F44988E6BF27D /* libRNAudioRecorderPlayer.a */; };
 		A0CFAE402C174F1AB5A9497F /* libRCTCamera.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AED3B0A72964785B9A04E1E /* libRCTCamera.a */; };
+		AD10A43E2261346500A6C562 /* startscreen_meins.png in Resources */ = {isa = PBXBuildFile; fileRef = AD10A4112261346400A6C562 /* startscreen_meins.png */; };
+		AD10A441226136C000A6C562 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = AD10A440226136C000A6C562 /* logo.png */; };
 		AD2054DA2249A37C0034006D /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
 		AD788AB122497E4E004E475D /* libRNGestureHandler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD788AAD22497E08004E475D /* libRNGestureHandler.a */; };
 		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
@@ -422,6 +424,8 @@
 		85D38AEEB7BF4F39AEF11F02 /* FontAwesome.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf"; sourceTree = "<group>"; };
 		8E7515A8D7D9404593CF4DC3 /* Foundation.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Foundation.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Foundation.ttf"; sourceTree = "<group>"; };
 		AC6BE9851D214EC691D504F0 /* RCTContacts.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTContacts.xcodeproj; path = "../node_modules/react-native-contacts/ios/RCTContacts.xcodeproj"; sourceTree = "<group>"; };
+		AD10A4112261346400A6C562 /* startscreen_meins.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = startscreen_meins.png; path = ../../resources/public/images/startscreen_meins.png; sourceTree = "<group>"; };
+		AD10A440226136C000A6C562 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo.png; path = ../../resources/public/images/logo.png; sourceTree = "<group>"; };
 		AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNGestureHandler.xcodeproj; path = "../node_modules/react-native-gesture-handler/ios/RNGestureHandler.xcodeproj"; sourceTree = "<group>"; };
 		ADBDB91F1DFEBF0600ED6528 /* RCTBlob.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTBlob.xcodeproj; path = "../node_modules/react-native/Libraries/Blob/RCTBlob.xcodeproj"; sourceTree = "<group>"; };
 		B020BCFAED33213C5F36F9D3 /* libPods-MeinsAppTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MeinsAppTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -677,6 +681,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				AD10A4112261346400A6C562 /* startscreen_meins.png */,
+				AD10A440226136C000A6C562 /* logo.png */,
 				13B07FAE1A68108700A75B9A /* MeinsApp */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				00E356EF1AD99517003FC87E /* MeinsAppTests */,
@@ -847,6 +853,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -1268,7 +1275,9 @@
 				D81110D4D3B54B9E9562BE47 /* Foundation.ttf in Resources */,
 				5F322C0CF4784CC6924E9095 /* Ionicons.ttf in Resources */,
 				38B9029DDEBF480090DBF278 /* MaterialCommunityIcons.ttf in Resources */,
+				AD10A43E2261346500A6C562 /* startscreen_meins.png in Resources */,
 				02B59184B47446A78B15E83F /* MaterialIcons.ttf in Resources */,
+				AD10A441226136C000A6C562 /* logo.png in Resources */,
 				08D0FCB9199D4E64A255211A /* Octicons.ttf in Resources */,
 				0E918FD4254D4C02B750A040 /* SimpleLineIcons.ttf in Resources */,
 				9ADA757C7870484CADA506D0 /* Zocial.ttf in Resources */,
