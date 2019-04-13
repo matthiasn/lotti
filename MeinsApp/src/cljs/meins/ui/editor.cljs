@@ -1,7 +1,7 @@
 (ns meins.ui.editor
   (:require [re-frame.core :refer [subscribe]]
             [meins.ui.shared :refer [view text text-input touchable-opacity btn
-                                     keyboard-avoiding-view keyboard fa-icon]]
+                                     keyboard-avoiding-view keyboard fa-icon alert]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
     ;       [meins.helpers :as h]
     ;[meins.utils.parse :as p]

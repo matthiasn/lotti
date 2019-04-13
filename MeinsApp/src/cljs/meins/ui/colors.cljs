@@ -8,7 +8,7 @@
    :search-bg       {:light "#FAFAFA"
                      :dark  "#223"}
    :search-field-bg {:light "#ECECEC"
-                     :dark  "#272727"}
+                     :dark  "#445"}
    :text            {:light "#333"
                      :dark  "#D8D8D8"}
    :header-text     {:light "#FF8C00"

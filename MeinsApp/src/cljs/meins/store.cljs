@@ -1,6 +1,7 @@
 (ns meins.store
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [matthiasn.systems-toolbox.component :as st]
+            [meins.ui.shared :refer [alert]]
             [glittershark.core-async-storage :as as]
             [clojure.data.avl :as avl]
             [cljs.core.async :refer [<!]]
@@ -24,6 +25,7 @@
                       (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
+    (alert (str entry))
     (when-not (= :entry/sync msg-type)
       (put-fn (with-meta [:entry/sync entry] msg-meta)))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))

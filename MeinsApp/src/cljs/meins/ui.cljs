@@ -10,6 +10,7 @@
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]
             [meins.ui.db :as db]
+            [meins.ui.journal :as jrn]
             [meins.store :as st]
             [meins.ui.editor :as ue]))
 
@@ -35,6 +36,7 @@
                   :color        "rgb(66, 184, 221)"
                   :marginBottom 5}})
 
+#_
 (defn journal []
   [view {:style (:container styles)}
    [text {:style (:welcome styles)}
@@ -88,7 +90,7 @@
 (def bg "#223")
 
 (def app-nav (createBottomTabNavigator
-               (clj->js {:Journal  {:screen            (r/reactify-component journal)
+               (clj->js {:Journal  {:screen            (r/reactify-component jrn/journal)
                                     :navigationOptions (nav-options "list" 22)}
                          :Add      {:screen            (r/reactify-component ue/editor)
                                     :navigationOptions (nav-options "plus-square-o" 22)}
