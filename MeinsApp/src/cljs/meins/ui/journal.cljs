@@ -10,7 +10,7 @@
             [meins.ui.editor :as ed]
             [reagent.ratom :refer-macros [reaction]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                     map-view mapbox-style-url point-annotation
+                                     map-view mapbox-style-url point-annotation virtualized-list
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item
                                      rn-audio-recorder-player alert]]
@@ -106,7 +106,7 @@
             res (-> (.objects realm-db "Entry")
                     (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))
                     (.sorted "timestamp" true)
-                    (.slice 0 100))
+                    (.slice 0 1000))
             as-array (clj->js (map (fn [ts] {:timestamp (.-timestamp ts)}) res))
             search-field-bg (get-in c/colors [:search-field-bg @theme])
             bg (get-in c/colors [:list-bg @theme])
