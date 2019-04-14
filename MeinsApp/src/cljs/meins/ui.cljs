@@ -36,14 +36,6 @@
                   :color        "rgb(66, 184, 221)"
                   :marginBottom 5}})
 
-#_
-(defn journal []
-  [view {:style (:container styles)}
-   [text {:style (:welcome styles)}
-    "Journal"]
-   [text {:style (:instructions styles)}
-    instructions]])
-
 (defn add-screen []
   [view {:style (:container styles)}
    [text {:style (:welcome styles)}

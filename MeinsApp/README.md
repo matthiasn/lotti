@@ -1,4 +1,10 @@
 
+## Dependencies
+
+    $ yarn
+    $ react-native link realm
+
+
 ## Run JS Compiler
 
     $ shadow-cljs watch app

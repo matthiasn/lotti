@@ -19,13 +19,12 @@
       (let [{:keys [navigate goBack]} (js->clj navigation :keywordize-keys true)
             cancel-fn (fn []
                         (.dismiss keyboard)
-                        (navigate "journal"))
+                        (navigate "Journal"))
             save-fn #(let [new-entry (p/parse-entry (:md @local))]
                        (h/new-entry-fn emit new-entry)
                        (swap! local assoc-in [:md] "")
                        (.dismiss keyboard)
-                       #_(when-let [navigate (:navigate @local2)]
-                           (navigate "journal")))
+                       (navigate "Journal"))
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])

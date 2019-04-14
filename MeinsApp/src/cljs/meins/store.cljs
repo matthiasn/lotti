@@ -2,7 +2,9 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [matthiasn.systems-toolbox.component :as st]
             [meins.ui.shared :refer [alert]]
+            [meins.ui.db :as uidb]
             [glittershark.core-async-storage :as as]
+            ["realm" :as realm]
             [clojure.data.avl :as avl]
             [cljs.core.async :refer [<!]]
             [meins.helpers :as h]))
@@ -11,6 +13,7 @@
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
+        realm-db (:realm-db current-state)
         offset (inc (or (get last-vclock instance-id) 0))
         new-vclock {instance-id offset}
         id (or id (st/make-uuid))
@@ -22,16 +25,23 @@
         entry (h/remove-nils entry)
         new-state (-> current-state
                       (assoc-in [:entries timestamp] entry)
-                      (update-in [:all-timestamps] conj timestamp)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (alert (str entry))
     (when-not (= :entry/sync msg-type)
       (put-fn (with-meta [:entry/sync entry] msg-meta)))
+    (when realm-db
+      (try
+        (.write realm-db
+                (fn []
+                  (let [db-entry (-> entry
+                                     (select-keys [:md :timestamp :longitude :latitude])
+                                     (assoc :edn (pr-str entry))
+                                     clj->js)
+                        x (.create realm-db "Entry" db-entry true)])))
+        (catch :default e (js/console.error e))))
+
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
-      (go (<! (as/set-item timestamp entry)))
       (go (<! (as/set-item :global-vclock last-vclock)))
-      (go (<! (as/set-item :timestamps (:all-timestamps new-state))))
       {:new-state new-state})))
 
 (defn hide [{:keys [current-state msg-payload]}]
@@ -72,28 +82,24 @@
       (let [latest-vclock (second (<! (as/get-item :global-vclock)))]
         (put-fn [:debug/latest-vclock latest-vclock])
         (swap! cmp-state assoc-in [:global-vclock] latest-vclock))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
+      (catch js/Object e (js/console.error "get-global-vclock" e))))
   (go
     (try
       (let [active-theme (second (<! (as/get-item :active-theme)))]
         (swap! cmp-state assoc-in [:active-theme] (or active-theme :light)))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
+      (catch js/Object e (js/console.error "load-theme" e))))
   (go
     (try
       (let [secrets (second (<! (as/get-item :secrets)))]
         (when secrets
           (swap! cmp-state assoc-in [:secrets] secrets)))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
+      (catch js/Object e (js/console.error "load-secrets" e))))
   (go
     (try
       (let [latest-synced (second (<! (as/get-item :latest-synced)))]
         (put-fn [:debug/latest-synced latest-synced])
         (swap! cmp-state assoc-in [:latest-synced] latest-synced))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
+      (catch js/Object e (js/console.error "get-latest-synced" e))))
   (go
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
@@ -101,16 +107,8 @@
             timestamps (second (<! (as/get-item :timestamps)))
             sorted (apply sorted-set timestamps)]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
-        (swap! cmp-state assoc-in [:all-timestamps] sorted)
-        (<! (as/set-item :instance-id instance-id))
-        #_(doseq [ts timestamps]
-            (let [entry (second (<! (as/get-item ts)))
-                  offset (get-in entry [:vclock instance-id])]
-              (swap! cmp-state assoc-in [:entries ts] entry)
-              (when offset
-                (swap! cmp-state assoc-in [:vclock-map offset] entry)))))
-      (catch js/Object e
-        (put-fn [:debug/error {:msg e}]))))
+        (<! (as/set-item :instance-id instance-id)))
+      (catch js/Object e (js/console.error "load-state" e))))
   (go
     (try
       (let [hide-timestamps (second (<! (as/get-item :hide-timestamps)))]
@@ -133,16 +131,30 @@
     (go (<! (as/set-item :secrets msg-payload)))
     {:new-state new-state}))
 
+(def EntrySchema
+  {:name       "Entry"
+   :primaryKey "timestamp"
+   :properties {:timestamp "int"
+                :md        {:type "string" :indexed true }
+                :edn       "string"
+                :latitude  {:type "float" :default 0.0}
+                :logitude  {:type "float" :default 0.0}}})
+
 (defn state-fn [put-fn]
   (let [state (atom {:entries         (avl/sorted-map)
                      :active-theme    :light
-                     ;:all-timestamps (avl/sorted-set)
-                     :all-timestamps  (sorted-set)
                      :hide-timestamps (sorted-set)
                      :vclock-map      (avl/sorted-map)
                      :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
+    (-> (.open realm (clj->js {:schema [EntrySchema]}))
+        (.then (fn [db]
+                 (js/console.warn "db opened" db)
+                 (swap! state assoc :realm-db db)
+                 (reset! uidb/realm-db db)
+                 (js/console.warn (.-length (.objects db "Entry")) "entries")))
+        (.catch (fn [err] (js/console.error "error: " (.-message err)))))
     {:state state}))
 
 (defn cmp-map [cmp-id]

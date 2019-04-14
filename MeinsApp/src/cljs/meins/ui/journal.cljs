@@ -15,22 +15,24 @@
                                      rn-audio-recorder-player alert]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [clojure.pprint :as pp]
-            [meins.utils.parse :as p]))
+            [meins.utils.parse :as p]
+            [meins.ui.db :as uidb]))
 
 (defn map-url [latitude longitude]
   (str "http://staticmap.openstreetmap.de/staticmap.php?center="
        latitude "," longitude "&zoom=17&size=240x240&maptype=mapnik"
-       "&markers=" latitude "," longitude ",lightblues"))
+       "&markers=" latitude "," longitude ",lightblue"))
 
 (defn list-item [ts navigate]
   (let [theme (subscribe [:active-theme])
-        local (r/atom {})]
+        local (r/atom {})
+        realm-db @uidb/realm-db]
     (fn list-item-render [ts navigate]
-      (go (try
-            (let [entry (second (<! (as/get-item ts)))]
-              (swap! local assoc-in [:entry] entry))
-            (catch js/Object e
-              (alert e))))
+      (let [entry (-> (.objects realm-db "Entry")
+                      (.filtered (str "timestamp = " ts))
+                      (aget 0 "edn")
+                      cljs.reader/read-string)]
+        (swap! local assoc-in [:entry] entry))
       (let [text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])
             entry (:entry @local)
@@ -89,19 +91,26 @@
           ts (:timestamp entry)]
       (r/as-element [list-item ts navigate]))))
 
-(defn journal [local navigate]
+(defn journal [_]
   (let [theme (subscribe [:active-theme])
-        all-timestamps (subscribe [:all-timestamps])
+        global-vclock (subscribe [:global-vclock])
+        local (r/atom {:jrn-search ""})
         on-change-text #(swap! local assoc-in [:jrn-search] %)
-        on-clear-text #(swap! local assoc-in [:jrn-search] "")]
-    (fn [local navigate]
-      (let [as-array (clj->js (reverse (map (fn [ts] {:timestamp ts})
-                                            @all-timestamps)))
+        on-clear-text #(swap! local assoc-in [:jrn-search] "")
+        realm-db @uidb/realm-db]
+    (fn [_]
+      (let [navigate (fn [])
+            res (-> (.objects realm-db "Entry")
+                    (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))
+                    (.sorted "timestamp" true)
+                    (.slice 0 100))
+            as-array (clj->js (map (fn [ts] {:timestamp (.-timestamp ts)}) res))
             search-field-bg (get-in c/colors [:search-field-bg @theme])
             bg (get-in c/colors [:list-bg @theme])
             search-container-bg (get-in c/colors [:search-bg @theme])
             header-tab-bg (get-in c/colors [:header-tab @theme])
             light-theme (= :light @theme)]
+        @global-vclock
         [view {:style {:flex             1
                        :background-color bg}}
          [view {:style {:background-color header-tab-bg
