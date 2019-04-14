@@ -13,6 +13,45 @@
 
 (def local (r/atom {:md ""}))
 
+(defn header [save-fn cancel-fn label]
+  (let [theme (subscribe [:active-theme])]
+    (fn [save-fn cancel-fn]
+      (let [text-bg (get-in c/colors [:text-bg @theme])
+            text-color (get-in c/colors [:text @theme])
+            header-color (get-in c/colors [:header-text @theme])]
+        [view {:style {:display         "flex"
+                       :flex-direction  "row"
+                       :justify-content "space-between"
+                       :height          50}}
+         [touchable-opacity {:on-press cancel-fn
+                             :style    {:color                      text-color
+                                        :width                      100
+                                        :background-color           text-bg
+                                        :border-top-right-radius    4
+                                        :border-bottom-right-radius 4
+                                        :padding                    10}}
+          [text {:style {:font-size  24
+                         :text-align "center"
+                         :color      text-color}}
+           "cancel"]]
+         [text {:style {:padding     10
+                        :color       header-color
+                        :font-weight :bold
+                        :font-size   24}}
+          label]
+         [touchable-opacity {:on-press save-fn
+                             :style    {:padding                   10
+                                        :display                   :flex
+                                        :background-color          text-bg
+                                        :width                     100
+                                        :border-top-left-radius    4
+                                        :border-bottom-left-radius 4
+                                        :align-items               :center}}
+          [text {:style {:color      text-color
+                         :text-align "center"
+                         :font-size  24}}
+           "save"]]]))))
+
 (defn editor [_]
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
@@ -32,46 +71,15 @@
         ;(swap! local2 assoc :navigate navigate)
         [view {:style {:display        "flex"
                        :flex-direction "column"
-                       :padding-top    24}}
-         [view {:style {:display         "flex"
-                        :flex-direction  "row"
-                        :justify-content "space-between"
-                        :height          50}}
-          [touchable-opacity {:on-press cancel-fn
-                              :style    {:color                      text-color
-                                         :width                      100
-                                         :background-color           text-bg
-                                         :border-top-right-radius    10
-                                         :border-bottom-right-radius 10
-                                         :padding                    10}}
-           [text {:style {:font-size  24
-                          :text-align "center"
-                          :color      text-color}}
-            "cancel"]]
-          [text {:style {:padding     10
-                         :color       header-color
-                         :font-weight :bold
-                         :font-size   24}}
-           "New Entry"]
-          [touchable-opacity {:on-press save-fn
-                              :style    {:padding                   10
-                                         :display                   :flex
-                                         :background-color          text-bg
-                                         :width                     100
-                                         :border-top-left-radius    10
-                                         :border-bottom-left-radius 10
-                                         :align-items               :center}}
-           [text {:style {:color      text-color
-                          :text-align "center"
-                          :font-size  24}}
-            "save"]]]
+                       :padding-top    50}}
+         [header save-fn cancel-fn "New Entry"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
                                              :background-color bg
                                              :flex             1
-                                             :margin-top       50
+                                             :margin-top       20
                                              :align-items      "center"}}
           [text-input {:style              {:flex             2
                                             :font-weight      "100"

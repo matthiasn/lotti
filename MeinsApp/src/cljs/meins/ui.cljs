@@ -82,7 +82,8 @@
 (def bg "#223")
 
 (def app-nav (createBottomTabNavigator
-               (clj->js {:Journal  {:screen            (r/reactify-component jrn/journal)
+               (clj->js {:Journal  {;:screen            (r/reactify-component jrn/journal)
+                                    :screen            jrn/journal-stack
                                     :navigationOptions (nav-options "list" 22)}
                          :Add      {:screen            (r/reactify-component ue/editor)
                                     :navigationOptions (nav-options "plus-square-o" 22)}
@@ -100,10 +101,9 @@
 (def app-container
   (createAppContainer app-nav))
 
-#_
-(defn init ^:dev/after-load []
-  (.registerComponent
-    AppRegistry "MeinsApp" #(identity app-container)))
+#_(defn init ^:dev/after-load []
+    (.registerComponent
+      AppRegistry "MeinsApp" #(identity app-container)))
 
 (defn state-fn [put-fn]
   (reset! put-fn-atom put-fn)

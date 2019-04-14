@@ -10,3 +10,4 @@
 ;(reg-sub :active-theme (fn [db _] (:active-theme db)))
 (reg-sub :active-theme (fn [db _] :dark))
 (reg-sub :global-vclock (fn [db _] (:global-vclock db)))
+(reg-sub :entry-detail (fn [db _] (:entry-detail db)))
