@@ -11,7 +11,6 @@
             [meins.ui.editor :as ue]
             [re-frame.core :refer [reg-sub subscribe dispatch dispatch-sync]]
     ;       [meo.events]
-    ;        [meo.ios.healthkit :as hk]
     ;[meo.ios.sync :as sync]
             [meins.store :as store]
     ;[meo.ios.photos :as photos]
@@ -19,7 +18,7 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
     ;[meo.subs]
-            ))
+            [meins.ios.healthkit :as hk]))
 
 (enable-console-print!)
 (defonce switchboard (sb/component :client/switchboard))
@@ -34,7 +33,7 @@
 
 (defn ^:dev/after-load init []
   ;(dispatch-sync [:initialize-db])
-  (let [components #{;(hk/cmp-map :app/healthkit)
+  (let [components #{(hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
                      ;(photos/cmp-map :app/photos)
                      ;(sync/cmp-map :app/sync)
@@ -52,18 +51,20 @@
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
 
+       [:cmd/route {:from :app/healthkit
+                    :to   :app/store}]
+
+       [:cmd/route {:from :app/ui-cmp
+                    :to   :app/healthkit}]
+
        #_[:cmd/route {:from #{:app/store
                               :app/ui-cmp}
                       :to   :app/sync}]
        #_[:cmd/route {:from :app/sync
                       :to   #{:app/store
                               :app/scheduler}}]
-       #_[:cmd/route {:from :app/healthkit
-                      :to   :app/store}]
        #_[:cmd/route {:from :app/ui-cmp
                       :to   :app/photos}]
-       #_[:cmd/route {:from :app/ui-cmp
-                      :to   :app/healthkit}]
        #_(when OBSERVER
            [:cmd/attach-to-firehose :app/sync])
 

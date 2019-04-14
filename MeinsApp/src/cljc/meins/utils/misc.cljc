@@ -2,7 +2,7 @@
   (:require [clojure.string :as s]
     #?(:clj [clojure.pprint :as pp]
        :cljs [cljs.pprint :as pp])
-            [meo.specs]))
+            [meins.specs]))
 
 (defn duration-string
   "Format duration string from seconds."

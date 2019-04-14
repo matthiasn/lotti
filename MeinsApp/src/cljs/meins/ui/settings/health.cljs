@@ -2,23 +2,22 @@
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view settings-list cam text settings-list-item fa-icon
                                      touchable-opacity]]
-    ;[meo.ui.settings.common :as sc :refer [settings-icon]]
-            [re-frame.core :refer [subscribe]]
-            [cljs.tools.reader.edn :as edn]))
+            [meins.ui.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]))
 
 (defn start-watching [])
 
-(defn import-item [msg-type label icon-name put-fn]
+(defn import-item [msg-type label icon-name]
   (let [theme (subscribe [:active-theme])
-        n 30
-        click (fn [_] (put-fn [msg-type {:n n}]))
+        n 365
+        click (fn [_] (emit [msg-type {:n n}]))
         auto-check (fn [_]
-                     (put-fn [:cmd/schedule-new
-                              {:timeout (* 15 60 1000)
-                               :message [msg-type {:n n}]
-                               :id      msg-type
-                               :repeat  true
-                               :initial true}]))]
+                     (emit [:cmd/schedule-new
+                            {:timeout (* 15 60 1000)
+                             :message [msg-type {:n n}]
+                             :id      msg-type
+                             :repeat  true
+                             :initial true}]))]
     (fn [msg-type label icon-name]
       (let [item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
@@ -59,7 +58,7 @@
                             :text-align :center
                             :padding    16}}]]]))))
 
-(defn health-settings [local put-fn]
+(defn health-settings [_]
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
@@ -69,10 +68,10 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
-         [import-item :healthkit/weight "Weight" "balance-scale" put-fn]
-         [import-item :healthkit/bp "Blood Pressure" "heartbeat" put-fn]
-         [import-item :healthkit/exercise "Exercise" "forward" put-fn]
-         [import-item :healthkit/steps "Steps" "forward" put-fn]
-         [import-item :healthkit/energy "Energy" "bolt" put-fn]
-         [import-item :healthkit/sleep "Sleep" "bed" put-fn]
-         [import-item :healthkit/hrv "Heart Rate Variability" "heartbeat" put-fn]]))))
+         [import-item :healthkit/weight "Weight" "balance-scale"]
+         [import-item :healthkit/bp "Blood Pressure" "heartbeat"]
+         [import-item :healthkit/exercise "Exercise" "forward"]
+         [import-item :healthkit/steps "Steps" "forward"]
+         [import-item :healthkit/energy "Energy" "bolt"]
+         [import-item :healthkit/sleep "Sleep" "bed"]
+         [import-item :healthkit/hrv "Heart Rate Variability" "heartbeat"]]))))

@@ -3,6 +3,7 @@
 
     $ yarn
     $ react-native link realm
+    $ react-native link rn-apple-healthkit
 
 
 ## Run JS Compiler

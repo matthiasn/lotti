@@ -1,5 +1,5 @@
 (ns meins.specs
-  (:require  [meo.utils.parse :as p]
+  (:require  [meins.utils.parse :as p]
     #?(:clj  [clojure.spec.alpha :as s]
        :cljs [cljs.spec.alpha :as s])))
 
