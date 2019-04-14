@@ -10,7 +10,7 @@
             [meins.ui.editor :as ed]
             [reagent.ratom :refer-macros [reaction]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                     #_map-view #_mapbox-style-url #_point-annotation
+                                     map-view mapbox-style-url point-annotation
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item
                                      rn-audio-recorder-player alert]]
@@ -177,9 +177,8 @@
                            :padding-bottom   10}}
            [text {:style {:color          text-color
                           :text-align     "center"
-                          :font-size      8
-                          :padding-bottom 5
-                          :margin-top     5}}
+                          :font-size      12
+                          :padding-bottom 5}}
             (h/format-time (:timestamp entry))]
            [text-input {:style              {:flex             2
                                              :font-weight      "100"
@@ -197,38 +196,32 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
-
-           [text {:style {:color          text-color
-                          :text-align     "center"
-                          :font-size      8
-                          :padding-bottom 5
-                          :margin-top     5}}
-            (str latitude " - " longitude)]
            (when-let [media (:media entry)]
              [image {:style  {:width  "100%"
                               :height 500}
                      :source {:uri (-> media :image :uri)}}])
-           #_(when latitude
-               [map-view {:centerCoordinate [longitude latitude]
-                          :scrollEnabled    false
-                          :rotateEnabled    false
-                          :styleURL         (get mapbox-style-url (:map-style @cfg-map))
-                          :style            {:width         "100%"
-                                             :height        200
-                                             :margin-bottom 30}
-                          :zoomLevel        15}
-                [point-annotation {:coordinate [longitude latitude]}
-                 [view {:style {:width           24
-                                :height          24
-                                :alignItems      "center"
-                                :justifyContent  "center"
-                                :backgroundColor "white"
-                                :borderRadius    12}}
-                  [view {:style {:width           24
-                                 :height          24
-                                 :backgroundColor "orange"
-                                 :borderRadius    12
-                                 :transform       [{:scale 0.7}]}}]]]])
+           (when latitude
+             [map-view {:centerCoordinate [longitude latitude]
+                        :scrollEnabled    false
+                        :rotateEnabled    false
+                        :styleURL         (get mapbox-style-url :Street)
+                        :style            {:width         "100%"
+                                           :height        250
+                                           :margin-bottom 30}
+                        :zoomLevel        15}
+              [point-annotation {:coordinate [longitude latitude]
+                                 :id         (str (:timestamp entry))}
+               [view {:style {:width           24
+                              :height          24
+                              :alignItems      "center"
+                              :justifyContent  "center"
+                              :backgroundColor "white"
+                              :borderRadius    12}}
+                [view {:style {:width           24
+                               :height          24
+                               :backgroundColor "orange"
+                               :borderRadius    12
+                               :transform       [{:scale 0.7}]}}]]]])
            #_(when-let [audio-file (:audio_file entry)]
                (let [status (:status @player-state)
                      pos (h/mm-ss (.floor js/Math (:pos @player-state)))
@@ -262,60 +255,12 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
-          #_[text {:style {:margin-top  20
-                           :margin-left 10
-                           :color       text-color
-                           :text-align  "left"
-                           :font-size   9}}
-             (with-out-str (pp/pprint entry))]]]))))
-
-#_(defn journal-tab [local theme]
-    (let [header-bg (get-in c/colors [:header-tab @theme])
-          text-color (get-in c/colors [:text @theme])
-          list-bg (get-in c/colors [:list-bg @theme])
-          entry-local (r/atom {})
-          nav (r/atom {})
-          save-fn #(let [updated (p/parse-entry (:md @entry-local))
-                         go-back (:goBack @nav)]
-                     (emit [:entry/persist (merge (:entry @entry-local) updated)])
-                     (reset! entry-local {})
-                     (go-back))
-          header-right (fn [_]
-                         [touchable-opacity {:on-press save-fn
-                                             :style    {:padding-top    8
-                                                        :padding-left   12
-                                                        :padding-right  12
-                                                        :padding-bottom 8}}
-                          [text {:style {:color      "#0078e7"
-                                         :text-align "center"
-                                         :font-size  18}}
-                           "save"]])]
-      (stack-navigator
-        {:journal {:screen (stack-screen
-                             (fn [{:keys [screenProps navigation] :as props}]
-                               (let [{:keys [navigate goBack]} navigation]
-                                 [journal local navigate]))
-                             {:headerTitleStyle {:color text-color}
-                              :headerStyle      {:backgroundColor header-bg}
-                              :headerTitle      (fn [{:keys [tintColor]}]
-                                                  [view {:style {:flex           1
-                                                                 :flex-direction :row}}
-                                                   [image {:style  {:width  40
-                                                                    :height 40}
-                                                           :source logo-img}]
-                                                   [text {:style {:color       text-color
-                                                                  :text-align  "left"
-                                                                  :margin-left 4
-                                                                  :margin-top  6
-                                                                  :font-size   20}}
-                                                    "meo"]])})}
-         :entry   {:screen (stack-screen (entry-detail local entry-local nav)
-                                         {:title            "Detail"
-                                          :headerTitleStyle {:color text-color}
-                                          :headerRight      header-right
-                                          :headerStyle      {:backgroundColor header-bg}})}}
-        {:cardStyle {:backgroundColor list-bg}})))
-
+          #_
+          [text {:style {:margin-top 4
+                         :color      text-color
+                         :text-align "left"
+                         :font-size  8}}
+           (with-out-str (pp/pprint entry))]]]))))
 
 (def journal-stack
   (createStackNavigator
