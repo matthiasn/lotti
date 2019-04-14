@@ -154,8 +154,8 @@
         saved (get-in current-state [:entries-map ts])
         relevant #(select-keys % [:md :questionnaires :custom_fields :task
                                   :habit :completed_time :starred :img-size
-                                  :primary_story :story_name :flagged
-                                  :adjusted_ts :custom_field_cfg :saga_cfg
+                                  :primary_story :story_name :flagged :perm_tags
+                                  :adjusted_ts :custom_field_cfg :saga_cfg :tags
                                   :dashboard_cfg :story_cfg :stars :album_cfg
                                   :post_mortem])
         changed? (not= (relevant saved) (relevant msg-payload))]
