@@ -2,7 +2,7 @@
   (:require [clojure.pprint :as pp]
             [meins.utils.misc :as um]
             [meins.helpers :as h]
-            ["rn-apple-healthkit" :as hk]
+            ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]
             [meins.ios.healthkit.common :as hc]

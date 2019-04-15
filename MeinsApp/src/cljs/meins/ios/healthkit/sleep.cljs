@@ -1,6 +1,6 @@
 (ns meins.ios.healthkit.sleep
   (:require [meins.helpers :as h]
-            ["rn-apple-healthkit" :as hk]
+            ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [meins.ios.healthkit.common :as hc]
             [matthiasn.systems-toolbox.component :as st]))

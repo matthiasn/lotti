@@ -1,6 +1,6 @@
 (ns meins.ios.healthkit.exercise
   (:require [meins.ios.healthkit.common :as hc]
-            ["rn-apple-healthkit" :as hk]
+            ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]))
 

@@ -1,6 +1,6 @@
 (ns meins.ios.healthkit.bp
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require ["rn-apple-healthkit" :as hk]
+  (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [meins.ios.healthkit.storage :as hs]
             [glittershark.core-async-storage :as as]
@@ -50,8 +50,8 @@
         hr-opts (clj->js {:startDate start})
         init-cb (fn [err res]
                   (.getBloodPressureSamples hk bp-opts (partial bp-cb put-fn))
-                  #_(.getRestingHeartRate hk hr-opts (partial hr-cb "#RHR" put-fn))
-                  #_(.getWalkingHeartRateAverage hk hr-opts (partial hr-cb "#WHR" put-fn)))
+                  (.getRestingHeartRate hk hr-opts (partial hr-cb "#RHR" put-fn))
+                  (.getWalkingHeartRateAverage hk hr-opts (partial hr-cb "#WHR" put-fn)))
         new-state (assoc current-state :last-read-bp now-dt)]
     (.initHealthKit hk hc/hk-opts init-cb)
     {:new-state new-state}))
