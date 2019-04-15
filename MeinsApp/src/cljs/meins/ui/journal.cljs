@@ -94,39 +94,45 @@
           ts (:timestamp entry)]
       (r/as-element [list-item ts navigate]))))
 
+(defn search-field [local]
+  (let [theme (subscribe [:active-theme])
+        on-change-text #(swap! local assoc-in [:jrn-search] %)
+        on-clear-text #(swap! local assoc-in [:jrn-search] "")]
+    (fn [_local]
+      (let [light-theme (= :light @theme)
+            search-field-bg (get-in c/colors [:search-field-bg @theme])
+            header-tab-bg (get-in c/colors [:header-tab @theme])]
+        [view {:style {:background-color header-tab-bg
+                       :padding-top      40
+                       :padding-bottom   6}}
+         [search-bar {:placeholder        "search..."
+                      :lightTheme         light-theme
+                      :on-change-text     on-change-text
+                      :on-clear-text      on-clear-text
+                      :keyboard-type      "twitter"
+                      :keyboardAppearance (if light-theme "light" "dark")
+                      :inputStyle         {:backgroundColor search-field-bg}
+                      :containerStyle     {:backgroundColor   "transparent"
+                                           :borderTopWidth    0
+                                           :borderBottomWidth 0}}]]))))
+
 (defn journal [_]
   (let [theme (subscribe [:active-theme])
         global-vclock (subscribe [:global-vclock])
         local (r/atom {:jrn-search ""})
-        on-change-text #(swap! local assoc-in [:jrn-search] %)
-        on-clear-text #(swap! local assoc-in [:jrn-search] "")
         realm-db @uidb/realm-db]
-    (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
+    (fn [{:keys [navigation] :as props}]
+      (let [{:keys [navigate] :as n} (js->clj navigation :keywordize-keys true)
             res (-> (.objects realm-db "Entry")
                     (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))
                     (.sorted "timestamp" true)
                     (.slice 0 1000))
             as-array (clj->js (map (fn [ts] {:timestamp (.-timestamp ts)}) res))
-            search-field-bg (get-in c/colors [:search-field-bg @theme])
-            bg (get-in c/colors [:list-bg @theme])
-            search-container-bg (get-in c/colors [:search-bg @theme])
-            header-tab-bg (get-in c/colors [:header-tab @theme])
-            light-theme (= :light @theme)]
+            bg (get-in c/colors [:list-bg @theme])]
         @global-vclock
         [view {:style {:flex             1
                        :background-color bg}}
-         [view {:style {:background-color header-tab-bg
-                        :padding-top      40
-                        :padding-bottom   6}}
-          [search-bar {:placeholder    "search..."
-                       :lightTheme     light-theme
-                       :on-change-text on-change-text
-                       :on-clear-text  on-clear-text
-                       :inputStyle     {:backgroundColor search-field-bg}
-                       :containerStyle {:backgroundColor   "transparent"
-                                        :borderTopWidth    0
-                                        :borderBottomWidth 0}}]]
+         [search-field local]
          [flat-list {:style        {:flex           1
                                     :padding-bottom 50
                                     :width          "100%"}
@@ -255,12 +261,11 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
-          #_
-          [text {:style {:margin-top 4
-                         :color      text-color
-                         :text-align "left"
-                         :font-size  8}}
-           (with-out-str (pp/pprint entry))]]]))))
+          #_[text {:style {:margin-top 4
+                           :color      text-color
+                           :text-align "left"
+                           :font-size  8}}
+             (with-out-str (pp/pprint entry))]]]))))
 
 (def journal-stack
   (createStackNavigator
