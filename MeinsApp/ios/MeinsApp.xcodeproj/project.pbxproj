@@ -31,10 +31,10 @@
 		1C3253DDEEEC4696A1481B68 /* libRNVectorIcons.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E03094FEA640F6AE4B5635 /* libRNVectorIcons.a */; };
 		2DD6BD3C230748B9ABA76369 /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 417DD79C6B5C4D07A3A9F9C4 /* Feather.ttf */; };
 		38B9029DDEBF480090DBF278 /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 762D7FB3AC6943C28471F4D9 /* MaterialCommunityIcons.ttf */; };
-		433F90CC7075C6793DCDE152 /* libPods-MeinsApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7E1929174CB513748A396AFE /* libPods-MeinsApp.a */; };
 		51A826363C1F44E78537F26B /* libRealmReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C98CFD8839E47CDBF25F98F /* libRealmReact.a */; };
 		5F322C0CF4784CC6924E9095 /* Ionicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5A05FE3814B59ABC7CE0E /* Ionicons.ttf */; };
 		7AA75205427341228039628D /* libRCTAppleHealthKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6F8076AB37F44B45966DA0B3 /* libRCTAppleHealthKit.a */; };
+		7D05F3B6D192882079865F7B /* Pods_MeinsAppTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4837545098E592D599CDE28C /* Pods_MeinsAppTests.framework */; };
 		832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 832341B51AAA6A8300B99B32 /* libRCTText.a */; };
 		87748996341F4981BD8AFCB2 /* FontAwesome.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 85D38AEEB7BF4F39AEF11F02 /* FontAwesome.ttf */; };
 		9715AD94CB7E453CA13E916A /* Entypo.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CF4BEE7CE64C4075A1BA153C /* Entypo.ttf */; };
@@ -48,13 +48,17 @@
 		AD10A48F2263C00200A6C562 /* libRCTMGL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD10A48E2263BFDB00A6C562 /* libRCTMGL.a */; };
 		AD10A4D82263E23800A6C562 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD10A4D72263E23800A6C562 /* HealthKit.framework */; };
 		AD2054DA2249A37C0034006D /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
+		AD3C1AC12265C5650072585D /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1AC02265C5650072585D /* CFNetwork.framework */; };
+		AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1AC22265C57D0072585D /* Security.framework */; };
+		AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1C0F226672D60072585D /* liblibPods.a */; };
+		AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1A8F2265C54E0072585D /* libMailCore-ios.a */; };
 		AD788AB122497E4E004E475D /* libRNGestureHandler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD788AAD22497E08004E475D /* libRNGestureHandler.a */; };
 		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
 		AE2F5CF358404C97B632D6C8 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */; };
 		D81110D4D3B54B9E9562BE47 /* Foundation.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8E7515A8D7D9404593CF4DC3 /* Foundation.ttf */; };
 		EC99EB5CCF9848638B400F75 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 9016D1D5D71749AB86CD4EB2 /* libc++.tbd */; };
 		ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED297162215061F000B7C4FE /* JavaScriptCore.framework */; };
-		F706DA1151E250D72E7735E1 /* libPods-MeinsAppTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B020BCFAED33213C5F36F9D3 /* libPods-MeinsAppTests.a */; };
+		EEF47224BA7944D2BDCD85F2 /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D26F25321884E449E113B7D /* libRNMailCore.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -310,6 +314,76 @@
 			remoteGlobalIDString = 3774C88D1D2092F20000B3F3;
 			remoteInfo = RCTAppleHealthKit;
 		};
+		AD3C1B75226668A10072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 134814201AA4EA6300B7C361;
+			remoteInfo = RNMailCore;
+		};
+		AD3C1C1D226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C64EA537169E772200778456;
+			remoteInfo = "static mailcore2 osx";
+		};
+		AD3C1C1F226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C6BA2C191705F4E6003F0E9E;
+			remoteInfo = "static mailcore2 ios";
+		};
+		AD3C1C21226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C64EA78C169F259200778456;
+			remoteInfo = tests;
+		};
+		AD3C1C23226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C6A81B911706840C00882C15;
+			remoteInfo = "test-ios";
+		};
+		AD3C1C25226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C6BD288D170BD71100A91AC1;
+			remoteInfo = "mailcore osx";
+		};
+		AD3C1C27226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 27780C3A19CF9CD100C77E44;
+			remoteInfo = "mailcore ios";
+		};
+		AD3C1C29226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C6B5AE0219F630B3001352A6;
+			remoteInfo = unittest;
+		};
+		AD3C1C2B226675250072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C600B6141A242C3F000728F1;
+			remoteInfo = unittestcpp;
+		};
+		AD3C1C2D226675330072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = C6BA2B091705F4E6003F0E9E;
+			remoteInfo = "static mailcore2 ios";
+		};
 		AD788AAC22497E08004E475D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */;
@@ -427,11 +501,15 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MeinsApp/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = MeinsApp/main.m; sourceTree = "<group>"; };
 		146833FF1AC3E56700842450 /* React.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = React.xcodeproj; path = "../node_modules/react-native/React/React.xcodeproj"; sourceTree = "<group>"; };
+		1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNMailCore.xcodeproj; path = "../node_modules/@matthiasn/react-native-mailcore/ios/RNMailCore.xcodeproj"; sourceTree = "<group>"; };
+		1D26F25321884E449E113B7D /* libRNMailCore.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNMailCore.a; sourceTree = "<group>"; };
 		214A0E057F7A4D9081890589 /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
 		2D16E6891FA4F8E400B85C8A /* libReact.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReact.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C98CFD8839E47CDBF25F98F /* libRealmReact.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRealmReact.a; sourceTree = "<group>"; };
 		417DD79C6B5C4D07A3A9F9C4 /* Feather.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Feather.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Feather.ttf"; sourceTree = "<group>"; };
+		457276E8CD39EB8675A73E3B /* Pods_MeinsApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MeinsApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNAudioRecorderPlayer.xcodeproj; path = "../node_modules/react-native-audio-recorder-player/ios/RNAudioRecorderPlayer.xcodeproj"; sourceTree = "<group>"; };
+		4837545098E592D599CDE28C /* Pods_MeinsAppTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MeinsAppTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C74629DB19F44988E6BF27D /* libRNAudioRecorderPlayer.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNAudioRecorderPlayer.a; sourceTree = "<group>"; };
 		52FEC448AC55498799855BE7 /* MaterialIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialIcons.ttf"; sourceTree = "<group>"; };
 		5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTAnimation.xcodeproj; path = "../node_modules/react-native/Libraries/NativeAnimation/RCTAnimation.xcodeproj"; sourceTree = "<group>"; };
@@ -439,7 +517,6 @@
 		6FE0958684E5421CBE73ED09 /* RNVectorIcons.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNVectorIcons.xcodeproj; path = "../node_modules/react-native-vector-icons/RNVectorIcons.xcodeproj"; sourceTree = "<group>"; };
 		762D7FB3AC6943C28471F4D9 /* MaterialCommunityIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialCommunityIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"; sourceTree = "<group>"; };
 		78C398B01ACF4ADC00677621 /* RCTLinking.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTLinking.xcodeproj; path = "../node_modules/react-native/Libraries/LinkingIOS/RCTLinking.xcodeproj"; sourceTree = "<group>"; };
-		7E1929174CB513748A396AFE /* libPods-MeinsApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MeinsApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F902C394BE3ED77418D562B /* Pods-MeinsApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MeinsApp.debug.xcconfig"; path = "Target Support Files/Pods-MeinsApp/Pods-MeinsApp.debug.xcconfig"; sourceTree = "<group>"; };
 		7FFC497D8F57497E990DACA9 /* RCTAppleHealthKit.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTAppleHealthKit.xcodeproj; path = "../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit.xcodeproj"; sourceTree = "<group>"; };
 		832341B01AAA6A8300B99B32 /* RCTText.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTText.xcodeproj; path = "../node_modules/react-native/Libraries/Text/RCTText.xcodeproj"; sourceTree = "<group>"; };
@@ -455,9 +532,13 @@
 		AD10A4892263BFDB00A6C562 /* RCTMGL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTMGL.xcodeproj; path = "../node_modules/@mapbox/react-native-mapbox-gl/ios/RCTMGL.xcodeproj"; sourceTree = "<group>"; };
 		AD10A4D72263E23800A6C562 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		AD10A4D92263E23800A6C562 /* MeinsApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = MeinsApp.entitlements; path = MeinsApp/MeinsApp.entitlements; sourceTree = "<group>"; };
+		AD3C1A8F2265C54E0072585D /* libMailCore-ios.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libMailCore-ios.a"; path = "Pods/mailcore2-ios/lib/libMailCore-ios.a"; sourceTree = "<group>"; };
+		AD3C1AC02265C5650072585D /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		AD3C1AC22265C57D0072585D /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		AD3C1C0F226672D60072585D /* liblibPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = liblibPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD3C1C12226675240072585D /* mailcore2.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = mailcore2.xcodeproj; path = "../../../mailcore2/build-mac/mailcore2.xcodeproj"; sourceTree = "<group>"; };
 		AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNGestureHandler.xcodeproj; path = "../node_modules/react-native-gesture-handler/ios/RNGestureHandler.xcodeproj"; sourceTree = "<group>"; };
 		ADBDB91F1DFEBF0600ED6528 /* RCTBlob.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTBlob.xcodeproj; path = "../node_modules/react-native/Libraries/Blob/RCTBlob.xcodeproj"; sourceTree = "<group>"; };
-		B020BCFAED33213C5F36F9D3 /* libPods-MeinsAppTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MeinsAppTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTCamera.xcodeproj; path = "../node_modules/react-native-camera/ios/RCTCamera.xcodeproj"; sourceTree = "<group>"; };
 		CF4BEE7CE64C4075A1BA153C /* Entypo.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Entypo.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Entypo.ttf"; sourceTree = "<group>"; };
 		D2D1E8640FD3AEA40CC47AE4 /* Pods-MeinsAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MeinsAppTests.release.xcconfig"; path = "Target Support Files/Pods-MeinsAppTests/Pods-MeinsAppTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -476,7 +557,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				140ED2AC1D01E1AD002B40FF /* libReact.a in Frameworks */,
-				F706DA1151E250D72E7735E1 /* libPods-MeinsAppTests.a in Frameworks */,
+				7D05F3B6D192882079865F7B /* Pods_MeinsAppTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -484,6 +565,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */,
+				AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */,
+				AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */,
+				AD3C1AC12265C5650072585D /* CFNetwork.framework in Frameworks */,
 				AD10A48F2263C00200A6C562 /* libRCTMGL.a in Frameworks */,
 				AD788AB122497E4E004E475D /* libRNGestureHandler.a in Frameworks */,
 				ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */,
@@ -505,11 +590,11 @@
 				1C3253DDEEEC4696A1481B68 /* libRNVectorIcons.a in Frameworks */,
 				16C1B48B925B44EB9A68CB64 /* libRCTContacts.a in Frameworks */,
 				A0CFAE402C174F1AB5A9497F /* libRCTCamera.a in Frameworks */,
-				433F90CC7075C6793DCDE152 /* libPods-MeinsApp.a in Frameworks */,
 				51A826363C1F44E78537F26B /* libRealmReact.a in Frameworks */,
 				EC99EB5CCF9848638B400F75 /* libc++.tbd in Frameworks */,
 				AE2F5CF358404C97B632D6C8 /* libz.tbd in Frameworks */,
 				7AA75205427341228039628D /* libRCTAppleHealthKit.a in Frameworks */,
+				EEF47224BA7944D2BDCD85F2 /* libRNMailCore.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -636,14 +721,18 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AD3C1C0F226672D60072585D /* liblibPods.a */,
+				AD3C1AC22265C57D0072585D /* Security.framework */,
+				AD3C1AC02265C5650072585D /* CFNetwork.framework */,
+				AD3C1A8F2265C54E0072585D /* libMailCore-ios.a */,
 				AD10A4D72263E23800A6C562 /* HealthKit.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				ED2971642150620600B7C4FE /* JavaScriptCore.framework */,
 				2D16E6891FA4F8E400B85C8A /* libReact.a */,
-				7E1929174CB513748A396AFE /* libPods-MeinsApp.a */,
-				B020BCFAED33213C5F36F9D3 /* libPods-MeinsAppTests.a */,
 				9016D1D5D71749AB86CD4EB2 /* libc++.tbd */,
 				DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */,
+				457276E8CD39EB8675A73E3B /* Pods_MeinsApp.framework */,
+				4837545098E592D599CDE28C /* Pods_MeinsAppTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -707,6 +796,7 @@
 				BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */,
 				A46C5BC50F154F5A91D3BE92 /* RealmReact.xcodeproj */,
 				7FFC497D8F57497E990DACA9 /* RCTAppleHealthKit.xcodeproj */,
+				1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -723,6 +813,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				AD3C1C12226675240072585D /* mailcore2.xcodeproj */,
 				AD10A4862263BFA000A6C562 /* Mapbox.framework */,
 				AD10A4112261346400A6C562 /* startscreen_meins.png */,
 				AD10A440226136C000A6C562 /* logo.png */,
@@ -773,6 +864,29 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AD3C1B45226668A10072585D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD3C1B76226668A10072585D /* libRNMailCore.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD3C1C13226675240072585D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD3C1C1E226675250072585D /* libMailCore.a */,
+				AD3C1C20226675250072585D /* libMailCore-ios.a */,
+				AD3C1C22226675250072585D /* tests */,
+				AD3C1C24226675250072585D /* test-ios.app */,
+				AD3C1C26226675250072585D /* MailCore.framework */,
+				AD3C1C28226675250072585D /* MailCore.framework */,
+				AD3C1C2A226675250072585D /* unittest.xctest */,
+				AD3C1C2C226675250072585D /* unittestcpp */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		AD788A7F22497E08004E475D /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -800,6 +914,7 @@
 				0AED3B0A72964785B9A04E1E /* libRCTCamera.a */,
 				3C98CFD8839E47CDBF25F98F /* libRealmReact.a */,
 				6F8076AB37F44B45966DA0B3 /* libRCTAppleHealthKit.a */,
+				1D26F25321884E449E113B7D /* libRNMailCore.a */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -884,6 +999,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				AD3C1C2E226675330072585D /* PBXTargetDependency */,
 			);
 			name = MeinsApp;
 			productName = "Hello World";
@@ -897,7 +1013,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 940;
-				ORGANIZATIONNAME = Facebook;
+				ORGANIZATIONNAME = "Matthias Nehlsen";
 				TargetAttributes = {
 					00E356ED1AD99517003FC87E = {
 						CreatedOnToolsVersion = 6.2;
@@ -927,6 +1043,10 @@
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectReferences = (
+				{
+					ProductGroup = AD3C1C13226675240072585D /* Products */;
+					ProjectRef = AD3C1C12226675240072585D /* mailcore2.xcodeproj */;
+				},
 				{
 					ProductGroup = 00C302A81ABCB8CE00DB3ED1 /* Products */;
 					ProjectRef = 00C302A71ABCB8CE00DB3ED1 /* RCTActionSheet.xcodeproj */;
@@ -1002,6 +1122,10 @@
 				{
 					ProductGroup = AD788A7F22497E08004E475D /* Products */;
 					ProjectRef = AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */;
+				},
+				{
+					ProductGroup = AD3C1B45226668A10072585D /* Products */;
+					ProjectRef = 1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */;
 				},
 				{
 					ProductGroup = ADECBD8422485345000EC59D /* Products */;
@@ -1262,6 +1386,69 @@
 			remoteRef = AD10A53222649C5200A6C562 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		AD3C1B76226668A10072585D /* libRNMailCore.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRNMailCore.a;
+			remoteRef = AD3C1B75226668A10072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C1E226675250072585D /* libMailCore.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libMailCore.a;
+			remoteRef = AD3C1C1D226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C20226675250072585D /* libMailCore-ios.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libMailCore-ios.a";
+			remoteRef = AD3C1C1F226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C22226675250072585D /* tests */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = tests;
+			remoteRef = AD3C1C21226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C24226675250072585D /* test-ios.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = "test-ios.app";
+			remoteRef = AD3C1C23226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C26226675250072585D /* MailCore.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = MailCore.framework;
+			remoteRef = AD3C1C25226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C28226675250072585D /* MailCore.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = MailCore.framework;
+			remoteRef = AD3C1C27226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C2A226675250072585D /* unittest.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = unittest.xctest;
+			remoteRef = AD3C1C29226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1C2C226675250072585D /* unittestcpp */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = unittestcpp;
+			remoteRef = AD3C1C2B226675250072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		AD788AAD22497E08004E475D /* libRNGestureHandler.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1478,6 +1665,11 @@
 			target = 13B07F861A680F5B00A75B9A /* MeinsApp */;
 			targetProxy = 00E356F41AD99517003FC87E /* PBXContainerItemProxy */;
 		};
+		AD3C1C2E226675330072585D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "static mailcore2 ios";
+			targetProxy = AD3C1C2D226675330072585D /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
@@ -1512,6 +1704,7 @@
 					"$(SRCROOT)/../node_modules/realm/src/**",
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = MeinsAppTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -1546,6 +1739,7 @@
 					"$(SRCROOT)/../node_modules/realm/src/**",
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = MeinsAppTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -1583,16 +1777,33 @@
 					"$(SRCROOT)/../node_modules/realm/src/**",
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
+					"$(SRCROOT)/Pods/mailcore2-ios/include/**",
+					"$(BUILT_PRODUCTS_DIR)/../../include/**",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios/**",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_ROOT}/mailcore2-ios/lib\"/**",
+					"$(PROJECT_DIR)/Pods/mailcore2-ios/lib",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-lctemplate-ios",
+					"-letpan-ios",
+					"-lxml2",
+					"-lsasl2",
+					"-liconv",
+					"-ltidy",
+					"-lz",
+					"-stdlib=libc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = MeinsApp;
+				"SYSTEM_HEADER_SEARCH_PATHS[arch=*]" = "\"$(BUILT_PRODUCTS_DIR)/../../include\"/**";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -1615,9 +1826,17 @@
 					"$(SRCROOT)/../node_modules/realm/src/**",
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
+					"$(SRCROOT)/Pods/mailcore2-ios/include/MailCore/**",
+					"$(BUILT_PRODUCTS_DIR)/../../include/**",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_ROOT}/mailcore2-ios/lib\"/**",
+					"$(PROJECT_DIR)/Pods/mailcore2-ios/lib",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1625,6 +1844,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = MeinsApp;
+				"SYSTEM_HEADER_SEARCH_PATHS[arch=*]" = "\"$(BUILT_PRODUCTS_DIR)/../../include\"/**";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;

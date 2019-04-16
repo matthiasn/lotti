@@ -10,14 +10,12 @@
             [meins.store :as st]
             [meins.ui.editor :as ue]
             [re-frame.core :refer [reg-sub subscribe dispatch dispatch-sync]]
-    ;       [meo.events]
-    ;[meo.ios.sync :as sync]
+            [meins.ios.sync :as sync]
             [meins.store :as store]
     ;[meo.ios.photos :as photos]
             [meins.ui :as ui]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
-    ;[meo.subs]
             [meins.ios.healthkit :as hk]))
 
 (enable-console-print!)
@@ -36,7 +34,7 @@
   (let [components #{(hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
                      ;(photos/cmp-map :app/photos)
-                     ;(sync/cmp-map :app/sync)
+                     (sync/cmp-map :app/sync)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
         components (make-observable components)]
@@ -57,12 +55,14 @@
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/healthkit}]
 
-       #_[:cmd/route {:from #{:app/store
-                              :app/ui-cmp}
-                      :to   :app/sync}]
-       #_[:cmd/route {:from :app/sync
-                      :to   #{:app/store
-                              :app/scheduler}}]
+       [:cmd/route {:from #{:app/store
+                            :app/ui-cmp}
+                    :to   :app/sync}]
+
+       [:cmd/route {:from :app/sync
+                    :to   #{:app/store
+                            :app/scheduler}}]
+
        #_[:cmd/route {:from :app/ui-cmp
                       :to   :app/photos}]
        #_(when OBSERVER

@@ -7,11 +7,10 @@
             [meins.ui.shared :refer [view text fa-icon settings-list alert
                                      settings-list-header settings-list-item]]
             [meins.ui.settings.db :as db]
+            [meins.ui.settings.sync :as sync]
             [meins.ui.settings.health :as sh]
-            [cljs.pprint :as pp]
-            [meins.ui.colors :as c]))
-
-(def bg "#223")
+            [meins.ui.colors :as c]
+            [cljs.pprint :as pp]))
 
 (def styles
   {:container    {:flex            1
@@ -63,9 +62,8 @@
                        :text-align :center}}]]))
 
 (defn settings-wrapper [props]
-  (let [;all-timestamps (subscribe [:all-timestamps])
-        theme (subscribe [:active-theme])]
-    (fn [{:keys [screenProps navigation] :as props}]
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
             bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:text-bg @theme])
@@ -145,6 +143,7 @@
 (def settings-stack
   (createStackNavigator
     (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
+              :sync     {:screen (r/reactify-component sync/sync-settings)}
               :db       {:screen (r/reactify-component db/db-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})
     (clj->js {;:headerMode "none"

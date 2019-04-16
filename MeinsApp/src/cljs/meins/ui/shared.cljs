@@ -36,8 +36,6 @@
 (def logo-img (js/require "../images/meo.png"))
 
 (def rn-audio-recorder-player (aget react-native-audio-recorder-player "default"))
-
-(def react-native-camera (js/require "react-native-camera"))
 (def cam (r/adapt-react-class (aget react-native-camera "default")))
 
 (def fa-icon (r/adapt-react-class (aget FontAwesome "default")))
