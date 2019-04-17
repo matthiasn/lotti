@@ -29,6 +29,7 @@
 		146834051AC3E58100842450 /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		16C1B48B925B44EB9A68CB64 /* libRCTContacts.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7C4439073564454887DC4B1 /* libRCTContacts.a */; };
 		1C3253DDEEEC4696A1481B68 /* libRNVectorIcons.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 05E03094FEA640F6AE4B5635 /* libRNVectorIcons.a */; };
+		1EBE383B8A614674B89AB333 /* libRNCCameraRoll.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CF8A87E7256C4F0C8B3D2FA7 /* libRNCCameraRoll.a */; };
 		2DD6BD3C230748B9ABA76369 /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 417DD79C6B5C4D07A3A9F9C4 /* Feather.ttf */; };
 		38B9029DDEBF480090DBF278 /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 762D7FB3AC6943C28471F4D9 /* MaterialCommunityIcons.ttf */; };
 		51A826363C1F44E78537F26B /* libRealmReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C98CFD8839E47CDBF25F98F /* libRealmReact.a */; };
@@ -52,6 +53,7 @@
 		AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1AC22265C57D0072585D /* Security.framework */; };
 		AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1C0F226672D60072585D /* liblibPods.a */; };
 		AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1A8F2265C54E0072585D /* libMailCore-ios.a */; };
+		AD3C1DA7226690C40072585D /* libRCTCameraRoll.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1D7E226690820072585D /* libRCTCameraRoll.a */; };
 		AD788AB122497E4E004E475D /* libRNGestureHandler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD788AAD22497E08004E475D /* libRNGestureHandler.a */; };
 		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
 		AE2F5CF358404C97B632D6C8 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */; };
@@ -59,6 +61,7 @@
 		EC99EB5CCF9848638B400F75 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 9016D1D5D71749AB86CD4EB2 /* libc++.tbd */; };
 		ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED297162215061F000B7C4FE /* JavaScriptCore.framework */; };
 		EEF47224BA7944D2BDCD85F2 /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D26F25321884E449E113B7D /* libRNMailCore.a */; };
+		FA0DC4B9A8B7962799FE65DF /* Pods_MeinsApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 457276E8CD39EB8675A73E3B /* Pods_MeinsApp.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -384,6 +387,20 @@
 			remoteGlobalIDString = C6BA2B091705F4E6003F0E9E;
 			remoteInfo = "static mailcore2 ios";
 		};
+		AD3C1D7D226690820072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD3C1D6B226690820072585D /* RCTCameraRoll.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 58B5115D1A9E6B3D00147676;
+			remoteInfo = RCTCameraRoll;
+		};
+		AD3C1DFA226696B20072585D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B524EBCF24C4422A9FFFA564 /* RNCCameraRoll.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 58B5115D1A9E6B3D00147676;
+			remoteInfo = RNCCameraRoll;
+		};
 		AD788AAC22497E08004E475D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */;
@@ -537,10 +554,13 @@
 		AD3C1AC22265C57D0072585D /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		AD3C1C0F226672D60072585D /* liblibPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = liblibPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD3C1C12226675240072585D /* mailcore2.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = mailcore2.xcodeproj; path = "../../../mailcore2/build-mac/mailcore2.xcodeproj"; sourceTree = "<group>"; };
+		AD3C1D6B226690820072585D /* RCTCameraRoll.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTCameraRoll.xcodeproj; path = "../node_modules/react-native/Libraries/CameraRoll/RCTCameraRoll.xcodeproj"; sourceTree = "<group>"; };
 		AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNGestureHandler.xcodeproj; path = "../node_modules/react-native-gesture-handler/ios/RNGestureHandler.xcodeproj"; sourceTree = "<group>"; };
 		ADBDB91F1DFEBF0600ED6528 /* RCTBlob.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTBlob.xcodeproj; path = "../node_modules/react-native/Libraries/Blob/RCTBlob.xcodeproj"; sourceTree = "<group>"; };
+		B524EBCF24C4422A9FFFA564 /* RNCCameraRoll.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNCCameraRoll.xcodeproj; path = "../node_modules/@react-native-community/cameraroll/ios/RNCCameraRoll.xcodeproj"; sourceTree = "<group>"; };
 		BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTCamera.xcodeproj; path = "../node_modules/react-native-camera/ios/RCTCamera.xcodeproj"; sourceTree = "<group>"; };
 		CF4BEE7CE64C4075A1BA153C /* Entypo.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Entypo.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Entypo.ttf"; sourceTree = "<group>"; };
+		CF8A87E7256C4F0C8B3D2FA7 /* libRNCCameraRoll.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNCCameraRoll.a; sourceTree = "<group>"; };
 		D2D1E8640FD3AEA40CC47AE4 /* Pods-MeinsAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MeinsAppTests.release.xcconfig"; path = "Target Support Files/Pods-MeinsAppTests/Pods-MeinsAppTests.release.xcconfig"; sourceTree = "<group>"; };
 		DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		E7C4439073564454887DC4B1 /* libRCTContacts.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTContacts.a; sourceTree = "<group>"; };
@@ -565,6 +585,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD3C1DA7226690C40072585D /* libRCTCameraRoll.a in Frameworks */,
 				AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */,
 				AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */,
 				AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */,
@@ -595,6 +616,8 @@
 				AE2F5CF358404C97B632D6C8 /* libz.tbd in Frameworks */,
 				7AA75205427341228039628D /* libRCTAppleHealthKit.a in Frameworks */,
 				EEF47224BA7944D2BDCD85F2 /* libRNMailCore.a in Frameworks */,
+				FA0DC4B9A8B7962799FE65DF /* Pods_MeinsApp.framework in Frameworks */,
+				1EBE383B8A614674B89AB333 /* libRNCCameraRoll.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -776,6 +799,7 @@
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
+				AD3C1D6B226690820072585D /* RCTCameraRoll.xcodeproj */,
 				AD10A4892263BFDB00A6C562 /* RCTMGL.xcodeproj */,
 				AD788A7E22497E08004E475D /* RNGestureHandler.xcodeproj */,
 				5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */,
@@ -797,6 +821,7 @@
 				A46C5BC50F154F5A91D3BE92 /* RealmReact.xcodeproj */,
 				7FFC497D8F57497E990DACA9 /* RCTAppleHealthKit.xcodeproj */,
 				1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */,
+				B524EBCF24C4422A9FFFA564 /* RNCCameraRoll.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -887,6 +912,22 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AD3C1D6C226690820072585D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD3C1D7E226690820072585D /* libRCTCameraRoll.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD3C1DF7226696B20072585D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD3C1DFB226696B20072585D /* libRNCCameraRoll.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		AD788A7F22497E08004E475D /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -915,6 +956,7 @@
 				3C98CFD8839E47CDBF25F98F /* libRealmReact.a */,
 				6F8076AB37F44B45966DA0B3 /* libRCTAppleHealthKit.a */,
 				1D26F25321884E449E113B7D /* libRNMailCore.a */,
+				CF8A87E7256C4F0C8B3D2FA7 /* libRNCCameraRoll.a */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -1068,6 +1110,10 @@
 					ProjectRef = BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */;
 				},
 				{
+					ProductGroup = AD3C1D6C226690820072585D /* Products */;
+					ProjectRef = AD3C1D6B226690820072585D /* RCTCameraRoll.xcodeproj */;
+				},
+				{
 					ProductGroup = ADECBDC022485353000EC59D /* Products */;
 					ProjectRef = AC6BE9851D214EC691D504F0 /* RCTContacts.xcodeproj */;
 				},
@@ -1118,6 +1164,10 @@
 				{
 					ProductGroup = ADECBD1222485338000EC59D /* Products */;
 					ProjectRef = 45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */;
+				},
+				{
+					ProductGroup = AD3C1DF7226696B20072585D /* Products */;
+					ProjectRef = B524EBCF24C4422A9FFFA564 /* RNCCameraRoll.xcodeproj */;
 				},
 				{
 					ProductGroup = AD788A7F22497E08004E475D /* Products */;
@@ -1449,6 +1499,20 @@
 			remoteRef = AD3C1C2B226675250072585D /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		AD3C1D7E226690820072585D /* libRCTCameraRoll.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRCTCameraRoll.a;
+			remoteRef = AD3C1D7D226690820072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD3C1DFB226696B20072585D /* libRNCCameraRoll.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRNCCameraRoll.a;
+			remoteRef = AD3C1DFA226696B20072585D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		AD788AAD22497E08004E475D /* libRNGestureHandler.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1705,12 +1769,14 @@
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
 				);
 				INFOPLIST_FILE = MeinsAppTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
@@ -1740,12 +1806,14 @@
 					"$(SRCROOT)/../node_modules/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/rn-apple-healthkit/RCTAppleHealthKit",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
 				);
 				INFOPLIST_FILE = MeinsAppTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
@@ -1780,6 +1848,7 @@
 					"$(SRCROOT)/Pods/mailcore2-ios/include/**",
 					"$(BUILT_PRODUCTS_DIR)/../../include/**",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios/**",
+					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -1829,6 +1898,7 @@
 					"$(SRCROOT)/Pods/mailcore2-ios/include/MailCore/**",
 					"$(BUILT_PRODUCTS_DIR)/../../include/**",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
+					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

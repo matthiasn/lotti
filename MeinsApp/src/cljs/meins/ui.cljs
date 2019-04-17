@@ -10,6 +10,7 @@
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]
             [meins.ui.db :as db]
+            [meins.ui.photos :as photos]
             [meins.ui.journal :as jrn]
             [meins.store :as st]
             [meins.ui.editor :as ue]))
@@ -40,13 +41,6 @@
   [view {:style (:container styles)}
    [text {:style (:welcome styles)}
     "Add Screen"]
-   [text {:style (:instructions styles)}
-    instructions]])
-
-(defn photos []
-  [view {:style (:container styles)}
-   [text {:style (:welcome styles)}
-    "Photos Screen"]
    [text {:style (:instructions styles)}
     instructions]])
 
@@ -87,7 +81,7 @@
                                     :navigationOptions (nav-options "list" 22)}
                          :Add      {:screen            (r/reactify-component ue/editor)
                                     :navigationOptions (nav-options "plus-square-o" 22)}
-                         :Photos   {:screen            (r/reactify-component photos)
+                         :Photos   {:screen            (r/reactify-component photos/photos-tab)
                                     :navigationOptions (nav-options "film" 22)}
                          :Settings {:screen            s/settings-stack
                                     :navigationOptions (nav-options "cogs" 22)}})

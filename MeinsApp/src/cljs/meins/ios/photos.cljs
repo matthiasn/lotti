@@ -1,8 +1,6 @@
-(ns meo.ios.photos
+(ns meins.ios.photos
   (:require [clojure.pprint :as pp]
-            [meo.utils.misc :as um]
-            [meo.ui.shared :refer [cam-roll]]
-            [meo.helpers :as h]
+            ["react-native" :as rn]
             [matthiasn.systems-toolbox.component :as st]))
 
 (enable-console-print!)
@@ -11,7 +9,7 @@
   (let [{:keys [n]} msg-payload
         params (clj->js {:first     n
                          :assetType "Photos"})
-        photos-promise (.getPhotos cam-roll params)]
+        photos-promise (.getPhotos rn/cam-roll params)]
     (.then photos-promise
            (fn [r]
              (let [parsed (js->clj r :keywordize-keys true)]

@@ -12,7 +12,7 @@
             [re-frame.core :refer [reg-sub subscribe dispatch dispatch-sync]]
             [meins.ios.sync :as sync]
             [meins.store :as store]
-    ;[meo.ios.photos :as photos]
+            [meins.ios.photos :as photos]
             [meins.ui :as ui]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
@@ -33,7 +33,7 @@
   ;(dispatch-sync [:initialize-db])
   (let [components #{(hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
-                     ;(photos/cmp-map :app/photos)
+                     (photos/cmp-map :app/photos)
                      (sync/cmp-map :app/sync)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
@@ -63,8 +63,9 @@
                     :to   #{:app/store
                             :app/scheduler}}]
 
-       #_[:cmd/route {:from :app/ui-cmp
-                      :to   :app/photos}]
+       [:cmd/route {:from :app/ui-cmp
+                    :to   :app/photos}]
+
        #_(when OBSERVER
            [:cmd/attach-to-firehose :app/sync])
 
