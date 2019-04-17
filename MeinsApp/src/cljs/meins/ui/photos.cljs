@@ -23,11 +23,10 @@
             loc (:location node)
             lat (:latitude loc)
             lon (:longitude loc)
-            img (:image node)
             ts (.floor js/Math (* 1000 (:timestamp node)))
             imported (not (contains? (set/union @all-timestamps) ts))
             import (fn [_]
-                     (let [filename (str (h/img-fmt ts) "_" (:filename img))
+                     (let [filename (str (h/img-fmt ts) ".JPG")
                            entry {:latitude  lat
                                   :longitude lon
                                   :location  loc
@@ -38,7 +37,7 @@
                                   :media     (dissoc node :location)
                                   :img_file  filename
                                   :timestamp ts}]
-                       ;(alert entry)
+                       ;(alert (str entry))
                        (emit [:entry/new entry])))
             hide (fn [_]
                    (let [entry {:timestamp  ts
