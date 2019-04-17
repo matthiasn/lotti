@@ -51,7 +51,6 @@
 		AD2054DA2249A37C0034006D /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
 		AD3C1AC12265C5650072585D /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1AC02265C5650072585D /* CFNetwork.framework */; };
 		AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1AC22265C57D0072585D /* Security.framework */; };
-		AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1C0F226672D60072585D /* liblibPods.a */; };
 		AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1A8F2265C54E0072585D /* libMailCore-ios.a */; };
 		AD3C1DA7226690C40072585D /* libRCTCameraRoll.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD3C1D7E226690820072585D /* libRCTCameraRoll.a */; };
 		AD788AB122497E4E004E475D /* libRNGestureHandler.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD788AAD22497E08004E475D /* libRNGestureHandler.a */; };
@@ -587,7 +586,6 @@
 			files = (
 				AD3C1DA7226690C40072585D /* libRCTCameraRoll.a in Frameworks */,
 				AD3C1C112266731B0072585D /* libMailCore-ios.a in Frameworks */,
-				AD3C1C10226672D60072585D /* liblibPods.a in Frameworks */,
 				AD3C1AC32265C57D0072585D /* Security.framework in Frameworks */,
 				AD3C1AC12265C5650072585D /* CFNetwork.framework in Frameworks */,
 				AD10A48F2263C00200A6C562 /* libRCTMGL.a in Frameworks */,
