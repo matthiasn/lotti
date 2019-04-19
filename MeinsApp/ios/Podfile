@@ -7,6 +7,8 @@ target 'MeinsApp' do
   # Pods for meins
   pod 'mailcore2-ios'
 
+  pod 'react-native-cameraroll', :path => '../node_modules/@matthiasn/cameraroll'
+
   target 'MeinsAppTests' do
     inherit! :search_paths
     # Pods for testing

@@ -48,15 +48,19 @@
                  md)
             delete #(emit [:entry/persist (assoc-in entry [:deleted] true)])]
         [view {:style {:flex             1
-                       :margin-top       4
+                       :margin-bottom    12
                        :flex-direction   :row
-                       :background-color text-bg
+                       :background-color "black"
                        :width            "100%"}}
          [touchable-opacity {:on-press to-detail
                              :style    {:display         "flex"
-                                        :flex-direction  "row"
+                                        :flex-direction  "column"
                                         :width           "100%"
                                         :justify-content "space-between"}}
+          (when-let [media (:media entry)]
+            [image {:style  {:width  "100%"
+                             :height 300}
+                    :source {:uri (-> media :image :uri)}}])
           [view {:style {:flex             1
                          :flex-direction   :column
                          :background-color text-bg
@@ -81,11 +85,7 @@
             [text {:style {:color       text-color
                            :text-align  "left"
                            :font-weight "normal"}}
-             md]]]
-          (when-let [media (:media entry)]
-            [image {:style  {:width  120
-                             :height 120}
-                    :source {:uri (-> media :image :uri)}}])]]))))
+             md]]]]]))))
 
 (defn render-item [navigate]
   (fn [item]
@@ -181,10 +181,19 @@
                            :background-color bg
                            :width            "100%"
                            :padding-bottom   10}}
-           [text {:style {:color          text-color
-                          :text-align     "center"
-                          :font-size      12
-                          :padding-bottom 5}}
+           (when-let [media (:media entry)]
+             [image {:style      {:flex             3
+                                  :background-color "black"
+                                  :min-height       300
+                                  :max-height       600
+                                  :width            "100%"}
+                     :resizeMode "contain"
+                     :source     {:uri (-> media :image :uri)}}])
+           [text {:style {:background-color text-bg
+                          :color            text-color
+                          :text-align       "center"
+                          :font-size        12
+                          :padding          4}}
             (h/format-time (:timestamp entry))]
            [text-input {:style              {:flex             2
                                              :font-weight      "100"
@@ -202,10 +211,6 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
-           (when-let [media (:media entry)]
-             [image {:style  {:width  "100%"
-                              :height 500}
-                     :source {:uri (-> media :image :uri)}}])
            (when latitude
              [map-view {:centerCoordinate [longitude latitude]
                         :scrollEnabled    false

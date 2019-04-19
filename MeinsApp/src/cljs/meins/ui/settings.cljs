@@ -66,9 +66,9 @@
     (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
             bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:text-bg @theme])
+            item-bg (get-in c/colors [:button-bg @theme])
             header-color (get-in c/colors [:header-text @theme])
-            text-color (get-in c/colors [:text @theme])]
+            text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
                        :height           "100%"
                        :background-color bg}}

@@ -3,7 +3,7 @@
                                      scroll image dimensions]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
-            ["@react-native-community/cameraroll" :as cam-roll]
+            ["@matthiasn/cameraroll" :as cam-roll]
             ["react-native-super-grid" :as rn-super-grid]
             [meins.ui.colors :as c]
             [meins.helpers :as h]
@@ -23,11 +23,12 @@
             loc (:location node)
             lat (:latitude loc)
             lon (:longitude loc)
+            img (:image node)
             ts (.floor js/Math (* 1000 (:timestamp node)))
             imported (not (contains? (set/union @all-timestamps) ts))
+            filename (str (h/img-fmt ts) "_" (:fileName img))
             import (fn [_]
-                     (let [filename (str (h/img-fmt ts) ".JPG")
-                           entry {:latitude  lat
+                     (let [entry {:latitude  lat
                                   :longitude lon
                                   :location  loc
                                   :md        ""

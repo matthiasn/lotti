@@ -3,8 +3,6 @@
             [meins.ui.shared :refer [view text text-input touchable-opacity btn
                                      keyboard-avoiding-view keyboard fa-icon alert]]
             [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
-    ;       [meins.helpers :as h]
-    ;[meins.utils.parse :as p]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
             [meins.ui.colors :as c]
@@ -16,40 +14,39 @@
 (defn header [save-fn cancel-fn label]
   (let [theme (subscribe [:active-theme])]
     (fn [save-fn cancel-fn]
-      (let [text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])
+      (let [button-bg (get-in c/colors [:button-bg @theme])
+            btn-text (get-in c/colors [:btn-text @theme])
             header-color (get-in c/colors [:header-text @theme])]
         [view {:style {:display         "flex"
                        :flex-direction  "row"
                        :justify-content "space-between"
-                       :height          50}}
+                       :height          45}}
          [touchable-opacity {:on-press cancel-fn
-                             :style    {:color                      text-color
-                                        :width                      100
-                                        :background-color           text-bg
+                             :style    {:width                      100
+                                        :background-color           button-bg
                                         :border-top-right-radius    4
                                         :border-bottom-right-radius 4
-                                        :padding                    10}}
-          [text {:style {:font-size  24
+                                        :padding                    8}}
+          [text {:style {:font-size  20
                          :text-align "center"
-                         :color      text-color}}
+                         :color      btn-text}}
            "cancel"]]
-         [text {:style {:padding     10
+         [text {:style {:padding     8
                         :color       header-color
                         :font-weight :bold
-                        :font-size   24}}
+                        :font-size   20}}
           label]
          [touchable-opacity {:on-press save-fn
-                             :style    {:padding                   10
+                             :style    {:padding                   8
                                         :display                   :flex
-                                        :background-color          text-bg
+                                        :background-color          button-bg
                                         :width                     100
                                         :border-top-left-radius    4
                                         :border-bottom-left-radius 4
                                         :align-items               :center}}
-          [text {:style {:color      text-color
+          [text {:style {:color      btn-text
                          :text-align "center"
-                         :font-size  24}}
+                         :font-size  20}}
            "save"]]]))))
 
 (defn editor [_]

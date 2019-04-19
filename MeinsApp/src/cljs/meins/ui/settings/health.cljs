@@ -19,8 +19,8 @@
                              :repeat  true
                              :initial true}]))]
     (fn [msg-type label icon-name]
-      (let [item-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])]
+      (let [item-bg (get-in c/colors [:button-bg @theme])
+            text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:margin-top       3
                        :width            "100%"
                        :background-color item-bg
