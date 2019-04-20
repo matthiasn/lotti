@@ -1,11 +1,14 @@
 (ns meins.core
-  (:require ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon]]
-            ["react" :as react :refer [Component]]
+  (:require ["react-native" :refer [AppRegistry]]
             [reagent.core :as r]
-            ["react-navigation" :refer [createStackNavigator createAppContainer
+            ["react-navigation" :refer [createStackNavigator
+                                        createAppContainer
                                         createBottomTabNavigator]]
+            ["react-native-exception-handler" :refer [setJSExceptionHandler
+                                                      getJSExceptionHandler
+                                                      setNativeExceptionHandler]]
             [cljs.pprint :as pp]
-            [meins.ui.shared :refer [view text fa-icon]]
+            [meins.ui.shared :refer [alert view fa-icon]]
             [meins.ui.settings :as s]
             [meins.store :as st]
             [meins.ui.editor :as ue]
@@ -71,9 +74,8 @@
 
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store
-                            ;:app/sync
-                            ;:app/healthkit
-                            }}]
+                            :app/sync
+                            :app/healthkit}}]
 
        [:cmd/send {:to  :app/scheduler
                    :msg [:cmd/schedule-new {:timeout 60000
@@ -86,5 +88,6 @@
                                             :message [:sync/retry]
                                             :repeat  true
                                             :initial false}]}]])
-    (.registerComponent
-      AppRegistry "meins" #(identity ui/app-container))))
+    (.registerComponent AppRegistry "meins" #(identity ui/app-container))
+    (setJSExceptionHandler (fn [error _is-fatal] (alert error)))
+    (setNativeExceptionHandler (fn [error] (alert error)))))
