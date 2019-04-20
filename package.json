@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "3.0.16",
+    "electron": "3.1.8",
     "electron-builder": "20.39.0",
     "module-deps": "6.2.0",
     "resolve": "1.10.0"

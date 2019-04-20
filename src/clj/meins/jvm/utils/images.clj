@@ -7,7 +7,8 @@
             [image-resizer.util :refer :all]
             [clojure.string :as s]
             [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.file-utils :as fu])
+            [meins.jvm.file-utils :as fu]
+            [me.raynes.fs :as fs])
   (:import (com.drew.imaging ImageMetadataReader)))
 
 (defn extract-from-tag
@@ -42,9 +43,11 @@
     (resize (rotate file))))
 
 (defn resize-save [filename img max-w-h]
-  (let [resize (resize-fn max-w-h max-w-h quality)
-        new-filename (str fu/thumbs-path max-w-h "/" filename)]
-    (as-file (resize img) new-filename :verbatim)))
+  (let [new-filename (str fu/thumbs-path max-w-h "/" filename)]
+    (if (fs/exists? new-filename)
+      (warn "File exists:" new-filename)
+      (let [resize (resize-fn max-w-h max-w-h quality)]
+        (as-file (resize img) new-filename :verbatim)))))
 
 (defn gen-thumbs [file filename]
   (let [rotated (rotate file)]
