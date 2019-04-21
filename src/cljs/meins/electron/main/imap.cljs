@@ -43,6 +43,7 @@
   (.from js/Buffer b64 "base64"))
 
 (defn read-image [mailbox uid partID filename put-fn]
+  (info "read-image" mailbox uid partID filename)
   (let [body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
                                  (let [base-64-img (apply str @buffer)
@@ -71,8 +72,7 @@
                 (try
                   (let [s (clj->js ["UNDELETED" ["UID" uid]])
                         cb (fn [err res]
-                             (let [
-                                   f (.fetch conn res (clj->js {:bodies [partID]
+                             (let [f (.fetch conn res (clj->js {:bodies [partID]
                                                                 :struct true}))
                                    cb (fn []
                                         (info "finished reading" filename)
@@ -129,9 +129,7 @@
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
-                                 (let [hex-body (mue/extract-body (apply str @buffer))
-                                       cfg (assoc-in (imap-cfg) path seqn)
-                                       s (pp-str cfg)]
+                                 (let [hex-body (mue/extract-body (apply str @buffer))]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
                                    (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
@@ -142,8 +140,7 @@
                                        (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
                                        (info decrypted)
                                        (put-fn msg)))
-                                   (info "body-cb last-read" seqn)
-                                   (writeFileSync cfg-path s)))]
+                                   (info "body-cb last-read" seqn)))]
                     (info "IMAP body stream-info" (js->clj stream-info))
                     (.on stream "data" #(let [s (.toString % "UTF8")]
                                           (when (= body-part (.-which stream-info))
@@ -180,8 +177,9 @@
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
         mb-cb (fn [conn err box]
                 (try
-                  (let [last-read (get-in (imap-cfg) path 0)
+                  (let [last-read (:last-read mb-cfg)
                         uid (str (inc last-read) ":*")
+                        _ (info "last-read" last-read uid)
                         s (clj->js ["UNDELETED" ["UID" uid]])
                         cb (fn [err res]
                              (let [parsed-res (js->clj res)]
@@ -190,7 +188,10 @@
                                        f (.fetch conn res (clj->js {:bodies [body-part]
                                                                     :struct true}))
                                        cb (fn []
-                                            (info "mb-cb fetch end, last-read" last-read)
+                                            (let [cfg (assoc-in (imap-cfg) path last-read)
+                                                  s (pp-str cfg)]
+                                              (writeFileSync cfg-path s)
+                                              (info "mb-cb fetch end, last-read" last-read))
                                             (.end conn))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)

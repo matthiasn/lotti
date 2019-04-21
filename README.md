@@ -71,12 +71,12 @@ For development, you need to install the JavaScript dependencies:
 
     $ yarn install
  
-Once that is done, you need to compile the ClojureScript code into JavaScript. These need to be run with the `cljs` profile. Using this profile keeps the size of the uberjar for the JVM-based backend smaller.
+Then, you need to build the JavaScript for both the Electron Main and Render processes:
 
-    $ lein cljs-main
-    $ lein cljs-figwheel
+    $ shadow-cljs watch main
+    $ shadow-cljs watch renderer
 
-The `cljs-figwheel` task needs to be running in separate terminals, as it keeps running and watches the file system for changes. Next, you need to compile the SCSS files into CSS:
+The task above need to be running in separate terminals, as they watching the file system for changes. Next, you need to compile the SCSS files into CSS:
 
     $ lein sass4clj auto
 
@@ -91,7 +91,7 @@ Now you should have an environment running where any change in the code (includi
 
 **meins** is released as follows:
 
-    $ ./make release
+    $ make release
 
 This will package and sign the application, for the platform it runs on. Then, it will upload the resulting package(s) to the releases section on the project page. Note that the proper `GH_TOKEN` environment variable must be set for this.
 
