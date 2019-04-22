@@ -12,6 +12,8 @@
             [clojure.set :as set]))
 
 (def flat-grid (r/adapt-react-class (.-FlatGrid rn-super-grid)))
+(def screen-width (.-width (.get dimensions "window")))
+(def img-dimension (js/Math.floor (/ (- screen-width 10) 4)))
 
 (defn card [photo]
   (let [;all-timestamps (subscribe [:all-timestamps])
@@ -45,22 +47,12 @@
                                 :entry-type :hide}]
                      (emit [:entry/hide entry])))]
         [touchable-opacity {:on-press import
-                            :style    {:flex   1
-                                       :width  "100%"
-                                       :height 200}}
-         [image {:style  {:width           "100%"
-                          :resizeMode      "contain"
-                          ;:height          400
-                          :height          "80%"
+                            :style    {:flex 1}}
+         [image {:style  {:width           img-dimension
+                          :height          img-dimension
+                          :resizeMode      "cover"
                           :backgroundColor "black"}
-                 :source {:uri uri}}]
-         [text {:style {:color       "#7F7F7F"
-                        :text-align  "center"
-                        :width       "100%"
-                        :font-size   12
-                        :font-weight "100"
-                        :margin-top  5}}
-          (h/format-time ts)]]))))
+                 :source {:uri uri}}]]))))
 
 (defn photos-tab []
   (let [local (r/atom {})
@@ -75,11 +67,12 @@
     (fn []
       (get-fn)
       [flat-grid
-       {:itemDimension 100
+       {:itemDimension img-dimension
         :items         (->> @local :photos :edges vec clj->js)
         :style         {:flex             1
-                        :background-color :black
+                        :background-color "black"
                         :margin-top       50}
+        :spacing       2
         :renderItem    (fn [item]
                          (let [item (js->clj item :keywordize-keys true)]
                            (r/as-element

@@ -90,4 +90,4 @@
                                             :initial false}]}]])
     (.registerComponent AppRegistry "meins" #(identity ui/app-container))
     (setJSExceptionHandler (fn [error _is-fatal] (alert error)))
-    (setNativeExceptionHandler (fn [error] (alert error)))))
+    #_(setNativeExceptionHandler (fn [error] (alert error)))))
