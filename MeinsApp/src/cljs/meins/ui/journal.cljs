@@ -14,8 +14,7 @@
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item
                                      rn-audio-recorder-player alert]]
-            ["react-navigation" :refer [createStackNavigator createAppContainer
-                                        createBottomTabNavigator]]
+            ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
             [meins.utils.parse :as p]
             [meins.ui.db :as uidb]))

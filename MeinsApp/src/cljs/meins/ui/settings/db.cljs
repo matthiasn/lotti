@@ -6,9 +6,7 @@
             ))
 
 (defn db-settings [local put-fn]
-  (let [
-        ;theme (subscribe [:active-theme])
-        ]
+  (let [theme (subscribe [:active-theme])]
     (fn [{:keys [screenProps navigation] :as props}]
       ;(alert (js->clj navigation :keywordize-keys true))
       (let [{:keys [navigate goBack]} (js->clj navigation :keywordize-keys true)

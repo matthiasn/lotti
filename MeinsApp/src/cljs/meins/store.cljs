@@ -39,7 +39,6 @@
                                      clj->js)
                         x (.create realm-db "Entry" db-entry true)])))
         (catch :default e (js/console.error e))))
-
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item :global-vclock last-vclock)))
       {:new-state new-state})))
@@ -135,10 +134,22 @@
   {:name       "Entry"
    :primaryKey "timestamp"
    :properties {:timestamp "int"
-                :md        {:type "string" :indexed true }
+                :md        {:type "string" :indexed true}
                 :edn       "string"
-                :latitude  {:type "float" :default 0.0}
-                :logitude  {:type "float" :default 0.0}}})
+                :latitude  {:type "float" :default 0.0 :optional true}
+                :longitude {:type "float" :default 0.0 :optional true}}})
+
+(def ImageSchema
+  {:name       "Image"
+   :primaryKey "timestamp"
+   :properties {:timestamp "int"
+                :imported  "bool"
+                :fileName  "string"
+                :uri       "string"
+                :width     "int"
+                :height    "int"
+                :latitude  {:type "float" :default 0.0 :optional true}
+                :longitude {:type "float" :default 0.0 :optional true}}})
 
 (defn state-fn [put-fn]
   (let [state (atom {:entries         (avl/sorted-map)
@@ -148,12 +159,13 @@
                      :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
-    (-> (.open realm (clj->js {:schema [EntrySchema]}))
+    (-> (.open realm (clj->js {:schema [EntrySchema ImageSchema]}))
         (.then (fn [db]
                  (js/console.warn "db opened" db)
                  (swap! state assoc :realm-db db)
                  (reset! uidb/realm-db db)
-                 (js/console.warn (.-length (.objects db "Entry")) "entries")))
+                 (js/console.warn (.-length (.objects db "Entry")) "entries")
+                 (js/console.warn (.-length (.objects db "Image")) "photos")))
         (.catch (fn [err] (js/console.error "error: " (.-message err)))))
     {:state state}))
 

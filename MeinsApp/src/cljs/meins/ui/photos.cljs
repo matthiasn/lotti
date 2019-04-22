@@ -64,6 +64,7 @@
                          (fn [r]
                            (let [parsed (js->clj r :keywordize-keys true)]
                              (swap! local assoc-in [:photos] parsed)))))]
+    (emit [:photos/import {:n 1000}])
     (fn []
       (get-fn)
       [flat-grid

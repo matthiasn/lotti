@@ -2,6 +2,7 @@
   (:require [re-frame.core :refer [reg-sub]]))
 
 (def realm-db (atom nil))
+(def photo-db (atom nil))
 
 ; to be overwritten with put-fn on ui startup
 (def emit-atom (atom (fn [])))

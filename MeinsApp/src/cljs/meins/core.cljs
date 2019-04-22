@@ -47,7 +47,8 @@
 
        [:cmd/route {:from :app/ui-cmp
                     :to   #{:app/store
-                            :app/scheduler}}]
+                            :app/scheduler
+                            :app/photos}}]
 
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
