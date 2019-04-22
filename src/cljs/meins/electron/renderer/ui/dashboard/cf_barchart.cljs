@@ -98,7 +98,7 @@
                        :fill        "black"
                        :text-anchor "start"}
                 (+ n)]))
-           (for [[n {:keys [date_string day-ts fields] :as m}] (rest indexed)]
+           (for [[n {:keys [date_string day-ts fields] :as m}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
                    d (* 24 60 60 1000)
