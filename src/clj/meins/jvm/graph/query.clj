@@ -320,15 +320,18 @@
 
                       ; set with all timestamps
                       :else (:sorted-entries state))
-        matched-ids (if (contains? opts ":predicted-stories")
+        matched-ids (if (or (sorted? matched-ids)
+                            (contains? opts ":predicted-stories"))
                       matched-ids
                       (sort-fn matched-ids))
         matched-entries (map mapper-fn matched-ids)
         matched-entries (filter #(or (:briefing query)
                                      (not (:briefing %))) matched-entries)
-        parent-ids (filter identity (mapv :comment_for matched-entries))
-        parents (map mapper-fn parent-ids)
-        res (flatten [matched-entries parents])]
+        res (if (sorted? matched-ids)
+              matched-entries
+              (let [parent-ids (filter identity (map :comment_for matched-entries))
+                    parents (map mapper-fn parent-ids)]
+                (flatten [matched-entries parents])))]
     (tmr/stop started-timer)
     res))
 
