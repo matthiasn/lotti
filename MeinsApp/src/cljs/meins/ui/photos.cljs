@@ -9,41 +9,34 @@
             [meins.helpers :as h]
             [reagent.core :as r]
             [meins.ui.db :refer [emit]]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [meins.ui.db :as uidb]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (def flat-grid (r/adapt-react-class (.-FlatGrid rn-super-grid)))
 (def screen-width (.-width (.get dimensions "window")))
 (def img-dimension (js/Math.floor (/ (- screen-width 10) 4)))
 
-(defn card [photo]
-  (let [;all-timestamps (subscribe [:all-timestamps])
-        all-timestamps (r/atom #{})]
-    (fn [photo]
-      (let [photo (:item photo)
-            uri (-> photo :node :image :uri)
-            node (:node photo)
-            loc (:location node)
-            lat (:latitude loc)
-            lon (:longitude loc)
-            img (:image node)
-            ts (.floor js/Math (* 1000 (:timestamp node)))
-            imported (not (contains? (set/union @all-timestamps) ts))
-            filename (str (h/img-fmt ts) "_" (:fileName img))
+(defn card [_]
+  (let []
+    (fn [item]
+      (let [json (js/JSON.stringify (.-item item))
+            parsed (js->clj (js/JSON.parse json) :keywordize-keys true)
+            {:keys [latitude longitude uri timestamp fileName]} parsed
+            filename (str (h/img-fmt timestamp) "_" fileName)
             import (fn [_]
-                     (let [entry {:latitude  lat
-                                  :longitude lon
-                                  :location  loc
+                     (let [entry {:latitude  latitude
+                                  :longitude longitude
                                   :md        ""
                                   :tags      #{"#import"}
                                   :perm_tags #{"#photo"}
                                   :mentions  #{}
-                                  :media     (dissoc node :location)
+                                  :media     {:image {:uri uri}}
                                   :img_file  filename
-                                  :timestamp ts}]
-                       ;(alert (str entry))
+                                  :timestamp timestamp}]
                        (emit [:entry/new entry])))
             hide (fn [_]
-                   (let [entry {:timestamp  ts
+                   (let [entry {:timestamp  timestamp
                                 :entry-type :hide}]
                      (emit [:entry/hide entry])))]
         [touchable-opacity {:on-press import
@@ -55,26 +48,25 @@
                  :source {:uri uri}}]]))))
 
 (defn photos-tab []
-  (let [local (r/atom {})
-        get-fn #(let [params (clj->js {:first      1000
-                                       :groupTypes "All"
-                                       :assetType  "Photos"})
-                      photos-promise (.getPhotos cam-roll params)]
-                  (.then photos-promise
-                         (fn [r]
-                           (let [parsed (js->clj r :keywordize-keys true)]
-                             (swap! local assoc-in [:photos] parsed)))))]
-    (emit [:photos/import {:n 1000}])
+  (let [realm-db @uidb/realm-db
+        local (r/atom {:last-updated 0})
+        update-local #(swap! local assoc :last-updated (stc/now))
+        refresh (fn [_]
+                  (emit [:photos/import {:n 1000}])
+                  (js/setTimeout update-local 1000))]
+    (refresh)
     (fn []
-      (get-fn)
-      [flat-grid
-       {:itemDimension img-dimension
-        :items         (->> @local :photos :edges vec clj->js)
-        :style         {:flex             1
-                        :background-color "black"
-                        :margin-top       50}
-        :spacing       2
-        :renderItem    (fn [item]
-                         (let [item (js->clj item :keywordize-keys true)]
-                           (r/as-element
-                             [card item])))}])))
+      (let [items (-> (.objects realm-db "Image")
+                      (.sorted "timestamp" true)
+                      (.slice 0 1000))]
+        @local
+        [flat-grid
+         {:itemDimension img-dimension
+          :items         items
+          :style         {:flex             1
+                          :background-color "black"
+                          :margin-top       50}
+          :on-refresh    refresh
+          :refreshing    false
+          :spacing       2
+          :renderItem    (fn [x] (r/as-element [card x]))}]))))

@@ -9,20 +9,28 @@
 
 (enable-console-print!)
 
+(defn get-img [ts]
+  (when (number? ts)
+    (some-> (.objects @uidb/realm-db "Image")
+            (.filtered (str "timestamp = " ts))
+            (aget 0)
+            js/JSON.stringify
+            js/JSON.parse
+            js->clj)))
+
 (defn camroll->image [item]
   (let [node (:node item)
         image (:image node)
         loc (:location node)
-        ts (.floor js/Math (* 1000 (:timestamp node)))
-        data {:timestamp ts
-              :imported  false
-              :fileName  (:fileName image)
-              :uri       (:uri image)
-              :height    (:height image)
-              :width     (:width image)
-              :latitude  (:latitude loc)
-              :longitude (:longitude loc)}]
-    (clj->js data)))
+        ts (.floor js/Math (* 1000 (:timestamp node)))]
+    {:timestamp ts
+     :imported  false
+     :fileName  (:fileName image)
+     :uri       (:uri image)
+     :height    (:height image)
+     :width     (:width image)
+     :latitude  (:latitude loc)
+     :longitude (:longitude loc)}))
 
 (defn import-photos [{:keys [cmp-state msg-payload]}]
   (let [{:keys [n]} msg-payload
@@ -37,7 +45,11 @@
                    edges (:edges parsed)]
                (doseq [item edges]
                  (try
-                   (.write realm-db #(.create realm-db "Image" (camroll->image item) true))
+                   (let [data (camroll->image item)
+                         data-js (clj->js data)
+                         existing (get-img (:timestamp data))]
+                     (when-not existing
+                       (.write realm-db #(.create realm-db "Image" data-js true))))
                    (catch :default e (js/console.error e))))
                (swap! cmp-state assoc-in [:photos] parsed)))))
   {})
