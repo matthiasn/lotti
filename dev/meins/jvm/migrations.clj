@@ -15,6 +15,7 @@
             [clj-time.coerce :as c]
             [cheshire.core :as cc]
             [clojure.data.json :as json])
+  #_
   (:import (io.dgraph DgraphClient DgraphGrpc DgraphProto$Mutation)
            (io.grpc ManagedChannelBuilder)
            (com.google.protobuf ByteString)))
@@ -322,6 +323,7 @@
 
 
 ;(m/migrate-to-dgraph "./data/migrations/dgraph")
+#_
 (defn migrate-to-dgraph [path]
   (let [files (file-seq (clojure.java.io/file path))
         ts-uuids (atom #{})

@@ -73,7 +73,8 @@
                                            [matthiasn/systems-toolbox-electron "0.6.29"]
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources" "dev"]
-                            :dependencies [[io.dgraph/dgraph4j "1.7.1"]]}}
+                            ;:dependencies [[io.dgraph/dgraph4j "1.7.1"]]
+                            }}
 
   :repl-options {:init-ns meins.jvm.core}
 
