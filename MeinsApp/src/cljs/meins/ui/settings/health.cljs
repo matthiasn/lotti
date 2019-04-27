@@ -1,6 +1,6 @@
 (ns meins.ui.settings.health
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list cam text settings-list-item fa-icon
+            [meins.ui.shared :refer [view settings-list text settings-list-item fa-icon
                                      touchable-opacity]]
             [meins.ui.db :refer [emit]]
             [re-frame.core :refer [subscribe]]))

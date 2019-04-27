@@ -35,7 +35,7 @@
 (defn import-photos [{:keys [cmp-state msg-payload]}]
   (let [{:keys [n]} msg-payload
         params (clj->js {:first      n
-                         :groupTypes "All"
+                         ;:groupTypes "All"
                          :assetType  "Photos"})
         realm-db @uidb/realm-db
         photos-promise (.getPhotos cam-roll params)]

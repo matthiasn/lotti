@@ -54,7 +54,7 @@
         refresh (fn [_]
                   (emit [:photos/import {:n 1000}])
                   (js/setTimeout update-local 1000))]
-    (refresh)
+    (refresh nil)
     (fn []
       (let [items (-> (.objects realm-db "Image")
                       (.sorted "timestamp" true)

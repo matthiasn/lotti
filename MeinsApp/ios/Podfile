@@ -9,6 +9,8 @@ target 'MeinsApp' do
 
   pod 'react-native-cameraroll', :path => '../node_modules/@matthiasn/cameraroll'
 
+  pod 'react-native-camera', :path => '../node_modules/react-native-camera'
+
   target 'MeinsAppTests' do
     inherit! :search_paths
     # Pods for testing

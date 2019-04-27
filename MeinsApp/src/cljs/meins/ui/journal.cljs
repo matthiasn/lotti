@@ -172,12 +172,13 @@
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
-                                             :background-color text-bg
+                                             :background-color "green"
                                              :width            "100%"
                                              :flex             1
                                              :align-items      "center"}}
           [scroll {:style {:flex-direction   "column"
-                           :background-color bg
+                           :background-color "red"
+                           :height           200
                            :width            "100%"
                            :padding-bottom   10}}
            (when-let [media (:media entry)]
@@ -200,7 +201,8 @@
                                              :font-size        24
                                              :max-height       400
                                              :min-height       100
-                                             :background-color text-bg
+                                             :height 200
+                                             :background-color "#ABC"
                                              :margin-bottom    5
                                              :color            text-color
                                              :width            "100%"}
@@ -210,28 +212,28 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
-           (when latitude
-             [map-view {:centerCoordinate [longitude latitude]
-                        :scrollEnabled    false
-                        :rotateEnabled    false
-                        :styleURL         (get mapbox-style-url :Street)
-                        :style            {:width         "100%"
-                                           :height        250
-                                           :margin-bottom 30}
-                        :zoomLevel        15}
-              [point-annotation {:coordinate [longitude latitude]
-                                 :id         (str (:timestamp entry))}
-               [view {:style {:width           24
-                              :height          24
-                              :alignItems      "center"
-                              :justifyContent  "center"
-                              :backgroundColor "white"
-                              :borderRadius    12}}
-                [view {:style {:width           24
-                               :height          24
-                               :backgroundColor "orange"
-                               :borderRadius    12
-                               :transform       [{:scale 0.7}]}}]]]])
+           #_(when latitude
+               [map-view {:centerCoordinate [longitude latitude]
+                          :scrollEnabled    false
+                          :rotateEnabled    false
+                          :styleURL         (get mapbox-style-url :Street)
+                          :style            {:width         "100%"
+                                             :height        250
+                                             :margin-bottom 30}
+                          :zoomLevel        15}
+                [point-annotation {:coordinate [longitude latitude]
+                                   :id         (str (:timestamp entry))}
+                 [view {:style {:width           24
+                                :height          24
+                                :alignItems      "center"
+                                :justifyContent  "center"
+                                :backgroundColor "white"
+                                :borderRadius    12}}
+                  [view {:style {:width           24
+                                 :height          24
+                                 :backgroundColor "orange"
+                                 :borderRadius    12
+                                 :transform       [{:scale 0.7}]}}]]]])
            #_(when-let [audio-file (:audio_file entry)]
                (let [status (:status @player-state)
                      pos (h/mm-ss (.floor js/Math (:pos @player-state)))

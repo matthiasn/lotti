@@ -64,15 +64,16 @@
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])]
-        [view {:style {:display        "flex"
-                       :flex-direction "column"
-                       :padding-top    50}}
+        [view {:style {:display          "flex"
+                       :flex-direction   "column"
+                       :background-color "green"
+                       :padding-top      50}}
          [header save-fn cancel-fn "New Entry"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
-                                             :background-color bg
+                                             :background-color "red"
                                              :flex             1
                                              :margin-top       20
                                              :align-items      "center"}}
@@ -82,7 +83,8 @@
                                             :font-size        24
                                             :max-height       400
                                             :min-height       300
-                                            :background-color text-bg
+                                            :height 200
+                                            :background-color "pink"
                                             :margin-bottom    20
                                             :color            text-color
                                             :width            "100%"}

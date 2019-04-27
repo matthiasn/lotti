@@ -1,6 +1,6 @@
 (ns meins.ui.settings.sync
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list cam text settings-list-item]]
+            [meins.ui.shared :refer [view settings-list #_cam text settings-list-item]]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]
@@ -32,6 +32,7 @@
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         #(swap! local update-in [:cam] not)}]]
+         #_
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :flex   5

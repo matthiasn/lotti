@@ -4,6 +4,9 @@
     $ yarn
     $ react-native link realm
     $ react-native link rn-apple-healthkit
+    $ react-native link react-native-camera
+    $ react-native link @mapbox/react-native-mapbox-gl
+    $ react-native link react-native-gesture-handler
 
 
 ## Run JS Compiler
