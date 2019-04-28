@@ -2,7 +2,6 @@
   (:require [re-frame.core :refer [subscribe]]
             [meins.ui.shared :refer [view text text-input touchable-opacity btn
                                      keyboard-avoiding-view keyboard fa-icon alert]]
-            [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
             [meins.ui.colors :as c]

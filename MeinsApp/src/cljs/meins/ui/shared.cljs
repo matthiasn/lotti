@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             ["react-native" :as react-native]
             ["react-native-audio-recorder-player" :as react-native-audio-recorder-player]
-    ;["react-native-camera" :as react-native-camera]
+            ["react-native-camera" :as react-native-camera]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             ["@mapbox/react-native-mapbox-gl" :as mapbox-gl]
             ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
@@ -10,6 +10,7 @@
 
 (def dimensions (.-Dimensions react-native))
 (def keyboard (.-Keyboard react-native))
+(def platform-os (aget react-native "Platform" "OS"))
 (def app-registry (.-AppRegistry react-native))
 (def view (r/adapt-react-class (.-View react-native)))
 (def safe-area-view (r/adapt-react-class (.-SafeAreaView react-native)))
@@ -36,7 +37,7 @@
 (def logo-img (js/require "../images/meo.png"))
 
 (def rn-audio-recorder-player (aget react-native-audio-recorder-player "default"))
-;(def cam (r/adapt-react-class (aget react-native-camera "default")))
+(def cam (r/adapt-react-class (aget react-native-camera "default")))
 
 (def fa-icon (r/adapt-react-class (aget FontAwesome "default")))
 

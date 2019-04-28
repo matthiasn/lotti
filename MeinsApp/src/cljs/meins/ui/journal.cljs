@@ -12,7 +12,7 @@
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
                                      map-view mapbox-style-url point-annotation virtualized-list
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
-                                     touchable-opacity settings-list settings-list-item
+                                     touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert]]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
@@ -100,9 +100,10 @@
     (fn [_local]
       (let [light-theme (= :light @theme)
             search-field-bg (get-in c/colors [:search-field-bg @theme])
-            header-tab-bg (get-in c/colors [:header-tab @theme])]
+            header-tab-bg (get-in c/colors [:header-tab @theme])
+            pt (if (= platform-os "ios") 40 10)]
         [view {:style {:background-color header-tab-bg
-                       :padding-top      40
+                       :padding-top      pt
                        :padding-bottom   6}}
          [search-bar {:placeholder        "search..."
                       :lightTheme         light-theme
@@ -160,13 +161,14 @@
                         (emit [:entry/persist (merge entry updated)])
                         (reset! entry-local {})
                         (navigate "Journal")))
-            cancel-fn (fn [] (navigate "Journal"))]
+            cancel-fn (fn [] (navigate "Journal"))
+            pt (if (= platform-os "ios") 40 10)]
         ;(reset! nav navigation)
         [view {:style {:display          "flex"
                        :flex-direction   "column"
                        :height           "100%"
                        :background-color bg
-                       :padding-top      50}}
+                       :padding-top      pt}}
          [ed/header save-fn cancel-fn "Edit"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display          "flex"
@@ -177,8 +179,7 @@
                                              :flex             1
                                              :align-items      "center"}}
           [scroll {:style {:flex-direction   "column"
-                           :background-color "red"
-                           :height           200
+                           :background-color bg
                            :width            "100%"
                            :padding-bottom   10}}
            (when-let [media (:media entry)]
@@ -201,8 +202,7 @@
                                              :font-size        24
                                              :max-height       400
                                              :min-height       100
-                                             :height 200
-                                             :background-color "#ABC"
+                                             :background-color text-bg
                                              :margin-bottom    5
                                              :color            text-color
                                              :width            "100%"}
@@ -212,28 +212,29 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
-           #_(when latitude
-               [map-view {:centerCoordinate [longitude latitude]
-                          :scrollEnabled    false
-                          :rotateEnabled    false
-                          :styleURL         (get mapbox-style-url :Street)
-                          :style            {:width         "100%"
-                                             :height        250
-                                             :margin-bottom 30}
-                          :zoomLevel        15}
-                [point-annotation {:coordinate [longitude latitude]
-                                   :id         (str (:timestamp entry))}
-                 [view {:style {:width           24
-                                :height          24
-                                :alignItems      "center"
-                                :justifyContent  "center"
-                                :backgroundColor "white"
-                                :borderRadius    12}}
-                  [view {:style {:width           24
-                                 :height          24
-                                 :backgroundColor "orange"
-                                 :borderRadius    12
-                                 :transform       [{:scale 0.7}]}}]]]])
+           #_
+           (when (and latitude longitude (= platform-os "ios"))
+             [map-view {:centerCoordinate [longitude latitude]
+                        :scrollEnabled    false
+                        :rotateEnabled    false
+                        :styleURL         (get mapbox-style-url :Street)
+                        :style            {:width         "100%"
+                                           :height        250
+                                           :margin-bottom 30}
+                        :zoomLevel        15}
+              [point-annotation {:coordinate [longitude latitude]
+                                 :id         (str (:timestamp entry))}
+               [view {:style {:width           24
+                              :height          24
+                              :alignItems      "center"
+                              :justifyContent  "center"
+                              :backgroundColor "white"
+                              :borderRadius    12}}
+                [view {:style {:width           24
+                               :height          24
+                               :backgroundColor "orange"
+                               :borderRadius    12
+                               :transform       [{:scale 0.7}]}}]]]])
            #_(when-let [audio-file (:audio_file entry)]
                (let [status (:status @player-state)
                      pos (h/mm-ss (.floor js/Math (:pos @player-state)))
@@ -267,11 +268,11 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
-          #_[text {:style {:margin-top 4
-                           :color      text-color
-                           :text-align "left"
-                           :font-size  8}}
-             (with-out-str (pp/pprint entry))]]]))))
+          [text {:style {:margin-top 4
+                         :color      text-color
+                         :text-align "left"
+                         :font-size  8}}
+           (with-out-str (pp/pprint entry))]]]))))
 
 (def journal-stack
   (createStackNavigator

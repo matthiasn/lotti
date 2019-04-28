@@ -1,6 +1,6 @@
 (ns meins.ui.settings.sync
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list #_cam text settings-list-item]]
+            [meins.ui.shared :refer [view settings-list cam text settings-list-item]]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]
@@ -18,8 +18,8 @@
     (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])]
+            item-bg (get-in c/colors [:button-bg @theme])
+            text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg
@@ -32,7 +32,6 @@
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         #(swap! local update-in [:cam] not)}]]
-         #_
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :flex   5

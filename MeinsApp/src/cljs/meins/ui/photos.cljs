@@ -1,7 +1,6 @@
 (ns meins.ui.photos
   (:require [meins.ui.shared :refer [view text touchable-opacity alert
                                      scroll image dimensions]]
-            [cljs-react-navigation.reagent :refer [stack-navigator stack-screen]]
             [re-frame.core :refer [reg-sub subscribe]]
             ["@matthiasn/cameraroll" :as cam-roll]
             ["react-native-super-grid" :as rn-super-grid]
