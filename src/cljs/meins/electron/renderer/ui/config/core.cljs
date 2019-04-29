@@ -113,8 +113,9 @@
                           [:h2 "Photo Settings"]
                           [:button {:on-click #(emit [:photos/gen-cache])}
                            "regenerate cache"]])]
-                      [h/error-boundary
-                       [f/dashboard]]
+                      (when (= :dashboards page)
+                        [h/error-boundary
+                         [f/dashboard]])
                       [:div.cfg.footer [stats/stats-text true]]]]]))]
     (r/create-class
       {:component-did-mount    did-mount

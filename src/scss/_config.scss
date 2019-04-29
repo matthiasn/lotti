@@ -37,7 +37,6 @@
 
     tr {
       cursor: pointer;
-      background-color: white;
 
       &:hover {
         background-color: desaturate(lighten($orange, 40%), 10%);
@@ -210,9 +209,7 @@
       margin-top: 20px;
       width: auto;
       padding: 5px;
-
-      .label {
-      }
+      background-color: white;
 
       td, th {
         padding: 0 7px;
