@@ -64,7 +64,7 @@
   (let [data (-> res :data vals)
         id (:id res)
         f (case id
-            :custom-fields-by-days save-dashboard-data-by-tag
+            :custom_fields_by_days save-dashboard-data-by-tag
             :questionnaires-by-days save-questionnaire-data-by-tag
             :habits-by-days save-habits-by-day
             :day-stats save-day-stats-by-day

@@ -98,7 +98,7 @@
    have a handler function. Also route messages from imports to store component.
    Finally, sends all messages from store component to client via the ws
    component."
-  [switchboard cmp-maps opts]
+  [opts]
   (sb/send-mult-cmd
     switchboard
     [[:cmd/init-comp (make-observable cmp-maps)]
@@ -147,5 +147,5 @@
   (pid/save fu/pid-file)
   (pid/delete-on-shutdown! fu/pid-file)
   (info "meins started, PID" (pid/current))
-  (restart! switchboard cmp-maps {:read-logs true})
+  (restart! {:read-logs true})
   (Thread/sleep Long/MAX_VALUE))

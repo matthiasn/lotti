@@ -406,7 +406,7 @@
   {:type        (list :CustomFieldStatsItem)
    :description "Custom field stats for tag and day"
    :args        {:day_strings {:type (list String)}
-                 :tag         {:type String}
+                 :tags        {:type (list String)}
                  :prio        {:type Int}}
    :resolve     :query/custom-fields-by-days}
 

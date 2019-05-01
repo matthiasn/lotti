@@ -34,10 +34,10 @@
            :query/alias alias}]
     (v/graphql-query {:venia/queries [q]})))
 
-(defn graphql-query-by-days [day-strings tag alias]
+(defn graphql-query-by-days [day-strings tags alias]
   (let [q {:query/data  [:custom_fields_by_days
                          {:day_strings day-strings
-                          :tag         tag}
+                          :tags        tags}
                          [:date_string
                           :tag
                           [:fields [:field :value

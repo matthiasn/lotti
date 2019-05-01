@@ -135,7 +135,7 @@
                 :tag         tag}
                fields)))))
 
-(defn custom-field-stats [state context args value]
+(defn custom-field-stats [state _context args _value]
   (let [{:keys [days tag offset]} args
         offset (* offset 24 60 60 1000)
         days (reverse (range days))
@@ -147,13 +147,12 @@
         stats (mapv custom-fields-mapper day-strings)]
     stats))
 
-(defn custom-field-stats-by-day [state context args value]
+(defn custom-field-stats-by-day [state _context args _value]
   (let [{:keys [day tag]} args
         custom-fields-fn (custom-fields-mapper @state tag)]
     (custom-fields-fn day)))
 
-(defn custom-fields-by-days [state context args value]
-  (let [args (merge args (-> context :msg-payload :new-args))
-        {:keys [day_strings tag]} args
-        custom-fields-fn (custom-fields-mapper @state tag)]
-    (mapv custom-fields-fn day_strings)))
+(defn custom-fields-by-days [state _context args _value]
+  (let [{:keys [day_strings tags]} args
+        tag-mapper (fn [tag] (mapv (custom-fields-mapper @state tag) day_strings))]
+    (apply concat (map tag-mapper tags))))

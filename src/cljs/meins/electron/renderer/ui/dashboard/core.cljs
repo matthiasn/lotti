@@ -35,13 +35,10 @@
                     (mapv :tag)
                     (concat ["#BP"]))]
       (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) days days))))]
-        (doseq [tag tags]
-          (let [alias (keyword (s/replace (str (subs (str tag) 1)) "-" "_"))
-                day-strings (filter #(not (get-in dashboard-data [% :custom-fields tag])) day-strings)]
-            (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tag alias)
-                               :res-hash nil
-                               :id       :custom-fields-by-days
-                               :prio     15}])))))
+        (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tags :custom_fields_by_days)
+                           :res-hash nil
+                           :id       :custom_fields_by_days
+                           :prio     15}])))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))
           day-strings (mapv rh/n-days-ago-fmt (range 0 (+ (* -1 offset) days days)))]
