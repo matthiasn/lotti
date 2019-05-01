@@ -64,13 +64,13 @@
               label (get-in @custom-fields [tag :fields (keyword field) :label])
               field-type (get-in @custom-fields [tag :fields (keyword field) :cfg :type])
               mx (or mx
-                     (apply max (map
-                                  (fn [x]
-                                    (:value
-                                      (first (filter #(= (name field) (:field %))
-                                                     (:fields x)))
-                                      0))
-                                  data)))
+                     (apply max 1 (map
+                                    (fn [x]
+                                      (:value
+                                        (first (filter #(= (name field) (:field %))
+                                                       (:fields x)))
+                                        0))
+                                    data)))
               scale (if (pos? mx) (/ (- h 3) mx) 1)
               line-inc (cond
                          (> mx 12000) 10000
@@ -101,7 +101,6 @@
            (for [[n {:keys [date_string day-ts fields] :as m}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
-                   d (* 24 60 60 1000)
                    offset (- day-ts start)
                    span (if (zero? span) 1 span)
                    scaled (* days 20 (/ offset span))

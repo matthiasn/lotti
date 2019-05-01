@@ -68,8 +68,8 @@
               values (->> values
                           (filter #(< (:ts %) end))
                           (filter #(> (:ts %) start)))
-              mn (apply min (map :v values))
-              mx (apply max (map :v values))
+              mn (apply min 0 (map :v values))
+              mx (apply max 1 (map :v values))
               rng (- mx mn)
               line-inc (cond
                          (> rng 2000) 1000
