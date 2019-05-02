@@ -1,6 +1,6 @@
 (ns meins.ui.editor
   (:require [re-frame.core :refer [subscribe]]
-            [meins.ui.shared :refer [view text text-input touchable-opacity btn
+            [meins.ui.shared :refer [view text text-input touchable-opacity btn platform-os
                                      keyboard-avoiding-view keyboard fa-icon alert]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
@@ -62,17 +62,17 @@
                        (navigate "Journal"))
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])]
+            text-color (get-in c/colors [:text @theme])
+            pt (if (= platform-os "ios") 40 10)]
         [view {:style {:display          "flex"
                        :flex-direction   "column"
-                       :background-color "green"
-                       :padding-top      50}}
+                       :background-color bg
+                       :padding-top      pt}}
          [header save-fn cancel-fn "New Entry"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
-                                             :background-color "red"
                                              :flex             1
                                              :margin-top       20
                                              :align-items      "center"}}
@@ -82,8 +82,8 @@
                                             :font-size        24
                                             :max-height       400
                                             :min-height       300
-                                            :height 200
-                                            :background-color "pink"
+                                            :height           200
+                                            :background-color text-bg
                                             :margin-bottom    20
                                             :color            text-color
                                             :width            "100%"}

@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.132",
+  "version": "0.6.133",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -20,6 +20,7 @@
   "homepage": "https://github.com/matthiasn/meins",
   "dependencies": {
     "@cljs-oss/module-deps": "1.1.1",
+    "@geonet/geohash": "1.0.10",
     "asar": "1.0.0",
     "base-64": "0.1.0",
     "bufferutil": "^4.0.1",

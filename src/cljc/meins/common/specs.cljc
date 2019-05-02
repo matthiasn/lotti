@@ -51,6 +51,7 @@
 
 (s/def :meins.entry/latitude (s/nilable (number-in-range? -180.0 180.0)))
 (s/def :meins.entry/longitude (s/nilable (number-in-range? -180.0 180.0)))
+(s/def :meins.entry/geohash string?)
 (s/def :meins.entry/planned-dur integer?)
 (s/def :meins.entry/interruptions (s/and integer? #(<= 0 %)))
 
@@ -74,6 +75,7 @@
                    :meins.entry/interruptions
                    :meins.entry/timezone
                    :meins.entry/utc-offset
+                   :meins.entry/geohash
                    :meins.entry/latitude
                    :meins.entry/longitude
                    :meins.entry/md]))

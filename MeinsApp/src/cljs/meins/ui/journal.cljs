@@ -174,7 +174,6 @@
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
-                                             :background-color "green"
                                              :width            "100%"
                                              :flex             1
                                              :align-items      "center"}}
@@ -268,6 +267,7 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
+          #_
           [text {:style {:margin-top 4
                          :color      text-color
                          :text-align "left"
