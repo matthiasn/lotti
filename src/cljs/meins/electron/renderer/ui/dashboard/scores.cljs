@@ -59,7 +59,6 @@
       (let [points (map-indexed point-mapper scores)
             {:keys [color fill glow label]} cfg
             line-points (s/join " " (map :s points))
-            active-dashboard @active-dashboard
             stroke (:stroke_width cfg 1)]
         [:g
          (when glow
@@ -77,10 +76,10 @@
                       :style  {:stroke       color
                                :stroke-width stroke
                                :fill         :none}}]
-          (for [p points]
+          (for [[i p ] (map-indexed (fn [i v] [i v]) points)]
+            ^{:key (str label i)}
             [:circle {:cx       (:x p)
                       :cy       (:y p)
-                      :id       (str active-dashboard p start-ymd)
                       :on-click (up/add-search
                                   {:tab-group    :left
                                    :first-line   label

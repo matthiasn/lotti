@@ -68,7 +68,7 @@
               values (->> values
                           (filter #(< (:ts %) end))
                           (filter #(> (:ts %) start)))
-              mn (apply min 0 (map :v values))
+              mn (if (seq values) (apply min (map :v values)) 0)
               mx (apply max 1 (map :v values))
               rng (- mx mn)
               line-inc (cond

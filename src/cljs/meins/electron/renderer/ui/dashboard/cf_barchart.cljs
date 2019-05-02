@@ -113,17 +113,18 @@
                    display-v (if (= :time field-type)
                                (h/m-to-hh-mm v)
                                v)]
-               ^{:key (str tag field n)}
-               [rect {:v     display-v
-                      :x     x
-                      :w     16
-                      :ymd   date_string
-                      :y     btm-y
-                      :h     h
-                      :label label
-                      :local local
-                      :tag   tag
-                      :cls   cls
-                      :color color
-                      :n     n}]))
+               (when-not (js/isNaN x)
+                 ^{:key (str tag field n)}
+                 [rect {:v     display-v
+                        :x     x
+                        :w     16
+                        :ymd   date_string
+                        :y     btm-y
+                        :h     h
+                        :label label
+                        :local local
+                        :tag   tag
+                        :cls   cls
+                        :color color
+                        :n     n}])))
            [dc/line (+ y h) "#000" 2]])))))
