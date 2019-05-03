@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.leaflet
   (:require [reagent.core :as rc]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer [info]]
             [leaflet]))
 
@@ -9,7 +10,7 @@
    longitude, also from the props map."
   [props]
   (fn []
-    (let [{:keys [lat lon zoom put-fn ts bounds]} props
+    (let [{:keys [lat lon zoom ts bounds]} props
           zoom (or zoom 13)
           iww-host (.-iwwHOST js/window)
           map-cfg (clj->js {:scrollWheelZoom false})
@@ -18,9 +19,9 @@
       (.addTo (.tileLayer leaflet tiles-url (clj->js {:maxZoom 18})) map)
       (when-not bounds
         (.addTo (.marker leaflet #js [lat lon]) map))
-      (.on map "zoomend" #(put-fn [:entry/update-local
-                                   {:map-zoom  (aget % "target" "_zoom")
-                                    :timestamp ts}]))
+      (.on map "zoomend" #(emit [:entry/update-local
+                                 {:map-zoom  (aget % "target" "_zoom")
+                                  :timestamp ts}]))
       (when bounds
         (-> (leaflet/rectangle (clj->js bounds)
                                (clj->js {:color  "blue"
@@ -41,24 +42,12 @@
 
 (defn leaflet-map
   "Helper for showing map when exists and desired."
-  [entry show? local-cfg put-fn]
+  [entry show? local-cfg]
   (let [{:keys [latitude longitude timestamp map-zoom]} entry]
     (when (and show? latitude)
       ^{:key (str latitude longitude)}
-      [leaflet-component {:id     (str "map" timestamp (:query-id local-cfg))
-                          :lat    latitude
-                          :lon    longitude
-                          :zoom   map-zoom
-                          :ts     timestamp
-                          :put-fn put-fn}])))
-
-(defn leaflet-map2
-  [data local-cfg put-fn]
-  (let [{:keys [latitude longitude bounds]} data]
-    (when latitude
-      ^{:key (str latitude longitude)}
-      [leaflet-component {:id     (str "map" latitude (:query-id local-cfg))
-                          :lat    latitude
-                          :lon    longitude
-                          :bounds bounds
-                          :put-fn put-fn}])))
+      [leaflet-component {:id   (str "map" timestamp (:query-id local-cfg))
+                          :lat  latitude
+                          :lon  longitude
+                          :zoom map-zoom
+                          :ts   timestamp}])))

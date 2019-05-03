@@ -139,7 +139,7 @@
                              :id           (str ts)
                              :selected     selected
                              :mapbox-token mapbox-token}]
-             [l/leaflet-map selected true {} emit]))
+             [l/leaflet-map selected true {}]))
          [:div.journal {:on-mouse-enter stop-watch}
           [:div.journal-entries
            ^{:key (:timestamp selected)}

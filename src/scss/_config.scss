@@ -406,6 +406,18 @@
   }
 }
 
+.usage {
+  padding: 20px;
+
+  .leaflet {
+    width: 500px;
+    height: 300px;
+    margin-bottom: 20px;
+  }
+
+  overflow-y: auto;
+}
+
 .sync-cfg {
   display: flex;
   flex-flow: row;

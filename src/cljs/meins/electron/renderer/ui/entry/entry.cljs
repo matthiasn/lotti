@@ -5,7 +5,6 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [meins.common.utils.parse :as up]
-            ["ngeohash" :as geohash]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.entry.datetime :as dt]
             [meins.electron.renderer.ui.entry.actions :as a]
@@ -183,16 +182,7 @@
                               :scroll-disabled (:scroll-disabled @local)
                               :local-cfg       local-cfg
                               :mapbox-token    mapbox-token}]]
-             [l/leaflet-map merged @show-map? local-cfg emit]))
-         (when (and show-map? (:geohash merged))
-           (let [gh (:geohash merged)
-                 shortened (subs gh 0 3)
-                 center (js->clj (geohash/decode shortened) :keywordize-keys true)
-                 bounding-box (js->clj (geohash/decode_bbox shortened))
-                 [minlat minlon maxlat maxlon] bounding-box
-                 bounds [[minlat minlon] [maxlat maxlon]]
-                 data (merge center {:bounds bounds})]
-             [:div [l/leaflet-map2 data local-cfg emit]]))
+             [l/leaflet-map merged @show-map? local-cfg]))
          [m/imdb-view merged]
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]

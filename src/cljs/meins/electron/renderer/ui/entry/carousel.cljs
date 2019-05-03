@@ -151,7 +151,7 @@
                              :selected     selected
                              :mapbox-token mapbox-token
                              :put-fn       put-fn}]
-             [l/leaflet-map selected true {} put-fn]))
+             [l/leaflet-map selected true {}]))
          [:time (h/localize-datetime-full ts locale)]
          [text-editor selected put-fn]
          [stars-view selected put-fn]

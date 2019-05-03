@@ -12,6 +12,7 @@
             [meins.electron.renderer.ui.config.metrics :as cm]
             [meins.electron.renderer.ui.config.locale :as cl]
             [meins.electron.renderer.ui.config.sync :as sync]
+            [meins.electron.renderer.ui.config.usage-stats :as usage]
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.helpers :as h]
@@ -82,6 +83,7 @@
                         [menu-item :sync "Synchronization" page]
                         [menu-item :photos "Photos" page]
                         [menu-item :localization "Localization" page]
+                        [menu-item :usage "Usage Stats" page]
                         [:div.menu-item.exit
                          {:on-click exit
                           :class    (when (= :exit (:highlighted @local)) "highlight")}
@@ -106,6 +108,8 @@
                          [cd/dashboards-row local])
                        (when (= :sync page)
                          [sync/sync])
+                       (when (= :usage page)
+                         [usage/usage])
                        (when (= :metrics page)
                          [cm/metrics])
                        (when (= :photos page)
