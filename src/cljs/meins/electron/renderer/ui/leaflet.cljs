@@ -9,17 +9,24 @@
    longitude, also from the props map."
   [props]
   (fn []
-    (let [{:keys [lat lon zoom put-fn ts]} props
+    (let [{:keys [lat lon zoom put-fn ts bounds]} props
           zoom (or zoom 13)
           iww-host (.-iwwHOST js/window)
           map-cfg (clj->js {:scrollWheelZoom false})
           map (.setView (.map leaflet (:id props) map-cfg) #js [lat lon] zoom)
           tiles-url (str "http://" iww-host "/tiles/{z}/{x}/{y}.png")]
       (.addTo (.tileLayer leaflet tiles-url (clj->js {:maxZoom 18})) map)
-      (.addTo (.marker leaflet #js [lat lon]) map)
+      (when-not bounds
+        (.addTo (.marker leaflet #js [lat lon]) map))
       (.on map "zoomend" #(put-fn [:entry/update-local
                                    {:map-zoom  (aget % "target" "_zoom")
-                                    :timestamp ts}])))))
+                                    :timestamp ts}]))
+      (when bounds
+        (-> (leaflet/rectangle (clj->js bounds)
+                               (clj->js {:color  "blue"
+                                         :weight 2}))
+            (.addTo map))
+        (.fitBounds map (leaflet/latLngBounds (clj->js bounds)))))))
 
 (defn leaflet-component
   "Creates a leaflet map reagent class. The reagent-render function only creates
@@ -43,4 +50,15 @@
                           :lon    longitude
                           :zoom   map-zoom
                           :ts     timestamp
+                          :put-fn put-fn}])))
+
+(defn leaflet-map2
+  [data local-cfg put-fn]
+  (let [{:keys [latitude longitude bounds]} data]
+    (when latitude
+      ^{:key (str latitude longitude)}
+      [leaflet-component {:id     (str "map" latitude (:query-id local-cfg))
+                          :lat    latitude
+                          :lon    longitude
+                          :bounds bounds
                           :put-fn put-fn}])))

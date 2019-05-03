@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.133",
+  "version": "0.6.134",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -55,6 +55,7 @@
     "meins-draftjs-md-converter": "1.1.3",
     "moment": "2.24.0",
     "moment-duration-format": "2.2.2",
+    "ngeohash": "0.6.3",
     "normalize.css": "8.0.1",
     "quill": "1.3.6",
     "randomcolor": "0.5.4",

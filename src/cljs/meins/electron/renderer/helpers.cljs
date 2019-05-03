@@ -2,7 +2,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.parse :as p]
             [goog.dom.Range]
-            ["@geonet/geohash" :as geohash]
+            ["ngeohash" :as geohash]
             [reagent.core :as rc]
             [taoensso.timbre :refer-macros [info debug error]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -25,12 +25,12 @@
     (.-geolocation js/navigator)
     (fn [pos]
       (let [coords (.-coords pos)
-            lng (.-longitude coords)
             lat (.-latitude coords)
+            lng (.-longitude coords)
             updated {:timestamp (:timestamp entry)
-                     :geohash   (geohash/encode lng lat 9)
-                     :longitude lng
-                     :latitude  lat}]
+                     :geohash   (geohash/encode lat lng 9)
+                     :latitude  lat
+                     :longitude lng}]
         (emit [:entry/update-local updated])))
     (fn [err]
       (error "while getting geolocation:" err)
