@@ -104,7 +104,7 @@
               (let [selected (js/parseInt (-> ev .-nativeEvent .-target .-value))
                     updated (assoc-in entry [:linked_saga] selected)]
                 (info "saga-select" selected)
-                (emit [:entry/update-local updated])))]
+                (emit [:entry/update updated])))]
         (when (= entry-type :story)
           (when-not (:comment_for entry)
             [:div.saga
