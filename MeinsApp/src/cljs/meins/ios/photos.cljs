@@ -5,7 +5,11 @@
             ["realm" :as realm]
             [matthiasn.systems-toolbox.component :as st]
             [meins.ui.shared :refer [alert]]
-            [meins.ui.db :as uidb]))
+            [meins.ui.db :as uidb]
+            [clojure.string :as str]))
+
+(when (= "android" rn/Platform.OS)
+  (.request rn/PermissionsAndroid rn/PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE))
 
 (enable-console-print!)
 
@@ -25,7 +29,8 @@
         ts (.floor js/Math (* 1000 (:timestamp node)))]
     {:timestamp ts
      :imported  false
-     :fileName  (:fileName image)
+     :fileName  (or (:fileName image)
+                    (last (str/split (:uri image) "/")))
      :uri       (:uri image)
      :height    (:height image)
      :width     (:width image)

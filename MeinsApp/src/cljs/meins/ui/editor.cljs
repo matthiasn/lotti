@@ -1,7 +1,7 @@
 (ns meins.ui.editor
   (:require [re-frame.core :refer [subscribe]]
             [meins.ui.shared :refer [view text text-input touchable-opacity btn platform-os
-                                     keyboard-avoiding-view keyboard fa-icon alert]]
+                                     keyboard-avoiding-view keyboard fa-icon alert scroll]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
             [meins.ui.colors :as c]
@@ -66,30 +66,36 @@
             pt (if (= platform-os "ios") 40 10)]
         [view {:style {:display          "flex"
                        :flex-direction   "column"
+                       :height "100%"
                        :background-color bg
                        :padding-top      pt}}
          [header save-fn cancel-fn "New Entry"]
-         [keyboard-avoiding-view {:behavior "padding"
+         [keyboard-avoiding-view {                          ;:behavior "padding"
                                   :style    {:display          "flex"
                                              :flex-direction   "column"
                                              :justify-content  "space-between"
-                                             :flex             1
+                                             :flex             2
                                              :margin-top       20
+                                             :height 500
                                              :align-items      "center"}}
-          [text-input {:style              {:flex             2
-                                            :font-weight      "100"
-                                            :padding          16
-                                            :font-size        24
-                                            :max-height       400
-                                            :min-height       300
-                                            :height           200
-                                            :background-color text-bg
-                                            :margin-bottom    20
-                                            :color            text-color
-                                            :width            "100%"}
-                       :multiline          true
-                       :default-value      (:md @local)
-                       :keyboard-type      "twitter"
-                       :keyboardAppearance (if (= @theme :dark) "dark" "light")
-                       :on-change-text     (fn [text]
-                                             (swap! local assoc-in [:md] text))}]]]))))
+          [scroll {:style {:flex-direction   "column"
+                           :display          "flex"
+                           :width            "100%"
+                           :flex 1
+                           :padding-bottom   10}}
+           [text-input {:style              {:flex             2
+                                             :font-weight      "100"
+                                             :padding          16
+                                             :font-size        24
+                                             :max-height       400
+                                             :min-height       100
+                                             :background-color text-bg
+                                             :margin-bottom    20
+                                             :color            text-color
+                                             :width            "100%"}
+                        :multiline          true
+                        :default-value      (:md @local)
+                        ;:keyboard-type      "twitter"
+                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
+                        :on-change-text     (fn [text]
+                                              (swap! local assoc-in [:md] text))}]]]]))))

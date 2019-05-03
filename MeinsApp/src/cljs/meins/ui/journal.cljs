@@ -171,14 +171,15 @@
                        :padding-top      pt}}
          [ed/header save-fn cancel-fn "Edit"]
          [keyboard-avoiding-view {:behavior "padding"
-                                  :style    {:display          "flex"
-                                             :flex-direction   "column"
-                                             :justify-content  "space-between"
-                                             :width            "100%"
-                                             :flex             1
-                                             :align-items      "center"}}
+                                  :style    {:display         "flex"
+                                             :flex-direction  "column"
+                                             :justify-content "space-between"
+                                             :width           "100%"
+                                             :flex            1
+                                             :align-items     "center"}}
           [scroll {:style {:flex-direction   "column"
                            :background-color bg
+                           :min-height       250
                            :width            "100%"
                            :padding-bottom   10}}
            (when-let [media (:media entry)]
@@ -211,29 +212,28 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
-           #_
-           (when (and latitude longitude (= platform-os "ios"))
-             [map-view {:centerCoordinate [longitude latitude]
-                        :scrollEnabled    false
-                        :rotateEnabled    false
-                        :styleURL         (get mapbox-style-url :Street)
-                        :style            {:width         "100%"
-                                           :height        250
-                                           :margin-bottom 30}
-                        :zoomLevel        15}
-              [point-annotation {:coordinate [longitude latitude]
-                                 :id         (str (:timestamp entry))}
-               [view {:style {:width           24
-                              :height          24
-                              :alignItems      "center"
-                              :justifyContent  "center"
-                              :backgroundColor "white"
-                              :borderRadius    12}}
-                [view {:style {:width           24
-                               :height          24
-                               :backgroundColor "orange"
-                               :borderRadius    12
-                               :transform       [{:scale 0.7}]}}]]]])
+           #_(when (and latitude longitude (= platform-os "ios"))
+               [map-view {:centerCoordinate [longitude latitude]
+                          :scrollEnabled    false
+                          :rotateEnabled    false
+                          :styleURL         (get mapbox-style-url :Street)
+                          :style            {:width         "100%"
+                                             :height        250
+                                             :margin-bottom 30}
+                          :zoomLevel        15}
+                [point-annotation {:coordinate [longitude latitude]
+                                   :id         (str (:timestamp entry))}
+                 [view {:style {:width           24
+                                :height          24
+                                :alignItems      "center"
+                                :justifyContent  "center"
+                                :backgroundColor "white"
+                                :borderRadius    12}}
+                  [view {:style {:width           24
+                                 :height          24
+                                 :backgroundColor "orange"
+                                 :borderRadius    12
+                                 :transform       [{:scale 0.7}]}}]]]])
            #_(when-let [audio-file (:audio_file entry)]
                (let [status (:status @player-state)
                      pos (h/mm-ss (.floor js/Math (:pos @player-state)))
@@ -267,7 +267,6 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
-          #_
           [text {:style {:margin-top 4
                          :color      text-color
                          :text-align "left"
