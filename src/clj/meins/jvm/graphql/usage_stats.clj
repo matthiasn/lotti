@@ -38,6 +38,7 @@
              :habits       habits
              :words        wordcount
              :stories      stories
+             :os           (System/getProperty "os.name")
              :sagas        sagas}
         end (stc/now)]
     (merge res {:dur (- end start)})))

@@ -199,6 +199,7 @@
                  :words        {:type Int}
                  :hashtags     {:type Int}
                  :dur          {:type Int}
+                 :os           {:type String}
                  :geohashes    {:type (list String)}}}
 
   :BloodPressureStatsItem

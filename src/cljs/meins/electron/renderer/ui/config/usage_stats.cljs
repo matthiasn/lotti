@@ -40,6 +40,7 @@
                          :words
                          :stories
                          :sagas
+                         :os
                          :dur
                          :geohashes]]}]
     (v/graphql-query {:venia/queries [q]})))
@@ -84,6 +85,9 @@
             [:tr
              [:td "Hours logged:"]
              [:td (:hours_logged usage)]]
+            [:tr
+             [:td "Operating System:"]
+             [:td (:os usage)]]
             [:tr
              [:td "Query duration (ms):"]
              [:td (:dur usage)]]]]
