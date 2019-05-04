@@ -188,11 +188,12 @@
 
   :UsageStatsItem
   {:description "Usage stats item."
-   :fields      {:date_string     {:type String}
-                 :entries_total   {:type Int}
-                 :entries_created {:type Int}
-                 :hours_logged    {:type Float}
-                 :geohashes       {:type (list String)}}}
+   :fields      {:date_string        {:type String}
+                 :entries_total      {:type Int}
+                 :entries_created    {:type Int}
+                 :hours_logged       {:type Float}
+                 :hours_logged_total {:type Float}
+                 :geohashes          {:type (list String)}}}
 
   :BloodPressureStatsItem
   {:description "Blood Pressure item."
@@ -421,7 +422,7 @@
   :usage_by_day
   {:type        :UsageStatsItem
    :description "Usage stats by day"
-   :args        {:day_string {:type String}}
+   :args        {:date_string {:type String}}
    :resolve     :query/usage-by-day}
 
   :bp_field_stats

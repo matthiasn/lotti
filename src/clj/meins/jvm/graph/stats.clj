@@ -79,3 +79,17 @@
         total-seconds (apply + seconds-logged)
         total-hours (/ total-seconds 60 60)]
     total-hours))
+
+(defn hours-logged2
+  "Count total hours logged for provided entries."
+  [current-state timestamps]
+  (let [entries (map #(gq/get-entry current-state %) timestamps)
+        seconds-logged (map (fn [entry]
+                              (let [completed (or (get entry :completed_time) 0)
+                                    manual (gq/summed-durations entry)
+                                    summed (+ completed manual)]
+                                summed))
+                            entries)
+        total-seconds (apply + seconds-logged)
+        total-hours (/ total-seconds 60 60)]
+    total-hours))

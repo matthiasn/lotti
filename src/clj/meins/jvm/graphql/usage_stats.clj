@@ -7,20 +7,22 @@
             [meins.jvm.graph.stats :as gs]))
 
 (defn usage-stats-by-day [state _context args _value]
-  (prn args)
-  (let [{:keys [day_string]} args
+  (let [{:keys [date_string]} args
         g (:graph @state)
-        geohashes (->> (gq/get-nodes-for-day g {:date_string day_string})
+        entries-by-day (gq/get-nodes-for-day g {:date_string date_string})
+        geohashes (->> entries-by-day
                        (map (partial gq/get-entry @state))
                        (map :geohash)
                        (filter identity)
                        (map #(subs % 0 3))
                        set
                        vec)
-        entry-count (count (:entries-map @state))
-        hours-logged (gs/hours-logged @state)]
-    {:date_string     day_string
-     :entries_total   entry-count
-     :entries_created 0
-     :hours_logged    hours-logged
+        entries-total (count (:entries-map @state))
+        hours-logged-total (Math/floor (gs/hours-logged @state))
+        hours-logged (Math/floor (gs/hours-logged2 @state entries-by-day))]
+    {:date_string     date_string
+     :entries_total   entries-total
+     :entries_created (count entries-by-day)
+     :hours_logged hours-logged
+     :hours_logged_total    hours-logged-total
      :geohashes       geohashes}))

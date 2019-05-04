@@ -409,10 +409,26 @@
 .usage {
   padding: 20px;
 
-  .leaflet {
-    width: 500px;
-    height: 300px;
-    margin-bottom: 20px;
+  .view {
+    .leaflet {
+      width: 500px;
+      height: 250px;
+      margin-bottom: 20px;
+    }
+
+    tr {
+      background-color: transparent;
+      color: white;
+      font-weight: 400;
+
+      td {
+        padding-right: 20px;
+      }
+      &:hover {
+        background-color: transparent;
+        cursor: default;
+      }
+    }
   }
 
   overflow-y: auto;
