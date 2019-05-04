@@ -186,6 +186,14 @@
                  :tag         {:type String}
                  :fields      {:type (list :CustomFieldItem)}}}
 
+  :UsageStatsItem
+  {:description "Usage stats item."
+   :fields      {:date_string     {:type String}
+                 :entries_total   {:type Int}
+                 :entries_created {:type Int}
+                 :hours_logged    {:type Float}
+                 :geohashes       {:type (list String)}}}
+
   :BloodPressureStatsItem
   {:description "Blood Pressure item."
    :fields      {:timestamp    {:type (non-null ID)}
@@ -409,6 +417,12 @@
                  :tags        {:type (list String)}
                  :prio        {:type Int}}
    :resolve     :query/custom-fields-by-days}
+
+  :usage_by_day
+  {:type        :UsageStatsItem
+   :description "Usage stats by day"
+   :args        {:day_string {:type String}}
+   :resolve     :query/usage-by-day}
 
   :bp_field_stats
   {:type        (list :BloodPressureStatsItem)

@@ -14,6 +14,7 @@
             [meins.jvm.graphql.tab-search :as gts]
             [meins.jvm.graphql.briefings-logged :as gbl]
             [taoensso.timbre :refer [info error warn debug]]
+            [meins.jvm.graphql.usage-stats :as us]
             [meins.jvm.graphql.custom-fields :as gcf]))
 
 (defn search-remove [{:keys [current-state msg-payload]}]
@@ -73,6 +74,7 @@
            :query/custom-field-stats        gcf/custom-field-stats
            :query/custom-field-stats-by-day gcf/custom-field-stats-by-day
            :query/custom-fields-by-days     gcf/custom-fields-by-days
+           :query/usage-by-day              us/usage-stats-by-day
            :query/bp-field-stats            gms/bp-field-stats
            :query/git-stats                 gms/git-stats
            :query/briefings                 opts/briefings
