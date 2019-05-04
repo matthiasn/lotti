@@ -74,6 +74,7 @@
                                            [secretary "1.2.3"]]}
              :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources" "dev"]
                             :dependencies [;[io.dgraph/dgraph4j "1.7.1"]
+                                           [factual/geo "2.1.1"]
                                            [org.clojure/tools.namespace "0.3.0-alpha4"]]}}
 
   :repl-options {:init-ns meins.jvm.core}

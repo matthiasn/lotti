@@ -8,8 +8,7 @@
 
 (defn usage-stats-by-day [state _context args _value]
   (let [start (stc/now)
-        {:keys []} args
-        g (:graph @state)
+        {:keys [geohash_precision]} args
         current-state @state
         cfg (:cfg current-state)
         node-id (:node-id cfg)
@@ -17,7 +16,7 @@
         geohashes (->> entries
                        (map :geohash)
                        (filter identity)
-                       (map #(subs % 0 3))
+                       (map #(subs % 0 geohash_precision))
                        set
                        vec)
         entries-total (count entries)

@@ -11,16 +11,14 @@
             [meins.electron.renderer.graphql :as gql]
             [venia.core :as v]))
 
-(defn gh-2-bounds [geohash precision]
-  (let [shortened (subs geohash 0 precision)
-        bounding-box (js->clj (geohash/decode_bbox shortened))
+(defn gh-2-bounds [geohash]
+  (let [bounding-box (js->clj (geohash/decode_bbox geohash))
         [minlat minlon maxlat maxlon] bounding-box]
     [[minlat minlon] [maxlat maxlon]]))
 
-
 (defn gh-map [geohash]
   (when geohash
-    (let [bounds (gh-2-bounds geohash 3)]
+    (let [bounds (gh-2-bounds geohash)]
       [:div
        [l/leaflet-component
         {:id     (str "gh-" geohash)
@@ -31,6 +29,7 @@
 
 (defn usage-query []
   (let [q {:query/data [:usage_by_day
+                        {:geohash_precision 3}
                         [:id_hash
                          :entries
                          :hours_logged
@@ -86,7 +85,7 @@
              [:td "Hours logged:"]
              [:td (:hours_logged usage)]]
             [:tr
-             [:td "Time to create usage report:"]
+             [:td "Query duration (ms):"]
              [:td (:dur usage)]]]]
           (for [gh (:geohashes usage)]
             [gh-map gh])]]))))

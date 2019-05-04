@@ -428,7 +428,7 @@
   :usage_by_day
   {:type        :UsageStatsItem
    :description "Usage stats by day"
-   :args        {:date_string {:type String}}
+   :args        {:geohash_precision {:type Int}}
    :resolve     :query/usage-by-day}
 
   :bp_field_stats
