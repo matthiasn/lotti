@@ -2,27 +2,43 @@
   (:require [meins.jvm.graph.query :as gq]
             [taoensso.timbre :refer [info error warn debug]]
             [matthiasn.systems-toolbox.component :as stc]
-            [meins.jvm.datetime :as dt]
-            [meins.jvm.graphql.common :as gc]
+            [buddy.core.hash :as hash]
+            [buddy.core.codecs :refer :all]
             [meins.jvm.graph.stats :as gs]))
 
 (defn usage-stats-by-day [state _context args _value]
-  (let [{:keys [date_string]} args
+  (let [start (stc/now)
+        {:keys []} args
         g (:graph @state)
-        entries-by-day (gq/get-nodes-for-day g {:date_string date_string})
-        geohashes (->> entries-by-day
-                       (map (partial gq/get-entry @state))
+        current-state @state
+        cfg (:cfg current-state)
+        node-id (:node-id cfg)
+        entries (map #(gq/get-entry current-state %) (:sorted-entries current-state))
+        geohashes (->> entries
                        (map :geohash)
                        (filter identity)
                        (map #(subs % 0 3))
                        set
                        vec)
-        entries-total (count (:entries-map @state))
-        hours-logged-total (Math/floor (gs/hours-logged @state))
-        hours-logged (Math/floor (gs/hours-logged2 @state entries-by-day))]
-    {:date_string     date_string
-     :entries_total   entries-total
-     :entries_created (count entries-by-day)
-     :hours_logged hours-logged
-     :hours_logged_total    hours-logged-total
-     :geohashes       geohashes}))
+        entries-total (count entries)
+        hours-logged-total (Math/floor (gs/hours-logged current-state))
+        sagas (count (gq/find-all-sagas2 current-state))
+        stories (count (gq/find-all-stories2 current-state))
+        habits (count (gq/find-all-habits current-state))
+        hashtags (count (gq/find-all-hashtags current-state))
+        tasks (gs/res-count current-state {:tags #{"#task"} :n Integer/MAX_VALUE})
+        tasks-completed (gs/completed-count current-state)
+        wordcount (gs/count-words current-state)
+        res {:id_hash      (bytes->hex (hash/sha1 node-id))
+             :entries      entries-total
+             :hours_logged hours-logged-total
+             :geohashes    geohashes
+             :hashtags     hashtags
+             :tasks        tasks
+             :tasks_done   tasks-completed
+             :habits       habits
+             :words        wordcount
+             :stories      stories
+             :sagas        sagas}
+        end (stc/now)]
+    (merge res {:dur (- end start)})))

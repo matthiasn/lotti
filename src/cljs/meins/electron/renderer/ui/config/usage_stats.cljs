@@ -29,22 +29,27 @@
          :bounds bounds
          :put-fn emit}]])))
 
-(defn usage-by-day-query [date-string]
-  (let [q {:query/data  [:usage_by_day
-                         {:date_string date-string}
-                         [:date_string
-                          :entries_created
-                          :entries_total
-                          :hours_logged
-                          :hours_logged_total
-                          :geohashes]]}]
+(defn usage-query []
+  (let [q {:query/data [:usage_by_day
+                        [:id_hash
+                         :entries
+                         :hours_logged
+                         :tasks
+                         :tasks_done
+                         :habits
+                         :hashtags
+                         :words
+                         :stories
+                         :sagas
+                         :dur
+                         :geohashes]]}]
     (v/graphql-query {:venia/queries [q]})))
 
 (defn usage []
   (let [local (rc/atom {})
         gql-res (subscribe [:gql-res])
         usage-by-day (reaction (-> @gql-res :usage-by-day :data :usage_by_day))
-        q (usage-by-day-query "2019-05-03")]
+        q (usage-query)]
     (emit [:gql/query {:q        q
                        :res-hash nil
                        :id       :usage-by-day
@@ -57,19 +62,31 @@
           [:table
            [:tdata
             [:tr
-             [:td "Day:"]
-             [:td (:date_string usage)]]
+             [:td "ID Hash:"]
+             [:td (:id_hash usage)]]
             [:tr
-             [:td "Entries created:"]
-             [:td (:entries_created usage)]]
+             [:td "Entries:"]
+             [:td (:entries usage)]]
+            [:tr
+             [:td "Words:"]
+             [:td (:words usage)]]
+            [:tr
+             [:td "Sagas:"]
+             [:td (:sagas usage)]]
+            [:tr
+             [:td "Stories:"]
+             [:td (:stories usage)]]
+            [:tr
+             [:td "Habits:"]
+             [:td (:habits usage)]]
+            [:tr
+             [:td "Hashtags:"]
+             [:td (:hashtags usage)]]
             [:tr
              [:td "Hours logged:"]
              [:td (:hours_logged usage)]]
             [:tr
-             [:td "Entries total:"]
-             [:td (:entries_total usage)]]
-            [:tr
-             [:td "Hours logged total:"]
-             [:td (:hours_logged_total usage)]]]]
+             [:td "Time to create usage report:"]
+             [:td (:dur usage)]]]]
           (for [gh (:geohashes usage)]
             [gh-map gh])]]))))

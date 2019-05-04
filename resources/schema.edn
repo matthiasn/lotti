@@ -188,12 +188,18 @@
 
   :UsageStatsItem
   {:description "Usage stats item."
-   :fields      {:date_string        {:type String}
-                 :entries_total      {:type Int}
-                 :entries_created    {:type Int}
-                 :hours_logged       {:type Float}
-                 :hours_logged_total {:type Float}
-                 :geohashes          {:type (list String)}}}
+   :fields      {:id_hash      {:type String}
+                 :entries      {:type Int}
+                 :hours_logged {:type Float}
+                 :tasks        {:type Int}
+                 :tasks_done   {:type Int}
+                 :habits       {:type Int}
+                 :stories      {:type Int}
+                 :sagas        {:type Int}
+                 :words        {:type Int}
+                 :hashtags     {:type Int}
+                 :dur          {:type Int}
+                 :geohashes    {:type (list String)}}}
 
   :BloodPressureStatsItem
   {:description "Blood Pressure item."
