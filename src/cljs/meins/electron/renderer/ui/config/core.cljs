@@ -34,7 +34,7 @@
                                   (when (= (:highlighted @local) k) "highlight"))}
                      t])
         sections [:sagas :stories :custom-fields :habits :dashboards
-                  :metrics :sync :photos :localization :exit]
+                  :metrics :sync :photos :localization :usage :exit]
         sections (concat sections sections)
         next-item (fn [coll] (first (rest (drop-while #(not= (:highlighted @local) %) coll))))
         next-page #(swap! local assoc :highlighted (next-item sections))
