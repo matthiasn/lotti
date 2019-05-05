@@ -3,6 +3,7 @@
             [taoensso.timbre :refer [info error warn debug]]
             [matthiasn.systems-toolbox.component :as stc]
             [buddy.core.hash :as hash]
+            [meins.jvm.usage :as usage]
             [buddy.core.codecs :refer :all]
             [meins.jvm.graph.stats :as gs]))
 
@@ -28,7 +29,8 @@
         tasks (gs/res-count current-state {:tags #{"#task"} :n Integer/MAX_VALUE})
         tasks-completed (gs/completed-count current-state)
         wordcount (gs/count-words current-state)
-        res {:id_hash      (bytes->hex (hash/sha1 node-id))
+        id-hash (subs (bytes->hex (hash/sha1 node-id)) 0 10)
+        res {:id_hash      id-hash
              :entries      entries-total
              :hours_logged hours-logged-total
              :geohashes    geohashes
@@ -40,5 +42,6 @@
              :stories      stories
              :os           (System/getProperty "os.name")
              :sagas        sagas}
-        end (stc/now)]
-    (merge res {:dur (- end start)})))
+        res (merge res {:dur (- (stc/now) start)})]
+    (usage/upload-usage res)
+    res))

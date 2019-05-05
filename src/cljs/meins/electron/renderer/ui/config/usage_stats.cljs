@@ -29,7 +29,7 @@
 
 (defn usage-query []
   (let [q {:query/data [:usage_by_day
-                        {:geohash_precision 3}
+                        {:geohash_precision 2}
                         [:id_hash
                          :entries
                          :hours_logged
