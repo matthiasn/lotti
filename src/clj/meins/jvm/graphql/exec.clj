@@ -54,7 +54,7 @@
   (let [start (stc/now)
         qid (:id msg-payload)
         merged (merge (get-in current-state [:queries qid]) msg-payload)
-        {:keys [file args q id]} merged
+        {:keys [file args q id once]} merged
         started-timer (mt/start-timer ["graphql" "query" (name id)])
         schema (:schema current-state)
         template (if file (slurp (io/resource (str "queries/" file))) q)
@@ -68,13 +68,15 @@
                              {:ts   (stc/now)
                               :size size
                               :prio (:prio merged 100)})]
-              (swap! cmp-state assoc-in [:queries id] (dissoc res :data))
+              (when-not once
+                (swap! cmp-state assoc-in [:queries id] (dissoc res :data)))
               (info "GraphQL query" id "finished in" (- (stc/now) start) "ms "
                     (str "- '" (or file query-string) "'"))
               (put-fn (with-meta [:gql/res res] {:sente-uid :broadcast}))
               (tmr/stop started-timer))
             (catch Exception ex (error ex))))]
-    (swap! cmp-state assoc-in [:queries id] merged)
+    (when-not once
+      (swap! cmp-state assoc-in [:queries id] merged))
     (if query-string
       (execute-async schema query-string nil m {} on-deliver)
       (put-fn [:gql/res (merge msg-payload {:data {}})])))

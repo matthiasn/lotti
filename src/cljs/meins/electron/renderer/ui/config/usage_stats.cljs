@@ -27,33 +27,11 @@
          :bounds bounds
          :put-fn emit}]])))
 
-(defn usage-query []
-  (let [q {:query/data [:usage_by_day
-                        {:geohash_precision 2}
-                        [:id_hash
-                         :entries
-                         :hours_logged
-                         :tasks
-                         :tasks_done
-                         :habits
-                         :hashtags
-                         :words
-                         :stories
-                         :sagas
-                         :os
-                         :dur
-                         :geohashes]]}]
-    (v/graphql-query {:venia/queries [q]})))
 
 (defn usage []
   (let [local (rc/atom {})
         gql-res (subscribe [:gql-res])
-        usage-by-day (reaction (-> @gql-res :usage-by-day :data :usage_by_day))
-        q (usage-query)]
-    (emit [:gql/query {:q        q
-                       :res-hash nil
-                       :id       :usage-by-day
-                       :prio     15}])
+        usage-by-day (reaction (-> @gql-res :usage-by-day :data :usage_by_day))]
     (fn usage-render []
       (let [usage @usage-by-day]
         [:div.usage

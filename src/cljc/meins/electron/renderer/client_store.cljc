@@ -7,7 +7,8 @@
             [meins.electron.renderer.client-store.search :as s]
             [meins.electron.renderer.client-store.initial :as csi]
             [meins.electron.renderer.client-store.handlers :as csh]
-            [meins.electron.renderer.client-store.cfg :as c]))
+            [meins.electron.renderer.client-store.cfg :as c]
+            [meins.electron.renderer.graphql :as gql]))
 
 (defn state-fn [put-fn]
   (let [cfg (assoc-in @c/app-cfg [:qr-code] false)

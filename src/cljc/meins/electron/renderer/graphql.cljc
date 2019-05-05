@@ -180,3 +180,25 @@
   (let [q [{:query/data q}]]
     (when (seq q)
       (v/graphql-query {:venia/queries q}))))
+
+(defn usage-query []
+  (let [q {:query/data [:usage_by_day
+                        {:geohash_precision 2}
+                        [:id_hash
+                         :entries
+                         :hours_logged
+                         :tasks
+                         :tasks_done
+                         :habits
+                         :hashtags
+                         :words
+                         :stories
+                         :sagas
+                         :os
+                         :dur
+                         :geohashes]]}]
+    [:gql/query {:q        (v/graphql-query {:venia/queries [q]})
+                 :res-hash nil
+                 :once     true
+                 :id       :usage-by-day
+                 :prio     15}]))

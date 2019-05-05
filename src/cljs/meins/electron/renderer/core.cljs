@@ -12,7 +12,8 @@
             [meins.electron.renderer.exec :as exec]
             [cljs.nodejs :refer [process]]
             [matthiasn.systems-toolbox.switchboard :as sb]
-            [matthiasn.systems-toolbox.scheduler :as sched]))
+            [matthiasn.systems-toolbox.scheduler :as sched]
+            [meins.electron.renderer.graphql :as gql]))
 
 (def sente-base-cfg
   {:sente-opts {:host     (.-iwwHOST js/window)
@@ -127,6 +128,11 @@
        [:cmd/observe-state {:from :renderer/store
                             :to   :renderer/ui-cmp}]
 
+       [:cmd/send {:to  :renderer/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
+                                            :message (gql/usage-query)
+                                            :repeat  true
+                                            :initial true}]}]
        (when OBSERVER
          [:cmd/attach-to-firehose :renderer/ws-firehose])
 
