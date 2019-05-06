@@ -1,6 +1,6 @@
 (defproject matthiasn/meins "0.0-SNAPSHOT"
   :description "meins - a personal information manager"
-  :url "https://github.com/matthiasn/systems-toolbox"
+  :url "https://github.com/matthiasn/meins"
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.10.0"]

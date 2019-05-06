@@ -128,16 +128,17 @@
        [:cmd/observe-state {:from :renderer/store
                             :to   :renderer/ui-cmp}]
 
-       [:cmd/send {:to  :renderer/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
-                                            :message (gql/usage-query)
-                                            :repeat  true
-                                            :initial true}]}]
        (when OBSERVER
          [:cmd/attach-to-firehose :renderer/ws-firehose])
 
        [:cmd/send {:to  :renderer/store
-                   :msg [:startup/query]}]])))
+                   :msg [:startup/query]}]
+
+       [:cmd/send {:to  :renderer/scheduler
+                   :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
+                                            :message (gql/usage-query)
+                                            :repeat  true
+                                            :initial true}]}]])))
 
 (defn load-handler [ev]
   (info "RENDERER loaded")
