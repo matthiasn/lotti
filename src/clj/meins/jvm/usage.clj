@@ -10,7 +10,6 @@
                 "https://api.meinsapp.com/v1/usage"
                 {:body         json
                  :content-type :json
-                 :accept       :json
-                 :insecure?    true})]
+                 :accept       :json})]
       (info res))
     (catch Exception ex (error "upload-usage" ex))))

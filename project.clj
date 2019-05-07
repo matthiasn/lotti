@@ -89,7 +89,7 @@
             [lein-ancient "0.6.15"]]
 
   :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
-                  "java.management" "jdk.unsupported"]
+                  "java.management" "jdk.unsupported" "jdk.crypto.cryptoki"]
 
   ;:global-vars {*assert* false}
 
