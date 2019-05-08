@@ -148,7 +148,7 @@
    :properties {:timestamp "int"
                 :md        {:type "string" :indexed true}
                 :edn       "string"
-                :sync      {:type "string" :default "OPEN"}
+                :sync      {:type "string" :default "OPEN" :optional true}
                 :latitude  {:type "float" :default 0.0 :optional true}
                 :longitude {:type "float" :default 0.0 :optional true}}})
 
