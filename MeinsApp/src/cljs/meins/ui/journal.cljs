@@ -8,6 +8,7 @@
             [meins.ui.colors :as c]
             [meins.ui.db :refer [emit]]
             [meins.ui.editor :as ed]
+            [cljs.reader :as rdr]
             [reagent.ratom :refer-macros [reaction]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
                                      map-view mapbox-style-url point-annotation virtualized-list
@@ -29,7 +30,7 @@
     (-> (.objects @uidb/realm-db "Entry")
         (.filtered (str "timestamp = " ts))
         (aget 0 "edn")
-        cljs.reader/read-string)))
+        rdr/read-string)))
 
 (defn list-item [ts navigate]
   (let [theme (subscribe [:active-theme])

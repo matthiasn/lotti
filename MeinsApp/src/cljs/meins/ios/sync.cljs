@@ -8,7 +8,9 @@
             [clojure.pprint :as pp]
             ["crypto-js" :as crypto-js]
             ["buffer" :as buffer]
-            ["@matthiasn/react-native-mailcore" :as react-native-mailcore]))
+            ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
+            [meins.ui.db :as uidb]
+            [cljs.reader :as rdr]))
 
 (def AES (aget crypto-js "AES"))
 (def utf-8 (aget crypto-js "enc" "Utf8"))
@@ -43,7 +45,7 @@
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
-(defn sync-write [{:keys [msg-type msg-payload msg-meta cmp-state]}]
+(defn sync-write [{:keys [msg-type msg-payload msg-meta cmp-state db-item]}]
   (when-let [secrets (:secrets @cmp-state)]
     (try
       (let [aes-secret (-> secrets :sync :write :secret)
@@ -73,12 +75,14 @@
                         (when (and (= :entry/sync msg-type) filename)
                           {:attachmentUri photo-uri
                            :filename      filename}))
-            success-cb #(swap! cmp-state update-in [:open-writes] disj msg-payload)]
+            success-cb (fn []
+                         (when db-item
+                           (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))))]
         (swap! cmp-state update-in [:open-writes] conj msg-payload)
         (-> (.saveImap MailCore (clj->js mail))
             (.then success-cb)
-            (.catch #(.log js/console (str (js->clj %))))))
-      (catch :default e (.error js/console (str e)))))
+            (.catch #(js/console.error (str (js->clj %))))))
+      (catch :default e (js/console.error (str e)))))
   {})
 
 (defn schedule-read [cmp-state put-fn]
@@ -139,10 +143,14 @@
   {})
 
 (defn retry-write [{:keys [cmp-state]}]
-  (for [x (:open-writes @cmp-state)]
-    (sync-write {:cmp-state   cmp-state
-                 :msg-type    :entry/sync
-                 :msg-payload x}))
+  (let [res (-> (.objects @uidb/realm-db "Entry")
+                (.filtered "sync == \"OPEN\"")
+                (.slice 0 100))]
+    (doseq [x res]
+      (sync-write {:db-item     x
+                   :cmp-state   cmp-state
+                   :msg-type    :entry/sync
+                   :msg-payload (rdr/read-string (aget x "edn"))})))
   {})
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
@@ -159,12 +167,6 @@
           (let [secrets (second (<! (as/get-item :secrets)))]
             (when secrets
               (swap! state assoc-in [:secrets] secrets)))
-          (catch js/Object e
-            (put-fn [:debug/error {:msg e}]))))
-    (go (try
-          (let [open-writes (second (<! (as/get-item :open-writes)))]
-            (when open-writes
-              (swap! state assoc-in [:open-writes] open-writes)))
           (catch js/Object e
             (put-fn [:debug/error {:msg e}]))))
     (go (try

@@ -70,25 +70,18 @@
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/photos}]
 
-       #_(when OBSERVER
-           [:cmd/attach-to-firehose :app/sync])
-
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store
                             :app/sync
                             :app/healthkit}}]
 
-       [:cmd/send {:to  :app/scheduler
-                   :msg [:cmd/schedule-new {:timeout 60000
-                                            :message [:sync/fetch]
-                                            :repeat  true
-                                            :initial false}]}]
-
-       [:cmd/send {:to  :app/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 10 60 1000)
-                                            :message [:sync/retry]
-                                            :repeat  true
-                                            :initial false}]}]])
+       #_(when OBSERVER
+           [:cmd/attach-to-firehose :app/sync])
+       #_[:cmd/send {:to  :app/scheduler
+                     :msg [:cmd/schedule-new {:timeout 60000
+                                              :message [:sync/fetch]
+                                              :repeat  true
+                                              :initial false}]}]])
     (.registerComponent AppRegistry "meins" #(identity ui/app-container))
     (setJSExceptionHandler (fn [error _is-fatal] (alert error)))
     #_(setNativeExceptionHandler (fn [error] (alert error)))))

@@ -1702,7 +1702,7 @@
 					"-lz",
 					"-stdlib=libc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.meins;
 				PRODUCT_NAME = MeinsApp;
 				"SYSTEM_HEADER_SEARCH_PATHS[arch=*]" = "\"$(BUILT_PRODUCTS_DIR)/../../include\"/**";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -1753,7 +1753,7 @@
 					"-stdlib=libstdc++",
 					"-lxml2",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.meins;
 				PRODUCT_NAME = MeinsApp;
 				"SYSTEM_HEADER_SEARCH_PATHS[arch=*]" = "\"$(BUILT_PRODUCTS_DIR)/../../include\"/**";
 				VERSIONING_SYSTEM = "apple-generic";

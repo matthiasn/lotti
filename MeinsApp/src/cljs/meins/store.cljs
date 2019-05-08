@@ -27,8 +27,6 @@
                       (assoc-in [:entries timestamp] entry)
                       (assoc-in [:vclock-map offset] entry)
                       (assoc-in [:global-vclock] new-vclock))]
-    (when-not (= :entry/sync msg-type)
-      (put-fn (with-meta [:entry/sync entry] msg-meta)))
     (when realm-db
       (try
         (.write realm-db
@@ -36,8 +34,10 @@
                   (let [db-entry (-> entry
                                      (select-keys [:md :timestamp :longitude :latitude])
                                      (assoc :edn (pr-str entry))
+                                     (assoc :sync "OPEN")
                                      clj->js)
-                        x (.create realm-db "Entry" db-entry true)])))
+                        x (.create realm-db "Entry" db-entry true)])
+                  (put-fn [:sync/retry])))
         (catch :default e (js/console.error e))))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item :global-vclock last-vclock)))
@@ -136,6 +136,7 @@
    :properties {:timestamp "int"
                 :md        {:type "string" :indexed true}
                 :edn       "string"
+                :sync      {:type "string" :default "OPEN"}
                 :latitude  {:type "float" :default 0.0 :optional true}
                 :longitude {:type "float" :default 0.0 :optional true}}})
 
@@ -166,7 +167,7 @@
                  (reset! uidb/realm-db db)
                  (js/console.warn (.-length (.objects db "Entry")) "entries")
                  (js/console.warn (.-length (.objects db "Image")) "photos")))
-        (.catch (fn [err] (js/console.error "error: " (.-message err)))))
+        (.catch (fn [err] (js/console.error "Realm: " (.-message err)))))
     {:state state}))
 
 (defn cmp-map [cmp-id]
