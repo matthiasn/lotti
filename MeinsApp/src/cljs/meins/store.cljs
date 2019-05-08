@@ -95,6 +95,12 @@
       (catch js/Object e (js/console.error "load-secrets" e))))
   (go
     (try
+      (let [cfg (second (<! (as/get-item :cfg)))]
+        (when cfg
+          (swap! cmp-state assoc-in [:cfg] cfg)))
+      (catch js/Object e (js/console.error "load-cfg" e))))
+  (go
+    (try
       (let [latest-synced (second (<! (as/get-item :latest-synced)))]
         (put-fn [:debug/latest-synced latest-synced])
         (swap! cmp-state assoc-in [:latest-synced] latest-synced))
@@ -130,6 +136,12 @@
     (go (<! (as/set-item :secrets msg-payload)))
     {:new-state new-state}))
 
+(defn set-cfg [{:keys [current-state msg-payload]}]
+  (let [cfg (merge (:cfg current-state) msg-payload)
+        new-state (assoc-in current-state [:cfg] cfg)]
+    (go (<! (as/set-item :cfg cfg)))
+    {:new-state new-state}))
+
 (def EntrySchema
   {:name       "Entry"
    :primaryKey "timestamp"
@@ -157,6 +169,7 @@
                      :active-theme    :light
                      :hide-timestamps (sorted-set)
                      :vclock-map      (avl/sorted-map)
+                     :cfg             {:sync-active true}
                      :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
@@ -183,5 +196,6 @@
                  :state/load       load-state
                  :state/reset      state-reset
                  :secrets/set      set-secrets
+                 :cfg/set          set-cfg
                  :theme/active     theme
                  :activity/current current-activity}})

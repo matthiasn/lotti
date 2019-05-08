@@ -6,6 +6,7 @@
             [meins.ui.shared :as shared]
             [cljs.reader :as edn]
             [clojure.pprint :as pp]
+            [re-frame.core :refer [subscribe]]
             ["crypto-js" :as crypto-js]
             ["buffer" :as buffer]
             ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
@@ -143,16 +144,17 @@
   {})
 
 (defn retry-write [{:keys [cmp-state]}]
-
-  (let [res (some-> @uidb/realm-db
+  (let [cfg (subscribe [:cfg])
+        res (some-> @uidb/realm-db
                     (.objects "Entry")
                     (.filtered "sync == \"OPEN\"")
                     (.slice 0 100))]
-    (doseq [x res]
-      (sync-write {:db-item     x
-                   :cmp-state   cmp-state
-                   :msg-type    :entry/sync
-                   :msg-payload (rdr/read-string (aget x "edn"))})))
+    (when (:sync-active @cfg)
+      (doseq [x res]
+        (sync-write {:db-item     x
+                     :cmp-state   cmp-state
+                     :msg-type    :entry/sync
+                     :msg-payload (rdr/read-string (aget x "edn"))}))))
   {})
 
 (defn set-secrets [{:keys [current-state msg-payload]}]

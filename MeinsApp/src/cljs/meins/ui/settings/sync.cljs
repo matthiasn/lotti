@@ -8,13 +8,15 @@
 
 (defn sync-settings [_]
   (let [theme (subscribe [:active-theme])
+        cfg (subscribe [:cfg])
         local (r/atom {})
         on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
                                 data (edn/read-string (get qr-code "data"))]
                             (swap! local assoc-in [:barcode] data)
                             (emit [:secrets/set data])
-                            (swap! local assoc-in [:cam] false)))]
+                            (swap! local assoc-in [:cam] false)))
+        toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
     (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             bg (get-in c/colors [:list-bg @theme])
@@ -26,13 +28,14 @@
                        :height           "100%"}}
          [settings-list {:border-color bg
                          :width        "100%"}
-          [settings-list-item {:title            "Enable Sync"
-                               :has-switch       true
-                               :switchState      true
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(swap! local update-in [:cam] not)}]
+          [settings-list-item {:title               "Enable Sync"
+                               :has-switch          true
+                               :switchState         (:sync-active @cfg)
+                               :switchOnValueChange toggle-enable
+                               :hasNavArrow         false
+                               :background-color    item-bg
+                               :titleStyle          {:color text-color}
+                               :on-press            #(swap! local update-in [:cam] not)}]
           [settings-list-item {:title            "Scan barcode"
                                :hasNavArrow      false
                                :background-color item-bg
