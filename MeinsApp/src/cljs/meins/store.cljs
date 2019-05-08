@@ -169,7 +169,8 @@
                      :active-theme    :light
                      :hide-timestamps (sorted-set)
                      :vclock-map      (avl/sorted-map)
-                     :cfg             {:sync-active true}
+                     :cfg             {:sync-active  true
+                                       :entry-pprint false}
                      :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})

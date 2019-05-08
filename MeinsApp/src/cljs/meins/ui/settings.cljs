@@ -8,6 +8,7 @@
                                      settings-list-header settings-list-item]]
             [meins.ui.settings.db :as db]
             [meins.ui.settings.sync :as sync]
+            [meins.ui.settings.dev :as dev]
             [meins.ui.settings.health :as sh]
             [meins.ui.colors :as c]
             [cljs.pprint :as pp]))
@@ -144,6 +145,7 @@
   (createStackNavigator
     (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
               :sync     {:screen (r/reactify-component sync/sync-settings)}
+              :dev      {:screen (r/reactify-component dev/dev-settings)}
               :db       {:screen (r/reactify-component db/db-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})
     (clj->js {;:headerMode "none"

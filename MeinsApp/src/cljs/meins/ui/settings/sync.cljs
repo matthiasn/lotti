@@ -18,8 +18,7 @@
                             (swap! local assoc-in [:cam] false)))
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
     (fn [{:keys [navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation
-            bg (get-in c/colors [:list-bg @theme])
+      (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
             text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
@@ -34,8 +33,7 @@
                                :switchOnValueChange toggle-enable
                                :hasNavArrow         false
                                :background-color    item-bg
-                               :titleStyle          {:color text-color}
-                               :on-press            #(swap! local update-in [:cam] not)}]
+                               :titleStyle          {:color text-color}}]
           [settings-list-item {:title            "Scan barcode"
                                :hasNavArrow      false
                                :background-color item-bg
@@ -46,7 +44,6 @@
                                  :flex   5
                                  :height "100%"}
                  :onBarCodeRead on-barcode-read}])
-
          (when-let [barcode (:barcode @local)]
            [text {:style {:font-size   10
                           :color       "#888"

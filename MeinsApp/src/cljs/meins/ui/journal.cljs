@@ -143,6 +143,7 @@
 (defn entry-detail [_]
   (let [entry-detail (subscribe [:entry-detail])
         theme (subscribe [:active-theme])
+        cfg (subscribe [:cfg])
         player-state (r/atom {:pos    0
                               :status :paused})
         ;recorder-player (rn-audio-recorder-player.)
@@ -267,11 +268,12 @@
                                  :margin-right 25
                                  :font-family  "Courier"}}
                    pos]]))]
-          [text {:style {:margin-top 4
-                         :color      "white"
-                         :text-align "left"
-                         :font-size  8}}
-           (with-out-str (pp/pprint entry))]]]))))
+          (when (:entry-pprint @cfg)
+            [text {:style {:margin-top 4
+                           :color      "white"
+                           :text-align "left"
+                           :font-size  8}}
+             (with-out-str (pp/pprint entry))])]]))))
 
 (def journal-stack
   (createStackNavigator
