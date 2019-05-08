@@ -46,7 +46,7 @@
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
-(defn sync-write [{:keys [msg-type msg-payload msg-meta cmp-state db-item]}]
+(defn sync-write [{:keys [msg-type msg-payload put-fn cmp-state db-item]}]
   (when-let [secrets (:secrets @cmp-state)]
     (try
       (let [aes-secret (-> secrets :sync :write :secret)
@@ -78,7 +78,10 @@
                            :filename      filename}))
             success-cb (fn []
                          (when db-item
-                           (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))))]
+                           (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))
+                           (put-fn [:cmd/schedule-new {:timeout 100
+                                                       :message [:sync/retry]
+                                                       :id      :sync}])))]
         (swap! cmp-state update-in [:open-writes] conj msg-payload)
         (-> (.saveImap MailCore (clj->js mail))
             (.then success-cb)
@@ -143,16 +146,18 @@
       (catch :default e (shared/alert (str e)))))
   {})
 
-(defn retry-write [{:keys [cmp-state]}]
+(defn retry-write [{:keys [cmp-state put-fn]}]
+  (js/console.warn "retry-write")
   (let [cfg (subscribe [:cfg])
         res (some-> @uidb/realm-db
                     (.objects "Entry")
                     (.filtered "sync == \"OPEN\"")
-                    (.slice 0 100))]
+                    (.slice 0 1))]
     (when (:sync-active @cfg)
       (doseq [x res]
         (sync-write {:db-item     x
                      :cmp-state   cmp-state
+                     :put-fn      put-fn
                      :msg-type    :entry/sync
                      :msg-payload (rdr/read-string (aget x "edn"))}))))
   {})

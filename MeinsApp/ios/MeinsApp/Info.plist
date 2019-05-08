@@ -55,6 +55,8 @@
 	<string>record significant location changes</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>record location for journal entries</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>record location for journal entries</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import images</string>
 	<key>UIAppFonts</key>

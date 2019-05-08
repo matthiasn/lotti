@@ -67,6 +67,9 @@
                     :to   #{:app/store
                             :app/scheduler}}]
 
+       [:cmd/route {:from :app/store
+                    :to   :app/scheduler}]
+
        [:cmd/route {:from :app/ui-cmp
                     :to   :app/photos}]
 

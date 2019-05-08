@@ -9,7 +9,7 @@
 
 (defn import-item [msg-type label icon-name]
   (let [theme (subscribe [:active-theme])
-        n 365
+        n 30
         click (fn [_] (emit [msg-type {:n n}]))
         auto-check (fn [_]
                      (emit [:cmd/schedule-new
