@@ -15,7 +15,8 @@
 
 (defn get-img [ts]
   (when (number? ts)
-    (some-> (.objects @uidb/realm-db "Image")
+    (some-> @uidb/realm-db
+            (.objects "Image")
             (.filtered (str "timestamp = " ts))
             (aget 0)
             js/JSON.stringify

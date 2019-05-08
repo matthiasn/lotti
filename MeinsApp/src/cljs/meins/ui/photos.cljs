@@ -55,9 +55,10 @@
                   (js/setTimeout update-local 1000))]
     (refresh nil)
     (fn []
-      (let [items (-> (.objects realm-db "Image")
-                      (.sorted "timestamp" true)
-                      (.slice 0 1000))]
+      (let [items (some-> realm-db
+                          (.objects "Image")
+                          (.sorted "timestamp" true)
+                          (.slice 0 1000))]
         @local
         [flat-grid
          {:itemDimension img-dimension

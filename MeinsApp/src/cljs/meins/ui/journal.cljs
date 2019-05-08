@@ -10,6 +10,7 @@
             [meins.ui.editor :as ed]
             [cljs.reader :as rdr]
             [reagent.ratom :refer-macros [reaction]]
+            ["react-navigation-transitions" :refer [fromLeft zoomIn fadeIn]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
                                      map-view mapbox-style-url point-annotation virtualized-list
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
@@ -20,17 +21,13 @@
             [meins.utils.parse :as p]
             [meins.ui.db :as uidb]))
 
-(defn map-url [latitude longitude]
-  (str "http://staticmap.openstreetmap.de/staticmap.php?center="
-       latitude "," longitude "&zoom=17&size=240x240&maptype=mapnik"
-       "&markers=" latitude "," longitude ",lightblue"))
-
 (defn get-entry [ts]
   (when (number? ts)
-    (-> (.objects @uidb/realm-db "Entry")
-        (.filtered (str "timestamp = " ts))
-        (aget 0 "edn")
-        rdr/read-string)))
+    (some-> @uidb/realm-db
+            (.objects "Entry")
+            (.filtered (str "timestamp = " ts))
+            (aget 0 "edn")
+            rdr/read-string)))
 
 (defn list-item [ts navigate]
   (let [theme (subscribe [:active-theme])
@@ -124,14 +121,16 @@
         realm-db @uidb/realm-db]
     (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate] :as n} (js->clj navigation :keywordize-keys true)
-            res (-> (.objects realm-db "Entry")
-                    (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))
-                    (.sorted "timestamp" true)
-                    (.slice 0 1000))
+            res (some-> realm-db
+                        (.objects "Entry")
+                        (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))
+                        (.sorted "timestamp" true)
+                        (.slice 0 1000))
             as-array (clj->js (map (fn [ts] {:timestamp (.-timestamp ts)}) res))
             bg (get-in c/colors [:list-bg @theme])]
         @global-vclock
         [view {:style {:flex             1
+                       :height           "100%"
                        :background-color bg}}
          [search-field local]
          [flat-list {:style        {:flex           1
@@ -148,7 +147,7 @@
                               :status :paused})
         ;recorder-player (rn-audio-recorder-player.)
         entry-local (r/atom {:entry {}})]
-    (fn [{:keys [screenProps navigation] :as props}]
+    (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
             entry (get-entry (:timestamp @entry-detail))
             bg (get-in c/colors [:list-bg @theme])
@@ -269,7 +268,7 @@
                                  :font-family  "Courier"}}
                    pos]]))]
           [text {:style {:margin-top 4
-                         :color      text-color
+                         :color      "white"
                          :text-align "left"
                          :font-size  8}}
            (with-out-str (pp/pprint entry))]]]))))
@@ -280,4 +279,5 @@
               :Detail  {:screen (r/reactify-component entry-detail)}})
     (clj->js {:headerMode               "none"
               :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
-                                                       :borderBottomWidth 0}}})))
+                                                       :borderBottomWidth 0}}
+              :transitionConfig (fn [] (fadeIn 200))})))

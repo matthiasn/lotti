@@ -26,7 +26,6 @@
 
 (defn new-entry-fn [put-fn opts]
   (let [ts (st/now)
-        #_#_
         timezone (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
                        (.-timeZone resolved))
                      (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
@@ -34,9 +33,8 @@
         entry (merge (p/parse-entry "")
                      {:timestamp  ts
                       :new-entry  true
-                      ;:timezone   timezone
-                      ;:utc-offset (.getTimezoneOffset (new js/Date))
-                      }
+                      :timezone   timezone
+                      :utc-offset (.getTimezoneOffset (new js/Date))}
                      opts)]
     (put-fn [:entry/new entry])
     (send-w-geolocation ts put-fn)))

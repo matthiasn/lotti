@@ -39,6 +39,7 @@
     "react-native-swipeout": "2.3.3",
     "react-native-vector-icons": "4.6.0",
     "react-navigation": "3.5.1",
+    "react-navigation-transitions": "^1.0.10",
     "realm": "2.26.1",
     "s": "0.1.1",
     "stream": "0.0.2",

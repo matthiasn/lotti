@@ -1,10 +1,10 @@
 (ns meins.ui
   (:require [reagent.core :as r]
             [re-frame.db :as rdb]
-            ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon]]
+            ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon Animated]]
             ["react" :as react :refer [Component]]
-            ["react-navigation" :refer [createStackNavigator createAppContainer
-                                        createBottomTabNavigator]]
+            ["react-navigation" :refer [createAppContainer createBottomTabNavigator]]
+            ["react-navigation-transitions" :refer [fromLeft zoomIn]]
             [re-frame.core :refer [reg-sub subscribe]]
             [cljs.pprint :as pp]
             [meins.ui.shared :refer [view text fa-icon]]
@@ -75,22 +75,24 @@
 
 (def bg "#223")
 
-(def app-nav (createBottomTabNavigator
-               (clj->js {:Journal  {;:screen            (r/reactify-component jrn/journal)
-                                    :screen            jrn/journal-stack
-                                    :navigationOptions (nav-options "list" 22)}
-                         :Add      {:screen            (r/reactify-component ue/editor)
-                                    :navigationOptions (nav-options "plus-square-o" 22)}
-                         :Photos   {:screen            (r/reactify-component photos/photos-tab)
-                                    :navigationOptions (nav-options "film" 22)}
-                         :Settings {:screen            s/settings-stack
-                                    :navigationOptions (nav-options "cogs" 22)}})
-               (clj->js {:initialRouteName "Journal"
-                         :tabBarOptions    {:activeTintColor         "rgb(66, 184, 221)"
-                                            :inactiveTintColor       "#999"
-                                            :activeBackgroundColor   bg
-                                            :inactiveBackgroundColor bg
-                                            :style                   {:backgroundColor bg}}})))
+(def app-nav
+  (createBottomTabNavigator
+    (clj->js {:Journal  {;:screen            (r/reactify-component jrn/journal)
+                         :screen            jrn/journal-stack
+                         :navigationOptions (nav-options "list" 22)}
+              :Add      {:screen            (r/reactify-component ue/editor)
+                         :navigationOptions (nav-options "plus-square-o" 22)}
+              :Photos   {:screen            (r/reactify-component photos/photos-tab)
+                         :navigationOptions (nav-options "film" 22)}
+              :Settings {:screen            s/settings-stack
+                         :navigationOptions (nav-options "cogs" 22)}})
+    (clj->js {:initialRouteName "Journal"
+              :transitionConfig (fn [] (zoomIn 1000))
+              :tabBarOptions    {:activeTintColor         "rgb(66, 184, 221)"
+                                 :inactiveTintColor       "#999"
+                                 :activeBackgroundColor   bg
+                                 :inactiveBackgroundColor bg
+                                 :style                   {:backgroundColor bg}}})))
 
 (def app-container
   (createAppContainer app-nav))

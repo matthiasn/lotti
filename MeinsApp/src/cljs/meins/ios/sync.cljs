@@ -143,9 +143,11 @@
   {})
 
 (defn retry-write [{:keys [cmp-state]}]
-  (let [res (-> (.objects @uidb/realm-db "Entry")
-                (.filtered "sync == \"OPEN\"")
-                (.slice 0 100))]
+
+  (let [res (some-> @uidb/realm-db
+                    (.objects "Entry")
+                    (.filtered "sync == \"OPEN\"")
+                    (.slice 0 100))]
     (doseq [x res]
       (sync-write {:db-item     x
                    :cmp-state   cmp-state

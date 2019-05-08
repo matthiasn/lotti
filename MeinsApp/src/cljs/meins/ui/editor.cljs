@@ -59,7 +59,7 @@
                        (h/new-entry-fn emit new-entry)
                        (swap! local assoc-in [:md] "")
                        (.dismiss keyboard)
-                       (navigate "Journal"))
+                       (js/setTimeout (fn [_] (navigate "Journal")) 500))
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])

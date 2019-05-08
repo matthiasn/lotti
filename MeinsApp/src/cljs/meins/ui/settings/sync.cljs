@@ -26,8 +26,14 @@
                        :height           "100%"}}
          [settings-list {:border-color bg
                          :width        "100%"}
+          [settings-list-item {:title            "Enable Sync"
+                               :has-switch       true
+                               :switchState      true
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(swap! local update-in [:cam] not)}]
           [settings-list-item {:title            "Scan barcode"
-                               ;:has-switch       true
                                :hasNavArrow      false
                                :background-color item-bg
                                :titleStyle       {:color text-color}
