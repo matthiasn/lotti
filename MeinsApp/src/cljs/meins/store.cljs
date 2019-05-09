@@ -37,9 +37,9 @@
                                      (assoc :sync "OPEN")
                                      clj->js)
                         x (.create realm-db "Entry" db-entry true)])
-                  (put-fn [:cmd/schedule-new {:timeout 1000
-                                              :message [:sync/retry]
-                                              :id      :sync}])))
+                  (put-fn [:schedule/new {:timeout 1000
+                                          :message [:sync/retry]
+                                          :id      :sync}])))
         (catch :default e (js/console.error e))))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item :global-vclock last-vclock)))

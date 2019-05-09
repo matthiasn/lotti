@@ -12,7 +12,7 @@
         n 30
         click (fn [_] (emit [msg-type {:n n}]))
         auto-check (fn [_]
-                     (emit [:cmd/schedule-new
+                     (emit [:schedule/new
                             {:timeout (* 15 60 1000)
                              :message [msg-type {:n n}]
                              :id      msg-type

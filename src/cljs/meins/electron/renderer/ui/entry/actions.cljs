@@ -222,7 +222,7 @@
                        (let [new-entry-fn (h/new-entry (p/pomodoro-defaults ts)
                                                        show-comments)
                              new-entry (new-entry-fn)]
-                         (emit [:cmd/schedule-new
+                         (emit [:schedule/new
                                 {:message [:cmd/pomodoro-start new-entry]
                                  :timeout 1000}])))
         trash-entry (fn [_]

@@ -1,7 +1,7 @@
 {:source-paths ["src/cljc" "src/cljs"]
 
  :dependencies [[reagent "0.8.1"]
-                [matthiasn/systems-toolbox "0.6.38"]
+                [matthiasn/systems-toolbox "0.6.40"]
                 [org.clojure/data.avl "0.0.18"]
                 [core-async-storage "0.3.1"]
                 [re-frame "0.10.6"]]

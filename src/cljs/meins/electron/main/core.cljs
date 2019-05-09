@@ -138,10 +138,10 @@
        [:cmd/send {:to :main/startup :msg [:jvm/loaded? {:environment :live}]}]
 
        [:cmd/send {:to  :main/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
-                                            :message [:update/auto-check]
-                                            :repeat  true
-                                            :initial true}]}]])))
+                   :msg [:schedule/new {:timeout (* 24 60 60 1000)
+                                        :message [:update/auto-check]
+                                        :repeat  true
+                                        :initial true}]}]])))
 
 (.on app "ready" start)
 (.on app "activate" (fn [_ev hasVisibleWindows]

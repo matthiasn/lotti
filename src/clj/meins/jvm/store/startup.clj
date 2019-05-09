@@ -123,9 +123,9 @@
     (swap! cmp-state assoc-in [:startup-progress :lines] 1)
     (add-to-graph cmp-state entries-to-index broadcast)
     (opts/gen-options {:cmp-state cmp-state})
-    (put-fn [:cmd/schedule-new {:timeout 1000
-                                :message [:gql/run-registered]
-                                :id      :run-registered}])
+    (put-fn [:schedule/new {:timeout 1000
+                            :message [:gql/run-registered]
+                            :id      :run-registered}])
     (broadcast [:sync/start-imap])
     (put-fn [:import/git])
     (ft-index entries-to-index put-fn)

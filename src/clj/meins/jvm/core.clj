@@ -84,10 +84,10 @@
 
      (when-not (s/includes? fu/data-path "playground")
        [:cmd/send {:to  :backend/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
-                                            :message [:import/spotify]
-                                            :repeat  true
-                                            :initial false}]}])]))
+                   :msg [:schedule/new {:timeout (* 5 60 1000)
+                                        :message [:import/spotify]
+                                        :repeat  true
+                                        :initial false}]}])]))
 
 
 (defn restart!
@@ -133,10 +133,10 @@
 
      (when-not (s/includes? fu/data-path "playground")
        [:cmd/send {:to  :backend/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 5 60 1000)
-                                            :message [:import/spotify]
-                                            :repeat  true
-                                            :initial false}]}])]))
+                   :msg [:schedule/new {:timeout (* 5 60 1000)
+                                        :message [:import/spotify]
+                                        :repeat  true
+                                        :initial false}]}])]))
 
 (defn -main
   "Starts the application from command line, saves and logs process ID. The

@@ -192,7 +192,7 @@
 
 (defn capture-menu [cmp-state put-fn]
   (let [screenshot #(put-fn [:screenshot/take])
-        reload #(put-fn [:cmd/schedule-new
+        reload #(put-fn [:schedule/new
                          {:message [:menu/reload]
                           :timeout 1}])
         register #(do (.register globalShortcut screenshot-accelerator screenshot)

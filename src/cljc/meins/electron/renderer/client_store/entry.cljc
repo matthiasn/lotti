@@ -111,7 +111,7 @@
                              (play-audio "ticking-clock"))))
             (update-local-storage new-state)
             {:new-state new-state
-             :emit-msg  [[:cmd/schedule-new
+             :emit-msg  [[:schedule/new
                           {:timeout 1000
                            :id      (keyword (str "timer-" ts))
                            :message [:cmd/pomodoro-inc
@@ -133,7 +133,7 @@
                       (assoc-in [:busy-status :busy] false))]
     (update-local-storage new-state)
     {:new-state new-state
-     :emit-msg  [:cmd/schedule-new
+     :emit-msg  [:schedule/new
                  {:message [:cmd/pomodoro-inc
                             {:started        (st/now)
                              :completed_time (:completed_time new-entry)

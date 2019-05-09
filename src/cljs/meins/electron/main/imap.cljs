@@ -263,11 +263,11 @@
 
 (defn start-sync [{:keys []}]
   (info "starting IMAP sync")
-  {:emit-msg [:cmd/schedule-new {:timeout 60000
-                                 :id      :imap-schedule
-                                 :message [:sync/read-imap]
-                                 :initial true
-                                 :repeat  true}]})
+  {:emit-msg [:schedule/new {:timeout 60000
+                             :id      :imap-schedule
+                             :message [:sync/read-imap]
+                             :initial true
+                             :repeat  true}]})
 
 (defn get-cfg [{:keys []}]
   {:emit-msg [:imap/cfg (imap-cfg)]})

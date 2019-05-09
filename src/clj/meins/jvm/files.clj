@@ -75,7 +75,7 @@
     (when-not (= existing node-to-add)
       (append-daily-log cfg node-to-add put-fn)
       (put-fn (with-meta [:entry/saved entry] broadcast-meta))
-      (put-fn [:cmd/schedule-new
+      (put-fn [:schedule/new
                {:message [:gql/run-registered
                           {:new-args {:day_strings [day adjusted-day]}}]
                 :timeout 250
@@ -154,14 +154,14 @@
     (when (not= (dissoc prev :last_saved :vclock)
                 (dissoc entry :last_saved :vclock))
       (append-daily-log cfg entry put-fn)
-      (put-fn [:cmd/schedule-new {:timeout 5000
-                                  :message [:options/gen]
-                                  :id      :generate-opts}])
+      (put-fn [:schedule/new {:timeout 5000
+                              :message [:options/gen]
+                              :id      :generate-opts}])
       (when-not (s/includes? fu/data-path "playground")
         (put-fn (with-meta [:sync/imap entry] broadcast-meta)))
       (when-not (:silent msg-meta)
         (put-fn (with-meta [:entry/saved entry] broadcast-meta))
-        (put-fn [:cmd/schedule-new
+        (put-fn [:schedule/new
                  {:message [:gql/run-registered
                             {:new-args {:day_strings day-strings}}]
                   :timeout 10
@@ -191,9 +191,9 @@
              ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
-              :emit-msg  [[:cmd/schedule-new {:timeout 2500
-                                              :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
-                                              :id      :sync-delayed-refresh}]
+              :emit-msg  [[:schedule/new {:timeout 2500
+                                          :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
+                                          :id      :sync-delayed-refresh}]
                           [:ft/add entry]]})
       :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
                         new-state (ga/add-node current-state with-conflict {:clean-tags true})]
@@ -254,7 +254,7 @@
                            :vclock    {node-id vclock-offset}
                            :deleted   true}
                       put-fn)
-    (put-fn [:cmd/schedule-new
+    (put-fn [:schedule/new
              {:message [:gql/run-registered {:new-args {:day_strings day-strings}}]
               :timeout 10}])
     (move-attachment-to-trash cfg msg-payload "images" :img_file)

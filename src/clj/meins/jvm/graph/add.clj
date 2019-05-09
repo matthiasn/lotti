@@ -157,9 +157,9 @@
 (defn unlink [{:keys [current-state msg-payload put-fn]}]
   (let [rm-edges #(uc/remove-edges % (vec msg-payload))
         new-state (update-in current-state [:graph] rm-edges)]
-    (put-fn [:cmd/schedule-new {:message [:gql/run-registered]
-                                :timeout 10
-                                :id      :saved-entry}])
+    (put-fn [:schedule/new {:message [:gql/run-registered]
+                            :timeout 10
+                            :id      :saved-entry}])
     {:new-state new-state}))
 
 (defn add-linked-visit [state entry]

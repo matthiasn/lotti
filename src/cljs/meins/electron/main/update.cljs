@@ -26,7 +26,7 @@
                        (info "Update downloaded")
                        (when (:immediate @state)
                          (put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])
-                         (put-fn [:cmd/schedule-new
+                         (put-fn [:schedule/new
                                   {:timeout 1000
                                    :message [:update/quit-install]}]))
                        (put-fn [:update/status {:status :update/downloaded}]))
@@ -76,8 +76,8 @@
   {:emit-msg [[:app/clear-cache]
               ;[:app/clear-iww-cache]
               [:app/shutdown-jvm {:environments #{:live :playground}}]
-              [:cmd/schedule-new {:timeout 1000
-                                  :message [:update/quit-install]}]]})
+              [:schedule/new {:timeout 1000
+                              :message [:update/quit-install]}]]})
 
 (defn quit-install [_]
   (info "UPDATE: quit and install")

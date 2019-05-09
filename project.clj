@@ -38,7 +38,7 @@
                  [com.drewnoakes/metadata-extractor "2.11.0"]
                  [ubergraph "0.5.2"]
                  [camel-snake-kebab "0.4.0"]
-                 [matthiasn/systems-toolbox "0.6.38"]
+                 [matthiasn/systems-toolbox "0.6.40"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
                  [org.clojure/tools.reader "1.3.2"]
                  [clucy "0.4.0"]

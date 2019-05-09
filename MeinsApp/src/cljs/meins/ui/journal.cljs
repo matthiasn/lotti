@@ -45,7 +45,7 @@
                  md)
             delete #(emit [:entry/persist (assoc-in entry [:deleted] true)])]
         [view {:style {:flex             1
-                       :margin-bottom    12
+                       :margin-bottom    4
                        :flex-direction   :row
                        :background-color "black"
                        :width            "100%"}}

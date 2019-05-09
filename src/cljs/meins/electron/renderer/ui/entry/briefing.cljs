@@ -121,7 +121,7 @@
 (defn add-task [ts]
   (let [open-new (fn [x]
                    (emit
-                     [:cmd/schedule-new
+                     [:schedule/new
                       {:message [:search/add
                                  {:tab-group :left
                                   :query     (up/parse-search (:timestamp x))}]

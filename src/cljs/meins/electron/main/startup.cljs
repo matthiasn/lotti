@@ -83,13 +83,13 @@
         (fn [_]
           (info "- Nope, trying again")
           (when-not (-> @cmp-state :service environment)
-            (put-fn [:cmd/schedule-new {:timeout 10 :message [:jvm/start msg-payload]}]))
+            (put-fn [:schedule/new {:timeout 10 :message [:jvm/start msg-payload]}]))
           (put-fn [:window/new {:url       loading-page
                                 :width     400
                                 :height    300
                                 :opts      {:icon icon}
                                 :window-id loading-page}])
-          (put-fn [:cmd/schedule-new {:timeout 1000 :message [:jvm/loaded? msg-payload]}]))
+          (put-fn [:schedule/new {:timeout 1000 :message [:jvm/loaded? msg-payload]}]))
         res-handler
         (fn [res]
           (let [status-code (.-statusCode res)
@@ -187,7 +187,7 @@
       (kill-by-port port))
     (when (contains? environments :playground)
       (kill-by-port pg-port)))
-  (put-fn [:cmd/schedule-new {:timeout 1500 :message [:app/shutdown]}])
+  (put-fn [:schedule/new {:timeout 1500 :message [:app/shutdown]}])
   {})
 
 (defn clear-cache [{:keys []}]

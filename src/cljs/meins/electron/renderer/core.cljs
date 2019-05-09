@@ -135,10 +135,10 @@
                    :msg [:startup/query]}]
 
        [:cmd/send {:to  :renderer/scheduler
-                   :msg [:cmd/schedule-new {:timeout (* 24 60 60 1000)
-                                            :message (gql/usage-query)
-                                            :repeat  true
-                                            :initial true}]}]])))
+                   :msg [:schedule/new {:timeout (* 24 60 60 1000)
+                                        :message (gql/usage-query)
+                                        :repeat  true
+                                        :initial true}]}]])))
 
 (defn load-handler [ev]
   (info "RENDERER loaded")

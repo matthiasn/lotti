@@ -79,9 +79,9 @@
             success-cb (fn []
                          (when db-item
                            (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))
-                           (put-fn [:cmd/schedule-new {:timeout 100
-                                                       :message [:sync/retry]
-                                                       :id      :sync}])))]
+                           (put-fn [:schedule/new {:timeout 100
+                                                   :message [:sync/retry]
+                                                   :id      :sync}])))]
         (swap! cmp-state update-in [:open-writes] conj msg-payload)
         (-> (.saveImap MailCore (clj->js mail))
             (.then success-cb)
@@ -91,7 +91,7 @@
 
 (defn schedule-read [cmp-state put-fn]
   (when (seq (:not-fetched @cmp-state))
-    (put-fn [:cmd/schedule-new
+    (put-fn [:schedule/new
              {:timeout 1000
               :message [:sync/read]}])))
 
