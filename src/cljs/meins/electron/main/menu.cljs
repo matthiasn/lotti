@@ -62,6 +62,8 @@
 
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:entry/create {}])
+        new-task #(put-fn [:entry/create {:starred   true
+                                          :perm_tags #{"#task"}}])
         new-story #(put-fn [:entry/create {:entry_type :story}])
         new-saga #(put-fn [:entry/create {:entry_type :saga}])
         new-habit #(put-fn [:entry/create {:entry_type :habit}])
@@ -72,19 +74,28 @@
         new-dashboard #(put-fn [:entry/create
                                 {:entry_type :dashboard-cfg
                                  :perm_tags  #{"#dashboard-cfg"}}])
-        new-album #(put-fn [:entry/create {:perm_tags  #{"#album"}}])]
+        new-album #(put-fn [:entry/create {:perm_tags #{"#album"}}])]
     {:label   "File"
      :submenu [{:label       "New Entry"
                 :accelerator "CmdOrCtrl+N"
                 :click       new-entry}
 
                {:label   "New..."
-                :submenu [{:label "Story" :click new-story}
-                          {:label "Saga" :click new-saga}
-                          {:label "Habit" :click new-habit}
-                          {:label "Album" :click new-album}
-                          {:label "Dashboard" :click new-dashboard}
-                          {:label "Custom Field" :click new-custom-field}]}
+                :submenu [{:label       "Task"
+                           :click       new-task
+                           :accelerator "CmdOrCtrl+T"}
+                          {:label "Story"
+                           :click new-story}
+                          {:label "Saga"
+                           :click new-saga}
+                          {:label "Habit"
+                           :click new-habit}
+                          {:label "Album"
+                           :click new-album}
+                          {:label "Dashboard"
+                           :click new-dashboard}
+                          {:label "Custom Field"
+                           :click new-custom-field}]}
                {:label   "Import"
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
@@ -152,9 +163,9 @@
                {:label       "Back to Main View"
                 :accelerator "Escape"
                 :click       #(open :main)}
-               {:label "Focus Mode"
+               {:label       "Focus Mode"
                 :accelerator "CmdOrCtrl+F"
-                :click #(open :focus)}
+                :click       #(open :focus)}
                {:label "Post Mortems"
                 :click #(open :post-mortem)}
                (when (contains? capabilities :countries)
@@ -180,8 +191,8 @@
                {:label       "Toggle Dashboard"
                 :accelerator "CmdOrCtrl+Shift+D"
                 :click       #(put-fn [:cmd/toggle-key {:path [:cfg :dashboard-banner]}])}
-               {:label       "Toggle Satellite View"
-                :click       #(put-fn [:cmd/toggle-key {:path [:cfg :satellite-view]}])}
+               {:label "Toggle Satellite View"
+                :click #(put-fn [:cmd/toggle-key {:path [:cfg :satellite-view]}])}
                {:type "separator"}
                {:role "zoomin"}
                {:role "zoomout"}
