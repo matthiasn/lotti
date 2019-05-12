@@ -62,8 +62,10 @@
 
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:entry/create {}])
-        new-task #(put-fn [:entry/create {:starred   true
-                                          :perm_tags #{"#task"}}])
+        new-task #(put-fn (with-meta
+                            [:entry/create {:starred   true
+                                            :perm_tags #{"#task"}}]
+                            {:tab-group :left}))
         new-story #(put-fn [:entry/create {:entry_type :story}])
         new-saga #(put-fn [:entry/create {:entry_type :saga}])
         new-habit #(put-fn [:entry/create {:entry_type :habit}])

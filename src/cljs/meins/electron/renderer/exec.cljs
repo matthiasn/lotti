@@ -4,16 +4,15 @@
             [meins.electron.renderer.helpers :as h]
             [meins.common.utils.parse :as up]))
 
-(defn create-entry [{:keys [msg-payload put-fn]}]
+(defn create-entry [{:keys [msg-payload msg-meta put-fn]}]
   (info "create entry:" msg-payload)
   (let [open (fn [x]
                (info x)
                (put-fn [:search/add
-                             {:tab-group :right
-                              :query     (up/parse-search (:timestamp x))}]))
+                        {:tab-group (or (:tab-group msg-meta) :right)
+                         :query     (up/parse-search (:timestamp x))}]))
         f (h/new-entry msg-payload open)]
     (f)
-
     {}))
 
 (defn cmp-map [cmp-id]
