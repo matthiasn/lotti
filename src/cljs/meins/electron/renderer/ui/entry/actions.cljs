@@ -232,6 +232,15 @@
                       (if edit-mode?
                         (emit [:entry/remove-local {:timestamp ts}])
                         (emit [:entry/trash entry])))
+        move-over (fn [_]
+                    (emit [:search/remove-all
+                           {:story       (get-in entry [:story :timestamp])
+                            :search-text (str ts)}])
+                    ((up/add-search {:tab-group    tab-group
+                                     :story-name   story-name
+                                     :first-line   text
+                                     :query-string ts}
+                                    emit)))
         mouse-enter #(reset! visible true)]
     (fn entry-actions-render [entry local edit-mode? toggle-edit local-cfg]
       (let [toggle-debug (fn [_]
@@ -257,6 +266,12 @@
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])
           (when-not comment?
             [:i.fa.fa-comment.toggle {:on-click create-comment}])
+          (when (and (contains? #{:left :right} tab-group) (not comment?))
+            [:i.fa.toggle.far
+             {:class    (if (= tab-group :left)
+                          "fa-arrow-alt-from-left"
+                          "fa-arrow-alt-from-right")
+              :on-click move-over}])
           [trash-icon trash-entry]
           (when (or (contains? (:capabilities @backend-cfg) :debug)
                     h/repo-dir
