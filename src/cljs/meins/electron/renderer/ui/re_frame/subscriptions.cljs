@@ -41,6 +41,8 @@
                        (map (fn [x] [(:timestamp x) x]))
                        (into {}))))
 
+(reg-sub :briefing (fn [db _] (get-in db [:gql-res :briefing :data :briefing])))
+
 (reg-sub :briefings (fn [db _]
                       (->> (get-in db [:gql-res :options :data :briefings])
                            (map (fn [m] [(:day m) (:timestamp m)]))
