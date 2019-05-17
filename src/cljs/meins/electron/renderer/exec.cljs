@@ -9,8 +9,10 @@
   (info "create entry:" msg-payload)
   (let [briefing (subscribe [:briefing])
         entry (if (:link-current-day msg-meta)
-                (merge {:linked_entries #{(:timestamp @briefing)}
-                        :starred        true})
+                (merge
+                  {:linked_entries #{(:timestamp @briefing)}
+                   :starred        true}
+                  msg-payload)
                 msg-payload)
         open (fn [x]
                (info x)
@@ -18,6 +20,7 @@
                         {:tab-group (or (:tab-group msg-meta) :right)
                          :query     (up/parse-search (:timestamp x))}]))
         f (h/new-entry entry open)]
+    (info entry)
     (f)
     {}))
 
