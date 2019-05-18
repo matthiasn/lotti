@@ -12,7 +12,7 @@
             [reagent.ratom :refer-macros [reaction]]
             ["react-navigation-transitions" :refer [fromLeft zoomIn fadeIn]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                     map-view mapbox-style-url point-annotation virtualized-list
+                                     #_map-view #_mapbox-style-url #_point-annotation virtualized-list
                                      #_icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert]]

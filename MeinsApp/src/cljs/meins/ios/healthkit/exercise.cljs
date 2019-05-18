@@ -5,7 +5,7 @@
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn res-cb [tag k offset put-fn err res]
-  (when err (.error js/console err))
+  (when err (js/console.error err))
   (doseq [sample (js->clj res)]
     (let [v (get-in sample ["value"])
           end-date (get-in sample ["endDate"])

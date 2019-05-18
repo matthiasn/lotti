@@ -64,12 +64,13 @@
             photo-uri (-> msg-payload :media :image :uri)
             filename (:img_file msg-payload)
             audiofile (:audio_file msg-payload)
+            mb (-> secrets :server :username)
             mail (merge (:server secrets)
                         {:folder   folder
-                         :from     {:addressWithDisplayName "fred"
-                                    :mailbox                "meo@nehlsen-edv.de"}
-                         :to       {:addressWithDisplayName "uschi"
-                                    :mailbox                "meo@nehlsen-edv.de"}
+                         :from     {:addressWithDisplayName mb
+                                    :mailbox                mb}
+                         :to       {:addressWithDisplayName mb
+                                    :mailbox                mb}
                          :subject  (str msg-type)
                          :textBody hex-cipher}
                         (when audiofile {:audiofile audiofile})

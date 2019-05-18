@@ -3,6 +3,8 @@
             [goog.dom.Range]
             [meins.ui.shared :as shared]
             [meins.utils.parse :as p]
+            ["intl" :as intl]
+            ["intl/locale-data/jsonp/en"]
             [clojure.walk :as walk]))
 
 (set! js/moment (js/require "moment"))
@@ -21,14 +23,16 @@
                                    :latitude  (:latitude loc)
                                    :longitude (:longitude loc)}])))
       (fn [err] (prn err))
-      (clj->js {:enableHighAccuracy true :maximumAge 60000}))
+      (clj->js {:enableHighAccuracy false
+                :maximumAge         60000}))
     (catch :default _ (shared/alert "geolocation not available"))))
 
 (defn new-entry-fn [put-fn opts]
   (let [ts (st/now)
-        timezone (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
+        dtf (new intl/DateTimeFormat)
+        timezone (or (when-let [resolved (.-resolved dtf)]
                        (.-timeZone resolved))
-                     (when-let [resolved (.resolvedOptions (new js/Intl.DateTimeFormat))]
+                     (when-let [resolved (.resolvedOptions dtf)]
                        (.-timeZone resolved)))
         entry (merge (p/parse-entry "")
                      {:timestamp  ts

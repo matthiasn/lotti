@@ -5,7 +5,7 @@
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn cb [tag k xf offset put-fn err res]
-  (when err (.error js/console err))
+  (when err (js/console.error err))
   (doseq [sample (js->clj res)]
     (.log js/console (str sample))
     (let [v (get-in sample ["value"])

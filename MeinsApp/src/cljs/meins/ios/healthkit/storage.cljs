@@ -6,7 +6,7 @@
 
 (defn set-async [k v]
   (let []
-    (.info js/console k)
+    (js/console.info k)
     (go (<! (as/set-item k v)))))
 
 
@@ -15,4 +15,4 @@
         (when-let [v (second (<! (as/get-item k)))]
           (cb v))
         (catch js/Object e
-          (.error js/console e)))))
+          (js/console.error e)))))
