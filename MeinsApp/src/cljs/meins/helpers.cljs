@@ -22,9 +22,7 @@
                                    :location  loc
                                    :latitude  (:latitude loc)
                                    :longitude (:longitude loc)}])))
-      (fn [err] (prn err))
-      (clj->js {:enableHighAccuracy false
-                :maximumAge         60000}))
+      (fn [err] (prn err)))
     (catch :default _ (shared/alert "geolocation not available"))))
 
 (defn new-entry-fn [put-fn opts]
