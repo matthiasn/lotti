@@ -17,10 +17,17 @@
 (defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8" s))
 
 (defn extract-body [s]
-  (-> s
-      (s/replace "=\r\n" "")
-      (s/replace "\r\n" "")
-      (s/replace "\n" "")))
+  (let [body (-> s
+                 (s/replace "=\r\n" "")
+                 (s/replace "\r\n" "")
+                 (s/replace "\n" ""))]
+    (if (s/includes? body "inline")
+      (-> body
+          (s/split "inline")
+          second
+          (s/split "--")
+          first)
+      body)))
 
 (defn encrypt-aes-hex [s secret]
   (->> (.encrypt AES s secret)

@@ -138,7 +138,7 @@
                                            msg-meta (merge msg-meta {:window-id :broadcast})
                                            msg (with-meta [msg-type msg-payload] msg-meta)]
                                        (info "IMAP body end" seqn "- decrypted size" (count (str decrypted)))
-                                       (info decrypted)
+                                       (debug msg)
                                        (put-fn msg)))
                                    (info "body-cb last-read" seqn)))]
                     (info "IMAP body stream-info" (js->clj stream-info))
@@ -148,31 +148,32 @@
                                           (info "IMAP body data seqno" seqn "- size" (.-size stream-info))))
                     (.once stream "end" end-cb)))
         msg-cb (fn [msg seqn]
-                 (let [buffer (atom [])]
-                   (.once msg "attributes" (fn [attrs]
-                                             (let [uid (.-uid attrs)
-                                                   struct (js->clj (.-struct attrs) :keywordize-keys true)
-                                                   attachment (-> struct last last)]
-                                               (pp/pprint attachment)
-                                               (when (= "image" (:type attachment))
-                                                 (let [filename (-> attachment
-                                                                    :disposition
-                                                                    :params
-                                                                    :filename
-                                                                    (s/replace "=?utf-8?Q?" "")
-                                                                    (s/replace "?=" "")
-                                                                    (s/replace "=5F" "_"))
-                                                       partID (:partID attachment)]
-                                                   (read-image mailbox uid partID filename put-fn)
-                                                   (info "found attachment" filename uid partID)))
-                                               (when (= "audio" (:type attachment))
-                                                 (let [filename (-> attachment
-                                                                    :disposition
-                                                                    :params
-                                                                    :filename)
-                                                       partID (:partID attachment)]
-                                                   (read-audio mailbox uid partID filename put-fn)
-                                                   (info "found attachment" filename uid partID))))))
+                 (let [buffer (atom [])
+                       attr-cb (fn [attrs]
+                                 (let [uid (.-uid attrs)
+                                       struct (js->clj (.-struct attrs) :keywordize-keys true)
+                                       attachment (-> struct last last)]
+                                   (pp/pprint attachment)
+                                   (when (= "image" (:type attachment))
+                                     (let [filename (-> attachment
+                                                        :disposition
+                                                        :params
+                                                        :filename
+                                                        (s/replace "=?utf-8?Q?" "")
+                                                        (s/replace "?=" "")
+                                                        (s/replace "=5F" "_"))
+                                           partID (:partID attachment)]
+                                       (read-image mailbox uid partID filename put-fn)
+                                       (info "found attachment" filename uid partID)))
+                                   (when (= "audio" (:type attachment))
+                                     (let [filename (-> attachment
+                                                        :disposition
+                                                        :params
+                                                        :filename)
+                                           partID (:partID attachment)]
+                                       (read-audio mailbox uid partID filename put-fn)
+                                       (info "found attachment" filename uid partID)))))]
+                   (.once msg "attributes" attr-cb)
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "IMAP msg end" seqn))))
         mb-cb (fn [conn err box]

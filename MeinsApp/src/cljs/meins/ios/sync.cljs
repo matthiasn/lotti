@@ -148,7 +148,6 @@
   {})
 
 (defn retry-write [{:keys [cmp-state put-fn]}]
-  (js/console.warn "retry-write")
   (let [cfg (subscribe [:cfg])
         res (some-> @uidb/realm-db
                     (.objects "Entry")
