@@ -1,7 +1,7 @@
 (ns meins.electron.main.core
   (:require [meins.electron.main.log]
             [meins.common.specs]
-            [electron-context-menu :as ecm]
+            ["electron-context-menu" :as context-menu]
             [taoensso.timbre :refer-macros [info]]
             [matthiasn.systems-toolbox-electron.ipc-main :as ipc]
             [matthiasn.systems-toolbox-electron.window-manager :as wm]
@@ -32,7 +32,7 @@
       (set (mapv mapper components)))
     components))
 
-(ecm (clj->js {:showCopyImageAddress true}))
+(context-menu (clj->js {:showCopyImageAddress true}))
 
 (def wm-relay #{:cmd/toggle-key
                 :update/status

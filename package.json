@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.156",
+  "version": "0.6.157",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "draft-js-linkify-plugin": "2.0.1",
     "draft-js-mention-plugin": "3.1.3",
     "draft-js-plugins-editor": "2.1.1",
-    "electron-context-menu": "0.12.1",
+    "electron-context-menu": "0.11.0",
     "electron-fetch": "1.3.0",
     "electron-log": "3.0.5",
     "electron-updater": "4.0.6",
