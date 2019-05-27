@@ -121,8 +121,8 @@
     }
   }
 
-  .open-tasks, .started-tasks, .linked-tasks {
-    font-size: $font-size-medium;
+  .open-tasks, .started-tasks, .linked-tasks, .problems {
+    font-size: $font-size-small;
     margin: 0;
     background-color: white;
     line-height: 1.2em;
@@ -130,6 +130,7 @@
     table {
       border-collapse: collapse;
       margin-bottom: 4px;
+      width: 100%;
 
       .prio {
         min-width: 12px;

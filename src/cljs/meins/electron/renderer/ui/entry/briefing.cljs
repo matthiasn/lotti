@@ -20,7 +20,8 @@
             [cljs.pprint :as pp]
             [meins.common.utils.parse :as up]
             [matthiasn.systems-toolbox.component :as st]
-            [meins.electron.renderer.ui.ui-components :as uc]))
+            [meins.electron.renderer.ui.ui-components :as uc]
+            [meins.electron.renderer.graphql :as gql]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -150,6 +151,40 @@
           "show all"
           [:i.fas.fa-chevron-square-right]]]))))
 
+(defn problems-gql-query [n]
+  (let [queries [[:problems
+                  {:search-text "#problem"
+                   :n           n}]]
+        query (gql/tabs-query queries false true)]
+    (emit [:gql/query {:q        query
+                       :id       :problems
+                       :res-hash nil
+                       :prio     11}])))
+
+(defn problems-view []
+  (let [gql-res (subscribe [:gql-res2])
+        pvt (subscribe [:show-pvt])
+        problems (reaction (-> @gql-res :problems :res vals))
+        problems (reaction (->> @problems
+                                (filter :problem_cfg)
+                                (filter #(if @pvt true (not (-> % :problem_cfg :pvt))))
+                                (filter #(-> % :problem_cfg :active))))]
+    (problems-gql-query 1000)
+    (fn []
+      (let [])
+      [:div.problems
+       [:table
+        [:tbody
+         [:tr
+          [:th]
+          [:th "Problems"]]]
+        (for [p @problems]
+          ^{:key (:timestamp p)}
+          [:tr {:on-click (up/add-search {:tab-group    :right
+                                          :query-string (:timestamp p)} emit)}
+           [:td]
+           [:td (-> p :problem_cfg :name)]])]])))
+
 (defn briefing-view [local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
@@ -193,10 +228,11 @@
            [tasks/started-tasks local {:on-hold false} emit]]
           [h/error-boundary
            [tasks/open-linked-tasks local local-cfg emit]]
+          [problems-view]
           [:div.habit-details
            [habits/waiting-habits local emit]]
           [h/error-boundary
-           [tasks/started-tasks local {:on-hold true}  emit]]
+           [tasks/started-tasks local {:on-hold true} emit]]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary
