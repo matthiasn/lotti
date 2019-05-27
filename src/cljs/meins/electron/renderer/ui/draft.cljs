@@ -160,6 +160,7 @@
                       (emit [:blink/busy {:color :green}])
                       (emit [:cmd/pomodoro-stop updated]))
                     (when (empty? errors)
+                      (emit [:entry/update-local updated])
                       (emit [:entry/update updated]))))
         start-fn #(let [latest-entry (merge (dissoc entry2 :comments)
                                             @new-entry)]
