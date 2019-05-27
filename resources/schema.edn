@@ -66,6 +66,12 @@
             :claimed    {:type Boolean}
             :claimed_ts {:type ID}}}
 
+  :Problem_cfg
+  {:description "Config of a problem"
+   :fields      {:name   {:type String}
+                 :pvt    {:type Boolean}
+                 :active {:type Boolean}}}
+
   :Entry
   {:description "A journal entry"
    :fields      {:timestamp           {:type (non-null ID)}
@@ -87,6 +93,7 @@
                  :linked_saga         {:type ID}
                  :story_name          {:type String}
                  :saga_name           {:type String}
+                 :problem_cfg         {:type :Problem_cfg}
                  :saga_cfg            {:type :Saga}
                  :story_cfg           {:type :Story}
                  :habit               {:type String}

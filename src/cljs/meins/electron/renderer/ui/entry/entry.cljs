@@ -17,6 +17,7 @@
             [meins.electron.renderer.ui.entry.cfg.custom-field :as cfc]
             [meins.electron.renderer.ui.entry.reward :as reward]
             [meins.electron.renderer.ui.entry.story :as es]
+            [meins.electron.renderer.ui.entry.problem :as prb]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.entry.carousel :as cl]
             [meins.electron.renderer.ui.entry.post-mortem :as pm]
@@ -131,6 +132,7 @@
               [dt/datetime-edit merged local]
               [dt/datetime-header merged local])
             [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]]
+         [prb/problem-form merged]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
          (when-not (:spotify entry)

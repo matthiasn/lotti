@@ -38,6 +38,7 @@
   (s/nilable #{:pomodoro
                :story
                :saga
+               :problem
                :habit
                :dashboard-cfg
                :custom-field-cfg}))

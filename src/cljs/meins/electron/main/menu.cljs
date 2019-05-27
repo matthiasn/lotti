@@ -70,6 +70,8 @@
         new-story #(put-fn [:entry/create {:entry_type :story}])
         new-saga #(put-fn [:entry/create {:entry_type :saga}])
         new-habit #(put-fn [:entry/create {:entry_type :habit}])
+        new-problem #(put-fn [:entry/create {:entry_type :problem
+                                             :perm_tags  #{"#problem"}}])
         new-custom-field #(put-fn [:entry/create
                                    {:entry_type :custom-field-cfg
                                     :perm_tags  #{"#custom-field-cfg"}
@@ -91,6 +93,8 @@
                            :click new-story}
                           {:label "Saga"
                            :click new-saga}
+                          {:label "Problem"
+                           :click new-problem}
                           {:label "Habit"
                            :click new-habit}
                           {:label "Album"

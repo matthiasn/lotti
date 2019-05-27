@@ -46,7 +46,7 @@
   [entry]
   (when (= (:entry_type entry) :story)
     (let [on-input-fn (input-fn entry :story_name)
-          on-keydown-fn (h/keydown-fn entry :story_name)
+          on-keydown-fn (h/keydown-fn entry [:story_name])
           initial-story-name (:story_name entry)]
       (fn story-form-render [entry]
         (let [sw-common {:entry entry :msg-type :entry/update}
@@ -80,7 +80,7 @@
   [entry edit-mode?]
   (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga_name)
-          on-keydown-fn (h/keydown-fn entry :saga_name)
+          on-keydown-fn (h/keydown-fn entry [:saga_name])
           sw-common {:entry entry :msg-type :entry/update}]
       [:div.story.saga
        [:label "Saga:"]

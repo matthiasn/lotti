@@ -101,6 +101,7 @@
                 :saga_name
                 :story_cfg
                 [:story_cfg [:active :pvt :font_color :badge_color]]
+                [:problem_cfg [:active :pvt :name]]
                 [:saga_cfg [:active :pvt]]
                 :linked_saga
                 :stars

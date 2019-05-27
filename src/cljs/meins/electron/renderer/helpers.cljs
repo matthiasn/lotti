@@ -218,10 +218,10 @@
                                     [:div "Something went wrong."])
                                 comp))})))
 
-(defn keydown-fn [entry k]
+(defn keydown-fn [entry path]
   (fn [ev]
     (let [text (aget ev "target" "innerText")
-          updated (assoc-in entry [k] text)
+          updated (assoc-in entry path text)
           key-code (.. ev -keyCode)
           meta-key (.. ev -metaKey)]
       (when (and meta-key (= key-code 83))                  ; CMD-s pressed
