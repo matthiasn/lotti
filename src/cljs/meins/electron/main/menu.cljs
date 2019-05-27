@@ -70,8 +70,10 @@
         new-story #(put-fn [:entry/create {:entry_type :story}])
         new-saga #(put-fn [:entry/create {:entry_type :saga}])
         new-habit #(put-fn [:entry/create {:entry_type :habit}])
-        new-problem #(put-fn [:entry/create {:entry_type :problem
-                                             :perm_tags  #{"#problem"}}])
+        new-problem #(put-fn (with-meta
+                               [:entry/create {:entry_type :problem
+                                               :perm_tags  #{"#problem"}}]
+                               {:tab-group :left}))
         new-custom-field #(put-fn [:entry/create
                                    {:entry_type :custom-field-cfg
                                     :perm_tags  #{"#custom-field-cfg"}
