@@ -55,12 +55,12 @@
         [:div.progress
          {:style {:width (str percent-completed "%")}}])]]))
 
-(defn habit-line [_habit _tab-group put-fn]
+(defn habit-line [_habit _tab-group]
   (let [query-cfg (subscribe [:query-cfg])
         options (subscribe [:options])
         query-id-left (reaction (get-in @query-cfg [:tab-groups :left :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id-left :search-text]))]
-    (fn habit-line-render [habit tab-group put-fn]
+    (fn habit-line-render [habit tab-group]
       (let [entry (:habit_entry habit)
             story-name (:story_name (:story entry))
             ts (:timestamp entry)
@@ -71,8 +71,8 @@
                                       {:story-name story-name
                                        :first-line story-name})]
                          (info q)
-                         (put-fn [:search/add {:tab-group :left
-                                               :query     q}])))
+                         (emit [:search/add {:tab-group :left
+                                             :query     q}])))
             create-entry #(let [mapping (-> @options :questionnaires :mapping)
                                 mapping2 (zipmap (vals mapping) (keys mapping))
                                 story (get-in entry [:story :timestamp])
@@ -95,16 +95,16 @@
            {:on-click (up/add-search {:tab-group    tab-group
                                       :story-name   story-name
                                       :first-line   text
-                                      :query-string ts} put-fn)}]]]))))
+                                      :query-string ts} emit)}]]]))))
 
 (defn waiting-habits
   "Renders table with open habits."
-  [local _put-fn]
+  [local]
   (let [gql-res (subscribe [:gql-res])
         habits-success (reaction (-> @gql-res :habits-success :data :habits_success))
         pvt (subscribe [:show-pvt])
         filter-fn #(swap! local update-in [:all] not)]
-    (fn waiting-habits-list-render [local put-fn]
+    (fn waiting-habits-list-render [local]
       (let [local @local
             pvt @pvt
             habits (filter #(or (:all local)
@@ -114,9 +114,9 @@
             habits (filter #(-> % :habit_entry :habit :active) habits)
             tab-group :briefing
             open-new (fn [x]
-                       (put-fn [:search/add
-                                {:tab-group :left
-                                 :query     (up/parse-search (:timestamp x))}]))
+                       (emit [:search/add
+                              {:tab-group :left
+                               :query     (up/parse-search (:timestamp x))}]))
             habit-default {:entry_type :habit
                            :starred    true
                            :perm_tags  #{"#habit"}}
@@ -136,4 +136,4 @@
              #_[:div.add-habit {:on-click new-habit} [:i.fas.fa-plus]]]]
            (for [habit habits]
              ^{:key (:timestamp (:habit_entry habit))}
-             [habit-line habit tab-group put-fn])]]]))))
+             [habit-line habit tab-group])]]]))))

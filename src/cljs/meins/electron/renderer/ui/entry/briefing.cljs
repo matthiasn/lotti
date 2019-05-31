@@ -225,14 +225,14 @@
            [add-task ts]]]
          [:div.scroll
           [h/error-boundary
-           [tasks/started-tasks local {:on-hold false} emit]]
+           [tasks/started-tasks local {:on-hold false}]]
           [h/error-boundary
-           [tasks/open-linked-tasks local local-cfg emit]]
+           [tasks/open-linked-tasks local local-cfg]]
           [problems-view]
           [:div.habit-details
-           [habits/waiting-habits local emit]]
+           [habits/waiting-habits local]]
           [h/error-boundary
-           [tasks/started-tasks local {:on-hold true} emit]]
+           [tasks/started-tasks local {:on-hold true}]]
           [:div.entry-with-comments
            [:div.entry
             [:div.summary
