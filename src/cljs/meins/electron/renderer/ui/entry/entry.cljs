@@ -132,7 +132,8 @@
               [dt/datetime-edit merged local]
               [dt/datetime-header merged local])
             [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]]
-         [prb/problem-form merged]
+         [prb/problem-form merged local-cfg]
+         [prb/problem-review-form merged]
          (when (= :custom-field-cfg (:entry_type merged))
            [cfc/custom-field-config merged])
          (when-not (:spotify entry)

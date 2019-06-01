@@ -37,9 +37,17 @@
     border-top-left-radius: 2px;
     border-bottom: 3px inset $tab-bg;
 
+    &.add-tab {
+      background-color: lighten($green, 10);
+      font-weight: bold;
+      color: lighten($green, 50);
+      padding-left: 6px;
+      min-width: 9px;
+    }
+
     &.full {
       border-radius: $entry-border-radius;
-      padding: 8px 12px;
+      padding: 8px 18px 8px 10px;
       font-size: $font-size-large;
       margin: 6px;
 
@@ -47,14 +55,6 @@
         margin-left: 6px!important;
         margin-right: 16px;
       }
-    }
-
-    &.add-tab {
-      background-color: lighten($green, 10);
-      font-weight: bold;
-      color: lighten($green, 50);
-      padding-left: 6px;
-      min-width: 9px;
     }
 
     &.close-all {

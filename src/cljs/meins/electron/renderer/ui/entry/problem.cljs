@@ -40,16 +40,23 @@
 
 (defn problem-form
   "Renders fields for rendering the definition of a problem."
-  [entry]
+  [entry local-cfg]
   (when (= (:entry_type entry) :problem)
-    (let [name-path [:problem_cfg :name]
+    (let [ts (:timestamp entry)
+          name-path [:problem_cfg :name]
           on-input-fn (input-fn entry name-path)
           on-keydown-fn (h/keydown-fn entry name-path)
           initial-story-name (get-in entry name-path)
           schedule-path [:problem_cfg :review_schedule]]
-      (fn story-form-render [entry]
+      (fn story-form-render [entry local-cfg]
         (let [sw-common {:entry    entry
-                         :msg-type :entry/update}]
+                         :msg-type :entry/update}
+              show-hide-comments #(emit [:cmd/assoc-in
+                                         {:path  [:cfg :show-comments-for ts]
+                                          :value %}])
+              show-comments #(show-hide-comments (:query-id local-cfg))
+              create-review (h/new-entry {:comment_for ts
+                                          :entry_type  :problem-review} show-comments)]
           [:div.problem
            [:h2 "Problem"]
            [:label "Name:"]
@@ -84,4 +91,31 @@
                                        :Wednesday "Wednesday"
                                        :Thursday  "Thursday"
                                        :Friday    "Friday"
-                                       :Saturday  "Saturday"}}]])])))))
+                                       :Saturday  "Saturday"}}]])
+           [:div.row
+            [:span.btn
+             {:on-click create-review}
+             "Add Review"]]])))))
+
+(defn problem-review-form
+  "Renders fields for rendering a problem review."
+  [entry]
+  (when (= (:entry_type entry) :problem-review)
+    (let [conclusion-path [:problem_review :conclusion]]
+      (fn story-form-render [entry]
+        (let [conclusion (get-in entry conclusion-path)
+              pivot #(emit [:entry/update-local
+                            (assoc-in entry conclusion-path :pivot)])
+              persevere #(emit [:entry/update-local
+                                (assoc-in entry conclusion-path :persevere)])]
+          [:div.problem
+           [:h2 "Problem Review"]
+           [:div.row
+            [:span.btn.conclusion.pivot
+             {:on-click pivot
+              :class    (when (= conclusion :persevere) "gray")}
+             "Pivot"]
+            [:span.btn.conclusion
+             {:on-click persevere
+              :class    (when (= conclusion :pivot) "gray")}
+             "Persevere"]]])))))

@@ -5,6 +5,25 @@
   font-size: 12px;
   color: #5d7186;
 
+  .btn {
+    background-color: $green;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: $font-size-small;
+
+    &.conclusion {
+      width: 50px;
+      margin-right: 20px;
+      text-align: center;
+    }
+    &.pivot {
+      background-color: $red;
+    }
+    &.gray {
+      background-color: #CCC;
+    }
+  }
+
   .name-edit-field {
     padding: 4px 6px;
     background-color: $search-field-color;

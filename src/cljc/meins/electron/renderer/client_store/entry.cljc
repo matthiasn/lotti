@@ -157,7 +157,7 @@
                                   :primary_story :story_name :flagged :perm_tags
                                   :adjusted_ts :custom_field_cfg :saga_cfg :tags
                                   :dashboard_cfg :story_cfg :stars :album_cfg
-                                  :linked_saga :problem_cfg])
+                                  :linked_saga :problem_cfg :problem_review])
         changed? (not= (relevant saved) (relevant msg-payload))]
     (if changed?
       (let [new-entry (get-in current-state [:new-entries ts])

@@ -39,6 +39,7 @@
                :story
                :saga
                :problem
+               :problem-review
                :habit
                :dashboard-cfg
                :custom-field-cfg}))
