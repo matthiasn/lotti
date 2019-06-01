@@ -75,9 +75,9 @@
   "Adds graph nodes for year, month and day of entry and connects those if they
    don't exist. In any case, connects new entry node to the entry node of the
    matching :timeline/day node."
-  [state entry]
+  [state entry k]
   (let [g (:graph state)
-        dt (dt/dt-tz (:timestamp entry) (:timezone entry))
+        dt (dt/dt-tz (k entry) (:timezone entry))
         year (ct/year dt)
         month (ct/month dt)
         year-node {:type :timeline/year :year year}
@@ -341,7 +341,9 @@
                 (cond-> (not= (:task entry) (:task old-entry))
                         (add-tasks-set new-entry))
                 (cond-> (not old-entry)
-                        (add-timeline-tree new-entry))
+                        (add-timeline-tree new-entry :timestamp))
+                (cond-> (:adjusted_ts new-entry)
+                        (add-timeline-tree new-entry :adjusted_ts))
                 (add-geoname new-entry)
                 (add-adjusted-ts new-entry)
                 (update-in [:graph] add-parent-ref new-entry)

@@ -116,6 +116,7 @@
                           (assoc-in active-path query-id)
                           (assoc-in query-path new-query)
                           (assoc-in [:gql-res2 tab-group :res] (sorted-map-by >)))]
+        (put-fn [:search/remove {:tab-group tab-group}])
         (update-query-cfg new-state put-fn)
         {:new-state new-state})
       (let [new-state (-> current-state
@@ -128,6 +129,33 @@
                           (assoc-in [:gql-res2 tab-group :res] (sorted-map-by >)))]
         (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
+
+(defn previously-active [state query-id tab-group]
+  (let [all-path [:query-cfg :tab-groups tab-group :all]
+        active-path [:query-cfg :tab-groups tab-group :active]
+        hist-path [:query-cfg :tab-groups tab-group :history]]
+    (update-in state active-path
+               (fn [active]
+                 (if (= active query-id)
+                   (let [hist (get-in state hist-path)]
+                     (first (filter
+                              #(contains? (get-in state all-path) %)
+                              hist)))
+                   active)))))
+
+(defn query-remove [current-state msg-payload]
+  (let [{:keys [query-id tab-group]} msg-payload
+        all-path [:query-cfg :tab-groups tab-group :all]
+        query-path [:query-cfg :queries]
+        new-state (-> current-state
+                      (update-in all-path #(disj (set %) query-id))
+                      (previously-active query-id tab-group)
+                      (update-in query-path dissoc query-id))
+        new-state (if query-id
+                    (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))
+                    new-state)]
+    (info "remove query" tab-group query-id)
+    new-state))
 
 (defn update-query [{:keys [current-state msg-payload put-fn]}]
   (let [{:keys [tab-group query]} msg-payload
@@ -150,32 +178,9 @@
         (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
 
-(defn previously-active [state query-id tab-group]
-  (let [all-path [:query-cfg :tab-groups tab-group :all]
-        active-path [:query-cfg :tab-groups tab-group :active]
-        hist-path [:query-cfg :tab-groups tab-group :history]]
-    (update-in state active-path
-               (fn [active]
-                 (if (= active query-id)
-                   (let [hist (get-in state hist-path)]
-                     (first (filter
-                              #(contains? (get-in state all-path) %)
-                              hist)))
-                   active)))))
-
 (defn remove-query [{:keys [current-state msg-payload put-fn]}]
   (if msg-payload
-    (let [{:keys [query-id tab-group]} msg-payload
-          all-path [:query-cfg :tab-groups tab-group :all]
-          query-path [:query-cfg :queries]
-          new-state (-> current-state
-                        (update-in all-path #(disj (set %) query-id))
-                        (previously-active query-id tab-group)
-                        (update-in query-path dissoc query-id))
-          new-state (if query-id
-                      (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))
-                      new-state)]
-      (info "remove query" tab-group query-id)
+    (let [new-state (query-remove current-state msg-payload)]
       (update-query-cfg new-state put-fn)
       {:new-state new-state})
     {}))

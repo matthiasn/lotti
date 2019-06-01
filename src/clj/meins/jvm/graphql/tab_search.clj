@@ -45,10 +45,11 @@
                           (map (partial gc/entry-w-comments current-state))
                           (map (partial gc/linked-for current-state))
                           (map #(assoc % :linked_cnt (count (:linked_entries_list %))))))
+          ts-cmp (fn [f k x c] (when (k x) (f (k x) c)))
           res (->> lazy-res
                    (filter :timestamp)
-                   (filter #(< (:timestamp %) to))
-                   (filter #(> (:timestamp %) from))
+                   (filter #(or (ts-cmp < :timestamp % to) (ts-cmp < :adjusted_ts % to)))
+                   (filter #(or (ts-cmp > :timestamp % from) (ts-cmp > :adjusted_ts % from)))
                    (take (or n 100)))
           pvt-filter (um/pvt-filter (:options current-state))
           res (if pvt

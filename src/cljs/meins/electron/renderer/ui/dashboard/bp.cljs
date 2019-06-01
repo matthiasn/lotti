@@ -9,9 +9,6 @@
             [clojure.string :as s]
             [meins.electron.renderer.helpers :as h]))
 
-(def ymd "YYYY-MM-DD")
-(defn df [ts format] (.format (moment ts) format))
-
 (defn line [y s w]
   [:line {:x1           200
           :x2           620
@@ -23,7 +20,7 @@
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg]
-      (let [{:keys [color fill glow local]} cfg
+      (let [{:keys [color fill glow local tag]} cfg
             points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) (apply concat points))
             points (sort-by :ts points)
@@ -49,7 +46,7 @@
           (for [p points]
             (let [bp_systolic (-> p :data first :v)
                   bp_diastolic (-> p :data second :v)
-                  ymd (df (:ts p) ymd)
+                  ymd (h/ymd (:ts p))
                   bp (str bp_systolic "/" bp_diastolic " mmHG")
                   t [:span ymd ": " [:strong bp]]
                   enter #(swap! local assoc :display-text t)
@@ -60,7 +57,7 @@
                         :on-mouse-enter enter
                         :on-mouse-leave leave
                         :on-click       (up/add-search
-                                          {:tab-group    :right
+                                          {:tab-group    :left
                                            :first-line   (str "#BP " bp)
                                            :query-string (:ts p)} emit)
                         :fill           fill
