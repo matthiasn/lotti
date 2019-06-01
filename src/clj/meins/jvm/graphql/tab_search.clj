@@ -18,7 +18,7 @@
 
 (defn tab-search [put-fn]
   (fn [state context args value]
-    (let [{:keys [query n pvt story tab incremental starred flagged from to]} args
+    (let [{:keys [query n pvt story tab incremental starred flagged from to] :as m} args
           msg-meta (:msg-meta context)
           current-state @state
           from (if from (dt/ymd-to-ts from) 0)
@@ -60,9 +60,9 @@
                                          :query       (dissoc q :n)})
       (if incremental
         (let [diff (res-diff prev res)
-              diff-res (merge diff {:tab tab :query query :n n :incremental true})]
+              diff-res (merge diff {:tab tab :query m :n n :incremental true})]
           (when (seq (set/union (:res diff) (:del diff)))
             (put-fn (with-meta [:gql/res2 diff-res] msg-meta))))
-        (let [res {:res res :del #{} :tab tab :query query :n n :incremental false}]
+        (let [res {:res res :del #{} :tab tab :query m :n n :incremental false}]
           (put-fn (with-meta [:gql/res2 res] msg-meta))))
       [])))

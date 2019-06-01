@@ -17,8 +17,8 @@
    :cljs (defonce query-cfg (sa/local-storage
                               (atom initial-query-cfg) "meins_query_cfg")))
 
-(defn gql-query [tab-group current-state incremental put-fn]
-  (let [query-cfg @query-cfg
+(defn gql-query [tab-group state incremental put-fn]
+  (let [query-cfg (:query-cfg state)
         query-for (fn [k]
                     (let [a (get-in query-cfg [:tab-groups k :active])
                           search-text (get-in query-cfg [:queries a :search-text])
@@ -37,7 +37,7 @@
                             :to          to
                             :n           n}])))
         queries (filter identity (map query-for [tab-group]))
-        pvt (:show-pvt (:cfg current-state))
+        pvt (:show-pvt (:cfg state))
         gql-query (when (seq queries) (gql/tabs-query queries incremental pvt))]
     (put-fn [:gql/query {:q        gql-query
                          :id       tab-group
@@ -71,7 +71,7 @@
     (swap! query-cfg assoc-in [:queries query-id] msg-payload)
     (when-not (= (u/cleaned-queries current-state)
                  (u/cleaned-queries new-state))
-      (gql-query tab-group current-state true put-fn)
+      (gql-query tab-group new-state true put-fn)
       {:new-state new-state})))
 
 ; TODO: linked filter belongs in query-cfg
@@ -105,24 +105,27 @@
   (let [{:keys [tab-group query]} msg-payload
         query-id (keyword (str (st/make-uuid)))
         active-path [:query-cfg :tab-groups tab-group :active]
-        all-path [:query-cfg :tab-groups tab-group :all]]
+        query-path [:query-cfg :queries query-id]
+        all-path [:query-cfg :tab-groups tab-group :all]
+        new-query (merge {:query-id query-id} (p/parse-search "") query)]
     (if-let [existing (find-existing (:query-cfg current-state) tab-group query)]
       (let [query-id (:query-id existing)
-            new-state (assoc-in current-state active-path query-id)
-            new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
-        (put-fn [:search/remove {:tab-group tab-group}])
-        (update-query-cfg new-state put-fn)
-        {:new-state new-state})
-      (let [new-query (merge {:query-id query-id} (p/parse-search "") query)
+            query-path [:query-cfg :queries query-id]
+            new-query (merge existing new-query {:query-id query-id})
             new-state (-> current-state
                           (assoc-in active-path query-id)
-                          (assoc-in [:query-cfg :queries query-id] new-query)
+                          (assoc-in query-path new-query)
+                          (assoc-in [:gql-res2 tab-group :res] (sorted-map-by >)))]
+        (update-query-cfg new-state put-fn)
+        {:new-state new-state})
+      (let [new-state (-> current-state
+                          (assoc-in active-path query-id)
+                          (assoc-in query-path new-query)
                           (update-in all-path conj query-id)
                           (update-in [:query-cfg :tab-groups tab-group :history]
                                      #(conj (take 20 %1) %2)
-                                     query-id))
-            new-state (assoc-in new-state [:gql-res2 tab-group :res] (sorted-map-by >))]
-        (put-fn [:search/remove {:tab-group tab-group}])
+                                     query-id)
+                          (assoc-in [:gql-res2 tab-group :res] (sorted-map-by >)))]
         (update-query-cfg new-state put-fn)
         {:new-state new-state}))))
 

@@ -1,6 +1,7 @@
 (ns meins.electron.renderer.ui.dashboard.cf_barchart
   (:require [moment]
             [re-frame.core :refer [subscribe]]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.helpers :as h]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
@@ -8,20 +9,27 @@
             [clojure.string :as s]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [clojure.data.avl :as avl]))
+            [clojure.data.avl :as avl]
+            [meins.common.utils.parse :as up]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
 
 (defn rect [{:keys []}]
   (let []
-    (fn [{:keys [v x w y h cls ymd color label local]}]
+    (fn [{:keys [v x w y h tag ymd color label local]}]
       (let [display-text [:span ymd ": " [:strong v] " " label]
             enter #(swap! local assoc :display-text display-text)
-            leave #(swap! local assoc :display-text "")]
+            leave #(swap! local assoc :display-text "")
+            click #(let [q (merge (up/parse-search tag)
+                                  {:from ymd
+                                   :to   ymd})]
+                     (emit [:search/add {:tab-group :right
+                                         :query     q}]))]
         [:g
          [:rect {:on-mouse-enter enter
                  :on-mouse-leave leave
+                 :on-click       click
                  :x              x
                  :y              (- y h)
                  :width          w

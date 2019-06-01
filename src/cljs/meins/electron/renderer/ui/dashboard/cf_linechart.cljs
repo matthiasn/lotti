@@ -2,19 +2,18 @@
   (:require [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [info debug]]
             [clojure.string :as s]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [meins.electron.renderer.helpers :as h]))
-
-(def ymd "YYYY-MM-DD")
-(defn df [ts format] (.format (moment ts) format))
+            [meins.electron.renderer.helpers :as h]
+            [meins.common.utils.parse :as up]))
 
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg]
-      (let [{:keys [color label local fill]} cfg
+      (let [{:keys [color label local fill tag]} cfg
             points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) (apply concat points))
             points (sort-by :ts points)
@@ -26,15 +25,21 @@
                               :stroke-width (:stroke_width cfg 3)
                               :fill         :none}}]
          (for [p points]
-           (let [enter #(let [ymd (df (:ts p) ymd)
-                              t [:span ymd ": " [:strong (:v p)] " " label]]
+           (let [ymd (h/ymd (:ts p))
+                 enter #(let [t [:span ymd ": " [:strong (:v p)] " " label]]
                           (swap! local assoc :display-text t))
+                 click #(let [q (merge (up/parse-search tag)
+                                       {:from ymd
+                                        :to   ymd})]
+                          (emit [:search/add {:tab-group :right
+                                              :query     q}]))
                  leave #(swap! local assoc :display-text "")]
              ^{:key (str active-dashboard p)}
              [:circle {:cx             (:x p)
                        :cy             (:y p)
                        :on-mouse-enter enter
                        :on-mouse-leave leave
+                       :on-click       click
                        :fill           fill
                        :r              (:circle_radius cfg 4)
                        :style          {:stroke       color

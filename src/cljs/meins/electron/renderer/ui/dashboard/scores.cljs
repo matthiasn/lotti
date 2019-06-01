@@ -57,7 +57,7 @@
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg start-ymd]
       (let [points (map-indexed point-mapper scores)
-            {:keys [color fill glow label]} cfg
+            {:keys [color fill glow label tag]} cfg
             line-points (s/join " " (map :s points))
             stroke (:stroke_width cfg 1)]
         [:g
@@ -76,18 +76,21 @@
                       :style  {:stroke       color
                                :stroke-width stroke
                                :fill         :none}}]
-          (for [[i p ] (map-indexed (fn [i v] [i v]) points)]
-            ^{:key (str label i)}
-            [:circle {:cx       (:x p)
-                      :cy       (:y p)
-                      :on-click (up/add-search
-                                  {:tab-group    :left
-                                   :first-line   label
-                                   :query-string (:ts p)} emit)
-                      :r        (:circle_radius cfg 3)
-                      :fill     fill
-                      :style    {:stroke       color
-                                 :stroke-width (:circle_stroke_width cfg 3)}}])]]))))
+          (for [[i p] (map-indexed (fn [i v] [i v]) points)]
+            (let [ymd (h/ymd (:ts p))
+                  click #(let [q (merge (up/parse-search tag)
+                                        {:from ymd
+                                         :to   ymd})]
+                           (emit [:search/add {:tab-group :right
+                                               :query     q}]))]
+              ^{:key (str label i)}
+              [:circle {:cx       (:x p)
+                        :cy       (:y p)
+                        :on-click click
+                        :r        (:circle_radius cfg 3)
+                        :fill     fill
+                        :style    {:stroke       color
+                                   :stroke-width (:circle_stroke_width cfg 3)}}]))]]))))
 
 (defn scores-chart
   [{:keys []}]

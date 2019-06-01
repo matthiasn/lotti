@@ -30,8 +30,7 @@
                                       {:from start
                                        :to   end})]
                          ;(swap! local assoc-in [:show-range-picker] false)
-                         (emit [:search/update q])))
-                     (info "selected" selected)))]
+                         (emit [:search/update q])))))]
     (fn [query local]
       (let [selected (:selected @local)
             from (:start selected)
@@ -79,8 +78,9 @@
                                            (p/parse-search text)
                                            {:story        story
                                             :tab-group    tab-group
-                                            :editor-state editor-state})]
-                              (info s)
+                                            :editor-state editor-state
+                                            :to           (:to @query)
+                                            :from         (:from @query)})]
                               (emit [:search/update s]))))
             query-deref @query
             starred (:starred query-deref)
