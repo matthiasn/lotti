@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.164",
+  "version": "0.6.165",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -23,7 +23,7 @@
     "@geonet/geohash": "1.0.10",
     "asar": "1.0.0",
     "base-64": "0.1.0",
-    "bufferutil": "^4.0.1",
+    "bufferutil": "4.0.1",
     "buildmail": "4.0.1",
     "cldr-data": "35.1.0",
     "cookie-parser": "1.4.4",

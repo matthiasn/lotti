@@ -14,7 +14,8 @@
             [moment-duration-format]
             [electron :refer [remote]]
             [cljs.nodejs :refer [process]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 
@@ -136,6 +137,10 @@
 (defn s-to-mm-ss-ms [ms]
   (let [t (moment ms)]
     (.format (.utc t) "mm:ss:SSS")))
+
+(defn time-ago [ms-ago]
+  (let [dur (.duration moment ms-ago)]
+    (.humanize dur false)))
 
 (defn visit-duration
   "Formats duration string."

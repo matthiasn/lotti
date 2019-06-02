@@ -21,7 +21,8 @@
             [meins.common.utils.parse :as up]
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [meins.electron.renderer.graphql :as gql]))
+            [meins.electron.renderer.graphql :as gql]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn planned-actual [entry]
   (let [chart-data (subscribe [:chart-data])
@@ -171,19 +172,26 @@
                                 (filter #(-> % :problem_cfg :active))))]
     (problems-gql-query 1000)
     (fn []
-      (let [])
       [:div.problems
        [:table
         [:tbody
          [:tr
-          [:th]
-          [:th "Problems"]]]
+          [:th "Problem"]
+          [:th "Last Review"]]]
         (for [p @problems]
-          ^{:key (:timestamp p)}
-          [:tr {:on-click (up/add-search {:tab-group    :right
-                                          :query-string (:timestamp p)} emit)}
-           [:td]
-           [:td (-> p :problem_cfg :name)]])]])))
+          (let [reviews (->> p
+                             :comments
+                             (filter #(= :problem-review (:entry_type %)))
+                             (sort-by :timestamp))
+                since-last-review (- (stc/now) (:timestamp (last reviews)))
+                last-review (h/time-ago since-last-review)
+                cls (when (> since-last-review (* 7 24 60 60 1000)) "due")]
+            ^{:key (:timestamp p)}
+            [:tr {:class    cls
+                  :on-click (up/add-search {:tab-group    :right
+                                            :query-string (:timestamp p)} emit)}
+             [:td (-> p :problem_cfg :name)]
+             [:td last-review " ago"]]))]])))
 
 (defn briefing-view [local-cfg]
   (let [gql-res (subscribe [:gql-res])
