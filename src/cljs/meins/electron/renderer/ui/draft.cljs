@@ -91,7 +91,7 @@
         y (assoc y :tags (set/union (:perm_tags y) (:tags y)))
         ks (set/intersection (set (keys x))
                              (set (keys y)))
-        ks (conj ks :starred :flagged :latitude :longitude :habit :custom_field_cfg :story_cfg :saga_cfg :post_mortem)
+        ks (conj ks :starred :flagged :latitude :longitude :habit :custom_field_cfg :story_cfg :saga_cfg :post_mortem :problem_review)
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
         x2 (update-in x1 [:md] s/replace " " "")

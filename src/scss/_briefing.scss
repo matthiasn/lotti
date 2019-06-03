@@ -248,6 +248,42 @@
       }
     }
   }
+
+  .problems {
+    table {
+      td {
+        padding-left: 10px;
+        padding-top: 2px;
+
+        &:first-child {
+          font-weight: 400;
+        }
+
+        .conclusion {
+          display: inline-block;
+          width: 5px;
+          height: 15px;
+
+          &.pivot {
+            background-color: $red;
+          }
+          &.persevere {
+            background-color: $green;
+          }
+        }
+
+        &:last-child {
+          padding-right: 10px;
+        }
+      }
+      th {
+        &:last-child {
+          padding-right: 10px;
+        }
+      }
+    }
+  }
+
   .open-tasks {
     margin-top: 10px;
 

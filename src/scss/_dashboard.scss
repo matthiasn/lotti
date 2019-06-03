@@ -3,6 +3,9 @@
 .dashboard {
   background-color: white;
   width: 350px;
+  align-self: flex-end;
+  overflow-y: auto;
+  max-height: calc(100vh - 45px);
 
   .display-text {
     margin-right: 64px;
