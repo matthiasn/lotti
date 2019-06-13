@@ -84,7 +84,8 @@
   (let [{:keys [tab res del incremental query]} msg-payload
         prev (get-in current-state [:gql-res2 tab])
         prev-res (if (and incremental
-                          (= query (:query prev)))
+                          (= (dissoc query :n)
+                             (dissoc (:query prev) :n)))
                    (:res prev)
                    (sorted-map-by >))
         cleaned (apply dissoc prev-res del)
