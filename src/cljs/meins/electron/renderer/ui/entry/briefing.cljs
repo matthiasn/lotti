@@ -184,7 +184,8 @@
                              :comments
                              (filter #(= :problem-review (:entry_type %)))
                              (sort-by :timestamp))
-                since-last-review (- (stc/now) (:timestamp (last reviews)))
+                last-ts (:timestamp (or (last reviews) p))
+                since-last-review (- (stc/now) last-ts)
                 last-review (str (h/time-ago since-last-review) " ago")
                 last-review (s/replace last-review "minutes" "min")
                 last-review (s/replace last-review "a few seconds ago" "just now")
