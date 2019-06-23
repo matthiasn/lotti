@@ -2,7 +2,7 @@
 
  :dependencies [[reagent "0.8.1"]
                 [matthiasn/systems-toolbox "0.6.40"]
-                [org.clojure/data.avl "0.0.18"]
+                [org.clojure/data.avl "0.1.0"]
                 [core-async-storage "0.3.1"]
                 [re-frame "0.10.6"]]
 

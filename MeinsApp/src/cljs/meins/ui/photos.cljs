@@ -14,7 +14,7 @@
 
 (def flat-grid (r/adapt-react-class (.-FlatGrid rn-super-grid)))
 (def screen-width (.-width (.get dimensions "window")))
-(def img-dimension (js/Math.floor (/ (- screen-width 10) 4)))
+(def img-dimension (js/Math.floor (/ (- screen-width 10) 3)))
 
 (defn card [_]
   (let []

@@ -22,7 +22,12 @@
 ## Creating Release Bundle
 
     $ shadow-cljs release app
+
     $ node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js bundle --entry-file app/index.js --platform ios --dev false --bundle-output ios/main.jsbundle --assets-dest ios
+
+    $ node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js bundle --platform android --dev false --entry-file app/index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
+
+    $ ./gradlew assembleRelease -x bundleReleaseJsAndAssets
 
 
 ## Running on Android

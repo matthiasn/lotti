@@ -3,7 +3,7 @@
   "version": "0.6.1",
   "private": true,
   "scripts": {
-    "start": "node node_modules/react-native/local-cli/cli.js start",
+    "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
     "test": "jest",
     "lint": "eslint ."
   },

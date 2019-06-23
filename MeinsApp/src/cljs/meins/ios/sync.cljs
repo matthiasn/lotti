@@ -82,11 +82,19 @@
                            (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))
                            (put-fn [:schedule/new {:timeout 100
                                                    :message [:sync/retry]
-                                                   :id      :sync}])))]
+                                                   :id      :sync}])))
+            error-cb (fn [err]
+                       (when db-item
+                         (.write @uidb/realm-db #(set! (.-sync db-item) "ERROR"))
+                         (js/console.error (str (js->clj err)))
+                         (put-fn [:schedule/new {:timeout 100
+                                                 :message [:sync/retry]
+                                                 :id      :sync}])))]
         (swap! cmp-state update-in [:open-writes] conj msg-payload)
+        (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
         (-> (.saveImap MailCore (clj->js mail))
             (.then success-cb)
-            (.catch #(js/console.error (str (js->clj %))))))
+            (.catch error-cb)))
       (catch :default e (js/console.error (str e)))))
   {})
 
