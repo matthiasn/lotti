@@ -10,7 +10,7 @@
   "dependencies": {
     "@mapbox/react-native-mapbox-gl": "6.1.3",
     "@matthiasn/cameraroll": "1.0.6",
-    "@matthiasn/react-native-mailcore": "0.0.7",
+    "@matthiasn/react-native-mailcore": "0.0.8",
     "@matthiasn/rn-apple-healthkit": "0.6.6",
     "babel-plugin-transform-es2015-block-scoping": "6.15.0",
     "buffer": "5.1.0",

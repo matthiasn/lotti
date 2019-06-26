@@ -11,7 +11,8 @@
             ["buffer" :as buffer]
             ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
             [meins.ui.db :as uidb]
-            [cljs.reader :as rdr]))
+            [cljs.reader :as rdr]
+            [clojure.string :as str]))
 
 (def AES (aget crypto-js "AES"))
 (def utf-8 (aget crypto-js "enc" "Utf8"))
@@ -55,7 +56,11 @@
 
             ; actual meta-data too large, makes the encryption waste battery
             msg-meta {}
-            serializable [msg-type {:msg-payload msg-payload
+            update-filename (fn [entry]
+                              (if (:img_file entry)
+                                (update entry :img_file #(str/replace % ".PNG" ".JPG"))
+                                entry))
+            serializable [msg-type {:msg-payload (update-filename msg-payload)
                                     :msg-meta    msg-meta}]
             data (pr-str serializable)
             ciphertext (.toString (.encrypt AES data aes-secret))
