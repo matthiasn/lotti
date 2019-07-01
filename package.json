@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.172",
+  "version": "0.6.173",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "@cljs-oss/module-deps": "1.1.1",
     "@geonet/geohash": "1.0.10",
-    "asar": "1.0.0",
+    "asar": "2.0.1",
     "base-64": "0.1.0",
     "bufferutil": "4.0.1",
     "buildmail": "4.0.1",
@@ -37,10 +37,10 @@
     "draft-js-plugins-editor": "2.1.1",
     "electron-context-menu": "0.11.0",
     "electron-fetch": "1.3.0",
-    "electron-log": "3.0.5",
-    "electron-updater": "4.0.6",
+    "electron-log": "3.0.6",
+    "electron-updater": "4.0.14",
     "emoji-flags": "1.2.0",
-    "find-process": "1.4.1",
+    "find-process": "1.4.2",
     "globalize": "1.4.2",
     "iana-tz-data": "2018.5.0",
     "imap": "0.8.19",
@@ -50,11 +50,11 @@
     "leaflet": "1.5.1",
     "lodash": "4.17.11",
     "lodash.throttle": "4.1.1",
-    "mapbox-gl": "0.53.1",
+    "mapbox-gl": "1.0.0",
     "meins-draft": "0.0.3",
     "meins-draftjs-md-converter": "1.1.3",
     "moment": "2.24.0",
-    "moment-duration-format": "2.2.2",
+    "moment-duration-format": "2.3.2",
     "ngeohash": "0.6.3",
     "normalize.css": "8.0.1",
     "quill": "1.3.6",
@@ -72,7 +72,7 @@
     "react-responsive-carousel": "3.1.49",
     "react-with-direction": "1.3.0",
     "s": "0.1.1",
-    "screenshot-desktop": "1.7.0",
+    "screenshot-desktop": "1.8.0",
     "shell-escape": "0.2.0",
     "tcp-port-used": "1.0.1",
     "tinycolor": "0.0.1",
@@ -82,10 +82,10 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "3.1.9",
-    "electron-builder": "20.40.2",
-    "module-deps": "6.2.0",
-    "resolve": "1.10.1",
-    "webpack": "4.31.0"
+    "electron": "3.1.11",
+    "electron-builder": "20.44.4",
+    "module-deps": "6.2.1",
+    "resolve": "1.11.1",
+    "webpack": "4.35.2"
   }
 }
