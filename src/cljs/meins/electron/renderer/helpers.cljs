@@ -32,10 +32,13 @@
                      :geohash   (geohash/encode lat lng 9)
                      :latitude  lat
                      :longitude lng}]
-        (emit [:entry/update-local updated])))
+        (js/window.setTimeout #(emit [:entry/update-local updated]) 100)))
     (fn [err]
       (error "while getting geolocation:" err)
-      (.log js/console err))))
+      (.log js/console err))
+    (clj->js {:timeout            30000
+              :maximumAge         300000
+              :enableHighAccuracy true})))
 
 (def timezone
   (or (when-let [resolved (.-resolved (new js/Intl.DateTimeFormat))]
