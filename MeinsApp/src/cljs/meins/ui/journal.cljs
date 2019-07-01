@@ -103,16 +103,16 @@
         [view {:style {:background-color header-tab-bg
                        :padding-top      pt
                        :padding-bottom   6}}
-         [search-bar {:placeholder        "search..."
-                      :lightTheme         light-theme
-                      :on-change-text     on-change-text
-                      :on-clear-text      on-clear-text
-                      :keyboard-type      "twitter"
-                      :keyboardAppearance (if light-theme "light" "dark")
-                      :inputStyle         {:backgroundColor search-field-bg}
-                      :containerStyle     {:backgroundColor   "transparent"
-                                           :borderTopWidth    0
-                                           :borderBottomWidth 0}}]]))))
+         [search-bar {:placeholder         "search..."
+                      :lightTheme          light-theme
+                      :on-change-text      on-change-text
+                      :on-clear-text       on-clear-text
+                      :keyboard-type       "twitter"
+                      :keyboardAppearance  (if light-theme "light" "dark")
+                      :inputContainerStyle {:backgroundColor search-field-bg}
+                      :containerStyle      {:backgroundColor   "transparent"
+                                            :borderTopWidth    0
+                                            :borderBottomWidth 0}}]]))))
 
 (defn journal [_]
   (let [theme (subscribe [:active-theme])
@@ -282,4 +282,4 @@
     (clj->js {:headerMode               "none"
               :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
                                                        :borderBottomWidth 0}}
-              :transitionConfig (fn [] (fadeIn 200))})))
+              :transitionConfig         (fn [] (fadeIn 200))})))
