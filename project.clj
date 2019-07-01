@@ -4,17 +4,17 @@
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/tools.logging "0.4.1"]
+                 [org.clojure/tools.logging "0.5.0-alpha.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
-                 [org.clojure/data.avl "0.0.18"]
+                 [org.clojure/data.avl "0.1.0"]
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [clj-pid "0.1.2"]
                  [clj-time "0.15.1"]
-                 [clj-http "3.9.1"]
+                 [clj-http "3.10.0"]
                  [ring/ring-core "1.7.1"]
                  [enlive "1.1.6"]
-                 [buddy/buddy-sign "3.0.0"]
+                 [buddy/buddy-sign "3.1.0"]
                  [me.raynes/fs "1.4.6"]
                  [markdown-clj "1.10.0"]
                  [progrock "0.1.2"]
@@ -61,28 +61,18 @@
   :main meins.jvm.core
   :jvm-opts ["-Xmx2g"]
 
-  :profiles {:uberjar      {:aot :all}
-             :test-reagent {:dependencies [[cljsjs/react "16.8.6-0"]
-                                           [cljsjs/react-dom "16.8.6-0"]
-                                           [cljsjs/create-react-class "15.6.3-1"]]}
-             :cljs         {:dependencies [[org.clojure/clojurescript "1.10.520"]
-                                           [reagent "0.8.1"
-                                            :exclusions [cljsjs/react cljsjs/react-dom]]
-                                           [re-frame "0.10.6"]
-                                           [cljsjs/moment "2.24.0-0"]
-                                           [matthiasn/systems-toolbox-electron "0.6.29"]
-                                           [secretary "1.2.3"]]}
-             :dev          {:source-paths ["src/cljc" "src/clj/" "dev-resources" "dev"]
-                            :dependencies [;[io.dgraph/dgraph4j "1.7.1"]
-                                           [factual/geo "2.1.1"]
-                                           [org.clojure/tools.namespace "0.3.0"]]}}
+  :profiles {:uberjar {:aot :all}
+             :dev     {:source-paths ["src/cljc" "src/clj/" "dev-resources" "dev"]
+                       :dependencies [;[io.dgraph/dgraph4j "1.7.1"]
+                                      [factual/geo "2.1.1"]
+                                      [org.clojure/tools.namespace "0.3.0"]]}}
 
   :repl-options {:init-ns meins.jvm.core}
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 
   :plugins [[test2junit "1.4.2"]
-            [lein-cloverage "1.1.0"]
+            [lein-cloverage "1.1.1"]
             [deraen/lein-sass4clj "0.3.1"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.1"]
@@ -98,11 +88,11 @@
   :sass {:source-paths ["src/scss/"]
          :target-path  "resources/public/css/"}
 
-  :aliases {"sass"              ["sass4clj" "once"]
-            "dist"              ["do"
-                                 ["clean"]
-                                 ["test"]
-                                 ["cljs-main"]
-                                 ["cljs-renderer"]
-                                 ["sass4clj" "once"]
-                                 ["jlink" "assemble"]]})
+  :aliases {"sass" ["sass4clj" "once"]
+            "dist" ["do"
+                    ["clean"]
+                    ["test"]
+                    ["cljs-main"]
+                    ["cljs-renderer"]
+                    ["sass4clj" "once"]
+                    ["jlink" "assemble"]]})
