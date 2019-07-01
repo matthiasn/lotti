@@ -20,3 +20,5 @@ publish:
     draft: true
 nsis:
     differentialPackage: false
+linux:
+    target: AppImage
