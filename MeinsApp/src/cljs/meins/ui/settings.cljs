@@ -4,9 +4,10 @@
                                         createBottomTabNavigator]]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             [re-frame.core :refer [reg-sub subscribe]]
-            [meins.ui.shared :refer [view text fa-icon settings-list alert
+            [meins.ui.shared :refer [view text fa-icon settings-list alert settings-icon
                                      settings-list-header settings-list-item]]
             [meins.ui.settings.db :as db]
+            [meins.ui.settings.audio :as audio]
             [meins.ui.settings.sync :as sync]
             [meins.ui.settings.dev :as dev]
             [meins.ui.settings.health :as sh]
@@ -51,16 +52,6 @@
                                   :color            (:tintColor m)}])))})
 
 (defn put-fn [])
-
-(defn settings-icon [icon-name color]
-  (r/as-element
-    [view {:style {:padding-top  14
-                   :padding-left 14
-                   :width        44}}
-     [fa-icon {:name  icon-name
-               :size  20
-               :style {:color      color
-                       :text-align :center}}]]))
 
 (defn settings-wrapper [props]
   (let [theme (subscribe [:active-theme])]
@@ -147,6 +138,7 @@
               :sync     {:screen (r/reactify-component sync/sync-settings)}
               :dev      {:screen (r/reactify-component dev/dev-settings)}
               :db       {:screen (r/reactify-component db/db-settings)}
+              :audio    {:screen (r/reactify-component audio/audio-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})
     (clj->js {;:headerMode "none"
               :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"

@@ -13,7 +13,7 @@
             ["react-navigation-transitions" :refer [fromLeft zoomIn fadeIn]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
                                      #_map-view #_mapbox-style-url #_point-annotation virtualized-list
-                                     #_icon image logo-img #_swipeout keyboard-avoiding-view
+                                     fa-icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert]]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
@@ -146,7 +146,7 @@
         cfg (subscribe [:cfg])
         player-state (r/atom {:pos    0
                               :status :paused})
-        ;recorder-player (rn-audio-recorder-player.)
+        recorder-player (rn-audio-recorder-player.)
         entry-local (r/atom {:entry {}})]
     (fn [{:keys [navigation] :as props}]
       (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
@@ -235,39 +235,39 @@
                                  :backgroundColor "orange"
                                  :borderRadius    12
                                  :transform       [{:scale 0.7}]}}]]]])
-           #_(when-let [audio-file (:audio_file entry)]
-               (let [status (:status @player-state)
-                     pos (h/mm-ss (.floor js/Math (:pos @player-state)))
-                     play (fn [_]
-                            (.startPlayer recorder-player audio-file)
-                            (.addPlayBackListener
-                              recorder-player
-                              #(swap! player-state assoc-in [:pos] (.-current_position %)))
-                            (swap! player-state assoc-in [:status] :play))
-                     stop (fn [_]
-                            (.stopPlayer recorder-player)
-                            (.removePlayBackListener recorder-player)
-                            (swap! player-state assoc-in [:status] :paused))]
-                 [touchable-opacity {:on-press (if (= :play status) stop play)
-                                     :style    {:margin         10
-                                                :display        "flex"
-                                                :flex-direction "row"}}
-                  [icon {:name  "microphone"
-                         :size  30
-                         :style {:color       (if (= :play status) "#66F" "#999")
-                                 :margin-left 25}}]
-                  [text {:style {:color       "#0078e7"
-                                 :font-size   30
-                                 :margin-left 25
-                                 :font-family "Courier"}}
-                   (if (= :play status) "Stop" "Play")]
-                  [text {:style {:font-size    30
-                                 :color        "#888"
-                                 :font-weight  "100"
-                                 :margin-left  50
-                                 :margin-right 25
-                                 :font-family  "Courier"}}
-                   pos]]))]
+           (when-let [audio-file (:audio_file entry)]
+             (let [status (:status @player-state)
+                   pos (h/mm-ss (.floor js/Math (:pos @player-state)))
+                   play (fn [_]
+                          (.startPlayer recorder-player audio-file)
+                          (.addPlayBackListener
+                            recorder-player
+                            #(swap! player-state assoc-in [:pos] (.-current_position %)))
+                          (swap! player-state assoc-in [:status] :play))
+                   stop (fn [_]
+                          (.stopPlayer recorder-player)
+                          (.removePlayBackListener recorder-player)
+                          (swap! player-state assoc-in [:status] :paused))]
+               [touchable-opacity {:on-press (if (= :play status) stop play)
+                                   :style    {:margin         10
+                                              :display        "flex"
+                                              :flex-direction "row"}}
+                [fa-icon {:name  "microphone"
+                          :size  30
+                          :style {:color       (if (= :play status) "#66F" "#999")
+                                  :margin-left 25}}]
+                [text {:style {:color       "#0078e7"
+                               :font-size   30
+                               :margin-left 25
+                               :font-family "Courier"}}
+                 (if (= :play status) "Stop" "Play")]
+                [text {:style {:font-size    30
+                               :color        "#888"
+                               :font-weight  "100"
+                               :margin-left  50
+                               :margin-right 25
+                               :font-family  "Courier"}}
+                 pos]]))]
           (when (:entry-pprint @cfg)
             [text {:style {:margin-top 4
                            :color      "white"

@@ -57,3 +57,13 @@
 (def settings-list (r/adapt-react-class rn-settings-list))
 (def settings-list-header (r/adapt-react-class Header))
 (def settings-list-item (r/adapt-react-class Item))
+
+(defn settings-icon [icon-name color]
+  (r/as-element
+    [view {:style {:padding-top  14
+                   :padding-left 14
+                   :width        44}}
+     [fa-icon {:name  icon-name
+               :size  20
+               :style {:color      color
+                       :text-align :center}}]]))
