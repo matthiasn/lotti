@@ -36,7 +36,6 @@
 		87748996341F4981BD8AFCB2 /* FontAwesome.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 85D38AEEB7BF4F39AEF11F02 /* FontAwesome.ttf */; };
 		9715AD94CB7E453CA13E916A /* Entypo.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CF4BEE7CE64C4075A1BA153C /* Entypo.ttf */; };
 		9ADA757C7870484CADA506D0 /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0FA7E5BE390442AFB6C27E42 /* Zocial.ttf */; };
-		9B49782C09EB4D15B69B80E6 /* libRNAudioRecorderPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4C74629DB19F44988E6BF27D /* libRNAudioRecorderPlayer.a */; };
 		A0CFAE402C174F1AB5A9497F /* libRCTCamera.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0AED3B0A72964785B9A04E1E /* libRCTCamera.a */; };
 		AD10A43E2261346500A6C562 /* startscreen_meins.png in Resources */ = {isa = PBXBuildFile; fileRef = AD10A4112261346400A6C562 /* startscreen_meins.png */; };
 		AD10A441226136C000A6C562 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = AD10A440226136C000A6C562 /* logo.png */; };
@@ -53,6 +52,7 @@
 		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
 		ADCEF58B226933A400FD6EEF /* libRNCCameraRoll.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADCEF58A2269338500FD6EEF /* libRNCCameraRoll.a */; };
 		AE2F5CF358404C97B632D6C8 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */; };
+		B441864C88D3449C996C3987 /* libRNAudioRecorderPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DC6AAA21AC6A4A728A05EBB0 /* libRNAudioRecorderPlayer.a */; };
 		D81110D4D3B54B9E9562BE47 /* Foundation.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8E7515A8D7D9404593CF4DC3 /* Foundation.ttf */; };
 		EC99EB5CCF9848638B400F75 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 9016D1D5D71749AB86CD4EB2 /* libc++.tbd */; };
 		ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED297162215061F000B7C4FE /* JavaScriptCore.framework */; };
@@ -306,6 +306,20 @@
 			remoteGlobalIDString = 3774C88D1D2092F20000B3F3;
 			remoteInfo = RCTAppleHealthKit;
 		};
+		AD15349722CCD30800EA1126 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 17058E4B32F4482EB2261826 /* RNAudioRecorderPlayer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 134814201AA4EA6300B7C361;
+			remoteInfo = RNAudioRecorderPlayer;
+		};
+		AD15349F22CCD30800EA1126 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6FE0958684E5421CBE73ED09 /* RNVectorIcons.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A39873CE1EA65EE60051E01A;
+			remoteInfo = "RNVectorIcons-tvOS";
+		};
 		AD3C1B75226668A10072585D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */;
@@ -439,13 +453,6 @@
 			remoteGlobalIDString = ED296FEE214C9CF800B7C4FE;
 			remoteInfo = "jsiexecutor-tvOS";
 		};
-		ADECBD1522485338000EC59D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 134814201AA4EA6300B7C361;
-			remoteInfo = RNAudioRecorderPlayer;
-		};
 		ADECBD8722485345000EC59D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6FE0958684E5421CBE73ED09 /* RNVectorIcons.xcodeproj */;
@@ -506,6 +513,7 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MeinsApp/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = MeinsApp/main.m; sourceTree = "<group>"; };
 		146833FF1AC3E56700842450 /* React.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = React.xcodeproj; path = "../node_modules/react-native/React/React.xcodeproj"; sourceTree = "<group>"; };
+		17058E4B32F4482EB2261826 /* RNAudioRecorderPlayer.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNAudioRecorderPlayer.xcodeproj; path = "../node_modules/@matthiasn/react-native-audio-recorder-player/ios/RNAudioRecorderPlayer.xcodeproj"; sourceTree = "<group>"; };
 		1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNMailCore.xcodeproj; path = "../node_modules/@matthiasn/react-native-mailcore/ios/RNMailCore.xcodeproj"; sourceTree = "<group>"; };
 		1D26F25321884E449E113B7D /* libRNMailCore.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNMailCore.a; sourceTree = "<group>"; };
 		214A0E057F7A4D9081890589 /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
@@ -513,9 +521,7 @@
 		3C98CFD8839E47CDBF25F98F /* libRealmReact.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRealmReact.a; sourceTree = "<group>"; };
 		417DD79C6B5C4D07A3A9F9C4 /* Feather.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Feather.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Feather.ttf"; sourceTree = "<group>"; };
 		457276E8CD39EB8675A73E3B /* Pods_MeinsApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MeinsApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RNAudioRecorderPlayer.xcodeproj; path = "../node_modules/react-native-audio-recorder-player/ios/RNAudioRecorderPlayer.xcodeproj"; sourceTree = "<group>"; };
 		4837545098E592D599CDE28C /* Pods_MeinsAppTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MeinsAppTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		4C74629DB19F44988E6BF27D /* libRNAudioRecorderPlayer.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNAudioRecorderPlayer.a; sourceTree = "<group>"; };
 		52FEC448AC55498799855BE7 /* MaterialIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialIcons.ttf"; sourceTree = "<group>"; };
 		5E91572D1DD0AC6500FF2AA8 /* RCTAnimation.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTAnimation.xcodeproj; path = "../node_modules/react-native/Libraries/NativeAnimation/RCTAnimation.xcodeproj"; sourceTree = "<group>"; };
 		6F8076AB37F44B45966DA0B3 /* libRCTAppleHealthKit.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTAppleHealthKit.a; sourceTree = "<group>"; };
@@ -549,6 +555,7 @@
 		BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "wrapper.pb-project"; name = RCTCamera.xcodeproj; path = "../node_modules/react-native-camera/ios/RCTCamera.xcodeproj"; sourceTree = "<group>"; };
 		CF4BEE7CE64C4075A1BA153C /* Entypo.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Entypo.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Entypo.ttf"; sourceTree = "<group>"; };
 		D2D1E8640FD3AEA40CC47AE4 /* Pods-MeinsAppTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MeinsAppTests.release.xcconfig"; path = "Target Support Files/Pods-MeinsAppTests/Pods-MeinsAppTests.release.xcconfig"; sourceTree = "<group>"; };
+		DC6AAA21AC6A4A728A05EBB0 /* libRNAudioRecorderPlayer.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNAudioRecorderPlayer.a; sourceTree = "<group>"; };
 		DF5F38B50EC04EEEB2B3FA5B /* libz.tbd */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		E7C4439073564454887DC4B1 /* libRCTContacts.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTContacts.a; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -585,7 +592,6 @@
 				832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */,
 				00C302EA1ABCBA2D00DB3ED1 /* libRCTVibration.a in Frameworks */,
 				139FDEF61B0652A700C62182 /* libRCTWebSocket.a in Frameworks */,
-				9B49782C09EB4D15B69B80E6 /* libRNAudioRecorderPlayer.a in Frameworks */,
 				1C3253DDEEEC4696A1481B68 /* libRNVectorIcons.a in Frameworks */,
 				16C1B48B925B44EB9A68CB64 /* libRCTContacts.a in Frameworks */,
 				A0CFAE402C174F1AB5A9497F /* libRCTCamera.a in Frameworks */,
@@ -595,6 +601,7 @@
 				7AA75205427341228039628D /* libRCTAppleHealthKit.a in Frameworks */,
 				EEF47224BA7944D2BDCD85F2 /* libRNMailCore.a in Frameworks */,
 				FA0DC4B9A8B7962799FE65DF /* Pods_MeinsApp.framework in Frameworks */,
+				B441864C88D3449C996C3987 /* libRNAudioRecorderPlayer.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -792,13 +799,13 @@
 				832341B01AAA6A8300B99B32 /* RCTText.xcodeproj */,
 				00C302DF1ABCB9EE00DB3ED1 /* RCTVibration.xcodeproj */,
 				139FDEE61B06529A00C62182 /* RCTWebSocket.xcodeproj */,
-				45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */,
 				6FE0958684E5421CBE73ED09 /* RNVectorIcons.xcodeproj */,
 				AC6BE9851D214EC691D504F0 /* RCTContacts.xcodeproj */,
 				BDE15B64FF4D41D3B3DCCB62 /* RCTCamera.xcodeproj */,
 				A46C5BC50F154F5A91D3BE92 /* RealmReact.xcodeproj */,
 				7FFC497D8F57497E990DACA9 /* RCTAppleHealthKit.xcodeproj */,
 				1B59CB32063E43E393E865DB /* RNMailCore.xcodeproj */,
+				17058E4B32F4482EB2261826 /* RNAudioRecorderPlayer.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -865,6 +872,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AD15346222CCD30800EA1126 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD15349822CCD30800EA1126 /* libRNAudioRecorderPlayer.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		AD3C1B45226668A10072585D /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -925,29 +940,22 @@
 		ADECBCE422485337000EC59D /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				4C74629DB19F44988E6BF27D /* libRNAudioRecorderPlayer.a */,
 				05E03094FEA640F6AE4B5635 /* libRNVectorIcons.a */,
 				E7C4439073564454887DC4B1 /* libRCTContacts.a */,
 				0AED3B0A72964785B9A04E1E /* libRCTCamera.a */,
 				3C98CFD8839E47CDBF25F98F /* libRealmReact.a */,
 				6F8076AB37F44B45966DA0B3 /* libRCTAppleHealthKit.a */,
 				1D26F25321884E449E113B7D /* libRNMailCore.a */,
+				DC6AAA21AC6A4A728A05EBB0 /* libRNAudioRecorderPlayer.a */,
 			);
 			name = "Recovered References";
-			sourceTree = "<group>";
-		};
-		ADECBD1222485338000EC59D /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				ADECBD1622485338000EC59D /* libRNAudioRecorderPlayer.a */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		ADECBD8422485345000EC59D /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				ADECBD8822485345000EC59D /* libRNVectorIcons.a */,
+				AD1534A022CCD30800EA1126 /* libRNVectorIcons-tvOS.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1113,8 +1121,8 @@
 					ProjectRef = A46C5BC50F154F5A91D3BE92 /* RealmReact.xcodeproj */;
 				},
 				{
-					ProductGroup = ADECBD1222485338000EC59D /* Products */;
-					ProjectRef = 45F5E30A0C6F4F9A8C55A064 /* RNAudioRecorderPlayer.xcodeproj */;
+					ProductGroup = AD15346222CCD30800EA1126 /* Products */;
+					ProjectRef = 17058E4B32F4482EB2261826 /* RNAudioRecorderPlayer.xcodeproj */;
 				},
 				{
 					ProductGroup = ADCEF5862269338500FD6EEF /* Products */;
@@ -1386,6 +1394,20 @@
 			remoteRef = AD10A53222649C5200A6C562 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		AD15349822CCD30800EA1126 /* libRNAudioRecorderPlayer.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libRNAudioRecorderPlayer.a;
+			remoteRef = AD15349722CCD30800EA1126 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AD1534A022CCD30800EA1126 /* libRNVectorIcons-tvOS.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libRNVectorIcons-tvOS.a";
+			remoteRef = AD15349F22CCD30800EA1126 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		AD3C1B76226668A10072585D /* libRNMailCore.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1510,13 +1532,6 @@
 			fileType = archive.ar;
 			path = "libjsiexecutor-tvOS.a";
 			remoteRef = ADECBD1022485338000EC59D /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		ADECBD1622485338000EC59D /* libRNAudioRecorderPlayer.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libRNAudioRecorderPlayer.a;
-			remoteRef = ADECBD1522485338000EC59D /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		ADECBD8822485345000EC59D /* libRNVectorIcons.a */ = {
@@ -1680,6 +1695,7 @@
 					"$(BUILT_PRODUCTS_DIR)/../../include/**",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios/**",
 					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
@@ -1688,6 +1704,7 @@
 					"$(inherited)",
 					"\"${PODS_ROOT}/mailcore2-ios/lib\"/**",
 					"$(PROJECT_DIR)/Pods/mailcore2-ios/lib",
+					"\"$(SRCROOT)/MeinsApp\"",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -1731,6 +1748,7 @@
 					"$(BUILT_PRODUCTS_DIR)/../../include/**",
 					"$(SRCROOT)/../node_modules/@matthiasn/react-native-mailcore/ios",
 					"$(SRCROOT)/../node_modules/@react-native-community/cameraroll/ios",
+					"$(SRCROOT)/../node_modules/@matthiasn/react-native-audio-recorder-player/ios",
 				);
 				INFOPLIST_FILE = MeinsApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
@@ -1739,6 +1757,7 @@
 					"$(inherited)",
 					"\"${PODS_ROOT}/mailcore2-ios/lib\"/**",
 					"$(PROJECT_DIR)/Pods/mailcore2-ios/lib",
+					"\"$(SRCROOT)/MeinsApp\"",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",

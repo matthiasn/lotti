@@ -1,7 +1,7 @@
 (ns meins.ui.shared
   (:require [reagent.core :as r]
             ["react-native" :as react-native]
-            ["react-native-audio-recorder-player" :as react-native-audio-recorder-player]
+            ["@matthiasn/react-native-audio-recorder-player" :as react-native-audio-recorder-player]
             ["react-native-camera" :as react-native-camera]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
     ;["@mapbox/react-native-mapbox-gl" :as mapbox-gl]

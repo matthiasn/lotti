@@ -20,15 +20,17 @@
                           (swap! player-state assoc-in [:pos] pos)
                           (swap! player-state assoc-in [:dur] pos)))
             record (fn [_]
-                     (let [file (str (st/now) ".m4a")]
-                       (.startRecorder recorder-player file)
+                     (let [file (str (st/now) ".m4a")
+                           uri-promise (.startRecorder recorder-player file)]
+                       (.then uri-promise #(js/console.log %))
                        (swap! player-state assoc-in [:status] :rec)
                        (swap! player-state assoc-in [:file] file)
                        (.addRecordBackListener recorder-player record-cb)))
             stop-recording (fn [_]
-                             (.stopRecorder recorder-player)
-                             (.removeRecordBackListener recorder-player)
-                             (swap! player-state assoc-in [:status] :paused))
+                             (let [stop-promise (.stopRecorder recorder-player)]
+                               (.then stop-promise #(js/console.log %))
+                               (.removeRecordBackListener recorder-player)
+                               (swap! player-state assoc-in [:status] :paused)))
             play (fn [_]
                    (.startPlayer recorder-player (:file @player-state))
                    (.addPlayBackListener
