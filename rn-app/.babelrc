@@ -1,4 +1,0 @@
-{
-  "presets": ["react-native"],
-  "ignore": ["index.ios.js"]
-}
