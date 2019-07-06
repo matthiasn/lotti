@@ -30,10 +30,11 @@
   (when-let [cfg (imap-cfg)]
     (try
       (let [conn (imap. (clj->js (:server cfg)))]
-        (.once conn "ready" #(.openBox conn mailbox-name false (partial open-mb-cb conn)))
-        (.once conn "error" #(error "IMAP connection" %))
+        (.once conn "ready" #(do
+                               (info "conn ready" mailbox-name)
+                               (.openBox conn mailbox-name false (partial open-mb-cb conn))))
+        (.once conn "error" #(info "IMAP connection error" %))
         (.once conn "end" #(info "IMAP connection ended:" mailbox-name))
-        (debug "imap-open" mailbox-name)
         (.connect conn)
         (js/setTimeout #(.end conn) 120000))
       (catch :default e (error e))))
@@ -211,30 +212,28 @@
 (defn write-email [{:keys [msg-payload msg-meta]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (let [mailbox (:mailbox mb-cfg)
-          cb (fn [conn _err _box]
-               ;(.getBoxes mb (fn [err boxes] (.log js/console boxes)))
+          cb (fn [conn _err box]
+               ;(.getBoxes conn (fn [err boxes] (.log js/console boxes)))
                (try
                  (let [secret (:secret mb-cfg)
                        ; actual meta-data too large, makes the encryption waste battery
-                       msg-meta {}
                        serializable [:entry/sync {:msg-payload msg-payload
-                                                  :msg-meta    msg-meta}]
+                                                  :msg-meta    {}}]
                        cipher-hex (mue/encrypt-aes-hex (pr-str serializable) secret)
                        append-cb (fn [err]
-                                   (if err
-                                     (error "IMAP write" err)
-                                     (info "IMAP wrote message"))
+                                   (when err
+                                     (info "IMAP append error" err))
                                    (info "closing WRITE connection")
                                    (.end conn))
                        cb (fn [_err rfc-2822]
-                            (debug "RFC2822\n" rfc-2822)
-                            (.append conn rfc-2822 append-cb))]
+                            (info "RFC2822\n" mailbox rfc-2822)
+                            (.append conn rfc-2822 append-cb)
+                            (js/console.log (aget conn "_queue")))]
                    (-> (BuildMail. "text/plain")
                        (.setContent cipher-hex)
                        (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
                        (.build cb)))
-                 (catch :default e (error e))
-                 (finally (.end conn))))]
+                 (catch :default e (error e))))]
       (imap-open mailbox cb)))
   {:emit-msg [:imap/cfg (imap-cfg)]})
 

@@ -203,7 +203,7 @@
   {:cmp-id      cmp-id
    :state-fn    state-fn
    :handler-map {:entry/sync  sync-write
-                 ;:sync/fetch  sync-get-uids
+                 :sync/fetch  sync-get-uids
                  :sync/retry  retry-write
-                 ;:sync/read   sync-read-msg
+                 :sync/read   sync-read-msg
                  :secrets/set set-secrets}})

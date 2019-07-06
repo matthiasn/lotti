@@ -80,11 +80,12 @@
 
        #_(when OBSERVER
            [:cmd/attach-to-firehose :app/sync])
-       #_[:cmd/send {:to  :app/scheduler
-                     :msg [:cmd/schedule-new {:timeout 60000
-                                              :message [:sync/fetch]
-                                              :repeat  true
-                                              :initial false}]}]])
+
+       [:cmd/send {:to  :app/scheduler
+                   :msg [:cmd/schedule-new {:timeout 60000
+                                            :message [:sync/fetch]
+                                            :repeat  true
+                                            :initial false}]}]])
     (.registerComponent AppRegistry "meins" #(identity ui/app-container))
     (setJSExceptionHandler (fn [error _is-fatal] (alert error)))
     #_(setNativeExceptionHandler (fn [error] (alert error)))))
