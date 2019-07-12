@@ -188,7 +188,7 @@
   (testing "property checks for successful vector clock comparison"
     (is (:result (tc/quick-check 500 property)))))
 
-;;; Property for asserting symmetry, such taht when passing the same values
+;;; Property for asserting symmetry, such that when passing the same values
 ;;; into vc/vclock-comparator in opposite order, we get the opposite results
 ;;; in the cases of :a>b and :b>a, and :equal and :concurrent regardless of
 ;;; order.

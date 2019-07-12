@@ -24,7 +24,7 @@
     "querystring": "0.2.0",
     "react": "16.8.3",
     "react-dom": "16.8.3",
-    "react-native": "0.59.9",
+    "react-native": "0.59.10",
     "react-native-camera": "0.13.0",
     "react-native-contacts": "5.0.0",
     "react-native-elements": "1.1.0",

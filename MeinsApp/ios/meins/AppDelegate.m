@@ -19,7 +19,7 @@
   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
                                                    moduleName:@"meins"
                                             initialProperties:nil];
-
+  
   rootView.backgroundColor = [UIColor colorWithRed:0.27 green:0.27 blue:0.33 alpha:1.0];
 
   self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -33,9 +33,7 @@
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
 {
 #if DEBUG
-  NSURL *jsCodeLocation = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"app/index" fallbackResource:nil];
-  [[RCTBundleURLProvider sharedSettings] setJsLocation:jsCodeLocation.host];
-  return jsCodeLocation;
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"app/index" fallbackResource:nil];
 #else
   return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #endif
