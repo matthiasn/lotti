@@ -16,7 +16,11 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="Launch_BG" translatesAutoresizingMaskIntoConstraints="NO" id="WAq-tF-utr">
-                    <rect key="frame" x="-1088" y="5" width="2712" height="1341"/>
+                    <rect key="frame" x="-328" y="421" width="1439" height="902"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                </imageView>
+                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="logo" translatesAutoresizingMaskIntoConstraints="NO" id="8ba-DD-Fbf">
+                    <rect key="frame" x="20" y="213" width="590" height="292"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                 </imageView>
             </subviews>
@@ -28,5 +32,6 @@
     </objects>
     <resources>
         <image name="Launch_BG" width="853.33331298828125" height="370.33334350585938"/>
+        <image name="logo" width="500" height="510"/>
     </resources>
 </document>
