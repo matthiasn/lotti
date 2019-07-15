@@ -19,7 +19,6 @@ target 'meins' do
     'RCTImage',
     'RCTPushNotification',
     'RCTSettings',
-    'RCTTest',
     'RCTVibration',
     'RCTLinkingIOS'
   ]
