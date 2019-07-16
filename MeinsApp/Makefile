@@ -40,7 +40,7 @@ clean-pods:
 	@echo Cleaning up pods...
 	@rm -rf ./ios/Pods
 
-deps: deps-npm deps-pods
+deps: deps-npm deps-pods deps-link
 
 deps-npm:
 	@echo Fetching NPM dependencies...
@@ -49,6 +49,10 @@ deps-npm:
 deps-pods:
 	@echo Fetching Pods...
 	@cd ios && pod install && cd ..
+
+deps-link:
+	@echo Linking dependencies...
+	@react-native link
 
 cljs:
 	@echo Building ClojureScript for React Native app...
