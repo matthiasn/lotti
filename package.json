@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.176",
+  "version": "0.6.177",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -48,7 +48,7 @@
     "install": "0.12.2",
     "lato-font": "3.0.0",
     "leaflet": "1.5.1",
-    "lodash": "4.17.11",
+    "lodash": "4.17.14",
     "lodash.throttle": "4.1.1",
     "mapbox-gl": "1.0.0",
     "meins-draft": "0.0.3",
