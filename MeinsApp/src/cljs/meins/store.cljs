@@ -34,7 +34,7 @@
                   (let [db-entry (-> entry
                                      (select-keys [:md :timestamp :longitude :latitude])
                                      (assoc :edn (pr-str entry))
-                                     (assoc :sync "OPEN")
+                                     (assoc :sync (if (:from-sync msg-meta) "SYNC" "OPEN"))
                                      clj->js)
                         x (.create realm-db "Entry" db-entry true)])
                   (put-fn [:schedule/new {:timeout 1000

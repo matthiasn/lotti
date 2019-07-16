@@ -118,7 +118,7 @@
             mail (merge (:server secrets)
                         {:folder folder
                          :minUid min-uid
-                         :length 100})
+                         :length 25})
             fetch-cb (fn [data]
                        (let [uids (edn/read-string (str "[" data "]"))]
                          (swap! cmp-state update :not-fetched into uids)
@@ -135,7 +135,7 @@
     (try
       (let [{:keys [fetched not-fetched]} @cmp-state
             not-fetched (drop-while #(contains? fetched %) not-fetched)]
-        (when-let [uid (first not-fetched)]
+        (doseq [uid not-fetched]
           (let [aes-secret (-> secrets :sync :read :secret)
                 folder (-> secrets :sync :read :folder)
                 mail (merge (:server secrets)
@@ -146,7 +146,8 @@
                                  decrypted (decrypt-body body aes-secret)
                                  msg-type (first decrypted)
                                  {:keys [msg-payload msg-meta]} (second decrypted)
-                                 msg (with-meta [msg-type msg-payload] msg-meta)]
+                                 msg (with-meta [msg-type msg-payload]
+                                                (assoc msg-meta :from-sync true))]
                              (swap! cmp-state assoc-in [:last-uid-read] uid)
                              (go (<! (as/set-item :last-uid-read uid)))
                              (swap! cmp-state update-in [:not-fetched] disj uid)

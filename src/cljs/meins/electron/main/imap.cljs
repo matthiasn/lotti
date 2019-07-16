@@ -263,7 +263,7 @@
 
 (defn start-sync [{:keys []}]
   (info "starting IMAP sync")
-  {:emit-msg [:schedule/new {:timeout 60000
+  {:emit-msg [:schedule/new {:timeout 30000
                              :id      :imap-schedule
                              :message [:sync/read-imap]
                              :initial true

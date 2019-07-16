@@ -82,7 +82,7 @@
            [:cmd/attach-to-firehose :app/sync])
 
        [:cmd/send {:to  :app/scheduler
-                   :msg [:cmd/schedule-new {:timeout 60000
+                   :msg [:cmd/schedule-new {:timeout 30000
                                             :message [:sync/fetch]
                                             :repeat  true
                                             :initial false}]}]])
