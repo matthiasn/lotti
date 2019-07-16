@@ -36,6 +36,7 @@
     "react-native-swipe-cards": "0.1.1",
     "react-native-swipeout": "2.3.6",
     "react-native-vector-icons": "6.6.0",
+    "react-native-version-number": "0.3.6",
     "react-navigation": "3.11.0",
     "react-navigation-transitions": "1.0.10",
     "realm": "2.28.1",

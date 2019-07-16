@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>taking audio notes</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -19,29 +17,29 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.1</string>
+	<string>0.6.2</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
 	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<true />
 	<key>MGLMapboxAccessToken</key>
 	<string>pk.eyJ1IjoibWF0dGhpYXNuIiwiYSI6ImNqY295azVueDFyajMycW14eXk0eDg5NWgifQ.fVPCdpdMMB2l4YR1rtz_8Q</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<true />
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<true />
 		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		<true />
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
+				<true />
 			</dict>
 		</dict>
 	</dict>
@@ -53,12 +51,14 @@
 	<string>import health data in meins</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>update health data</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>record location for journal entries</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>record significant location changes</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>record location for journal entries</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>record location for journal entries</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>taking audio notes</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Import images</string>
 	<key>UIAppFonts</key>
@@ -88,6 +88,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+	<false />
 </dict>
 </plist>

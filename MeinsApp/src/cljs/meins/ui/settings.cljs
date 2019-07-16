@@ -3,6 +3,7 @@
             ["react-navigation" :refer [createStackNavigator createAppContainer
                                         createBottomTabNavigator]]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
+            ["react-native-version-number" :as rnvn :refer [appVersion]]
             [re-frame.core :refer [reg-sub subscribe]]
             [meins.ui.shared :refer [view text fa-icon settings-list alert settings-icon
                                      settings-list-header settings-list-item]]
@@ -76,11 +77,10 @@
           [settings-list-item
            {:hasNavArrow      false
             :background-color item-bg
-            :title            "Entries"
+            :title            "Version"
             :titleStyle       {:color text-color}
             :icon             (settings-icon "list" text-color)
-            ;:title-info       (str (count @all-timestamps))
-            }]
+            :title-info       (aget rnvn "default" "appVersion")}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg

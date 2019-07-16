@@ -33,7 +33,7 @@ target 'meins' do
 
   pod 'react-native-camera', :path => '../node_modules/react-native-camera'
 
-  #pod 'react-native-version-number', :path => '../node_modules/react-native-version-number'
+  pod 'react-native-version-number', :path => '../node_modules/react-native-version-number'
 
   pod 'react-native-mapbox-gl', :path => '../node_modules/@mapbox/react-native-mapbox-gl'
 
