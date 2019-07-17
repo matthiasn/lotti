@@ -64,4 +64,4 @@ jsbundle:
 
 version:
 	@echo Syncing version numbers...
-	react-native-version --never-increment-build
+	react-native-version
