@@ -17,29 +17,29 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.3</string>
+	<string>1.0.5</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>6</string>
 	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<true />
 	<key>MGLMapboxAccessToken</key>
 	<string>pk.eyJ1IjoibWF0dGhpYXNuIiwiYSI6ImNqY295azVueDFyajMycW14eXk0eDg5NWgifQ.fVPCdpdMMB2l4YR1rtz_8Q</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<true />
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<true />
 		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		<true />
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
+				<true />
 			</dict>
 		</dict>
 	</dict>
@@ -88,6 +88,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+	<false />
 </dict>
 </plist>
