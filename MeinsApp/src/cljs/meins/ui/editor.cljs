@@ -95,7 +95,7 @@
                                              :width            "100%"}
                         :multiline          true
                         :default-value      (:md @local)
-                        ;:keyboard-type      "twitter"
+                        :keyboard-type      "twitter"
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! local assoc-in [:md] text))}]]]]))))
