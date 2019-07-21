@@ -40,7 +40,7 @@ clean-pods:
 	@echo Cleaning up pods...
 	@rm -rf ./ios/Pods
 
-deps: deps-npm deps-pods deps-link
+deps: deps-npm deps-pods
 
 deps-npm:
 	@echo Fetching NPM dependencies...
