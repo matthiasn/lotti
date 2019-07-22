@@ -65,3 +65,9 @@ jsbundle:
 version:
 	@echo Syncing version numbers...
 	react-native-version
+
+fastlane-beta:
+	@echo Building and publishing via Fastlane
+	cd ios && fastlane beta && cd ..
+
+testflight: deps package fastlane-beta
