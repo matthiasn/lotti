@@ -213,6 +213,36 @@
                         :keyboardAppearance (if (= @theme :dark) "dark" "light")
                         :on-change-text     (fn [text]
                                               (swap! entry-local assoc-in [:md] text))}]
+           (when-let [spotify (:spotify entry)]
+             [view {:style {:display          "flex"
+                            :flex-direction   "column"
+                            :background-color "white"}}
+              [image {:style      {:flex             3
+                                   :background-color "black"
+                                   :min-height       300
+                                   :max-height       600
+                                   :width            "100%"}
+                      :resizeMode "contain"
+                      :source     {:uri (:image spotify)}}]
+              [text {:style {:background-color text-bg
+                             :color            text-color
+                             :text-align       "left"
+                             :font-weight      "bold"
+                             :font-size        12
+                             :padding-left     12
+                             :padding-top      4}}
+               (:name spotify)]
+              [text {:style {:background-color text-bg
+                             :color            text-color
+                             :text-align       "left"
+                             :font-size        12
+                             :padding-left     12
+                             :padding-top      1
+                             :padding-bottom   4}}
+               (->> (:artists spotify)
+                    (map :name)
+                    (interpose ", ")
+                    (apply str))]])
            #_(when (and latitude longitude (= platform-os "ios"))
                [map-view {:centerCoordinate [longitude latitude]
                           :scrollEnabled    false
