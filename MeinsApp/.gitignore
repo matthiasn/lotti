@@ -61,3 +61,6 @@ buck-out/
 
 .nrepl-port
 MeinsApp/ios/assets/
+
+*.cer
+*.mobileprovision

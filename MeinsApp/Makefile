@@ -70,4 +70,4 @@ fastlane-beta:
 	@echo Building and publishing via Fastlane
 	cd ios && fastlane beta && cd ..
 
-testflight: deps package fastlane-beta
+testflight: deps-npm package fastlane-beta
