@@ -81,14 +81,34 @@
                            :font-size   9
                            :font-weight "100"}}
              (h/format-time ts)]]
-           [view {:style {:padding-top    1
-                          :padding-left   4
-                          :padding-right  4
-                          :padding-bottom 4}}
-            [text {:style {:color       text-color
-                           :text-align  "left"
-                           :font-weight "normal"}}
-             md]]]]]))))
+           (if-let [spotify (:spotify entry)]
+             [view {:style {:padding-top    1
+                            :padding-left   4
+                            :padding-right  4
+                            :padding-bottom 4}}
+              [text {:style {:background-color text-bg
+                             :color            text-color
+                             :text-align       "left"
+                             :font-weight      "bold"
+                             :font-size        12}}
+               (:name spotify)]
+              [text {:style {:background-color text-bg
+                             :color            text-color
+                             :text-align       "left"
+                             :font-size        12
+                             :padding-top      1}}
+               (->> (:artists spotify)
+                    (map :name)
+                    (interpose ", ")
+                    (apply str))]]
+             [view {:style {:padding-top    1
+                            :padding-left   4
+                            :padding-right  4
+                            :padding-bottom 4}}
+              [text {:style {:color       text-color
+                             :text-align  "left"
+                             :font-weight "normal"}}
+               md]])]]]))))
 
 (defn render-item [navigate]
   (fn [item]
