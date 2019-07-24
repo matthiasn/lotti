@@ -1,7 +1,7 @@
 (ns meins.ui.settings.audio
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view text settings-list settings-list-item settings-icon
-                                     rn-audio-recorder-player alert]]
+                                     rn-audio-recorder-player alert status-bar]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [meins.helpers :as h]
@@ -58,6 +58,7 @@
                        :padding-top      10
                        :background-color bg
                        :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
          [settings-list {:border-color bg
                          :width        "100%"}
           (if (= :rec status)

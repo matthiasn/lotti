@@ -1,7 +1,7 @@
 (ns meins.ui.settings.health
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view settings-list text settings-list-item fa-icon
-                                     touchable-opacity]]
+                                     touchable-opacity status-bar]]
             [meins.ui.db :refer [emit]]
             [re-frame.core :refer [subscribe]]))
 
@@ -68,6 +68,7 @@
                        :padding-bottom   10
                        :height           "100%"
                        :background-color bg}}
+         [status-bar {:barStyle "light-content"}]
          [import-item :healthkit/weight "Weight" "balance-scale"]
          [import-item :healthkit/bp "Blood Pressure" "heartbeat"]
          [import-item :healthkit/exercise "Exercise" "forward"]

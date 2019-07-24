@@ -60,13 +60,15 @@
                           (.sorted "timestamp" true)
                           (.slice 0 1000))]
         @local
-        [flat-grid
-         {:itemDimension img-dimension
-          :items         items
-          :style         {:flex             1
-                          :background-color "black"
-                          :margin-top       50}
-          :on-refresh    refresh
-          :refreshing    false
-          :spacing       2
-          :renderItem    (fn [x] (r/as-element [card x]))}]))))
+        [view {:width  "100%"
+               :height "100%"}
+         [flat-grid
+          {:itemDimension img-dimension
+           :items         items
+           :style         {:flex             1
+                           :background-color "black"
+                           :margin-top       50}
+           :on-refresh    refresh
+           :refreshing    false
+           :spacing       2
+           :renderItem    (fn [x] (r/as-element [card x]))}]]))))

@@ -1,5 +1,5 @@
 (ns meins.ui.settings.db
-  (:require [meins.ui.shared :refer [view text settings-list settings-list-item alert]]
+  (:require [meins.ui.shared :refer [view text settings-list settings-list-item alert status-bar]]
             [re-frame.core :refer [subscribe]]
     ;[mein.ui.settings.common :refer [settings-icon]]
     ;       [meo.ui.colors :as c]
@@ -19,6 +19,7 @@
                        :padding-top      10
                        :background-color bg
                        :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
          [settings-list {:border-color bg
                          :width        "100%"}
           #_

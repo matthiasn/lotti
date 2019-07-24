@@ -15,7 +15,7 @@
                                      #_map-view #_mapbox-style-url #_point-annotation virtualized-list
                                      fa-icon image logo-img #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item platform-os
-                                     rn-audio-recorder-player alert]]
+                                     rn-audio-recorder-player alert status-bar]]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
             [meins.utils.parse :as p]
@@ -159,6 +159,7 @@
         [view {:style {:flex             1
                        :height           "100%"
                        :background-color bg}}
+         [status-bar {:barStyle "light-content"}]
          [search-field local]
          [flat-list {:style        {:flex           1
                                     :padding-bottom 50
@@ -197,6 +198,7 @@
                        :height           "100%"
                        :background-color bg
                        :padding-top      pt}}
+         [status-bar {:barStyle "light-content"}]
          [ed/header save-fn cancel-fn "Edit"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display         "flex"

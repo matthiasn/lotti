@@ -6,7 +6,7 @@
             ["react-native-version-number" :as rnvn :refer [appVersion]]
             [re-frame.core :refer [reg-sub subscribe]]
             [meins.ui.shared :refer [view text fa-icon settings-list alert settings-icon
-                                     settings-list-header settings-list-item]]
+                                     settings-list-header settings-list-item status-bar]]
             [meins.ui.settings.db :as db]
             [meins.ui.settings.audio :as audio]
             [meins.ui.settings.sync :as sync]
@@ -65,6 +65,7 @@
         [view {:style {:flex-direction   "column"
                        :height           "100%"
                        :background-color bg}}
+         [status-bar {:barStyle "light-content"}]
          [settings-list {:border-color bg
                          :flex         1}
           [settings-list-header

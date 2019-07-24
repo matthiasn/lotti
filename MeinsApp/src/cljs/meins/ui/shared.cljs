@@ -13,6 +13,7 @@
 (def platform-os (aget react-native "Platform" "OS"))
 (def app-registry (.-AppRegistry react-native))
 (def view (r/adapt-react-class (.-View react-native)))
+(def status-bar (r/adapt-react-class (.-StatusBar react-native)))
 (def safe-area-view (r/adapt-react-class (.-SafeAreaView react-native)))
 (def scroll (r/adapt-react-class (.-ScrollView react-native)))
 (def image (r/adapt-react-class (.-Image react-native)))

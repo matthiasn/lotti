@@ -1,6 +1,6 @@
 (ns meins.ui.editor
   (:require [re-frame.core :refer [subscribe]]
-            [meins.ui.shared :refer [view text text-input touchable-opacity btn platform-os
+            [meins.ui.shared :refer [view text text-input touchable-opacity btn platform-os status-bar
                                      keyboard-avoiding-view keyboard fa-icon alert scroll]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
@@ -69,6 +69,7 @@
                        :height "100%"
                        :background-color bg
                        :padding-top      pt}}
+         [status-bar {:barStyle "light-content"}]
          [header save-fn cancel-fn "New Entry"]
          [keyboard-avoiding-view {                          ;:behavior "padding"
                                   :style    {:display          "flex"
