@@ -58,6 +58,12 @@
             [image {:style  {:width  "100%"
                              :height 300}
                     :source {:uri (-> media :image :uri)}}])
+          (when-let [spotify (:spotify entry)]
+            [image {:style      {:background-color "black"
+                                 :height           150
+                                 :width            "100%"}
+                    :resizeMode "contain"
+                    :source     {:uri (:image spotify)}}])
           [view {:style {:flex             1
                          :flex-direction   :column
                          :background-color text-bg
@@ -197,23 +203,7 @@
                           :font-size        12
                           :padding          4}}
             (h/format-time (:timestamp entry))]
-           [text-input {:style              {:flex             2
-                                             :font-weight      "100"
-                                             :padding          16
-                                             :font-size        24
-                                             :max-height       400
-                                             :min-height       100
-                                             :background-color text-bg
-                                             :margin-bottom    5
-                                             :color            text-color
-                                             :width            "100%"}
-                        :multiline          true
-                        :default-value      (:md entry "")
-                        :keyboard-type      "twitter"
-                        :keyboardAppearance (if (= @theme :dark) "dark" "light")
-                        :on-change-text     (fn [text]
-                                              (swap! entry-local assoc-in [:md] text))}]
-           (when-let [spotify (:spotify entry)]
+           (if-let [spotify (:spotify entry)]
              [view {:style {:display          "flex"
                             :flex-direction   "column"
                             :background-color "white"}}
@@ -242,7 +232,23 @@
                (->> (:artists spotify)
                     (map :name)
                     (interpose ", ")
-                    (apply str))]])
+                    (apply str))]]
+             [text-input {:style              {:flex             2
+                                               :font-weight      "100"
+                                               :padding          16
+                                               :font-size        24
+                                               :max-height       400
+                                               :min-height       100
+                                               :background-color text-bg
+                                               :margin-bottom    5
+                                               :color            text-color
+                                               :width            "100%"}
+                          :multiline          true
+                          :default-value      (:md entry "")
+                          :keyboard-type      "twitter"
+                          :keyboardAppearance (if (= @theme :dark) "dark" "light")
+                          :on-change-text     (fn [text]
+                                                (swap! entry-local assoc-in [:md] text))}])
            #_(when (and latitude longitude (= platform-os "ios"))
                [map-view {:centerCoordinate [longitude latitude]
                           :scrollEnabled    false
