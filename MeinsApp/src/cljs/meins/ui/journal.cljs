@@ -133,6 +133,7 @@
                       :lightTheme          light-theme
                       :on-change-text      on-change-text
                       :on-clear-text       on-clear-text
+                      :value               (:jrn-search @local)
                       :keyboard-type       "twitter"
                       :keyboardAppearance  (if light-theme "light" "dark")
                       :inputContainerStyle {:backgroundColor search-field-bg}
