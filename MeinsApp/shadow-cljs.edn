@@ -12,7 +12,8 @@
                       :compiler-options {:elide-asserts   true
                                          :closure-defines {"goog.DEBUG"  false
                                                            "goog.LOCALE" "en"}}
-                      :devtools         {:autoload true}
+                      :devtools         {:autoload   true
+                                         :after-load meins.core/init}
                       :release          {:compiler-options
                                          {:optimizations      :simple
                                           :output-feature-set :es-next}}}}}

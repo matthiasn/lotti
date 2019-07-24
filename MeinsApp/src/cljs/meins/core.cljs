@@ -32,8 +32,7 @@
       (set (mapv mapper components)))
     components))
 
-(defn ^:dev/after-load init []
-  ;(dispatch-sync [:initialize-db])
+(defn init []
   (let [components #{(hk/cmp-map :app/healthkit)
                      (store/cmp-map :app/store)
                      (photos/cmp-map :app/photos)
