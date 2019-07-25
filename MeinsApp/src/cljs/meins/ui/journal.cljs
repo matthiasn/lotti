@@ -31,11 +31,13 @@
 
 (defn list-item [ts navigate]
   (let [theme (subscribe [:active-theme])
-        global-vclock (subscribe [:global-vclock])]
+        global-vclock (subscribe [:global-vclock])
+        cfg (subscribe [:cfg])]
     (fn list-item-render [ts navigate]
       @global-vclock
       (let [text-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])
+            show-pvt (:show-pvt @cfg)
             entry (get-entry ts)
             to-detail #(do (emit [:entry/detail {:timestamp ts}])
                            (navigate "Detail"))
@@ -44,71 +46,77 @@
                  (str (subs md 0 100) "...")
                  md)
             delete #(emit [:entry/persist (assoc-in entry [:deleted] true)])]
-        [view {:style {:flex             1
-                       :margin-bottom    4
-                       :flex-direction   :row
-                       :background-color "black"
-                       :width            "100%"}}
-         [touchable-opacity {:on-press to-detail
-                             :style    {:display         "flex"
-                                        :flex-direction  "column"
-                                        :width           "100%"
-                                        :justify-content "space-between"}}
-          (when-let [media (:media entry)]
-            [image {:style  {:width  "100%"
-                             :height 300}
-                    :source {:uri (-> media :image :uri)}}])
-          (when-let [spotify (:spotify entry)]
-            [image {:style      {:background-color "black"
-                                 :height           150
-                                 :width            "100%"}
-                    :resizeMode "contain"
-                    :source     {:uri (:image spotify)}}])
+        (when (or (not (or (:pvt entry)
+                           (:pvt (:story entry))
+                           (-> entry :story :saga :pvt)
+                           (contains? (:tags entry) "#pvt")
+                           (contains? (:perm_tags entry) "#pvt")))
+                  show-pvt)
           [view {:style {:flex             1
-                         :flex-direction   :column
-                         :background-color text-bg
-                         :padding-top      4
-                         :padding-left     8
-                         :padding-right    6
-                         :padding-bottom   4
+                         :margin-bottom    4
+                         :flex-direction   :row
+                         :background-color "black"
                          :width            "100%"}}
-           [view {:style {:padding-top    2
-                          :padding-left   4
-                          :padding-right  4
-                          :padding-bottom 2}}
-            [text {:style {:color       text-color
-                           :text-align  "left"
-                           :font-size   9
-                           :font-weight "100"}}
-             (h/format-time ts)]]
-           (if-let [spotify (:spotify entry)]
-             [view {:style {:padding-top    1
+           [touchable-opacity {:on-press to-detail
+                               :style    {:display         "flex"
+                                          :flex-direction  "column"
+                                          :width           "100%"
+                                          :justify-content "space-between"}}
+            (when-let [media (:media entry)]
+              [image {:style  {:width  "100%"
+                               :height 300}
+                      :source {:uri (-> media :image :uri)}}])
+            (when-let [spotify (:spotify entry)]
+              [image {:style      {:background-color "black"
+                                   :height           150
+                                   :width            "100%"}
+                      :resizeMode "contain"
+                      :source     {:uri (:image spotify)}}])
+            [view {:style {:flex             1
+                           :flex-direction   :column
+                           :background-color text-bg
+                           :padding-top      4
+                           :padding-left     8
+                           :padding-right    6
+                           :padding-bottom   4
+                           :width            "100%"}}
+             [view {:style {:padding-top    2
                             :padding-left   4
                             :padding-right  4
-                            :padding-bottom 4}}
-              [text {:style {:background-color text-bg
-                             :color            text-color
-                             :text-align       "left"
-                             :font-weight      "bold"
-                             :font-size        12}}
-               (:name spotify)]
-              [text {:style {:background-color text-bg
-                             :color            text-color
-                             :text-align       "left"
-                             :font-size        12
-                             :padding-top      1}}
-               (->> (:artists spotify)
-                    (map :name)
-                    (interpose ", ")
-                    (apply str))]]
-             [view {:style {:padding-top    1
-                            :padding-left   4
-                            :padding-right  4
-                            :padding-bottom 4}}
+                            :padding-bottom 2}}
               [text {:style {:color       text-color
                              :text-align  "left"
-                             :font-weight "normal"}}
-               md]])]]]))))
+                             :font-size   9
+                             :font-weight "100"}}
+               (h/format-time ts)]]
+             (if-let [spotify (:spotify entry)]
+               [view {:style {:padding-top    1
+                              :padding-left   4
+                              :padding-right  4
+                              :padding-bottom 4}}
+                [text {:style {:background-color text-bg
+                               :color            text-color
+                               :text-align       "left"
+                               :font-weight      "bold"
+                               :font-size        12}}
+                 (:name spotify)]
+                [text {:style {:background-color text-bg
+                               :color            text-color
+                               :text-align       "left"
+                               :font-size        12
+                               :padding-top      1}}
+                 (->> (:artists spotify)
+                      (map :name)
+                      (interpose ", ")
+                      (apply str))]]
+               [view {:style {:padding-top    1
+                              :padding-left   4
+                              :padding-right  4
+                              :padding-bottom 4}}
+                [text {:style {:color       text-color
+                               :text-align  "left"
+                               :font-weight "normal"}}
+                 md]])]]])))))
 
 (defn render-item [navigate]
   (fn [item]

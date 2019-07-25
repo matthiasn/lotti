@@ -9,7 +9,8 @@
 (defn dev-settings [_]
   (let [theme (subscribe [:active-theme])
         cfg (subscribe [:cfg])
-        toggle-enable #(emit [:cfg/set {:entry-pprint (not (:entry-pprint @cfg))}])]
+        toggle-pvt #(emit [:cfg/set {:show-pvt (not (:show-pvt @cfg))}])
+        toggle-debug #(emit [:cfg/set {:entry-pprint (not (:entry-pprint @cfg))}])]
     (fn [{:keys [navigation] :as props}]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
@@ -21,10 +22,17 @@
          [status-bar {:barStyle "light-content"}]
          [settings-list {:border-color bg
                          :width        "100%"}
+          [settings-list-item {:title               "Show Private Entries"
+                               :has-switch          true
+                               :switchState         (:show-pvt @cfg)
+                               :switchOnValueChange toggle-pvt
+                               :hasNavArrow         false
+                               :background-color    item-bg
+                               :titleStyle          {:color text-color}}]
           [settings-list-item {:title               "Debug Entry"
                                :has-switch          true
                                :switchState         (:entry-pprint @cfg)
-                               :switchOnValueChange toggle-enable
+                               :switchOnValueChange toggle-debug
                                :hasNavArrow         false
                                :background-color    item-bg
                                :titleStyle          {:color text-color}}]]]))))

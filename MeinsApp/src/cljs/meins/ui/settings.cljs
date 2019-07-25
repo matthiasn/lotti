@@ -117,7 +117,7 @@
             :titleStyle       {:color text-color}
             :icon             (settings-icon "bug" text-color)
             :on-press         #(navigate "dev")
-            :title            "Dev"}]
+            :title            "Entry View"}]
           [settings-list-item
            {:hasNavArrow      true
             :background-color item-bg
