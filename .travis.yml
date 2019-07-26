@@ -1,9 +1,19 @@
 language: clojure
+
+jdk:
+  - oraclejdk11
+
+matrix:
+  include:
+    - jdk: openjdk11
+      before_install:
+        - sudo rm "${JAVA_HOME}/lib/security/cacerts"
+        - sudo ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+
 install:
   - sudo apt-get install libxkbfile-dev
-  - nvm install 8
-  - nvm use 8
-  - npm install
-script: lein dist
-jdk:
-  - oraclejdk9
+  - nvm install 10
+  - nvm use 10
+  - npm install -g shadow-cljs
+
+script: make release
