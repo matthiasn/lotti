@@ -4,7 +4,7 @@
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/tools.logging "0.5.0-alpha.1"]
+                 [org.clojure/tools.logging "0.5.0"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
                  [org.clojure/data.avl "0.1.0"]
@@ -35,8 +35,8 @@
                  [metrics-clojure-jvm "2.10.0"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
-                 [com.drewnoakes/metadata-extractor "2.11.0"]
-                 [ubergraph "0.5.3"]
+                 [com.drewnoakes/metadata-extractor "2.12.0"]
+                 [ubergraph "0.6.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.40"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
