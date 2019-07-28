@@ -35,8 +35,6 @@ target 'meins' do
 
   pod 'react-native-version-number', :path => '../node_modules/react-native-version-number'
 
-  pod 'react-native-mapbox-gl', :path => '../node_modules/@mapbox/react-native-mapbox-gl'
-
   pod 'react-native-contacts', :path => '../node_modules/react-native-contacts'
 
   pod 'ReactNativeExceptionHandler', :path => '../node_modules/react-native-exception-handler'
