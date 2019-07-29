@@ -5,7 +5,7 @@
 # Xcode
 #
 build/
-app/
+/app/
 
 ios/Pods/
 
