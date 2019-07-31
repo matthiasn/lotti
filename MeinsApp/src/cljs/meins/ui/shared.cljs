@@ -38,7 +38,7 @@
 (def logo-img (js/require "../images/logo.png"))
 
 (def rn-audio-recorder-player (aget react-native-audio-recorder-player "default"))
-(def cam (r/adapt-react-class (aget react-native-camera "default")))
+(def cam (r/adapt-react-class (aget react-native-camera "RNCamera")))
 
 (def fa-icon (r/adapt-react-class (aget FontAwesome "default")))
 

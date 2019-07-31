@@ -73,8 +73,8 @@ import com.android.build.OutputFile
  */
 
 project.ext.react = [
-    entryFile: "app/index.js",
-    nodeExecutableAndArgs: ["node", "--max_old_space_size=4096"],
+        entryFile            : "app/index.js",
+        nodeExecutableAndArgs: ["node", "--max_old_space_size=4096"],
 ]
 
 apply from: "../../node_modules/react-native/react.gradle"
@@ -106,17 +106,16 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 23
-        versionName "1.0.19"
+        versionCode 24
+        versionName "1.0.20"
+        missingDimensionStrategy 'react-native-camera', 'general'
     }
     signingConfigs {
         release {
-            //if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_RELEASE_STORE_FILE)
-                storePassword MYAPP_RELEASE_STORE_PASSWORD
-                keyAlias MYAPP_RELEASE_KEY_ALIAS
-                keyPassword MYAPP_RELEASE_KEY_PASSWORD
-            //}
+            storeFile file(MYAPP_RELEASE_STORE_FILE)
+            storePassword MYAPP_RELEASE_STORE_PASSWORD
+            keyAlias MYAPP_RELEASE_KEY_ALIAS
+            keyPassword MYAPP_RELEASE_KEY_PASSWORD
         }
     }
     splits {
@@ -139,7 +138,7 @@ android {
         variant.outputs.each { output ->
             // For each separate APK per architecture, set a unique version code as described here:
             // http://tools.android.com/tech-docs/new-build-system/user-guide/apk-splits
-            def versionCodes = ["armeabi-v7a":1, "x86":2, "arm64-v8a": 3, "x86_64": 4]
+            def versionCodes = ["armeabi-v7a": 1, "x86": 2, "arm64-v8a": 3, "x86_64": 4]
             def abi = output.getFilter(OutputFile.ABI)
             if (abi != null) {  // null for the universal-debug, universal-release variants
                 output.versionCodeOverride =
@@ -155,14 +154,14 @@ dependencies {
     implementation project(':react-native-vector-icons')
     implementation project(':react-native-gesture-handler')
     implementation project(':react-native-exception-handler')
-    //implementation project(':react-native-contacts')
+    implementation project(':react-native-contacts')
     implementation project(':react-native-camera')
     compile project(':react-native-camera')
     implementation project(':@matthiasn_react-native-mailcore')
     implementation project(':@matthiasn_react-native-audio-recorder-player')
     implementation project(':@matthiasn_cameraroll')
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
+    implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation "com.facebook.react:react-native:+"  // From node_modules
 }
 

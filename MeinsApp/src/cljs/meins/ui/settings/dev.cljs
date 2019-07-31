@@ -1,6 +1,6 @@
 (ns meins.ui.settings.dev
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list cam text settings-list-item status-bar]]
+            [meins.ui.shared :refer [view settings-list text settings-list-item status-bar]]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]

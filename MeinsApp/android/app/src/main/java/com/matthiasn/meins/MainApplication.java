@@ -8,8 +8,8 @@ import io.realm.react.RealmReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
 import com.masteratul.exceptionhandler.ReactNativeExceptionHandlerPackage;
-//import com.rt2zz.reactnativecontacts.ReactNativeContacts;
-import com.lwansbrough.RCTCamera.RCTCameraPackage;
+import com.rt2zz.reactnativecontacts.ReactNativeContacts;
+import org.reactnative.camera.RNCameraPackage;
 import com.reactlibrary.RNMailCorePackage;
 import com.dooboolab.RNAudioRecorderPlayerPackage;
 import com.reactnativecommunity.cameraroll.CameraRollPackage;
@@ -37,8 +37,8 @@ public class MainApplication extends Application implements ReactApplication {
             new VectorIconsPackage(),
             new RNGestureHandlerPackage(),
             new ReactNativeExceptionHandlerPackage(),
-            //new ReactNativeContacts(),
-            new RCTCameraPackage(),
+            new ReactNativeContacts(),
+            new RNCameraPackage(),
             new RNMailCorePackage(),
             new RNAudioRecorderPlayerPackage(),
             new CameraRollPackage()
