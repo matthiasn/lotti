@@ -3,7 +3,7 @@
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]
             [clojure.string :as s]
-            [meins.ui.shared :as shared]
+            [meins.ui.shared :as shared :refer [platform-os]]
             [cljs.reader :as edn]
             [clojure.pprint :as pp]
             [re-frame.core :refer [subscribe]]
@@ -133,31 +133,32 @@
 (defn sync-read-msg [{:keys [put-fn cmp-state]}]
   (when-let [secrets (:secrets @cmp-state)]
     (try
-      (let [{:keys [fetched not-fetched]} @cmp-state
-            not-fetched (drop-while #(contains? fetched %) not-fetched)]
-        (doseq [uid not-fetched]
-          (let [aes-secret (-> secrets :sync :read :secret)
-                folder (-> secrets :sync :read :folder)
-                mail (merge (:server secrets)
-                            {:folder folder
-                             :uid    uid})
-                fetch-cb (fn [data]
-                           (let [body (get (js->clj data) "body")
-                                 decrypted (decrypt-body body aes-secret)
-                                 msg-type (first decrypted)
-                                 {:keys [msg-payload msg-meta]} (second decrypted)
-                                 msg (with-meta [msg-type msg-payload]
-                                                (assoc msg-meta :from-sync true))]
-                             (swap! cmp-state assoc-in [:last-uid-read] uid)
-                             (go (<! (as/set-item :last-uid-read uid)))
-                             (swap! cmp-state update-in [:not-fetched] disj uid)
-                             (swap! cmp-state update-in [:fetched] conj uid)
-                             (schedule-read cmp-state put-fn)
-                             ;(shared/alert (with-out-str (pp/pprint msg)))
-                             (put-fn msg)))]
-            (-> (.fetchImapByUid MailCore (clj->js mail))
-                (.then fetch-cb)
-                (.catch #(.log js/console (str (js->clj %))))))))
+      (when (= platform-os "ios")
+        (let [{:keys [fetched not-fetched]} @cmp-state
+              not-fetched (drop-while #(contains? fetched %) not-fetched)]
+          (doseq [uid not-fetched]
+            (let [aes-secret (-> secrets :sync :read :secret)
+                  folder (-> secrets :sync :read :folder)
+                  mail (merge (:server secrets)
+                              {:folder folder
+                               :uid    uid})
+                  fetch-cb (fn [data]
+                             (let [body (get (js->clj data) "body")
+                                   decrypted (decrypt-body body aes-secret)
+                                   msg-type (first decrypted)
+                                   {:keys [msg-payload msg-meta]} (second decrypted)
+                                   msg (with-meta [msg-type msg-payload]
+                                                  (assoc msg-meta :from-sync true))]
+                               (swap! cmp-state assoc-in [:last-uid-read] uid)
+                               (go (<! (as/set-item :last-uid-read uid)))
+                               (swap! cmp-state update-in [:not-fetched] disj uid)
+                               (swap! cmp-state update-in [:fetched] conj uid)
+                               (schedule-read cmp-state put-fn)
+                               ;(shared/alert (with-out-str (pp/pprint msg)))
+                               (put-fn msg)))]
+              (-> (.fetchImapByUid MailCore (clj->js mail))
+                  (.then fetch-cb)
+                  (.catch #(.log js/console (str (js->clj %)))))))))
       (catch :default e (shared/alert (str e)))))
   {})
 

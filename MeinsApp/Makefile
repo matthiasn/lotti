@@ -75,3 +75,9 @@ testflight: deps-npm package fastlane-beta
 jsbundle-android:
 	@echo Packaging jsbundle for Android...
 	@node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js bundle --platform android --dev false --entry-file app/index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
+
+fastlane-beta-android:
+	@echo Building Android via Fastlane
+	cd android && fastlane build && cd ..
+
+beta-android: deps-npm package fastlane-beta-android

@@ -57,6 +57,7 @@ buck-out/
 */fastlane/screenshots
 
 # Bundle artifact
+index.android.bundle
 *.jsbundle
 
 .nrepl-port
