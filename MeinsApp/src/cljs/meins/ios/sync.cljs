@@ -112,21 +112,22 @@
 (defn sync-get-uids [{:keys [put-fn cmp-state current-state]}]
   (when-let [secrets (:secrets @cmp-state)]
     (try
-      (let [folder (-> secrets :sync :read :folder)
-            min-uid (or (last (:not-fetched current-state))
-                        (:last-uid-read current-state))
-            mail (merge (:server secrets)
-                        {:folder folder
-                         :minUid min-uid
-                         :length 25})
-            fetch-cb (fn [data]
-                       (let [uids (edn/read-string (str "[" data "]"))]
-                         (swap! cmp-state update :not-fetched into uids)
-                         ;(shared/alert (:not-fetched @cmp-state))
-                         (schedule-read cmp-state put-fn)))]
-        (-> (.fetchImap MailCore (clj->js mail))
-            (.then fetch-cb)
-            (.catch #(shared/alert (str %)))))
+      (when (= platform-os "ios")
+        (let [folder (-> secrets :sync :read :folder)
+              min-uid (or (last (:not-fetched current-state))
+                          (:last-uid-read current-state))
+              mail (merge (:server secrets)
+                          {:folder folder
+                           :minUid min-uid
+                           :length 25})
+              fetch-cb (fn [data]
+                         (let [uids (edn/read-string (str "[" data "]"))]
+                           (swap! cmp-state update :not-fetched into uids)
+                           ;(shared/alert (:not-fetched @cmp-state))
+                           (schedule-read cmp-state put-fn)))]
+          (-> (.fetchImap MailCore (clj->js mail))
+              (.then fetch-cb)
+              (.catch #(shared/alert (str %))))))
       (catch :default e (shared/alert (str e)))))
   {})
 
