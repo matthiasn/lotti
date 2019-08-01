@@ -80,4 +80,4 @@ fastlane-beta-android:
 	@echo Building Android via Fastlane
 	cd android && fastlane build && cd ..
 
-beta-android: deps-npm cljs jsbundle-android fastlane-beta-android
+beta-android: deps-npm cljs fastlane-beta-android

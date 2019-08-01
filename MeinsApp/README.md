@@ -38,12 +38,9 @@ You need to modify projects in **XCode** as follows for _Product > Archive_ to w
 
 
 ## Creating Release Bundle on Android
-
-**This is currently not working.**
-
-    $ node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js bundle --platform android --dev false --entry-file app/index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
-
-    $ ./gradlew assembleRelease -x bundleReleaseJsAndAssets
+    
+    $ make beta-android
+    $ adb install app/build/outputs/apk/release/app-release.apk
 
 
 ## Running on Android
