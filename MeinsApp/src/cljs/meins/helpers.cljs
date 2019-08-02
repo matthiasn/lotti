@@ -4,6 +4,7 @@
             [meins.ui.shared :as shared]
             [meins.utils.parse :as p]
             ["intl" :as intl]
+            ["@react-native-community/geolocation" :as Geolocation]
             ["intl/locale-data/jsonp/en"]
             [clojure.walk :as walk]))
 
@@ -15,7 +16,7 @@
   [ts put-fn]
   (try
     (.getCurrentPosition
-      (.-geolocation js/navigator)
+      Geolocation
       (fn [pos]
         (let [loc (js->clj (.-coords pos) :keywordize-keys true)]
           (put-fn [:entry/persist {:timestamp ts

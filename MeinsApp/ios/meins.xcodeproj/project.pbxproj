@@ -7,23 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302AC1ABCB8CE00DB3ED1 /* libRCTActionSheet.a */; };
-		00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302BA1ABCB90400DB3ED1 /* libRCTGeolocation.a */; };
-		00C302E81ABCBA2D00DB3ED1 /* libRCTImage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302C01ABCB91800DB3ED1 /* libRCTImage.a */; };
-		00C302E91ABCBA2D00DB3ED1 /* libRCTNetwork.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302DC1ABCB9D200DB3ED1 /* libRCTNetwork.a */; };
-		00C302EA1ABCBA2D00DB3ED1 /* libRCTVibration.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302E41ABCB9EE00DB3ED1 /* libRCTVibration.a */; };
 		00E356F31AD99517003FC87E /* meinsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* meinsTests.m */; };
 		01CC470045D54A94A13E88AF /* MaterialIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5A7BF12D831D4D5B8C5A72C3 /* MaterialIcons.ttf */; };
-		11D1A2F320CAFA9E000508D9 /* libRCTAnimation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E9157331DD0AC6500FF2AA8 /* libRCTAnimation.a */; };
-		133E29F31AD74F7200F7D852 /* libRCTLinking.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 78C398B91ACF4ADC00677621 /* libRCTLinking.a */; };
-		139105C61AF99C1200B5F7CC /* libRCTSettings.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 139105C11AF99BAD00B5F7CC /* libRCTSettings.a */; };
-		139FDEF61B0652A700C62182 /* libRCTWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 139FDEF41B06529B00C62182 /* libRCTWebSocket.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.m */; };
 		13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB11A68108700A75B9A /* LaunchScreen.xib */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		140ED2AC1D01E1AD002B40FF /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
-		146834051AC3E58100842450 /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		32C0C5BB21284BF386E8F5C7 /* FontAwesome5_Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4339EB92519644909C4E14FB /* FontAwesome5_Regular.ttf */; };
 		42513CBFFA4A451BB934ECBC /* FontAwesome.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0CA904608FAF4E9E9902924B /* FontAwesome.ttf */; };
 		45E0412AC2264BDC97293748 /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9F2EA7346AA447A3B3FBCE5A /* MaterialCommunityIcons.ttf */; };
@@ -32,7 +22,6 @@
 		7A985E37E1034DF39BAEBF6E /* Fontisto.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3176D9E2728045A1B2E224A2 /* Fontisto.ttf */; };
 		7E8C5FCD7F4B47418D01DF3B /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 60B9D187AEFD4E7C9EBDB5D5 /* Feather.ttf */; };
 		81B27E593CEF4FE1977ED33A /* libRNAudioRecorderPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0483644362E345FCA88451FD /* libRNAudioRecorderPlayer.a */; };
-		832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 832341B51AAA6A8300B99B32 /* libRCTText.a */; };
 		87C2C6D96EC247BBAF744B01 /* Entypo.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2D7687C734734F49A2413130 /* Entypo.ttf */; };
 		8AC68613FBAC4AA9990C0C67 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 97E5E4456E284BF2A5F35D89 /* SimpleLineIcons.ttf */; };
 		8B769596968A40B8AA436037 /* AntDesign.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2BB15AE9F43C4E69AF9113FA /* AntDesign.ttf */; };
@@ -45,7 +34,6 @@
 		AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */; };
 		AD7A621A22D90DAE00056A04 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD7A621922D90DAE00056A04 /* CFNetwork.framework */; };
 		AD7A621C22D90DB900056A04 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD7A621B22D90DB900056A04 /* Security.framework */; };
-		ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADBDB9271DFEBF0700ED6528 /* libRCTBlob.a */; };
 		B999F8BDC546468FB3EE9914 /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B1D050266544BC5B11A5522 /* libRNMailCore.a */; };
 		DAFD769A4903F95284CCF679 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FF3A5F570795892980908D1 /* libPods-meins.a */; };
 		E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 65BCA4EE270E457584AA1A37 /* libz.tbd */; };
@@ -489,18 +477,6 @@
 				AD7A621C22D90DB900056A04 /* Security.framework in Frameworks */,
 				AD7A621A22D90DAE00056A04 /* CFNetwork.framework in Frameworks */,
 				ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */,
-				ADBDB9381DFEBF1600ED6528 /* libRCTBlob.a in Frameworks */,
-				11D1A2F320CAFA9E000508D9 /* libRCTAnimation.a in Frameworks */,
-				146834051AC3E58100842450 /* libReact.a in Frameworks */,
-				00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */,
-				00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */,
-				00C302E81ABCBA2D00DB3ED1 /* libRCTImage.a in Frameworks */,
-				133E29F31AD74F7200F7D852 /* libRCTLinking.a in Frameworks */,
-				00C302E91ABCBA2D00DB3ED1 /* libRCTNetwork.a in Frameworks */,
-				139105C61AF99C1200B5F7CC /* libRCTSettings.a in Frameworks */,
-				832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */,
-				00C302EA1ABCBA2D00DB3ED1 /* libRCTVibration.a in Frameworks */,
-				139FDEF61B0652A700C62182 /* libRCTWebSocket.a in Frameworks */,
 				DAFD769A4903F95284CCF679 /* libPods-meins.a in Frameworks */,
 				81B27E593CEF4FE1977ED33A /* libRNAudioRecorderPlayer.a in Frameworks */,
 				B999F8BDC546468FB3EE9914 /* libRNMailCore.a in Frameworks */,
@@ -1569,7 +1545,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				HEADER_SEARCH_PATHS = (
@@ -1612,7 +1588,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 30;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",

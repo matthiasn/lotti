@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -13,6 +13,7 @@
     "@matthiasn/react-native-audio-recorder-player": "2.2.2",
     "@matthiasn/react-native-mailcore": "0.0.8",
     "@matthiasn/rn-apple-healthkit": "0.6.6",
+    "@react-native-community/geolocation": "^1.4.2",
     "buffer": "5.2.1",
     "create-react-class": "15.6.3",
     "crypto-js": "3.1.9-1",
@@ -22,9 +23,9 @@
     "path": "0.12.7",
     "prop-types": "15.7.2",
     "querystring": "0.2.0",
-    "react": "16.8.3",
-    "react-dom": "16.8.3",
-    "react-native": "0.59.10",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
+    "react-native": "0.60.4",
     "react-native-camera": "3.0.0",
     "react-native-contacts": "5.0.2",
     "react-native-elements": "1.1.0",
@@ -45,8 +46,8 @@
     "timers": "0.1.1"
   },
   "devDependencies": {
-    "@babel/core": "7.4.5",
-    "@babel/runtime": "7.4.5",
+    "@babel/core": "7.5.5",
+    "@babel/runtime": "7.5.5",
     "@react-native-community/eslint-config": "0.0.5",
     "babel-jest": "^24.5.0",
     "babel-plugin-transform-es2015-block-scoping": "6.26.0",
@@ -54,7 +55,7 @@
     "jest": "^24.5.0",
     "jetifier": "^1.6.3",
     "metro-react-native-babel-preset": "0.55.0",
-    "react-test-renderer": "16.8.3"
+    "react-test-renderer": "16.8.6"
   },
   "jest": {
     "preset": "react-native"
