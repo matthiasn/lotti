@@ -79,6 +79,8 @@
                          :subject  (str msg-type)
                          :textBody hex-cipher}
                         (when audiofile {:audiofile audiofile})
+                        (when (and (= "android" platform-os) audiofile)
+                          {:audiopath (str "/data/data/com.matthiasn.meins/" audiofile)})
                         (when (and (= :entry/sync msg-type) filename)
                           {:attachmentUri photo-uri
                            :filename      filename}))
