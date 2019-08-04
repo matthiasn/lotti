@@ -48,4 +48,8 @@ target 'meins' do
 
   pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
+  pod 'ReactNativePermissions', :path => '../node_modules/react-native-permissions'
+
+  pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-community/async-storage'
+
 end

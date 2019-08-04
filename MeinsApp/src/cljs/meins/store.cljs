@@ -178,7 +178,7 @@
                  :put-fn    put-fn})
     (-> (.open realm (clj->js {:schema [EntrySchema ImageSchema]}))
         (.then (fn [db]
-                 (js/console.warn "db opened" db)
+                 (js/console.warn "db finished opening" db)
                  (swap! state assoc :realm-db db)
                  (reset! uidb/realm-db db)
                  (js/console.warn (.-length (.objects db "Entry")) "entries")

@@ -1,18 +1,23 @@
 (ns meins.ui.settings.audio
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view text settings-list settings-list-item settings-icon
-                                     rn-audio-recorder-player alert status-bar]]
+                                     rn-audio-recorder-player alert status-bar platform-os]]
             [re-frame.core :refer [subscribe]]
+            ["react-native-permissions" :as Permissions]
             [reagent.core :as r]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
             [matthiasn.systems-toolbox.component :as st]))
+
+(def perm (aget Permissions "default"))
 
 (defn audio-settings [_]
   (let [theme (subscribe [:active-theme])
         player-state (r/atom {:status :paused
                               :pos    0})
         recorder-player (rn-audio-recorder-player.)]
+    (-> (.request perm "microphone" (clj->js {}))
+        (.then #(js/console.info "permission granted")))
     (fn [{:keys [screenProps navigation] :as props}]
       (let [{:keys [navigate goBack]} navigation
             record-cb (fn [e]
@@ -20,8 +25,11 @@
                           (swap! player-state assoc-in [:pos] pos)
                           (swap! player-state assoc-in [:dur] pos)))
             record (fn [_]
-                     (let [file (str (st/now) ".m4a")
-                           uri-promise (.startRecorder recorder-player file)]
+                     (let [prefix (when (= "android" platform-os)
+                                    "/data/data/com.matthiasn.meins/")
+                           file (str (st/now) ".m4a")
+                           path (str prefix file)
+                           uri-promise (.startRecorder recorder-player path)]
                        (.then uri-promise #(js/console.log %))
                        (swap! player-state assoc-in [:status] :rec)
                        (swap! player-state assoc-in [:file] file)

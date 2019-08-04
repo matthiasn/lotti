@@ -304,9 +304,11 @@
                                  :transform       [{:scale 0.7}]}}]]]])
            (when-let [audio-file (:audio_file entry)]
              (let [status (:status @player-state)
+                   prefix (when (= "android" platform-os)
+                            "/data/data/com.matthiasn.meins/")
                    pos (h/mm-ss (.floor js/Math (:pos @player-state)))
                    play (fn [_]
-                          (.startPlayer recorder-player audio-file)
+                          (.startPlayer recorder-player (str prefix audio-file))
                           (.addPlayBackListener
                             recorder-player
                             #(swap! player-state assoc-in [:pos] (.-current_position %)))
