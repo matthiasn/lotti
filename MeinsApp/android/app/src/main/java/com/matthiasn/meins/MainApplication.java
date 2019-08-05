@@ -15,6 +15,7 @@ import com.reactlibrary.RNMailCorePackage;
 import com.dooboolab.RNAudioRecorderPlayerPackage;
 import com.reactnativecommunity.cameraroll.CameraRollPackage;
 import com.reactnativecommunity.geolocation.GeolocationPackage;
+import com.reactnativecommunity.netinfo.NetInfoPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -35,8 +36,9 @@ public class MainApplication extends Application implements ReactApplication {
         protected List<ReactPackage> getPackages() {
             return Arrays.<ReactPackage>asList(
                     new MainReactPackage(),
-            new AsyncStoragePackage(),
+                    new AsyncStoragePackage(),
                     new RNVersionNumberPackage(),
+                    new NetInfoPackage(),
                     new RealmReactPackage(),
                     new VectorIconsPackage(),
                     new RNGestureHandlerPackage(),
