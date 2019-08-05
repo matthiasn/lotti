@@ -153,25 +153,21 @@
                        attr-cb (fn [attrs]
                                  (let [uid (.-uid attrs)
                                        struct (js->clj (.-struct attrs) :keywordize-keys true)
-                                       attachment (-> struct last last)]
+                                       attachment (-> struct last last)
+                                       filename (-> attachment
+                                                    :disposition
+                                                    :params
+                                                    :filename
+                                                    (s/replace "=?utf-8?Q?" "")
+                                                    (s/replace "?=" "")
+                                                    (s/replace "=5F" "_"))]
                                    (pp/pprint attachment)
                                    (when (= "image" (:type attachment))
-                                     (let [filename (-> attachment
-                                                        :disposition
-                                                        :params
-                                                        :filename
-                                                        (s/replace "=?utf-8?Q?" "")
-                                                        (s/replace "?=" "")
-                                                        (s/replace "=5F" "_"))
-                                           partID (:partID attachment)]
+                                     (let [partID (:partID attachment)]
                                        (read-image mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))
                                    (when (= "audio" (:type attachment))
-                                     (let [filename (-> attachment
-                                                        :disposition
-                                                        :params
-                                                        :filename)
-                                           partID (:partID attachment)]
+                                     (let [partID (:partID attachment)]
                                        (read-audio mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))))]
                    (.once msg "attributes" attr-cb)

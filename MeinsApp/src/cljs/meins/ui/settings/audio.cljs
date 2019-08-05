@@ -25,10 +25,10 @@
                           (swap! player-state assoc-in [:pos] pos)
                           (swap! player-state assoc-in [:dur] pos)))
             record (fn [_]
-                     (let [prefix (when (= "android" platform-os)
-                                    "/data/data/com.matthiasn.meins/")
+                     (let [dir (when (= "android" platform-os)
+                                 "/data/data/com.matthiasn.meins/")
                            file (str (st/now) ".m4a")
-                           path (str prefix file)
+                           path (str dir file)
                            uri-promise (.startRecorder recorder-player path)]
                        (.then uri-promise #(js/console.log %))
                        (swap! player-state assoc-in [:status] :rec)
