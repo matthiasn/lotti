@@ -17,6 +17,7 @@
                      "/tmp/meins/data")))
 
 (def pid-file (str data-path "/meins.pid"))
+(def audio-path (str data-path "/audio/"))
 (def daily-logs-path (str data-path "/daily-logs/"))
 (def bak-path (str data-path "/backup/"))
 (def app-cache-file (str data-path "/cache.dat"))
@@ -38,6 +39,7 @@
 (defn paths []
   (let [trash-path (str data-path "/trash/")]
     (fs/mkdirs daily-logs-path)
+    (fs/mkdirs audio-path)
     (fs/mkdirs bak-path)
     (fs/mkdirs clucy-path)
     (fs/mkdirs export-path)
@@ -51,6 +53,7 @@
      :app-cache       app-cache-file
      :app-path        app-path
      :backup-path     bak-path
+     :audio-path      audio-path
      :daily-logs-path daily-logs-path
      :clucy-path      clucy-path
      :img-path        img-path
