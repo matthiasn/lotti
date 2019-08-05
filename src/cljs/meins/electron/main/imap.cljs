@@ -166,7 +166,7 @@
                                      (let [partID (:partID attachment)]
                                        (read-image mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))
-                                   (when (= "audio" (:type attachment))
+                                   (when (s/includes? filename "m4a")
                                      (let [partID (:partID attachment)]
                                        (read-audio mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))))]
