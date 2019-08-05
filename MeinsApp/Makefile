@@ -66,11 +66,15 @@ version:
 	@echo Syncing version numbers...
 	react-native-version
 
+pod-install:
+	@echo Building and publishing via Fastlane
+	cd ios && pod install && cd ..
+
 fastlane-beta:
 	@echo Building and publishing via Fastlane
 	cd ios && fastlane beta && cd ..
 
-testflight: deps-npm package fastlane-beta
+testflight: deps-npm pod-install package fastlane-beta
 
 jsbundle-android:
 	@echo Packaging jsbundle for Android...
