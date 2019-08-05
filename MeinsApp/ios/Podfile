@@ -33,6 +33,8 @@ target 'meins' do
   pod 'mailcore2-ios'
 
   pod 'react-native-geolocation', path: '../node_modules/@react-native-community/geolocation'
+  pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-community/async-storage'
+  pod 'react-native-netinfo', :path => '../node_modules/@react-native-community/netinfo'
 
   pod 'react-native-cameraroll', :path => '../node_modules/@matthiasn/cameraroll'
 
