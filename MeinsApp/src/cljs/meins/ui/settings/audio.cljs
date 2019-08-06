@@ -18,8 +18,8 @@
         recorder-player (rn-audio-recorder-player.)]
     (-> (.request perm "microphone" (clj->js {}))
         (.then #(js/console.info "permission granted")))
-    (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation
+    (fn [{:keys [navigation] :as _props}]
+      (let [{:keys [_navigate _goBack]} navigation
             record-cb (fn [e]
                         (let [pos (.-current_position e)]
                           (swap! player-state assoc-in [:pos] pos)

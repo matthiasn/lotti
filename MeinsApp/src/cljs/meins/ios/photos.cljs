@@ -1,10 +1,8 @@
 (ns meins.ios.photos
-  (:require [clojure.pprint :as pp]
-            ["react-native" :as rn]
+  (:require ["react-native" :as rn]
             ["@matthiasn/cameraroll" :as cam-roll]
             ["realm" :as realm]
             [matthiasn.systems-toolbox.component :as st]
-            [meins.ui.shared :refer [alert]]
             [meins.ui.db :as uidb]
             [clojure.string :as str]))
 

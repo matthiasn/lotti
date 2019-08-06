@@ -1,17 +1,15 @@
 (ns meins.ui.settings.dev
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list text settings-list-item status-bar]]
+            [meins.ui.shared :refer [view settings-list settings-list-item status-bar]]
             [re-frame.core :refer [subscribe]]
-            [cljs.tools.reader.edn :as edn]
-            [meins.ui.db :refer [emit]]
-            [reagent.core :as r]))
+            [meins.ui.db :refer [emit]]))
 
 (defn dev-settings [_]
   (let [theme (subscribe [:active-theme])
         cfg (subscribe [:cfg])
         toggle-pvt #(emit [:cfg/set {:show-pvt (not (:show-pvt @cfg))}])
         toggle-debug #(emit [:cfg/set {:entry-pprint (not (:entry-pprint @cfg))}])]
-    (fn [{:keys [navigation] :as props}]
+    (fn [{:keys [_navigation] :as _props}]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
             text-color (get-in c/colors [:btn-text @theme])]

@@ -27,7 +27,7 @@
         opts (clj->js {:startDate start})
         now-dt (hc/date-from-ts (st/now))
         exercise-cb (partial res-cb "#exercise" :minutes 400 put-fn)
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getBasalEnergyBurned hk opts exercise-cb))
         new-state (assoc current-state :last-read-exercise now-dt)]
     (.initHealthKit hk hc/hk-opts init-cb)

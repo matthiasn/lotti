@@ -1,16 +1,13 @@
 (ns meins.ios.healthkit.weight
-  (:require [clojure.pprint :as pp]
-            [meins.utils.misc :as um]
-            [meins.helpers :as h]
-            ["@matthiasn/rn-apple-healthkit" :as hk]
+  (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]
             [meins.ios.healthkit.common :as hc]
-            [cljs.pprint :as pprint]))
+            [cljs.pprint :as pp]))
 
 (defn round [n d]
   (let [fmt (str "~," d "f")]
-    (js/parseFloat (pprint/cl-format nil fmt n))))
+    (js/parseFloat (pp/cl-format nil fmt n))))
 
 (defn get-weight [{:keys [put-fn msg-payload current-state]}]
   (let [start (or (:last-read-weight current-state)
@@ -19,7 +16,7 @@
         bodyfat-opts (clj->js {:unit "percent" :startDate start})
         bmi-opts (clj->js {:unit "count" :startDate start})
         now-dt (hc/date-from-ts (st/now))
-        weight-cb (fn [err res]
+        weight-cb (fn [_err res]
                     (doseq [sample (js->clj res)]
                       (let [v (get-in sample ["value"])
                             end-date (get-in sample ["endDate"])
@@ -33,7 +30,7 @@
                                    :custom_fields {"#weight" {:weight kg}}}]
                         (put-fn (with-meta [:entry/update entry] {:silent true}))
                         (put-fn [:entry/persist entry]))))
-        bodyfat-cb (fn [err res]
+        bodyfat-cb (fn [_err res]
                      (.warn js/console "bodyfat" res)
                      (let [sample (js->clj res)
                            v (get-in sample ["value"])
@@ -48,7 +45,7 @@
                                   :custom_fields {"#body-fat" {:bodyfat v}}}]
                        (put-fn (with-meta [:entry/update entry] {:silent true}))
                        (put-fn [:entry/persist entry])))
-        bmi-cb (fn [err res]
+        bmi-cb (fn [_err res]
                  (.warn js/console "bmi" res)
                  (let [sample (js->clj res)
                        v (get-in sample ["value"])
@@ -63,7 +60,7 @@
                               :custom_fields {"#bmi" {:bmi v}}}]
                    (put-fn (with-meta [:entry/update entry] {:silent true}))
                    (put-fn [:entry/persist entry])))
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getWeightSamples hk weight-opts weight-cb)
                   (.getLatestBodyFatPercentage hk bodyfat-opts bodyfat-cb)
                   (.getLatestBmi hk bmi-opts bmi-cb))

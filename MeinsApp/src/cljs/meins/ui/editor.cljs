@@ -1,7 +1,7 @@
 (ns meins.ui.editor
   (:require [re-frame.core :refer [subscribe]]
-            [meins.ui.shared :refer [view text text-input touchable-opacity btn platform-os status-bar
-                                     keyboard-avoiding-view keyboard fa-icon alert scroll]]
+            [meins.ui.shared :refer [view text text-input touchable-opacity platform-os status-bar
+                                     keyboard-avoiding-view keyboard scroll]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
             [meins.ui.colors :as c]
@@ -50,7 +50,7 @@
 
 (defn editor [_]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [screenProps navigation] :as props}]
+    (fn [{:keys [navigation] :as _props}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             cancel-fn (fn []
                         (.dismiss keyboard)

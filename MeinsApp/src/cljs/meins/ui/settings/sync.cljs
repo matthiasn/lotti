@@ -17,7 +17,7 @@
                             (emit [:secrets/set data])
                             (swap! local assoc-in [:cam] false)))
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
-    (fn [{:keys [navigation] :as props}]
+    (fn [_props]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
             text-color (get-in c/colors [:btn-text @theme])]

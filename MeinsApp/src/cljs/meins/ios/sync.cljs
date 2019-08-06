@@ -2,10 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]
-            [clojure.string :as s]
             [meins.ui.shared :as shared :refer [platform-os]]
-            [cljs.reader :as edn]
-            [clojure.pprint :as pp]
             [re-frame.core :refer [subscribe]]
             ["crypto-js" :as crypto-js]
             ["buffer" :as buffer]
@@ -31,12 +28,12 @@
 
 (defn extract-body [s]
   (-> (str s)
-      (s/split "-")
+      (str/split "-")
       first
-      (s/replace " " "")
-      (s/replace "=\r\n" "")
-      (s/replace "\r\n" "")
-      (s/replace "\n" "")))
+      (str/replace " " "")
+      (str/replace "=\r\n" "")
+      (str/replace "\r\n" "")
+      (str/replace "\n" "")))
 
 (defn decrypt-body [body secret]
   (try
@@ -44,7 +41,7 @@
           ciphertext (hex-to-utf8 cleaned)
           decrypted-bytes (.decrypt AES ciphertext secret)
           s (.toString decrypted-bytes utf-8)
-          data (edn/read-string s)]
+          data (rdr/read-string s)]
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
 
@@ -54,8 +51,6 @@
       (when (:online @cmp-state)
         (let [aes-secret (-> secrets :sync :write :secret)
               folder (-> secrets :sync :write :folder)
-              ts (:timestamp msg-payload)
-
               ; actual meta-data too large, makes the encryption waste battery
               msg-meta {}
               update-filename (fn [entry]
@@ -126,7 +121,7 @@
                              :minUid min-uid
                              :length 25})
                 fetch-cb (fn [data]
-                           (let [uids (edn/read-string (str "[" data "]"))]
+                           (let [uids (rdr/read-string (str "[" data "]"))]
                              (swap! cmp-state update :not-fetched into uids)
                              ;(shared/alert (:not-fetched @cmp-state))
                              (schedule-read cmp-state put-fn)))]
@@ -160,7 +155,6 @@
                                (swap! cmp-state update-in [:not-fetched] disj uid)
                                (swap! cmp-state update-in [:fetched] conj uid)
                                (schedule-read cmp-state put-fn)
-                               ;(shared/alert (with-out-str (pp/pprint msg)))
                                (put-fn msg)))]
               (-> (.fetchImapByUid MailCore (clj->js mail))
                   (.then fetch-cb)

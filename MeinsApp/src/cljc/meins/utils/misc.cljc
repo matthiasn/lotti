@@ -1,7 +1,5 @@
 (ns meins.utils.misc
   (:require [clojure.string :as s]
-    #?(:clj [clojure.pprint :as pp]
-       :cljs [cljs.pprint :as pp])
             [meins.specs]))
 
 (defn duration-string

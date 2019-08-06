@@ -1,8 +1,5 @@
 (ns meins.ios.healthkit.common
-  (:require [clojure.pprint :as pp]
-            [meins.utils.misc :as um]
-            [meins.helpers :as h]
-            [matthiasn.systems-toolbox.component :as st]))
+  (:require [matthiasn.systems-toolbox.component :as st]))
 
 (defn date-from-ts [ts]
   (let [date (js/Date. ts)]

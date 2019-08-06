@@ -1,10 +1,6 @@
 (ns meins.ios.healthkit.bp
-  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
-            [meins.ios.healthkit.storage :as hs]
-            [glittershark.core-async-storage :as as]
-            [cljs.core.async :refer [<!]]
             [meins.ios.healthkit.common :as hc]
             [matthiasn.systems-toolbox.component :as st]))
 
@@ -27,7 +23,7 @@
       (put-fn (with-meta [:entry/update entry] {:silent true}))
       (put-fn [:entry/persist entry]))))
 
-(defn hr-cb [tag put-fn err res]
+(defn hr-cb [tag put-fn _err res]
   (doseq [sample (js->clj res)]
     (let [v (get-in sample ["value"])
           end-date (get-in sample ["endDate"])
@@ -48,7 +44,7 @@
         now-dt (hc/date-from-ts (st/now))
         bp-opts (clj->js {:unit "mmHg" :startDate start})
         hr-opts (clj->js {:startDate start})
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getBloodPressureSamples hk bp-opts (partial bp-cb put-fn))
                   (.getRestingHeartRate hk hr-opts (partial hr-cb "#RHR" put-fn))
                   (.getWalkingHeartRateAverage hk hr-opts (partial hr-cb "#WHR" put-fn)))
@@ -61,7 +57,7 @@
                   (hc/days-ago (:n msg-payload)))
         now-dt (hc/date-from-ts (st/now))
         hrv-opts (clj->js {:startDate start})
-        hrv-cb (fn [err res]
+        hrv-cb (fn [_err res]
                  (.warn js/console res)
                  (doseq [sample (js->clj res)]
                    (.warn js/console sample)
@@ -77,7 +73,7 @@
                                 :custom_fields {"#HRV" {:sdnn v}}}]
                      (put-fn (with-meta [:entry/update entry] {:silent true}))
                      (put-fn [:entry/persist entry]))))
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getHeartRateVariabilitySamples hk hrv-opts hrv-cb))
         new-state (assoc current-state :last-read-hrv now-dt)]
     (.initHealthKit hk hc/hk-opts init-cb)

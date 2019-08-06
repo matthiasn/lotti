@@ -10,7 +10,7 @@
                   (hc/days-ago (:n msg-payload)))
         sleep-opts (clj->js {:startDate start})
         now-dt (hc/date-from-ts (st/now))
-        sleep-cb (fn [err res]
+        sleep-cb (fn [_err res]
                    (doseq [sample (js->clj res)]
                      (let [value (get-in sample ["value"])
                            tag (if (= value "ASLEEP") "#sleep" "#bed")
@@ -29,7 +29,7 @@
                                   :custom_fields {tag {:duration minutes}}}]
                        (put-fn (with-meta [:entry/update entry] {:silent true}))
                        (put-fn [:entry/persist entry]))))
-        init-cb (fn [err res] (.getSleepSamples hk sleep-opts sleep-cb))
+        init-cb (fn [_err _res] (.getSleepSamples hk sleep-opts sleep-cb))
         new-state (assoc current-state :last-read-sleep now-dt)]
     (.initHealthKit hk hc/hk-opts init-cb)
     {:new-state new-state}))

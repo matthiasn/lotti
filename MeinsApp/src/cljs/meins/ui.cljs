@@ -1,22 +1,20 @@
 (ns meins.ui
   (:require [reagent.core :as r]
             [re-frame.db :as rdb]
-            ["react-native" :refer [AppRegistry Platform StyleSheet Text View Icon Animated]]
-            ["react" :as react :refer [Component]]
+            ["react-native" :refer [AppRegistry Platform]]
+            ["react" :refer [Component]]
             ["react-navigation" :refer [createAppContainer createBottomTabNavigator]]
-            ["react-navigation-transitions" :refer [fromLeft zoomIn]]
-            [re-frame.core :refer [reg-sub subscribe]]
-            [cljs.pprint :as pp]
+            ["react-navigation-transitions" :refer [zoomIn]]
+            [re-frame.core :refer [reg-sub]]
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]
             [meins.ui.db :as db]
             [meins.ui.photos :as photos]
             [meins.ui.journal :as jrn]
-            [meins.store :as st]
             [meins.ui.editor :as ue]))
 
 (def put-fn-atom (r/atom nil))
-(reg-sub :active-theme (fn [db _] :dark))
+(reg-sub :active-theme (fn [_db _] :dark))
 
 (def instructions
   (.select Platform
@@ -50,7 +48,7 @@
                     :active    "journal"
                     :md        ""}))
 
-(defn nav-options [icon-name size]
+(defn nav-options [icon-name _size]
   {:tabBarOnPress (fn [ev]
                     (let [ev (js->clj ev :keywordize-keys true)
                           navigate (-> ev :navigation :navigate)

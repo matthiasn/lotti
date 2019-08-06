@@ -1,13 +1,12 @@
 (ns meins.ui.settings.health
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list text settings-list-item fa-icon
-                                     touchable-opacity status-bar]]
+            [meins.ui.shared :refer [view text fa-icon touchable-opacity status-bar]]
             [meins.ui.db :refer [emit]]
             [re-frame.core :refer [subscribe]]))
 
 (defn start-watching [])
 
-(defn import-item [msg-type label icon-name]
+(defn import-item [msg-type _label _icon-name]
   (let [theme (subscribe [:active-theme])
         n 30
         click (fn [_] (emit [msg-type {:n n}]))
@@ -18,7 +17,7 @@
                              :id      msg-type
                              :repeat  true
                              :initial true}]))]
-    (fn [msg-type label icon-name]
+    (fn [_msg-type label icon-name]
       (let [item-bg (get-in c/colors [:button-bg @theme])
             text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:margin-top       3
@@ -60,8 +59,8 @@
 
 (defn health-settings [_]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [screenProps navigation] :as props}]
-      (let [{:keys [navigate goBack]} navigation
+    (fn [{:keys [navigation] :as _props}]
+      (let [{:keys [_navigate _goBack]} navigation
             bg (get-in c/colors [:list-bg @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10

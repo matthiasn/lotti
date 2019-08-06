@@ -1,7 +1,6 @@
 (ns meins.store
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [matthiasn.systems-toolbox.component :as st]
-            [meins.ui.shared :refer [alert]]
             [meins.ui.db :as uidb]
             [glittershark.core-async-storage :as as]
             ["realm" :as realm]
@@ -9,7 +8,7 @@
             [cljs.core.async :refer [<!]]
             [meins.helpers :as h]))
 
-(defn persist [{:keys [msg-type current-state put-fn msg-payload msg-meta]}]
+(defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload
         last-vclock (:global-vclock current-state)
         instance-id (str (:instance-id current-state))
@@ -36,7 +35,7 @@
                                      (assoc :edn (pr-str entry))
                                      (assoc :sync (if (:from-sync msg-meta) "SYNC" "OPEN"))
                                      clj->js)
-                        x (.create realm-db "Entry" db-entry true)])
+                        _ (.create realm-db "Entry" db-entry true)])
                   (put-fn [:schedule/new {:timeout 1000
                                           :message [:sync/retry]
                                           :id      :sync}])))
@@ -111,8 +110,7 @@
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
                                  (st/make-uuid)))
-            timestamps (second (<! (as/get-item :timestamps)))
-            sorted (apply sorted-set timestamps)]
+            timestamps (second (<! (as/get-item :timestamps)))]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
         (<! (as/set-item :instance-id instance-id)))
       (catch js/Object e (js/console.error "load-state" e))))

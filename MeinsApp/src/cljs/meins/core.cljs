@@ -1,18 +1,8 @@
 (ns meins.core
   (:require ["react-native" :refer [AppRegistry]]
-            [reagent.core :as r]
-            ["react-navigation" :refer [createStackNavigator
-                                        createAppContainer
-                                        createBottomTabNavigator]]
             ["react-native-exception-handler" :refer [setJSExceptionHandler
-                                                      getJSExceptionHandler
                                                       setNativeExceptionHandler]]
-            [cljs.pprint :as pp]
-            [meins.ui.shared :refer [alert view fa-icon]]
-            [meins.ui.settings :as s]
-            [meins.store :as st]
-            [meins.ui.editor :as ue]
-            [re-frame.core :refer [reg-sub subscribe dispatch dispatch-sync]]
+            [meins.ui.shared :refer [alert]]
             [meins.ios.sync :as sync]
             [meins.store :as store]
             [meins.ios.photos :as photos]
@@ -86,5 +76,4 @@
                                             :repeat  true
                                             :initial false}]}]])
     (.registerComponent AppRegistry "meins" #(identity ui/app-container))
-    (setJSExceptionHandler (fn [error _is-fatal] (alert error)))
-    #_(setNativeExceptionHandler (fn [error] (alert error)))))
+    (setJSExceptionHandler (fn [error _is-fatal] (alert error)))))

@@ -1,19 +1,16 @@
 (ns meins.ui.settings
   (:require [reagent.core :as r]
-            ["react-navigation" :refer [createStackNavigator createAppContainer
-                                        createBottomTabNavigator]]
-            ["react-native-vector-icons/FontAwesome" :as FontAwesome]
-            ["react-native-version-number" :as rnvn :refer [appVersion]]
+            ["react-navigation" :refer [createStackNavigator]]
+            ["react-native-version-number" :as rnvn]
             [re-frame.core :refer [reg-sub subscribe]]
-            [meins.ui.shared :refer [view text fa-icon settings-list alert settings-icon
+            [meins.ui.shared :refer [view fa-icon settings-list settings-icon
                                      settings-list-header settings-list-item status-bar]]
             [meins.ui.settings.db :as db]
             [meins.ui.settings.audio :as audio]
             [meins.ui.settings.sync :as sync]
             [meins.ui.settings.dev :as dev]
             [meins.ui.settings.health :as sh]
-            [meins.ui.colors :as c]
-            [cljs.pprint :as pp]))
+            [meins.ui.colors :as c]))
 
 (def styles
   {:container    {:flex            1
@@ -37,7 +34,7 @@
                     :active    "journal"
                     :md        ""}))
 
-(defn nav-options [icon-name size]
+(defn nav-options [icon-name _size]
   {:tabBarOnPress (fn [ev]
                     (let [ev (js->clj ev :keywordize-keys true)
                           navigate (-> ev :navigation :navigate)
@@ -54,10 +51,10 @@
 
 (defn put-fn [])
 
-(defn settings-wrapper [props]
+(defn settings-wrapper [_props]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [navigation] :as props}]
-      (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
             header-color (get-in c/colors [:header-text @theme])
@@ -141,6 +138,5 @@
               :db       {:screen (r/reactify-component db/db-settings)}
               :audio    {:screen (r/reactify-component audio/audio-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})
-    (clj->js {;:headerMode "none"
-              :defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
+    (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
                                                        :borderBottomWidth 0}}})))

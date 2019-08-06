@@ -1,15 +1,9 @@
 (ns meins.ui.photos
-  (:require [meins.ui.shared :refer [view text touchable-opacity alert
-                                     scroll image dimensions]]
-            [re-frame.core :refer [reg-sub subscribe]]
-            ["@matthiasn/cameraroll" :as cam-roll]
+  (:require [meins.ui.shared :refer [view touchable-opacity image dimensions]]
             ["react-native-super-grid" :as rn-super-grid]
-            [meins.ui.colors :as c]
             [meins.helpers :as h]
             [reagent.core :as r]
-            [meins.ui.db :refer [emit]]
-            [clojure.set :as set]
-            [meins.ui.db :as uidb]
+            [meins.ui.db :as uidb :refer [emit]]
             [matthiasn.systems-toolbox.component :as stc]))
 
 (def flat-grid (r/adapt-react-class (.-FlatGrid rn-super-grid)))

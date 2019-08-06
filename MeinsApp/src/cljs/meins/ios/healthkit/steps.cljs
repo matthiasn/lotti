@@ -33,7 +33,7 @@
         cycling-cb (partial cb "#DistanceCycling" :distance_cycling #(/ % 1000) 20 put-fn)
         steps-cb (partial cb "#steps" :cnt nil 30 put-fn)
         flights-of-stairs-cb (partial cb "#flights-of-stairs" :cnt nil 40 put-fn)
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getDailyStepCountSamples hk opts steps-cb)
                   (.getDailyFlightsClimbedSamples hk opts flights-of-stairs-cb)
                   (.getDailyDistanceWalkingRunningSamples hk opts distance-cb)

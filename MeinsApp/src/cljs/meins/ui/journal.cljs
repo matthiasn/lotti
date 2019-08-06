@@ -1,25 +1,21 @@
 (ns meins.ui.journal
-  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [reagent.core :as r]
             [re-frame.core :refer [subscribe]]
             [meins.helpers :as h]
             [glittershark.core-async-storage :as as]
-            [cljs.core.async :refer [<!]]
             [meins.ui.colors :as c]
-            [meins.ui.db :refer [emit]]
+            [meins.ui.db :as uidb :refer [emit]]
             [meins.ui.editor :as ed]
             [cljs.reader :as rdr]
-            [reagent.ratom :refer-macros [reaction]]
-            ["react-navigation-transitions" :refer [fromLeft zoomIn fadeIn]]
+            ["react-navigation-transitions" :refer [fadeIn]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
                                      #_map-view #_mapbox-style-url #_point-annotation virtualized-list
-                                     fa-icon image logo-img #_swipeout keyboard-avoiding-view
+                                     fa-icon image #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert status-bar]]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
-            [meins.utils.parse :as p]
-            [meins.ui.db :as uidb]))
+            [meins.utils.parse :as p]))
 
 (defn get-entry [ts]
   (when (number? ts)
@@ -29,7 +25,7 @@
             (aget 0 "edn")
             rdr/read-string)))
 
-(defn list-item [ts navigate]
+(defn list-item [_ts _navigate]
   (let [theme (subscribe [:active-theme])
         global-vclock (subscribe [:global-vclock])
         cfg (subscribe [:cfg])]
@@ -41,7 +37,7 @@
             entry (get-entry ts)
             to-detail #(do (emit [:entry/detail {:timestamp ts}])
                            (navigate "Detail"))
-            {:keys [latitude longitude md]} entry
+            {:keys [md]} entry
             md (if (> (count md) 100)
                  (str (subs md 0 100) "...")
                  md)
@@ -184,12 +180,11 @@
                               :status :paused})
         recorder-player (rn-audio-recorder-player.)
         entry-local (r/atom {:entry {}})]
-    (fn [{:keys [navigation] :as props}]
-      (let [{:keys [navigate goBack] :as n} (js->clj navigation :keywordize-keys true)
+    (fn [{:keys [navigation] :as _props}]
+      (let [{:keys [navigate _goBack] :as _nav} (js->clj navigation :keywordize-keys true)
             entry (get-entry (:timestamp @entry-detail))
             bg (get-in c/colors [:list-bg @theme])
             text-bg (get-in c/colors [:text-bg @theme])
-            item-bg (get-in c/colors [:text-bg @theme])
             text-color (get-in c/colors [:text @theme])
             latitude (:latitude entry)
             longitude (:longitude entry)

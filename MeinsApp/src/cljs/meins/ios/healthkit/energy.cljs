@@ -29,7 +29,7 @@
         opts (clj->js {:startDate start})
         basal-energy-cb (partial res-cb "#BasalEnergyBurned" :kcal 500 put-fn)
         active-energy-cb (partial res-cb "#ActiveEnergyBurned" :kcal 499 put-fn)
-        init-cb (fn [err res]
+        init-cb (fn [_err _res]
                   (.getBasalEnergyBurned hk opts basal-energy-cb)
                   (.getActiveEnergyBurned hk opts active-energy-cb))
         new-state (assoc current-state :last-read-energy now-dt)]

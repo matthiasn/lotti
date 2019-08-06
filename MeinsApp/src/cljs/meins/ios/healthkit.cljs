@@ -9,10 +9,10 @@
 
 (enable-console-print!)
 
-(defn state-fn [put-fn]
+(defn state-fn [_put-fn]
   (let [state (atom {})]
     (add-watch state :watcher
-               (fn [key atom old-state new-state]
+               (fn [_key _atom _old-state new-state]
                  (hs/set-async :healthkit new-state)))
     (hs/get-async :healthkit #(reset! state %))
     {:state state}))
