@@ -81,11 +81,3 @@
       (execute-async schema query-string nil m {} on-deliver)
       (put-fn [:gql/res (merge msg-payload {:data {}})])))
   {})
-
-(defn run-registered [{:keys [current-state msg-meta] :as m}]
-  (let [queries (sort-by #(:prio (second %)) (:queries current-state))]
-    (info "Running registered GraphQL queries" queries)
-    (doseq [[id _q] queries]
-      (run-query (merge m {:msg-payload {:id id}
-                           :msg-meta    msg-meta}))))
-  {})

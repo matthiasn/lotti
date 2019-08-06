@@ -79,11 +79,7 @@
                {:message [:gql/run-registered
                           {:new-args {:day_strings [day adjusted-day]}}]
                 :timeout 250
-                :id      :imported-entry}])
-      #_
-      (put-fn [:cmd/schedule-new {:message [:state/persist]
-                                  :id      :persist-state
-                                  :timeout 10000}]))
+                :id      :imported-entry}]))
     {:new-state (ga/add-node new-state node-to-add {:clean-tags true})
      :emit-msg  [[:ft/add entry]]}))
 
@@ -166,40 +162,36 @@
                             {:new-args {:day_strings day-strings}}]
                   :timeout 10
                   :id      :saved-entry}]))
-      #_
-      (put-fn [:cmd/schedule-new {:message [:state/persist]
-                                  :id      :persist-state
-                                  :timeout 2000}])
+      #_(put-fn [:cmd/schedule-new {:message [:state/persist]
+                                    :id      :persist-state
+                                    :timeout 2000}])
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
 
 (defn sync-fn
   "Handler function for syncing journal entry."
-  [{:keys [current-state msg-payload msg-meta put-fn]}]
+  [{:keys [current-state cmp-state msg-payload msg-meta put-fn]}]
   (let [ts (:timestamp msg-payload)
         entry msg-payload
         rcv-vclock (:vclock entry)
         cfg (:cfg current-state)
         prev (when-let [entry (gq/get-entry current-state ts)] (remove-nils entry))
-        new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
-                           :b>a)
-        broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
-    (info "sync-fn" vclocks-compared)
+                           :b>a)]
     (case vclocks-compared
-      :b>a (let [new-state (ga/add-node current-state entry {:clean-tags true})]
-             ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
+      :b>a (let [new-state (ga/add-node current-state entry {:clean-tags true})
+                 new-global-vclock (vc/new-global-vclock new-state entry)
+                 new-state (assoc-in new-state [:global-vclock] new-global-vclock)]
              (append-daily-log cfg entry put-fn)
+             (put-fn [:schedule/new {:timeout 500
+                                     :message [:gql/run-registered]
+                                     :id      :sync-delayed-refresh}])
              {:new-state new-state
-              :emit-msg  [[:schedule/new {:timeout 1000
-                                          :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
-                                          :id      :sync-delayed-refresh}]
-                          [:ft/add entry]]})
+              :emit-msg  [[:ft/add entry]]})
       :concurrent (let [with-conflict (assoc-in prev [:conflict] entry)
                         new-state (ga/add-node current-state with-conflict {:clean-tags true})]
                     (warn "conflict\n" prev "\n" entry)
-                    ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
                     (append-daily-log cfg entry put-fn)
                     {:new-state new-state
                      :emit-msg  [:ft/add entry]})

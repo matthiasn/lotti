@@ -20,6 +20,7 @@
   (fn [state context args value]
     (let [{:keys [query n pvt story tab incremental starred flagged from to] :as m} args
           msg-meta (:msg-meta context)
+          msg-meta (assoc msg-meta :sente-uid :broadcast)
           current-state @state
           from (if from (dt/ymd-to-ts from) 0)
           to (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)

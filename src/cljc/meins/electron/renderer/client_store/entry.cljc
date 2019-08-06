@@ -59,7 +59,6 @@
                     current-state)]
     (debug "entry saved, clearing" msg-payload)
     (update-local-storage new-state)
-    (put-fn [:cfg/refresh])
     {:new-state new-state}))
 
 (defn play-audio
