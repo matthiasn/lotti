@@ -184,14 +184,15 @@
         new-meta (update-in msg-meta [:cmp-seq] #(vec (take-last 10 %)))
         vclocks-compared (if prev
                            (vc/vclock-compare (:vclock prev) rcv-vclock)
-                           :b>a)]
+                           :b>a)
+        broadcast-meta (merge {:sente-uid :broadcast} msg-meta)]
     (info "sync-fn" vclocks-compared)
     (case vclocks-compared
       :b>a (let [new-state (ga/add-node current-state entry {:clean-tags true})]
              ;(put-fn (with-meta [:entry/saved entry] broadcast-meta))
              (append-daily-log cfg entry put-fn)
              {:new-state new-state
-              :emit-msg  [[:schedule/new {:timeout 2500
+              :emit-msg  [[:schedule/new {:timeout 1000
                                           :message (with-meta [:gql/run-registered] {:sente-uid :broadcast})
                                           :id      :sync-delayed-refresh}]
                           [:ft/add entry]]})

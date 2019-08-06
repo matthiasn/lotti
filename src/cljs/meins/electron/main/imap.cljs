@@ -154,31 +154,37 @@
                                  (let [uid (.-uid attrs)
                                        struct (js->clj (.-struct attrs) :keywordize-keys true)
                                        attachment (-> struct last last)
-                                       filename (-> attachment
-                                                    :disposition
-                                                    :params
-                                                    :filename
-                                                    (s/replace "=?utf-8?Q?" "")
-                                                    (s/replace "?=" "")
-                                                    (s/replace "=5F" "_"))]
+                                       filename (some-> attachment
+                                                        :disposition
+                                                        :params
+                                                        :filename
+                                                        (s/replace "=?utf-8?Q?" "")
+                                                        (s/replace "?=" "")
+                                                        (s/replace "=5F" "_"))]
                                    (pp/pprint attachment)
-                                   (when (= "image" (:type attachment))
+                                   (when (and filename (= "image" (:type attachment)))
                                      (let [partID (:partID attachment)]
                                        (read-image mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))
-                                   (when (s/includes? filename "m4a")
+                                   (when (and filename (s/includes? filename "m4a"))
                                      (let [partID (:partID attachment)]
                                        (read-audio mailbox uid partID filename put-fn)
                                        (info "found attachment" filename uid partID)))))]
                    (.once msg "attributes" attr-cb)
                    (.on msg "body" (partial body-cb buffer seqn))
-                   (.once msg "end" #(debug "IMAP msg end" seqn))))
+                   (.once msg "end" (fn [] (info "IMAP msg end" seqn)))))
         mb-cb (fn [conn err box]
                 (try
                   (let [last-read (:last-read mb-cfg)
                         uid (str (inc last-read) ":*")
                         _ (info "last-read" last-read uid)
                         s (clj->js ["UNDELETED" ["UID" uid]])
+                        idle-cb (fn [msg]
+                                  (.end conn)
+                                  (put-fn
+                                    [:schedule/new
+                                     {:timeout 100
+                                      :message [:sync/read-imap]}]))
                         cb (fn [err res]
                              (let [parsed-res (js->clj res)]
                                (when (and (seq parsed-res) (> (last parsed-res) last-read))
@@ -189,8 +195,8 @@
                                             (let [cfg (assoc-in (imap-cfg) path last-read)
                                                   s (pp-str cfg)]
                                               (writeFileSync cfg-path s)
-                                              (info "mb-cb fetch end, last-read" last-read))
-                                            (.end conn))]
+                                              (info "mb-cb fetch end, last-read" last-read)
+                                              (.on conn "mail" idle-cb)))]
                                    (info "search fetch" res)
                                    (.on f "message" msg-cb)
                                    (.once f "error" #(error "Fetch error" %))
@@ -259,7 +265,7 @@
 
 (defn start-sync [{:keys []}]
   (info "starting IMAP sync")
-  {:emit-msg [:schedule/new {:timeout 30000
+  {:emit-msg [:schedule/new {:timeout 60000
                              :id      :imap-schedule
                              :message [:sync/read-imap]
                              :initial true
@@ -274,9 +280,13 @@
       (writeFileSync cfg-path s)))
   {:emit-msg [[:imap/cfg (imap-cfg)]]})
 
+(defn state-fn [put-fn]
+  (let [state (atom {})]
+    {:state state}))
+
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
-   :state-fn    (fn [_put-fn] {:state (atom {})})
+   :state-fn    state-fn
    :opts        {:in-chan  [:buffer 100]
                  :out-chan [:buffer 100]}
    :handler-map {:sync/imap       write-email
