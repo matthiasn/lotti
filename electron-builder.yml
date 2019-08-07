@@ -1,5 +1,7 @@
 appId: "matthiasn.meins"
 asar: false
+afterSign: "build/notarize.js"
+
 files:
     - "bin/jlink/**"
     - "!node_modules/**"
@@ -14,11 +16,23 @@ files:
     - "electron/**"
     - "src/**"
     - "resources/**"
+
+dmg:
+    sign: false
+
 publish:
     provider: "github"
     owner: "matthiasn"
     draft: true
+
 nsis:
     differentialPackage: false
+
 linux:
     target: AppImage
+
+mac:
+    hardenedRuntime: true
+    gatekeeperAssess: false
+    entitlements: "build/entitlements.mac.plist"
+    entitlementsInherit: "build/entitlements.mac.plist"
