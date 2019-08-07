@@ -129,8 +129,8 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 41
-        versionName "1.0.33"
+        versionCode 42
+        versionName "1.0.34"
         missingDimensionStrategy 'react-native-camera', 'general'
     }
     signingConfigs {
