@@ -85,6 +85,9 @@
   (let [f (fn [[k v]] (when v [k v]))]
     (walk/postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
 
+(defn nilable-replace [s match replacement]
+  (when (string? s) (s/replace s match replacement)))
+
 (defn compare-entries [x y]
   (let [x (remove-nils x)
         y (remove-nils y)
@@ -94,8 +97,8 @@
         ks (conj ks :starred :flagged :latitude :longitude :habit :custom_field_cfg :story_cfg :saga_cfg :post_mortem :problem_review)
         x1 (u/clean-entry (select-keys x ks))
         y1 (u/clean-entry (select-keys y ks))
-        x2 (update-in x1 [:md] s/replace " " "")
-        y2 (update-in y1 [:md] s/replace " " "")
+        x2 (update-in x1 [:md] nilable-replace " " "")
+        y2 (update-in y1 [:md] nilable-replace " " "")
         eq (= x2 y2)
         diff (clojure.data/diff x2 y2)]
     (when-not eq
