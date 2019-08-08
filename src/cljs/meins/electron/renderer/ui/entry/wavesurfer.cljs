@@ -16,6 +16,7 @@
                                                  :height        80
                                                  :normalize     true
                                                  :cursorWidth   2
+                                                 :backend       "MediaElement"
                                                  :progressColor "#FF5F1A"}))
           url (h/audio-path audio-file)
           progress (fn [p]
@@ -37,45 +38,54 @@
       (.on waveform "finish" #(swap! local assoc-in [:status] :finished))
       (swap! local assoc-in [:waveform] waveform))))
 
+(defn controls [props]
+  (let [{:keys [local skip-fwd skip-back play-pause]} props
+        stop #(.stop (:waveform @local))
+        zoom (fn [ev]
+               (let [v (.. ev -target -value)
+                     v (when (seq v) (js/parseFloat v))]
+                 (swap! local assoc-in [:zoom] v)
+                 (.zoom (:waveform @local) v)))]
+    (fn [_]
+      (let [progress (or (:progress @local) 0)
+            progress (h/s-to-mm-ss-ms
+                       (int (* 1000 progress)))
+            duration (or (:duration @local) 0)
+            duration (h/s-to-mm-ss-ms
+                       (int (* 1000 duration)))]
+        [:div.controls
+         [:span.ctrl-btn {:on-click skip-back}
+          [:i.fas.fa-step-backward]]
+         [:span.ctrl-btn {:on-click play-pause}
+          (if (= :playing (:status @local))
+            [:i.fas.fa-pause]
+            [:i.fas.fa-play])]
+         [:span.ctrl-btn {:on-click stop}
+          [:i.fas.fa-stop]]
+         [:span.ctrl-btn {:on-click skip-fwd}
+          [:i.fas.fa-step-forward]]
+         [:span.time
+          [:span.progress progress]
+          "/"
+          [:span.duration duration]]
+         [:input {:on-input zoom
+                  :type     :range
+                  :min      1
+                  :max      100
+                  :value    (:zoom @local)}]]))))
+
 (defn wavesurfer-cmp [props]
   (r/create-class
-    {:component-did-mount (wavesurfer-did-mount props)
-     :reagent-render      (fn [props]
-                            (let [{:keys [local skip-fwd skip-back play-pause]} props
-                                  progress (or (:progress @local) 0)
-                                  progress (h/s-to-mm-ss-ms
-                                             (int (* 1000 progress)))
-                                  duration (or (:duration @local) 0)
-                                  duration (h/s-to-mm-ss-ms
-                                             (int (* 1000 duration)))
-                                  stop #(.stop (:waveform @local))
-                                  zoom (fn [ev]
-                                         (let [v (.. ev -target -value)
-                                               v (when (seq v) (js/parseFloat v))]
-                                           (swap! local assoc-in [:zoom] v)
-                                           (.zoom (:waveform @local) v)))]
-                              [:div.wavesurfer
-                               [:div {:id (:id props)}]
-                               [:div.controls
-                                [:span.ctrl-btn {:on-click skip-back}
-                                 [:i.fas.fa-step-backward]]
-                                [:span.ctrl-btn {:on-click play-pause}
-                                 (if (= :playing (:status @local))
-                                   [:i.fas.fa-pause]
-                                   [:i.fas.fa-play])]
-                                [:span.ctrl-btn {:on-click stop}
-                                 [:i.fas.fa-stop]]
-                                [:span.ctrl-btn {:on-click skip-fwd}
-                                 [:i.fas.fa-step-forward]]
-                                [:span.time
-                                 [:span.progress progress]
-                                 "/"
-                                 [:span.duration duration]]
-                                [:input {:on-input zoom
-                                         :type     :range
-                                         :min      1
-                                         :max      100
-                                         :value    (:zoom @local)}]]]))}))
+    {:component-did-mount    (wavesurfer-did-mount props)
+     :component-will-unmount (fn [_]
+                               (let [local (:local props)]
+                                 (when-let [waveform (:waveform @local)]
+                                   (.destroy waveform)
+                                   (swap! local assoc-in [:waveform] nil))))
+     :reagent-render         (fn [props]
+                               [:div.wavesurfer
+                                [:div {:id (:id props)}]
+                                [controls props]])}))
 
 (defn wavesurfer [entry local-cfg]
   (when-let [audio-file (:audio_file entry)]
