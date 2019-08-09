@@ -6,7 +6,8 @@
             ["realm" :as realm]
             [clojure.data.avl :as avl]
             [cljs.core.async :refer [<!]]
-            [meins.helpers :as h]))
+            [meins.helpers :as h]
+            [cljs.tools.reader.edn :as edn]))
 
 (defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload
@@ -33,6 +34,7 @@
                   (let [db-entry (-> entry
                                      (select-keys [:md :timestamp :longitude :latitude])
                                      (assoc :edn (pr-str entry))
+                                     (assoc :task (boolean (:task entry)))
                                      (assoc :sync (if (:from-sync msg-meta) "SYNC" "OPEN"))
                                      clj->js)
                         _ (.create realm-db "Entry" db-entry true)])
@@ -142,11 +144,22 @@
     (go (<! (as/set-item :cfg cfg)))
     {:new-state new-state}))
 
-(def EntrySchema
+(def EntrySchema0
   {:name       "Entry"
    :primaryKey "timestamp"
    :properties {:timestamp "int"
                 :md        {:type "string" :indexed true}
+                :edn       "string"
+                :sync      {:type "string" :default "OPEN" :optional true}
+                :latitude  {:type "float" :default 0.0 :optional true}
+                :longitude {:type "float" :default 0.0 :optional true}}})
+
+(def EntrySchema
+  {:name       "Entry"
+   :primaryKey "timestamp"
+   :properties {:timestamp {:type "int" :indexed true}
+                :md        {:type "string" :indexed true}
+                :task      {:type "bool" :indexed true :optional true}
                 :edn       "string"
                 :sync      {:type "string" :default "OPEN" :optional true}
                 :latitude  {:type "float" :default 0.0 :optional true}
@@ -164,6 +177,30 @@
                 :latitude  {:type "float" :default 0.0 :optional true}
                 :longitude {:type "float" :default 0.0 :optional true}}})
 
+(defn migration-1
+  [old-realm new-realm]
+  (let [schema-version (.-schemaVersion old-realm)]
+    (when (< schema-version 1)
+      (js/console.warn "starting migration to schema" schema-version)
+      (let [old-objects (.objects old-realm "Entry")
+            new-objects (.objects new-realm "Entry")
+            n (.-length old-objects)]
+        (dotimes [i n]
+          (let [old-obj (aget old-objects i)
+                entry (edn/read-string (.-edn old-obj))
+                task? (-> entry :task boolean)]
+            (aset new-objects i "task" task?)
+            (when task?
+              (js/console.warn (aget new-objects i)))))))))
+
+(def schema-1
+  (clj->js {:schema        [EntrySchema ImageSchema]
+            :schemaVersion 1
+            :migration     migration-1}))
+
+(def schema-0
+  (clj->js {:schema [EntrySchema0 ImageSchema]}))
+
 (defn state-fn [put-fn]
   (let [state (atom {:entries         (avl/sorted-map)
                      :active-theme    :light
@@ -174,7 +211,7 @@
                      :latest-synced   0})]
     (load-state {:cmp-state state
                  :put-fn    put-fn})
-    (-> (.open realm (clj->js {:schema [EntrySchema ImageSchema]}))
+    (-> (.open realm schema-1)
         (.then (fn [db]
                  (js/console.warn "db finished opening" db)
                  (swap! state assoc :realm-db db)

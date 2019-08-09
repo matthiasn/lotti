@@ -119,7 +119,7 @@
                 mail (merge (:server secrets)
                             {:folder folder
                              :minUid min-uid
-                             :length 25})
+                             :length 100})
                 fetch-cb (fn [data]
                            (let [uids (rdr/read-string (str "[" data "]"))]
                              (swap! cmp-state update :not-fetched into uids)
