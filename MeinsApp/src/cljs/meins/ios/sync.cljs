@@ -4,18 +4,21 @@
             [cljs.core.async :refer [<!]]
             [meins.ui.shared :as shared :refer [platform-os]]
             [re-frame.core :refer [subscribe]]
-            ["crypto-js" :as crypto-js]
-            ["buffer" :as buffer]
+            ["crypto-js" :refer [AES enc util lib PBKDF2] :as crypto-js]
+            ["buffer" :refer [Buffer]]
             ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
             ["@react-native-community/netinfo" :as net-info]
             [meins.ui.db :as uidb]
-            [cljs.reader :as rdr]
+            [cljs.reader :as edn]
             [clojure.string :as str]))
 
-(def AES (aget crypto-js "AES"))
-(def utf-8 (aget crypto-js "enc" "Utf8"))
+(def iterations 16384)
 
-(def Buffer (aget buffer "Buffer"))
+(def hex (.-Hex enc))
+(def word-array (.-WordArray lib))
+(def utf-8 (.-Utf8 enc))
+(defn words-to-hex [w] (.stringify hex w))
+(defn hex-to-words [w] (.parse hex w))
 
 (defn buffer-convert [from to s]
   (let [buffer (.from Buffer s from)]
@@ -41,9 +44,40 @@
           ciphertext (hex-to-utf8 cleaned)
           decrypted-bytes (.decrypt AES ciphertext secret)
           s (.toString decrypted-bytes utf-8)
-          data (rdr/read-string s)]
+          data (edn/read-string s)]
       data)
     (catch :default e (shared/alert (str "decrypt body " e)))))
+
+(defn key-from-pw-salt
+  [password n salt]
+  (let [opts (clj->js {:keySize    256/32
+                       :iterations n})
+        key-256 (PBKDF2 password salt opts)]
+    key-256))
+
+(defn key-from-pw
+  "Arbitrarily expensive password based key derivation function.
+   The more expensive this function, the harder dictionary attacks
+   will be."
+  [password n]
+  (let [salt (.random word-array 128/8)
+        key-256 (key-from-pw-salt password n salt)
+        salt-hex (words-to-hex salt)]
+    [salt-hex key-256]))
+
+(defn decrypt-body2 [hex-cipher secret]
+  (try
+    (let [[salt iv hex-cipher] (str/split hex-cipher ".")
+          salt (hex-to-words salt)
+          iv (hex-to-words iv)
+          opts (clj->js {:iv iv})
+          key-256 (key-from-pw-salt secret iterations salt)
+          ciphertext (hex-to-utf8 hex-cipher)
+          decrypted-bytes (.decrypt AES ciphertext key-256 opts)
+          s (.toString decrypted-bytes utf-8)
+          data (edn/read-string s)]
+      data)
+    (catch :default e (js/console.error "decrypt" e))))
 
 (defn sync-write [{:keys [msg-type msg-payload put-fn cmp-state db-item]}]
   (when-let [secrets (:secrets @cmp-state)]
@@ -121,7 +155,7 @@
                              :minUid min-uid
                              :length 100})
                 fetch-cb (fn [data]
-                           (let [uids (rdr/read-string (str "[" data "]"))]
+                           (let [uids (edn/read-string (str "[" data "]"))]
                              (swap! cmp-state update :not-fetched into uids)
                              ;(shared/alert (:not-fetched @cmp-state))
                              (schedule-read cmp-state put-fn)))]
@@ -144,8 +178,9 @@
                               {:folder folder
                                :uid    uid})
                   fetch-cb (fn [data]
+                             (schedule-read cmp-state put-fn)
                              (let [body (get (js->clj data) "body")
-                                   decrypted (decrypt-body body aes-secret)
+                                   decrypted (time (decrypt-body2 body aes-secret))
                                    msg-type (first decrypted)
                                    {:keys [msg-payload msg-meta]} (second decrypted)
                                    msg (with-meta [msg-type msg-payload]
@@ -154,12 +189,11 @@
                                (go (<! (as/set-item :last-uid-read uid)))
                                (swap! cmp-state update-in [:not-fetched] disj uid)
                                (swap! cmp-state update-in [:fetched] conj uid)
-                               (schedule-read cmp-state put-fn)
                                (put-fn msg)))]
               (-> (.fetchImapByUid MailCore (clj->js mail))
                   (.then fetch-cb)
                   (.catch #(.log js/console (str (js->clj %)))))))))
-      (catch :default e (shared/alert (str e)))))
+      (catch :default e (js/console.error (str e)))))
   {})
 
 (defn retry-write [{:keys [cmp-state current-state put-fn]}]
@@ -174,7 +208,7 @@
                      :cmp-state   cmp-state
                      :put-fn      put-fn
                      :msg-type    :entry/sync
-                     :msg-payload (rdr/read-string (aget x "edn"))}))))
+                     :msg-payload (edn/read-string (aget x "edn"))}))))
   {})
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
