@@ -89,7 +89,7 @@
         cipher-hex2 (time (encrypt-aes-hex-2 s secret))
         decrypted (decrypt-aes-hex-2 cipher-hex2 secret)]
     (info :decrypted decrypted)
-    cipher-hex))
+    cipher-hex2))
 
 (defn decrypt-aes-hex [hex-cipher secret]
   (try (let [ciphertext (hex-to-utf8 hex-cipher)
