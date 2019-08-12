@@ -1,4 +1,4 @@
-{:source-paths ["src/cljc" "src/cljs"]
+{:source-paths ["src/cljc" "src/cljs" "../src/cljs"]
 
  :dependencies [[reagent "0.8.1"]
                 [matthiasn/systems-toolbox "0.6.40"]

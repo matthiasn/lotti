@@ -4,7 +4,7 @@
             [meins.electron.main.runtime :as rt]
             [fs :refer [existsSync readFileSync mkdirSync writeFile writeFileSync statSync]]
             [child_process :refer [spawn]]
-            [meins.electron.main.utils.encryption :as mue]
+            [meins.shared.encryption :as mse]
             [imap :as imap]
             [clojure.data :as data]
             [buildmail :as BuildMail]
@@ -125,15 +125,28 @@
                   (catch :default e (do (error e) (.end conn)))))]
     (imap-open mailbox mb-cb)))
 
+(defn extract-body [s]
+  (let [body (-> s
+                 (s/replace "=\r\n" "")
+                 (s/replace "\r\n" "")
+                 (s/replace "\n" ""))]
+    (if (s/includes? body "inline")
+      (-> body
+          (s/split "inline")
+          second
+          (s/split "--")
+          first)
+      body)))
+
 (defn read-mailbox [[k mb-cfg] put-fn]
   (let [{:keys [secret mailbox body-part]} mb-cfg
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
-                                 (let [hex-body (mue/extract-body (apply str @buffer))]
+                                 (let [hex-body (extract-body (apply str @buffer))]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
-                                   (when-let [decrypted (mue/decrypt-aes-hex hex-body secret)]
+                                   (when-let [decrypted (mse/decrypt hex-body secret)]
                                      (let [msg-type (first decrypted)
                                            {:keys [msg-payload msg-meta]} (second decrypted)
                                            msg-meta (merge msg-meta {:window-id :broadcast})
@@ -221,7 +234,7 @@
                        ; actual meta-data too large, makes the encryption waste battery
                        serializable [:entry/sync {:msg-payload msg-payload
                                                   :msg-meta    {}}]
-                       cipher-hex (mue/encrypt-aes-hex (pr-str serializable) secret)
+                       cipher-hex (mse/encrypt (pr-str serializable) secret)
                        append-cb (fn [err]
                                    (when err
                                      (info "IMAP append error" err))

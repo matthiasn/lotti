@@ -3,8 +3,8 @@
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]
             [meins.ui.shared :as shared :refer [platform-os]]
+            [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
-            ["crypto-js" :refer [AES enc util lib PBKDF2] :as crypto-js]
             ["buffer" :refer [Buffer]]
             ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
             ["@react-native-community/netinfo" :as net-info]
@@ -12,21 +12,7 @@
             [cljs.reader :as edn]
             [clojure.string :as str]))
 
-(def iterations 16384)
-
-(def hex (.-Hex enc))
-(def word-array (.-WordArray lib))
-(def utf-8 (.-Utf8 enc))
-(defn words-to-hex [w] (.stringify hex w))
-(defn hex-to-words [w] (.parse hex w))
-
-(defn buffer-convert [from to s]
-  (let [buffer (.from Buffer s from)]
-    (.toString buffer to)))
-
-(defn utf8-to-hex [s] (buffer-convert "utf-8" "hex" s))
-(defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8" s))
-
+(set! js/Buffer Buffer)
 (def MailCore (.-default react-native-mailcore))
 
 (defn extract-body [s]
@@ -37,47 +23,6 @@
       (str/replace "=\r\n" "")
       (str/replace "\r\n" "")
       (str/replace "\n" "")))
-
-(defn decrypt-body [body secret]
-  (try
-    (let [cleaned (extract-body body)
-          ciphertext (hex-to-utf8 cleaned)
-          decrypted-bytes (.decrypt AES ciphertext secret)
-          s (.toString decrypted-bytes utf-8)
-          data (edn/read-string s)]
-      data)
-    (catch :default e (shared/alert (str "decrypt body " e)))))
-
-(defn key-from-pw-salt
-  [password n salt]
-  (let [opts (clj->js {:keySize    256/32
-                       :iterations n})
-        key-256 (PBKDF2 password salt opts)]
-    key-256))
-
-(defn key-from-pw
-  "Arbitrarily expensive password based key derivation function.
-   The more expensive this function, the harder dictionary attacks
-   will be."
-  [password n]
-  (let [salt (.random word-array 128/8)
-        key-256 (key-from-pw-salt password n salt)
-        salt-hex (words-to-hex salt)]
-    [salt-hex key-256]))
-
-(defn decrypt-body2 [hex-cipher secret]
-  (try
-    (let [[salt iv hex-cipher] (str/split hex-cipher ".")
-          salt (hex-to-words salt)
-          iv (hex-to-words iv)
-          opts (clj->js {:iv iv})
-          key-256 (key-from-pw-salt secret iterations salt)
-          ciphertext (hex-to-utf8 hex-cipher)
-          decrypted-bytes (.decrypt AES ciphertext key-256 opts)
-          s (.toString decrypted-bytes utf-8)
-          data (edn/read-string s)]
-      data)
-    (catch :default e (js/console.error "decrypt" e))))
 
 (defn sync-write [{:keys [msg-type msg-payload put-fn cmp-state db-item]}]
   (when-let [secrets (:secrets @cmp-state)]
@@ -94,9 +39,7 @@
               serializable [msg-type {:msg-payload (update-filename msg-payload)
                                       :msg-meta    msg-meta}]
               data (pr-str serializable)
-              ciphertext (.toString (.encrypt AES data aes-secret))
-              hex-cipher (utf8-to-hex ciphertext)
-
+              hex-cipher (mse/encrypt data aes-secret)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
               audiofile (:audio_file msg-payload)
@@ -180,7 +123,7 @@
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
                              (let [body (get (js->clj data) "body")
-                                   decrypted (time (decrypt-body2 body aes-secret))
+                                   decrypted (time (mse/decrypt body aes-secret))
                                    msg-type (first decrypted)
                                    {:keys [msg-payload msg-meta]} (second decrypted)
                                    msg (with-meta [msg-type msg-payload]
