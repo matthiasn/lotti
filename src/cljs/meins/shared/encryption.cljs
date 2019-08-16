@@ -3,7 +3,7 @@
             [cljs.reader :as edn]
             [clojure.string :as s]))
 
-(def iterations 16384)
+(def iterations 1024)
 
 (def utf-8 (.-Utf8 enc))
 (def hex (.-Hex enc))
