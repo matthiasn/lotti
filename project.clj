@@ -8,9 +8,9 @@
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [hiccup "1.0.5"]
                  [org.clojure/data.avl "0.1.0"]
-                 [org.clojure/test.check "0.10.0-alpha3"]
+                 [org.clojure/test.check "0.10.0"]
                  [clj-pid "0.1.2"]
-                 [clj-time "0.15.1"]
+                 [clj-time "0.15.2"]
                  [clj-http "3.10.0"]
                  [ring/ring-core "1.7.1"]
                  [enlive "1.1.6"]
@@ -18,7 +18,7 @@
                  [me.raynes/fs "1.4.6"]
                  [markdown-clj "1.10.0"]
                  [progrock "0.1.2"]
-                 [cheshire "5.8.1"]
+                 [cheshire "5.9.0"]
                  [me.raynes/conch "0.8.0"]
                  [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
@@ -36,7 +36,7 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.12.0"]
-                 [ubergraph "0.6.1"]
+                 [ubergraph "0.7.2"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.40"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
@@ -65,7 +65,7 @@
              :dev     {:source-paths ["src/cljc" "src/clj/" "dev-resources" "dev"]
                        :dependencies [;[io.dgraph/dgraph4j "1.7.1"]
                                       [factual/geo "2.1.1"]
-                                      [org.clojure/tools.namespace "0.3.0"]]}}
+                                      [org.clojure/tools.namespace "0.3.1"]]}}
 
   :repl-options {:init-ns meins.jvm.core}
 
