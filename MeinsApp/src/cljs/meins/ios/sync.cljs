@@ -50,7 +50,7 @@
                                       :mailbox                mb}
                            :to       {:addressWithDisplayName mb
                                       :mailbox                mb}
-                           :subject  (str msg-type)
+                           :subject  (str (:timestamp msg-payload))
                            :textBody hex-cipher}
                           (when audiofile {:audiofile audiofile})
                           (when (and (= "android" platform-os) audiofile)

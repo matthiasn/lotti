@@ -235,6 +235,7 @@
                        serializable [:entry/sync {:msg-payload msg-payload
                                                   :msg-meta    {}}]
                        cipher-hex (mse/encrypt (pr-str serializable) secret)
+                       _ (mse/test-asym-encrypt (pr-str serializable))
                        append-cb (fn [err]
                                    (when err
                                      (info "IMAP append error" err))
@@ -246,7 +247,7 @@
                             (js/console.log (aget conn "_queue")))]
                    (-> (BuildMail. "text/plain")
                        (.setContent cipher-hex)
-                       (.setHeader "subject" (str (:timestamp msg-payload) " " (:vclock msg-payload)))
+                       (.setHeader "subject" (str (:timestamp msg-payload)))
                        (.build cb)))
                  (catch :default e (error e))))]
       (imap-open mailbox cb)))

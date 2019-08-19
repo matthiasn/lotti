@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.195",
+  "version": "0.6.196",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -77,6 +77,8 @@
     "tcp-port-used": "1.0.1",
     "tinycolor": "0.0.1",
     "turndown": "5.0.3",
+    "tweetnacl": "1.0.1",
+    "tweetnacl-util": "0.15.0",
     "utf-8-validate": "5.0.2",
     "wavesurfer.js": "2.2.1"
   },

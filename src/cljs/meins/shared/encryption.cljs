@@ -1,7 +1,10 @@
 (ns meins.shared.encryption
-  (:require [crypto-js :refer [AES algo enc util lib PBKDF2] :as crypto]
+  (:require ["crypto-js" :refer [AES algo enc util lib PBKDF2] :as crypto]
             [cljs.reader :as edn]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            ["tweetnacl" :refer [box randomBytes]]
+            ["tweetnacl-util" :refer [decodeUTF8 encodeUTF8 encodeBase64 decodeBase64]]
+            [clojure.string :as str]))
 
 (def iterations 1024)
 
@@ -45,10 +48,10 @@
         cipher (->> (.encrypt AES s key-256 opts)
                     (.toString)
                     (utf8-to-hex))]
-    (str salt "." iv "." cipher)))
+    (str "v1." salt "." iv "." cipher)))
 
-(defn decrypt [hex-cipher secret]
-  (try (let [[salt iv hex-cipher] (s/split hex-cipher ".")
+(defn decrypt-v1 [hex-cipher secret]
+  (try (let [[_version salt iv hex-cipher] (s/split hex-cipher ".")
              salt (hex-to-words salt)
              iv (hex-to-words iv)
              opts (clj->js {:iv iv})
@@ -59,3 +62,53 @@
              data (edn/read-string s)]
          data)
        (catch :default e (js/console.error "decrypt" e))))
+
+;; TweetNaCl.js
+(defn new-nonce []
+  (randomBytes (.-nonceLength box)))
+
+(defn gen-key-pair []
+  (js->clj (.keyPair box) :keywordize-keys true))
+
+(defn encrypt-asymm
+  "Encrypt message via x25519-xsalsa20-poly1305 using the public key of the
+   recipient and the local private key."
+  [message their-public-key my-secret-key]
+  (let [nonce (new-nonce)
+        messageUint8 (decodeUTF8 message)
+        encrypted (box messageUint8 nonce their-public-key my-secret-key)
+        ciphertext (encodeBase64 encrypted)
+        nonce-base64 (encodeBase64 nonce)]
+    (str "v2." nonce-base64 "." ciphertext)))
+
+(defn decrypt-asymm
+  "Decrypt x25519-xsalsa20-poly1305 encrypted message using the public key
+   of the encryptor and the local private key."
+  [message their-public-key my-secret-key]
+  (let [[_version nonce-base64 ciphertext] (str/split message ".")
+        nonce (decodeBase64 nonce-base64)
+        encrypted (decodeBase64 ciphertext)
+        decrypted (.open box encrypted nonce their-public-key my-secret-key)]
+    (encodeUTF8 decrypted)))
+
+(defn test-asym-encrypt [s]
+  (js/console.log "Generating Key Pairs")
+  (let [key-pair-a (time (gen-key-pair))
+        key-pair-b (time (gen-key-pair))
+        their-public-key (:publicKey key-pair-b)
+        my-secret-key (:secretKey key-pair-a)
+        cipher (time (encrypt-asymm s their-public-key my-secret-key))
+        _ (js/console.warn ">>> ciphertext: " cipher)
+        deciphered (time (decrypt-asymm cipher their-public-key my-secret-key))]
+    (js/console.warn ">>> deciphered: " deciphered)))
+
+(defn decrypt
+  "Decrypts ciphertext based on the version, which is encoded in the first characters
+   of the ciphertext leading up to the first dot. v1 and no version substring are the
+   same, except for the added version in v1"
+  [hex-cipher secret]
+  (try
+    (case (first (s/split hex-cipher "."))
+      "v1" (decrypt-v1 hex-cipher secret)
+      (decrypt-v1 hex-cipher secret))
+    (catch :default e (js/console.error "decrypt" e))))
