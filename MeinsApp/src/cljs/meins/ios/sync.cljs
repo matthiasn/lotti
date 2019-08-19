@@ -5,14 +5,12 @@
             [meins.ui.shared :as shared :refer [platform-os]]
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
-            ["buffer" :refer [Buffer]]
             ["@matthiasn/react-native-mailcore" :as react-native-mailcore]
             ["@react-native-community/netinfo" :as net-info]
             [meins.ui.db :as uidb]
             [cljs.reader :as edn]
             [clojure.string :as str]))
 
-(set! js/Buffer Buffer)
 (def MailCore (.-default react-native-mailcore))
 
 (defn extract-body [s]

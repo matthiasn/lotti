@@ -4,11 +4,14 @@
             [meins.ui.shared :as shared]
             [meins.utils.parse :as p]
             ["intl" :as intl]
+            ["buffer" :refer [Buffer]]
+            ["moment" :as moment]
             ["@react-native-community/geolocation" :as Geolocation]
             ["intl/locale-data/jsonp/en"]
             [clojure.walk :as walk]))
 
-(set! js/moment (js/require "moment"))
+(set! js/moment moment)
+(set! js/Buffer Buffer)
 
 (defn send-w-geolocation
   "Calls geolocation, sends entry enriched by geo information inside the
