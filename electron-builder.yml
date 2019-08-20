@@ -10,6 +10,7 @@ files:
     - "node_modules/leaflet/**"
     - "node_modules/normalize.css/**"
     - "node_modules/cldr-data/**"
+    - "node_modules/keytar/**"
     - "node_modules/cldr-data/main/@(de|en|fr|es)"
     - "!node_modules/cldr-data/main/!(de|en|fr|es)"
     - "prod/**"

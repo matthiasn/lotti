@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.197",
+  "version": "0.6.198",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -46,7 +46,7 @@
     "imap": "0.8.19",
     "immutable": "3.8.2",
     "install": "0.13.0",
-    "keytar": "5.0.0-beta.0",
+    "keytar": "4.13.0",
     "lato-font": "3.0.0",
     "leaflet": "1.5.1",
     "lodash": "4.17.15",
