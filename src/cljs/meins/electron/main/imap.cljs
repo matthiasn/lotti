@@ -5,6 +5,7 @@
             [fs :refer [existsSync readFileSync mkdirSync writeFile writeFileSync statSync]]
             [child_process :refer [spawn]]
             [meins.shared.encryption :as mse]
+            [meins.electron.main.keychain :as kc]
             [imap :as imap]
             [clojure.data :as data]
             [buildmail :as BuildMail]
@@ -235,7 +236,7 @@
                        serializable [:entry/sync {:msg-payload msg-payload
                                                   :msg-meta    {}}]
                        cipher-hex (mse/encrypt (pr-str serializable) secret)
-                       _ (mse/test-asym-encrypt (pr-str serializable))
+                       key-pair (mse/test-asym-encrypt (pr-str serializable))
                        append-cb (fn [err]
                                    (when err
                                      (info "IMAP append error" err))
@@ -245,6 +246,7 @@
                             (info "RFC2822\n" mailbox rfc-2822)
                             (.append conn rfc-2822 append-cb)
                             (js/console.log (aget conn "_queue")))]
+                   (kc/save-keypair key-pair)
                    (-> (BuildMail. "text/plain")
                        (.setContent cipher-hex)
                        (.setHeader "subject" (str (:timestamp msg-payload)))

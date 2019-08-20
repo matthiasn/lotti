@@ -18,6 +18,9 @@
 
 (defn utf8-to-hex [s] (buffer-convert "utf-8" "hex" s))
 (defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8" s))
+(defn hex->base64 [s] (buffer-convert "hex" "base64" s))
+(defn base64->hex [s] (buffer-convert "base64" "hex" s))
+
 (defn words-to-hex [w] (.stringify hex w))
 (defn hex-to-words [w] (.parse hex w))
 
@@ -99,8 +102,13 @@
         my-secret-key (:secretKey key-pair-a)
         cipher (time (encrypt-asymm s their-public-key my-secret-key))
         _ (js/console.warn ">>> ciphertext: " cipher)
+        my-secret-hex (base64->hex (encodeBase64 my-secret-key))
+        my-secret-from-hex (decodeBase64 (hex->base64 my-secret-hex))
+        _ (js/console.info my-secret-hex)
+        _ (js/console.info my-secret-key my-secret-from-hex)
         deciphered (time (decrypt-asymm cipher their-public-key my-secret-key))]
-    (js/console.warn ">>> deciphered: " deciphered)))
+    (js/console.warn ">>> deciphered: " deciphered)
+    (into {} (map (fn [[k v]] [k (base64->hex (encodeBase64 v))]) key-pair-a))))
 
 (defn decrypt
   "Decrypts ciphertext based on the version, which is encoded in the first characters

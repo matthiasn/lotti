@@ -27,7 +27,7 @@
                  :output-to        "prod/main-shadow/main.js"
                  :js-options       {:js-provider          :shadow
                                     :keep-native-requires true
-                                    :keep-as-require      #{"electron"}}
+                                    :keep-as-require      #{"electron" "keytar"}}
                  :compiler-options {:optimizations      :simple
                                     :output-feature-set :es-next}
                  :main             meins.electron.main.core/init}
