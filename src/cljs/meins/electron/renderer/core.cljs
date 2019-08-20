@@ -57,7 +57,8 @@
                        :import/screenshot
                        :update/check :update/check-beta :update/download
                        :update/install :window/close
-                       :blink/busy})
+                       :blink/busy
+                       :crypto/create-keys})
 
 (defonce switchboard (sb/component :renderer/switchboard))
 

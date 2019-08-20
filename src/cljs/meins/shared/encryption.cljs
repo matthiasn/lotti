@@ -18,8 +18,12 @@
 
 (defn utf8-to-hex [s] (buffer-convert "utf-8" "hex" s))
 (defn hex-to-utf8 [s] (buffer-convert "hex" "utf-8" s))
+
 (defn hex->base64 [s] (buffer-convert "hex" "base64" s))
 (defn base64->hex [s] (buffer-convert "base64" "hex" s))
+
+(defn hex->array [s] (decodeBase64 (hex->base64 s)))
+(defn array->hex [s] (base64->hex (encodeBase64 s)))
 
 (defn words-to-hex [w] (.stringify hex w))
 (defn hex-to-words [w] (.parse hex w))
@@ -45,26 +49,27 @@
 (defn encrypt
   "Encryption function that uses a unique key for each cipher."
   [s secret]
-  (let [iv (.random word-array 128/8)
-        opts (clj->js {:iv iv})
-        [salt key-256] (key-from-pw secret)
-        cipher (->> (.encrypt AES s key-256 opts)
-                    (.toString)
-                    (utf8-to-hex))]
-    (str "v1." salt "." iv "." cipher)))
+  (try
+    (let [iv (.random word-array 128/8)
+          opts (clj->js {:iv iv})
+          [salt key-256] (key-from-pw secret)
+          cipher (->> (.encrypt AES s key-256 opts)
+                      (.toString)
+                      (utf8-to-hex))]
+      (str "v1." salt "." iv "." cipher))
+    (catch :default e (js/console.error "encrypt" e))))
 
 (defn decrypt-v1 [hex-cipher secret]
-  (try (let [[_version salt iv hex-cipher] (s/split hex-cipher ".")
-             salt (hex-to-words salt)
-             iv (hex-to-words iv)
-             opts (clj->js {:iv iv})
-             key-256 (key-from-pw-salt secret salt)
-             ciphertext (hex-to-utf8 hex-cipher)
-             decrypted-bytes (.decrypt AES ciphertext key-256 opts)
-             s (.toString decrypted-bytes utf-8)
-             data (edn/read-string s)]
-         data)
-       (catch :default e (js/console.error "decrypt" e))))
+  (try
+    (let [[_version salt iv hex-cipher] (s/split hex-cipher ".")
+          salt (hex-to-words salt)
+          iv (hex-to-words iv)
+          opts (clj->js {:iv iv})
+          key-256 (key-from-pw-salt secret salt)
+          ciphertext (hex-to-utf8 hex-cipher)
+          decrypted-bytes (.decrypt AES ciphertext key-256 opts)]
+      (.toString decrypted-bytes utf-8))
+    (catch :default e (js/console.error "decrypt" e))))
 
 ;; TweetNaCl.js
 (defn new-nonce []
@@ -77,46 +82,33 @@
   "Encrypt message via x25519-xsalsa20-poly1305 using the public key of the
    recipient and the local private key."
   [message their-public-key my-secret-key]
-  (let [nonce (new-nonce)
-        messageUint8 (decodeUTF8 message)
-        encrypted (box messageUint8 nonce their-public-key my-secret-key)
-        ciphertext (encodeBase64 encrypted)
-        nonce-base64 (encodeBase64 nonce)]
-    (str "v2." nonce-base64 "." ciphertext)))
+  (try
+    (let [nonce (new-nonce)
+          messageUint8 (decodeUTF8 message)
+          encrypted (box messageUint8 nonce their-public-key my-secret-key)
+          ciphertext (array->hex encrypted)
+          nonce-base64 (array->hex nonce)]
+      (str "v2." nonce-base64 "." ciphertext))
+    (catch :default e (js/console.error "encrypt-asymm" e))))
 
 (defn decrypt-asymm
   "Decrypt x25519-xsalsa20-poly1305 encrypted message using the public key
    of the encryptor and the local private key."
   [message their-public-key my-secret-key]
-  (let [[_version nonce-base64 ciphertext] (str/split message ".")
-        nonce (decodeBase64 nonce-base64)
-        encrypted (decodeBase64 ciphertext)
-        decrypted (.open box encrypted nonce their-public-key my-secret-key)]
-    (encodeUTF8 decrypted)))
-
-(defn test-asym-encrypt [s]
-  (js/console.log "Generating Key Pairs")
-  (let [key-pair-a (time (gen-key-pair))
-        key-pair-b (time (gen-key-pair))
-        their-public-key (:publicKey key-pair-b)
-        my-secret-key (:secretKey key-pair-a)
-        cipher (time (encrypt-asymm s their-public-key my-secret-key))
-        _ (js/console.warn ">>> ciphertext: " cipher)
-        my-secret-hex (base64->hex (encodeBase64 my-secret-key))
-        my-secret-from-hex (decodeBase64 (hex->base64 my-secret-hex))
-        _ (js/console.info my-secret-hex)
-        _ (js/console.info my-secret-key my-secret-from-hex)
-        deciphered (time (decrypt-asymm cipher their-public-key my-secret-key))]
-    (js/console.warn ">>> deciphered: " deciphered)
-    (into {} (map (fn [[k v]] [k (base64->hex (encodeBase64 v))]) key-pair-a))))
+  (try
+    (let [[_version nonce-hex ciphertext] (str/split message ".")
+          nonce (hex->array nonce-hex)
+          encrypted (hex->array ciphertext)
+          decrypted (.open box encrypted nonce their-public-key my-secret-key)]
+      (encodeUTF8 decrypted))
+    (catch :default e (js/console.error "decrypt-asymm" e))))
 
 (defn decrypt
   "Decrypts ciphertext based on the version, which is encoded in the first characters
-   of the ciphertext leading up to the first dot. v1 and no version substring are the
-   same, except for the added version in v1"
-  [hex-cipher secret]
+   of the ciphertext leading up to the first dot."
+  [cipher secret]
   (try
-    (case (first (s/split hex-cipher "."))
-      "v1" (decrypt-v1 hex-cipher secret)
-      (decrypt-v1 hex-cipher secret))
+    (case (first (s/split cipher "."))
+      "v1" (edn/read-string (decrypt-v1 cipher secret))
+      nil)
     (catch :default e (js/console.error "decrypt" e))))

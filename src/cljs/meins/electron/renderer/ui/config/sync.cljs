@@ -36,7 +36,8 @@
         save (fn [_] (info "save") (emit [:imap/save-cfg @local]))]
     (fn config-render []
       (let [connected (= (:status @imap-status) :read-mailboxes)
-            verify-account #(emit [:imap/get-status @local])]
+            verify-account #(emit [:imap/get-status @local])
+            create-key-pair #(emit [:crypto/create-keys])]
         [:div.sync-cfg
          [:div.settings
           [:h2 "Sync Settings"]
@@ -62,7 +63,9 @@
             [settings-item local :text [:sync :write :mailbox] "Write Mailbox:" connected]
             [settings-item local :password [:sync :write :secret] "Write Secret:" connected]
             [settings-item local :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]
-            [settings-item local :password [:sync :read :fred :secret] "Read Secret:" connected]]]]
+            [settings-item local :password [:sync :read :fred :secret] "Read Secret:" connected]]]
+          [:button {:on-click create-key-pair}
+           "(Re-)Create Key Pair"]]
          [:div
           [:img {:src (str "http://" iww-host "/secrets/"
                            (stc/make-uuid) "/secrets.png")}]]]))))

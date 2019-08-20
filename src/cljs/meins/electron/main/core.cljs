@@ -12,6 +12,7 @@
             [meins.electron.main.screenshot :as screen]
             [meins.electron.main.geocoder :as geocoder]
             [meins.electron.main.startup :as st]
+            [meins.electron.main.crypto :as kc]
             [electron :refer [app]]
             [matthiasn.systems-toolbox.scheduler :as sched]
             [matthiasn.systems-toolbox.switchboard :as sb]
@@ -71,6 +72,7 @@
                      (bl/cmp-map :main/blink)
                      (screen/cmp-map :main/screenshot)
                      (imap/cmp-map :main/sync)
+                     (kc/cmp-map :main/crypto)
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
                      (menu/cmp-map :main/menu-cmp)
@@ -102,6 +104,7 @@
                             :main/updater
                             :main/geocoder
                             :main/blink
+                            :main/crypto
                             :main/screenshot
                             :main/sync
                             :main/scheduler

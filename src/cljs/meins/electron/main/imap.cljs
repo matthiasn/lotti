@@ -5,7 +5,7 @@
             [fs :refer [existsSync readFileSync mkdirSync writeFile writeFileSync statSync]]
             [child_process :refer [spawn]]
             [meins.shared.encryption :as mse]
-            [meins.electron.main.keychain :as kc]
+            [meins.electron.main.crypto :as kc]
             [imap :as imap]
             [clojure.data :as data]
             [buildmail :as BuildMail]
@@ -225,35 +225,56 @@
     (read-mailbox mb-tuple put-fn))
   {})
 
+(defn imap-save [{:keys [ciphertext subject content-type mailbox encoding]}]
+  (let [cb (fn [conn _err box]
+             (try
+               (let [append-cb (fn [err]
+                                 (when err
+                                   (info "IMAP append error" err))
+                                 (info "closing WRITE connection")
+                                 (.end conn))
+                     cb (fn [_err rfc-2822]
+                          (info "RFC2822\n" mailbox rfc-2822)
+                          (.append conn rfc-2822 append-cb)
+                          (js/console.log (aget conn "_queue")))
+                     opts (clj->js {:textEncoding encoding})]
+                 (-> (BuildMail. content-type opts)
+                     (.setContent ciphertext)
+                     (.setHeader "subject" subject)
+                     (.build cb)))
+               (catch :default e (error e))))]
+    (imap-open mailbox cb))
+  {})
+
 (defn write-email [{:keys [msg-payload msg-meta]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
-    (let [mailbox (:mailbox mb-cfg)
-          cb (fn [conn _err box]
-               ;(.getBoxes conn (fn [err boxes] (.log js/console boxes)))
-               (try
-                 (let [secret (:secret mb-cfg)
-                       ; actual meta-data too large, makes the encryption waste battery
-                       serializable [:entry/sync {:msg-payload msg-payload
-                                                  :msg-meta    {}}]
-                       cipher-hex (mse/encrypt (pr-str serializable) secret)
-                       key-pair (mse/test-asym-encrypt (pr-str serializable))
-                       append-cb (fn [err]
-                                   (when err
-                                     (info "IMAP append error" err))
-                                   (info "closing WRITE connection")
-                                   (.end conn))
-                       cb (fn [_err rfc-2822]
-                            (info "RFC2822\n" mailbox rfc-2822)
-                            (.append conn rfc-2822 append-cb)
-                            (js/console.log (aget conn "_queue")))]
-                   (kc/save-keypair key-pair)
-                   (-> (BuildMail. "text/plain")
-                       (.setContent cipher-hex)
-                       (.setHeader "subject" (str (:timestamp msg-payload)))
-                       (.build cb)))
-                 (catch :default e (error e))))]
-      (imap-open mailbox cb)))
-  {:emit-msg [:imap/cfg (imap-cfg)]})
+    (try
+      (let [mailbox (:mailbox mb-cfg)
+            secret (:secret mb-cfg)
+            their-public-key (mse/hex->array (:public-key mb-cfg))
+            ; actual meta-data too large, makes the encryption waste battery
+            serializable [:entry/sync {:msg-payload msg-payload
+                                       :msg-meta    {}}]
+            serialized (pr-str serializable)
+            subject (str (:timestamp msg-payload))
+            cipher-hex (mse/encrypt serialized secret)
+            send-asymm (fn [secret-key]
+                         (let [sk (mse/hex->array secret-key)
+                               ct (mse/encrypt-asymm serialized their-public-key sk)]
+                           (imap-save {:ciphertext   ct
+                                       :content-type "text/plain"
+                                       :encoding     "quoted-printable"
+                                       :subject      subject
+                                       :mailbox      "INBOX.paul"})))]
+        (imap-save {:ciphertext   cipher-hex
+                    :content-type "text/plain"
+                    :encoding     "quoted-printable"
+                    :subject      subject
+                    :mailbox      mailbox})
+        (-> (kc/get-secret-key)
+            (.then send-asymm)))
+      (catch :default e (error e))))
+  {})
 
 (defn read-mb [k d cfg put-fn]
   (try

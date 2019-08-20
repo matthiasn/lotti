@@ -93,6 +93,11 @@ test: deps
 	@echo Running Clojure tests...
 	@eval $(LEIN) test
 
+cljs-test:
+	@echo Running ClojureScript tests...
+	@eval $(SHADOW) compile test
+	@node out/node-tests.js
+
 sass:
 	@echo Building CSS...
 	@eval $(LEIN) sass4clj once
@@ -106,7 +111,7 @@ cljs: deps npm-deps
 figwheel:
 	@lein cljs-figwheel
 
-electron: clean deps test sass cljs
+electron: clean deps test cljs-test sass cljs
 
 directories:
 	@echo Preparing target directories...
