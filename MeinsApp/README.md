@@ -39,8 +39,8 @@ You need to modify projects in **XCode** as follows for _Product > Archive_ to w
 
 ## Creating Release Bundle on Android
     
-    $ make beta-android
-    $ adb install app/build/outputs/apk/release/app-release.apk
+    $ make android
+    $ adb install android/app/build/outputs/apk/release/app-release.apk
 
 
 ## Running on Android
