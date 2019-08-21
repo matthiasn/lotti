@@ -36,7 +36,7 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.12.0"]
-                 [ubergraph "0.7.2"]
+                 [ubergraph "0.8.0"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.40"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
@@ -73,7 +73,7 @@
 
   :plugins [[test2junit "1.4.2"]
             [lein-cloverage "1.1.1"]
-            [deraen/lein-sass4clj "0.3.1"]
+            [deraen/lein-sass4clj "0.4.0"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.1"]
             [lein-ancient "0.6.15"]]
