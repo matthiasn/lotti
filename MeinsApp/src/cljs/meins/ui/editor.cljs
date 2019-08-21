@@ -55,7 +55,7 @@
             cancel-fn (fn []
                         (.dismiss keyboard)
                         (navigate "Journal"))
-            save-fn #(let [new-entry (p/parse-entry (:md @local))]
+            save-fn #(let [new-entry (h/parse-entry (:md @local))]
                        (h/new-entry-fn emit new-entry)
                        (swap! local assoc-in [:md] "")
                        (.dismiss keyboard)

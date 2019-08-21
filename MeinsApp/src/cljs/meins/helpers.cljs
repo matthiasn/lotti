@@ -27,7 +27,13 @@
                                    :latitude  (:latitude loc)
                                    :longitude (:longitude loc)}])))
       (fn [err] (prn err)))
-    (catch :default _ (shared/alert "geolocation not available"))))
+    (catch :default e (shared/alert (str "geolocation not available: " e)))))
+
+(defn parse-entry
+  "Parses entry for hashtags and mentions by calling shared function, plus setting the
+   #import tag."
+  [text]
+  (update (p/parse-entry text) :tags conj "#import") )
 
 (defn new-entry-fn [put-fn opts]
   (let [ts (st/now)
@@ -36,7 +42,7 @@
                        (.-timeZone resolved))
                      (when-let [resolved (.resolvedOptions dtf)]
                        (.-timeZone resolved)))
-        entry (merge (p/parse-entry "")
+        entry (merge (parse-entry "")
                      {:timestamp  ts
                       :new-entry  true
                       :timezone   timezone
