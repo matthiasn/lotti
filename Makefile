@@ -93,7 +93,7 @@ test: deps
 	@echo Running Clojure tests...
 	@eval $(LEIN) test
 
-cljs-test:
+cljs-test: npm-deps
 	@echo Running ClojureScript tests...
 	@eval $(SHADOW) compile test
 	@node out/node-tests.js
