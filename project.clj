@@ -36,7 +36,7 @@
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.drewnoakes/metadata-extractor "2.12.0"]
-                 [ubergraph "0.8.0"]
+                 [ubergraph "0.8.1"]
                  [camel-snake-kebab "0.4.0"]
                  [matthiasn/systems-toolbox "0.6.40"]
                  [matthiasn/systems-toolbox-sente "0.6.32"]
