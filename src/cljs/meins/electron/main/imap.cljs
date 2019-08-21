@@ -251,7 +251,7 @@
     (try
       (let [mailbox (:mailbox mb-cfg)
             secret (:secret mb-cfg)
-            their-public-key (mse/hex->array (:public-key mb-cfg))
+            their-public-key (:public-key mb-cfg)
             ; actual meta-data too large, makes the encryption waste battery
             serializable [:entry/sync {:msg-payload msg-payload
                                        :msg-meta    {}}]
@@ -260,6 +260,7 @@
             cipher-hex (mse/encrypt serialized secret)
             send-asymm (fn [secret-key]
                          (let [sk (mse/hex->array secret-key)
+                               their-public-key (mse/hex->array their-public-key)
                                ct (mse/encrypt-asymm serialized their-public-key sk)]
                            (imap-save {:ciphertext   ct
                                        :content-type "text/plain"
@@ -271,8 +272,9 @@
                     :encoding     "quoted-printable"
                     :subject      subject
                     :mailbox      mailbox})
-        (-> (kc/get-secret-key)
-            (.then send-asymm)))
+        (when their-public-key
+          (-> (kc/get-secret-key)
+              (.then send-asymm))))
       (catch :default e (error e))))
   {})
 
