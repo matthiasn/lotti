@@ -5,7 +5,7 @@
                 [org.clojure/data.avl "0.1.0"]
                 [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                 [core-async-storage "0.3.1"]
-                [re-frame "0.10.7"]]
+                [re-frame "0.10.8"]]
 
  :builds       {:app
                 {:target           :react-native

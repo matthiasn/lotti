@@ -1,5 +1,5 @@
 {:dependencies [[reagent "0.8.1"]
-                [re-frame "0.10.7"]
+                [re-frame "0.10.8"]
                 [cljsjs/moment "2.24.0-0"]
                 [matthiasn/systems-toolbox-electron "0.6.29"]
                 [matthiasn/systems-toolbox "0.6.40"]
