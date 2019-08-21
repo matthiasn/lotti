@@ -15,7 +15,7 @@
                                      rn-audio-recorder-player alert status-bar]]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
-            [meins.utils.parse :as p]))
+            [meins.common.utils.parse :as p]))
 
 (defn get-entry [ts]
   (when (number? ts)

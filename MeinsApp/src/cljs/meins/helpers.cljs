@@ -2,7 +2,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [goog.dom.Range]
             [meins.ui.shared :as shared]
-            [meins.utils.parse :as p]
+            [meins.common.utils.parse :as p]
             ["intl" :as intl]
             ["buffer" :refer [Buffer]]
             ["moment" :as moment]

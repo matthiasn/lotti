@@ -1,8 +1,9 @@
-{:source-paths ["src/cljc" "src/cljs" "../src/cljs" "../src/test"]
+{:source-paths ["../src/cljc" "src/cljs" "../src/cljs" "../src/test"]
 
  :dependencies [[reagent "0.8.1"]
                 [matthiasn/systems-toolbox "0.6.40"]
                 [org.clojure/data.avl "0.1.0"]
+                [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                 [core-async-storage "0.3.1"]
                 [re-frame "0.10.7"]]
 

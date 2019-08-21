@@ -6,7 +6,7 @@
             [reagent.core :as r]
             [meins.ui.colors :as c]
             [meins.helpers :as h]
-            [meins.utils.parse :as p]))
+            [meins.common.utils.parse :as p]))
 
 (def local (r/atom {:md ""}))
 
