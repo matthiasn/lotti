@@ -32,9 +32,9 @@
                                     :output-feature-set :es-next}
                  :main             meins.electron.main.core/init}
 
-                :test
+                :shared-tests
                 {:target    :node-test
-                 :output-to "out/node-tests.js"}
+                 :output-to "out/shared-tests.js"}
 
                 :renderer
                 {:target     :browser

@@ -1,4 +1,4 @@
-{:source-paths ["src/cljc" "src/cljs" "../src/cljs"]
+{:source-paths ["src/cljc" "src/cljs" "../src/cljs" "../src/test"]
 
  :dependencies [[reagent "0.8.1"]
                 [matthiasn/systems-toolbox "0.6.40"]
@@ -6,14 +6,19 @@
                 [core-async-storage "0.3.1"]
                 [re-frame "0.10.7"]]
 
- :builds       {:app {:target           :react-native
-                      :init-fn          meins.core/init
-                      :output-dir       "app"
-                      :compiler-options {:elide-asserts   true
-                                         :closure-defines {"goog.DEBUG"  false
-                                                           "goog.LOCALE" "en"}}
-                      :devtools         {:autoload   true
-                                         :after-load meins.core/init}
-                      :release          {:compiler-options
-                                         {:optimizations      :simple
-                                          :output-feature-set :es-next}}}}}
+ :builds       {:app
+                {:target           :react-native
+                 :init-fn          meins.core/init
+                 :output-dir       "app"
+                 :compiler-options {:elide-asserts   true
+                                    :closure-defines {"goog.DEBUG"  false
+                                                      "goog.LOCALE" "en"}}
+                 :devtools         {:autoload   true
+                                    :after-load meins.core/init}
+                 :release          {:compiler-options
+                                    {:optimizations      :simple
+                                     :output-feature-set :es-next}}}
+
+                :shared-tests
+                {:target    :node-test
+                 :output-to "out/shared-tests.js"}}}

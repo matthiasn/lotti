@@ -40,23 +40,28 @@ clean-pods:
 	@echo Cleaning up pods...
 	@rm -rf ./ios/Pods
 
-deps: deps-npm deps-pods
+deps: npm-deps pod-deps
 
-deps-npm:
+npm-deps:
 	@echo Fetching NPM dependencies...
 	@yarn install
 
-deps-pods:
+pod-deps:
 	@echo Fetching Pods...
 	@cd ios && pod install && cd ..
 
-deps-link:
+link-deps:
 	@echo Linking dependencies...
 	@react-native link
 
 cljs:
 	@echo Building ClojureScript for React Native app...
 	@eval $(SHADOW) release app
+
+cljs-shared-tests: npm-deps
+	@echo Running ClojureScript tests...
+	@eval $(SHADOW) compile shared-tests
+	@node out/shared-tests.js
 
 jsbundle:
 	@echo Packaging jsbundle...
@@ -74,7 +79,7 @@ fastlane-beta:
 	@echo Building and publishing via Fastlane
 	cd ios && fastlane beta && cd ..
 
-testflight: deps-npm pod-install package fastlane-beta
+testflight: npm-deps pod-install package fastlane-beta
 
 jsbundle-android:
 	@echo Packaging jsbundle for Android...
@@ -88,4 +93,4 @@ metro:
 	@echo Starting Metro Bundler...
 	node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js start --reset-cache
 
-android: deps-npm cljs fastlane-beta-android
+android: npm-deps cljs fastlane-beta-android

@@ -93,10 +93,10 @@ test: deps
 	@echo Running Clojure tests...
 	@eval $(LEIN) test
 
-cljs-test: npm-deps
+cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
-	@eval $(SHADOW) compile test
-	@node out/node-tests.js
+	@eval $(SHADOW) compile shared-tests
+	@node out/shared-tests.js
 
 sass:
 	@echo Building CSS...
@@ -111,7 +111,7 @@ cljs: deps npm-deps
 figwheel:
 	@lein cljs-figwheel
 
-electron: clean deps test cljs-test sass cljs
+electron: clean deps test cljs-shared-tests sass cljs
 
 directories:
 	@echo Preparing target directories...
