@@ -1,9 +1,9 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/meo
+    working_directory: ~/meins
     docker:
-      - image: circleci/clojure:lein-2.8.1-node
+      - image: circleci/clojure:lein-2.9.1-node
     environment:
       LEIN_ROOT: nbd
       JVM_OPTS: -Xmx3200m
