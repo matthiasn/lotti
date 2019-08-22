@@ -13,13 +13,14 @@ jobs:
       - checkout
       - run: lein deps
       - run: lein test2junit
-      #- run: npm install
-      #- run: npm install -g node-gyp
-      #- run: lein cljs-main
-      #- run: lein cljs-renderer
-      #- run: lein cljs-updater
       - run: lein sass
       - run: lein uberjar
       - store_artifacts:
           path: test2junit/xml
           destination: reports
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build

@@ -1,29 +1,21 @@
 # OS detection adapted from: https://gist.github.com/sighingnow/deee806603ec9274fd47
 OSFLAG 	:=
-LEIN 	:=
-SHADOW 	:=
-YARN := $(shell command -v yarn 2> /dev/null)
 JLINK := $(shell command -v jlink 2> /dev/null)
+LEIN := $(shell command -v lein 2> /dev/null)
+SHADOW := $(shell command -v shadow-cljs 2> /dev/null)
 
-ifeq ($(OS),Windows_NT)
-	LEIN := $(shell command -v lein.bat 2> /dev/null)
-	SHADOW := $(shell command -v shadow-cljs.cmd 2> /dev/null)
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	OSFLAG := -l
+endif
+ifeq ($(UNAME_S),Darwin)
+	OSFLAG := -m
+endif
+ifeq ($(UNAME_S),CYGWIN_NT-10.0)
 	OSFLAG := -w
-else
-	LEIN := $(shell command -v lein 2> /dev/null)
-	SHADOW := $(shell command -v shadow-cljs 2> /dev/null)
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S),Linux)
-		OSFLAG := -l
-	endif
-	ifeq ($(UNAME_S),Darwin)
-		OSFLAG := -m
-	endif
-	ifeq ($(UNAME_S),CYGWIN_NT-10.0)
-		LEIN := $(shell command -v lein.bat 2> /dev/null)
-		SHADOW := $(shell command -v shadow-cljs.cmd 2> /dev/null)
-		OSFLAG := -w
-	endif
+endif
+ifeq ($(UNAME_S),MSYS_NT-10.0)
+	OSFLAG := -w
 endif
 
 package: install package-only
@@ -59,54 +51,41 @@ deps-ubuntu:
 	npm install -g shadow-cljs
 	mkdir ./bin
 
-build-deps:
-ifndef LEIN
-	$(error "Leiningen not found, please install from https://leiningen.org")
-endif
-ifndef SHADOW
-	$(error "shadow-cljs not found, please install from https://shadow-cljs.github.io")
-endif
-ifndef YARN
-	$(error "yarn not found, please install from https://yarnpkg.com")
-endif
-ifndef JLINK
-	$(error "jlink not found, please install JDK10")
-endif
-
-clean: build-deps
+clean:
 	@echo Cleaning up...
 	@rm -rf ./bin
 	@rm -rf ./dist
-	@eval $(LEIN) clean
+	@lein clean
 	@rm -f ./yarn.lock
 
 deps: clean
 	@echo Fetching Leiningen dependencies...
-	@eval $(LEIN) deps
+	@lein deps
 
 npm-deps: clean
 	@echo Fetching NPM dependencies...
 	@yarn install
+	@npm install -g electron-builder
 	@electron-rebuild -v 6.0.3 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
-	@eval $(LEIN) test
+	@lein test
 
 cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
-	@eval $(SHADOW) compile shared-tests
+	@shadow-cljs compile shared-tests
 	@node out/shared-tests.js
 
 sass:
 	@echo Building CSS...
-	@eval $(LEIN) sass4clj once
+	@lein sass4clj once
 
 cljs: deps npm-deps
 	@echo Building ClojureScript for main electron process...
-	@eval $(SHADOW) release main
+	@shadow-cljs release main
 	@echo Building ClojureScript for electron renderer process...
-	@eval $(SHADOW) release renderer
+	@shadow-cljs release renderer
 
 figwheel:
 	@lein cljs-figwheel
@@ -121,7 +100,7 @@ directories:
 
 jlink: clean test directories
 	@echo Assembling UberJAR...
-	@eval $(LEIN) jlink assemble
+	@lein jlink assemble
 
 # replace symlinks, they lead to problems with electron-packager
 # from: https://superuser.com/questions/303559/replace-symbolic-links-with-files
@@ -136,10 +115,10 @@ install: jlink electron symlinks
 
 package-only:
 	@echo Building executable...
-	./node_modules/.bin/electron-builder $(OSFLAG)
+	@electron-builder $(OSFLAG)
 
 publish-github:
 	@echo Publishing to GitHub Releases - requires GH_TOKEN in ENV...
-	./node_modules/.bin/electron-builder -c electron-builder.yml --publish always $(OSFLAG)
+	@electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
 release: install publish-github

@@ -1,20 +1,17 @@
 language: clojure
 
 jdk:
-  - oraclejdk11
+  - openjdk12
 
-matrix:
-  include:
-    - jdk: openjdk11
-      before_install:
-        - sudo rm "${JAVA_HOME}/lib/security/cacerts"
-        - sudo ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+before_install:
+  - sudo rm "${JAVA_HOME}/lib/security/cacerts"
+  - sudo ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
 
 install:
   - sudo apt-get install libxkbfile-dev
   - sudo apt-get install libsecret-1-dev
-  - nvm install 10
-  - nvm use 10
+  - nvm install 12
+  - nvm use 12
   - npm install -g shadow-cljs
   - npm install -g electron-rebuild
 
