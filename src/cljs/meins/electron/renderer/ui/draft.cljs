@@ -7,14 +7,12 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.common.utils.misc :as u]
             [draft-js :as Draft]
-            [meins-draftjs-md-converter :as md-converter]
+            [draftjs-md-converter :as md-converter]
             [meins-draft]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
             [clojure.set :as set]
-            [cljs.pprint :as pp]
             [clojure.walk :as walk]
-            [clojure.string :as str]
             [clojure.string :as s]
             [meins.electron.renderer.ui.entry.cfg.custom-field :as cfc]))
 

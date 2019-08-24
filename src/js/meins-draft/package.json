@@ -1,6 +1,6 @@
 {
 	"name": "meins-draft",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"description": "draft editor wrappers for meins",
 	"license": "MIT",
 	"repository": {
@@ -19,7 +19,6 @@
 		"StyleControls.js"
 	],
 	"dependencies": {
-		"meins-draftjs-md-converter": "1.1.2"
 	},
 	"devDependencies": {
 	}

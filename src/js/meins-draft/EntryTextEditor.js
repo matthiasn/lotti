@@ -60,8 +60,7 @@ let _react = require('react');
 let _react2 = _interopRequireDefault(_react);
 
 let _draftJs = require('draft-js');
-let _draftjsMdConverter = require('meins-draftjs-md-converter');
-let _draftJsExportHtml = require('draft-js-export-html');
+let _draftjsMdConverter = require('draftjs-md-converter');
 
 let _draftJsPluginsEditor = require('draft-js-plugins-editor');
 let _draftJsPluginsEditor2 = _interopRequireDefault(_draftJsPluginsEditor);
@@ -148,6 +147,27 @@ function extractAndSave (editorState, saveFn) {
 
     saveFn(md, plain);
 }
+
+let extraStyles = {
+    inlineStyles: {
+        Strong: {
+            type: 'BOLD',
+            symbol: '**'
+        },
+        Code: {
+            type: 'CODE',
+            symbol: '`'
+        },
+        Strikethrough: {
+            type: 'STRIKETHROUGH',
+            symbol: '~~'
+        },
+        Underline: {
+            type: 'UNDERLINE',
+            symbol: '__'
+        }
+    }
+};
 
 let EntryTextEditor = function (_Component) {
     _inherits(EntryTextEditor, _Component);
@@ -246,7 +266,7 @@ let EntryTextEditor = function (_Component) {
 
         _this.handleKeyCommand = _this.handleKeyCommand.bind(_this);
 
-        let rawFromMd = _draftjsMdConverter.mdToDraftjs(props.md);
+        let rawFromMd = _draftjsMdConverter.mdToDraftjs(props.md, extraStyles);
         let stateFromMd = _draftJs.convertFromRaw(rawFromMd);
         let stateFromMd2 = _draftJs.EditorState.createWithContent(stateFromMd);
 
