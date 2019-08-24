@@ -7,7 +7,7 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.common.utils.misc :as u]
             [draft-js :as Draft]
-            [draftjs-md-converter :as md-converter]
+            ["@matthiasn/draftjs-md-converter" :as md-converter]
             [meins-draft]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [matthiasn.systems-toolbox.component :as st]
