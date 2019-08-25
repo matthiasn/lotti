@@ -4,6 +4,11 @@
   display: flex;
   background-color: $tab-bg;
 
+  #qr-video {
+    width: 300px;
+    height: 300px;
+  }
+
   th {
     user-select: none;
   }

@@ -1,8 +1,9 @@
 (ns meins.electron.renderer.ui.config.sync
   (:require [moment]
+            [meins.electron.renderer.ui.config.qr-scanner :as qr]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as rc]
+            [reagent.core :as r]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [taoensso.timbre :refer-macros [info error]]
             [matthiasn.systems-toolbox.component :as stc]
@@ -32,7 +33,7 @@
   (let [iww-host (.-iwwHOST js/window)
         imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
-        local (rc/atom (or @imap-cfg {}))
+        local (r/atom (or @imap-cfg {}))
         save (fn [_] (info "save") (emit [:imap/save-cfg @local]))]
     (fn config-render []
       (let [connected (= (:status @imap-status) :read-mailboxes)
@@ -67,5 +68,5 @@
           [:button {:on-click create-key-pair}
            "(Re-)Create Key Pair"]]
          [:div
-          [:img {:src (str "http://" iww-host "/secrets/"
-                           (stc/make-uuid) "/secrets.png")}]]]))))
+          [:img {:src (str "http://" iww-host "/secrets/" (stc/make-uuid) "/secrets.png")}]
+          [qr/scanner]]]))))
