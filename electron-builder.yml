@@ -3,37 +3,40 @@ asar: false
 afterSign: "build/notarize.js"
 
 files:
-    - "bin/jlink/**"
-    - "!node_modules/**"
-    - "node_modules/date-fns/**"
-    - "node_modules/lato-font/**"
-    - "node_modules/leaflet/**"
-    - "node_modules/normalize.css/**"
-    - "node_modules/cldr-data/**"
-    - "node_modules/keytar/**"
-    - "node_modules/cldr-data/main/@(de|en|fr|es)"
-    - "!node_modules/cldr-data/main/!(de|en|fr|es)"
-    - "prod/**"
-    - "electron/**"
-    - "src/**"
-    - "resources/**"
+  - "bin/jlink/**"
+  - "!node_modules/**"
+  - "node_modules/date-fns/**"
+  - "node_modules/lato-font/**"
+  - "node_modules/leaflet/**"
+  - "node_modules/normalize.css/**"
+  - "node_modules/cldr-data/**"
+  - "node_modules/keytar/**"
+  - "node_modules/cldr-data/main/@(de|en|fr|es)"
+  - "!node_modules/cldr-data/main/!(de|en|fr|es)"
+  - "prod/**"
+  - "electron/**"
+  - "src/**"
+  - "resources/**"
 
 dmg:
-    sign: false
+  sign: false
 
 publish:
-    provider: "github"
-    owner: "matthiasn"
-    draft: true
+  provider: "github"
+  owner: "matthiasn"
+  draft: true
 
 nsis:
-    differentialPackage: false
+  differentialPackage: false
 
 linux:
-    target: AppImage
+  target: AppImage
 
 mac:
-    hardenedRuntime: true
-    gatekeeperAssess: false
-    entitlements: "build/entitlements.mac.plist"
-    entitlementsInherit: "build/entitlements.mac.plist"
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: "build/entitlements.mac.plist"
+  entitlementsInherit: "build/entitlements.mac.plist"
+  extendInfo:
+    NSCameraUsageDescription: "This app requires web cam access for scanning the public key of a connected mobile device."
+    NSMicrophoneUsageDescription: "This app requires web cam access for scanning the public key of a connected mobile device."

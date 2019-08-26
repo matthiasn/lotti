@@ -1,6 +1,6 @@
 (ns meins.electron.main.runtime
   (:require [path :refer [normalize join]]
-            [electron :refer [app]]
+            [electron :refer [app systemPreferences]]
             [cljs.nodejs :refer [process]]
             [taoensso.timbre :refer-macros [info error debug]]
             [fs :refer [existsSync renameSync readFileSync]]
@@ -69,3 +69,9 @@
            :capabilities  capabilities
            :gql-port      (if repo-dir 8766 7789)}
           (map (fn [[k v]] [k (normalize v)]) info))))
+
+(-> (.askForMediaAccess systemPreferences "camera")
+    (.then (fn [res]
+             (let [status (.getMediaAccessStatus systemPreferences "camera")]
+               (info "askForMediaAccess" res)
+               (info "getMediaAccessStatus" status)))))
