@@ -44,9 +44,8 @@
                  :release    {:compiler-options {:optimizations      :simple
                                                  :output-feature-set :es-next}
                               :output-dir       "prod/renderer-shadow"
-                              :js-options       {:js-provider          :shadow
-                                                 :keep-native-requires true
-                                                 :keep-as-require      #{"cldr-data" "electron"}}}
+                              :js-options       {:js-provider          :require
+                                                 :keep-native-requires true}}
                  :devtools   {:use-document-host false
                               :loader-mode       :eval
                               :ignore-warnings   true
