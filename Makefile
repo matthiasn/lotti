@@ -64,6 +64,7 @@ deps: clean
 
 npm-deps: clean
 	@echo Fetching NPM dependencies...
+	@nvm use 12
 	@yarn install
 	@npm install -g electron-builder
 	@electron-rebuild -v 6.0.3 -w keytar
