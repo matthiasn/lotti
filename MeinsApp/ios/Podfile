@@ -53,4 +53,6 @@ target 'meins' do
 
   pod 'RNCAsyncStorage', :path => '../node_modules/@react-native-community/async-storage'
 
+  pod 'RNSVG', :path => '../node_modules/react-native-svg'
+
 end

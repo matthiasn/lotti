@@ -1,10 +1,13 @@
 (ns meins.ui.settings.sync
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list cam text settings-list-item status-bar]]
+            [meins.ui.shared :refer [view settings-list alert cam text settings-list-item status-bar]]
+            ["react-native-qrcode-svg" :as qr]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]))
+
+(def qr-svg (r/adapt-react-class (aget qr "default")))
 
 (defn sync-settings [_]
   (let [theme (subscribe [:active-theme])
@@ -20,7 +23,9 @@
     (fn [_props]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
-            text-color (get-in c/colors [:btn-text @theme])]
+            text-color (get-in c/colors [:btn-text @theme])
+            qr-value (pr-str {:node-id    "06847646-1c24-4bd8-b595-bcc6ce5967f6"
+                              :public-key "36613538396661336665363534323639613864613564353666353"})]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg
@@ -52,4 +57,9 @@
                           :flex        2
                           :margin      5
                           :text-align  "center"}}
-            (str barcode)])]))))
+            (str barcode)])
+         [view {:style {:background-color "white"
+                        :padding          20
+                        :align-items      "center"}}
+          [qr-svg {:value qr-value
+                   :size  300}]]]))))
