@@ -2,7 +2,7 @@
   (:require ["crypto-js" :refer [AES algo enc util lib PBKDF2] :as crypto]
             [cljs.reader :as edn]
             [clojure.string :as s]
-            ["tweetnacl" :refer [box randomBytes]]
+            ["tweetnacl" :refer [box randomBytes setPRNG]]
             ["tweetnacl-util" :refer [decodeUTF8 encodeUTF8 encodeBase64 decodeBase64]]
             [clojure.string :as str]))
 
@@ -78,6 +78,11 @@
 (defn gen-key-pair []
   (js->clj (.keyPair box) :keywordize-keys true))
 
+(defn gen-key-pair-hex []
+  (-> (gen-key-pair)
+      (update :publicKey array->hex)
+      (update :secretKey array->hex)))
+
 (defn encrypt-asymm
   "Encrypt message via x25519-xsalsa20-poly1305 using the public key of the
    recipient and the local private key."
@@ -102,6 +107,9 @@
           decrypted (.open box encrypted nonce their-public-key my-secret-key)]
       (encodeUTF8 decrypted))
     (catch :default e (js/console.error "decrypt-asymm" e))))
+
+(defn set-prng [f]
+  (setPRNG f))
 
 (defn decrypt
   "Decrypts ciphertext based on the version, which is encoded in the first characters

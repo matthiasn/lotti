@@ -3,6 +3,7 @@
             ["react-native-exception-handler" :refer [setJSExceptionHandler
                                                       setNativeExceptionHandler]]
             [meins.helpers]
+            [meins.crypto]
             [meins.ui.shared :refer [alert]]
             [meins.ios.sync :as sync]
             [meins.store :as store]

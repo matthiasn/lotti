@@ -5,14 +5,14 @@
 
 (defn save-key-pair [key-pair]
   (let [{:keys [publicKey secretKey]} key-pair]
-    (setPassword "meins" "publicKey" (mse/array->hex publicKey))
-    (setPassword "meins" "secretKey" (mse/array->hex secretKey))))
+    (setPassword "meins" "publicKey" publicKey)
+    (setPassword "meins" "secretKey" secretKey)))
 
 (defn get-secret-key []
   (getPassword "meins" "secretKey"))
 
 (defn create-keypair [{:keys []}]
-  (let [key-pair (mse/gen-key-pair)]
+  (let [key-pair (mse/gen-key-pair-hex)]
     (save-key-pair key-pair)
     (info "created key pair, public key:" (:publicKey key-pair))
     {}))

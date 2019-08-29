@@ -55,4 +55,6 @@ target 'meins' do
 
   pod 'RNSVG', :path => '../node_modules/react-native-svg'
 
+  pod 'react-native-randombytes', :path => '../node_modules/@matthiasn/react-native-randombytes'
+
 end

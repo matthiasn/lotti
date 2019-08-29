@@ -1,13 +1,20 @@
 (ns meins.ui.settings.sync
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view settings-list alert cam text settings-list-item status-bar]]
-            ["react-native-qrcode-svg" :as qr]
+            [meins.ui.elements.qr :as qr]
+            [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]))
 
-(def qr-svg (r/adapt-react-class (aget qr "default")))
+(defn set-keypair
+  "Sets keypair in local atom. Experimental usage - in the next step, the keypair needs to be
+   generated once and then stored in the keychain."
+  [local]
+  (let [kp (mse/gen-key-pair-hex)]
+    (swap! local assoc :key-pair kp)
+    (js/console.warn (str kp))))
 
 (defn sync-settings [_]
   (let [theme (subscribe [:active-theme])
@@ -20,12 +27,14 @@
                             (emit [:secrets/set data])
                             (swap! local assoc-in [:cam] false)))
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
+    (set-keypair local)
     (fn [_props]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
             text-color (get-in c/colors [:btn-text @theme])
-            qr-value (pr-str {:node-id    "06847646-1c24-4bd8-b595-bcc6ce5967f6"
-                              :public-key "36613538396661336665363534323639613864613564353666353"})]
+            qr-value (when-let [kp (:key-pair @local)]
+                       (pr-str {:public-key (:publicKey kp)
+                                :node-id    "fooooo"}))]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg
@@ -58,8 +67,4 @@
                           :margin      5
                           :text-align  "center"}}
             (str barcode)])
-         [view {:style {:background-color "white"
-                        :padding          20
-                        :align-items      "center"}}
-          [qr-svg {:value qr-value
-                   :size  300}]]]))))
+         [qr/qr-code qr-value]]))))
