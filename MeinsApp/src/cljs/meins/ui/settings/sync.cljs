@@ -33,10 +33,7 @@
     (fn [_props]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
-            text-color (get-in c/colors [:btn-text @theme])
-            qr-value (when-let [kp (:key-pair @local)]
-                       (pr-str {:public-key (:publicKey kp)
-                                :node-id    "fooooo"}))]
+            text-color (get-in c/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg
@@ -69,4 +66,4 @@
                           :margin      5
                           :text-align  "center"}}
             (str barcode)])
-         [qr/qr-code qr-value]]))))
+         [qr/qr-code]]))))
