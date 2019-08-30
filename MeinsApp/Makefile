@@ -44,7 +44,6 @@ deps: npm-deps pod-deps
 
 npm-deps:
 	@echo Fetching NPM dependencies...
-	@nvm use 10
 	@yarn install
 
 pod-deps:
