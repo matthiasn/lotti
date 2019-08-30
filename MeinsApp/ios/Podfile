@@ -57,4 +57,6 @@ target 'meins' do
 
   pod 'react-native-randombytes', :path => '../node_modules/@matthiasn/react-native-randombytes'
 
+  pod 'RNKeychain', :path => '../node_modules/react-native-keychain'
+
 end

@@ -2,6 +2,7 @@
   (:require [meins.ui.colors :as c]
             [meins.ui.shared :refer [view settings-list alert cam text settings-list-item status-bar]]
             [meins.ui.elements.qr :as qr]
+            [meins.util.keychain :as kc]
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
             [cljs.tools.reader.edn :as edn]
@@ -13,6 +14,7 @@
    generated once and then stored in the keychain."
   [local]
   (let [kp (mse/gen-key-pair-hex)]
+    (kc/set-keypair kp)
     (swap! local assoc :key-pair kp)
     (js/console.warn (str kp))))
 
