@@ -1,6 +1,6 @@
 (ns meins.ui.shared
   (:require [reagent.core :as r]
-            ["react-native" :as react-native]
+            ["react-native" :as react-native :refer [Clipboard]]
             ["@matthiasn/react-native-audio-recorder-player" :as react-native-audio-recorder-player]
             ["react-native-camera" :as react-native-camera]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
@@ -34,6 +34,8 @@
 (def cam-roll (.-CameraRoll react-native))
 
 (defn alert [title] (.alert (.-Alert react-native) (str title)))
+
+(defn set-clipboard [s] (.setString Clipboard s))
 
 (def logo-img (js/require "../images/logo.png"))
 

@@ -1,5 +1,5 @@
 (ns meins.ui.elements.qr
-  (:require [meins.ui.shared :refer [view]]
+  (:require [meins.ui.shared :refer [touchable-opacity set-clipboard]]
             ["react-native-qrcode-svg" :as qr]
             [reagent.core :as r]))
 
@@ -7,8 +7,9 @@
 
 (defn qr-code [qr-value]
   (when qr-value
-    [view {:style {:background-color "white"
-                   :padding          20
-                   :align-items      "center"}}
+    [touchable-opacity {:on-press #(set-clipboard qr-value)
+                        :style    {:background-color "white"
+                                   :padding          20
+                                   :align-items      "center"}}
      [qr-svg {:value qr-value
               :size  300}]]))
