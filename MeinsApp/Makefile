@@ -94,3 +94,6 @@ metro:
 	node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js start --reset-cache
 
 android: npm-deps cljs fastlane-beta-android
+
+android-install:
+	adb install android/app/build/outputs/apk/release/app-release.apk
