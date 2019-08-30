@@ -1,4 +1,4 @@
-(ns meins.ios.healthkit.common
+(ns meins.components.healthkit.common
   (:require [matthiasn.systems-toolbox.component :as st]))
 
 (defn date-from-ts [ts]

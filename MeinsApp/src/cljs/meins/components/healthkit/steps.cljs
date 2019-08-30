@@ -1,5 +1,5 @@
-(ns meins.ios.healthkit.steps
-  (:require [meins.ios.healthkit.common :as hc]
+(ns meins.components.healthkit.steps
+  (:require [meins.components.healthkit.common :as hc]
             ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]))

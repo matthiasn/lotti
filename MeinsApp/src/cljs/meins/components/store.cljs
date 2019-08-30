@@ -1,4 +1,4 @@
-(ns meins.store
+(ns meins.components.store
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [matthiasn.systems-toolbox.component :as st]
             [meins.ui.db :as uidb]

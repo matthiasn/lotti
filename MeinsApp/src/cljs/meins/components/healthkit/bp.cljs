@@ -1,7 +1,7 @@
-(ns meins.ios.healthkit.bp
+(ns meins.components.healthkit.bp
   (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
-            [meins.ios.healthkit.common :as hc]
+            [meins.components.healthkit.common :as hc]
             [matthiasn.systems-toolbox.component :as st]))
 
 (defn bp-cb [put-fn err res]

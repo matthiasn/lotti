@@ -5,13 +5,13 @@
             [meins.helpers]
             [meins.crypto]
             [meins.ui.shared :refer [alert]]
-            [meins.ios.sync :as sync]
-            [meins.store :as store]
-            [meins.ios.photos :as photos]
+            [meins.components.sync :as sync]
+            [meins.components.store :as store]
+            [meins.components.photos :as photos]
             [meins.ui :as ui]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
-            [meins.ios.healthkit :as hk]))
+            [meins.components.healthkit :as hk]))
 
 (enable-console-print!)
 (defonce switchboard (sb/component :client/switchboard))

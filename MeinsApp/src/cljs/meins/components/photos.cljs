@@ -1,4 +1,4 @@
-(ns meins.ios.photos
+(ns meins.components.photos
   (:require ["react-native" :as rn]
             ["@matthiasn/cameraroll" :as cam-roll]
             ["realm" :as realm]

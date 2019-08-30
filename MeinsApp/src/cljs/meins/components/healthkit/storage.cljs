@@ -1,4 +1,4 @@
-(ns meins.ios.healthkit.storage
+(ns meins.components.healthkit.storage
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]))

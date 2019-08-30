@@ -1,4 +1,4 @@
-(ns meins.ios.sync
+(ns meins.components.sync
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]

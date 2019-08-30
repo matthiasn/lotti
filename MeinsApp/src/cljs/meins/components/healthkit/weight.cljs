@@ -1,8 +1,8 @@
-(ns meins.ios.healthkit.weight
+(ns meins.components.healthkit.weight
   (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]
-            [meins.ios.healthkit.common :as hc]
+            [meins.components.healthkit.common :as hc]
             [cljs.pprint :as pp]))
 
 (defn round [n d]

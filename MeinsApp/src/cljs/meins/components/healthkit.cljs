@@ -1,11 +1,11 @@
-(ns meins.ios.healthkit
-  (:require [meins.ios.healthkit.storage :as hs]
-            [meins.ios.healthkit.bp :as hb]
-            [meins.ios.healthkit.weight :as hw]
-            [meins.ios.healthkit.energy :as he]
-            [meins.ios.healthkit.exercise :as hx]
-            [meins.ios.healthkit.steps :as hst]
-            [meins.ios.healthkit.sleep :as hsl]))
+(ns meins.components.healthkit
+  (:require [meins.components.healthkit.storage :as hs]
+            [meins.components.healthkit.bp :as hb]
+            [meins.components.healthkit.weight :as hw]
+            [meins.components.healthkit.energy :as he]
+            [meins.components.healthkit.exercise :as hx]
+            [meins.components.healthkit.steps :as hst]
+            [meins.components.healthkit.sleep :as hsl]))
 
 (enable-console-print!)
 
