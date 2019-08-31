@@ -19,7 +19,7 @@
         data-path (str user-data "/data")
         playground-path (str user-data "/playground-data")
         encrypted-path (str user-data "/encrypted")
-        ca-file (str (if repo-dir (str cwd "/data") data-path) "/capabilities.edn")
+        ca-file (str data-path "/capabilities.edn")
         capabilities (when (existsSync ca-file)
                        (:capabilities (edn/read-string
                                         (readFileSync ca-file "utf-8"))))

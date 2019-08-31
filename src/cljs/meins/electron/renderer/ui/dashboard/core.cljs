@@ -33,7 +33,7 @@
                     (filter #(contains? #{:barchart_row
                                           :linechart_row} (:type %)))
                     (mapv :tag)
-                    (concat ["#BP"]))]
+                    (concat ["#BP" "#sleep"]))]
       (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) days days))))]
         (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tags :custom_fields_by_days)
                            :res-hash nil

@@ -58,9 +58,16 @@
              :fill        "#333"}
       (name yk)]]))
 
+(defn data-xform [combined dashboard-data tag out-key]
+  (->> dashboard-data
+       (reduce (fn [acc [date_string {:keys [custom-fields]}]]
+                 (let [v (get-in custom-fields [tag :fields 0 :value])]
+                   (assoc-in acc [date_string out-key] v)))
+               combined)))
+
 (defn scatter-matrix []
   (let [gql-res (subscribe [:gql-res])
-        dashboard-data (reaction (get-in @gql-res [:dashboard :data]))
+        dashboard-data (subscribe [:dashboard-data])
         questionnaire-data (reaction (get-in @gql-res [:dashboard-questionnaires :data]))
         day-stats (reaction (get-in @gql-res [:day-stats :data :day_stats]))
         panas-stats (reaction
@@ -102,27 +109,11 @@
                            @cfq11-stats
                            @day-stats))
         combined2 (reaction
-                    (->> @dashboard-data
-                         :sleep
-                         (reduce (fn [acc {:keys [date_string fields]}]
-                                   (-> acc
-                                       (assoc-in [date_string :sleep] (get-in fields [0 :value]))))
-                                 @combined)))
-        combined3 (reaction
-                    (->> @dashboard-data
-                         :coffee
-                         (reduce (fn [acc {:keys [date_string fields]}]
-                                   (-> acc
-                                       (assoc-in [date_string :coffee] (get-in fields [0 :value]))))
-                                 @combined2)))
-        combined4 (reaction
-                    (->> @dashboard-data
-                         :steps
-                         (reduce (fn [acc {:keys [date_string fields]}]
-                                   (-> acc
-                                       (assoc-in [date_string :steps] (get-in fields [0 :value]))))
-                                 @combined3)))
-        combined-vals (reaction (vals @combined4))
+                    (-> @combined
+                        (data-xform @dashboard-data "#sleep" :sleep)
+                        (data-xform @dashboard-data "#coffee" :coffee)
+                        (data-xform @dashboard-data "#steps" :steps)))
+        combined-vals (reaction (vals @combined2))
         ks [:panas-pos :panas-neg :sleep :cfq11 :steps :coffee :word-count
             :entry-count :completed-tasks]
         matrix (partition (count ks) (sh/cartesian-product ks ks))
