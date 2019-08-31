@@ -59,61 +59,41 @@
       (name yk)]]))
 
 (defn data-xform [combined dashboard-data tag out-key]
-  (->> dashboard-data
-       (reduce (fn [acc [date_string {:keys [custom-fields]}]]
-                 (let [v (get-in custom-fields [tag :fields 0 :value])]
-                   (assoc-in acc [date_string out-key] v)))
-               combined)))
+  (reduce (fn [acc [date_string {:keys [custom-fields]}]]
+            (let [v (get-in custom-fields [tag :fields 0 :value])]
+              (assoc-in acc [date_string out-key] v)))
+          combined
+          dashboard-data))
+
+(defn q-xform [combined dashboard-data tag score out-key]
+  (reduce (fn [acc [date_string {:keys [questionnaires]}]]
+            (let [v (:score (first (get-in questionnaires [tag (name score)])))]
+              (update-in acc [date_string out-key] conj v)))
+          combined
+          dashboard-data))
+
+(defn ds-xform [stats]
+  (reduce (fn [acc {:keys [day entry_count word_count done_tasks_cnt]}]
+            (-> acc
+                (assoc-in [day :word-count] word_count)
+                (assoc-in [day :entry-count] entry_count)
+                (assoc-in [day :completed-tasks] done_tasks_cnt)))
+          {}
+          stats))
 
 (defn scatter-matrix []
   (let [gql-res (subscribe [:gql-res])
         dashboard-data (subscribe [:dashboard-data])
-        questionnaire-data (reaction (get-in @gql-res [:dashboard-questionnaires :data]))
         day-stats (reaction (get-in @gql-res [:day-stats :data :day_stats]))
-        panas-stats (reaction
-                      (->> @questionnaire-data
-                           :PANAS_pos
-                           (map (fn [{:keys [timestamp score]}]
-                                  (when score
-                                    [(h/ymd timestamp) score])))
-                           (filter identity)
-                           (reduce (fn [acc [k v]]
-                                     (update-in acc [k :panas-pos] conj v))
-                                   {})))
-        panas-stats2 (reaction
-                      (->> @questionnaire-data
-                           :PANAS_neg
-                           (map (fn [{:keys [timestamp score]}]
-                                  (when score
-                                    [(h/ymd timestamp) score])))
-                           (filter identity)
-                           (reduce (fn [acc [k v]]
-                                     (update-in acc [k :panas-neg] conj v))
-                                   @panas-stats)))
-        cfq11-stats (reaction
-                      (->> @questionnaire-data
-                           :CFQ11_total
-                           (map (fn [{:keys [timestamp score]}]
-                                  (when score
-                                    [(h/ymd timestamp) score])))
-                           (filter identity)
-                           (reduce (fn [acc [k v]]
-                                     (update-in acc [k :cfq11] conj v))
-                                   @panas-stats2)))
         combined (reaction
-                   (reduce (fn [acc {:keys [day entry_count word_count done_tasks_cnt]}]
-                             (-> acc
-                                 (assoc-in [day :word-count] word_count)
-                                 (assoc-in [day :entry-count] entry_count)
-                                 (assoc-in [day :completed-tasks] done_tasks_cnt)))
-                           @cfq11-stats
-                           @day-stats))
-        combined2 (reaction
-                    (-> @combined
+                    (-> (ds-xform @day-stats)
+                        (q-xform @dashboard-data "#PANAS" :pos :panas-pos)
+                        (q-xform @dashboard-data "#PANAS" :neg :panas-neg)
+                        (q-xform @dashboard-data "#CFQ11" :total :cfq11)
                         (data-xform @dashboard-data "#sleep" :sleep)
                         (data-xform @dashboard-data "#coffee" :coffee)
                         (data-xform @dashboard-data "#steps" :steps)))
-        combined-vals (reaction (vals @combined2))
+        combined-vals (reaction (vals @combined))
         ks [:panas-pos :panas-neg :sleep :cfq11 :steps :coffee :word-count
             :entry-count :completed-tasks]
         matrix (partition (count ks) (sh/cartesian-product ks ks))

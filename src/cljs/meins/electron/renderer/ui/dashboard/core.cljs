@@ -43,7 +43,8 @@
                      (filter #(= :questionnaire (:type %))))
           day-strings (mapv rh/n-days-ago-fmt (range 0 (+ (* -1 offset) days days)))]
       (doseq [item items]
-        (let [day-strings (filter #(not (get-in dashboard-data [% (:tag item)])) day-strings)]
+        (let [tag (:tag item)
+              day-strings (filter #(not (get-in dashboard-data [% tag])) day-strings)]
           (emit [:gql/query {:q        (gql/dashboard-questionnaires-by-days day-strings item)
                              :res-hash nil
                              :id       :questionnaires-by-days
