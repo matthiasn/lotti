@@ -33,7 +33,8 @@
       (set (mapv mapper components)))
     components))
 
-(context-menu (clj->js {:showCopyImageAddress true}))
+(context-menu (clj->js {:showCopyImageAddress true
+                        :showInspectElement   true}))
 
 (def wm-relay #{:cmd/toggle-key
                 :update/status
