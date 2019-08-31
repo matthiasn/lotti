@@ -165,11 +165,12 @@
 (defn problems-view []
   (let [gql-res (subscribe [:gql-res2])
         pvt (subscribe [:show-pvt])
-        problems (reaction (-> @gql-res :problems :res vals))
-        problems (reaction (->> @problems
-                                (filter :problem_cfg)
-                                (filter #(if @pvt true (not (-> % :problem_cfg :pvt))))
-                                (filter #(-> % :problem_cfg :active))))]
+        problems (reaction (let [res (-> @gql-res :problems :res vals)
+                                 pvt @pvt]
+                             (->> res
+                                  (filter :problem_cfg)
+                                  (filter #(if pvt true (not (-> % :problem_cfg :pvt))))
+                                  (filter #(-> % :problem_cfg :active)))))]
     (problems-gql-query 1000)
     (fn []
       [:div.problems
@@ -178,29 +179,29 @@
          [:tr
           [:th "Problem"]
           [:th "Last Review"]
-          [:th "Reviews"]]]
-        (for [p @problems]
-          (let [reviews (->> p
-                             :comments
-                             (filter #(= :problem-review (:entry_type %)))
-                             (sort-by :timestamp))
-                last-ts (:timestamp (or (last reviews) p))
-                since-last-review (- (stc/now) last-ts)
-                last-review (str (h/time-ago since-last-review) " ago")
-                last-review (s/replace last-review "minutes" "min")
-                last-review (s/replace last-review "a few seconds ago" "just now")
-                cls (when (> since-last-review (* 7 24 60 60 1000)) "due")]
-            ^{:key (:timestamp p)}
-            [:tr {:class    cls
-                  :on-click (up/add-search {:tab-group    :right
-                                            :query-string (:timestamp p)} emit)}
-             [:td (-> p :problem_cfg :name)]
-             [:td last-review]
-             [:td
-              (for [r (take-last 12 reviews)]
-                (let [cls (some-> r :problem_review :conclusion name)]
-                  ^{:key (:timestamp r)}
-                  [:span.conclusion {:class cls}]))]]))]])))
+          [:th "Reviews"]]
+         (for [p @problems]
+           (let [reviews (->> p
+                              :comments
+                              (filter #(= :problem-review (:entry_type %)))
+                              (sort-by :timestamp))
+                 last-ts (:timestamp (or (last reviews) p))
+                 since-last-review (- (stc/now) last-ts)
+                 last-review (str (h/time-ago since-last-review) " ago")
+                 last-review (s/replace last-review "minutes" "min")
+                 last-review (s/replace last-review "a few seconds ago" "just now")
+                 cls (when (> since-last-review (* 7 24 60 60 1000)) "due")]
+             ^{:key (:timestamp p)}
+             [:tr {:class    cls
+                   :on-click (up/add-search {:tab-group    :right
+                                             :query-string (:timestamp p)} emit)}
+              [:td (-> p :problem_cfg :name)]
+              [:td last-review]
+              [:td
+               (for [r (take-last 12 reviews)]
+                 (let [cls (some-> r :problem_review :conclusion name)]
+                   ^{:key (:timestamp r)}
+                   [:span.conclusion {:class cls}]))]]))]]])))
 
 (defn briefing-view [local-cfg]
   (let [gql-res (subscribe [:gql-res])
