@@ -1,16 +1,20 @@
 (ns meins.ui.elements.mapbox
-  (:require [meins.ui.shared :refer [view platform-os]]
+  (:require [meins.ui.shared :refer [view]]
             ["@react-native-mapbox-gl/maps" :as mapbox-gl]
+            ["react-native-build-config" :as build-cfg]
             [reagent.core :as r]))
 
 (def mapbox-style-url (js->clj (aget mapbox-gl "default" "StyleURL") :keywordize-keys true))
 (def map-view (r/adapt-react-class (aget mapbox-gl "default" "MapView")))
 (def point-annotation (r/adapt-react-class (aget mapbox-gl "default" "PointAnnotation")))
 (def camera (r/adapt-react-class (aget mapbox-gl "default" "Camera")))
+(def set-token (aget mapbox-gl "default" "setAccessToken"))
 
 (defn map-elem [entry]
-  (let [{:keys [latitude longitude]} entry]
-    (when (and latitude longitude (= platform-os "ios"))
+  (let [{:keys [latitude longitude]} entry
+        mapbox-token (aget build-cfg "default" "MGLMapboxAccessToken")]
+    (set-token mapbox-token)
+    (when (and latitude longitude)
       [map-view {:scrollEnabled false
                  :rotateEnabled false
                  :styleURL      (get mapbox-style-url :Street)

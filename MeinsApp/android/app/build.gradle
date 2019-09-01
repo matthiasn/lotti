@@ -129,10 +129,11 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 61
-        versionName "1.0.52"
+        versionCode 62
+        versionName "1.0.53"
         missingDimensionStrategy 'react-native-camera', 'general'
         multiDexEnabled true
+        buildConfigField "String", "MGLMapboxAccessToken", MAPBOX_ACCESS_TOKEN
     }
     signingConfigs {
         release {
@@ -151,14 +152,10 @@ android {
         }
     }
     buildTypes {
-        debug {
-            buildConfigField 'String', "MapboxAccessToken", MAPBOX_ACCESS_TOKEN
-        }
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             signingConfig signingConfigs.release
-            buildConfigField 'String', "MapboxAccessToken", MAPBOX_ACCESS_TOKEN
         }
     }
     // applicationVariants are e.g. debug, release
@@ -185,6 +182,7 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-build-config')
     implementation project(':react-native-keychain')
     implementation project(':@matthiasn_react-native-randombytes')
     implementation project(':react-native-svg')

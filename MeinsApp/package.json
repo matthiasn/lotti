@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.52",
+  "version": "1.0.53",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -30,6 +30,7 @@
     "react": "16.8.6",
     "react-dom": "16.8.6",
     "react-native": "0.60.5",
+    "react-native-build-config": "0.3.1",
     "react-native-camera": "3.3.0",
     "react-native-contacts": "5.0.2",
     "react-native-elements": "1.1.0",

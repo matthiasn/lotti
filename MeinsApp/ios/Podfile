@@ -61,4 +61,6 @@ target 'meins' do
 
   pod 'react-native-mapbox-gl', :path => '../node_modules/@react-native-mapbox-gl/maps'
 
+  pod 'react-native-build-config', :path => '../node_modules/react-native-build-config'
+
 end
