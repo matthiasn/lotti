@@ -16,6 +16,7 @@ import com.rt2zz.reactnativecontacts.ReactNativeContacts;
 import org.reactnative.camera.RNCameraPackage;
 import com.reactlibrary.RNMailCorePackage;
 import com.dooboolab.RNAudioRecorderPlayerPackage;
+import com.mapbox.rctmgl.RCTMGLPackage;
 import com.reactnativecommunity.cameraroll.CameraRollPackage;
 import com.reactnativecommunity.geolocation.GeolocationPackage;
 import com.reactnativecommunity.netinfo.NetInfoPackage;
@@ -50,6 +51,7 @@ public class MainApplication extends Application implements ReactApplication {
                     new RNGestureHandlerPackage(),
                     new ReactNativeExceptionHandlerPackage(),
                     new ReactNativeContacts(),
+                    new RCTMGLPackage(),
                     new RNCameraPackage(),
                     new RNMailCorePackage(),
                     new RNAudioRecorderPlayerPackage(),

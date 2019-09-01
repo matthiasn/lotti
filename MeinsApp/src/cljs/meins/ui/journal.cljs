@@ -9,10 +9,11 @@
             [cljs.reader :as rdr]
             ["react-navigation-transitions" :refer [fadeIn]]
             [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                     #_map-view #_mapbox-style-url #_point-annotation virtualized-list
+                                     virtualized-list
                                      fa-icon image #_swipeout keyboard-avoiding-view
                                      touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert status-bar]]
+            [meins.ui.elements.mapbox :as mb]
             ["react-navigation" :refer [createStackNavigator createAppContainer]]
             [clojure.pprint :as pp]
             [meins.common.utils.parse :as p]))
@@ -275,28 +276,7 @@
                           :keyboardAppearance (if (= @theme :dark) "dark" "light")
                           :on-change-text     (fn [text]
                                                 (swap! entry-local assoc-in [:md] text))}])
-           #_(when (and latitude longitude (= platform-os "ios"))
-               [map-view {:centerCoordinate [longitude latitude]
-                          :scrollEnabled    false
-                          :rotateEnabled    false
-                          :styleURL         (get mapbox-style-url :Street)
-                          :style            {:width         "100%"
-                                             :height        250
-                                             :margin-bottom 30}
-                          :zoomLevel        15}
-                [point-annotation {:coordinate [longitude latitude]
-                                   :id         (str (:timestamp entry))}
-                 [view {:style {:width           24
-                                :height          24
-                                :alignItems      "center"
-                                :justifyContent  "center"
-                                :backgroundColor "white"
-                                :borderRadius    12}}
-                  [view {:style {:width           24
-                                 :height          24
-                                 :backgroundColor "orange"
-                                 :borderRadius    12
-                                 :transform       [{:scale 0.7}]}}]]]])
+           [mb/map-elem entry]
            (when-let [audio-file (:audio_file entry)]
              (let [status (:status @player-state)
                    prefix (when (= "android" platform-os)

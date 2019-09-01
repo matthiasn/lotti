@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.51",
+  "version": "1.0.52",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -17,6 +17,7 @@
     "@react-native-community/async-storage": "1.6.1",
     "@react-native-community/geolocation": "1.4.2",
     "@react-native-community/netinfo": "4.1.5",
+    "@react-native-mapbox-gl/maps": "7.0.1",
     "buffer": "5.4.2",
     "create-react-class": "15.6.3",
     "crypto-js": "3.1.9-1",

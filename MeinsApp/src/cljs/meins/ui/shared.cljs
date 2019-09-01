@@ -4,7 +4,6 @@
             ["@matthiasn/react-native-audio-recorder-player" :as react-native-audio-recorder-player]
             ["react-native-camera" :as react-native-camera]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
-    ;["@mapbox/react-native-mapbox-gl" :as mapbox-gl]
             ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             ["react-native-elements" :as react-native-elements]))
 
@@ -51,11 +50,6 @@
 (def divider (r/adapt-react-class (aget react-native-elements "Divider")))
 
 (def contacts (js/require "react-native-contacts"))
-
-;(def mapbox (aget mapbox-gl "default"))
-;(def mapbox-style-url (js->clj (aget mapbox "StyleURL") :keywordize-keys true))
-;(def map-view (r/adapt-react-class (aget mapbox "MapView")))
-;(def point-annotation (r/adapt-react-class (aget mapbox "PointAnnotation")))
 
 (def settings-list (r/adapt-react-class rn-settings-list))
 (def settings-list-header (r/adapt-react-class Header))

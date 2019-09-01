@@ -129,9 +129,10 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 59
-        versionName "1.0.51"
+        versionCode 61
+        versionName "1.0.52"
         missingDimensionStrategy 'react-native-camera', 'general'
+        multiDexEnabled true
     }
     signingConfigs {
         release {
@@ -150,10 +151,14 @@ android {
         }
     }
     buildTypes {
+        debug {
+            buildConfigField 'String', "MapboxAccessToken", MAPBOX_ACCESS_TOKEN
+        }
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             signingConfig signingConfigs.release
+            buildConfigField 'String', "MapboxAccessToken", MAPBOX_ACCESS_TOKEN
         }
     }
     // applicationVariants are e.g. debug, release
@@ -197,6 +202,7 @@ dependencies {
     implementation project(':@matthiasn_react-native-mailcore')
     implementation project(':@matthiasn_react-native-audio-recorder-player')
     implementation project(':@matthiasn_cameraroll')
+    implementation project(':@react-native-mapbox-gl_maps')
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation "com.facebook.react:react-native:+"  // From node_modules
