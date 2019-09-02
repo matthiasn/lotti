@@ -70,8 +70,9 @@
            :gql-port      (if repo-dir 8766 7789)}
           (map (fn [[k v]] [k (normalize v)]) info))))
 
-(-> (.askForMediaAccess systemPreferences "camera")
-    (.then (fn [res]
-             (let [status (.getMediaAccessStatus systemPreferences "camera")]
-               (info "askForMediaAccess" res)
-               (info "getMediaAccessStatus" status)))))
+(when (= "darwin" (:platform runtime-info))
+  (-> (.askForMediaAccess systemPreferences "camera")
+      (.then (fn [res]
+               (let [status (.getMediaAccessStatus systemPreferences "camera")]
+                 (info "askForMediaAccess" res)
+                 (info "getMediaAccessStatus" status))))))
