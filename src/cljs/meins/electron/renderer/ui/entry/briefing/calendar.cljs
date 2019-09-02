@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.entry.briefing.calendar
   (:require [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.parse :as up]
@@ -7,16 +8,15 @@
             [taoensso.timbre :refer-macros [info]]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.award :as ca]
-            [moment :as moment]
-            [globalize :as globalize]
-            [cldr-data :as cldr-data]
-            [iana-tz-data :as iana-tz-data]
-            [reagent.ratom :refer-macros [reaction]]
-            [react-big-calendar :as rbc]
-            [react-infinite-calendar :as ric]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.common.utils.parse :as p]
-            [meins.electron.renderer.ui.entry.utils :as eu]))
+            [meins.electron.renderer.ui.entry.utils :as eu]
+            ["moment" :as moment]
+            ["globalize" :as globalize]
+            ["cldr-data" :as cldr-data]
+            ["iana-tz-data" :as iana-tz-data]
+            ["react-big-calendar" :as rbc]
+            ["react-infinite-calendar" :as ric]))
 
 (def locales
   {:fr {:locale       (js/require "date-fns/locale/fr")
@@ -89,7 +89,7 @@
                     :color           (.-color event)}}))
 
 (defn calendar-view []
-  (let [cal (r/adapt-react-class rbc)
+  (let [cal (r/adapt-react-class rbc/Calendar)
         show-pvt (subscribe [:show-pvt])
         cal-day (subscribe [:cal-day])
         stories (subscribe [:stories])
