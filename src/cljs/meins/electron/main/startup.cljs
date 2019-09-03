@@ -109,15 +109,17 @@
                 data (atom "")
                 version-handler
                 (fn [_]
-                  (let [package-json (.parse js/JSON @data)
-                        backend-version (.-version package-json)]
-                    (info version backend-version)
-                    (if (= version backend-version)
-                      (do (put-fn [:window/new msg])
-                          (put-fn (with-meta [:window/close]
-                                             {:window-id loading-page})))
-                      (do (kill-by-port port)
-                          (try-again res)))))]
+                  (try
+                    (let [package-json (.parse js/JSON @data)
+                          backend-version (.-version package-json)]
+                      (info version backend-version)
+                      (if (= version backend-version)
+                        (do (put-fn [:window/new msg])
+                            (put-fn (with-meta [:window/close]
+                                               {:window-id loading-page})))
+                        (do (kill-by-port port)
+                            (try-again res))))
+                    (catch :default e (error e))))]
             (.on res "data" (fn [chunk] (swap! data str chunk)))
             (.on res "end" version-handler)
             (info "HTTP response: " status-code (= status-code 200))
