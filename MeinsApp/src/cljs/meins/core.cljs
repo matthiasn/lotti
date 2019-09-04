@@ -8,7 +8,7 @@
             [meins.components.sync :as sync]
             [meins.components.store :as store]
             [meins.components.photos :as photos]
-            [meins.util.bg-geolocation :as bg-geo]
+            [meins.components.geolocation :as geo]
             [meins.ui :as ui]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
@@ -30,10 +30,10 @@
                      (store/cmp-map :app/store)
                      (photos/cmp-map :app/photos)
                      (sync/cmp-map :app/sync)
+                     (geo/cmp-map :app/geo)
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
         components (make-observable components)]
-    (bg-geo/start-bg-location)
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp components]
@@ -46,7 +46,8 @@
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
 
-       [:cmd/route {:from :app/healthkit
+       [:cmd/route {:from #{:app/healthkit
+                            :app/geo}
                     :to   :app/store}]
 
        [:cmd/route {:from :app/ui-cmp
