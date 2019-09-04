@@ -198,7 +198,7 @@
 
 (defn audio-path [file] (media-path "/data/audio/" file))
 
-(def export (str (if repo-dir ".." user-data) "/data/export/"))
+(def export (str (if repo-dir "/tmp/meins" user-data) "/data/export/"))
 
 (defn to-day [ymd pvt]
   (emit [:cal/to-day {:day ymd}])

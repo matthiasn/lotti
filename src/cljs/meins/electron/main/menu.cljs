@@ -105,7 +105,7 @@
                            :click new-dashboard}
                           {:label "Custom Field"
                            :click new-custom-field}]}
-               {:label   "Import"
+               {:label   "Import..."
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
@@ -115,8 +115,9 @@
                           (when (contains? capabilities :spotify)
                             {:label "Spotify Most Listened"
                              :click #(put-fn [:import/spotify])})]}
-               #_{:label "Export"
-                  :click #(put-fn [:export/geojson])}]}))
+               {:label   "Export..."
+                :submenu [{:label "GeoJSON"
+                           :click #(put-fn [:export/geojson])}]}]}))
 
 (defn broadcast [msg] (with-meta msg {:window-id :broadcast}))
 
