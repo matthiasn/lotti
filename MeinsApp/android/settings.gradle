@@ -1,4 +1,8 @@
 rootProject.name = 'meins'
+include ':react-native-background-fetch'
+project(':react-native-background-fetch').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-background-fetch/android')
+include ':react-native-background-geolocation'
+project(':react-native-background-geolocation').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-background-geolocation/android')
 
 include ':react-native-build-config'
 project(':react-native-build-config').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-build-config/android')

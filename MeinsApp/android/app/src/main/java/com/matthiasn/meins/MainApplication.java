@@ -3,6 +3,8 @@ package com.matthiasn.meins;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.transistorsoft.rnbackgroundfetch.RNBackgroundFetchPackage;
+import com.transistorsoft.rnbackgroundgeolocation.RNBackgroundGeolocation;
 import com.ismaeld.RNBuildConfig.RNBuildConfigPackage;
 import com.oblador.keychain.KeychainPackage;
 import com.bitgo.randombytes.RandomBytesPackage;
@@ -41,6 +43,8 @@ public class MainApplication extends Application implements ReactApplication {
         protected List<ReactPackage> getPackages() {
             return Arrays.<ReactPackage>asList(
                     new MainReactPackage(),
+            new RNBackgroundFetchPackage(),
+            new RNBackgroundGeolocation(),
                     new RNBuildConfigPackage(BuildConfig.class),
                     new KeychainPackage(),
                     new RandomBytesPackage(),

@@ -31,6 +31,17 @@ deps-mac:
 	npm install -g shadow-cljs
 	mkdir ./bin
 
+deps-win:
+	choco install make -y
+	choco install lein -y
+	choco install nvm -y
+	nvm install 12.8.1
+	nvm use 12.8.1
+	npm install -g yarn
+	npm install -g shadow-cljs
+	npm install -g windows-build-tools
+	npm install -g electron-rebuild
+
 deps-ubuntu:
 	sudo apt-get update
 	sudo apt-get install python2.7

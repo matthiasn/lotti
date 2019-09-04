@@ -5,7 +5,6 @@
 	};
 	objectVersion = 46;
 	objects = {
-
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* meinsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* meinsTests.m */; };
 		01CC470045D54A94A13E88AF /* MaterialIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5A7BF12D831D4D5B8C5A72C3 /* MaterialIcons.ttf */; };
@@ -42,6 +41,7 @@
 		EF757DE980FE4897AD8F09C1 /* Ionicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EB4DCB324AC40C0B808B928 /* Ionicons.ttf */; };
 		F7AFB15C03294E06BBC32092 /* Octicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 763B3FFCC6704BE0A6ECF382 /* Octicons.ttf */; };
 		FA4C049D32F2465B9D215E9C /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D6E136EC6B5F480C9329FF74 /* libc++.tbd */; };
+		D01B0FCA311B4F49B220CF55 /* TSLocationManager.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9D8E9A7C869B441F906A1179 /* TSLocationManager.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -465,6 +465,7 @@
 		E5B93D25ED1843DBBF84FECB /* FontAwesome5_Brands.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome5_Brands.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		EF6B0869AE7E415690D64A05 /* FontAwesome5_Solid.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome5_Solid.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf"; sourceTree = "<group>"; };
+		9D8E9A7C869B441F906A1179 /* TSLocationManager.framework */ = {isa = PBXFileReference; name = "TSLocationManager.framework"; path = "../node_modules/react-native-background-geolocation/ios/RNBackgroundGeolocation/TSLocationManager.framework"; sourceTree = SDKROOT; fileEncoding = undefined; lastKnownFileType = wrapper.framework; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -492,6 +493,7 @@
 				AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */,
 				FA4C049D32F2465B9D215E9C /* libc++.tbd in Frameworks */,
 				E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */,
+				D01B0FCA311B4F49B220CF55 /* TSLocationManager.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -627,6 +629,7 @@
 				3FF3A5F570795892980908D1 /* libPods-meins.a */,
 				D6E136EC6B5F480C9329FF74 /* libc++.tbd */,
 				65BCA4EE270E457584AA1A37 /* libz.tbd */,
+				9D8E9A7C869B441F906A1179 /* TSLocationManager.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -871,6 +874,9 @@
 						SystemCapabilities = {
 							com.apple.HealthKit = {
 								enabled = 1;
+							};
+							com.apple.BackgroundModes = {
+								enabled = true;
 							};
 						};
 					};
@@ -1533,6 +1539,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/meins.app/meins";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+				);
 			};
 			name = Debug;
 		};
@@ -1567,6 +1576,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/meins.app/meins";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+				);
 			};
 			name = Release;
 		};
@@ -1577,7 +1589,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				HEADER_SEARCH_PATHS = (
@@ -1610,6 +1622,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.meins;
 				PRODUCT_NAME = meins;
 				VERSIONING_SYSTEM = "apple-generic";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+				);
 			};
 			name = Debug;
 		};
@@ -1620,7 +1635,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1652,6 +1667,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.meins;
 				PRODUCT_NAME = meins;
 				VERSIONING_SYSTEM = "apple-generic";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+				);
 			};
 			name = Release;
 		};

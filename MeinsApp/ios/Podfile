@@ -63,4 +63,8 @@ target 'meins' do
 
   pod 'react-native-build-config', :path => '../node_modules/react-native-build-config'
 
+  pod 'RNBackgroundGeolocation', :path => '../node_modules/react-native-background-geolocation'
+
+  pod 'RNBackgroundFetch', :path => '../node_modules/react-native-background-fetch'
+
 end

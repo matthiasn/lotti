@@ -129,8 +129,8 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 62
-        versionName "1.0.53"
+        versionCode 63
+        versionName "1.0.54"
         missingDimensionStrategy 'react-native-camera', 'general'
         multiDexEnabled true
         buildConfigField "String", "MGLMapboxAccessToken", MAPBOX_ACCESS_TOKEN
@@ -182,6 +182,8 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-background-fetch')
+    implementation project(':react-native-background-geolocation')
     implementation project(':react-native-build-config')
     implementation project(':react-native-keychain')
     implementation project(':@matthiasn_react-native-randombytes')

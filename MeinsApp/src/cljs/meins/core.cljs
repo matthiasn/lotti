@@ -8,6 +8,7 @@
             [meins.components.sync :as sync]
             [meins.components.store :as store]
             [meins.components.photos :as photos]
+            [meins.util.bg-geolocation :as bg-geo]
             [meins.ui :as ui]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
@@ -32,6 +33,7 @@
                      (sched/cmp-map :app/scheduler)
                      (ui/cmp-map :app/ui-cmp)}
         components (make-observable components)]
+    (bg-geo/start-bg-location)
     (sb/send-mult-cmd
       switchboard
       [[:cmd/init-comp components]
