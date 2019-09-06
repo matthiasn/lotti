@@ -49,6 +49,20 @@
                                 10 1
                                 25 0]}})
 
+(def points-cfg
+  {:id "points"
+   :type "circle"
+   :source "earthquakes"
+   :paint {:circle-radius 6
+           :circle-color ["match"
+                          ["get" "activity"]
+                          "on_foot" "green"
+                          "running" "red"
+                          "in_vehicle" "blue"
+                          "on_bicycle" "orange"
+                          "still" "#AAA"
+                          "#888"]}})
+
 (defn heatmap-did-mount [props]
   (fn []
     (let [{:keys [local]} props
@@ -58,9 +72,9 @@
                 :style     "mapbox://styles/mapbox/dark-v9"}
           mb-map (mapbox-gl/Map. (clj->js opts))
           loaded (fn []
-                   (.addSource mb-map "earthquakes"
-                               (clj->js heatmap-data))
-                   (.addLayer mb-map (clj->js heatmap-cfg) "waterway-label"))
+                   (.addSource mb-map "earthquakes" (clj->js heatmap-data))
+                   ;(.addLayer mb-map (clj->js heatmap-cfg) "waterway-label")
+                   (.addLayer mb-map (clj->js points-cfg)))
           hide-gallery #(swap! local assoc-in [:gallery] false)]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
