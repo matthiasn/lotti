@@ -9,6 +9,7 @@
             [meins.ui.settings.audio :as audio]
             [meins.ui.settings.sync :as sync]
             [meins.ui.settings.dev :as dev]
+            [meins.ui.settings.geolocation :as geo]
             [meins.ui.settings.health :as sh]
             [meins.ui.colors :as c]))
 
@@ -119,6 +120,13 @@
            {:hasNavArrow      true
             :background-color item-bg
             :titleStyle       {:color text-color}
+            :icon             (settings-icon "map" text-color)
+            :on-press         #(navigate "geo")
+            :title            "Geolocation"}]
+          [settings-list-item
+           {:hasNavArrow      true
+            :background-color item-bg
+            :titleStyle       {:color text-color}
             :icon             (settings-icon "microphone" text-color)
             :on-press         #(navigate "audio")
             :title            "Audio"}]
@@ -135,6 +143,7 @@
     (clj->js {:settings {:screen (r/reactify-component settings-wrapper)}
               :sync     {:screen (r/reactify-component sync/sync-settings)}
               :dev      {:screen (r/reactify-component dev/dev-settings)}
+              :geo      {:screen (r/reactify-component geo/geo-settings)}
               :db       {:screen (r/reactify-component db/db-settings)}
               :audio    {:screen (r/reactify-component audio/audio-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})

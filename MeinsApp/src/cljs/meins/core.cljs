@@ -40,6 +40,7 @@
 
        [:cmd/route {:from :app/ui-cmp
                     :to   #{:app/store
+                            :app/geo
                             :app/scheduler
                             :app/photos}}]
 

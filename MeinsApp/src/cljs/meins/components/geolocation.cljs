@@ -75,8 +75,6 @@
 
 (defn state-fn [put-fn]
   (let [state (atom (empty-state))]
-    (start {:cmp-state state
-            :put-fn    put-fn})
     {:state state}))
 
 (defn cmp-map [cmp-id]
