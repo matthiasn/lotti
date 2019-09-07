@@ -129,8 +129,8 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 66
-        versionName "1.0.57"
+        versionCode 67
+        versionName "1.0.58"
         missingDimensionStrategy 'react-native-camera', 'general'
         multiDexEnabled true
         buildConfigField "String", "MGLMapboxAccessToken", MAPBOX_ACCESS_TOKEN
@@ -182,27 +182,8 @@ android {
 }
 
 dependencies {
-    implementation project(':react-native-background-fetch')
-    implementation project(':react-native-background-geolocation')
-    implementation project(':react-native-build-config')
-    implementation project(':react-native-keychain')
-    implementation project(':@matthiasn_react-native-randombytes')
-    implementation project(':react-native-svg')
-    implementation project(':@react-native-community_async-storage')
-    implementation project(':react-native-community-netinfo')
-    implementation project(':react-native-version-number')
     implementation project(':realm')
-    implementation project(':react-native-vector-icons')
-    implementation project(':react-native-gesture-handler')
-    implementation project(':react-native-exception-handler')
-    implementation project(':react-native-contacts')
-    implementation project(':react-native-camera')
-    compile project(':react-native-camera')
-    implementation project(':react-native-community-geolocation')
     implementation project(':@matthiasn_react-native-mailcore')
-    implementation project(':@matthiasn_react-native-audio-recorder-player')
-    implementation project(':@matthiasn_cameraroll')
-    implementation project(':@react-native-mapbox-gl_maps')
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation "com.facebook.react:react-native:+"  // From node_modules
@@ -222,3 +203,7 @@ task copyDownloadableDepsToLibs(type: Copy) {
     from configurations.compile
     into 'libs'
 }
+
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

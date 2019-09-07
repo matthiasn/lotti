@@ -2,31 +2,15 @@ package com.matthiasn.meins;
 
 import android.app.Application;
 
+import com.facebook.react.PackageList;
 import com.facebook.react.ReactApplication;
-import com.transistorsoft.rnbackgroundfetch.RNBackgroundFetchPackage;
-import com.transistorsoft.rnbackgroundgeolocation.RNBackgroundGeolocation;
-import com.ismaeld.RNBuildConfig.RNBuildConfigPackage;
-import com.oblador.keychain.KeychainPackage;
-import com.bitgo.randombytes.RandomBytesPackage;
-import com.horcrux.svg.SvgPackage;
-import com.reactnativecommunity.asyncstorage.AsyncStoragePackage;
-import com.apsl.versionnumber.RNVersionNumberPackage;
-import io.realm.react.RealmReactPackage;
-import com.oblador.vectoricons.VectorIconsPackage;
-import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
-import com.masteratul.exceptionhandler.ReactNativeExceptionHandlerPackage;
-import com.rt2zz.reactnativecontacts.ReactNativeContacts;
-import org.reactnative.camera.RNCameraPackage;
-import com.reactlibrary.RNMailCorePackage;
-import com.dooboolab.RNAudioRecorderPlayerPackage;
-import com.mapbox.rctmgl.RCTMGLPackage;
-import com.reactnativecommunity.cameraroll.CameraRollPackage;
-import com.reactnativecommunity.geolocation.GeolocationPackage;
-import com.reactnativecommunity.netinfo.NetInfoPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
+import com.reactlibrary.RNMailCorePackage;
+import com.reactnativecommunity.netinfo.NetInfoPackage;
+import io.realm.react.RealmReactPackage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,29 +25,13 @@ public class MainApplication extends Application implements ReactApplication {
 
         @Override
         protected List<ReactPackage> getPackages() {
-            return Arrays.<ReactPackage>asList(
-                    new MainReactPackage(),
-            new RNBackgroundFetchPackage(),
-            new RNBackgroundGeolocation(),
-                    new RNBuildConfigPackage(BuildConfig.class),
-                    new KeychainPackage(),
-                    new RandomBytesPackage(),
-                    new SvgPackage(),
-                    new AsyncStoragePackage(),
-                    new RNVersionNumberPackage(),
-                    new NetInfoPackage(),
-                    new RealmReactPackage(),
-                    new VectorIconsPackage(),
-                    new RNGestureHandlerPackage(),
-                    new ReactNativeExceptionHandlerPackage(),
-                    new ReactNativeContacts(),
-                    new RCTMGLPackage(),
-                    new RNCameraPackage(),
-                    new RNMailCorePackage(),
-                    new RNAudioRecorderPlayerPackage(),
-                    new CameraRollPackage(),
-                    new GeolocationPackage()
-            );
+            @SuppressWarnings("UnnecessaryLocalVariable")
+            List<ReactPackage> packages = new PackageList(this).getPackages();
+
+            // Packages that cannot be autolinked yet are added manually here
+            packages.add(new RNMailCorePackage());
+            packages.add(new RealmReactPackage());
+            return packages;
         }
 
         @Override
