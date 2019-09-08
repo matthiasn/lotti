@@ -117,6 +117,8 @@ def enableProguardInReleaseBuilds = false
  */
 def enableHermes = project.ext.react.get("enableHermes", false);
 
+def rnBackgroundGeolocationKey = System.getenv("RN_BG_GEO_KEY")
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
 
@@ -129,8 +131,8 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 67
-        versionName "1.0.58"
+        versionCode 68
+        versionName "1.0.59"
         missingDimensionStrategy 'react-native-camera', 'general'
         multiDexEnabled true
         buildConfigField "String", "MGLMapboxAccessToken", MAPBOX_ACCESS_TOKEN

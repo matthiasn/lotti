@@ -10,16 +10,18 @@
 
 (def cfg
   (clj->js
-    {:reset           true
-     :desiredAccuracy (.-DESIRED_ACCURACY_HIGH BackgroundGeolocation)
-     :distanceFilter  10
-     :stopTimeout     2
-     :debug           false
-     :logLevel        (.-LOG_LEVEL_VERBOSE BackgroundGeolocation)
-     :stopOnTerminate false
-     :startOnBoot     true
-     :batchSync       false
-     :autoSync        false}))
+    {:reset                  true
+     :desiredAccuracy        (.-DESIRED_ACCURACY_HIGH BackgroundGeolocation)
+     :distanceFilter         50
+     :locationUpdateInterval 60000
+     ;:useSignificantChanges  true
+     :stopTimeout            2
+     :debug                  false
+     :logLevel               (.-LOG_LEVEL_INFO BackgroundGeolocation)
+     :stopOnTerminate        false
+     :startOnBoot            true
+     :batchSync              false
+     :autoSync               false}))
 
 (defn next-save-ts [ts]
   (let [interval (* 5 60 1000)
