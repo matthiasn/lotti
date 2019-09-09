@@ -195,17 +195,8 @@
             (when task?
               (js/console.warn (aget new-objects i)))))))))
 
-(def BgGeoSchema-0
-  {:name       "BgGeo"
-   :primaryKey "timestamp"
-   :properties {:timestamp {:type "int" :indexed true}
-                :edn       "string"
-                :sync      {:type "string" :default "OPEN" :optional true}
-                :latitude  {:type "float" :default 0.0 :optional true}
-                :longitude {:type "float" :default 0.0 :optional true}}})
-
 (def schema-1
-  (clj->js {:schema        [EntrySchema ImageSchema BgGeoSchema-0]
+  (clj->js {:schema        [EntrySchema ImageSchema]
             :schemaVersion 1
             :migration     migration-1}))
 
