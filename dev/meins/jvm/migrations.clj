@@ -351,6 +351,35 @@
                 (error "Exception" ex "when parsing line:\n" line))))
           (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
 
+(defn filter-vclock [path out-path host-id]
+  (let [files (file-seq (clojure.java.io/file path))
+        ts-uuids (atom #{})
+        line-count (atom 0)
+        files (f/filter-by-name files #"\d{4}-\d{2}-\d{2}a?.jrn")
+        sorted-files (sort-by #(.getName %) files)]
+    (fs/mkdirs out-path)
+    (doseq [f sorted-files]
+      (with-open [reader (clojure.java.io/reader f)]
+        (let [filename (.getName f)
+              lines (line-seq reader)]
+          (doseq [line lines]
+            (try
+              (swap! line-count inc)
+              (let [entry (clojure.edn/read-string line)
+                    id (:timestamp entry)
+                    entry (if (:habit entry)
+                            (let [criteria (get-in entry [:habit :criteria])]
+                              (-> entry
+                                  (assoc-in [:habit :versions 0 :criteria] criteria)
+                                  (assoc-in [:habit :versions 0 :valid_from] "1970-01-01")))
+                            entry)
+                    serialized (str (pr-str entry) "\n")]
+                (when-not (get-in entry [:vclock host-id])
+                  (swap! ts-uuids conj id)
+                  (spit (str out-path "/" filename) serialized :append true)))
+              (catch Exception ex
+                (error "Exception" ex "when parsing line:\n" line))))
+          (info filename "-" (count @ts-uuids) "entries," @line-count "lines"))))))
 
 ;(m/migrate-to-dgraph "./data/migrations/dgraph")
 #_(defn migrate-to-dgraph [path]
