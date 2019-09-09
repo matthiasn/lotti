@@ -14,7 +14,8 @@
                                      touchable-opacity settings-list settings-list-item platform-os
                                      rn-audio-recorder-player alert status-bar]]
             [meins.ui.elements.mapbox :as mb]
-            ["react-navigation" :refer [createStackNavigator createAppContainer]]
+            ["react-navigation" :refer [createAppContainer]]
+            ["react-navigation-stack" :refer [createStackNavigator]]
             [clojure.pprint :as pp]
             [meins.common.utils.parse :as p]))
 

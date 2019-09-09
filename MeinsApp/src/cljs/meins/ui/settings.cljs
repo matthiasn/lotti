@@ -1,6 +1,6 @@
 (ns meins.ui.settings
   (:require [reagent.core :as r]
-            ["react-navigation" :refer [createStackNavigator]]
+            ["react-navigation-stack" :refer [createStackNavigator]]
             ["react-native-version-number" :as rnvn]
             [re-frame.core :refer [reg-sub subscribe]]
             [meins.ui.shared :refer [view fa-icon settings-list settings-icon
