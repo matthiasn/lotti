@@ -1,11 +1,10 @@
 (ns meins.ui
   (:require [reagent.core :as r]
             [re-frame.db :as rdb]
-            ["react-native" :refer [AppRegistry Platform]]
+            ["react-native" :refer [AppRegistry Platform Animated]]
             ["react" :refer [Component]]
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-tabs" :refer [createBottomTabNavigator]]
-            ["react-navigation-transitions" :refer [zoomIn]]
             [re-frame.core :refer [reg-sub]]
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]
@@ -76,8 +75,7 @@
 
 (def app-nav
   (createBottomTabNavigator
-    (clj->js {:Journal  {;:screen            (r/reactify-component jrn/journal)
-                         :screen            jrn/journal-stack
+    (clj->js {:Journal  {:screen            jrn/journal-stack
                          :navigationOptions (nav-options "list" 22)}
               :Add      {:screen            (r/reactify-component ue/editor)
                          :navigationOptions (nav-options "plus-square-o" 22)}
@@ -86,7 +84,11 @@
               :Settings {:screen            s/settings-stack
                          :navigationOptions (nav-options "cogs" 22)}})
     (clj->js {:initialRouteName "Journal"
-              :transitionConfig (fn [] (zoomIn 1000))
+              :transitionConfig (fn []
+                                  (clj->js
+                                    {:transitionSpec
+                                     {:duration 0
+                                      :timing   (.-timing Animated)}}))
               :tabBarOptions    {:activeTintColor         "rgb(66, 184, 221)"
                                  :inactiveTintColor       "#999"
                                  :activeBackgroundColor   bg
@@ -95,10 +97,6 @@
 
 (def app-container
   (createAppContainer app-nav))
-
-#_(defn init ^:dev/after-load []
-    (.registerComponent
-      AppRegistry "MeinsApp" #(identity app-container)))
 
 (defn state-fn [put-fn]
   (reset! put-fn-atom put-fn)
