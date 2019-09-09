@@ -1,6 +1,6 @@
 (ns meins.ui.settings.geolocation
   (:require [meins.ui.colors :as c]
-            [meins.ui.shared :refer [view settings-list settings-list-item status-bar]]
+            [meins.ui.shared :refer [view settings-list settings-icon settings-list-item status-bar]]
             [re-frame.core :refer [subscribe]]
             [meins.ui.db :refer [emit]]))
 
@@ -29,4 +29,10 @@
                                :switchOnValueChange toggle-geo
                                :hasNavArrow         false
                                :background-color    item-bg
-                               :titleStyle          {:color text-color}}]]]))))
+                               :titleStyle          {:color text-color}}]
+          [settings-list-item {:hasNavArrow      false
+                               :background-color item-bg
+                               :title            "Sync"
+                               :titleStyle       {:color text-color}
+                               :icon             (settings-icon "save" text-color)
+                               :on-press         #(emit [:bg-geo/save])}]]]))))

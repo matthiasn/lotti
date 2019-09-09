@@ -100,7 +100,9 @@
     (try
       (let [cfg (second (<! (as/get-item :cfg)))]
         (when cfg
-          (swap! cmp-state assoc-in [:cfg] cfg)))
+          (swap! cmp-state assoc-in [:cfg] cfg)
+          (when (:bg-geo cfg)
+            (put-fn [:bg-geo/start]))))
       (catch js/Object e (js/console.error "load-cfg" e))))
   (go
     (try
@@ -193,8 +195,17 @@
             (when task?
               (js/console.warn (aget new-objects i)))))))))
 
+(def BgGeoSchema-0
+  {:name       "BgGeo"
+   :primaryKey "timestamp"
+   :properties {:timestamp {:type "int" :indexed true}
+                :edn       "string"
+                :sync      {:type "string" :default "OPEN" :optional true}
+                :latitude  {:type "float" :default 0.0 :optional true}
+                :longitude {:type "float" :default 0.0 :optional true}}})
+
 (def schema-1
-  (clj->js {:schema        [EntrySchema ImageSchema]
+  (clj->js {:schema        [EntrySchema ImageSchema BgGeoSchema-0]
             :schemaVersion 1
             :migration     migration-1}))
 

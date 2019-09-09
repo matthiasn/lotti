@@ -71,6 +71,8 @@
 (defn hh-mm [m] (.format (js/moment m) "HH:mm"))
 (defn mm-ss [m] (.format (js/moment m) "mm:ss"))
 (defn ymd [m] (.format (js/moment m) ymd-format))
+(defn iso8601-to-millis [m] (js/parseInt (.format (js/moment m) "x")))
+
 (defn m-to-hh-mm [m]
   (let [t (js/moment (* m 60 1000))]
     (.format (.utc t) "HH:mm")))
