@@ -137,7 +137,7 @@
                    (let [rm #(let [criteria %]
                                (vec (concat (take idx criteria)
                                             (drop (inc idx) criteria))))
-                         updated (update-in entry [:habit :criteria] rm)]
+                         updated (update-in entry [:habit :versions version :criteria] rm)]
                      (emit [:entry/update-local updated])))]
     [:div.criterion
      [:i.fas.fa-trash-alt
