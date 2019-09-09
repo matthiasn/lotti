@@ -12,18 +12,18 @@
 (def BackgroundGeolocation (aget rn-bg-geo "default"))
 
 (def cfg
-  (clj->js
-    {:reset                  true
-     :desiredAccuracy        (.-DESIRED_ACCURACY_HIGH BackgroundGeolocation)
-     :distanceFilter         50
+  (->js
+    {:reset           true
+     :desiredAccuracy (.-DESIRED_ACCURACY_HIGH BackgroundGeolocation)
+     :distanceFilter  20
      ;:useSignificantChanges  true
-     :stopTimeout            5
-     :debug                  false
-     :logLevel               (.-LOG_LEVEL_INFO BackgroundGeolocation)
-     :stopOnTerminate        false
-     :startOnBoot            true
-     :batchSync              false
-     :autoSync               false}))
+     :stopTimeout     5
+     :debug           false
+     :logLevel        (.-LOG_LEVEL_INFO BackgroundGeolocation)
+     :stopOnTerminate false
+     :startOnBoot     true
+     :batchSync       false
+     :autoSync        false}))
 
 (defn next-save-ts [ts]
   (let [interval (* 5 60 1000)
@@ -53,8 +53,10 @@
                           :timezone   timezone
                           :utc-offset (.getTimezoneOffset (new js/Date))
                           :bg-geo     locations
-                          :perm_tags  #{"#locationtracking"}}]
-               (put-fn [:entry/new entry])))]
+                          :perm_tags  #{"#locationtracking"}}
+                   clear-cb #(js/console.warn "geo db cleared")]
+               (put-fn [:entry/new entry])
+               (.destroyLocations BackgroundGeolocation clear-cb)))]
     (.getLocations BackgroundGeolocation cb))
   {})
 
