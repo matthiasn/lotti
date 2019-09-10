@@ -57,6 +57,7 @@
            :circle-color ["match"
                           ["get" "activity"]
                           "on_foot" "green"
+                          "walking" "darkgreen"
                           "running" "red"
                           "in_vehicle" "blue"
                           "on_bicycle" "orange"
