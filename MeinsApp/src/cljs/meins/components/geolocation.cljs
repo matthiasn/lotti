@@ -1,25 +1,27 @@
 (ns meins.components.geolocation
   (:require [matthiasn.systems-toolbox.component :as st]
-            [meins.ui.shared :as shared]
+            [meins.ui.shared :as shared :refer [platform-os]]
             ["intl" :as intl]
             ["realm" :as realm]
             [cljs-bean.core :refer [bean ->clj ->js]]
-            ["react-native-background-geolocation" :as rn-bg-geo]
+            ["react-native-background-geolocation" :default BgGeo]
             [cljs.tools.reader.edn :as edn]
             [meins.helpers :as h]
             [meins.ui.db :as uidb]))
 
-(def BackgroundGeolocation (aget rn-bg-geo "default"))
+(def accuracy
+  (if (= platform-os "ios")
+    (.-DESIRED_ACCURACY_NAVIGATION BgGeo)
+    (.-DESIRED_ACCURACY_HIGH BgGeo)))
 
 (def cfg
   (->js
     {:reset           true
-     :desiredAccuracy (.-DESIRED_ACCURACY_HIGH BackgroundGeolocation)
-     :distanceFilter  20
-     ;:useSignificantChanges  true
+     :desiredAccuracy accuracy
+     :distanceFilter  10
      :stopTimeout     5
      :debug           false
-     :logLevel        (.-LOG_LEVEL_INFO BackgroundGeolocation)
+     :logLevel        (.-LOG_LEVEL_DEBUG BgGeo)
      :stopOnTerminate false
      :startOnBoot     true
      :batchSync       false
@@ -34,7 +36,7 @@
   {:next-save (next-save-ts (st/now))})
 
 (defn stop [_]
-  (.stop BackgroundGeolocation)
+  (.stop BgGeo)
   {})
 
 (defn save [{:keys [put-fn]}]
@@ -56,8 +58,13 @@
                           :perm_tags  #{"#locationtracking"}}
                    clear-cb #(js/console.warn "geo db cleared")]
                (put-fn [:entry/new entry])
-               (.destroyLocations BackgroundGeolocation clear-cb)))]
-    (.getLocations BackgroundGeolocation cb))
+               (.destroyLocations BgGeo clear-cb)))]
+    (.getLocations BgGeo cb))
+  {})
+
+(defn email-logs [{:keys [put-fn]}]
+  (-> (.emailLog BgGeo "")
+      (.then #(js/console.warn "BgGeo logs sent")))
   {})
 
 (defn start [{:keys []}]
@@ -65,9 +72,9 @@
   (try
     (let [on-ready (fn [state]
                      (js/console.warn "ready" state)
-                     (.start BackgroundGeolocation
+                     (.start BgGeo
                              (fn [] (js/console.warn "started-watching"))))]
-      (.ready BackgroundGeolocation cfg on-ready))
+      (.ready BgGeo cfg on-ready))
     (catch :default e (shared/alert (str "geolocation error: " e))))
   {})
 
@@ -78,6 +85,7 @@
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
-   :handler-map {:bg-geo/start start
-                 :bg-geo/save  save
-                 :bg-geo/stop  stop}})
+   :handler-map {:bg-geo/start      start
+                 :bg-geo/save       save
+                 :bg-geo/email-logs email-logs
+                 :bg-geo/stop       stop}})

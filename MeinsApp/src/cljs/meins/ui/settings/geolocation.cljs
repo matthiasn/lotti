@@ -35,4 +35,10 @@
                                :title            "Sync"
                                :titleStyle       {:color text-color}
                                :icon             (settings-icon "save" text-color)
-                               :on-press         #(emit [:bg-geo/save])}]]]))))
+                               :on-press         #(emit [:bg-geo/save])}]
+          [settings-list-item {:hasNavArrow      false
+                               :background-color item-bg
+                               :title            "Mail Logs"
+                               :titleStyle       {:color text-color}
+                               :icon             (settings-icon "envelope" text-color)
+                               :on-press         #(emit [:bg-geo/email-logs])}]]]))))
