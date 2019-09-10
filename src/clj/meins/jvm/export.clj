@@ -22,12 +22,13 @@
 (defn entry-fmt-bg-geo [entry]
   (when-let [bg-geo (:bg-geo entry)]
     (mapv
-      (fn [{:keys [timestamp coords activity]}]
+      (fn [{:keys [timestamp coords activity] :as data}]
         (let [ts (ctc/to-long timestamp)
               {:keys [longitude latitude]} coords]
           {:type       "Feature"
            :properties {:timestamp ts
-                        :activity  (:type activity)}
+                        :activity  (:type activity)
+                        :data      (pr-str data)}
            :geometry   {:type        "Point"
                         :coordinates [longitude latitude 0.0]}}))
       bg-geo)))

@@ -9,7 +9,9 @@
             [mapbox-gl :refer [Map Popup]]
             [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.graphql :as gql]))
+            [meins.electron.renderer.graphql :as gql]
+            [cljs.tools.reader.edn :as edn]
+            [clojure.pprint :as pp]))
 
 (def heatmap-data
   {:type "geojson"
@@ -87,11 +89,14 @@
                         (let [canvas (.getCanvas mb-map)
                               feature (aget e "features" 0)
                               coords (aget feature "geometry" "coordinates")
-                              text (h/format-time (aget feature "properties" "timestamp"))]
+                              text (h/format-time (aget feature "properties" "timestamp"))
+                              data (edn/read-string (aget feature "properties" "data"))
+                              html (str "<pre><code>" (with-out-str (pp/pprint data)) "</code></pre>")]
                           (aset canvas "style" "cursor" "pointer")
+                          (js/console.info data)
                           (-> popup
                               (.setLngLat coords)
-                              (.setHTML text)
+                              (.setHTML html)
                               (.addTo mb-map))))]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
