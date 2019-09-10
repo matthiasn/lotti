@@ -1,6 +1,7 @@
 {:dependencies [[reagent "0.8.1"]
                 [re-frame "0.10.9"]
                 [cljsjs/moment "2.24.0-0"]
+                [cljs-bean "1.4.0"]
                 [matthiasn/systems-toolbox-electron "0.6.29"]
                 [matthiasn/systems-toolbox "0.6.40"]
                 [matthiasn/systems-toolbox-sente "0.6.32"]

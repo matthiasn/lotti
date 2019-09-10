@@ -5,10 +5,10 @@
             [taoensso.timbre :refer-macros [info error debug]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [cljs.nodejs :refer [process]]
-            [mapbox-gl]
+            [cljs-bean.core :refer [bean ->clj ->js]]
+            [mapbox-gl :refer [Map Popup]]
             [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.helpers :as h]
-            [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.graphql :as gql]))
 
 (def heatmap-data
@@ -16,9 +16,9 @@
    :data (str h/export "entries.geojson")})
 
 (def heatmap-cfg
-  {:id     "earthquakes-heat"
+  {:id     "locations-heat"
    :type   "heatmap"
-   :source "earthquakes"
+   :source "locations"
    :paint  {:heatmap-weight    ["interpolate"
                                 ["linear"]
                                 ["get" "mag"]
@@ -50,19 +50,19 @@
                                 25 0]}})
 
 (def points-cfg
-  {:id "points"
-   :type "circle"
-   :source "earthquakes"
-   :paint {:circle-radius 6
-           :circle-color ["match"
-                          ["get" "activity"]
-                          "on_foot" "green"
-                          "walking" "darkgreen"
-                          "running" "red"
-                          "in_vehicle" "blue"
-                          "on_bicycle" "orange"
-                          "still" "#AAA"
-                          "#888"]}})
+  {:id     "points"
+   :type   "circle"
+   :source "locations"
+   :paint  {:circle-radius 6
+            :circle-color  ["match"
+                            ["get" "activity"]
+                            "on_foot" "green"
+                            "walking" "darkgreen"
+                            "running" "red"
+                            "in_vehicle" "blue"
+                            "on_bicycle" "orange"
+                            "still" "#AAA"
+                            "#888"]}})
 
 (defn heatmap-did-mount [props]
   (fn []
@@ -71,16 +71,34 @@
                 :zoom      1
                 :center    [10.1 53.56]
                 :style     "mapbox://styles/mapbox/dark-v9"}
-          mb-map (mapbox-gl/Map. (clj->js opts))
+          mb-map (Map. (clj->js opts))
           loaded (fn []
-                   (.addSource mb-map "earthquakes" (clj->js heatmap-data))
+                   (.addSource mb-map "locations" (clj->js heatmap-data))
                    ;(.addLayer mb-map (clj->js heatmap-cfg) "waterway-label")
                    (.addLayer mb-map (clj->js points-cfg)))
-          hide-gallery #(swap! local assoc-in [:gallery] false)]
+          hide-gallery #(swap! local assoc-in [:gallery] false)
+          popup (Popup. (->js {:closeButton  false
+                               :closeOnClick false}))
+          mouse-leave (fn []
+                        (let [canvas (.getCanvas mb-map)]
+                          (.remove popup)
+                          (aset canvas "style" "cursor" "")))
+          mouse-enter (fn [e]
+                        (let [canvas (.getCanvas mb-map)
+                              feature (aget e "features" 0)
+                              coords (aget feature "geometry" "coordinates")
+                              text (h/format-time (aget feature "properties" "timestamp"))]
+                          (aset canvas "style" "cursor" "pointer")
+                          (-> popup
+                              (.setLngLat coords)
+                              (.setHTML text)
+                              (.addTo mb-map))))]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
       (.on mb-map "load" loaded)
-      (.on mb-map "zoomstart" hide-gallery))))
+      (.on mb-map "zoomstart" hide-gallery)
+      (.on mb-map "mouseenter" "points" mouse-enter)
+      (.on mb-map "mouseleave" "points" mouse-leave))))
 
 (defn heatmap-cls [props]
   (r/create-class
