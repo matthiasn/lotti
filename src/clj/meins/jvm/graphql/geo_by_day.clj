@@ -31,17 +31,17 @@
       bg-geo)))
 
 (defn geo-by-days
-  [state context args value]
+  [state _context args _value]
   (let [{:keys [from to] :as m} args
-        from (if from (dt/ymd-to-ts from) 0)
-        to (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)
+        from-ts (if from (dt/ymd-to-ts from) 0)
+        to-ts (if to (+ (dt/ymd-to-ts to) (* 24 60 60 1000)) Long/MAX_VALUE)
         current-state @state
-        entries-map (:entries-map (gq/get-filtered current-state {:n    n
-                                                                  :from from
-                                                                  :to   to}))
-        features (filter identity (map entry-fmt (vals entries-map)))
-        features2 (flatten (filter identity (map entry-fmt-bg-geo (vals entries-map))))
+        g (:graph current-state)
+        day-nodes (gq/get-nodes-for-day g {:date_string to})
+        day-nodes-attrs (map #(gq/get-entry current-state %) day-nodes)
+        features (filter identity (map entry-fmt day-nodes-attrs))
+        features2 (flatten (filter identity (map entry-fmt-bg-geo day-nodes-attrs)))
         res (->> (concat features features2)
-                 (filter #(< (-> % :properties :timestamp) to))
-                 (filter #(> (-> % :properties :timestamp) from)))]
+                 (filter #(< (-> % :properties :timestamp) to-ts))
+                 (filter #(> (-> % :properties :timestamp) from-ts)))]
     res))
