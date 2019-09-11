@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [cljs.nodejs :refer [process]]
             [cljs-bean.core :refer [bean ->clj ->js]]
-            [mapbox-gl :refer [Map Popup]]
+            ["mapbox-gl" :refer [Map Popup LngLat LngLatBounds] :as mapbox-gl]
             ["react-day-picker" :default DayPicker]
             ["react-day-picker/DayPickerInput" :default DayPickerInput]
             ["moment" :as moment]
@@ -19,44 +19,6 @@
 
 (def day-picker (r/adapt-react-class DayPicker))
 (def day-picker-input (r/adapt-react-class DayPickerInput))
-
-(def heatmap-data
-  {:type "geojson"
-   :data (str h/export "entries.geojson")})
-
-(def heatmap-cfg
-  {:id     "locations-heat"
-   :type   "heatmap"
-   :source "locations"
-   :paint  {:heatmap-weight    ["interpolate"
-                                ["linear"]
-                                ["get" "mag"]
-                                0 0
-                                6 1]
-            :heatmap-intensity ["interpolate"
-                                ["linear"]
-                                ["zoom"]
-                                0 1
-                                9 3]
-            :heatmap-color     ["interpolate"
-                                ["linear"]
-                                ["heatmap-density"]
-                                0 "rgba(33,102,172,0)"
-                                0.2 "rgb(103,169,207)"
-                                0.4 "rgb(209,229,240)"
-                                0.6 "rgb(253,219,199)"
-                                0.8 "rgb(239,138,98)"
-                                1 "rgb(178,24,43)"]
-            :heatmap-radius    ["interpolate"
-                                ["linear"]
-                                ["zoom"]
-                                0 2
-                                13 20]
-            :heatmap-opacity   ["interpolate"
-                                ["linear"]
-                                ["zoom"]
-                                10 1
-                                25 0]}})
 
 (def points-cfg
   {:id     "points"
@@ -98,20 +60,23 @@
 
 (defn add-layers [mb-map]
   (.addLayer mb-map (clj->js points-cfg))
-  (.addLayer mb-map (clj->js buildings-cfg)))
+  #_(.addLayer mb-map (clj->js buildings-cfg)))
 
 (defn heatmap-did-mount [props]
   (fn []
-    (let [{:keys [local]} props
+    (let [{:keys [local features]} props
+          {:keys [zoom lat lng]} @local
           opts {:container "heatmap"
-                :zoom      1
-                :center    [10.1 53.56]
+                :zoom      zoom
+                :center    [lng lat]
                 :pitch     0
                 :style     (:dark styles)}
           mb-map (Map. (clj->js opts))
+          data {:type "geojson"
+                :data {:type     "FeatureCollection"
+                       :features features}}
           loaded (fn []
-                   (.addSource mb-map "locations" (clj->js heatmap-data))
-                   ;(.addLayer mb-map (clj->js heatmap-cfg) "waterway-label")
+                   (.addSource mb-map "locations" (clj->js data))
                    (add-layers mb-map))
           hide-gallery #(swap! local assoc-in [:gallery] false)
           popup (Popup. (->js {:closeButton  false
@@ -127,7 +92,6 @@
                               data (edn/read-string (aget feature "properties" "data"))
                               html (str "<pre><code>" (with-out-str (pp/pprint data)) "</code></pre>")]
                           (aset canvas "style" "cursor" "pointer")
-                          (js/console.info data)
                           (-> popup
                               (.setLngLat coords)
                               (.setHTML html)
@@ -136,6 +100,11 @@
       (aset js/window "heatmap" mb-map)
       (.on mb-map "load" loaded)
       (.on mb-map "zoomstart" hide-gallery)
+      (.on mb-map "zoomend" (fn [e]
+                              (let [coords {:zoom (aget e "target" "transform" "_zoom")
+                                            :lat  (aget e "target" "transform" "_center" "lat")
+                                            :lng  (aget e "target" "transform" "_center" "lng")}]
+                                (swap! local merge coords))))
       (.on mb-map "mouseenter" "points" mouse-enter)
       (.on mb-map "mouseleave" "points" mouse-leave))))
 
@@ -149,8 +118,9 @@
                                                      :background-color "#333"}}]))}))
 
 (defn query [local]
+  (info "Location query")
   (emit [:gql/query {:id       :locations-by-days
-                     :q        (gql/gen-query [:locations_by_day
+                     :q        (gql/gen-query [:locations_by_days
                                                {:from (:from @local)
                                                 :to   (:to @local)}
                                                [:type
@@ -163,40 +133,28 @@
                      :res-hash nil
                      :prio     15}]))
 
+(defn map-view [props]
+  (info "Location map render")
+  ^{:key (stc/make-uuid)}
+  [heatmap-cls props])
+
 (defn locations-map []
   (let [backend-cfg (subscribe [:backend-cfg])
         gql-res (subscribe [:gql-res])
+        features (reaction (get-in @gql-res [:locations-by-days :data :locations_by_days]))
         local (r/atom {:gallery true
+                       :zoom    5
+                       :lng     10.1
+                       :lat     53.56
                        :from    (h/ymd (stc/now))
                        :to      (h/ymd (stc/now))})
-        get-bounds #(let [mb-map (:mb-map @local)
-                          bounds (.getBounds mb-map)
-                          zoom (.getZoom mb-map)
-                          ne (.-_ne bounds)
-                          sw (.-_sw bounds)
-                          center (.getCenter mb-map)
-                          q (gql/gen-query
-                              [:photos_by_location {:ne_lat (.-lat ne)
-                                                    :ne_lon (.-lng ne)
-                                                    :sw_lat (.-lat sw)
-                                                    :sw_lon (.-lng sw)}
-                               [:timestamp :img_file :latitude :longitude
-                                :md :starred :stars :text]])]
-                      (info "heatmap gql" q zoom center)
-                      (emit [:gql/query {:q        q
-                                         :res-hash nil
-                                         :id       :heatmap}]))
-        entries (reaction (->> @gql-res
-                               :heatmap
-                               :data
-                               :photos_by_location
-                               (filter :img_file)))
-        p1 #(let [mb-map (:mb-map @local)]
-              (.flyTo mb-map (clj->js {:center [10.001872149129213
-                                                53.561938271672375]
-                                       :speed  0.8
-                                       :pitch  45
-                                       :zoom   16})))
+        zoom-bounds (fn [_]
+                      (let [bounds (LngLatBounds.)
+                            mb-map (:mb-map @local)]
+                        (doseq [feat @features]
+                          (let [[lng lat] (-> feat :geometry :coordinates)]
+                            (.extend bounds (LngLat. lng lat))))
+                        (.fitBounds mb-map bounds (->js {:padding 50}))))
         date-pick (fn [d]
                     (let [ymd (h/ymd (moment. d))]
                       (swap! local assoc :from ymd)
@@ -225,14 +183,11 @@
               (for [[k style-url] styles]
                 ^{:key k}
                 [:option {:value style-url} k])]
-             [:button {:on-click p1
+             [:button {:on-click zoom-bounds
                        :style    {:margin-left 20}}
-              "p1"]
-             [:button {:on-click get-bounds} "search"]]
-            [heatmap-cls {:local local}]
-            (when (:gallery @local)
-              [:div.fixed-gallery
-               [carousel/gallery @entries {} emit]])]]
+              "fit bounds"]]
+            [map-view {:local    local
+                       :features @features}]]]
           [:div.flex-container
            [:div.error
             [:h1

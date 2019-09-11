@@ -30,7 +30,7 @@
                         :coordinates [longitude latitude altitude]}}))
       bg-geo)))
 
-(defn geo-by-day
+(defn geo-by-days
   [state context args value]
   (let [{:keys [from to] :as m} args
         from (if from (dt/ymd-to-ts from) 0)
