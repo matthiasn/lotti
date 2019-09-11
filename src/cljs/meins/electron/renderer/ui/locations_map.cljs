@@ -62,6 +62,14 @@
   (.addLayer mb-map (clj->js points-cfg))
   #_(.addLayer mb-map (clj->js buildings-cfg)))
 
+(defn zoom-bounds [local features _]
+  (let [bounds (LngLatBounds.)
+        mb-map (:mb-map @local)]
+    (doseq [feat features]
+      (let [[lng lat] (-> feat :geometry :coordinates)]
+        (.extend bounds (LngLat. lng lat))))
+    (.fitBounds mb-map bounds (->js {:padding 50}))))
+
 (defn heatmap-did-mount [props]
   (fn []
     (let [{:keys [local features]} props
@@ -95,7 +103,8 @@
                           (-> popup
                               (.setLngLat coords)
                               (.setHTML html)
-                              (.addTo mb-map))))]
+                              (.addTo mb-map))))
+          zoom-bounds (partial zoom-bounds local features)]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
       (.on mb-map "load" loaded)
@@ -106,7 +115,8 @@
                                             :lng  (aget e "target" "transform" "_center" "lng")}]
                                 (swap! local merge coords))))
       (.on mb-map "mouseenter" "points" mouse-enter)
-      (.on mb-map "mouseleave" "points" mouse-leave))))
+      (.on mb-map "mouseleave" "points" mouse-leave)
+      (js/setTimeout zoom-bounds 1000))))
 
 (defn heatmap-cls [props]
   (r/create-class
@@ -148,13 +158,6 @@
                        :lat     53.56
                        :from    (h/ymd (stc/now))
                        :to      (h/ymd (stc/now))})
-        zoom-bounds (fn [_]
-                      (let [bounds (LngLatBounds.)
-                            mb-map (:mb-map @local)]
-                        (doseq [feat @features]
-                          (let [[lng lat] (-> feat :geometry :coordinates)]
-                            (.extend bounds (LngLat. lng lat))))
-                        (.fitBounds mb-map bounds (->js {:padding 50}))))
         date-pick (fn [d]
                     (let [ymd (h/ymd (moment. d))]
                       (swap! local assoc :from ymd)
@@ -183,7 +186,7 @@
               (for [[k style-url] styles]
                 ^{:key k}
                 [:option {:value style-url} k])]
-             [:button {:on-click zoom-bounds
+             [:button {:on-click (partial zoom-bounds local @features)
                        :style    {:margin-left 20}}
               "fit bounds"]]
             [map-view {:local    local
