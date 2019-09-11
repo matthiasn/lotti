@@ -131,6 +131,10 @@
        [:cmd/send {:to  :backend/store
                    :msg [:startup/read]}])
 
+     (when-not (System/getenv "DATA_PATH")
+       [:cmd/send {:to  :backend/store
+                   :msg [:gql/cmd {:cmd :start}]}])
+
      (when-not (s/includes? fu/data-path "playground")
        [:cmd/send {:to  :backend/scheduler
                    :msg [:schedule/new {:timeout (* 5 60 1000)

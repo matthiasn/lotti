@@ -1,0 +1,23 @@
+{:objects
+ {:GeoProperties
+  {:description "GeoJSON properties"
+   :fields      {:timestamp  {:type (non-null ID)}
+                 :entry_type {:type String}
+                 :data       {:type String}
+                 :activity   {:type String}}}
+  :GeoGeometry
+  {:description "GeoJSON properties"
+   :fields      {:coordinates {:type (list Float)}
+                 :type        {:type String}}}
+  :GeoFeature
+  {:description "GeoJSON Feature"
+   :fields      {:type       {:type String}
+                 :properties {:type :GeoProperties}
+                 :geometry   {:type :GeoGeometry}}}}
+ :queries
+ {:locations_by_day
+  {:type        (list :GeoFeature)
+   :description "List of entries for given query."
+   :args        {:from {:type String}
+                 :to   {:type String}}
+   :resolve     :query/locations-by-day}}}

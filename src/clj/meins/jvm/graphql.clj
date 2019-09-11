@@ -10,6 +10,7 @@
             [meins.jvm.graphql.habits :as gh]
             [meins.jvm.graphql.tasks :as gt]
             [meins.jvm.graphql.opts :as opts]
+            [meins.jvm.graphql.geo-by-day :as geo]
             [meins.jvm.graphql.misc-stats :as gms]
             [meins.jvm.graphql.tab-search :as gts]
             [meins.jvm.graphql.briefings-logged :as gbl]
@@ -46,43 +47,46 @@
     {}))
 
 (defn compile-schema [attach-state put-fn]
-  (-> (edn/read-string (slurp (io/resource "schema.edn")))
-      (util/attach-resolvers
-        (attach-state
-          {:query/entry-count               opts/entry-count
-           :query/hours-logged              opts/hours-logged
-           :query/word-count                opts/word-count
-           :query/tag-count                 opts/tag-count
-           :query/mention-count             opts/mention-count
-           :query/completed-count           opts/completed-count
-           :query/match-count               gms/match-count
-           :query/active-threads            opts/thread-count
-           :query/pid                       opts/pid
-           :query/tab-search                (gts/tab-search put-fn)
-           :query/hashtags                  opts/hashtags
-           :query/pvt-hashtags              opts/pvt-hashtags
-           :query/logged-time               gbl/logged-time
-           :query/day-stats                 gbl/day-stats
-           :query/habits-success            gh/habits-success
-           :query/habits-success-by-day     gh/habits-success-by-day
-           :query/started-tasks             gt/started-tasks
-           :query/open-tasks                gt/open-tasks
-           :query/waiting-habits            gh/waiting-habits
-           :query/mentions                  opts/mentions
-           :query/stories                   opts/stories
-           :query/sagas                     opts/sagas
-           :query/custom-field-stats        gcf/custom-field-stats
-           :query/custom-field-stats-by-day gcf/custom-field-stats-by-day
-           :query/custom-fields-by-days     gcf/custom-fields-by-days
-           :query/usage-by-day              us/usage-stats-by-day
-           :query/bp-field-stats            gms/bp-field-stats
-           :query/git-stats                 gms/git-stats
-           :query/briefings                 opts/briefings
-           :query/questionnaires            gms/questionnaires
-           :query/questionnaires-by-days    gms/questionnaires-by-days
-           :query/award-points              gms/award-points
-           :query/briefing                  gbl/briefing}))
-      schema/compile))
+  (let [schema (edn/read-string (slurp (io/resource "schemas/schema.edn")))
+        geo-schema (edn/read-string (slurp (io/resource "schemas/geo_schema.edn")))]
+    (-> (merge-with merge schema geo-schema)
+        (util/attach-resolvers
+          (attach-state
+            {:query/entry-count               opts/entry-count
+             :query/hours-logged              opts/hours-logged
+             :query/word-count                opts/word-count
+             :query/tag-count                 opts/tag-count
+             :query/mention-count             opts/mention-count
+             :query/completed-count           opts/completed-count
+             :query/match-count               gms/match-count
+             :query/active-threads            opts/thread-count
+             :query/pid                       opts/pid
+             :query/tab-search                (gts/tab-search put-fn)
+             :query/hashtags                  opts/hashtags
+             :query/pvt-hashtags              opts/pvt-hashtags
+             :query/logged-time               gbl/logged-time
+             :query/day-stats                 gbl/day-stats
+             :query/habits-success            gh/habits-success
+             :query/habits-success-by-day     gh/habits-success-by-day
+             :query/started-tasks             gt/started-tasks
+             :query/open-tasks                gt/open-tasks
+             :query/waiting-habits            gh/waiting-habits
+             :query/mentions                  opts/mentions
+             :query/stories                   opts/stories
+             :query/sagas                     opts/sagas
+             :query/custom-field-stats        gcf/custom-field-stats
+             :query/custom-field-stats-by-day gcf/custom-field-stats-by-day
+             :query/custom-fields-by-days     gcf/custom-fields-by-days
+             :query/usage-by-day              us/usage-stats-by-day
+             :query/bp-field-stats            gms/bp-field-stats
+             :query/git-stats                 gms/git-stats
+             :query/briefings                 opts/briefings
+             :query/questionnaires            gms/questionnaires
+             :query/questionnaires-by-days    gms/questionnaires-by-days
+             :query/award-points              gms/award-points
+             :query/locations-by-day          geo/geo-by-day
+             :query/briefing                  gbl/briefing}))
+        schema/compile)))
 
 (defn state-fn [state put-fn]
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))

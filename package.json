@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.232",
+  "version": "0.6.233",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -64,6 +64,7 @@
     "react-addons-shallow-compare": "15.6.2",
     "react-big-calendar": "0.22.0",
     "react-color": "2.17.3",
+    "react-day-picker": "7.3.2",
     "react-dom": "16.8.6",
     "react-event-timeline": "1.6.3",
     "react-horizontal-timeline": "1.5.3",

@@ -28,8 +28,9 @@
   {:index-page-fn index-page
    :routes-fn     routes-fn
    :port          port
-   :opts          {:in-chan  [:buffer 100]
-                   :out-chan [:buffer 100]}
+   :opts          {:in-chan    [:buffer 100]
+                   :out-chan   [:buffer 100]
+                   :reload-cmp false}
    :relay-types   #{:entry/saved :backend-cfg/new :cmd/toggle-key :cfg/show-qr
                     :ws/ping :startup/progress :file/encrypt :search/res :sync/imap
                     :sync/start-imap :gql/res :gql/res2 :metrics/info}})
