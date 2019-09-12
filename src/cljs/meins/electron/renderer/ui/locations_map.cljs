@@ -7,18 +7,53 @@
             [cljs.nodejs :refer [process]]
             [cljs-bean.core :refer [bean ->clj ->js]]
             ["mapbox-gl" :refer [Map Popup LngLat LngLatBounds] :as mapbox-gl]
-            ["react-day-picker" :default DayPicker]
-            ["react-day-picker/DayPickerInput" :default DayPickerInput]
             ["moment" :as moment]
             [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.graphql :as gql]
             [cljs.tools.reader.edn :as edn]
             [clojure.pprint :as pp]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
 
-(def day-picker (r/adapt-react-class DayPicker))
-(def day-picker-input (r/adapt-react-class DayPickerInput))
+(defn query [local]
+  (emit [:gql/query {:id       :locations-by-days
+                     :q        (gql/gen-query [:locations_by_days
+                                               {:from (:from @local)
+                                                :to   (:to @local)}
+                                               [:type
+                                                [:geometry [:type
+                                                            :coordinates]]
+                                                [:properties [:activity
+                                                              :data
+                                                              :timestamp
+                                                              :entry_type]]]])
+                     :res-hash nil
+                     :prio     15}]))
+
+(defn infinite-cal-search [local]
+  (let [on-select (fn [ev]
+                   (let [selected (js->clj ev :keywordize-keys true)
+                         start (h/ymd (:start selected))
+                         end (h/ymd (:end selected))
+                         sel {:start start
+                              :end   end}]
+                     (swap! local assoc-in [:selected] sel)
+                     (when (= (:eventType selected) 3)
+                       (swap! local merge {:from start
+                                           :to   end})
+                       (query local))))]
+    (fn [local]
+      (let [selected (:selected @local)]
+        [:div.infinite-cal-search
+         [ebc/infinite-cal-range-adapted
+          {:width     "100%"
+           :height    200
+           :onSelect  on-select
+           :theme     {:weekdayColor "#666"
+                       :headerColor  "#778"}
+           :rowHeight 40
+           :selected  selected}]]))))
 
 (def points-cfg
   {:id     "points"
@@ -127,22 +162,6 @@
                                                      :height           "100vh"
                                                      :background-color "#333"}}]))}))
 
-(defn query [local]
-  (info "Location query")
-  (emit [:gql/query {:id       :locations-by-days
-                     :q        (gql/gen-query [:locations_by_days
-                                               {:from (:from @local)
-                                                :to   (:to @local)}
-                                               [:type
-                                                [:geometry [:type
-                                                            :coordinates]]
-                                                [:properties [:activity
-                                                              :data
-                                                              :timestamp
-                                                              :entry_type]]]])
-                     :res-hash nil
-                     :prio     15}]))
-
 (defn map-view [props]
   (info "Location map render")
   ^{:key (stc/make-uuid)}
@@ -157,24 +176,16 @@
                        :lng     10.1
                        :lat     53.56
                        :from    (h/ymd (stc/now))
-                       :to      (h/ymd (stc/now))})
-        date-pick (fn [d]
-                    (let [ymd (h/ymd (moment. d))]
-                      (swap! local assoc :from ymd)
-                      (swap! local assoc :to ymd)))]
+                       :to      (h/ymd (stc/now))})]
+    (query local)
     (fn []
-      (query local)
       (let [mapbox-token (:mapbox-token @backend-cfg)]
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
           [:div.flex-container
            [:div.heatmap
             [:div.ctrl
-             [day-picker-input {:style          {:padding-right 20}
-                                :onDayChange    date-pick
-                                :value          (:from @local)
-                                :format         "yyyy-MM-dd"
-                                :dayPickerProps {:showWeekNumbers true}}]
+             [infinite-cal-search local]
              [:select {:value     :dark
                        :style     {:padding-right 20}
                        :on-change (fn [ev]

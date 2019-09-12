@@ -586,12 +586,14 @@ a.mapboxgl-ctrl-logo {
 
   .ctrl {
     position: fixed;
-    top: 10px;
-    left: 200px;
+    display: flex;
+    width: 230px;
+    flex-direction: column;
+    top: 0;
+    right: 0;
     z-index: 2;
-    opacity: 0.6;
 
-    button {
+    button, select {
       margin: 5px;
       padding: 3px 6px;
       border-radius: 2px;

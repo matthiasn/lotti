@@ -236,7 +236,6 @@
         (emit [:entry/update updated])
         (.preventDefault ev)))))
 
-
 (defn key-down-save [entry]
   (fn [ev]
     (let [key-code (.. ev -keyCode)
