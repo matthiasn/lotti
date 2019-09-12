@@ -30,6 +30,7 @@
                                :hasNavArrow         false
                                :background-color    item-bg
                                :titleStyle          {:color text-color}}]
+
           [settings-list-item {:hasNavArrow      false
                                :background-color item-bg
                                :title            "Sync"

@@ -14,18 +14,20 @@
     (.-DESIRED_ACCURACY_NAVIGATION BgGeo)
     (.-DESIRED_ACCURACY_HIGH BgGeo)))
 
-(def cfg
+(defn bg-geo-cfg [cfg]
   (->js
-    {:reset           true
-     :desiredAccuracy accuracy
-     :distanceFilter  10
-     :stopTimeout     5
-     :debug           false
-     :logLevel        (.-LOG_LEVEL_DEBUG BgGeo)
-     :stopOnTerminate false
-     :startOnBoot     true
-     :batchSync       false
-     :autoSync        false}))
+    (merge
+      {:reset           true
+       :desiredAccuracy accuracy
+       :distanceFilter  25
+       :stopTimeout     5
+       :debug           false
+       :logLevel        (.-LOG_LEVEL_INFO BgGeo)
+       :stopOnTerminate false
+       :startOnBoot     true
+       :batchSync       false
+       :autoSync        false}
+      cfg)))
 
 (defn next-save-ts [ts]
   (let [interval (* 5 60 1000)
@@ -67,10 +69,11 @@
       (.then #(js/console.warn "BgGeo logs sent")))
   {})
 
-(defn start [{:keys []}]
+(defn start [{:keys [msg-payload]}]
   (js/console.warn "BgGeo start")
   (try
-    (let [on-ready (fn [state]
+    (let [cfg (bg-geo-cfg (:cfg msg-payload))
+          on-ready (fn [state]
                      (js/console.warn "ready" state)
                      (.start BgGeo
                              (fn [] (js/console.warn "started-watching"))))]
