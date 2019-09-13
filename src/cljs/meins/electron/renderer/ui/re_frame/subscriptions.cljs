@@ -63,6 +63,7 @@
 (reg-sub :cal-day (fn [db _] (-> db :cfg :cal-day)))
 (reg-sub :busy-status (fn [db _] (:busy-status db)))
 (reg-sub :query-cfg (fn [db _] (:query-cfg db)))
+(reg-sub :crypto-cfg (fn [db _] (:crypto-cfg db)))
 (reg-sub :widgets (fn [db _] (:widgets (:cfg db))))
 (reg-sub :questionnaires (fn [db _] (:questionnaires (:options db))))
 (reg-sub :dashboards (fn [db _] (:dashboards (:questionnaires (:options db)))))

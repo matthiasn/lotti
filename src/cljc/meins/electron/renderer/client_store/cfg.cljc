@@ -27,6 +27,9 @@
   (reset! app-cfg (:cfg current-state))
   {})
 
+(defn save-crypto [{:keys [current-state msg-payload]}]
+  {:new-state (assoc current-state :crypto-cfg msg-payload)})
+
 (defn toggle-key-fn [{:keys [current-state msg-payload]}]
   (let [{:keys [path reset-to]} msg-payload
         new-state (if reset-to

@@ -43,6 +43,7 @@
                 :entry/sync
                 :entry/create
                 :geonames/res
+                :crypto/cfg
                 :export/geojson
                 :gql/cmd
                 :firehose/cmd
@@ -116,6 +117,9 @@
 
        [:cmd/route {:from :main/window-manager
                     :to   :main/startup}]
+
+       [:cmd/route {:from :main/crypto
+                    :to   :main/window-manager}]
 
        [:cmd/route {:from :main/geocoder
                     :to   :main/window-manager}]

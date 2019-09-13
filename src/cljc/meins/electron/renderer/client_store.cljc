@@ -36,6 +36,7 @@
    :handler-map (merge cse/entry-handler-map
                        s/search-handler-map
                        {:cfg/save         c/save-cfg
+                        :crypto/cfg       c/save-crypto
                         :gql/res          csh/gql-res
                         :gql/res2         csh/gql-res2
                         :gql/remove       csh/gql-remove

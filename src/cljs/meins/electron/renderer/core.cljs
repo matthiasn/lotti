@@ -44,6 +44,7 @@
 
 (def ipc-relay-types #{:wm/open-external
                        :geonames/lookup
+                       :crypto/get-cfg
                        :window/hide
                        :window/show
                        :window/progress

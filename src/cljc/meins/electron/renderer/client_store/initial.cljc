@@ -20,6 +20,7 @@
         ymd (or (get-in current-state [:cfg :cal-day]) (h/ymd (stc/now)))
         pvt (-> current-state :cfg :show-pvt)]
     (put-fn [:cfg/refresh])
+    (put-fn [:crypto/get-cfg])
     (run-query "briefing.gql" :briefing 12 [ymd pvt])
     (run-query "logged-by-day.gql" :logged-by-day 13 [ymd])
     (put-fn [:gql/query {:file "habits-success.gql"

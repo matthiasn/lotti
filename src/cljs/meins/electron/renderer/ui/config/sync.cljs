@@ -1,6 +1,7 @@
 (ns meins.electron.renderer.ui.config.sync
   (:require [moment]
-            [meins.electron.renderer.ui.config.qr-scanner :as qr]
+            [meins.electron.renderer.ui.config.qr-scanner :as qrs]
+            [meins.electron.renderer.ui.config.qr-gen :as qrg]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
@@ -68,5 +69,6 @@
           [:button {:on-click create-key-pair}
            "(Re-)Create Key Pair"]]
          [:div
-          [:img {:src (str "http://" iww-host "/secrets/" (stc/make-uuid) "/secrets.png")}]
-          [qr/scanner cfg]]]))))
+          ;[:img {:src (str "http://" iww-host "/secrets/" (stc/make-uuid) "/secrets.png")}]
+          [qrg/qr-code-gen cfg connected]
+          [qrs/scanner cfg]]]))))

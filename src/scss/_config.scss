@@ -447,6 +447,12 @@
   width: 100%;
   margin-left: 16px;
 
+  #sync-cfg-qr {
+    svg {
+      background-color: white;
+    }
+  }
+
   .scanned {
     color: white;
     font-size: $font-size-xs;
