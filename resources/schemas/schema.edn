@@ -371,6 +371,12 @@
                  :incremental {:type Boolean}}
    :resolve     :query/tab-search}
 
+  :entry_by_ts
+  {:type        :Entry
+   :description "Entry for given timestamp."
+   :args        {:ts {:type ID}}
+   :resolve     :query/entry-by-ts}
+
   :hashtags
   {:type        (list String)
    :args        {:prio {:type Int}}

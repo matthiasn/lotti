@@ -17,7 +17,7 @@
             [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
 
 (defn query [local]
-  (emit [:gql/query {:id       :locations-by-days
+  (emit [:gql/query {:id       (:query-id @local)
                      :q        (gql/gen-query [:locations_by_days
                                                {:from (:from @local)
                                                 :to   (:to @local)}
@@ -167,17 +167,8 @@
   ^{:key (stc/make-uuid)}
   [heatmap-cls props])
 
-(defn locations-map []
-  (let [backend-cfg (subscribe [:backend-cfg])
-        gql-res (subscribe [:gql-res])
-        features (reaction (get-in @gql-res [:locations-by-days :data :locations_by_days]))
-        local (r/atom {:gallery true
-                       :zoom    5
-                       :lng     10.1
-                       :lat     53.56
-                       :from    (h/ymd (stc/now))
-                       :to      (h/ymd (stc/now))})]
-    (query local)
+(defn map-render [local res]
+  (let [backend-cfg (subscribe [:backend-cfg])]
     (fn []
       (let [mapbox-token (:mapbox-token @backend-cfg)]
         (aset mapbox-gl "accessToken" mapbox-token)
@@ -197,13 +188,30 @@
               (for [[k style-url] styles]
                 ^{:key k}
                 [:option {:value style-url} k])]
-             [:button {:on-click (partial zoom-bounds local @features)
+             [:button {:on-click (partial zoom-bounds local @res)
                        :style    {:margin-left 20}}
               "fit bounds"]]
             [map-view {:local    local
-                       :features @features}]]]
+                       :features @res}]]]
           [:div.flex-container
            [:div.error
             [:h1
              [:i.fas.fa-exclamation]
              "mapbox access token not found"]]])))))
+
+(defn locations-map []
+  (let [query-id :location-map
+        query-type :locations_by_days
+        gql-res (subscribe [:gql-res])
+        res (reaction (get-in @gql-res [query-id :data query-type]))
+        local (r/atom {:query-id query-id
+                       :zoom    5
+                       :lng     10.1
+                       :lat     53.56
+                       :from    (h/ymd (stc/now))
+                       :to      (h/ymd (stc/now))})
+        render (fn [props] [map-render local res])
+        cleanup #(emit [:gql/remove {:query-id query-id}])]
+    (query local)
+    (r/create-class {:component-will-unmount cleanup
+                     :reagent-render         render})))

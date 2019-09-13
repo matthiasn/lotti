@@ -13,6 +13,7 @@
             [meins.jvm.graphql.geo-by-day :as geo]
             [meins.jvm.graphql.misc-stats :as gms]
             [meins.jvm.graphql.tab-search :as gts]
+            [meins.jvm.graphql.entry :as gte]
             [meins.jvm.graphql.briefings-logged :as gbl]
             [taoensso.timbre :refer [info error warn debug]]
             [meins.jvm.graphql.usage-stats :as us]
@@ -24,6 +25,16 @@
                     (dissoc tab-group))
         new-state (-> current-state
                       (assoc-in [:prev tab-group] {})
+                      (assoc-in [:queries] queries))]
+    (info "removing query" msg-payload (keys queries))
+    {:new-state new-state}))
+
+(defn query-remove [{:keys [current-state msg-payload]}]
+  (let [id (:query-id msg-payload)
+        queries (-> (into {} (:queries current-state))
+                    (dissoc id))
+        new-state (-> current-state
+                      (assoc-in [:prev id] {})
                       (assoc-in [:queries] queries))]
     (info "removing query" msg-payload (keys queries))
     {:new-state new-state}))
@@ -62,6 +73,7 @@
              :query/active-threads            opts/thread-count
              :query/pid                       opts/pid
              :query/tab-search                (gts/tab-search put-fn)
+             :query/entry-by-ts               gte/entry-by-ts
              :query/hashtags                  opts/hashtags
              :query/pvt-hashtags              opts/pvt-hashtags
              :query/logged-time               gbl/logged-time

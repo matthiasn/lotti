@@ -55,6 +55,7 @@
                  :cfg/refresh        cfg/refresh-cfg
                  :backend-cfg/save   fu/write-cfg
                  :search/remove      gql/search-remove
+                 :gql/remove         gql/query-remove
                  :metrics/get        m/get-metrics
                  :gql/query          exec/run-query
                  :gql/cmd            gql/start-stop
