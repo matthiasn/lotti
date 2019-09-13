@@ -11,11 +11,13 @@
             [clojure.pprint :as pp]))
 
 (defn stop-scanning [local]
-  (some-> (:qr-reader @local)
-          (.-stream)
-          (.getTracks)
-          (aget 0)
-          (.stop)))
+  (let [qr-reader (:qr-reader @local)]
+    (some-> qr-reader
+            (.-stream)
+            (.getTracks)
+            (aget 0)
+            (.stop))
+    (.stopAsyncDecode qr-reader)))
 
 (defn did-mount [local _]
   (let [qr-reader (BrowserQRCodeReader.)
