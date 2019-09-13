@@ -19,13 +19,14 @@
             (.stop))
     (.stopAsyncDecode qr-reader)))
 
-(defn did-mount [local _]
+(defn did-mount [local cfg _]
   (let [qr-reader (BrowserQRCodeReader.)
         on-scanned (fn [qr]
                      (try
                        (let [data (edn/read-string (.-text qr))]
                          (info "Scanned data:" data)
-                         (swap! local assoc :scanned data)
+                         (swap! cfg assoc :mobile data)
+                         (emit [:imap/save-cfg @cfg])
                          (stop-scanning local))
                        (catch :default e (error e))))
         scan (fn [cameras]
@@ -52,10 +53,10 @@
   (info "QR scanner will unmount")
   (stop-scanning local))
 
-(defn scanner []
+(defn scanner [cfg]
   (let [local (r/atom {:local "foo"})]
     (r/create-class
-      {:component-did-mount    (partial did-mount local)
+      {:component-did-mount    (partial did-mount local cfg)
        :component-will-unmount (partial will-unmount local)
        :display-name           "QR-Scanner"
        :reagent-render         (partial qr local)})))
