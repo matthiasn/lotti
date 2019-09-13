@@ -1,5 +1,5 @@
 (ns meins.util.keychain
-  (:require ["react-native-keychain" :as kc :refer [setGenericPassword getGenericPassword]]
+  (:require ["react-native-keychain" :as kc :refer [setGenericPassword getGenericPassword resetGenericPassword]]
             [cljs.tools.reader.edn :as edn]))
 
 (defn get-keypair
@@ -20,5 +20,14 @@
   (-> (setGenericPassword "meins" (pr-str kp))
       (.then (fn [res]
                (js/console.warn "setGenericPassword" res)
+               (get-keypair #(js/console.warn "publicKey" (:publicKey %)))))
+      (.catch (fn [e] (js/console.error e)))))
+
+(defn del-keypair
+  "Deletes keypair from keychain."
+  []
+  (-> (resetGenericPassword "meins")
+      (.then (fn [res]
+               (js/console.warn "resetGenericPassword" res)
                (get-keypair #(js/console.warn "publicKey" (:publicKey %)))))
       (.catch (fn [e] (js/console.error e)))))

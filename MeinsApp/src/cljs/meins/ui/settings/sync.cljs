@@ -15,13 +15,13 @@
   [local]
   (let [kp (mse/gen-key-pair-hex)]
     (kc/set-keypair kp)
-    (swap! local assoc :key-pair kp)
+    (kc/get-keypair #(swap! local assoc :key-pair %))
     (js/console.warn (str kp))))
 
 (defn sync-settings [_]
   (let [theme (subscribe [:active-theme])
         cfg (subscribe [:cfg])
-        local (r/atom {})
+        local (r/atom {:qr false})
         on-barcode-read (fn [e]
                           (let [qr-code (js->clj e)
                                 data (edn/read-string (get qr-code "data"))]
@@ -29,7 +29,7 @@
                             (emit [:secrets/set data])
                             (swap! local assoc-in [:cam] false)))
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
-    (set-keypair local)
+    (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [_props]
       (let [bg (get-in c/colors [:list-bg @theme])
             item-bg (get-in c/colors [:button-bg @theme])
@@ -52,7 +52,33 @@
                                :hasNavArrow      false
                                :background-color item-bg
                                :titleStyle       {:color text-color}
-                               :on-press         #(swap! local update-in [:cam] not)}]]
+                               :on-press         #(swap! local update-in [:cam] not)}]
+          (if (:key-pair @local)
+            [settings-list-item {:title            "Delete Keypair"
+                                 :hasNavArrow      false
+                                 :background-color item-bg
+                                 :titleStyle       {:color text-color}
+                                 :on-press         (fn [_]
+                                                     (kc/del-keypair)
+                                                     (swap! local assoc :key-pair nil))}]
+            [settings-list-item {:title            "Generate Keypair"
+                                 :hasNavArrow      false
+                                 :background-color item-bg
+                                 :titleStyle       {:color text-color}
+                                 :on-press         #(set-keypair local)}])
+          [settings-list-item {:title            "Show barcode"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(swap! local update-in [:qr] not)}]]
+         (when-let [kp (:key-pair @local)]
+           [text {:style {:font-size   10
+                          :color       "#888"
+                          :font-weight "100"
+                          :flex        2
+                          :margin      5
+                          :text-align  "center"}}
+            (str kp)])
          (when (:cam @local)
            [cam {:style         {:width  "100%"
                                  :flex   5
@@ -66,4 +92,5 @@
                           :margin      5
                           :text-align  "center"}}
             (str barcode)])
-         [qr/qr-code]]))))
+         (when (:qr @local)
+           [qr/qr-code (:publicKey (:key-pair @local))])]))))
