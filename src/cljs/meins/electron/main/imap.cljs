@@ -139,15 +139,17 @@
           first)
       body)))
 
-(defn read-mailbox [[k mb-cfg] put-fn]
+(defn read-mailbox [[k mb-cfg] cfg current-state put-fn]
   (let [{:keys [secret mailbox body-part]} mb-cfg
+        their-public-key (-> cfg :mobile :publicKey mse/hex->array)
+        our-private-key (-> current-state :secretKey mse/hex->array)
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
                                  (let [hex-body (extract-body (apply str @buffer))]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
-                                   (when-let [decrypted (mse/decrypt hex-body secret)]
+                                   (when-let [decrypted (mse/decrypt hex-body secret their-public-key our-private-key)]
                                      (let [msg-type (first decrypted)
                                            {:keys [msg-payload msg-meta]} (second decrypted)
                                            msg-meta (merge msg-meta {:window-id :broadcast})
@@ -220,10 +222,11 @@
                   (catch :default e (do (error e) (.end conn)))))]
     (imap-open mailbox mb-cb)))
 
-(defn read-email [{:keys [put-fn]}]
-  (doseq [mb-tuple (:read (:sync (imap-cfg)))]
-    (read-mailbox mb-tuple put-fn))
-  {})
+(defn read-email [{:keys [put-fn current-state]}]
+  (let [cfg (imap-cfg)]
+    (doseq [mb-tuple (:read (:sync cfg))]
+      (read-mailbox mb-tuple cfg current-state put-fn))
+    {}))
 
 (defn imap-save [{:keys [ciphertext subject content-type mailbox encoding]}]
   (let [cb (fn [conn _err box]
@@ -251,7 +254,7 @@
     (try
       (let [mailbox (:mailbox mb-cfg)
             secret (:secret mb-cfg)
-            their-public-key (:public-key mb-cfg)
+            their-public-key (:publicKey mb-cfg)
             ; actual meta-data too large, makes the encryption waste battery
             serializable [:entry/sync {:msg-payload msg-payload
                                        :msg-meta    {}}]
@@ -319,8 +322,12 @@
       (writeFileSync cfg-path s)))
   {:emit-msg [[:imap/cfg (imap-cfg)]]})
 
-(defn state-fn [put-fn]
+(defn state-fn [_put-fn]
   (let [state (atom {})]
+    (-> (kc/get-secret-key)
+        (.then #(swap! state assoc :secretKey %)))
+    (-> (kc/get-public-key)
+        (.then #(swap! state assoc :publicKey %)))
     {:state state}))
 
 (defn cmp-map [cmp-id]

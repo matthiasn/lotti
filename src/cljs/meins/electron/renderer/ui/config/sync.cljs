@@ -31,8 +31,7 @@
                :tls         true})
 
 (defn sync []
-  (let [iww-host (.-iwwHOST js/window)
-        imap-status (subscribe [:imap-status])
+  (let [imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
         cfg (r/atom (or @imap-cfg {}))
         save (fn [_] (info "save") (emit [:imap/save-cfg @cfg]))]
@@ -69,6 +68,5 @@
           [:button {:on-click create-key-pair}
            "(Re-)Create Key Pair"]]
          [:div
-          ;[:img {:src (str "http://" iww-host "/secrets/" (stc/make-uuid) "/secrets.png")}]
           [qrg/qr-code-gen cfg connected]
           [qrs/scanner cfg]]]))))

@@ -94,32 +94,6 @@
         (update-in [:questionnaires] #(merge-with merge questionnaires %))
         (assoc-in [:capabilities] (:capabilities capabilities)))))
 
-(defn read-secrets []
-  (try
-    (edn/read-string (slurp (str data-path "/app.edn")))
-    (catch Exception ex (warn "No secrets found." ex))))
-
-(defn imap-to-app-cfg [imap-cfg]
-  (let [server-cfg (:server imap-cfg)
-        write-folder (-> imap-cfg :sync :read first second :mailbox)
-        write-secret (-> imap-cfg :sync :read first second :secret)
-        read-folder (-> imap-cfg :sync :write :mailbox)
-        read-secret (-> imap-cfg :sync :write :secret)]
-    {:server {:hostname (:host server-cfg)
-              :port     (:port server-cfg)
-              :username (:user server-cfg)
-              :password (:password server-cfg)}
-     :sync   {:write {:folder write-folder
-                      :secret write-secret}
-              :read  {:folder read-folder
-                      :secret read-secret}}}))
-
-(defn read-secrets []
-  (try
-    (let [imap-cfg (edn/read-string (slurp (str data-path "/imap.edn")))]
-      (imap-to-app-cfg imap-cfg))
-    (catch Exception ex (warn "No secrets found." ex))))
-
 (defn write-cfg [{:keys [msg-payload]}]
   (let [conf-path (str data-path "/conf.edn")
         bak-path (str bak-path "/conf-" (st/now) ".edn")
