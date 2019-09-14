@@ -3,7 +3,6 @@
             ["@zxing/library" :refer [BrowserQRCodeSvgWriter]]
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
-            [meins.electron.main.crypto :as kc]
             [taoensso.timbre :refer-macros [info error]]
             [meins.common.utils.misc :as u]))
 

@@ -141,8 +141,8 @@
 
 (defn read-mailbox [[k mb-cfg] cfg current-state put-fn]
   (let [{:keys [secret mailbox body-part]} mb-cfg
-        their-public-key (-> cfg :mobile :publicKey mse/hex->array)
-        our-private-key (-> current-state :secretKey mse/hex->array)
+        their-public-key (some-> cfg :mobile :publicKey mse/hex->array)
+        our-private-key (some-> current-state :secretKey mse/hex->array)
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
@@ -249,35 +249,24 @@
     (imap-open mailbox cb))
   {})
 
-(defn write-email [{:keys [msg-payload msg-meta]}]
+(defn write-email [{:keys [msg-payload current-state msg-meta]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (try
       (let [mailbox (:mailbox mb-cfg)
-            secret (:secret mb-cfg)
-            their-public-key (:publicKey mb-cfg)
-            ; actual meta-data too large, makes the encryption waste battery
+            their-public-key (some-> (imap-cfg) :mobile :publicKey mse/hex->array)
+            our-private-key (some-> current-state :secretKey mse/hex->array)
             serializable [:entry/sync {:msg-payload msg-payload
-                                       :msg-meta    {}}]
+                                       :msg-meta    {}}]    ; save battery and bandwidth
             serialized (pr-str serializable)
             subject (str (:timestamp msg-payload))
-            cipher-hex (mse/encrypt serialized secret)
-            send-asymm (fn [secret-key]
-                         (let [sk (mse/hex->array secret-key)
-                               their-public-key (mse/hex->array their-public-key)
-                               ct (mse/encrypt-asymm serialized their-public-key sk)]
-                           (imap-save {:ciphertext   ct
-                                       :content-type "text/plain"
-                                       :encoding     "quoted-printable"
-                                       :subject      subject
-                                       :mailbox      "INBOX.paul"})))]
-        (imap-save {:ciphertext   cipher-hex
-                    :content-type "text/plain"
-                    :encoding     "quoted-printable"
-                    :subject      subject
-                    :mailbox      mailbox})
-        (when their-public-key
-          (-> (kc/get-secret-key)
-              (.then send-asymm))))
+            cipher-hex (when (and their-public-key our-private-key)
+                         (mse/encrypt-asymm serialized their-public-key our-private-key))]
+        (when cipher-hex
+          (imap-save {:ciphertext   cipher-hex
+                      :content-type "text/plain"
+                      :encoding     "quoted-printable"
+                      :subject      subject
+                      :mailbox      mailbox})))
       (catch :default e (error e))))
   {})
 
