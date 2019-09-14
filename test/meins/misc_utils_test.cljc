@@ -133,10 +133,8 @@
             :password "password"
             :username "user"
             :port     993}
-   :sync   {:write {:folder "INBOX.mobile-write"
-                    :secret "secret"}
-            :read  {:folder "INBOX.desktop-write"
-                    :secret "secret"}}})
+   :sync   {:write {:folder "INBOX.mobile-write"}
+            :read  {:folder "INBOX.desktop-write"}}})
 
 (def imap-cfg
   {:server {:host        "host"
@@ -157,4 +155,4 @@
 
 (deftest imap-to-app-cfg-test
   (testing "converts imap config as required by app"
-    (is (= app-cfg (fu/imap-to-app-cfg imap-cfg)))))
+    (is (= app-cfg (u/imap-to-app-cfg imap-cfg)))))

@@ -135,3 +135,14 @@
 (defn connect [from to]
   [:cmd/route {:from from
                :to   to}])
+
+(defn imap-to-app-cfg [imap-cfg]
+  (let [server-cfg (:server imap-cfg)
+        write-folder (-> imap-cfg :sync :read first second :mailbox)
+        read-folder (-> imap-cfg :sync :write :mailbox)]
+    {:server {:hostname (:host server-cfg)
+              :port     (:port server-cfg)
+              :username (:user server-cfg)
+              :password (:password server-cfg)}
+     :sync   {:write {:folder write-folder}
+              :read  {:folder read-folder}}}))

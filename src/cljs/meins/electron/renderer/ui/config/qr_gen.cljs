@@ -4,7 +4,8 @@
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
             [meins.electron.main.crypto :as kc]
-            [taoensso.timbre :refer-macros [info error]]))
+            [taoensso.timbre :refer-macros [info error]]
+            [meins.common.utils.misc :as u]))
 
 (defn qr-code [s]
   (r/create-class
@@ -16,22 +17,11 @@
      :reagent-render      (fn [_]
                             [:div#sync-cfg-qr])}))
 
-(defn imap-to-app-cfg [imap-cfg]
-  (let [server-cfg (:server imap-cfg)
-        write-folder (-> imap-cfg :sync :read first second :mailbox)
-        read-folder (-> imap-cfg :sync :write :mailbox)]
-    {:server {:hostname (:host server-cfg)
-              :port     (:port server-cfg)
-              :username (:user server-cfg)
-              :password (:password server-cfg)}
-     :sync   {:write {:folder write-folder}
-              :read  {:folder read-folder}}}))
-
 (defn qr-code-gen
   [cfg-atom _]
   (let [crypto-cfg (subscribe [:crypto-cfg])]
     (fn [_ show]
-      (let [data (imap-to-app-cfg @cfg-atom)
+      (let [data (u/imap-to-app-cfg @cfg-atom)
             s (pr-str data)
             my-secret-key (some-> @crypto-cfg :secretKey mse/hex->array)
             my-public-key-hex (some-> @crypto-cfg :publicKey)
