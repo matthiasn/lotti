@@ -99,12 +99,12 @@
 (defn decrypt-asymm
   "Decrypt x25519-xsalsa20-poly1305 encrypted message using the public key
    of the encryptor and the local private key."
-  [message their-public-key my-secret-key]
+  [message their-public-key our-secret-key]
   (try
     (let [[_version nonce-hex ciphertext] (str/split message ".")
           nonce (hex->array nonce-hex)
           encrypted (hex->array ciphertext)
-          decrypted (.open box encrypted nonce their-public-key my-secret-key)]
+          decrypted (.open box encrypted nonce their-public-key our-secret-key)]
       (encodeUTF8 decrypted))
     (catch :default e (js/console.error "decrypt-asymm" e))))
 
@@ -114,9 +114,10 @@
 (defn decrypt
   "Decrypts ciphertext based on the version, which is encoded in the first characters
    of the ciphertext leading up to the first dot."
-  [cipher secret]
+  [cipher secret their-public-key our-secret-key]
   (try
     (case (first (s/split cipher "."))
       "v1" (edn/read-string (decrypt-v1 cipher secret))
+      "v2" (edn/read-string (decrypt-asymm cipher their-public-key our-secret-key))
       nil)
     (catch :default e (js/console.error "decrypt" e))))

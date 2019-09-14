@@ -11,8 +11,8 @@
   (let [instance-id (subscribe [:instance-id])]
     (fn qr-code-render [public-key]
       (when public-key
-        (let [qr-value (pr-str {:public-key public-key
-                                :node-id    @instance-id})]
+        (let [qr-value (pr-str {:publicKey public-key
+                                :node-id   @instance-id})]
           [touchable-opacity {:on-press #(set-clipboard qr-value)
                               :style    {:background-color "white"
                                          :padding          20

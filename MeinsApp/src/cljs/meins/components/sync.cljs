@@ -9,7 +9,8 @@
             ["@react-native-community/netinfo" :as net-info]
             [meins.ui.db :as uidb]
             [cljs.reader :as edn]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [meins.util.keychain :as kc]))
 
 (def MailCore (.-default react-native-mailcore))
 
@@ -26,18 +27,17 @@
   (when-let [secrets (:secrets @cmp-state)]
     (try
       (when (:online @cmp-state)
-        (let [aes-secret (-> secrets :sync :write :secret)
+        (let [their-public-key (-> secrets :desktop :publicKey mse/hex->array)
+              my-private-key (-> @cmp-state :key-pair :secretKey mse/hex->array)
               folder (-> secrets :sync :write :folder)
-              ; actual meta-data too large, makes the encryption waste battery
-              msg-meta {}
               update-filename (fn [entry]
                                 (if (:img_file entry)
                                   (update entry :img_file #(str/replace % ".PNG" ".JPG"))
                                   entry))
               serializable [msg-type {:msg-payload (update-filename msg-payload)
-                                      :msg-meta    msg-meta}]
-              data (pr-str serializable)
-              hex-cipher (mse/encrypt data aes-secret)
+                                      :msg-meta    {}}]     ; save battery and bandwidth
+              serialized (pr-str serializable)
+              hex-cipher (mse/encrypt-asymm serialized their-public-key my-private-key)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
               audiofile (:audio_file msg-payload)
@@ -111,9 +111,11 @@
     (try
       (when (and (:online current-state) (= platform-os "ios"))
         (let [{:keys [fetched not-fetched]} @cmp-state
+              their-public-key (-> secrets :desktop :publicKey mse/hex->array)
+              our-private-key (-> @cmp-state :key-pair :secretKey mse/hex->array)
               not-fetched (drop-while #(contains? fetched %) not-fetched)]
           (doseq [uid not-fetched]
-            (let [aes-secret (-> secrets :sync :read :secret)
+            (let [secret (-> secrets :sync :read :secret)
                   folder (-> secrets :sync :read :folder)
                   mail (merge (:server secrets)
                               {:folder folder
@@ -121,7 +123,7 @@
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
                              (let [body (get (js->clj data) "body")
-                                   decrypted (time (mse/decrypt body aes-secret))
+                                   decrypted (time (mse/decrypt body secret their-public-key our-private-key))
                                    msg-type (first decrypted)
                                    {:keys [msg-payload msg-meta]} (second decrypted)
                                    msg (with-meta [msg-type msg-payload]
@@ -166,6 +168,7 @@
         listener (fn [ev]
                    (swap! state assoc :online (.-isInternetReachable ev)))]
     (.addEventListener net-info listener)
+    (kc/get-keypair #(swap! state assoc :key-pair %))
     (go (try
           (let [secrets (second (<! (as/get-item :secrets)))]
             (when secrets

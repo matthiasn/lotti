@@ -18,16 +18,25 @@
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (js/console.warn (str kp))))
 
+(defn on-barcode-read [local e]
+  (let [qr-code (js->clj e)
+        payload (get qr-code "data")
+        data (edn/read-string payload)
+        their-public-key-hex (:publicKey data)
+        their-public-key (mse/hex->array their-public-key-hex)
+        ciphertext (:cfg data)
+        our-secret-key (mse/hex->array (:secretKey (:key-pair @local)))
+        decrypted (mse/decrypt-asymm ciphertext their-public-key our-secret-key)
+        cfg (merge (edn/read-string decrypted)
+                   {:desktop {:publicKey their-public-key-hex}})]
+    (swap! local assoc-in [:barcode] cfg)
+    (emit [:secrets/set cfg])
+    (swap! local assoc-in [:cam] false)))
+
 (defn sync-settings [_]
   (let [theme (subscribe [:active-theme])
         cfg (subscribe [:cfg])
         local (r/atom {:qr false})
-        on-barcode-read (fn [e]
-                          (let [qr-code (js->clj e)
-                                data (edn/read-string (get qr-code "data"))]
-                            (swap! local assoc-in [:barcode] data)
-                            (emit [:secrets/set data])
-                            (swap! local assoc-in [:cam] false)))
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [_props]
@@ -83,7 +92,7 @@
            [cam {:style         {:width  "100%"
                                  :flex   5
                                  :height "100%"}
-                 :onBarCodeRead on-barcode-read}])
+                 :onBarCodeRead (partial on-barcode-read local)}])
          (when-let [barcode (:barcode @local)]
            [text {:style {:font-size   10
                           :color       "#888"
