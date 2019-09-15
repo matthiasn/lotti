@@ -15,16 +15,8 @@
    :timestamp      1465059173965
    :md             "Encryption test #elliptic-curve"})
 
-(def test-passphrase "sv/PppiWcMdttM[64fU}")
 (def test-hex "b67a5aba95e0f406d0e6d9c39338df92fa14414508788831bac0c39fd6bfc472")
 (def test-utf8 "He wes Leovenaðes sone -- liðe him be Drihten.")
-
-(deftest utf8->hex->utf8-test
-  (let [hex (mse/utf8-to-hex test-utf8)]
-    (testing "output is of expected type"
-      (is (= js/String (type hex))))
-    (testing "conversion back to hex results in identical string"
-      (is (= test-utf8 (mse/hex-to-utf8 hex))))))
 
 (deftest hex->base64->hex-test
   (let [base64 (mse/hex->base64 test-hex)]
@@ -48,15 +40,6 @@
     (testing "secret key is of expected type and length"
       (is (= js/Uint8Array (type secretKey)))
       (is (= 32 (.-length secretKey))))))
-
-(deftest symmetric-encryption-roundtrip-test
-  (let [serialized (pr-str test-entry)
-        cipher (mse/encrypt serialized test-passphrase)
-        deciphered (mse/decrypt-v1 cipher test-passphrase)
-        deserialized (edn/read-string deciphered)]
-    (testing "encryption followed by decryption yields identical data structure"
-      (is (= serialized deciphered))
-      (is (= test-entry deserialized)))))
 
 (deftest asymmetric-encryption-roundtrip-test
   (let [key-pair-a (mse/gen-key-pair)
