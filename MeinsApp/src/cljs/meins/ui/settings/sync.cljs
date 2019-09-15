@@ -62,6 +62,11 @@
                                :background-color item-bg
                                :titleStyle       {:color text-color}
                                :on-press         #(swap! local update-in [:cam] not)}]
+          [settings-list-item {:title            "Reset last read"
+                               :hasNavArrow      false
+                               :background-color item-bg
+                               :titleStyle       {:color text-color}
+                               :on-press         #(emit [:state/reset {:type :last-uid-read}])}]
           (if (:key-pair @local)
             [settings-list-item {:title            "Delete Keypair"
                                  :hasNavArrow      false

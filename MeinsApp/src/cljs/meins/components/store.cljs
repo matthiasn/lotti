@@ -128,12 +128,14 @@
   (put-fn [:debug/state-fn-complete])
   {})
 
-(defn state-reset [{:keys [cmp-state put-fn]}]
-  (let [new-state {:entries       (avl/sorted-map)
-                   :latest-synced 0}]
-    (go (<! (as/clear)))
-    (load-state {:cmp-state cmp-state :put-fn put-fn})
-    {:new-state new-state}))
+(defn state-reset [{:keys [cmp-state msg-payload put-fn]}]
+  (if (= :last-uid-read (:type msg-payload))
+    (do (go (<! (as/set-item :last-uid-read 0))) {})
+    (let [new-state {:entries       (avl/sorted-map)
+                     :latest-synced 0}]
+      (go (<! (as/clear)))
+      (load-state {:cmp-state cmp-state :put-fn put-fn})
+      {:new-state new-state})))
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]
