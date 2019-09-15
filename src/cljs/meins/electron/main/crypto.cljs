@@ -1,18 +1,24 @@
 (ns meins.electron.main.crypto
   (:require [taoensso.timbre :refer-macros [info debug error warn]]
             ["keytar" :as keytar :refer [setPassword getPassword]]
-            [meins.shared.encryption :as mse]))
+            [meins.shared.encryption :as mse]
+            [meins.electron.main.runtime :as rt]))
+
+(def app-key
+  (if (:repo-dir rt/runtime-info)
+    "meins-dev"
+    "meins"))
 
 (defn save-key-pair [key-pair]
   (let [{:keys [publicKey secretKey]} key-pair]
-    (setPassword "meins" "publicKey" publicKey)
-    (setPassword "meins" "secretKey" secretKey)))
+    (setPassword app-key "publicKey" publicKey)
+    (setPassword app-key "secretKey" secretKey)))
 
 (defn get-secret-key []
-  (getPassword "meins" "secretKey"))
+  (getPassword app-key "secretKey"))
 
 (defn get-public-key []
-  (getPassword "meins" "publicKey"))
+  (getPassword app-key "publicKey"))
 
 (defn create-keypair [{:keys []}]
   (let [key-pair (mse/gen-key-pair-hex)]
