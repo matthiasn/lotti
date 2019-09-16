@@ -23,12 +23,9 @@
                  [com.climate/claypoole "1.1.4"]
                  [org.clojure/data.csv "0.1.4"]
 
-                 [com.walmartlabs/lacinia "0.32.0"]
-                 [com.walmartlabs/lacinia-pedestal "0.12.0"]
-
-                 [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
-                 [org.eclipse.jetty.websocket/websocket-api "9.4.7.v20170914"]
-                 [org.eclipse.jetty.websocket/websocket-server "9.4.7.v20170914"]
+                 [com.walmartlabs/lacinia "0.35.0"]
+                 [io.pedestal/pedestal.jetty "0.5.7"]
+                 [com.walmartlabs/lacinia-pedestal "0.12.0" :exclusions [io.pedestal/pedestal.jetty]]
 
                  [vincit/venia "0.2.5"]
                  [metrics-clojure "2.10.0"]
@@ -73,7 +70,7 @@
 
   :plugins [[test2junit "1.4.2"]
             [lein-cloverage "1.1.1"]
-            [deraen/lein-sass4clj "0.4.0"]
+            [deraen/lein-sass4clj "0.4.1"]
             [lein-shell "0.5.0"]
             [lein-jlink "0.2.1"]
             [lein-ancient "0.6.15"]]
