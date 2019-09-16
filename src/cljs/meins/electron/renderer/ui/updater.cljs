@@ -89,13 +89,6 @@
      " "
      [:button {:on-click install} "install"]]))
 
-(def test-status
-  {:status :update/downloading
-   :info   {:total          211111111
-            :percent        10.47368
-            :bytesPerSecond 22222213
-            :transferred    22111121}})
-
 (defn updater
   "Updater view component"
   []

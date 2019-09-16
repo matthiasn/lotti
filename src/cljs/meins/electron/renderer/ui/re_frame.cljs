@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.ui.re-frame
   (:require-macros [reagent.ratom :refer [reaction]])
-  (:require [reagent.core :as rc]
+  (:require [reagent.core :as r]
             [re-frame.core :refer [reg-sub subscribe]]
             [meins.electron.renderer.ui.re-frame.db :as rfd]
             [meins.electron.renderer.ui.re-frame.subscriptions]
@@ -26,7 +26,6 @@
             [meins.electron.renderer.ui.data-explorer :as dex]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.updater :as upd]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.help :as help]))
 
 (defn main-page []
@@ -49,9 +48,7 @@
          [h/error-boundary
           [f/dashboard]]]]
        [h/error-boundary
-        [stats/stats-text]]
-       [h/error-boundary
-        [upd/updater]]])))
+        [stats/stats-text]]])))
 
 (defn countries-page []
   [:div.flex-container
@@ -104,12 +101,14 @@
              :post-mortem [pm/post-mortem-page]
              [main-page])
            (when @data-explorer
-             [dex/data-explorer])]
+             [dex/data-explorer])
+           [h/error-boundary
+            [upd/updater]]]
           [load-progress])))))
 
 (defn state-fn [put-fn]
   (reset! rfd/emit-atom put-fn)
-  (rc/render [re-frame-ui] (.getElementById js/document "reframe"))
+  (r/render [re-frame-ui] (.getElementById js/document "reframe"))
   {:observed rdb/app-db})
 
 (defn cmp-map [cmp-id]
