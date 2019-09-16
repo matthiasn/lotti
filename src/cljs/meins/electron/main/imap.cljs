@@ -316,10 +316,6 @@
 
 (defn state-fn [_put-fn]
   (let [state (atom {})]
-    (-> (kc/get-secret-key)
-        (.then #(swap! state assoc-in [:crypto-cfg :secretKey] %)))
-    (-> (kc/get-public-key)
-        (.then #(swap! state assoc-in [:crypto-cfg :publicKey] %)))
     {:state state}))
 
 (defn cmp-map [cmp-id]

@@ -20,22 +20,28 @@
 (defn get-public-key []
   (getPassword app-key "publicKey"))
 
+(defn key-pair [state]
+  (select-keys state [:publicKey :secretKey]))
+
 (defn create-keypair [{:keys [cmp-state]}]
   (let [key-pair (mse/gen-key-pair-hex)]
     (save-key-pair key-pair)
     (swap! cmp-state merge key-pair)
     (info "created key pair, public key:" (:publicKey key-pair))
-    {:emit-msg [:crypto/cfg (select-keys @cmp-state [:publicKey :secretKey])]}))
+    {:emit-msg [:crypto/cfg (key-pair @cmp-state)]}))
 
 (defn get-cfg [{:keys [current-state]}]
-  {:emit-msg [:crypto/cfg (select-keys current-state [:publicKey :secretKey])]})
+  {:emit-msg [:crypto/cfg (key-pair current-state)]})
 
-(defn state-fn [_put-fn]
+(defn state-fn [put-fn]
   (let [state (atom {})]
     (-> (get-secret-key)
-        (.then #(swap! state assoc :secretKey %)))
-    (-> (get-public-key)
-        (.then #(swap! state assoc :publicKey %)))
+        (.then (fn [sk]
+                 (swap! state assoc :secretKey sk)
+                 (-> (get-public-key)
+                     (.then (fn [pk]
+                              (swap! state assoc :publicKey pk)
+                              (put-fn [:crypto/cfg (key-pair @state)])))))))
     {:state state}))
 
 (defn cmp-map [cmp-id]

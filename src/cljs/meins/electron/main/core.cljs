@@ -119,7 +119,8 @@
                     :to   :main/startup}]
 
        [:cmd/route {:from :main/crypto
-                    :to   :main/window-manager}]
+                    :to   #{:main/window-manager
+                            :main/sync}}]
 
        [:cmd/route {:from :main/geocoder
                     :to   :main/window-manager}]
