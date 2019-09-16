@@ -22,12 +22,11 @@
     (fn [_ show]
       (let [data (u/imap-to-app-cfg @cfg-atom)
             s (pr-str data)
-            my-secret-key (some-> @crypto-cfg :secretKey mse/hex->array)
-            my-public-key-hex (some-> @crypto-cfg :publicKey)
-            their-public-key (some-> @cfg-atom :mobile :publicKey mse/hex->array)
-            cfg-ciphertext (mse/encrypt-asymm s their-public-key my-secret-key)
-            qr-data {:cfg       cfg-ciphertext
-                     :publicKey my-public-key-hex}]
-        (when (and my-secret-key their-public-key show)
-          [:div
-           [qr-code (pr-str qr-data)]])))))
+            our-secret-key (some-> @crypto-cfg :secretKey)
+            their-public-key (some-> @cfg-atom :mobile :publicKey)]
+        (when (and our-secret-key their-public-key show)
+          (let [cfg-ciphertext (mse/encrypt-asymm s their-public-key our-secret-key)
+                qr-data {:cfg       cfg-ciphertext
+                         :publicKey our-secret-key}]
+            [:div
+             [qr-code (pr-str qr-data)]]))))))

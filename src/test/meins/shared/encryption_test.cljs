@@ -42,13 +42,13 @@
       (is (= 32 (.-length secretKey))))))
 
 (deftest asymmetric-encryption-roundtrip-test
-  (let [key-pair-a (mse/gen-key-pair)
-        key-pair-b (mse/gen-key-pair)
+  (let [key-pair-a (mse/gen-key-pair-hex)
+        key-pair-b (mse/gen-key-pair-hex)
         their-public-key (:publicKey key-pair-b)
-        my-secret-key (:secretKey key-pair-a)
+        our-secret-key (:secretKey key-pair-a)
         serialized (pr-str test-entry)
-        cipher (mse/encrypt-asymm serialized their-public-key my-secret-key)
-        deciphered (mse/decrypt-asymm cipher their-public-key my-secret-key)
+        cipher (mse/encrypt-asymm serialized their-public-key our-secret-key)
+        deciphered (mse/decrypt-asymm cipher their-public-key our-secret-key)
         deserialized (edn/read-string deciphered)]
     (testing "encryption followed by decryption yields identical data structure"
       (is (= serialized deciphered))

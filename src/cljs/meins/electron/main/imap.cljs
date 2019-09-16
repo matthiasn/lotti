@@ -141,8 +141,8 @@
 
 (defn read-mailbox [[k mb-cfg] cfg current-state put-fn]
   (let [{:keys [mailbox body-part]} mb-cfg
-        their-public-key (some-> cfg :mobile :publicKey mse/hex->array)
-        our-private-key (some-> current-state :secretKey mse/hex->array)
+        their-public-key (some-> cfg :mobile :publicKey)
+        our-private-key (some-> current-state :secretKey)
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
@@ -253,8 +253,8 @@
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (try
       (let [mailbox (:mailbox mb-cfg)
-            their-public-key (some-> (imap-cfg) :mobile :publicKey mse/hex->array)
-            our-private-key (some-> current-state :secretKey mse/hex->array)
+            their-public-key (some-> (imap-cfg) :mobile :publicKey)
+            our-private-key (some-> current-state :secretKey)
             serializable [:entry/sync {:msg-payload msg-payload
                                        :msg-meta    {}}]    ; save battery and bandwidth
             serialized (pr-str serializable)

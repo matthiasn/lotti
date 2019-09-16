@@ -30,11 +30,13 @@
 (defn encrypt-asymm
   "Encrypt message via x25519-xsalsa20-poly1305 using the public key of the
    recipient and the local private key."
-  [message their-public-key my-secret-key]
+  [message their-public-key our-secret-key]
   (try
-    (let [nonce (new-nonce)
+    (let [their-public-key (hex->array their-public-key)
+          our-secret-key (hex->array our-secret-key)
+          nonce (new-nonce)
           messageUint8 (decodeUTF8 message)
-          encrypted (box messageUint8 nonce their-public-key my-secret-key)
+          encrypted (box messageUint8 nonce their-public-key our-secret-key)
           ciphertext (array->hex encrypted)
           nonce-base64 (array->hex nonce)]
       (str "v2." nonce-base64 "." ciphertext))
@@ -45,7 +47,9 @@
    of the encryptor and the local private key."
   [message their-public-key our-secret-key]
   (try
-    (let [[_version nonce-hex ciphertext] (str/split message ".")
+    (let [their-public-key (hex->array their-public-key)
+          our-secret-key (hex->array our-secret-key)
+          [_version nonce-hex ciphertext] (str/split message ".")
           nonce (hex->array nonce-hex)
           encrypted (hex->array ciphertext)
           decrypted (.open box encrypted nonce their-public-key our-secret-key)]

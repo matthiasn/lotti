@@ -25,8 +25,8 @@
   (when-let [secrets (:secrets @cmp-state)]
     (try
       (when (:online @cmp-state)
-        (let [their-public-key (-> secrets :desktop :publicKey mse/hex->array)
-              my-private-key (-> @cmp-state :key-pair :secretKey mse/hex->array)
+        (let [their-public-key (-> secrets :desktop :publicKey)
+              our-secret-key (-> @cmp-state :key-pair :secretKey)
               folder (-> secrets :sync :write :folder)
               update-filename (fn [entry]
                                 (if (:img_file entry)
@@ -35,7 +35,7 @@
               serializable [msg-type {:msg-payload (update-filename msg-payload)
                                       :msg-meta    {}}]     ; save battery and bandwidth
               serialized (pr-str serializable)
-              hex-cipher (mse/encrypt-asymm serialized their-public-key my-private-key)
+              hex-cipher (mse/encrypt-asymm serialized their-public-key our-secret-key)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
               audiofile (:audio_file msg-payload)
@@ -108,8 +108,8 @@
     (try
       (when (and (:online current-state) (= platform-os "ios"))
         (let [{:keys [fetched not-fetched]} @cmp-state
-              their-public-key (-> secrets :desktop :publicKey mse/hex->array)
-              our-private-key (-> @cmp-state :key-pair :secretKey mse/hex->array)
+              their-public-key (-> secrets :desktop :publicKey)
+              our-private-key (-> @cmp-state :key-pair :secretKey)
               not-fetched (drop-while #(contains? fetched %) not-fetched)]
           (doseq [uid not-fetched]
             (let [folder (-> secrets :sync :read :folder)
