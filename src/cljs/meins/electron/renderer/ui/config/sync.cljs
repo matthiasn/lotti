@@ -62,9 +62,7 @@
              (when (= :error (:status @imap-status))
                [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
             [settings-item cfg :text [:sync :write :mailbox] "Write Mailbox:" connected]
-            [settings-item cfg :password [:sync :write :secret] "Write Secret:" connected]
-            [settings-item cfg :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]
-            [settings-item cfg :password [:sync :read :fred :secret] "Read Secret:" connected]]]
+            [settings-item cfg :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]]]
           [:button {:on-click create-key-pair}
            "(Re-)Create Key Pair"]]
          [:div

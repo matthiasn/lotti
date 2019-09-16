@@ -23,10 +23,11 @@
       (let [data (u/imap-to-app-cfg @cfg-atom)
             s (pr-str data)
             our-secret-key (some-> @crypto-cfg :secretKey)
+            our-public-key (some-> @crypto-cfg :publicKey)
             their-public-key (some-> @cfg-atom :mobile :publicKey)]
         (when (and our-secret-key their-public-key show)
           (let [cfg-ciphertext (mse/encrypt-asymm s their-public-key our-secret-key)
                 qr-data {:cfg       cfg-ciphertext
-                         :publicKey our-secret-key}]
+                         :publicKey our-public-key}]
             [:div
              [qr-code (pr-str qr-data)]]))))))

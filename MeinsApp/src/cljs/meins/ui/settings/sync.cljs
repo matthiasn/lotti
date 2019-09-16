@@ -15,20 +15,20 @@
   [local]
   (let [kp (mse/gen-key-pair-hex)]
     (kc/set-keypair kp)
-    (kc/get-keypair #(swap! local assoc :key-pair %))
-    (js/console.warn (str kp))))
+    (kc/get-keypair (fn [kp]
+                      (swap! local assoc :key-pair kp)
+                      (js/console.warn (str kp))))))
 
 (defn on-barcode-read [local e]
   (let [qr-code (js->clj e)
         payload (get qr-code "data")
         data (edn/read-string payload)
-        their-public-key-hex (:publicKey data)
-        their-public-key (mse/hex->array their-public-key-hex)
+        their-public-key (:publicKey data)
         ciphertext (:cfg data)
-        our-secret-key (mse/hex->array (:secretKey (:key-pair @local)))
+        our-secret-key (:secretKey (:key-pair @local))
         decrypted (mse/decrypt-asymm ciphertext their-public-key our-secret-key)
         cfg (merge (edn/read-string decrypted)
-                   {:desktop {:publicKey their-public-key-hex}})]
+                   {:desktop {:publicKey their-public-key}})]
     (swap! local assoc-in [:barcode] cfg)
     (emit [:secrets/set cfg])
     (swap! local assoc-in [:cam] false)))
