@@ -142,7 +142,7 @@
 (defn read-mailbox [[k mb-cfg] cfg current-state put-fn]
   (let [{:keys [mailbox body-part]} mb-cfg
         their-public-key (some-> cfg :mobile :publicKey)
-        our-private-key (some-> current-state :secretKey)
+        our-private-key (some-> current-state :crypto-cfg :secretKey)
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
@@ -249,12 +249,12 @@
     (imap-open mailbox cb))
   {})
 
-(defn write-email [{:keys [msg-payload current-state msg-meta]}]
+(defn write-email [{:keys [msg-payload current-state]}]
   (when-let [mb-cfg (:write (:sync (imap-cfg)))]
     (try
       (let [mailbox (:mailbox mb-cfg)
             their-public-key (some-> (imap-cfg) :mobile :publicKey)
-            our-private-key (some-> current-state :secretKey)
+            our-private-key (some-> current-state :crypto-cfg :secretKey)
             serializable [:entry/sync {:msg-payload msg-payload
                                        :msg-meta    {}}]    ; save battery and bandwidth
             serialized (pr-str serializable)
@@ -311,12 +311,15 @@
       (writeFileSync cfg-path s)))
   {:emit-msg [[:imap/cfg (imap-cfg)]]})
 
+(defn save-crypto [{:keys [current-state msg-payload]}]
+  {:new-state (assoc current-state :crypto-cfg msg-payload)})
+
 (defn state-fn [_put-fn]
   (let [state (atom {})]
     (-> (kc/get-secret-key)
-        (.then #(swap! state assoc :secretKey %)))
+        (.then #(swap! state assoc-in [:crypto-cfg :secretKey] %)))
     (-> (kc/get-public-key)
-        (.then #(swap! state assoc :publicKey %)))
+        (.then #(swap! state assoc-in [:crypto-cfg :publicKey] %)))
     {:state state}))
 
 (defn cmp-map [cmp-id]
@@ -328,5 +331,6 @@
                  :imap/get-status read-mailboxes
                  :imap/get-cfg    get-cfg
                  :imap/save-cfg   save-cfg
+                 :crypto/cfg      save-crypto
                  :sync/start-imap start-sync
                  :sync/read-imap  read-email}})

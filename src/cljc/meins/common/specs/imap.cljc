@@ -31,20 +31,17 @@
                    :meins.imap.server/tls]))
 
 (s/def :meins.imap.sync/mailbox string?)
-(s/def :meins.imap.sync/secret string?)
 (s/def :meins.imap.sync/last-read integer?)
 (s/def :meins.imap.sync/body-part string?)
 
 #_
 (s/def :meins.imap.sync/read
   (s/keys :req-un [:meins.imap.sync/mailbox
-                   :meins.imap.sync/secret
                    :meins.imap.sync/last-read
                    :meins.imap.sync/body-part]))
 
 (s/def :meins.imap.sync/write
-  (s/keys :req-un [:meins.imap.sync/mailbox
-                   :meins.imap.sync/secret]))
+  (s/keys :req-un [:meins.imap.sync/mailbox]))
 
 (s/def :meins.imap/sync
   (s/keys :req-un [:meins.imap.sync/read

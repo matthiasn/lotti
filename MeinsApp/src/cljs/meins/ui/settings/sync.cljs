@@ -15,9 +15,7 @@
   [local]
   (let [kp (mse/gen-key-pair-hex)]
     (kc/set-keypair kp)
-    (kc/get-keypair (fn [kp]
-                      (swap! local assoc :key-pair kp)
-                      (js/console.warn (str kp))))))
+    (swap! local assoc :key-pair kp)))
 
 (defn on-barcode-read [local e]
   (let [qr-code (js->clj e)

@@ -46,6 +46,8 @@
   "Decrypt x25519-xsalsa20-poly1305 encrypted message using the public key
    of the encryptor and the local private key."
   [message their-public-key our-secret-key]
+  (js/console.info "decrypt-asymm their-public-key" their-public-key)
+  (js/console.info "decrypt-asymm our-secret-key" our-secret-key)
   (try
     (let [their-public-key (hex->array their-public-key)
           our-secret-key (hex->array our-secret-key)

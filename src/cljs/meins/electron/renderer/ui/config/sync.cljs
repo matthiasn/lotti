@@ -33,6 +33,7 @@
 (defn sync []
   (let [imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
+        local (r/atom {})
         cfg (r/atom (or @imap-cfg {}))
         save (fn [_] (info "save") (emit [:imap/save-cfg @cfg]))]
     (fn config-render []
@@ -64,7 +65,11 @@
             [settings-item cfg :text [:sync :write :mailbox] "Write Mailbox:" connected]
             [settings-item cfg :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]]]
           [:button {:on-click create-key-pair}
-           "(Re-)Create Key Pair"]]
+           "(Re-)Create Key Pair"]
+          [:button {:on-click #(swap! local update :show-qr not)}
+           "Show QR code"]
+          [:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @cfg))]]]
          [:div
-          [qrg/qr-code-gen cfg connected]
+          (when (:show-qr @local)
+            [qrg/qr-code-gen cfg])
           [qrs/scanner cfg]]]))))

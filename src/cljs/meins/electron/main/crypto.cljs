@@ -20,11 +20,12 @@
 (defn get-public-key []
   (getPassword app-key "publicKey"))
 
-(defn create-keypair [{:keys []}]
+(defn create-keypair [{:keys [cmp-state]}]
   (let [key-pair (mse/gen-key-pair-hex)]
     (save-key-pair key-pair)
+    (swap! cmp-state merge key-pair)
     (info "created key pair, public key:" (:publicKey key-pair))
-    {}))
+    {:emit-msg [:crypto/cfg (select-keys @cmp-state [:publicKey :secretKey])]}))
 
 (defn get-cfg [{:keys [current-state]}]
   {:emit-msg [:crypto/cfg (select-keys current-state [:publicKey :secretKey])]})

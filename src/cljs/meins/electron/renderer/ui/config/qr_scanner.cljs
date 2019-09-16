@@ -42,12 +42,8 @@
         (.then scan))
     (info "QR scanner did mount")))
 
-(defn qr [cfg _]
-  [:div
-   (if-let [s (:mobile @cfg)]
-     [:div.scanned
-      [:pre [:code (with-out-str (pp/pprint s))]]]
-     [:video#qr-video])])
+(defn qr-render [_]
+  [:div [:video#qr-video]])
 
 (defn will-unmount [local _]
   (info "QR scanner will unmount")
@@ -59,4 +55,4 @@
       {:component-did-mount    (partial did-mount local cfg)
        :component-will-unmount (partial will-unmount local)
        :display-name           "QR-Scanner"
-       :reagent-render         (partial qr cfg)})))
+       :reagent-render         qr-render})))
