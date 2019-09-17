@@ -39,10 +39,12 @@
       [[:cmd/init-comp components]
 
        [:cmd/route {:from :app/ui-cmp
-                    :to   #{:app/store
-                            :app/geo
+                    :to   #{:app/geo
+                            :app/healthkit
+                            :app/photos
                             :app/scheduler
-                            :app/photos}}]
+                            :app/store
+                            :app/sync}}]
 
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
@@ -51,11 +53,8 @@
                             :app/geo}
                     :to   :app/store}]
 
-       [:cmd/route {:from :app/ui-cmp
-                    :to   :app/healthkit}]
 
-       [:cmd/route {:from #{:app/store
-                            :app/ui-cmp}
+       [:cmd/route {:from :app/store
                     :to   :app/sync}]
 
        [:cmd/route {:from :app/sync
@@ -64,9 +63,6 @@
 
        [:cmd/route {:from :app/store
                     :to   :app/scheduler}]
-
-       [:cmd/route {:from :app/ui-cmp
-                    :to   :app/photos}]
 
        [:cmd/route {:from :app/scheduler
                     :to   #{:app/store

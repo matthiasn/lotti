@@ -25,8 +25,9 @@
                      (try
                        (let [data (edn/read-string (.-text qr))]
                          (info "Scanned data:" data)
-                         (swap! cfg assoc :mobile data)
-                         (emit [:imap/save-cfg @cfg])
+                         ;                         (swap! cfg assoc :mobile data)
+                         (emit [:imap/save-cfg
+                                (merge @cfg {:mobile data})])
                          (stop-scanning local))
                        (catch :default e (error e))))
         scan (fn [cameras]

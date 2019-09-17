@@ -7,7 +7,7 @@
 
 (def qr-svg (r/adapt-react-class (aget qr "default")))
 
-(defn qr-code [public-key]
+(defn qr-code [_]
   (let [instance-id (subscribe [:instance-id])]
     (fn qr-code-render [public-key]
       (when public-key

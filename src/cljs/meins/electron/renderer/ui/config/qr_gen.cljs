@@ -18,14 +18,15 @@
                             [:div#sync-cfg-qr])}))
 
 (defn qr-code-gen
-  [cfg-atom]
-  (let [crypto-cfg (subscribe [:crypto-cfg])]
+  []
+  (let [crypto-cfg (subscribe [:crypto-cfg])
+        imap-cfg (subscribe [:imap-cfg])]
     (fn [_]
-      (let [data (u/imap-to-app-cfg @cfg-atom)
+      (let [data (u/imap-to-app-cfg @imap-cfg)
             s (pr-str data)
             our-secret-key (some-> @crypto-cfg :secretKey)
             our-public-key (some-> @crypto-cfg :publicKey)
-            their-public-key (some-> @cfg-atom :mobile :publicKey)]
+            their-public-key (some-> @imap-cfg :mobile :publicKey)]
         [:div
          [:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @crypto-cfg))]]
          (when (and our-secret-key their-public-key)

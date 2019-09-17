@@ -35,6 +35,8 @@
               serializable [msg-type {:msg-payload (update-filename msg-payload)
                                       :msg-meta    {}}]     ; save battery and bandwidth
               serialized (pr-str serializable)
+              _ (js/console.warn "their-public-key" their-public-key)
+              _ (js/console.warn "our-secret-key" our-secret-key)
               hex-cipher (mse/encrypt-asymm serialized their-public-key our-secret-key)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
@@ -68,10 +70,13 @@
                                                    :message [:sync/retry]
                                                    :id      :sync}])))]
           (swap! cmp-state update-in [:open-writes] conj msg-payload)
-          (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
-          (-> (.saveImap MailCore (clj->js mail))
-              (.then success-cb)
-              (.catch error-cb))))
+          (if (and hex-cipher folder)
+            (do
+              (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
+              (-> (.saveImap MailCore (clj->js mail))
+                  (.then success-cb)
+                  (.catch error-cb)))
+            (js/console.error "ciphertext" hex-cipher "folder" folder))))
       (catch :default e (js/console.error (str e)))))
   {})
 
@@ -153,7 +158,12 @@
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]
-    (go (<! (as/set-item :secrets msg-payload)))
+    (js/console.warn "set-secrets" (str msg-payload))
+    {:new-state new-state}))
+
+(defn set-key-pair [{:keys [current-state msg-payload]}]
+  (js/console.warn "set-key-pair" (str msg-payload))
+  (let [new-state (assoc-in current-state [:key-pair] msg-payload)]
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
@@ -183,8 +193,9 @@
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
-   :handler-map {:entry/sync  sync-write
-                 :sync/fetch  sync-get-uids
-                 :sync/retry  retry-write
-                 :sync/read   sync-read-msg
-                 :secrets/set set-secrets}})
+   :handler-map {:entry/sync     sync-write
+                 :sync/fetch     sync-get-uids
+                 :sync/retry     retry-write
+                 :sync/read      sync-read-msg
+                 :secrets/set    set-secrets
+                 :secrets/set-kp set-key-pair}})

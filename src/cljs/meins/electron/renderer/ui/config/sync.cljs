@@ -64,12 +64,20 @@
                [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
             [settings-item cfg :text [:sync :write :mailbox] "Write Mailbox:" connected]
             [settings-item cfg :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]]]
-          [:button {:on-click create-key-pair}
-           "(Re-)Create Key Pair"]
-          [:button {:on-click #(swap! local update :show-qr not)}
-           "Show QR code"]
-          [:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @cfg))]]]
+          [:div
+           [:div {:style {:margin-bottom 5}}
+            [:button {:on-click create-key-pair}
+             "(Re-)Create Key Pair"]]
+           [:div {:style {:margin-bottom 5}}
+            [:button {:on-click #(swap! local update :scan not)}
+             "Scan QR code"]]
+           [:div {:style {:margin-bottom 5}}
+            [:button {:on-click #(swap! local update :show-qr not)}
+             "Show QR code"]]
+           [:pre {:style {:color :white}}
+            [:code (with-out-str (pp/pprint @imap-cfg))]]]]
          [:div
           (when (:show-qr @local)
-            [qrg/qr-code-gen cfg])
-          [qrs/scanner cfg]]]))))
+            [qrg/qr-code-gen])
+          (when (:scan @local)
+            [qrs/scanner cfg])]]))))
