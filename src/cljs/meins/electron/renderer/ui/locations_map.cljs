@@ -90,6 +90,7 @@
   {:street            "mapbox://styles/mapbox/streets-v11"
    :dark              "mapbox://styles/mapbox/dark-v10"
    :light             "mapbox://styles/mapbox/light-v10"
+   :mineral           "mapbox://styles/matthiasn/ck0o3ac0d0ab51cp6o565lvx0"
    :satellite         "mapbox://styles/mapbox/satellite-v9"
    :satellite-streets "mapbox://styles/mapbox/satellite-streets-v11"})
 
