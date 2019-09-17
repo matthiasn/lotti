@@ -85,28 +85,28 @@
   (when-let [secrets (:secrets @cmp-state)]
     (when (:online current-state)
       (try
-        (when (= platform-os "ios")
-          (let [folder (-> secrets :sync :read :folder)
-                min-uid (or (last (:not-fetched current-state))
-                            (inc (:last-uid-read current-state)))
-                mail (merge (:server secrets)
-                            {:folder folder
-                             :minUid min-uid
-                             :length 1000})
-                fetch-cb (fn [data]
-                           (let [uids (edn/read-string (str "[" data "]"))]
-                             (swap! cmp-state update :not-fetched into uids)
-                             (schedule-read cmp-state put-fn)))]
-            (-> (.fetchImap MailCore (clj->js mail))
-                (.then fetch-cb)
-                (.catch #(shared/alert (str %))))))
+        (let [folder (-> secrets :sync :read :folder)
+              min-uid (or (last (:not-fetched current-state))
+                          (inc (:last-uid-read current-state)))
+              mail (merge (:server secrets)
+                          {:folder folder
+                           :minUid min-uid
+                           :length 1000})
+              fetch-cb (fn [data]
+                         (let [uids (edn/read-string (str "[" data "]"))]
+                           (js/console.warn "fetch-cb" data)
+                           (swap! cmp-state update :not-fetched into uids)
+                           (schedule-read cmp-state put-fn)))]
+          (-> (.fetchImap MailCore (clj->js mail))
+              (.then fetch-cb)
+              (.catch #(shared/alert (str %)))))
         (catch :default e (shared/alert (str e))))))
   {})
 
 (defn sync-read-msg [{:keys [put-fn cmp-state current-state]}]
   (when-let [secrets (:secrets current-state)]
     (try
-      (when (and (:online current-state) (= platform-os "ios"))
+      (when (:online current-state)
         (let [{:keys [fetched not-fetched]} @cmp-state
               their-public-key (-> secrets :desktop :publicKey)
               our-private-key (-> @cmp-state :key-pair :secretKey)
@@ -118,8 +118,9 @@
                                :uid    uid})
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
+                             (js/console.warn data)
                              (let [body (get (js->clj data) "body")
-                                   decrypted (time (mse/decrypt body their-public-key our-private-key))
+                                   decrypted (mse/decrypt body their-public-key our-private-key)
                                    msg-type (first decrypted)
                                    {:keys [msg-payload msg-meta]} (second decrypted)
                                    msg (with-meta [msg-type msg-payload]

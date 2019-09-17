@@ -47,7 +47,7 @@
    of the encryptor and the local private key."
   [message their-public-key our-secret-key]
   (js/console.info "decrypt-asymm their-public-key" their-public-key)
-  (js/console.info "decrypt-asymm our-secret-key" our-secret-key)
+  (js/console.info "decrypt-asymm our-secret-key" (subs our-secret-key 5))
   (try
     (let [their-public-key (hex->array their-public-key)
           our-secret-key (hex->array our-secret-key)
