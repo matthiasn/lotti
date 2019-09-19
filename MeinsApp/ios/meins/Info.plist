@@ -17,11 +17,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.83</string>
+	<string>1.0.84</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>95</string>
+	<string>96</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true />
 	<key>MGLMapboxAccessToken</key>
@@ -44,6 +44,8 @@
 		</dict>
 	</dict>
 	<key>NSAppleMusicUsageDescription</key>
+	<string>Our app does not request this permission or utilize this functionality but it is included in our info.plist since our app utilizes the react-native-permissions library, which references this permission in its code.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Our app does not request this permission or utilize this functionality but it is included in our info.plist since our app utilizes the react-native-permissions library, which references this permission in its code.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Our app does not request this permission or utilize this functionality but it is included in our info.plist since our app utilizes the react-native-permissions library, which references this permission in its code.</string>
