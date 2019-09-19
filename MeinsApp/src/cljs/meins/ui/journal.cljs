@@ -34,6 +34,7 @@
     (fn list-item-render [ts navigate]
       @global-vclock
       (let [text-bg (get-in c/colors [:text-bg @theme])
+            bg (get-in c/colors [:list-bg @theme])
             text-color (get-in c/colors [:text @theme])
             show-pvt (:show-pvt @cfg)
             entry (get-entry ts)
@@ -53,39 +54,45 @@
           [view {:style {:flex             1
                          :margin-bottom    4
                          :flex-direction   :row
-                         :background-color "black"
+                         :background-color bg
                          :width            "100%"}}
            [touchable-opacity {:on-press to-detail
                                :style    {:display         "flex"
                                           :flex-direction  "column"
                                           :width           "100%"
                                           :justify-content "space-between"}}
-            (when-let [media (:media entry)]
-              [image {:style  {:width  "100%"
-                               :height 300}
-                      :source {:uri (-> media :image :uri)}}])
-            (when-let [spotify (:spotify entry)]
-              [image {:style      {:background-color "black"
-                                   :height           150
-                                   :width            "100%"}
-                      :resizeMode "contain"
-                      :source     {:uri (:image spotify)}}])
             [view {:style {:flex             1
                            :flex-direction   :column
                            :background-color text-bg
-                           :padding-top      4
-                           :padding-left     8
-                           :padding-right    6
+                           :margin-left      10
+                           :margin-right     10
+                           :margin-top       4
+                           :margin-bottom    8
+                           :border-radius    18
                            :padding-bottom   4
-                           :width            "100%"}}
+                           :width            "auto"}}
+             (when-let [media (:media entry)]
+               [image {:style  {:width  "auto"
+                                :border-top-left-radius 18
+                                :border-top-right-radius 18
+                                :height 300}
+                       :source {:uri (-> media :image :uri)}}])
+             (when-let [spotify (:spotify entry)]
+               [image {:style      {:background-color "black"
+                                    :height           150
+                                    :width            "100%"}
+                       :resizeMode "contain"
+                       :source     {:uri (:image spotify)}}])
              [view {:style {:padding-top    2
-                            :padding-left   4
-                            :padding-right  4
+                            :padding-left   22
+                            :padding-right  22
                             :padding-bottom 2}}
-              [text {:style {:color       text-color
-                             :text-align  "left"
-                             :font-size   9
-                             :font-weight "100"}}
+              [text {:style {:color         text-color
+                             :opacity       0.68
+                             :text-align    "right"
+                             :font-size     9
+                             :padding-right 3
+                             :font-weight   "100"}}
                (h/format-time ts)]]
              (if-let [spotify (:spotify entry)]
                [view {:style {:padding-top    1
@@ -108,11 +115,14 @@
                       (interpose ", ")
                       (apply str))]]
                [view {:style {:padding-top    1
-                              :padding-left   4
-                              :padding-right  4
-                              :padding-bottom 4}}
+                              :padding-left   22
+                              :padding-right  22
+                              :padding-bottom 4
+                              :margin-top     3}}
                 [text {:style {:color       text-color
                                :text-align  "left"
+                               :font-size   14
+                               :line-height 21
                                :font-weight "normal"}}
                  md]])]]])))))
 
@@ -133,8 +143,7 @@
             header-tab-bg (get-in c/colors [:header-tab @theme])
             pt (if (= platform-os "ios") 40 10)]
         [view {:style {:background-color header-tab-bg
-                       :padding-top      pt
-                       :padding-bottom   6}}
+                       :padding-top      pt}}
          [search-bar {:placeholder         "search..."
                       :lightTheme          light-theme
                       :on-change-text      on-change-text
@@ -142,7 +151,8 @@
                       :value               (:jrn-search @local)
                       :keyboard-type       "twitter"
                       :keyboardAppearance  (if light-theme "light" "dark")
-                      :inputContainerStyle {:backgroundColor search-field-bg}
+                      :inputContainerStyle {:backgroundColor search-field-bg
+                                            :border-radius   18}
                       :containerStyle      {:backgroundColor   "transparent"
                                             :borderTopWidth    0
                                             :borderBottomWidth 0}}]]))))
