@@ -20,7 +20,7 @@
                                                    moduleName:@"meins"
                                             initialProperties:nil];
   
-  rootView.backgroundColor = [UIColor colorWithRed:0.27 green:0.27 blue:0.33 alpha:1.0];
+  rootView.backgroundColor = [UIColor colorWithRed:0.22 green:0.25 blue:0.34 alpha:1.0];
 
   self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
   UIViewController *rootViewController = [UIViewController new];

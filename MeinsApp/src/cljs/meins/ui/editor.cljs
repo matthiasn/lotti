@@ -21,32 +21,31 @@
                        :justify-content "space-between"
                        :height          45}}
          [touchable-opacity {:on-press cancel-fn
-                             :style    {:width                      100
-                                        :background-color           button-bg
-                                        :border-top-right-radius    4
-                                        :border-bottom-right-radius 4
-                                        :padding                    8}}
+                             :style    {:width            100
+                                        :margin-left      10
+                                        :border-radius    18
+                                        :padding          8}}
           [text {:style {:font-size  20
-                         :text-align "center"
+                         :text-align "left"
                          :color      btn-text}}
-           "cancel"]]
+           "X"]]
          [text {:style {:padding     8
                         :color       header-color
                         :font-weight :bold
                         :font-size   20}}
           label]
          [touchable-opacity {:on-press save-fn
-                             :style    {:padding                   8
-                                        :display                   :flex
-                                        :background-color          button-bg
-                                        :width                     100
-                                        :border-top-left-radius    4
-                                        :border-bottom-left-radius 4
-                                        :align-items               :center}}
+                             :style    {:padding          8
+                                        :display          :flex
+                                        :background-color button-bg
+                                        :width            100
+                                        :margin-right     10
+                                        :border-radius    18
+                                        :align-items      :center}}
           [text {:style {:color      btn-text
                          :text-align "center"
-                         :font-size  20}}
-           "save"]]]))))
+                         :font-size  18}}
+           "SAVE"]]]))))
 
 (defn editor [_]
   (let [theme (subscribe [:active-theme])]
@@ -66,34 +65,37 @@
             pt (if (= platform-os "ios") 40 10)]
         [view {:style {:display          "flex"
                        :flex-direction   "column"
-                       :height "100%"
+                       :height           "100%"
                        :background-color bg
                        :padding-top      pt}}
          [status-bar {:barStyle "light-content"}]
          [header save-fn cancel-fn "New Entry"]
-         [keyboard-avoiding-view {                          ;:behavior "padding"
-                                  :style    {:display          "flex"
-                                             :flex-direction   "column"
-                                             :justify-content  "space-between"
-                                             :flex             2
-                                             :margin-top       20
-                                             :height 500
-                                             :align-items      "center"}}
-          [scroll {:style {:flex-direction   "column"
-                           :display          "flex"
-                           :width            "100%"
-                           :flex 1
-                           :padding-bottom   10}}
+         [keyboard-avoiding-view {;:behavior "padding"
+                                  :style {:display         "flex"
+                                          :flex-direction  "column"
+                                          :justify-content "space-between"
+                                          :flex            2
+                                          :margin-top      20
+                                          :height          500
+                                          :align-items     "center"}}
+          [scroll {:style {:flex-direction "column"
+                           :display        "flex"
+                           :width          "100%"
+                           :flex           1
+                           :padding-bottom 10}}
            [text-input {:style              {:flex             2
                                              :font-weight      "100"
                                              :padding          16
                                              :font-size        24
                                              :max-height       400
                                              :min-height       100
+                                             :border-radius    18
+                                             :margin-left      10
+                                             :margin-right     10
                                              :background-color text-bg
                                              :margin-bottom    20
                                              :color            text-color
-                                             :width            "100%"}
+                                             :width            "auto"}
                         :multiline          true
                         :default-value      (:md @local)
                         :keyboard-type      "twitter"
