@@ -6,7 +6,9 @@
             [reagent.core :as r]
             [meins.ui.colors :as c]
             [meins.helpers :as h]
-            [meins.common.utils.parse :as p]))
+            [meins.common.utils.parse :as p]
+            [matthiasn.systems-toolbox.component :as stc]
+            [clojure.string :as s]))
 
 (def local (r/atom {:md ""}))
 
@@ -21,10 +23,10 @@
                        :justify-content "space-between"
                        :height          45}}
          [touchable-opacity {:on-press cancel-fn
-                             :style    {:width            100
-                                        :margin-left      10
-                                        :border-radius    18
-                                        :padding          8}}
+                             :style    {:width         100
+                                        :margin-left   10
+                                        :border-radius 18
+                                        :padding       8}}
           [text {:style {:font-size  20
                          :text-align "left"
                          :color      btn-text}}
@@ -32,19 +34,21 @@
          [text {:style {:padding     8
                         :color       header-color
                         :font-weight :bold
-                        :font-size   20}}
+                        :font-size   18}}
           label]
          [touchable-opacity {:on-press save-fn
-                             :style    {:padding          8
-                                        :display          :flex
+                             :style    {:display          :flex
                                         :background-color button-bg
-                                        :width            100
-                                        :margin-right     10
+                                        :width            81
+                                        :margin-right     17
                                         :border-radius    18
+                                        :height           36
                                         :align-items      :center}}
-          [text {:style {:color      btn-text
-                         :text-align "center"
-                         :font-size  18}}
+          [text {:style {:color       btn-text
+                         :text-align  "center"
+                         :line-height 21
+                         :padding-top 7
+                         :font-size   15}}
            "SAVE"]]]))))
 
 (defn editor [_]
@@ -70,12 +74,28 @@
                        :padding-top      pt}}
          [status-bar {:barStyle "light-content"}]
          [header save-fn cancel-fn "New Entry"]
+         [view {:display         :flex
+                :flex-direction  :row
+                :justify-content :center
+                :padding-top     7
+                :opacity         0.68}
+          [text {:style {:color       text-color
+                         :text-align  "center"
+                         :font-weight :bold
+                         :font-size   12}}
+           (s/upper-case
+             (h/entry-date-fmt (stc/now)))]
+          [text {:style {:color       text-color
+                         :text-align  "center"
+                         :margin-left 12
+                         :font-size   12}}
+           (h/hh-mm (stc/now))]]
          [keyboard-avoiding-view {;:behavior "padding"
                                   :style {:display         "flex"
                                           :flex-direction  "column"
                                           :justify-content "space-between"
                                           :flex            2
-                                          :margin-top      20
+                                          :margin-top      10
                                           :height          500
                                           :align-items     "center"}}
           [scroll {:style {:flex-direction "column"
@@ -88,10 +108,10 @@
                                              :padding          16
                                              :font-size        24
                                              :max-height       400
-                                             :min-height       100
+                                             :min-height       240
                                              :border-radius    18
-                                             :margin-left      10
-                                             :margin-right     10
+                                             :margin-left      17
+                                             :margin-right     17
                                              :background-color text-bg
                                              :margin-bottom    20
                                              :color            text-color

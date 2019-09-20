@@ -64,18 +64,16 @@
             [view {:style {:flex             1
                            :flex-direction   :column
                            :background-color text-bg
-                           :margin-left      10
-                           :margin-right     10
                            :margin-top       4
                            :margin-bottom    8
                            :border-radius    18
                            :padding-bottom   4
                            :width            "auto"}}
              (when-let [media (:media entry)]
-               [image {:style  {:width  "auto"
-                                :border-top-left-radius 18
+               [image {:style  {:width                   "auto"
+                                :border-top-left-radius  18
                                 :border-top-right-radius 18
-                                :height 300}
+                                :height                  300}
                        :source {:uri (-> media :image :uri)}}])
              (when-let [spotify (:spotify entry)]
                [image {:style      {:background-color "black"
@@ -90,10 +88,11 @@
               [text {:style {:color         text-color
                              :opacity       0.68
                              :text-align    "right"
-                             :font-size     9
+                             :font-size     12
+                             :margin-top    6
                              :padding-right 3
                              :font-weight   "100"}}
-               (h/format-time ts)]]
+               (h/hh-mm ts)]]
              (if-let [spotify (:spotify entry)]
                [view {:style {:padding-top    1
                               :padding-left   4
@@ -155,6 +154,10 @@
                                             :border-radius   18}
                       :containerStyle      {:backgroundColor   "transparent"
                                             :borderTopWidth    0
+                                            :padding-top       8
+                                            :padding-bottom    8
+                                            :padding-left      2
+                                            :padding-right     2
                                             :borderBottomWidth 0}}]]))))
 
 (defn journal [_]
@@ -174,6 +177,8 @@
         @global-vclock
         [view {:style {:flex             1
                        :height           "100%"
+                       :padding-left     18
+                       :padding-right    16
                        :background-color bg}}
          [status-bar {:barStyle "light-content"}]
          [search-field local]

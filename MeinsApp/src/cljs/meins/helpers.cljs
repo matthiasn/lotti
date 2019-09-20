@@ -68,6 +68,10 @@
 (defn n-days-ago-fmt [n] (.format (n-days-ago n) ymd-format))
 (defn format-time [m] (.format (js/moment m) "YYYY-MM-DD HH:mm"))
 (defn img-fmt [m] (.format (js/moment m) "YYYYMMDD_HHmmss_SSS"))
+
+(defn entry-date-fmt [ts]
+  (.format (js/moment ts) "ddd DD MMM YYYY"))
+
 (defn hh-mm [m] (.format (js/moment m) "HH:mm"))
 (defn mm-ss [m] (.format (js/moment m) "mm:ss"))
 (defn ymd [m] (.format (js/moment m) ymd-format))
