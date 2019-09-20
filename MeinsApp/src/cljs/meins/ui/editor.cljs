@@ -102,6 +102,8 @@
                            :display        "flex"
                            :width          "100%"
                            :flex           1
+                           :padding-left   18
+                           :padding-right  16
                            :padding-bottom 10}}
            [text-input {:style              {:flex             2
                                              :font-weight      "100"
@@ -110,8 +112,6 @@
                                              :max-height       400
                                              :min-height       240
                                              :border-radius    18
-                                             :margin-left      17
-                                             :margin-right     17
                                              :background-color text-bg
                                              :margin-bottom    20
                                              :color            text-color

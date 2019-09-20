@@ -13,27 +13,11 @@
             [meins.ui.settings.health :as sh]
             [meins.ui.colors :as c]))
 
-(def styles
-  {:container    {:flex            1
-                  :justifyContent  "center"
-                  :alignItems      "center"
-                  :backgroundColor "#445"}
-   :welcome      {:fontSize    44
-                  :font-weight "bold"
-                  :color       "#FF8C00"
-                  :textAlign   "center"
-                  :margin      10}
-   :instructions {:textAlign    "center"
-                  :color        "rgb(66, 184, 221)"
-                  :marginBottom 5}})
-
-(def put-fn-atom (r/atom nil))
+(def bg (get-in c/colors [:list-bg :dark]))
 
 (def local (r/atom {:cam       false
                     :contacts  (clj->js [])
-                    :map-style :Street
-                    :active    "journal"
-                    :md        ""}))
+                    :active    "journal"}))
 
 (defn nav-options [icon-name _size]
   {:tabBarOnPress (fn [ev]
@@ -47,10 +31,8 @@
                       (r/as-element
                         [fa-icon {:name             icon-name
                                   :size             22
-                                  :background-color "#445"
+                                  :background-color bg
                                   :color            (:tintColor m)}])))})
-
-(defn put-fn [])
 
 (defn settings-wrapper [_props]
   (let [theme (subscribe [:active-theme])]
@@ -70,9 +52,9 @@
            {:headerText       "Settings"
             :background-color item-bg
             :headerStyle      {:color       header-color
-                               :font-weight :bold
+                               :font-weight 300
                                :text-align  "center"
-                               :font-size   36}}]
+                               :font-size   24}}]
           [settings-list-item
            {:hasNavArrow      false
             :background-color item-bg
@@ -147,5 +129,5 @@
               :db       {:screen (r/reactify-component db/db-settings)}
               :audio    {:screen (r/reactify-component audio/audio-settings)}
               :health   {:screen (r/reactify-component sh/health-settings)}})
-    (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   "#445"
+    (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   bg
                                                        :borderBottomWidth 0}}})))
