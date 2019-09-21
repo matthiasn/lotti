@@ -1,5 +1,5 @@
 (ns meins.ui.settings.health
-  (:require [meins.ui.colors :as c]
+  (:require [meins.ui.styles :as styles]
             [meins.ui.shared :refer [view text fa-icon touchable-opacity status-bar]]
             [meins.ui.db :refer [emit]]
             [re-frame.core :refer [subscribe]]))
@@ -18,8 +18,8 @@
                              :repeat  true
                              :initial true}]))]
     (fn [_msg-type label icon-name]
-      (let [item-bg (get-in c/colors [:button-bg @theme])
-            text-color (get-in c/colors [:btn-text @theme])]
+      (let [item-bg (get-in styles/colors [:button-bg @theme])
+            text-color (get-in styles/colors [:btn-text @theme])]
         [view {:style {:margin-top       3
                        :width            "100%"
                        :background-color item-bg
@@ -61,7 +61,7 @@
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [navigation] :as _props}]
       (let [{:keys [_navigate _goBack]} navigation
-            bg (get-in c/colors [:list-bg @theme])]
+            bg (get-in styles/colors [:list-bg @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :padding-bottom   10

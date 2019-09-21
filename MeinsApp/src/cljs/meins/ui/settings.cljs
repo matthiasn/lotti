@@ -11,9 +11,9 @@
             [meins.ui.settings.dev :as dev]
             [meins.ui.settings.geolocation :as geo]
             [meins.ui.settings.health :as sh]
-            [meins.ui.colors :as c]))
+            [meins.ui.styles :as styles]))
 
-(def bg (get-in c/colors [:list-bg :dark]))
+(def bg (get-in styles/colors [:list-bg :dark]))
 
 (def local (r/atom {:cam       false
                     :contacts  (clj->js [])
@@ -38,10 +38,10 @@
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:button-bg @theme])
-            header-color (get-in c/colors [:header-text @theme])
-            text-color (get-in c/colors [:btn-text @theme])]
+            bg (get-in styles/colors [:list-bg @theme])
+            item-bg (get-in styles/colors [:button-bg @theme])
+            header-color (get-in styles/colors [:header-text @theme])
+            text-color (get-in styles/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
                        :height           "100%"
                        :background-color bg}}

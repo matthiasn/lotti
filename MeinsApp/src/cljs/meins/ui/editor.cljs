@@ -4,7 +4,7 @@
                                      keyboard-avoiding-view keyboard scroll]]
             [meins.ui.db :refer [emit]]
             [reagent.core :as r]
-            [meins.ui.colors :as c]
+            [meins.ui.styles :as styles]
             [meins.helpers :as h]
             [meins.common.utils.parse :as p]
             [matthiasn.systems-toolbox.component :as stc]
@@ -15,9 +15,9 @@
 (defn header [_save-fn _cancel-fn _label]
   (let [theme (subscribe [:active-theme])]
     (fn [save-fn cancel-fn label]
-      (let [button-bg (get-in c/colors [:button-bg @theme])
-            btn-text (get-in c/colors [:btn-text @theme])
-            header-color (get-in c/colors [:header-text @theme])]
+      (let [button-bg (get-in styles/colors [:button-bg @theme])
+            btn-text (get-in styles/colors [:btn-text @theme])
+            header-color (get-in styles/colors [:header-text @theme])]
         [view {:style {:display         "flex"
                        :flex-direction  "row"
                        :justify-content "space-between"
@@ -63,9 +63,9 @@
                        (swap! local assoc-in [:md] "")
                        (.dismiss keyboard)
                        (js/setTimeout (fn [_] (navigate "Journal")) 500))
-            bg (get-in c/colors [:list-bg @theme])
-            text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])
+            bg (get-in styles/colors [:list-bg @theme])
+            text-bg (get-in styles/colors [:text-bg @theme])
+            text-color (get-in styles/colors [:text @theme])
             pt (if (= platform-os "ios") 40 10)]
         [view {:style {:display          "flex"
                        :flex-direction   "column"

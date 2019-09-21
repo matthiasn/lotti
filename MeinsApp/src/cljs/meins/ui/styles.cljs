@@ -1,4 +1,6 @@
-(ns meins.ui.colors)
+(ns meins.ui.styles)
+
+(def border-radius 18)
 
 (def colors
   {:header-tab      {:light "#FAFAFA"

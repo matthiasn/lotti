@@ -3,7 +3,7 @@
             [re-frame.core :refer [subscribe]]
             [meins.helpers :as h]
             [glittershark.core-async-storage :as as]
-            [meins.ui.colors :as c]
+            [meins.ui.styles :as styles]
             [meins.ui.db :as uidb :refer [emit]]
             [meins.ui.editor :as ed]
             [cljs.reader :as rdr]
@@ -17,7 +17,9 @@
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-stack" :refer [createStackNavigator]]
             [clojure.pprint :as pp]
-            [meins.common.utils.parse :as p]))
+            [meins.common.utils.parse :as p]
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as stc]))
 
 (defn get-entry [ts]
   (when (number? ts)
@@ -33,9 +35,9 @@
         cfg (subscribe [:cfg])]
     (fn list-item-render [ts navigate]
       @global-vclock
-      (let [text-bg (get-in c/colors [:text-bg @theme])
-            bg (get-in c/colors [:list-bg @theme])
-            text-color (get-in c/colors [:text @theme])
+      (let [text-bg (get-in styles/colors [:text-bg @theme])
+            bg (get-in styles/colors [:list-bg @theme])
+            text-color (get-in styles/colors [:text @theme])
             show-pvt (:show-pvt @cfg)
             entry (get-entry ts)
             to-detail #(do (emit [:entry/detail {:timestamp ts}])
@@ -138,8 +140,8 @@
         on-clear-text #(swap! local assoc-in [:jrn-search] "")]
     (fn [_local]
       (let [light-theme (= :light @theme)
-            search-field-bg (get-in c/colors [:search-field-bg @theme])
-            header-tab-bg (get-in c/colors [:header-tab @theme])
+            search-field-bg (get-in styles/colors [:search-field-bg @theme])
+            header-tab-bg (get-in styles/colors [:header-tab @theme])
             pt (if (= platform-os "ios") 40 10)]
         [view {:style {:background-color header-tab-bg
                        :padding-top      pt}}
@@ -173,7 +175,7 @@
                         (.sorted "timestamp" true)
                         (.slice 0 1000))
             as-array (clj->js (map (fn [ts] {:timestamp (.-timestamp ts)}) res))
-            bg (get-in c/colors [:list-bg @theme])]
+            bg (get-in styles/colors [:list-bg @theme])]
         @global-vclock
         [view {:style {:flex             1
                        :height           "100%"
@@ -200,11 +202,9 @@
     (fn [{:keys [navigation] :as _props}]
       (let [{:keys [navigate _goBack] :as _nav} (js->clj navigation :keywordize-keys true)
             entry (get-entry (:timestamp @entry-detail))
-            bg (get-in c/colors [:list-bg @theme])
-            text-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])
-            latitude (:latitude entry)
-            longitude (:longitude entry)
+            bg (get-in styles/colors [:list-bg @theme])
+            text-bg (get-in styles/colors [:text-bg @theme])
+            text-color (get-in styles/colors [:text @theme])
             save-fn (fn []
                       (let [updated (p/parse-entry (:md @entry-local))]
                         (emit [:entry/persist (merge entry updated)])
@@ -227,113 +227,126 @@
                                              :width           "100%"
                                              :flex            1
                                              :align-items     "center"}}
-          [scroll {:style {:flex-direction   "column"
-                           :background-color bg
-                           :min-height       250
-                           :width            "100%"
-                           :padding-bottom   10}}
-           (when-let [media (:media entry)]
-             [image {:style      {:flex             3
-                                  :background-color "black"
-                                  :min-height       300
-                                  :max-height       600
-                                  :width            "100%"}
-                     :resizeMode "contain"
-                     :source     {:uri (-> media :image :uri)}}])
-           [text {:style {:background-color text-bg
-                          :color            text-color
-                          :text-align       "center"
-                          :font-size        12
-                          :padding          4}}
-            (h/format-time (:timestamp entry))]
-           (if-let [spotify (:spotify entry)]
-             [view {:style {:display          "flex"
-                            :flex-direction   "column"
-                            :background-color "white"}}
+          [scroll {:style {:flex-direction "column"
+                           :min-height     250
+                           :padding-left   18
+                           :padding-right  16
+                           :width          "100%"
+                           :padding-bottom 10}}
+           [view {:border-radius    styles/border-radius
+                  :background-color text-bg}
+            [view {:display         :flex
+                   :flex-direction  :row
+                   :justify-content :center
+                   :padding-top     7
+                   :opacity         0.68}
+             [text {:style {:color       text-color
+                            :text-align  "center"
+                            :font-weight :bold
+                            :font-size   12}}
+              (s/upper-case
+                (h/entry-date-fmt (:timestamp entry)))]
+             [text {:style {:color       text-color
+                            :text-align  "center"
+                            :margin-left 12
+                            :font-size   12}}
+              (h/hh-mm (:timestamp entry))]]
+            (if-let [spotify (:spotify entry)]
+              [view {:style {:display          "flex"
+                             :flex-direction   "column"
+                             :background-color "white"}}
+               [image {:style      {:flex             3
+                                    :background-color "black"
+                                    :min-height       300
+                                    :max-height       600
+                                    :width            "100%"}
+                       :resizeMode "contain"
+                       :source     {:uri (:image spotify)}}]
+               [text {:style {:background-color text-bg
+                              :color            text-color
+                              :text-align       "left"
+                              :font-weight      "bold"
+                              :font-size        12
+                              :padding-left     12
+                              :padding-top      4}}
+                (:name spotify)]
+               [text {:style {:background-color text-bg
+                              :color            text-color
+                              :text-align       "left"
+                              :font-size        12
+                              :padding-left     12
+                              :padding-top      1
+                              :padding-bottom   4}}
+                (->> (:artists spotify)
+                     (map :name)
+                     (interpose ", ")
+                     (apply str))]]
+              [text-input {:style              {:flex             2
+                                                :font-weight      "100"
+                                                :padding          16
+                                                :font-size        24
+                                                :max-height       400
+                                                :min-height       100
+                                                :background-color text-bg
+                                                :margin-bottom    5
+                                                :color            text-color
+                                                :width            "100%"}
+                           :multiline          true
+                           :default-value      (:md entry "")
+                           :keyboard-type      "twitter"
+                           :keyboardAppearance (if (= @theme :dark) "dark" "light")
+                           :on-change-text     (fn [text]
+                                                 (swap! entry-local assoc-in [:md] text))}])
+            (when-let [media (:media entry)]
               [image {:style      {:flex             3
                                    :background-color "black"
                                    :min-height       300
                                    :max-height       600
                                    :width            "100%"}
                       :resizeMode "contain"
-                      :source     {:uri (:image spotify)}}]
-              [text {:style {:background-color text-bg
-                             :color            text-color
-                             :text-align       "left"
-                             :font-weight      "bold"
-                             :font-size        12
-                             :padding-left     12
-                             :padding-top      4}}
-               (:name spotify)]
-              [text {:style {:background-color text-bg
-                             :color            text-color
-                             :text-align       "left"
-                             :font-size        12
-                             :padding-left     12
-                             :padding-top      1
-                             :padding-bottom   4}}
-               (->> (:artists spotify)
-                    (map :name)
-                    (interpose ", ")
-                    (apply str))]]
-             [text-input {:style              {:flex             2
-                                               :font-weight      "100"
-                                               :padding          16
-                                               :font-size        24
-                                               :max-height       400
-                                               :min-height       100
-                                               :background-color text-bg
-                                               :margin-bottom    5
-                                               :color            text-color
-                                               :width            "100%"}
-                          :multiline          true
-                          :default-value      (:md entry "")
-                          :keyboard-type      "twitter"
-                          :keyboardAppearance (if (= @theme :dark) "dark" "light")
-                          :on-change-text     (fn [text]
-                                                (swap! entry-local assoc-in [:md] text))}])
-           [mb/map-elem entry]
-           (when-let [audio-file (:audio_file entry)]
-             (let [status (:status @player-state)
-                   prefix (when (= "android" platform-os)
-                            "/data/data/com.matthiasn.meins/")
-                   pos (h/mm-ss (.floor js/Math (:pos @player-state)))
-                   play (fn [_]
-                          (.startPlayer recorder-player (str prefix audio-file))
-                          (.addPlayBackListener
-                            recorder-player
-                            #(swap! player-state assoc-in [:pos] (.-current_position %)))
-                          (swap! player-state assoc-in [:status] :play))
-                   stop (fn [_]
-                          (.stopPlayer recorder-player)
-                          (.removePlayBackListener recorder-player)
-                          (swap! player-state assoc-in [:status] :paused))]
-               [touchable-opacity {:on-press (if (= :play status) stop play)
-                                   :style    {:margin         10
-                                              :display        "flex"
-                                              :flex-direction "row"}}
-                [fa-icon {:name  "microphone"
-                          :size  30
-                          :style {:color       (if (= :play status) "#66F" "#999")
-                                  :margin-left 25}}]
-                [text {:style {:color       "#0078e7"
-                               :font-size   30
-                               :margin-left 25
-                               :font-family "Courier"}}
-                 (if (= :play status) "Stop" "Play")]
-                [text {:style {:font-size    30
-                               :color        "#888"
-                               :font-weight  "100"
-                               :margin-left  50
-                               :margin-right 25
-                               :font-family  "Courier"}}
-                 pos]]))]
-          (when (:entry-pprint @cfg)
-            [text {:style {:margin-top 4
-                           :color      "white"
-                           :text-align "left"
-                           :font-size  8}}
-             (with-out-str (pp/pprint entry))])]]))))
+                      :source     {:uri (-> media :image :uri)}}])
+            [mb/map-elem entry]
+            (when-let [audio-file (:audio_file entry)]
+              (let [status (:status @player-state)
+                    prefix (when (= "android" platform-os)
+                             "/data/data/com.matthiasn.meins/")
+                    pos (h/mm-ss (.floor js/Math (:pos @player-state)))
+                    play (fn [_]
+                           (.startPlayer recorder-player (str prefix audio-file))
+                           (.addPlayBackListener
+                             recorder-player
+                             #(swap! player-state assoc-in [:pos] (.-current_position %)))
+                           (swap! player-state assoc-in [:status] :play))
+                    stop (fn [_]
+                           (.stopPlayer recorder-player)
+                           (.removePlayBackListener recorder-player)
+                           (swap! player-state assoc-in [:status] :paused))]
+                [touchable-opacity {:on-press (if (= :play status) stop play)
+                                    :style    {:margin         10
+                                               :display        "flex"
+                                               :flex-direction "row"}}
+                 [fa-icon {:name  "microphone"
+                           :size  30
+                           :style {:color       (if (= :play status) "#66F" "#999")
+                                   :margin-left 25}}]
+                 [text {:style {:color       "#0078e7"
+                                :font-size   30
+                                :margin-left 25
+                                :font-family "Courier"}}
+                  (if (= :play status) "Stop" "Play")]
+                 [text {:style {:font-size    30
+                                :color        "#888"
+                                :font-weight  "100"
+                                :margin-left  50
+                                :margin-right 25
+                                :font-family  "Courier"}}
+                  pos]]))]
+           (when (:entry-pprint @cfg)
+             [text {:style {:margin-top 4
+                            :color      "white"
+                            :text-align "left"
+                            :font-size  8}}
+              (with-out-str (pp/pprint entry))])]]]))))
 
 (def journal-stack
   (createStackNavigator

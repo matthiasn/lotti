@@ -9,39 +9,12 @@
             [meins.ui.shared :refer [view text fa-icon]]
             [meins.ui.settings :as s]
             [meins.ui.db :as db]
-            [meins.ui.colors :as c]
+            [meins.ui.styles :as styles]
             [meins.ui.photos :as photos]
             [meins.ui.journal :as jrn]
             [meins.ui.editor :as ue]))
 
-(def put-fn-atom (r/atom nil))
 (reg-sub :active-theme (fn [_db _] :dark))
-
-(def instructions
-  (.select Platform
-           (clj->js {:ios     " Press Cmd+R to reload, Cmd+D or shake for dev menu"
-                     :android " Double tap R on your keyboard to reload,\n Shake or press menu button for dev menu"})))
-
-(def styles
-  {:container    {:flex            1
-                  :justifyContent  "center"
-                  :alignItems      "center"
-                  :backgroundColor "#445"}
-   :welcome      {:fontSize    44
-                  :font-weight "bold"
-                  :color       "#FF8C00"
-                  :textAlign   "center"
-                  :margin      10}
-   :instructions {:textAlign    "center"
-                  :color        "rgb(66, 184, 221)"
-                  :marginBottom 5}})
-
-(defn add-screen []
-  [view {:style (:container styles)}
-   [text {:style (:welcome styles)}
-    "Add Screen"]
-   [text {:style (:instructions styles)}
-    instructions]])
 
 (def local (r/atom {:cam       false
                     :contacts  (clj->js [])
@@ -66,7 +39,7 @@
 
 (defn put-fn [])
 
-(def bg (get-in c/colors [:nav-bg :dark]))
+(def bg (get-in styles/colors [:nav-bg :dark]))
 
 (defn opts [title]
   {:title            title
@@ -105,7 +78,6 @@
   (createAppContainer app-nav))
 
 (defn state-fn [put-fn]
-  (reset! put-fn-atom put-fn)
   (reset! db/emit-atom put-fn)
   {:observed rdb/app-db})
 

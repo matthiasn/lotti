@@ -1,5 +1,5 @@
 (ns meins.ui.settings.sync
-  (:require [meins.ui.colors :as c]
+  (:require [meins.ui.styles :as styles]
             [meins.ui.shared :refer [scroll view settings-list alert cam text settings-list-item status-bar]]
             [meins.ui.elements.qr :as qr]
             [meins.util.keychain :as kc]
@@ -38,9 +38,9 @@
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [_props]
-      (let [bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:button-bg @theme])
-            text-color (get-in c/colors [:btn-text @theme])]
+      (let [bg (get-in styles/colors [:list-bg @theme])
+            item-bg (get-in styles/colors [:button-bg @theme])
+            text-color (get-in styles/colors [:btn-text @theme])]
         [scroll {:style {:flex-direction   "column"
                          :padding-top      10
                          :background-color bg

@@ -1,5 +1,5 @@
 (ns meins.ui.settings.dev
-  (:require [meins.ui.colors :as c]
+  (:require [meins.ui.styles :as styles]
             [meins.ui.shared :refer [view settings-list settings-list-item status-bar]]
             [re-frame.core :refer [subscribe]]
             [meins.ui.db :refer [emit]]))
@@ -10,9 +10,9 @@
         toggle-pvt #(emit [:cfg/set {:show-pvt (not (:show-pvt @cfg))}])
         toggle-debug #(emit [:cfg/set {:entry-pprint (not (:entry-pprint @cfg))}])]
     (fn [{:keys [_navigation] :as _props}]
-      (let [bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:button-bg @theme])
-            text-color (get-in c/colors [:btn-text @theme])]
+      (let [bg (get-in styles/colors [:list-bg @theme])
+            item-bg (get-in styles/colors [:button-bg @theme])
+            text-color (get-in styles/colors [:btn-text @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg

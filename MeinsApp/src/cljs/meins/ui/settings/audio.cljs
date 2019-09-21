@@ -1,5 +1,5 @@
 (ns meins.ui.settings.audio
-  (:require [meins.ui.colors :as c]
+  (:require [meins.ui.styles :as styles]
             [meins.ui.shared :refer [view text settings-list settings-list-item settings-icon
                                      rn-audio-recorder-player alert status-bar platform-os]]
             [re-frame.core :refer [subscribe]]
@@ -55,9 +55,9 @@
                                 :audio_file (:file @player-state)}]
                      (h/new-entry-fn emit entry)
                      (reset! player-state {:pos 0 :status :paused})))
-            bg (get-in c/colors [:list-bg @theme])
-            item-bg (get-in c/colors [:text-bg @theme])
-            text-color (get-in c/colors [:text @theme])
+            bg (get-in styles/colors [:list-bg @theme])
+            item-bg (get-in styles/colors [:text-bg @theme])
+            text-color (get-in styles/colors [:text @theme])
             status (:status @player-state)
             pos (h/mm-ss (.floor js/Math (:pos @player-state)))
             dur (h/mm-ss (.floor js/Math (:dur @player-state)))
