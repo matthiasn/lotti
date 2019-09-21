@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.87",
+  "version": "1.0.88",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -53,7 +53,7 @@
     "react-navigation-stack": "1.8.0",
     "react-navigation-tabs": "2.5.4",
     "react-navigation-transitions": "1.0.12",
-    "realm": "3.0.0",
+    "realm": "3.1.0",
     "s": "1.0.0",
     "stream": "0.0.2",
     "timers": "0.1.1",
