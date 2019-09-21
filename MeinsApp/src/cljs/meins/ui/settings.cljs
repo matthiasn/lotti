@@ -15,24 +15,9 @@
 
 (def bg (get-in styles/colors [:list-bg :dark]))
 
-(def local (r/atom {:cam       false
-                    :contacts  (clj->js [])
-                    :active    "journal"}))
-
-(defn nav-options [icon-name _size]
-  {:tabBarOnPress (fn [ev]
-                    (let [ev (js->clj ev :keywordize-keys true)
-                          navigate (-> ev :navigation :navigate)
-                          route-name (-> ev :navigation :state :routeName)]
-                      (swap! local assoc :active route-name)
-                      (navigate route-name)))
-   :tabBarIcon    (fn [m]
-                    (let [m (js->clj m :keywordize-keys true)]
-                      (r/as-element
-                        [fa-icon {:name             icon-name
-                                  :size             22
-                                  :background-color bg
-                                  :color            (:tintColor m)}])))})
+(def local (r/atom {:cam      false
+                    :contacts (clj->js [])
+                    :active   "journal"}))
 
 (defn settings-wrapper [_props]
   (let [theme (subscribe [:active-theme])]
@@ -52,7 +37,6 @@
            {:headerText       "Settings"
             :background-color item-bg
             :headerStyle      {:color       header-color
-                               :font-weight 300
                                :text-align  "center"
                                :font-size   24}}]
           [settings-list-item
