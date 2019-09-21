@@ -14,6 +14,7 @@
             [meins.electron.renderer.ui.entry.cfg.habit :as habit]
             [meins.electron.renderer.ui.entry.cfg.album :as ca]
             [meins.electron.renderer.ui.entry.cfg.dashboard :as db]
+            [meins.electron.renderer.ui.entry.debug :as dbg]
             [meins.electron.renderer.ui.entry.cfg.custom-field :as cfc]
             [meins.electron.renderer.ui.entry.reward :as reward]
             [meins.electron.renderer.ui.entry.story :as es]
@@ -189,14 +190,7 @@
          [m/imdb-view merged]
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]
-         (when (:debug @local)
-           [:div.debug
-            [:h3 "from backend"]
-            [dex/data-explorer2 entry]
-            [:h3 "@new-entry"]
-            [dex/data-explorer2 @new-entry]
-            [:h3 "diff"]
-            [dex/data-explorer2 (cd/diff entry @new-entry)]])]))))
+         (dbg/debug-view entry new-entry local)]))))
 
 (defn entry-with-comments
   "Renders individual journal entry. Interaction with application state happens

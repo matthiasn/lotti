@@ -243,9 +243,7 @@
                                     emit)))
         mouse-enter #(reset! visible true)]
     (fn entry-actions-render [entry local edit-mode? toggle-edit local-cfg]
-      (let [toggle-debug (fn [_]
-                           (pp/pprint entry)
-                           (swap! local update-in [:debug] not))
+      (let [toggle-debug (fn [_] (swap! local update-in [:debug] not))
             {:keys [latitude longitude]} entry
             map? (and latitude longitude
                       (not (and (zero? latitude)
