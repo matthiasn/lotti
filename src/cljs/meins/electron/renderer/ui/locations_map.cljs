@@ -26,6 +26,7 @@
                                                             :coordinates]]
                                                 [:properties [:activity
                                                               :data
+                                                              :accuracy
                                                               :timestamp
                                                               :entry_type]]]])
                      :res-hash nil
@@ -118,18 +119,18 @@
 
 (defn add-line [mb-map prev-point points]
   (let [point-mapper (fn [p] (->> p :geometry :coordinates (take 2) vec))
-        coords (map point-mapper points)
-        coordinates (if prev-point
-                      (conj coords (point-mapper prev-point))
-                      coords)
         color (activity-color (-> points first :properties :activity))
+        points (if prev-point
+                 (conj points prev-point)
+                 points)
+        coords (map point-mapper points)
         data {:type   "line"
               :id     (str (stc/make-uuid))
               :source {:type "geojson"
                        :data {:type       "Feature"
                               :properties {}
                               :geometry   {:type        "LineString"
-                                           :coordinates coordinates}}}
+                                           :coordinates coords}}}
               :layout {:line-join "round"
                        :line-cap  "round"}
               :paint  {:line-color color
@@ -137,9 +138,13 @@
     (.addLayer mb-map (->js data))))
 
 (defn add-lines [mb-map features]
-  (let [by-activity (->> features
-                         (partition-by #(-> % :properties :activity))
-                         (filter #(-> % first :properties :activity)))]
+  (let [accuracy-filter #(let [accuracy (-> % :properties :accuracy)]
+                           (info accuracy)
+                           (and accuracy (< accuracy 250)))
+        by-activity (->> features
+                         (filter accuracy-filter)
+                         (partition-by #(-> % :properties :activity ))
+                         (filter #(-> % first :properties :activity )))]
     (dotimes [n (count by-activity)]
       (let [points (nth by-activity n)
             prev (when (pos? n)

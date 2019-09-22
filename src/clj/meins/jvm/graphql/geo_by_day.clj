@@ -21,11 +21,12 @@
     (mapv
       (fn [{:keys [timestamp coords activity] :as data}]
         (let [ts (ctc/to-long timestamp)
-              {:keys [longitude latitude altitude]} coords]
+              {:keys [longitude latitude altitude accuracy]} coords]
           {:type       "Feature"
            :properties {:timestamp  ts
                         :entry_type :bg-geo
                         :activity   (:type activity)
+                        :accuracy   accuracy
                         :data       (pr-str data)}
            :geometry   {:type        "Point"
                         :coordinates [longitude latitude altitude]}}))
@@ -46,5 +47,6 @@
         features2 (flatten (filter identity (map entry-fmt-bg-geo day-nodes-attrs)))
         res (->> (concat features features2)
                  (filter #(< (-> % :properties :timestamp) to-ts))
-                 (filter #(> (-> % :properties :timestamp) from-ts)))]
+                 (filter #(> (-> % :properties :timestamp) from-ts))
+                 (sort-by #(-> % :properties :timestamp)))]
     res))

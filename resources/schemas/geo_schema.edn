@@ -4,7 +4,8 @@
    :fields      {:timestamp  {:type (non-null ID)}
                  :entry_type {:type String}
                  :data       {:type String}
-                 :activity   {:type String}}}
+                 :activity   {:type String}
+                 :accuracy   {:type Float}}}
   :GeoGeometry
   {:description "GeoJSON geometry"
    :fields      {:coordinates {:type (list Float)}
