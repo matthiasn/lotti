@@ -33,16 +33,16 @@
 
 (defn infinite-cal-search [local]
   (let [on-select (fn [ev]
-                   (let [selected (js->clj ev :keywordize-keys true)
-                         start (h/ymd (:start selected))
-                         end (h/ymd (:end selected))
-                         sel {:start start
-                              :end   end}]
-                     (swap! local assoc-in [:selected] sel)
-                     (when (= (:eventType selected) 3)
-                       (swap! local merge {:from start
-                                           :to   end})
-                       (query local))))]
+                    (let [selected (js->clj ev :keywordize-keys true)
+                          start (h/ymd (:start selected))
+                          end (h/ymd (:end selected))
+                          sel {:start start
+                               :end   end}]
+                      (swap! local assoc-in [:selected] sel)
+                      (when (= (:eventType selected) 3)
+                        (swap! local merge {:from start
+                                            :to   end})
+                        (query local))))]
     (fn [local]
       (let [selected (:selected @local)]
         [:div.infinite-cal-search
@@ -59,7 +59,7 @@
   {:id     "points"
    :type   "circle"
    :source "locations"
-   :paint  {:circle-radius 6
+   :paint  {:circle-radius 4
             :circle-color  ["match"
                             ["get" "activity"]
                             "on_foot" "green"
@@ -106,6 +106,46 @@
         (.extend bounds (LngLat. lng lat))))
     (.fitBounds mb-map bounds (->js {:padding 50}))))
 
+(defn activity-color [activity]
+  (case activity
+    "on_foot" "green"
+    "walking" "darkgreen"
+    "running" "red"
+    "in_vehicle" "blue"
+    "on_bicycle" "orange"
+    "still" "#AAA"
+    "#888"))
+
+(defn add-line [mb-map prev-point points]
+  (let [point-mapper (fn [p] (->> p :geometry :coordinates (take 2) vec))
+        coords (map point-mapper points)
+        coordinates (if prev-point
+                      (conj coords (point-mapper prev-point))
+                      coords)
+        color (activity-color (-> points first :properties :activity))
+        data {:type   "line"
+              :id     (str (stc/make-uuid))
+              :source {:type "geojson"
+                       :data {:type       "Feature"
+                              :properties {}
+                              :geometry   {:type        "LineString"
+                                           :coordinates coordinates}}}
+              :layout {:line-join "round"
+                       :line-cap  "round"}
+              :paint  {:line-color color
+                       :line-width 4}}]
+    (.addLayer mb-map (->js data))))
+
+(defn add-lines [mb-map features]
+  (let [by-activity (->> features
+                         (partition-by #(-> % :properties :activity))
+                         (filter #(-> % first :properties :activity)))]
+    (dotimes [n (count by-activity)]
+      (let [points (nth by-activity n)
+            prev (when (pos? n)
+                   (last (nth by-activity (dec n))))]
+        (add-line mb-map prev points)))))
+
 (defn heatmap-did-mount [props]
   (fn []
     (let [{:keys [local features]} props
@@ -121,6 +161,7 @@
                        :features features}}
           loaded (fn []
                    (.addSource mb-map "locations" (clj->js data))
+                   (add-lines mb-map features)
                    (add-layers mb-map))
           hide-gallery #(swap! local assoc-in [:gallery] false)
           popup (Popup. (->js {:closeButton  false
@@ -206,11 +247,11 @@
         gql-res (subscribe [:gql-res])
         res (reaction (get-in @gql-res [query-id :data query-type]))
         local (r/atom {:query-id query-id
-                       :zoom    5
-                       :lng     10.1
-                       :lat     53.56
-                       :from    (h/ymd (stc/now))
-                       :to      (h/ymd (stc/now))})
+                       :zoom     5
+                       :lng      10.1
+                       :lat      53.56
+                       :from     (h/ymd (stc/now))
+                       :to       (h/ymd (stc/now))})
         render (fn [props] [map-render local res])
         cleanup #(emit [:gql/remove {:query-id query-id}])]
     (query local)
