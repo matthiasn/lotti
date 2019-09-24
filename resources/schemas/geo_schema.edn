@@ -3,6 +3,7 @@
   {:description "GeoJSON properties"
    :fields      {:timestamp  {:type (non-null ID)}
                  :entry_type {:type String}
+                 :entry      {:type :Entry}
                  :data       {:type String}
                  :activity   {:type String}
                  :accuracy   {:type Float}}}

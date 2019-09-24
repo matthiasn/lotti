@@ -12,7 +12,8 @@
     (when (and latitude longitude)
       {:type       "Feature"
        :properties {:timestamp  timestamp
-                    :entry_type (or entry_type :entry)}
+                    :entry_type (or entry_type :entry)
+                    :entry      entry}
        :geometry   {:type        "Point"
                     :coordinates [longitude latitude 0.0]}})))
 

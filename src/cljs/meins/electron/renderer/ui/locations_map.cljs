@@ -8,6 +8,7 @@
             [cljs-bean.core :refer [bean ->clj ->js]]
             ["mapbox-gl" :refer [Map Popup LngLat LngLatBounds] :as mapbox-gl]
             ["moment" :as moment]
+            [markdown.core :as mc]
             [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.graphql :as gql]
@@ -26,6 +27,10 @@
                                                             :coordinates]]
                                                 [:properties [:activity
                                                               :data
+                                                              [:entry [:md
+                                                                       :timestamp
+                                                                       :img_file
+                                                                       :img_rel_path]]
                                                               :accuracy
                                                               :timestamp
                                                               :entry_type]]]])
@@ -71,6 +76,13 @@
                             "still" "#AAA"
                             "#888"]}})
 
+(def img-points-cfg
+  {:id     "images"
+   :type   "circle"
+   :source "images"
+   :paint  {:circle-radius 6
+            :circle-color  "#C9B037"}})
+
 (def buildings-cfg
   {:id           "3d-buildings"
    :source       "composite"
@@ -96,7 +108,8 @@
    :satellite-streets "mapbox://styles/mapbox/satellite-streets-v11"})
 
 (defn add-layers [mb-map]
-  (.addLayer mb-map (clj->js points-cfg))
+  ;(.addLayer mb-map (clj->js points-cfg))
+  (.addLayer mb-map (clj->js img-points-cfg))
   #_(.addLayer mb-map (clj->js buildings-cfg)))
 
 (defn zoom-bounds [local features _]
@@ -133,23 +146,29 @@
                                            :coordinates coords}}}
               :layout {:line-join "round"
                        :line-cap  "round"}
-              :paint  {:line-color color
-                       :line-width 4}}]
+              :paint  {:line-color   color
+                       :line-opacity 0.6
+                       :line-width   5}}]
     (.addLayer mb-map (->js data))))
 
 (defn add-lines [mb-map features]
   (let [accuracy-filter #(let [accuracy (-> % :properties :accuracy)]
-                           (info accuracy)
                            (and accuracy (< accuracy 250)))
         by-activity (->> features
                          (filter accuracy-filter)
-                         (partition-by #(-> % :properties :activity ))
-                         (filter #(-> % first :properties :activity )))]
+                         (partition-by #(-> % :properties :activity))
+                         (filter #(-> % first :properties :activity)))]
     (dotimes [n (count by-activity)]
       (let [points (nth by-activity n)
             prev (when (pos? n)
                    (last (nth by-activity (dec n))))]
         (add-line mb-map prev points)))))
+
+(defn img-url [url md]
+  (str "<div class='entry map-entry'>"
+       "<img style='width:100%' src='" url "'></img>"
+       "<p>" (:html (mc/md-to-html-string* md {})) "</p>"
+       "</div>"))
 
 (defn heatmap-did-mount [props]
   (fn []
@@ -161,11 +180,16 @@
                 :pitch     0
                 :style     (:dark styles)}
           mb-map (Map. (clj->js opts))
+          img-features (filter #(-> % :properties :entry :img_file) features)
           data {:type "geojson"
                 :data {:type     "FeatureCollection"
                        :features features}}
+          img-data {:type "geojson"
+                    :data {:type     "FeatureCollection"
+                           :features img-features}}
           loaded (fn []
                    (.addSource mb-map "locations" (clj->js data))
+                   (.addSource mb-map "images" (clj->js img-data))
                    (add-lines mb-map features)
                    (add-layers mb-map))
           hide-gallery #(swap! local assoc-in [:gallery] false)
@@ -186,6 +210,21 @@
                               (.setLngLat coords)
                               (.setHTML html)
                               (.addTo mb-map))))
+          mouse-enter-img (fn [e]
+                            (let [canvas (.getCanvas mb-map)
+                                  feature (aget e "features" 0)
+                                  coords (aget feature "geometry" "coordinates")
+                                  entry (aget feature "properties" "entry")
+                                  entry (js/JSON.parse entry)
+                                  img_file (.-img_file entry)
+                                  md (.-md entry)
+                                  url (str "file://" (h/thumbs-512 img_file))
+                                  html (img-url url md)]
+                              (aset canvas "style" "cursor" "pointer")
+                              (-> popup
+                                  (.setLngLat coords)
+                                  (.setHTML html)
+                                  (.addTo mb-map))))
           zoom-bounds (partial zoom-bounds local features)]
       (swap! local assoc-in [:mb-map] mb-map)
       (aset js/window "heatmap" mb-map)
@@ -196,8 +235,10 @@
                                             :lat  (aget e "target" "transform" "_center" "lat")
                                             :lng  (aget e "target" "transform" "_center" "lng")}]
                                 (swap! local merge coords))))
-      (.on mb-map "mouseenter" "points" mouse-enter)
-      (.on mb-map "mouseleave" "points" mouse-leave)
+      ;(.on mb-map "mouseenter" "points" mouse-enter)
+      ;(.on mb-map "mouseleave" "points" mouse-leave)
+      (.on mb-map "mouseenter" "images" mouse-enter-img)
+      (.on mb-map "mouseleave" "images" mouse-leave)
       (js/setTimeout zoom-bounds 1000))))
 
 (defn heatmap-cls [props]
