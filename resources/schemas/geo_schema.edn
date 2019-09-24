@@ -15,11 +15,30 @@
   {:description "GeoJSON Feature"
    :fields      {:type       {:type String}
                  :properties {:type :GeoProperties}
-                 :geometry   {:type :GeoGeometry}}}}
+                 :geometry   {:type :GeoGeometry}}}
+  :GeoLineProperties
+  {:description "GeoJSON Line Properties"
+   :fields      {:activity {:type String}}}
+  :GeoLineGeometry
+  {:description "GeoJSON Line Geometry"
+   :fields      {:coordinates {:type (list (list Float))}
+                 :type        {:type String}}}
+  :GeoLineFeature
+  {:description "GeoJSON Line Feature"
+   :fields      {:type       {:type String}
+                 :properties {:type :GeoLineProperties}
+                 :geometry   {:type :GeoLineGeometry}}}}
  :queries
  {:locations_by_days
   {:type        (list :GeoFeature)
    :description "List of geo coordinated between from and to."
    :args        {:from {:type String}
                  :to   {:type String}}
-   :resolve     :query/locations-by-days}}}
+   :resolve     :query/locations-by-days}
+  :lines_by_days
+  {:type        (list :GeoLineFeature)
+   :description "List of geo coordinated between from and to."
+   :args        {:from     {:type String}
+                 :to       {:type String}
+                 :accuracy {:type Int}}
+   :resolve     :query/lines-by-days}}}

@@ -97,6 +97,7 @@
              :query/questionnaires-by-days    gms/questionnaires-by-days
              :query/award-points              gms/award-points
              :query/locations-by-days         geo/geo-by-days
+             :query/lines-by-days             geo/geo-lines-by-days
              :query/briefing                  gbl/briefing}))
         schema/compile)))
 

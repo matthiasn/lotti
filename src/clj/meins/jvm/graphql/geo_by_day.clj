@@ -51,3 +51,32 @@
                  (filter #(> (-> % :properties :timestamp) from-ts))
                  (sort-by #(-> % :properties :timestamp)))]
     res))
+
+(defn line-mapper [by-activity idx]
+  (let [points (nth by-activity idx)
+        prev-point (when (pos? idx)
+                     (last (nth by-activity (dec idx))))
+        point-mapper (fn [p] (->> p :geometry :coordinates (take 2) vec))
+        points (if prev-point
+                 (conj points prev-point)
+                 points)
+        activity (-> points last :properties :activity)
+        coords (map point-mapper points)]
+    {:type       "Feature"
+     :properties {:activity activity}
+     :geometry   {:type        "LineString"
+                  :coordinates coords}}))
+
+(defn geo-lines-by-days
+  [state _context args _value]
+  (let [{:keys [accuracy] :as m} args
+        accuracy (or accuracy 250)
+        res (geo-by-days state _context args _value)
+        accuracy-filter #(let [actual-accuracy (-> % :properties :accuracy)]
+                           (and actual-accuracy (< actual-accuracy accuracy)))
+        by-activity (->> res
+                         (filter accuracy-filter)
+                         (partition-by #(-> % :properties :activity))
+                         (filter #(-> % first :properties :activity)))
+        lines (range (count by-activity))]
+    (mapv (partial line-mapper by-activity) lines)))

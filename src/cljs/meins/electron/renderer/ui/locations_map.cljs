@@ -18,7 +18,7 @@
             [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
 
 (defn query [local]
-  (emit [:gql/query {:id       (:query-id @local)
+  (emit [:gql/query {:id       :location-map
                      :q        (gql/gen-query [:locations_by_days
                                                {:from (:from @local)
                                                 :to   (:to @local)}
@@ -34,6 +34,19 @@
                                                               :accuracy
                                                               :timestamp
                                                               :entry_type]]]])
+                     :res-hash nil
+                     :prio     15}]))
+
+(defn line-query [local]
+  (emit [:gql/query {:id       :location-map-lines
+                     :q        (gql/gen-query [:lines_by_days
+                                               {:from     (:from @local)
+                                                :to       (:to @local)
+                                                :accuracy 250}
+                                               [:type
+                                                [:geometry [:type
+                                                            :coordinates]]
+                                                [:properties [:activity]]]])
                      :res-hash nil
                      :prio     15}]))
 
@@ -130,20 +143,12 @@
     "still" "#AAA"
     "#888"))
 
-(defn add-line [mb-map prev-point points]
-  (let [point-mapper (fn [p] (->> p :geometry :coordinates (take 2) vec))
-        color (activity-color (-> points first :properties :activity))
-        points (if prev-point
-                 (conj points prev-point)
-                 points)
-        coords (map point-mapper points)
+(defn add-line [mb-map line-data]
+  (let [color (activity-color (-> line-data :properties :activity))
         data {:type   "line"
               :id     (str (stc/make-uuid))
               :source {:type "geojson"
-                       :data {:type       "Feature"
-                              :properties {}
-                              :geometry   {:type        "LineString"
-                                           :coordinates coords}}}
+                       :data line-data}
               :layout {:line-join "round"
                        :line-cap  "round"}
               :paint  {:line-color   color
@@ -151,18 +156,9 @@
                        :line-width   5}}]
     (.addLayer mb-map (->js data))))
 
-(defn add-lines [mb-map features]
-  (let [accuracy-filter #(let [accuracy (-> % :properties :accuracy)]
-                           (and accuracy (< accuracy 250)))
-        by-activity (->> features
-                         (filter accuracy-filter)
-                         (partition-by #(-> % :properties :activity))
-                         (filter #(-> % first :properties :activity)))]
-    (dotimes [n (count by-activity)]
-      (let [points (nth by-activity n)
-            prev (when (pos? n)
-                   (last (nth by-activity (dec n))))]
-        (add-line mb-map prev points)))))
+(defn add-lines [mb-map lines-res]
+  (doseq [line-data lines-res]
+    (add-line mb-map line-data)))
 
 (defn img-url [url md]
   (str "<div class='entry map-entry'>"
@@ -172,13 +168,13 @@
 
 (defn heatmap-did-mount [props]
   (fn []
-    (let [{:keys [local features]} props
+    (let [{:keys [local features line-features]} props
           {:keys [zoom lat lng]} @local
           opts {:container "heatmap"
                 :zoom      zoom
                 :center    [lng lat]
                 :pitch     0
-                :style     (:dark styles)}
+                :style     (:mineral styles)}
           mb-map (Map. (clj->js opts))
           img-features (filter #(-> % :properties :entry :img_file) features)
           data {:type "geojson"
@@ -190,7 +186,7 @@
           loaded (fn []
                    (.addSource mb-map "locations" (clj->js data))
                    (.addSource mb-map "images" (clj->js img-data))
-                   (add-lines mb-map features)
+                   (add-lines mb-map line-features)
                    (add-layers mb-map))
           hide-gallery #(swap! local assoc-in [:gallery] false)
           popup (Popup. (->js {:closeButton  false
@@ -255,7 +251,7 @@
   ^{:key (stc/make-uuid)}
   [heatmap-cls props])
 
-(defn map-render [local res]
+(defn map-render [local res lines-res]
   (let [backend-cfg (subscribe [:backend-cfg])]
     (fn []
       (let [mapbox-token (:mapbox-token @backend-cfg)]
@@ -279,8 +275,9 @@
              [:button {:on-click (partial zoom-bounds local @res)
                        :style    {:margin-left 20}}
               "fit bounds"]]
-            [map-view {:local    local
-                       :features @res}]]]
+            [map-view {:local         local
+                       :features      @res
+                       :line-features @lines-res}]]]
           [:div.flex-container
            [:div.error
             [:h1
@@ -288,18 +285,19 @@
              "mapbox access token not found"]]])))))
 
 (defn locations-map []
-  (let [query-id :location-map
-        query-type :locations_by_days
-        gql-res (subscribe [:gql-res])
-        res (reaction (get-in @gql-res [query-id :data query-type]))
-        local (r/atom {:query-id query-id
-                       :zoom     5
-                       :lng      10.1
-                       :lat      53.56
-                       :from     (h/ymd (stc/now))
-                       :to       (h/ymd (stc/now))})
-        render (fn [props] [map-render local res])
-        cleanup #(emit [:gql/remove {:query-id query-id}])]
+  (let [gql-res (subscribe [:gql-res])
+        res (reaction (get-in @gql-res [:location-map :data :locations_by_days]))
+        lines-res (reaction (get-in @gql-res [:location-map-lines :data :lines_by_days]))
+        local (r/atom {:zoom 5
+                       :lng  10.1
+                       :lat  53.56
+                       :from (h/ymd (stc/now))
+                       :to   (h/ymd (stc/now))})
+        render (fn [props] [map-render local res lines-res])
+        cleanup #(do
+                   (emit [:gql/remove {:query-id :location-map}])
+                   (emit [:gql/remove {:query-id :location-map-lines}]))]
     (query local)
+    (line-query local)
     (r/create-class {:component-will-unmount cleanup
                      :reagent-render         render})))
