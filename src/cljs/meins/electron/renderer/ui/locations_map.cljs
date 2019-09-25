@@ -281,8 +281,7 @@
         gql-res (subscribe [:gql-res])
         data (reaction (get-in @gql-res [:locations-map :data]))]
     (fn []
-      (let [mapbox-token (:mapbox-token @backend-cfg)
-            points (:locations_by_days @data)]
+      (let [mapbox-token (:mapbox-token @backend-cfg)]
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
           [:div.flex-container
@@ -296,10 +295,7 @@
                                       (swap! local assoc :style k)))}
               (for [[k _style-url] styles]
                 ^{:key k}
-                [:option k])]
-             [:button {:on-click (partial zoom-bounds local points)
-                       :style    {:margin-left 20}}
-              "fit bounds"]]
+                [:option k])]]
             [map-view {:local local
                        :data  @data}]]]
           [:div.flex-container
