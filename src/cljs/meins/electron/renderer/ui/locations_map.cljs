@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.locations-map
   (:require [reagent.core :as r]
+            [reagent.impl.component :as ric]
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer-macros [info error debug]]
@@ -90,6 +91,16 @@
                             "still" "#AAA"
                             "#888"]}})
 
+(def lines-cfg
+  {:id     "lines"
+   :type   "line"
+   :source "lines"
+   :layout {:line-join "round"
+            :line-cap  "round"}
+   :paint  {:line-width   6
+            :line-opacity 0.6
+            :line-color   ["get" "color"]}})
+
 (def img-points-cfg
   {:id     "images"
    :type   "circle"
@@ -148,19 +159,14 @@
   (let [color (activity-color (-> line-data :properties :activity))]
     (assoc-in line-data [:properties :color] color)))
 
-(defn add-lines [mb-map lines-res]
-  (let [line-features (map line-feature-mapper lines-res)
-        layer-data {:id     "lines"
-                    :type   "line"
-                    :source {:type "geojson"
-                             :data {:type     "FeatureCollection"
-                                    :features line-features}}
-                    :layout {:line-join "round"
-                             :line-cap  "round"}
-                    :paint  {:line-width   6
-                             :line-opacity 0.6
-                             :line-color   ["get" "color"]}}]
-    (.addLayer mb-map (->js layer-data))))
+(defn line-data [line-res]
+  (let [line-features (map line-feature-mapper line-res)]
+    {:type     "FeatureCollection"
+     :features line-features}))
+
+(defn line-source [line-res]
+  {:type "geojson"
+   :data (line-data line-res)})
 
 (defn img-url [url md]
   (str "<div class='entry map-entry'>"
@@ -168,26 +174,30 @@
        "<p>" (:html (mc/md-to-html-string* md {})) "</p>"
        "</div>"))
 
+(defn img-data [features]
+  (let [img-features (filter #(-> % :properties :entry :img_file) features)]
+    {:type     "FeatureCollection"
+     :features img-features}))
+
 (defn map-did-mount [props]
   (fn []
     (let [{:keys [local data]} props
           {:keys [zoom lat lng]} @local
           features (:locations_by_days data)
-          line-features (:lines_by_days data)
+          line-res (:lines_by_days data)
           opts {:container "heatmap"
                 :zoom      zoom
                 :center    [lng lat]
                 :pitch     0
                 :style     (:mineral styles)}
           mb-map (Map. (clj->js opts))
-          img-features (filter #(-> % :properties :entry :img_file) features)
-          img-data {:type "geojson"
-                    :data {:type     "FeatureCollection"
-                           :features img-features}}
+          img-features {:type "geojson"
+                        :data (img-data features)}
           loaded (fn []
-                   (.addSource mb-map "images" (clj->js img-data))
-                   (time (add-lines mb-map line-features))
-                   (add-layers mb-map))
+                   (.addSource mb-map "images" (->js img-features))
+                   (.addSource mb-map "lines" (->js (line-source line-res)))
+                   (.addLayer mb-map (->js lines-cfg))
+                   (.addLayer mb-map (->js img-points-cfg)))
           hide-gallery #(swap! local assoc-in [:gallery] false)
           popup (Popup. (->js {:closeButton  false
                                :closeOnClick false}))
@@ -237,18 +247,31 @@
       (.on mb-map "mouseleave" "images" mouse-leave)
       (js/setTimeout zoom-bounds 1000))))
 
+(defn will-receive-props [_this props]
+  (let [{:keys [local data]} (ric/extract-props props)
+        mb-map (:mb-map @local)
+        features (:locations_by_days data)
+        img-features (->js (img-data features))
+        lines (->js (line-data (:lines_by_days data)))
+        zoom-bounds (partial zoom-bounds local features)]
+    (when-let [line-src (.getSource mb-map "lines")]
+      (.setData line-src lines))
+    (when-let [img-src (.getSource mb-map "images")]
+      (.setData img-src img-features)
+      (js/setTimeout zoom-bounds 1000))))
+
 (defn map-cls [props]
   (r/create-class
-    {:component-did-mount (map-did-mount props)
-     :reagent-render      (fn [props]
-                            (let [{:keys [local]} props]
-                              [:div#heatmap {:style {:width            "100vw"
-                                                     :height           "100vh"
-                                                     :background-color "#333"}}]))}))
+    {:component-did-mount          (map-did-mount props)
+     :component-will-receive-props will-receive-props
+     :reagent-render               (fn [props]
+                                     (let [{:keys [local]} props]
+                                       [:div#heatmap {:style {:width            "100vw"
+                                                              :height           "100vh"
+                                                              :background-color "#333"}}]))}))
 
 (defn map-view [props]
   (info "Location map render")
-  ^{:key (stc/make-uuid)}
   [map-cls props])
 
 (defn map-render [local]
