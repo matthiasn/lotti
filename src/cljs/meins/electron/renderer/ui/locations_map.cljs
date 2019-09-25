@@ -182,14 +182,15 @@
 (defn map-did-mount [props]
   (fn []
     (let [{:keys [local data]} props
-          {:keys [zoom lat lng]} @local
+          {:keys [zoom lat lng style]} @local
           features (:locations_by_days data)
           line-res (:lines_by_days data)
+          style (get styles style)
           opts {:container "heatmap"
                 :zoom      zoom
                 :center    [lng lat]
                 :pitch     0
-                :style     (:mineral styles)}
+                :style     style}
           mb-map (Map. (clj->js opts))
           img-features {:type "geojson"
                         :data (img-data features)}
@@ -272,6 +273,7 @@
 
 (defn map-view [props]
   (info "Location map render")
+  ^{:key (:style @(:local props))}
   [map-cls props])
 
 (defn map-render [local]
@@ -287,17 +289,14 @@
            [:div.heatmap
             [:div.ctrl
              [infinite-cal-search local]
-             [:select {:value     :dark
+             [:select {:value     (:style @local)
                        :style     {:padding-right 20}
                        :on-change (fn [ev]
-                                    (let [tv (h/target-val ev)
-                                          mb-map (:mb-map @local)]
-                                      (info tv)
-                                      (.setStyle mb-map tv)
-                                      (add-layers mb-map)))}
-              (for [[k style-url] styles]
+                                    (let [k (keyword (h/target-val ev))]
+                                      (swap! local assoc :style k)))}
+              (for [[k _style-url] styles]
                 ^{:key k}
-                [:option {:value style-url} k])]
+                [:option k])]
              [:button {:on-click (partial zoom-bounds local points)
                        :style    {:margin-left 20}}
               "fit bounds"]]
@@ -310,11 +309,12 @@
              "mapbox access token not found"]]])))))
 
 (defn locations-map []
-  (let [local (r/atom {:zoom 5
-                       :lng  10.1
-                       :lat  53.56
-                       :from (h/ymd (stc/now))
-                       :to   (h/ymd (stc/now))})
+  (let [local (r/atom {:zoom  5
+                       :lng   10.1
+                       :lat   53.56
+                       :style :mineral
+                       :from  (h/ymd (stc/now))
+                       :to    (h/ymd (stc/now))})
         render (fn [props] [map-render local])
         cleanup #(emit [:gql/remove {:query-id :locations-map}])]
     (queries local)

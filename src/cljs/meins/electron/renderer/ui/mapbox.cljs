@@ -8,7 +8,6 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.impl.component :as ric]))
 
-
 (defn mapbox-did-mount [props]
   (let [cfg (subscribe [:cfg])
         satellite (reaction (:satellite-view @cfg))]
