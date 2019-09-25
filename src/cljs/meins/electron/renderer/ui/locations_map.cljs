@@ -142,24 +142,25 @@
     "in_vehicle" "blue"
     "on_bicycle" "orange"
     "still" "#AAA"
-    "#888"))
+    "deeppink"))
 
-(defn add-line [mb-map line-data]
-  (let [color (activity-color (-> line-data :properties :activity))
-        data {:type   "line"
-              :id     (str (stc/make-uuid))
-              :source {:type "geojson"
-                       :data line-data}
-              :layout {:line-join "round"
-                       :line-cap  "round"}
-              :paint  {:line-color   color
-                       :line-opacity 0.6
-                       :line-width   5}}]
-    (.addLayer mb-map (->js data))))
+(defn line-feature-mapper [line-data]
+  (let [color (activity-color (-> line-data :properties :activity))]
+    (assoc-in line-data [:properties :color] color)))
 
 (defn add-lines [mb-map lines-res]
-  (doseq [line-data lines-res]
-    (add-line mb-map line-data)))
+  (let [line-features (map line-feature-mapper lines-res)
+        layer-data {:id     "lines"
+                    :type   "line"
+                    :source {:type "geojson"
+                             :data {:type     "FeatureCollection"
+                                    :features line-features}}
+                    :layout {:line-join "round"
+                             :line-cap  "round"}
+                    :paint  {:line-width   6
+                             :line-opacity 0.6
+                             :line-color   ["get" "color"]}}]
+    (.addLayer mb-map (->js layer-data))))
 
 (defn img-url [url md]
   (str "<div class='entry map-entry'>"
@@ -167,7 +168,7 @@
        "<p>" (:html (mc/md-to-html-string* md {})) "</p>"
        "</div>"))
 
-(defn heatmap-did-mount [props]
+(defn map-did-mount [props]
   (fn []
     (let [{:keys [local data]} props
           {:keys [zoom lat lng]} @local
@@ -180,16 +181,12 @@
                 :style     (:mineral styles)}
           mb-map (Map. (clj->js opts))
           img-features (filter #(-> % :properties :entry :img_file) features)
-          data {:type "geojson"
-                :data {:type     "FeatureCollection"
-                       :features features}}
           img-data {:type "geojson"
                     :data {:type     "FeatureCollection"
                            :features img-features}}
           loaded (fn []
-                   (.addSource mb-map "locations" (clj->js data))
                    (.addSource mb-map "images" (clj->js img-data))
-                   (add-lines mb-map line-features)
+                   (time (add-lines mb-map line-features))
                    (add-layers mb-map))
           hide-gallery #(swap! local assoc-in [:gallery] false)
           popup (Popup. (->js {:closeButton  false
@@ -240,9 +237,9 @@
       (.on mb-map "mouseleave" "images" mouse-leave)
       (js/setTimeout zoom-bounds 1000))))
 
-(defn heatmap-cls [props]
+(defn map-cls [props]
   (r/create-class
-    {:component-did-mount (heatmap-did-mount props)
+    {:component-did-mount (map-did-mount props)
      :reagent-render      (fn [props]
                             (let [{:keys [local]} props]
                               [:div#heatmap {:style {:width            "100vw"
@@ -252,7 +249,7 @@
 (defn map-view [props]
   (info "Location map render")
   ^{:key (stc/make-uuid)}
-  [heatmap-cls props])
+  [map-cls props])
 
 (defn map-render [local]
   (let [backend-cfg (subscribe [:backend-cfg])
