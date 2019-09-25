@@ -15,42 +15,40 @@
             [cljs.tools.reader.edn :as edn]
             [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as stc]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
+            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]
+            [venia.core :as v]))
 
-(defn query [local]
-  (let [q {:id       :location-map
-           :q        (gql/gen-query [:locations_by_days
-                                     {:from (:from @local)
-                                      :to   (:to @local)}
-                                     [:type
-                                      [:geometry [:type
-                                                  :coordinates]]
-                                      [:properties [:activity
-                                                    :data
-                                                    [:entry [:md
-                                                             :timestamp
-                                                             :img_file
-                                                             :img_rel_path]]
-                                                    :accuracy
-                                                    :timestamp
-                                                    :entry_type]]]])
+(defn queries [local]
+  (let [{:keys [from to]} @local
+        q1 [:locations_by_days
+            {:from from
+             :to   to}
+            [:type
+             [:geometry [:type
+                         :coordinates]]
+             [:properties [:activity
+                           :data
+                           [:entry [:md
+                                    :timestamp
+                                    :img_file
+                                    :img_rel_path]]
+                           :accuracy
+                           :timestamp
+                           :entry_type]]]]
+        q2 [:lines_by_days
+            {:from     from
+             :to       to
+             :accuracy 250}
+            [:type
+             [:geometry [:type
+                         :coordinates]]
+             [:properties [:activity]]]]
+        gql (v/graphql-query {:venia/queries [{:query/data q1}
+                                              {:query/data q2}]})
+        q {:id       :locations-map
+           :q        gql
            :res-hash nil
            :prio     15}]
-    (emit [:gql/query q])))
-
-(defn line-query [local]
-  (let [q {:id       :location-map-lines
-           :q        (gql/gen-query [:lines_by_days
-                                     {:from     (:from @local)
-                                      :to       (:to @local)
-                                      :accuracy 250}
-                                     [:type
-                                      [:geometry [:type
-                                                  :coordinates]]
-                                      [:properties [:activity]]]])
-           :res-hash nil
-           :prio     10}]
-    (info "Line Query" q)
     (emit [:gql/query q])))
 
 (defn infinite-cal-search [local]
@@ -64,8 +62,7 @@
                       (when (= (:eventType selected) 3)
                         (swap! local merge {:from start
                                             :to   end})
-                        (line-query local)
-                        (query local))))]
+                        (queries local))))]
     (fn [local]
       (let [selected (:selected @local)]
         [:div.infinite-cal-search
@@ -172,8 +169,10 @@
 
 (defn heatmap-did-mount [props]
   (fn []
-    (let [{:keys [local features line-features]} props
+    (let [{:keys [local data]} props
           {:keys [zoom lat lng]} @local
+          features (:locations_by_days data)
+          line-features (:lines_by_days data)
           opts {:container "heatmap"
                 :zoom      zoom
                 :center    [lng lat]
@@ -255,10 +254,13 @@
   ^{:key (stc/make-uuid)}
   [heatmap-cls props])
 
-(defn map-render [local res lines-res]
-  (let [backend-cfg (subscribe [:backend-cfg])]
+(defn map-render [local]
+  (let [backend-cfg (subscribe [:backend-cfg])
+        gql-res (subscribe [:gql-res])
+        data (reaction (get-in @gql-res [:locations-map :data]))]
     (fn []
-      (let [mapbox-token (:mapbox-token @backend-cfg)]
+      (let [mapbox-token (:mapbox-token @backend-cfg)
+            points (:locations_by_days @data)]
         (aset mapbox-gl "accessToken" mapbox-token)
         (if mapbox-token
           [:div.flex-container
@@ -276,12 +278,11 @@
               (for [[k style-url] styles]
                 ^{:key k}
                 [:option {:value style-url} k])]
-             [:button {:on-click (partial zoom-bounds local @res)
+             [:button {:on-click (partial zoom-bounds local points)
                        :style    {:margin-left 20}}
               "fit bounds"]]
-            [map-view {:local         local
-                       :features      @res
-                       :line-features @lines-res}]]]
+            [map-view {:local local
+                       :data  @data}]]]
           [:div.flex-container
            [:div.error
             [:h1
@@ -289,19 +290,13 @@
              "mapbox access token not found"]]])))))
 
 (defn locations-map []
-  (let [gql-res (subscribe [:gql-res])
-        res (reaction (get-in @gql-res [:location-map :data :locations_by_days]))
-        lines-res (reaction (get-in @gql-res [:location-map-lines :data :lines_by_days]))
-        local (r/atom {:zoom 5
+  (let [local (r/atom {:zoom 5
                        :lng  10.1
                        :lat  53.56
                        :from (h/ymd (stc/now))
                        :to   (h/ymd (stc/now))})
-        render (fn [props] [map-render local res lines-res])
-        cleanup #(do
-                   (emit [:gql/remove {:query-id :location-map}])
-                   (emit [:gql/remove {:query-id :location-map-lines}]))]
-    (query local)
-    (line-query local)
+        render (fn [props] [map-render local])
+        cleanup #(emit [:gql/remove {:query-id :locations-map}])]
+    (queries local)
     (r/create-class {:component-will-unmount cleanup
                      :reagent-render         render})))
