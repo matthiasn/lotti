@@ -18,37 +18,40 @@
             [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
 
 (defn query [local]
-  (emit [:gql/query {:id       :location-map
-                     :q        (gql/gen-query [:locations_by_days
-                                               {:from (:from @local)
-                                                :to   (:to @local)}
-                                               [:type
-                                                [:geometry [:type
-                                                            :coordinates]]
-                                                [:properties [:activity
-                                                              :data
-                                                              [:entry [:md
-                                                                       :timestamp
-                                                                       :img_file
-                                                                       :img_rel_path]]
-                                                              :accuracy
-                                                              :timestamp
-                                                              :entry_type]]]])
-                     :res-hash nil
-                     :prio     15}]))
+  (let [q {:id       :location-map
+           :q        (gql/gen-query [:locations_by_days
+                                     {:from (:from @local)
+                                      :to   (:to @local)}
+                                     [:type
+                                      [:geometry [:type
+                                                  :coordinates]]
+                                      [:properties [:activity
+                                                    :data
+                                                    [:entry [:md
+                                                             :timestamp
+                                                             :img_file
+                                                             :img_rel_path]]
+                                                    :accuracy
+                                                    :timestamp
+                                                    :entry_type]]]])
+           :res-hash nil
+           :prio     15}]
+    (emit [:gql/query q])))
 
 (defn line-query [local]
-  (emit [:gql/query {:id       :location-map-lines
-                     :q        (gql/gen-query [:lines_by_days
-                                               {:from     (:from @local)
-                                                :to       (:to @local)
-                                                :accuracy 250}
-                                               [:type
-                                                [:geometry [:type
-                                                            :coordinates]]
-                                                [:properties [:activity]]]])
-                     :res-hash nil
-                     :prio     15}]))
+  (let [q {:id       :location-map-lines
+           :q        (gql/gen-query [:lines_by_days
+                                     {:from     (:from @local)
+                                      :to       (:to @local)
+                                      :accuracy 250}
+                                     [:type
+                                      [:geometry [:type
+                                                  :coordinates]]
+                                      [:properties [:activity]]]])
+           :res-hash nil
+           :prio     10}]
+    (info "Line Query" q)
+    (emit [:gql/query q])))
 
 (defn infinite-cal-search [local]
   (let [on-select (fn [ev]
@@ -61,6 +64,7 @@
                       (when (= (:eventType selected) 3)
                         (swap! local merge {:from start
                                             :to   end})
+                        (line-query local)
                         (query local))))]
     (fn [local]
       (let [selected (:selected @local)]
