@@ -141,7 +141,7 @@
     "running" "red"
     "in_vehicle" "blue"
     "on_bicycle" "orange"
-    "still" "#AAA"
+    "still" "turquoise"
     "deeppink"))
 
 (defn line-feature-mapper [line-data]
