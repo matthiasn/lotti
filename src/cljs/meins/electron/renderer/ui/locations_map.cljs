@@ -174,91 +174,102 @@
        "<p>" (:html (mc/md-to-html-string* md {})) "</p>"
        "</div>"))
 
-(defn img-data [features]
-  (let [img-features (filter #(-> % :properties :entry :img_file) features)]
-    {:type     "FeatureCollection"
-     :features img-features}))
+(defn img-data [img-features]
+  {:type     "FeatureCollection"
+   :features img-features})
+
+(defn ->img-features [features]
+  (filter #(-> % :properties :entry :img_file) features))
 
 (defn map-did-mount [props]
-  (fn []
-    (let [{:keys [local data]} props
-          {:keys [zoom lat lng style]} @local
-          features (:locations_by_days data)
-          line-res (:lines_by_days data)
-          style (get styles style)
-          opts {:container "heatmap"
-                :zoom      zoom
-                :center    [lng lat]
-                :pitch     0
-                :style     style}
-          mb-map (Map. (clj->js opts))
-          img-features {:type "geojson"
-                        :data (img-data features)}
-          loaded (fn []
-                   (.addSource mb-map "images" (->js img-features))
-                   (.addSource mb-map "lines" (->js (line-source line-res)))
-                   (.addLayer mb-map (->js lines-cfg))
-                   (.addLayer mb-map (->js img-points-cfg)))
-          hide-gallery #(swap! local assoc-in [:gallery] false)
-          popup (Popup. (->js {:closeButton  false
-                               :closeOnClick false}))
-          mouse-leave (fn []
-                        (let [canvas (.getCanvas mb-map)]
-                          (.remove popup)
-                          (aset canvas "style" "cursor" "")))
-          mouse-enter (fn [e]
-                        (let [canvas (.getCanvas mb-map)
-                              feature (aget e "features" 0)
-                              coords (aget feature "geometry" "coordinates")
-                              data (edn/read-string (aget feature "properties" "data"))
-                              html (str "<pre><code>" (with-out-str (pp/pprint data)) "</code></pre>")]
-                          (aset canvas "style" "cursor" "pointer")
-                          (-> popup
-                              (.setLngLat coords)
-                              (.setHTML html)
-                              (.addTo mb-map))))
-          mouse-enter-img (fn [e]
-                            (let [canvas (.getCanvas mb-map)
-                                  feature (aget e "features" 0)
-                                  coords (aget feature "geometry" "coordinates")
-                                  entry (aget feature "properties" "entry")
-                                  entry (js/JSON.parse entry)
-                                  img_file (.-img_file entry)
-                                  md (.-md entry)
-                                  url (str "file://" (h/thumbs-512 img_file))
-                                  html (img-url url md)]
-                              (aset canvas "style" "cursor" "pointer")
-                              (-> popup
-                                  (.setLngLat coords)
-                                  (.setHTML html)
-                                  (.addTo mb-map))))
-          zoom-bounds (partial zoom-bounds local features)]
-      (swap! local assoc-in [:mb-map] mb-map)
-      (aset js/window "heatmap" mb-map)
-      (.on mb-map "load" loaded)
-      (.on mb-map "zoomstart" hide-gallery)
-      (.on mb-map "zoomend" (fn [e]
-                              (let [coords {:zoom (aget e "target" "transform" "_zoom")
-                                            :lat  (aget e "target" "transform" "_center" "lat")
-                                            :lng  (aget e "target" "transform" "_center" "lng")}]
-                                (swap! local merge coords))))
-      ;(.on mb-map "mouseenter" "points" mouse-enter)
-      ;(.on mb-map "mouseleave" "points" mouse-leave)
-      (.on mb-map "mouseenter" "images" mouse-enter-img)
-      (.on mb-map "mouseleave" "images" mouse-leave)
-      (js/setTimeout zoom-bounds 1000))))
+  (let [gql-res (subscribe [:gql-res])
+        feature-subs (reaction (get-in @gql-res [:locations-map :data :locations_by_days]))]
+    (fn []
+      (let [{:keys [local data]} props
+            {:keys [zoom lat lng style]} @local
+            features (:locations_by_days data)
+            line-res (:lines_by_days data)
+            style (get styles style)
+            opts {:container "heatmap"
+                  :zoom      zoom
+                  :center    [lng lat]
+                  :pitch     0
+                  :style     style}
+            mb-map (Map. (clj->js opts))
+            img-geojson {:type "geojson"
+                         :data (img-data (->img-features features))}
+            loaded (fn []
+                     (.addSource mb-map "images" (->js img-geojson))
+                     (.addSource mb-map "lines" (->js (line-source line-res)))
+                     (.addLayer mb-map (->js lines-cfg))
+                     (.addLayer mb-map (->js img-points-cfg)))
+            hide-gallery #(swap! local assoc-in [:gallery] false)
+            popup (Popup. (->js {:closeButton  false
+                                 :closeOnClick false}))
+            mouse-leave (fn []
+                          (let [canvas (.getCanvas mb-map)]
+                            (.remove popup)
+                            (aset canvas "style" "cursor" "")))
+            mouse-enter-img (fn [e]
+                              (let [canvas (.getCanvas mb-map)
+                                    feature (aget e "features" 0)
+                                    coords (aget feature "geometry" "coordinates")
+                                    entry (aget feature "properties" "entry")
+                                    entry (js/JSON.parse entry)
+                                    img_file (.-img_file entry)
+                                    md (.-md entry)
+                                    url (str "file://" (h/thumbs-512 img_file))
+                                    html (img-url url md)]
+                                (aset canvas "style" "cursor" "pointer")
+                                (-> popup
+                                    (.setLngLat coords)
+                                    (.setHTML html)
+                                    (.addTo mb-map))))
+            zoom-bounds (partial zoom-bounds local features)
+            photo-cycle (fn []
+                          (let [img-features (->img-features @feature-subs)
+                                idx (:photo-idx @local)
+                                cnt (count img-features)]
+                            (if (and (not (neg? idx)) (< idx cnt))
+                              (let [feature (nth img-features idx)
+                                    coords (-> feature :geometry :coordinates)
+                                    entry (-> feature :properties :entry)
+                                    img_file (:img_file entry)
+                                    md (:md entry)
+                                    url (str "file://" (h/thumbs-512 img_file))
+                                    html (img-url url md)]
+                                (-> popup
+                                    (.setLngLat (->js coords))
+                                    (.setHTML html)
+                                    (.addTo mb-map)))
+                              (.remove popup))
+                            (info :photo-idx idx (neg? idx) cnt)))]
+        (swap! local assoc-in [:mb-map] mb-map)
+        (aset js/window "heatmap" mb-map)
+        (.on mb-map "load" loaded)
+        (.on mb-map "zoomstart" hide-gallery)
+        (.on mb-map "zoomend" (fn [e]
+                                (let [coords {:zoom (aget e "target" "transform" "_zoom")
+                                              :lat  (aget e "target" "transform" "_center" "lat")
+                                              :lng  (aget e "target" "transform" "_center" "lng")}]
+                                  (swap! local merge coords))))
+        (.on mb-map "mouseenter" "images" mouse-enter-img)
+        (.on mb-map "mouseleave" "images" mouse-leave)
+        (js/setTimeout zoom-bounds 1000)
+        (add-watch local :photo-idx photo-cycle)))))
 
 (defn will-receive-props [_this props]
   (let [{:keys [local data]} (ric/extract-props props)
         mb-map (:mb-map @local)
         features (:locations_by_days data)
-        img-features (->js (img-data features))
+        img-features (->img-features features)
+        img-geojson (->js (img-data img-features))
         lines (->js (line-data (:lines_by_days data)))
         zoom-bounds (partial zoom-bounds local features)]
     (when-let [line-src (.getSource mb-map "lines")]
       (.setData line-src lines))
     (when-let [img-src (.getSource mb-map "images")]
-      (.setData img-src img-features)
+      (.setData img-src img-geojson)
       (js/setTimeout zoom-bounds 1000))))
 
 (defn map-cls [props]
@@ -305,14 +316,24 @@
              "mapbox access token not found"]]])))))
 
 (defn locations-map []
-  (let [local (r/atom {:zoom  5
-                       :lng   10.1
-                       :lat   53.56
-                       :style :mineral
-                       :from  (h/ymd (stc/now))
-                       :to    (h/ymd (stc/now))})
+  (let [local (r/atom {:zoom      5
+                       :lng       10.1
+                       :lat       53.56
+                       :photo-idx -1
+                       :style     :mineral
+                       :from      (h/ymd (stc/now))
+                       :to        (h/ymd (stc/now))})
         render (fn [props] [map-render local])
-        cleanup #(emit [:gql/remove {:query-id :locations-map}])]
+        keydown (fn [ev]
+                  (let [key-code (.. ev -keyCode)]
+                    (when (.-metaKey ev)
+                      (when (= key-code 37) (swap! local update :photo-idx dec))
+                      (when (= key-code 39) (swap! local update :photo-idx inc))
+                      (.stopPropagation ev))))
+        cleanup (fn []
+                  (emit [:gql/remove {:query-id :locations-map}])
+                  (.removeEventListener js/document "keydown" keydown))]
+    (.addEventListener js/document "keydown" keydown)
     (queries local)
     (r/create-class {:component-will-unmount cleanup
                      :reagent-render         render})))
