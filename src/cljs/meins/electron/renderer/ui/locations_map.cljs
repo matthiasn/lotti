@@ -168,9 +168,11 @@
   {:type "geojson"
    :data (line-data line-res)})
 
-(defn img-url [url md]
+(defn img-html [url md ts locale]
+  (info :img-html url ts (keyword locale))
   (str "<div class='entry map-entry'>"
-       "<img style='width:100%' src='" url "'></img>"
+       "<img src='" url "'></img>"
+       "<time>" (h/localize-datetime (moment ts) locale) "</time>"
        "<p>" (:html (mc/md-to-html-string* md {})) "</p>"
        "</div>"))
 
@@ -183,6 +185,7 @@
 
 (defn map-did-mount [props]
   (let [gql-res (subscribe [:gql-res])
+        cfg (subscribe [:cfg])
         feature-subs (reaction (get-in @gql-res [:locations-map :data :locations_by_days]))]
     (fn []
       (let [{:keys [local data]} props
@@ -190,6 +193,7 @@
             features (:locations_by_days data)
             line-res (:lines_by_days data)
             style (get styles style)
+            locale (:locale @cfg :en)
             opts {:container "heatmap"
                   :zoom      zoom
                   :center    [lng lat]
@@ -218,8 +222,9 @@
                                     entry (js/JSON.parse entry)
                                     img_file (.-img_file entry)
                                     md (.-md entry)
+                                    ts (.-timestamp entry)
                                     url (str "file://" (h/thumbs-512 img_file))
-                                    html (img-url url md)]
+                                    html (img-html url md ts locale)]
                                 (aset canvas "style" "cursor" "pointer")
                                 (-> popup
                                     (.setLngLat coords)
@@ -228,21 +233,24 @@
             zoom-bounds (partial zoom-bounds local features)
             photo-cycle (fn []
                           (let [img-features (->img-features @feature-subs)
-                                idx (:photo-idx @local)
-                                cnt (count img-features)]
-                            (if (and (not (neg? idx)) (< idx cnt))
+                                cnt (count img-features)
+                                idx (rem (:photo-idx @local) cnt)]
+                            (.remove popup)
+                            (when (and (not (neg? idx)) (< idx cnt))
                               (let [feature (nth img-features idx)
-                                    coords (-> feature :geometry :coordinates)
+                                    coords (->> feature :geometry :coordinates (take 2))
                                     entry (-> feature :properties :entry)
                                     img_file (:img_file entry)
                                     md (:md entry)
+                                    ts (:timestamp entry)
                                     url (str "file://" (h/thumbs-512 img_file))
-                                    html (img-url url md)]
-                                (-> popup
-                                    (.setLngLat (->js coords))
-                                    (.setHTML html)
-                                    (.addTo mb-map)))
-                              (.remove popup))
+                                    html (img-html url md ts locale)]
+                                (js/setTimeout #(-> popup
+                                                    (.setLngLat (->js coords))
+                                                    (.setHTML html)
+                                                    (.addTo mb-map))
+                                               100)
+                                (.easeTo mb-map (->js {:center coords}))))
                             (info :photo-idx idx (neg? idx) cnt)))]
         (swap! local assoc-in [:mb-map] mb-map)
         (aset js/window "heatmap" mb-map)
@@ -273,6 +281,7 @@
       (js/setTimeout zoom-bounds 1000))))
 
 (defn map-cls [props]
+  (info "map-cls")
   (r/create-class
     {:component-did-mount          (map-did-mount props)
      :component-will-receive-props will-receive-props
@@ -283,7 +292,7 @@
                                                               :background-color "#333"}}]))}))
 
 (defn map-view [props]
-  (info "Location map render")
+  (info "map-view")
   ^{:key (:style @(:local props))}
   [map-cls props])
 
