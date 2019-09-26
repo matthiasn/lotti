@@ -234,9 +234,12 @@
             photo-cycle (fn []
                           (let [img-features (->img-features @feature-subs)
                                 cnt (count img-features)
-                                idx (rem (:photo-idx @local) cnt)]
+                                idx (rem (:photo-idx @local) cnt)
+                                idx (if (neg? idx)
+                                      (+ idx cnt)
+                                      idx)]
                             (.remove popup)
-                            (when (and (not (neg? idx)) (< idx cnt))
+                            (when (and (not (neg? idx)) (< idx cnt) (:popup @local))
                               (let [feature (nth img-features idx)
                                     coords (->> feature :geometry :coordinates (take 2))
                                     entry (-> feature :properties :entry)
@@ -328,7 +331,8 @@
   (let [local (r/atom {:zoom      5
                        :lng       10.1
                        :lat       53.56
-                       :photo-idx -1
+                       :photo-idx 0
+                       :popup     false
                        :style     :mineral
                        :from      (h/ymd (stc/now))
                        :to        (h/ymd (stc/now))})
@@ -336,8 +340,14 @@
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)]
                     (when (.-metaKey ev)
-                      (when (= key-code 37) (swap! local update :photo-idx dec))
-                      (when (= key-code 39) (swap! local update :photo-idx inc))
+                      (when (= key-code 37)
+                        (swap! local assoc :popup true)
+                        (swap! local update :photo-idx dec))
+                      (when (= key-code 39)
+                        (swap! local assoc :popup true)
+                        (swap! local update :photo-idx inc))
+                      (when (= key-code 40)
+                        (swap! local assoc :popup false))
                       (.stopPropagation ev))))
         cleanup (fn []
                   (emit [:gql/remove {:query-id :locations-map}])
