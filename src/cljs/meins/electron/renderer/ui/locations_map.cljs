@@ -129,6 +129,7 @@
    :dark              "mapbox://styles/mapbox/dark-v10"
    :light             "mapbox://styles/mapbox/light-v10"
    :mineral           "mapbox://styles/matthiasn/ck0o3ac0d0ab51cp6o565lvx0"
+   :le-shine          "mapbox://styles/matthiasn/ck11d7tl20gw01cpdtfmr1kkz"
    :satellite         "mapbox://styles/mapbox/satellite-v9"
    :satellite-streets "mapbox://styles/mapbox/satellite-streets-v11"})
 
