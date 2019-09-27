@@ -112,7 +112,7 @@
            [text-input {:style              {:flex             2
                                              :font-weight      "100"
                                              :padding          16
-                                             :font-size        24
+                                             :font-size        15
                                              :max-height       400
                                              :min-height       240
                                              :border-radius    18
