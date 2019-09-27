@@ -33,6 +33,7 @@
            "X"]]
          [text {:style {:padding     8
                         :color       header-color
+                        :font-family "Montserrat-SemiBold"
                         :font-weight :bold
                         :font-size   18}}
           label]
@@ -47,6 +48,7 @@
           [text {:style {:color       btn-text
                          :text-align  "center"
                          :line-height 21
+                         :font-family "Montserrat-Regular"
                          :padding-top 7
                          :font-size   15}}
            "SAVE"]]]))))
@@ -82,12 +84,14 @@
           [text {:style {:color       text-color
                          :text-align  "center"
                          :font-weight :bold
+                         :font-family "Montserrat-SemiBold"
                          :font-size   12}}
            (s/upper-case
              (h/entry-date-fmt (stc/now)))]
           [text {:style {:color       text-color
                          :text-align  "center"
                          :margin-left 12
+                         :font-family "Montserrat-Regular"
                          :font-size   12}}
            (h/hh-mm (stc/now))]]
          [keyboard-avoiding-view {;:behavior "padding"
@@ -112,6 +116,7 @@
                                              :max-height       400
                                              :min-height       240
                                              :border-radius    18
+                                             :font-family      "Montserrat-Regular"
                                              :background-color text-bg
                                              :margin-bottom    20
                                              :color            text-color

@@ -1,6 +1,9 @@
 // react-native.config.js
 module.exports = {
-    assets: ['react-native-vector-icons'],
+    assets: [
+        'react-native-vector-icons',
+        './assets/fonts'
+    ],
     dependencies: {
         '@matthiasn/react-native-mailcore': {
             platforms: {

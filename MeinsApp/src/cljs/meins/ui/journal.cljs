@@ -91,6 +91,7 @@
                              :opacity       0.68
                              :text-align    "right"
                              :font-size     12
+                             :font-family   "Montserrat-Regular"
                              :margin-top    6
                              :padding-right 3
                              :font-weight   "100"}}
@@ -104,12 +105,14 @@
                                :color            text-color
                                :text-align       "left"
                                :font-weight      "bold"
+                               :font-family      "Montserrat-SemiBold"
                                :font-size        12}}
                  (:name spotify)]
                 [text {:style {:background-color text-bg
                                :color            text-color
                                :text-align       "left"
                                :font-size        12
+                               :font-family      "Montserrat-Regular"
                                :padding-top      1}}
                  (->> (:artists spotify)
                       (map :name)
@@ -124,7 +127,7 @@
                                :text-align  "left"
                                :font-size   14
                                :line-height 21
-                               :font-weight "normal"}}
+                               :font-family "Montserrat-Regular"}}
                  md]])]]])))))
 
 (defn render-item [navigate]
@@ -152,6 +155,7 @@
                       :value               (:jrn-search @local)
                       :keyboard-type       "twitter"
                       :keyboardAppearance  (if light-theme "light" "dark")
+                      :inputStyle          {:font-family "Montserrat-Regular"}
                       :inputContainerStyle {:backgroundColor search-field-bg
                                             :border-radius   18}
                       :containerStyle      {:backgroundColor   "transparent"
@@ -242,13 +246,14 @@
                    :opacity         0.68}
              [text {:style {:color       text-color
                             :text-align  "center"
-                            :font-weight :bold
+                            :font-family "Montserrat-SemiBold"
                             :font-size   12}}
               (s/upper-case
                 (h/entry-date-fmt (:timestamp entry)))]
              [text {:style {:color       text-color
                             :text-align  "center"
                             :margin-left 12
+                            :font-family "Montserrat-Regular"
                             :font-size   12}}
               (h/hh-mm (:timestamp entry))]]
             (if-let [spotify (:spotify entry)]
@@ -265,7 +270,7 @@
                [text {:style {:background-color text-bg
                               :color            text-color
                               :text-align       "left"
-                              :font-weight      "bold"
+                              :font-family      "Montserrat-SemiBold"
                               :font-size        12
                               :padding-left     12
                               :padding-top      4}}
@@ -275,6 +280,7 @@
                               :text-align       "left"
                               :font-size        12
                               :padding-left     12
+                              :font-family      "Montserrat-Regular"
                               :padding-top      1
                               :padding-bottom   4}}
                 (->> (:artists spotify)
@@ -289,6 +295,7 @@
                                                 :min-height       100
                                                 :background-color text-bg
                                                 :margin-bottom    5
+                                                :font-family      "Montserrat-Regular"
                                                 :color            text-color
                                                 :width            "100%"}
                            :multiline          true

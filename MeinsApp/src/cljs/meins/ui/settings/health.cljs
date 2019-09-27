@@ -44,6 +44,7 @@
                              :text-align :center}}]]
           [text {:style {:color       text-color
                          :font-size   14
+                         :font-family "Montserrat-SemiBold"
                          :margin-left 20}}
            label]]
          [touchable-opacity {:on-press auto-check
