@@ -30,7 +30,6 @@
 (def picker-item (r/adapt-react-class (aget react-native "Picker" "Item")))
 (def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView react-native)))
 (def vibration (.-Vibration react-native))
-(def cam-roll (.-CameraRoll react-native))
 
 (defn alert [title] (.alert (.-Alert react-native) (str title)))
 

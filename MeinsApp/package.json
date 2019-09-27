@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.95",
+  "version": "1.0.96",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -9,7 +9,7 @@
     "postinstall": "npx jetify"
   },
   "dependencies": {
-    "@matthiasn/cameraroll": "1.0.6",
+    "@matthiasn/cameraroll": "1.2.1-1",
     "@matthiasn/react-native-audio-recorder-player": "2.2.2-1",
     "@matthiasn/react-native-mailcore": "0.0.12",
     "@matthiasn/react-native-randombytes": "3.5.3-3",
@@ -26,9 +26,9 @@
     "path": "0.12.7",
     "prop-types": "15.7.2",
     "querystring": "0.2.0",
-    "react": "16.8.6",
-    "react-dom": "16.8.6",
-    "react-native": "0.60.5",
+    "react": "16.9.0",
+    "react-dom": "16.9.0",
+    "react-native": "0.61.1",
     "react-native-background-fetch": "2.7.0",
     "react-native-background-geolocation": "3.2.2",
     "react-native-build-config": "0.3.1",
@@ -70,7 +70,7 @@
     "jest": "24.9.0",
     "jetifier": "1.6.4",
     "metro-react-native-babel-preset": "0.56.0",
-    "react-test-renderer": "16.8.6"
+    "react-test-renderer": "16.9.0"
   },
   "jest": {
     "preset": "react-native"
