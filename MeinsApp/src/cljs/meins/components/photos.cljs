@@ -3,6 +3,7 @@
             ["@matthiasn/cameraroll" :as cam-roll]
             ["realm" :as realm]
             [matthiasn.systems-toolbox.component :as st]
+            [cljs-bean.core :refer [bean ->clj ->js]]
             [meins.ui.db :as uidb]
             [clojure.string :as str]))
 
@@ -28,8 +29,7 @@
         ts (.floor js/Math (* 1000 (:timestamp node)))]
     {:timestamp ts
      :imported  false
-     :fileName  (or (:fileName image)
-                    (last (str/split (:uri image) "/")))
+     :fileName  (:fileName image)
      :uri       (:uri image)
      :height    (:height image)
      :width     (:width image)
@@ -38,13 +38,13 @@
 
 (defn import-photos [{:keys [cmp-state msg-payload]}]
   (let [{:keys [n]} msg-payload
-        params (clj->js {:first      n
-                         :assetType  "Photos"})
+        params (clj->js {:first     n
+                         :assetType "Photos"})
         realm-db @uidb/realm-db
         photos-promise (.getPhotos cam-roll params)]
     (.then photos-promise
            (fn [r]
-             (let [parsed (js->clj r :keywordize-keys true)
+             (let [parsed (->clj r)
                    edges (:edges parsed)]
                (doseq [item edges]
                  (try

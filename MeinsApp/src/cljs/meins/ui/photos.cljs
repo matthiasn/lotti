@@ -3,6 +3,7 @@
             ["react-native-super-grid" :as rn-super-grid]
             [meins.helpers :as h]
             [reagent.core :as r]
+            [cljs-bean.core :refer [bean ->clj ->js]]
             [meins.ui.db :as uidb :refer [emit]]
             [matthiasn.systems-toolbox.component :as stc]))
 

@@ -2,6 +2,7 @@
   (:require ["react-native" :refer [AppRegistry]]
             ["react-native-exception-handler" :refer [setJSExceptionHandler
                                                       setNativeExceptionHandler]]
+            ["react-native-gesture-handler"]
             [meins.helpers]
             [meins.crypto]
             [meins.ui.shared :refer [alert]]
