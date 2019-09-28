@@ -1,9 +1,10 @@
 (ns meins.ui.settings.audio
   (:require [meins.ui.styles :as styles]
             [meins.ui.shared :refer [view text settings-list settings-list-item settings-icon
-                                     rn-audio-recorder-player alert status-bar platform-os]]
+                                     alert status-bar platform-os]]
             [re-frame.core :refer [subscribe]]
             ["react-native-permissions" :as Permissions]
+            ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
             [reagent.core :as r]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
