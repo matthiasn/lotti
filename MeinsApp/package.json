@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.97",
+  "version": "1.0.98",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -11,9 +11,9 @@
   "dependencies": {
     "@matthiasn/cameraroll": "1.2.1-1",
     "@matthiasn/react-native-audio-recorder-player": "2.2.2-1",
-    "@matthiasn/react-native-mailcore": "0.0.12",
+    "@matthiasn/react-native-mailcore": "0.0.14",
     "@matthiasn/react-native-randombytes": "3.5.3-3",
-    "@matthiasn/rn-apple-healthkit": "0.6.6",
+    "@matthiasn/rn-apple-healthkit": "0.6.8",
     "@react-native-community/async-storage": "1.6.2",
     "@react-native-community/geolocation": "2.0.2",
     "@react-native-community/netinfo": "4.2.2",
