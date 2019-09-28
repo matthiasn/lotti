@@ -33,8 +33,6 @@
 		AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */; };
 		AD6AA066233F6CDF0092174A /* libRCTAppleHealthKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6AA043233F65AA0092174A /* libRCTAppleHealthKit.a */; };
 		AD6AA07F233F7BB40092174A /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6AA07E233F79F50092174A /* libRNMailCore.a */; };
-		AD7A621A22D90DAE00056A04 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD7A621922D90DAE00056A04 /* CFNetwork.framework */; };
-		AD7A621C22D90DB900056A04 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD7A621B22D90DB900056A04 /* Security.framework */; };
 		BFED5CC9ABE74C9489048997 /* FontAwesome5_Solid.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9C3CA8AB33694518A1A38369 /* FontAwesome5_Solid.ttf */; };
 		C35FA02AE9E744E8ACE354E1 /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F637DF3630264546895472F0 /* Feather.ttf */; };
 		E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 65BCA4EE270E457584AA1A37 /* libz.tbd */; };
@@ -181,8 +179,6 @@
 				AD6AA07F233F7BB40092174A /* libRNMailCore.a in Frameworks */,
 				AD6AA066233F6CDF0092174A /* libRCTAppleHealthKit.a in Frameworks */,
 				AD67467E22D910B9002B1FB7 /* libMailCore-ios.a in Frameworks */,
-				AD7A621C22D90DB900056A04 /* Security.framework in Frameworks */,
-				AD7A621A22D90DAE00056A04 /* CFNetwork.framework in Frameworks */,
 				ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */,
 				4C0B5FC7958946B1AB0CE717 /* libRealmReact.a in Frameworks */,
 				AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */,
@@ -678,7 +674,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 111;
+				CURRENT_PROJECT_VERSION = 112;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
@@ -722,7 +718,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 111;
+				CURRENT_PROJECT_VERSION = 112;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				HEADER_SEARCH_PATHS = (
