@@ -12,7 +12,8 @@
             [meins.ui.styles :as styles]
             [meins.ui.photos :as photos]
             [meins.ui.journal :as jrn]
-            [meins.ui.editor :as ue]))
+            [meins.ui.editor :as ue]
+            [meins.ui.icons :as ico]))
 
 (reg-sub :active-theme (fn [_db _] :dark))
 
@@ -30,12 +31,14 @@
                       (swap! local assoc :active route-name)
                       (navigate route-name)))
    :tabBarIcon    (fn [m]
-                    (let [m (js->clj m :keywordize-keys true)]
+                    (let [m (js->clj m :keywordize-keys true)
+                          color (:tintColor m)]
                       (r/as-element
-                        [fa-icon {:name             icon-name
-                                  :size             size
-                                  :background-color "#2C3246"
-                                  :color            (:tintColor m)}])))})
+                        (case icon-name
+                          "journal" [ico/journal-icon size color]
+                          "new-entry" [ico/add-icon size color]
+                          "photos" [ico/photos-icon size color]
+                          "settings" [ico/settings-icon size color]))))})
 
 (defn put-fn [])
 
@@ -50,20 +53,20 @@
 (def app-nav
   (createBottomTabNavigator
     (clj->js {:Journal  {:screen            jrn/journal-stack
-                         :navigationOptions (nav-options "list" 28)}
+                         :navigationOptions (nav-options "journal" 36)}
               :Add      {:screen            (r/reactify-component ue/editor)
-                         :navigationOptions (nav-options "plus-square-o" 28)}
+                         :navigationOptions (nav-options "new-entry" 36)}
               :Photos   {:screen            (r/reactify-component photos/photos-tab)
-                         :navigationOptions (nav-options "film" 28)}
+                         :navigationOptions (nav-options "photos" 36)}
               :Settings {:screen            s/settings-stack
-                         :navigationOptions (nav-options "cogs" 28)}})
+                         :navigationOptions (nav-options "settings" 36)}})
     (clj->js {:initialRouteName "Journal"
               :transitionConfig (fn []
                                   (clj->js
                                     {:transitionSpec
                                      {:duration 0
                                       :timing   (.-timing Animated)}}))
-              :tabBarOptions    {:activeTintColor         "#FEFEFE"
+              :tabBarOptions    {:activeTintColor         "#FFF"
                                  :inactiveTintColor       "#999"
                                  :activeBackgroundColor   bg
                                  :inactiveBackgroundColor bg
