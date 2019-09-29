@@ -63,8 +63,8 @@
    :source "lines"
    :layout {:line-join "round"
             :line-cap  "round"}
-   :paint  {:line-width   6
-            :line-opacity 0.6
+   :paint  {:line-width   5
+            :line-opacity 0.5
             :line-color   ["get" "color"]}})
 
 (def img-points-cfg
