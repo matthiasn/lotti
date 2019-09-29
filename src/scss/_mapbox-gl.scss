@@ -3,6 +3,14 @@
   overflow: hidden;
   position: relative;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+
+  .img-marker {
+    background-image: url('/Users/mn/github/meins/resources/public/map/C2_inactive_red.svg');
+    background-size: cover;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
 }
 
 .map-entry {

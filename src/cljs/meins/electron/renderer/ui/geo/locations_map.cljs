@@ -1,56 +1,22 @@
-(ns meins.electron.renderer.ui.locations-map
+(ns meins.electron.renderer.ui.geo.locations-map
   (:require [reagent.core :as r]
             [reagent.impl.component :as ric]
             [reagent.ratom :refer-macros [reaction]]
             [re-frame.core :refer [subscribe]]
+            [meins.electron.renderer.ui.geo.queries :as qry]
             [taoensso.timbre :refer-macros [info error debug]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [cljs.nodejs :refer [process]]
             [cljs-bean.core :refer [bean ->clj ->js]]
-            ["mapbox-gl" :refer [Map Popup LngLat LngLatBounds] :as mapbox-gl]
+            ["mapbox-gl" :refer [Map Popup LngLat LngLatBounds Marker] :as mapbox-gl]
             ["moment" :as moment]
             [markdown.core :as mc]
             [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.graphql :as gql]
             [cljs.tools.reader.edn :as edn]
             [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as stc]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]
-            [venia.core :as v]))
-
-(defn queries [local]
-  (let [{:keys [from to]} @local
-        q1 [:locations_by_days
-            {:from from
-             :to   to}
-            [:type
-             [:geometry [:type
-                         :coordinates]]
-             [:properties [:activity
-                           :data
-                           [:entry [:md
-                                    :timestamp
-                                    :img_file
-                                    :img_rel_path]]
-                           :accuracy
-                           :timestamp
-                           :entry_type]]]]
-        q2 [:lines_by_days
-            {:from     from
-             :to       to
-             :accuracy 250}
-            [:type
-             [:geometry [:type
-                         :coordinates]]
-             [:properties [:activity]]]]
-        gql (v/graphql-query {:venia/queries [{:query/data q1}
-                                              {:query/data q2}]})
-        q {:id       :locations-map
-           :q        gql
-           :res-hash nil
-           :prio     15}]
-    (emit [:gql/query q])))
+            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]))
 
 (defn infinite-cal-search [local]
   (let [on-select (fn [ev]
@@ -63,7 +29,7 @@
                       (when (= (:eventType selected) 3)
                         (swap! local merge {:from start
                                             :to   end})
-                        (queries local))))]
+                        (qry/queries local))))]
     (fn [local]
       (let [selected (:selected @local)]
         [:div.infinite-cal-search
@@ -105,8 +71,21 @@
   {:id     "images"
    :type   "circle"
    :source "images"
-   :paint  {:circle-radius 6
-            :circle-color  "#C9B037"}})
+   :paint  {:circle-radius         3
+            :circle-color          "#FF818C"
+            :circle-stroke-width   1
+            :circle-opacity        0.6
+            :circle-stroke-opacity 0.6
+            :circle-stroke-color   "#EF4E59"}})
+
+(def icon-url "/Users/mn/github/meins/resources/public/map/C2_active_red.png")
+
+(def img-icons-cfg
+  {:id     "img-icons"
+   :type   "symbol"
+   :source "image-icons"
+   :layout {:icon-image "img-icon"
+            :icon-size  0.35}})
 
 (def buildings-cfg
   {:id           "3d-buildings"
@@ -136,6 +115,7 @@
 (defn add-layers [mb-map]
   ;(.addLayer mb-map (clj->js points-cfg))
   (.addLayer mb-map (clj->js img-points-cfg))
+  (.addLayer mb-map (clj->js img-icons-cfg))
   #_(.addLayer mb-map (clj->js buildings-cfg)))
 
 (defn zoom-bounds [local features _]
@@ -184,6 +164,18 @@
 (defn ->img-features [features]
   (filter #(-> % :properties :entry :img_file) features))
 
+(defn img-markers [mb-map img-features]
+  (doseq [feat img-features]
+    (let [coords (-> feat :geometry :coordinates)
+          el (js/document.createElement "div")]
+      (aset el "className" "img-marker")
+      (-> (Marker. el)
+          (.setLngLat (->js (take 2 coords)))
+          (.setPopup (-> (Popup. (->js {:offset 25}))
+                         (.setHTML "<div>foooo</div")))
+          (.addTo mb-map))
+      (info coords))))
+
 (defn map-did-mount [props]
   (let [gql-res (subscribe [:gql-res])
         cfg (subscribe [:cfg])
@@ -201,15 +193,24 @@
                   :pitch     0
                   :style     style}
             mb-map (Map. (clj->js opts))
+            img-features (->img-features features)
             img-geojson {:type "geojson"
-                         :data (img-data (->img-features features))}
+                         :data (img-data img-features)}
+            img-icons-geojson {:type "geojson"
+                               :data (img-data [])}
             loaded (fn []
                      (.addSource mb-map "images" (->js img-geojson))
+                     (.addSource mb-map "image-icons" (->js img-icons-geojson))
                      (.addSource mb-map "lines" (->js (line-source line-res)))
+                     ;(img-markers mb-map img-features)
                      (.addLayer mb-map (->js lines-cfg))
-                     (.addLayer mb-map (->js img-points-cfg)))
+                     (.addLayer mb-map (->js img-points-cfg))
+                     (.loadImage mb-map icon-url (fn [err img]
+                                                   (.addImage mb-map "img-icon" img))
+                                 (.addLayer mb-map (->js img-icons-cfg))))
             hide-gallery #(swap! local assoc-in [:gallery] false)
             popup (Popup. (->js {:closeButton  false
+                                 :offset       5
                                  :closeOnClick false}))
             mouse-leave (fn []
                           (let [canvas (.getCanvas mb-map)]
@@ -248,7 +249,9 @@
                                     md (:md entry)
                                     ts (:timestamp entry)
                                     url (str "file://" (h/thumbs-512 img_file))
-                                    html (img-html url md ts locale)]
+                                    html (img-html url md ts locale)
+                                    img-geojson (->js (img-data [feature]))]
+                                (.setData (.getSource mb-map "image-icons") img-geojson)
                                 (js/setTimeout #(-> popup
                                                     (.setLngLat (->js coords))
                                                     (.setHTML html)
@@ -282,6 +285,8 @@
       (.setData line-src lines))
     (when-let [img-src (.getSource mb-map "images")]
       (.setData img-src img-geojson)
+      ;(.setData (.getSource mb-map "image-icons") img-geojson)
+      ;(img-markers mb-map img-features)
       (js/setTimeout zoom-bounds 1000))))
 
 (defn map-cls [props]
@@ -334,7 +339,7 @@
                        :lat       53.56
                        :photo-idx 0
                        :popup     false
-                       :style     :mineral
+                       :style     :le-shine
                        :from      (h/ymd (stc/now))
                        :to        (h/ymd (stc/now))})
         render (fn [props] [map-render local])
@@ -354,6 +359,6 @@
                   (emit [:gql/remove {:query-id :locations-map}])
                   (.removeEventListener js/document "keydown" keydown))]
     (.addEventListener js/document "keydown" keydown)
-    (queries local)
+    (qry/queries local)
     (r/create-class {:component-will-unmount cleanup
                      :reagent-render         render})))

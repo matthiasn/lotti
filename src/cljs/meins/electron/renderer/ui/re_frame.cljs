@@ -10,7 +10,7 @@
             [taoensso.timbre :refer [info error debug]]
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.ui.heatmap :as hm]
-            [meins.electron.renderer.ui.locations-map :as loc-map]
+            [meins.electron.renderer.ui.geo.locations-map :as loc-map]
             [meins.electron.renderer.ui.spotify :as sp]
             [meins.electron.renderer.ui.grid :as g]
             [meins.electron.renderer.ui.stats :as stats]
