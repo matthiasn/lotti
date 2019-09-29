@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.101",
+  "version": "1.0.102",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -13,7 +13,7 @@
     "@matthiasn/react-native-audio-recorder-player": "2.3.0-1",
     "@matthiasn/react-native-mailcore": "0.0.14",
     "@matthiasn/react-native-randombytes": "3.5.3-3",
-    "@matthiasn/rn-apple-healthkit": "0.6.8",
+    "@matthiasn/rn-apple-healthkit": "0.6.9",
     "@react-native-community/async-storage": "1.6.2",
     "@react-native-community/geolocation": "2.0.2",
     "@react-native-community/netinfo": "4.2.2",
@@ -38,7 +38,7 @@
     "react-native-exception-handler": "2.10.8",
     "react-native-gesture-handler": "1.4.1",
     "react-native-keyboard-aware-scroll-view": "0.9.1",
-    "react-native-keychain": "4.0.0",
+    "react-native-keychain": "4.0.1",
     "react-native-permissions": "1.2.1",
     "react-native-qrcode-svg": "5.2.0",
     "react-native-reanimated": "1.3.0",
