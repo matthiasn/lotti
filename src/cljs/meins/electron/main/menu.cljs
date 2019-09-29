@@ -185,8 +185,9 @@
                  {:label "Heatmap"
                   :click #(open :heatmap)})
                (when (contains? capabilities :locations-map)
-                 {:label "Locations Map"
-                  :click #(open :locations-map)})
+                 {:label       "Locations Map"
+                  :accelerator "CmdOrCtrl+Shift+M"
+                  :click       #(open :locations-map)})
                {:label "Spotify"
                 :click #(open :spotify)}
                (when (contains? capabilities :scatter-matrix)

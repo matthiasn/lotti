@@ -627,14 +627,20 @@ a.mapboxgl-ctrl-logo {
     display: flex;
     width: 230px;
     flex-direction: column;
+    opacity: 0.7;
     top: 0;
     right: 0;
     z-index: 2;
+    background-color: white;
+    border-bottom-left-radius: 6px;
 
     button, select {
       margin: 5px;
       padding: 3px 6px;
       border-radius: 2px;
+    }
+    &:hover {
+      opacity: 1;
     }
   }
 

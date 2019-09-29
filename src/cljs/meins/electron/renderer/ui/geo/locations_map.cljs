@@ -34,13 +34,15 @@
       (let [selected (:selected @local)]
         [:div.infinite-cal-search
          [ebc/infinite-cal-range-adapted
-          {:width     "100%"
-           :height    200
-           :onSelect  on-select
-           :theme     {:weekdayColor "#666"
-                       :headerColor  "#778"}
-           :rowHeight 40
-           :selected  selected}]]))))
+          {:width          "100%"
+           :height         150
+           :onSelect       on-select
+           :theme          {:weekdayColor "#666"
+                            :headerColor  "#778"}
+           :displayOptions {:showHeader   false
+                            :showWeekdays true}
+           :rowHeight      32
+           :selected       selected}]]))))
 
 (def points-cfg
   {:id     "points"
