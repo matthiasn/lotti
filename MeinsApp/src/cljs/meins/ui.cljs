@@ -53,13 +53,13 @@
 (def app-nav
   (createBottomTabNavigator
     (clj->js {:Journal  {:screen            jrn/journal-stack
-                         :navigationOptions (nav-options "journal" 36)}
+                         :navigationOptions (nav-options "journal" 33)}
               :Add      {:screen            (r/reactify-component ue/editor)
-                         :navigationOptions (nav-options "new-entry" 36)}
+                         :navigationOptions (nav-options "new-entry" 33)}
               :Photos   {:screen            (r/reactify-component photos/photos-tab)
-                         :navigationOptions (nav-options "photos" 36)}
+                         :navigationOptions (nav-options "photos" 33)}
               :Settings {:screen            s/settings-stack
-                         :navigationOptions (nav-options "settings" 36)}})
+                         :navigationOptions (nav-options "settings" 33)}})
     (clj->js {:initialRouteName "Journal"
               :transitionConfig (fn []
                                   (clj->js

@@ -2,6 +2,7 @@
   (:require ["react-native" :as rn]
             ["@matthiasn/cameraroll" :as cam-roll]
             ["realm" :as realm]
+            [taoensso.timbre :refer-macros [info error warn debug]]
             [matthiasn.systems-toolbox.component :as st]
             [cljs-bean.core :refer [bean ->clj ->js]]
             [meins.ui.db :as uidb]
@@ -25,11 +26,14 @@
 (defn camroll->image [item]
   (let [node (:node item)
         image (:image node)
+        file-name (if (= rn/Platform.OS "ios")
+                    (:fileName image)
+                    (last (str/split (:uri image) "/")))
         loc (:location node)
         ts (.floor js/Math (* 1000 (:timestamp node)))]
     {:timestamp ts
      :imported  false
-     :fileName  (:fileName image)
+     :fileName  file-name
      :uri       (:uri image)
      :height    (:height image)
      :width     (:width image)

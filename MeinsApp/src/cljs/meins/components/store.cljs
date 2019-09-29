@@ -3,6 +3,7 @@
   (:require [matthiasn.systems-toolbox.component :as st]
             [meins.ui.db :as uidb]
             [glittershark.core-async-storage :as as]
+            [taoensso.timbre :refer-macros [info error warn debug]]
             ["realm" :as realm]
             [clojure.data.avl :as avl]
             [cljs.core.async :refer [<!]]
@@ -41,7 +42,7 @@
                   (put-fn [:schedule/new {:timeout 1000
                                           :message [:sync/retry]
                                           :id      :sync}])))
-        (catch :default e (js/console.error e))))
+        (catch :default e (error e))))
     (when-not (= prev (dissoc msg-payload :id :last-saved :vclock))
       (go (<! (as/set-item :global-vclock last-vclock)))
       {:new-state new-state})))
@@ -84,18 +85,18 @@
       (let [latest-vclock (second (<! (as/get-item :global-vclock)))]
         (put-fn [:debug/latest-vclock latest-vclock])
         (swap! cmp-state assoc-in [:global-vclock] latest-vclock))
-      (catch js/Object e (js/console.error "get-global-vclock" e))))
+      (catch js/Object e (error "get-global-vclock" e))))
   (go
     (try
       (let [active-theme (second (<! (as/get-item :active-theme)))]
         (swap! cmp-state assoc-in [:active-theme] (or active-theme :light)))
-      (catch js/Object e (js/console.error "load-theme" e))))
+      (catch js/Object e (error "load-theme" e))))
   (go
     (try
       (let [secrets (second (<! (as/get-item :secrets)))]
         (when secrets
           (swap! cmp-state assoc-in [:secrets] secrets)))
-      (catch js/Object e (js/console.error "load-secrets" e))))
+      (catch js/Object e (error "load-secrets" e))))
   (go
     (try
       (let [cfg (second (<! (as/get-item :cfg)))]
@@ -103,13 +104,13 @@
           (swap! cmp-state assoc-in [:cfg] cfg)
           (when (:bg-geo cfg)
             (put-fn [:bg-geo/start]))))
-      (catch js/Object e (js/console.error "load-cfg" e))))
+      (catch js/Object e (error "load-cfg" e))))
   (go
     (try
       (let [latest-synced (second (<! (as/get-item :latest-synced)))]
         (put-fn [:debug/latest-synced latest-synced])
         (swap! cmp-state assoc-in [:latest-synced] latest-synced))
-      (catch js/Object e (js/console.error "get-latest-synced" e))))
+      (catch js/Object e (error "get-latest-synced" e))))
   (go
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
@@ -117,7 +118,7 @@
             timestamps (second (<! (as/get-item :timestamps)))]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
         (<! (as/set-item :instance-id instance-id)))
-      (catch js/Object e (js/console.error "load-state" e))))
+      (catch js/Object e (error "load-state" e))))
   (go
     (try
       (let [hide-timestamps (second (<! (as/get-item :hide-timestamps)))]
@@ -185,7 +186,7 @@
   [old-realm new-realm]
   (let [schema-version (.-schemaVersion old-realm)]
     (when (< schema-version 1)
-      (js/console.warn "starting migration to schema" schema-version)
+      (warn "starting migration to schema" schema-version)
       (let [old-objects (.objects old-realm "Entry")
             new-objects (.objects new-realm "Entry")
             n (.-length old-objects)]
@@ -195,7 +196,7 @@
                 task? (-> entry :task boolean)]
             (aset new-objects i "task" task?)
             (when task?
-              (js/console.warn (aget new-objects i)))))))))
+              (warn (aget new-objects i)))))))))
 
 (def schema-1
   (clj->js {:schema        [EntrySchema ImageSchema]
@@ -217,12 +218,12 @@
                  :put-fn    put-fn})
     (-> (.open realm schema-1)
         (.then (fn [db]
-                 (js/console.warn "db finished opening" db)
+                 (info "db finished opening" db)
                  (swap! state assoc :realm-db db)
                  (reset! uidb/realm-db db)
-                 (js/console.warn (.-length (.objects db "Entry")) "entries")
-                 (js/console.warn (.-length (.objects db "Image")) "photos")))
-        (.catch (fn [err] (js/console.error "Realm: " (.-message err)))))
+                 (info (.-length (.objects db "Entry")) "entries")
+                 (info (.-length (.objects db "Image")) "photos")))
+        (.catch (fn [err] (error "Realm: " (.-message err)))))
     {:state state}))
 
 (defn cmp-map [cmp-id]

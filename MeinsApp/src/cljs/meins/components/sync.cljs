@@ -2,7 +2,9 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [glittershark.core-async-storage :as as]
             [cljs.core.async :refer [<!]]
+            [taoensso.timbre :refer-macros [info error warn debug]]
             [meins.ui.shared :as shared :refer [platform-os]]
+            [taoensso.timbre :refer-macros [info error warn debug]]
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
             ["@matthiasn/react-native-mailcore" :default MailCore]
@@ -35,8 +37,8 @@
               serializable [msg-type {:msg-payload (update-filename msg-payload)
                                       :msg-meta    {}}]     ; save battery and bandwidth
               serialized (pr-str serializable)
-              _ (js/console.warn "their-public-key" their-public-key)
-              _ (js/console.warn "our-secret-key" our-secret-key)
+              _ (info "their-public-key" their-public-key)
+              _ (info "our-secret-key" our-secret-key)
               hex-cipher (mse/encrypt-asymm serialized their-public-key our-secret-key)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
@@ -65,7 +67,7 @@
               error-cb (fn [err]
                          (when db-item
                            (.write @uidb/realm-db #(set! (.-sync db-item) "ERROR"))
-                           (js/console.error (str (js->clj err)))
+                           (error (js->clj err))
                            (put-fn [:schedule/new {:timeout 100
                                                    :message [:sync/retry]
                                                    :id      :sync}])))]
@@ -76,8 +78,8 @@
               (-> (.saveImap MailCore (clj->js mail))
                   (.then success-cb)
                   (.catch error-cb)))
-            (js/console.error "ciphertext" hex-cipher "folder" folder))))
-      (catch :default e (js/console.error (str e)))))
+            (error "ciphertext" hex-cipher "folder" folder))))
+      (catch :default e (error (str e)))))
   {})
 
 (defn schedule-read [cmp-state put-fn]
@@ -99,7 +101,7 @@
                            :length 1000})
               fetch-cb (fn [data]
                          (let [uids (edn/read-string (str "[" data "]"))]
-                           (js/console.warn "fetch-cb" data)
+                           (info "fetch-cb" data)
                            (swap! cmp-state update :not-fetched into uids)
                            (schedule-read cmp-state put-fn)))]
           (-> (.fetchImap MailCore (clj->js mail))
@@ -123,7 +125,7 @@
                                :uid    uid})
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
-                             (js/console.warn data)
+                             (info data)
                              (let [body (get (js->clj data) "body")
                                    decrypted (mse/decrypt body their-public-key our-private-key)
                                    msg-type (first decrypted)
@@ -137,8 +139,8 @@
                                (put-fn msg)))]
               (-> (.fetchImapByUid MailCore (clj->js mail))
                   (.then fetch-cb)
-                  (.catch #(.log js/console (str (js->clj %)))))))))
-      (catch :default e (js/console.error (str e)))))
+                  (.catch #(error (js->clj %))))))))
+      (catch :default e (error (str e)))))
   {})
 
 (defn retry-write [{:keys [cmp-state current-state put-fn]}]
@@ -158,11 +160,11 @@
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
   (let [new-state (assoc-in current-state [:secrets] msg-payload)]
-    (js/console.warn "set-secrets" (str msg-payload))
+    (info "set-secrets" (str msg-payload))
     {:new-state new-state}))
 
 (defn set-key-pair [{:keys [current-state msg-payload]}]
-  (js/console.warn "set-key-pair" (str msg-payload))
+  (info "set-key-pair" (str msg-payload))
   (let [new-state (assoc-in current-state [:key-pair] msg-payload)]
     {:new-state new-state}))
 
