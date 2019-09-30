@@ -276,9 +276,11 @@
                (try
                  (.getBoxes conn (fn [err boxes]
                                    (.log js/console boxes)
-                                   (put-fn [:imap/status {:status k :detail d}])
+                                   (put-fn [:imap/status {:status k
+                                                          :detail d}])
                                    (info "read mailboxes")))
-                 (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))
+                 (catch :default e (put-fn [:imap/status {:status :error
+                                                          :detail (str e)}]))
                  (finally (.end conn))))
           conn (imap. (clj->js (:server cfg)))]
       (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
@@ -305,8 +307,22 @@
 (defn get-cfg [{:keys []}]
   {:emit-msg [:imap/cfg (imap-cfg)]})
 
+(defn add-mailbox [cfg mb]
+  (let [conn (imap. (clj->js (:server cfg)))
+        create (fn []
+                 (info "adding mailbox" mb)
+                 (.addBox conn mb (fn [err] (when err (error "addBox" mb err))))
+                 (.end conn))]
+    (.once conn "ready" create)
+    (.connect conn)))
+
 (defn save-cfg [{:keys [msg-payload put-fn]}]
-  (let [s (pp-str msg-payload)]
+  (let [s (pp-str msg-payload)
+        write-mb (-> msg-payload :sync :write :mailbox)
+        read-mbs (-> msg-payload :sync :read)]
+    (add-mailbox msg-payload write-mb)
+    (doseq [[_ {:keys [mailbox]}] read-mbs]
+      (add-mailbox msg-payload mailbox))
     (when (read-mb :saved (str "saved: " cfg-path) msg-payload put-fn)
       (writeFileSync cfg-path s)))
   {:emit-msg [[:imap/cfg (imap-cfg)]]})
