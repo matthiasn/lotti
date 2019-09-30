@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.entry.location
-  (:require [matthiasn.systems-toolbox.component :as st]
+  (:require [clojure.pprint :as pp]
             [clojure.string :as s]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.pprint :as pp]
             [emoji-flags]
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.helpers :as h]
             [reagent.core :as r]))
 
 (defn location-details

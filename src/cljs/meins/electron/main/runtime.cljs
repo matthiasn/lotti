@@ -1,12 +1,12 @@
 (ns meins.electron.main.runtime
-  (:require [path :refer [normalize join]]
-            [electron :refer [app systemPreferences]]
-            [cljs.nodejs :refer [process]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [fs :refer [existsSync renameSync readFileSync]]
+  (:require [cljs.nodejs :refer [process]]
+            [clojure.set :as set]
             [clojure.string :as s]
             [clojure.tools.reader.edn :as edn]
-            [clojure.set :as set]))
+            [electron :refer [app systemPreferences]]
+            [fs :refer [existsSync readFileSync renameSync]]
+            [path :refer [join normalize]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (def runtime-info
   (let [cwd (.cwd process)

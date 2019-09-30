@@ -1,7 +1,7 @@
 (ns meins.jvm.graphql.entry
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.graph.query :as gq]
-            [meins.jvm.graphql.common :as gc]))
+  (:require [meins.jvm.graph.query :as gq]
+            [meins.jvm.graphql.common :as gc]
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn entry-by-ts [state context args value]
   (let [{:keys [ts]} args

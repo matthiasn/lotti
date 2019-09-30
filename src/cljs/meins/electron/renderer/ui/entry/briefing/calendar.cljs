@@ -1,22 +1,22 @@
 (ns meins.electron.renderer.ui.entry.briefing.calendar
-  (:require [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
+  (:require ["cldr-data" :as cldr-data]
+            ["globalize" :as globalize]
+            ["iana-tz-data" :as iana-tz-data]
+            ["moment" :as moment]
+            ["react-big-calendar" :as rbc]
+            ["react-infinite-calendar" :as ric]
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.parse :as up]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info]]
+            [meins.common.utils.parse :as p]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.award :as ca]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            ["moment" :as moment]
-            ["globalize" :as globalize]
-            ["cldr-data" :as cldr-data]
-            ["iana-tz-data" :as iana-tz-data]
-            ["react-big-calendar" :as rbc]
-            ["react-infinite-calendar" :as ric]))
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info]]))
 
 (def locales
   {:fr {:locale       (js/require "date-fns/locale/fr")

@@ -1,21 +1,20 @@
 (ns meins.jvm.migrations
   "This namespace is used for migrating entries to new versions."
-  (:require [meins.jvm.files :as f]
-            [clojure.pprint :as pp]
-            [taoensso.timbre :refer [info error]]
-            [clj-uuid :as uuid]
-            [camel-snake-kebab.core :refer :all]
+  (:require [camel-snake-kebab.core :refer :all]
             [camel-snake-kebab.extras :refer [transform-keys]]
             [cheshire.core :as cc]
             [clj-http.client :as hc]
-            [geo [geohash :as geohash] [spatial :as spatial]]
-            [clj-time.format :as ctf]
+            [clj-time.coerce :as c]
             [clj-time.core :as ct]
+            [clj-time.format :as ctf]
+            [clj-uuid :as uuid]
+            [clojure.data.json :as json]
+            [clojure.pprint :as pp]
+            [geo [geohash :as geohash] [spatial :as spatial]]
             [me.raynes.fs :as fs]
             [meins.jvm.datetime :as dt]
-            [clj-time.coerce :as c]
-            [cheshire.core :as cc]
-            [clojure.data.json :as json])
+            [meins.jvm.files :as f]
+            [taoensso.timbre :refer [error info]])
   #_(:import (io.dgraph DgraphClient DgraphGrpc DgraphProto$Mutation)
       (io.grpc ManagedChannelBuilder)
       (com.google.protobuf ByteString)))

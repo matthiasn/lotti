@@ -1,17 +1,17 @@
 (ns meins.ui.settings
-  (:require [reagent.core :as r]
+  (:require ["react-native-version-number" :as rnvn]
             ["react-navigation-stack" :refer [createStackNavigator]]
-            ["react-native-version-number" :as rnvn]
-            [re-frame.core :refer [reg-sub subscribe]]
-            [meins.ui.shared :refer [view fa-icon settings-list settings-icon
-                                     settings-list-header settings-list-item status-bar]]
-            [meins.ui.settings.db :as db]
             [meins.ui.settings.audio :as audio]
-            [meins.ui.settings.sync :as sync]
+            [meins.ui.settings.db :as db]
             [meins.ui.settings.dev :as dev]
             [meins.ui.settings.geolocation :as geo]
             [meins.ui.settings.health :as sh]
-            [meins.ui.styles :as styles]))
+            [meins.ui.settings.sync :as sync]
+            [meins.ui.shared :refer [fa-icon settings-icon settings-list settings-list-header
+                                     settings-list-item status-bar view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [reg-sub subscribe]]
+            [reagent.core :as r]))
 
 (def bg (get-in styles/colors [:list-bg :dark]))
 

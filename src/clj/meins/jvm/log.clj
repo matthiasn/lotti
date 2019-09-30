@@ -1,8 +1,8 @@
 (ns meins.jvm.log
-  (:require [taoensso.timbre :as timbre :refer [info]]
+  (:require [taoensso.encore :as enc]
+            [taoensso.timbre :as timbre :refer [info]]
             [taoensso.timbre.appenders.3rd-party.rolling :as tr]
-            [taoensso.timbre.appenders.core :as appenders]
-            [taoensso.encore :as enc]))
+            [taoensso.timbre.appenders.core :as appenders]))
 
 (defn ns-filter
   "From: https://github.com/yonatane/timbre-ns-pattern-level"

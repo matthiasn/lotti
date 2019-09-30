@@ -1,15 +1,15 @@
 (ns meins.electron.main.geocoder
-  (:require [taoensso.timbre :as timbre :refer-macros [info error debug]]
-            [child_process :refer [spawn fork]]
-            [electron :refer [app session shell]]
-            [http :as http]
+  (:require [child_process :refer [fork spawn]]
             [cljs.reader :refer [read-string]]
-            [path :refer [join normalize]]
-            [meins.electron.main.runtime :as rt]
-            [process]
-            [fs :refer [existsSync renameSync readFileSync]]
             [clojure.pprint :as pp]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [electron :refer [app session shell]]
+            [fs :refer [existsSync readFileSync renameSync]]
+            [http :as http]
+            [meins.electron.main.runtime :as rt]
+            [path :refer [join normalize]]
+            [process]
+            [taoensso.timbre :as timbre :refer-macros [debug error info]]))
 
 (defn fork-process [args opts]
   (info "forking" args opts)

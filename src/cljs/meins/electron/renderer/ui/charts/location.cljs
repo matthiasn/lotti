@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.charts.location
-  (:require [reagent.core :as rc]
-            [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.electron.renderer.helpers :as h]
+  (:require [cljs.pprint :as pp]
             [emoji-flags]
-            [cljs.pprint :as pp]))
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.charts.common :as cc]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as rc]))
 
 (defn loc-table [expanded? per-location label]
   (when (and expanded? (seq per-location))

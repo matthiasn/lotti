@@ -1,9 +1,9 @@
 (ns meins.ft-search-test
   "Here, we test the handler functions of the fulltext search component."
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
+            [clucy.core :as clucy]
             [meins.jvm.fulltext-search :as fs]
-            [meins.jvm.fulltext-search :as ft]
-            [clucy.core :as clucy]))
+            [meins.jvm.fulltext-search :as ft]))
 
 (def some-test-entry
   {:mentions   #{"@SantaClaus"}

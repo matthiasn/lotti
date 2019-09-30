@@ -1,17 +1,17 @@
 (ns meins.electron.main.imap
   "Component for encrypting and decrypting log files."
-  (:require [taoensso.timbre :refer-macros [info debug error warn]]
-            [meins.electron.main.runtime :as rt]
-            [fs :refer [existsSync readFileSync mkdirSync writeFile writeFileSync statSync]]
+  (:require [buildmail :as BuildMail]
             [child_process :refer [spawn]]
-            [meins.shared.encryption :as mse]
-            [meins.electron.main.crypto :as kc]
-            [imap :as imap]
-            [clojure.data :as data]
-            [buildmail :as BuildMail]
             [cljs.reader :as edn]
+            [clojure.data :as data]
             [clojure.pprint :as pp]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [fs :refer [existsSync mkdirSync readFileSync statSync writeFile writeFileSync]]
+            [imap :as imap]
+            [meins.electron.main.crypto :as kc]
+            [meins.electron.main.runtime :as rt]
+            [meins.shared.encryption :as mse]
+            [taoensso.timbre :refer-macros [debug error info warn]]))
 
 (def data-path (:data-path rt/runtime-info))
 (def img-path (:img-path rt/runtime-info))

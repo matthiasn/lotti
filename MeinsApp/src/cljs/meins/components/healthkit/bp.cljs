@@ -1,8 +1,8 @@
 (ns meins.components.healthkit.bp
   (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
-            [meins.components.healthkit.common :as hc]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.components.healthkit.common :as hc]))
 
 (defn bp-cb [put-fn err res]
   (doseq [sample (js->clj res)]

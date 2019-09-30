@@ -4,24 +4,24 @@
   Then later on application startup, all these state changes can be
   replayed to recreate the application state. This mechanism is inspired
   by Event Sourcing (http://martinfowler.com/eaaDev/EventSourcing.html)."
-  (:require [meins.jvm.graph.add :as ga]
-            [clj-uuid :as uuid]
-            [clj-time.core :as time]
+  (:require [clj-time.core :as time]
             [clj-time.format :as tf]
-            [taoensso.timbre :refer [info error warn]]
+            [clj-uuid :as uuid]
+            [clojure.java.io :as io]
+            [clojure.set :as set]
+            [clojure.string :as s]
+            [clojure.walk :as walk]
             [matthiasn.systems-toolbox.component :as st]
             [me.raynes.fs :as fs]
-            [clojure.java.io :as io]
-            [taoensso.nippy :as nippy]
-            [meins.jvm.file-utils :as fu]
-            [ubergraph.core :as uc]
-            [meins.common.utils.vclock :as vc]
             [meins.common.utils.misc :as u]
-            [meins.jvm.graph.query :as gq]
-            [clojure.walk :as walk]
+            [meins.common.utils.vclock :as vc]
             [meins.jvm.datetime :as dt]
-            [clojure.string :as s]
-            [clojure.set :as set])
+            [meins.jvm.file-utils :as fu]
+            [meins.jvm.graph.add :as ga]
+            [meins.jvm.graph.query :as gq]
+            [taoensso.nippy :as nippy]
+            [taoensso.timbre :refer [error info warn]]
+            [ubergraph.core :as uc])
   (:import [java.io DataInputStream DataOutputStream]))
 
 (defn filter-by-name

@@ -3,14 +3,14 @@
   (:require [clojure.java.io :as io]
             [com.climate.claypoole :as cp]
             [com.walmartlabs.lacinia :as lacinia]
-            [com.walmartlabs.lacinia.util :as lu]
             [com.walmartlabs.lacinia.parser :as parser]
             [com.walmartlabs.lacinia.resolve :as resolve]
+            [com.walmartlabs.lacinia.util :as lu]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.jvm.graphql.xforms :as xf]
             [meins.jvm.metrics :as mt]
             [metrics.timers :as tmr]
-            [taoensso.timbre :refer [info error warn debug]])
+            [taoensso.timbre :refer [debug error info warn]])
   (:import [clojure.lang ExceptionInfo]))
 
 (defn ^:private as-errors

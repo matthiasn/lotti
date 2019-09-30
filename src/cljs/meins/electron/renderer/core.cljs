@@ -1,19 +1,19 @@
 (ns meins.electron.renderer.core
-  (:require [meins.common.specs]
-            [meins.electron.renderer.log]
+  (:require [cljs.nodejs :refer [process]]
+            [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
+            [matthiasn.systems-toolbox-sente.client :as sente]
+            [matthiasn.systems-toolbox.scheduler :as sched]
+            [matthiasn.systems-toolbox.switchboard :as sb]
+            [meins.common.specs]
             [meins.electron.renderer.client-store :as store]
-            [meins.electron.renderer.ui.re-frame :as rf]
+            [meins.electron.renderer.exec :as exec]
+            [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.log]
             [meins.electron.renderer.router :as router]
             [meins.electron.renderer.screenshot :as screenshot]
             [meins.electron.renderer.spellcheck :as spellcheck]
-            [taoensso.timbre :refer-macros [info debug error]]
-            [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
-            [matthiasn.systems-toolbox-sente.client :as sente]
-            [meins.electron.renderer.exec :as exec]
-            [cljs.nodejs :refer [process]]
-            [matthiasn.systems-toolbox.switchboard :as sb]
-            [matthiasn.systems-toolbox.scheduler :as sched]
-            [meins.electron.renderer.graphql :as gql]))
+            [meins.electron.renderer.ui.re-frame :as rf]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (def sente-base-cfg
   {:sente-opts {:host     (.-iwwHOST js/window)

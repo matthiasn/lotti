@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.client-store.search
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
-            #?(:clj  [taoensso.timbre :refer [info debug]]
-               :cljs [taoensso.timbre :refer-macros [info debug]])
+            #?(:clj  [taoensso.timbre :refer [debug info]]
+               :cljs [taoensso.timbre :refer-macros [debug info]])
             [matthiasn.systems-toolbox.component :as st]
+            [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as p]
-            [meins.electron.renderer.graphql :as gql]
-            [meins.common.utils.misc :as u]))
+            [meins.electron.renderer.graphql :as gql]))
 
 (def initial-query-cfg
   {:queries     {}

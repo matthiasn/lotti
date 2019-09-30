@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.charts.award
-  (:require [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.helpers :as h]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]))
+  (:require [meins.electron.renderer.helpers :as h]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]))
 
 (defn points-by-day-chart
   "Renders bars."

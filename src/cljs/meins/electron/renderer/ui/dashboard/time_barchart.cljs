@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.dashboard.time_barchart
-  (:require [moment]
+  (:require [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [moment]
             [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.helpers :as h]
             [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [meins.electron.renderer.ui.dashboard.common :as dc]))
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn rect [{:keys []}]
   (let []

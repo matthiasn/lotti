@@ -1,16 +1,15 @@
 (ns meins.electron.renderer.ui.charts.time.durations
-  (:require [reagent.core :as rc]
-            [meins.electron.renderer.ui.charts.common :as cc]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.charts.time.twenty-four-hour :as tfh]
+  (:require [clojure.pprint :as pp]
             [meins.common.utils.misc :as u]
-            [taoensso.timbre :refer-macros [info]]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [clojure.pprint :as pp]
-            [moment]
             [meins.electron.renderer.charts.data :as cd]
-            [meins.electron.renderer.helpers :as h]))
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.charts.common :as cc]
+            [meins.electron.renderer.ui.charts.time.twenty-four-hour :as tfh]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as rc]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info]]))
 
 (defn day-bars [day-stats local idx chart-h y-scale put-fn]
   (let [options (subscribe [:options])

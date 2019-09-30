@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.config.dashboards
-  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.ui.entry.utils :as eu]
-            [taoensso.timbre :refer-macros [info error]]
-            [meins.electron.renderer.ui.journal :as j]
+  (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
-            [reagent.ratom :refer-macros [reaction]]
             [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.utils :as eu]
+            [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
             [re-frame.core :refer [subscribe]]
-            [clojure.string :as s]
-            [moment]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))

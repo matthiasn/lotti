@@ -1,17 +1,17 @@
 (ns meins.electron.renderer.ui.entry.img.carousel
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer [info error debug]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.data.avl :as avl]
+  (:require [clojure.data.avl :as avl]
+            [clojure.set :as set]
             [clojure.string :as s]
-            [markdown.core :as md]
-            [reagent.core :as r]
-            [meins.electron.renderer.graphql :as gql]
-            [meins.electron.renderer.ui.entry.actions :as a]
             [clojure.string :as str]
-            [clojure.set :as set]))
+            [markdown.core :as md]
+            [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.actions :as a]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn stars-view [entry]
   (let [star (fn [idx n]

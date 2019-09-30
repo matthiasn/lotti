@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.ui.charts.time.twenty-four-hour
-  (:require [reagent.core :as rc]
-            [meins.electron.renderer.ui.charts.common :as cc]
+  (:require [clojure.pprint :as pp]
             [meins.common.utils.misc :as u]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [clojure.pprint :as pp]
+            [meins.electron.renderer.charts.data :as cd]
+            [meins.electron.renderer.ui.charts.common :as cc]
             [moment]
-            [taoensso.timbre :refer-macros [info]]
-            [meins.electron.renderer.charts.data :as cd]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as rc]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info]]))
 
 (defn ts-bars
   "Renders group with rects for all stories of the particular day."

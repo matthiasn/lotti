@@ -1,13 +1,12 @@
 (ns meins.store-add-test
   "Here, we test the handler functions of the server side store component."
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.pprint :as pp]
+            [clojure.test :refer [deftest is testing]]
+            [meins.jvm.file-utils :as fu]
             [meins.jvm.files :as f]
-            [meins.store-test :as st]
             [meins.jvm.graph.stats :as gs]
-            [meins.jvm.files :as f]
-            [meins.store-test-common :as stc]
-            [clojure.pprint :as pp]
-            [meins.jvm.file-utils :as fu]))
+            [meins.store-test :as st]
+            [meins.store-test-common :as stc]))
 
 (def pvt-test-entries
   [{:mentions  #{}

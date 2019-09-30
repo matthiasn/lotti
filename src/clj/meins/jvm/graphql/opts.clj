@@ -1,12 +1,12 @@
 (ns meins.jvm.graphql.opts
   "GraphQL query component"
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [matthiasn.systems-toolbox.component :as stc]
+  (:require [clj-pid.core :as pid]
             [com.climate.claypoole :as cp]
-            [meins.jvm.graph.stats :as gs]
+            [matthiasn.systems-toolbox.component :as stc]
             [meins.jvm.graph.query :as gq]
+            [meins.jvm.graph.stats :as gs]
             [meins.jvm.graphql.custom-fields :as gcf]
-            [clj-pid.core :as pid]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn entry-count [state context args value] (count (:sorted-entries @state)))
 (defn hours-logged [state context args value] (gs/hours-logged @state))

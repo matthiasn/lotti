@@ -1,7 +1,7 @@
 (ns meins.ui.elements.mapbox
-  (:require [meins.ui.shared :refer [view]]
-            ["@react-native-mapbox-gl/maps" :as mapbox-gl]
+  (:require ["@react-native-mapbox-gl/maps" :as mapbox-gl]
             ["react-native-build-config" :as build-cfg]
+            [meins.ui.shared :refer [view]]
             [reagent.core :as r]))
 
 (def mapbox-style-url (js->clj (aget mapbox-gl "default" "StyleURL") :keywordize-keys true))

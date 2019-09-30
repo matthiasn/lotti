@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.dashboard.earlybird
-  (:require [moment]
+  (:require [meins.electron.renderer.ui.charts.common :as cc]
+            [moment]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
-            [meins.electron.renderer.ui.charts.common :as cc]
+            [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer-macros [info]]))
 
 (defn line [y s w]

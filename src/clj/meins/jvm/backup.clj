@@ -1,7 +1,7 @@
 (ns meins.jvm.backup
-  (:require [taoensso.timbre :refer [info]]
-            [clojure.java.shell :refer [sh]]
-            [meins.jvm.file-utils :as fu]))
+  (:require [clojure.java.shell :refer [sh]]
+            [meins.jvm.file-utils :as fu]
+            [taoensso.timbre :refer [info]]))
 
 (defn backup [{:keys []}]
   (when (System/getenv "GIT_COMMITS")

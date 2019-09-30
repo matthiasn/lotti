@@ -2,23 +2,23 @@
   "In this namespace, the individual components are initialized and wired
   together to form the backend system."
   (:gen-class)
-  (:require [matthiasn.systems-toolbox.switchboard :as sb]
+  (:require [clj-pid.core :as pid]
+            [clojure.string :as s]
             [matthiasn.systems-toolbox-sente.server :as sente]
             [matthiasn.systems-toolbox.scheduler :as sched]
-            [meins.jvm.index :as idx]
-            [meins.jvm.log]
-            [meins.jvm.firehose :as fh]
-            [meins.jvm.store :as st]
-            [meins.jvm.fulltext-search :as ft]
-            [meins.jvm.playground :as pg]
-            [meins.jvm.backup :as bak]
-            [meins.jvm.imports :as i]
+            [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.common.utils.misc :refer [connect]]
-            [clj-pid.core :as pid]
-            [taoensso.timbre :refer [info]]
+            [meins.jvm.backup :as bak]
             [meins.jvm.file-utils :as fu]
-            [clojure.string :as s]))
+            [meins.jvm.firehose :as fh]
+            [meins.jvm.fulltext-search :as ft]
+            [meins.jvm.imports :as i]
+            [meins.jvm.index :as idx]
+            [meins.jvm.log]
+            [meins.jvm.playground :as pg]
+            [meins.jvm.store :as st]
+            [taoensso.timbre :refer [info]]))
 
 (defonce switchboard (sb/component :backend/switchboard))
 

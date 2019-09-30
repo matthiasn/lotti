@@ -1,11 +1,11 @@
 (ns meins.jvm.imports.spotify
-  (:require [cheshire.core :as cc]
-            [taoensso.timbre :refer [info error warn]]
+  (:require [camel-snake-kebab.core :refer :all]
+            [cheshire.core :as cc]
             [clj-http.client :as hc]
             [clj-time.coerce :as c]
-            [camel-snake-kebab.core :refer :all]
+            [clojure.pprint :as pp]
             [meins.jvm.file-utils :as fu]
-            [clojure.pprint :as pp])
+            [taoensso.timbre :refer [error info warn]])
   (:import (java.net UnknownHostException)))
 
 (defn body-parser [res]

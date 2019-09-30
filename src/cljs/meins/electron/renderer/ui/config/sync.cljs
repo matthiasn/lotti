@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.config.sync
-  (:require [moment]
-            [meins.electron.renderer.ui.config.qr-scanner :as qrs]
-            [meins.electron.renderer.ui.config.qr-gen :as qrg]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error]]
+  (:require [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as stc]
-            [clojure.pprint :as pp]))
+            [meins.electron.renderer.ui.config.qr-gen :as qrg]
+            [meins.electron.renderer.ui.config.qr-scanner :as qrs]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn input [t v cb]
   [:input {:value     v

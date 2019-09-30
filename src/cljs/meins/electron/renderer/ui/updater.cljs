@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.updater
-  (:require [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
+  (:require [clojure.pprint :as pp]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [clojure.pprint :as pp]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn cancel []
   (emit [:update/status {:status :update/closed}]))

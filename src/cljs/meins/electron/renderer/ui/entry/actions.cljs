@@ -1,18 +1,18 @@
 (ns meins.electron.renderer.ui.entry.actions
-  (:require [meins.electron.renderer.ui.pomodoro :as p]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.charts.common :as cc]
+  (:require [cljs.pprint :as pp]
+            [clojure.set :as set]
+            [clojure.string :as s]
+            [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
-            [reagent.core :as r]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [meins.common.utils.misc :as u]
-            [clojure.set :as set]
-            [taoensso.timbre :refer-macros [info]]
-            [cljs.pprint :as pp]
-            [clojure.string :as s]))
+            [meins.electron.renderer.ui.pomodoro :as p]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info]]))
 
 (defn trash-icon [trash-fn]
   (let [local (r/atom {:visible false})

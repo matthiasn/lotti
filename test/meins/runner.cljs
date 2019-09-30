@@ -1,13 +1,13 @@
 (ns meins.runner
-  (:require [cljs.test :refer-macros [deftest is testing run-tests]]
-            [meins.jvm.client-store-test]
+  (:require [cljs.test :refer-macros [deftest is run-tests testing]]
+            [clojure.string :as s]
             [meins.electron.renderer.client-store-entry-test]
             [meins.electron.renderer.client-store-search-test]
-            [meins.jvm.ui-markdown-test]
-            [meins.jvm.ui-pomodoros-test]
-            [meins.jvm.parse-test]
+            [meins.jvm.client-store-test]
             [meins.jvm.misc-utils-test]
-            [clojure.string :as s]))
+            [meins.jvm.parse-test]
+            [meins.jvm.ui-markdown-test]
+            [meins.jvm.ui-pomodoros-test]))
 
 (enable-console-print!)
 

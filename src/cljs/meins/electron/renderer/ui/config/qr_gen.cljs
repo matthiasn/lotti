@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.config.qr-gen
-  (:require [reagent.core :as r]
-            ["@zxing/library" :refer [BrowserQRCodeSvgWriter]]
+  (:require ["@zxing/library" :refer [BrowserQRCodeSvgWriter]]
+            [cljs.pprint :as pp]
+            [meins.common.utils.misc :as u]
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info error]]
-            [meins.common.utils.misc :as u]
-            [cljs.pprint :as pp]))
+            [reagent.core :as r]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn qr-code [s]
   (r/create-class

@@ -1,8 +1,8 @@
 (ns meins.electron.main.help
-  (:require [taoensso.timbre :refer-macros [info debug error warn]]
-            [meins.electron.main.runtime :as rt]
+  (:require [clojure.string :as s]
             [fs :refer [readFileSync]]
-            [clojure.string :as s]))
+            [meins.electron.main.runtime :as rt]
+            [taoensso.timbre :refer-macros [debug error info warn]]))
 
 (defn get-help [{:keys []}]
   (let [path (:manual-path rt/runtime-info)

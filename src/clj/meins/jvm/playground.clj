@@ -1,8 +1,8 @@
 (ns meins.jvm.playground
-  (:require [meins.common.utils.parse :as p]
+  (:require [clojure.java.io :as io]
             [clojure.string :as s]
-            [clojure.java.io :as io]
             [matthiasn.systems-toolbox.component :as st]
+            [meins.common.utils.parse :as p]
             [meins.jvm.file-utils :as fu]))
 
 (defn parse-txt [file n]

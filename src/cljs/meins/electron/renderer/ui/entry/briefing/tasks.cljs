@@ -1,18 +1,18 @@
 (ns meins.electron.renderer.ui.entry.briefing.tasks
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [meins.electron.renderer.ui.entry.utils :as eu]
+  (:require [clojure.pprint :as pp]
+            [clojure.set :as set]
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.utils :as eu]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [moment-duration-format]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [clojure.set :as set]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]
-            [clojure.pprint :as pp]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn task-sorter [x y]
   (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))

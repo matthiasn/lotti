@@ -1,5 +1,5 @@
 (ns meins.util.keychain
-  (:require ["react-native-keychain" :as kc :refer [setGenericPassword getGenericPassword resetGenericPassword]]
+  (:require ["react-native-keychain" :as kc :refer [getGenericPassword resetGenericPassword setGenericPassword]]
             [cljs.tools.reader.edn :as edn]))
 
 (defn get-keypair

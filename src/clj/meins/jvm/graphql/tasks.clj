@@ -1,7 +1,7 @@
 (ns meins.jvm.graphql.tasks
   (:require [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.graphql.common :as gc]))
+            [meins.jvm.graphql.common :as gc]
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def d (* 24 60 60 1000))
 

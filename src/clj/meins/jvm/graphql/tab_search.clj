@@ -1,11 +1,11 @@
 (ns meins.jvm.graphql.tab-search
-  (:require [meins.jvm.datetime :as dt]
+  (:require [clojure.set :as set]
+            [meins.common.utils.misc :as um]
             [meins.common.utils.parse :as p]
-            [taoensso.timbre :refer [info error warn debug]]
+            [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
             [meins.jvm.graphql.common :as gc]
-            [clojure.set :as set]
-            [meins.common.utils.misc :as um]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn res-diff [prev res]
   (let [prev (set prev)

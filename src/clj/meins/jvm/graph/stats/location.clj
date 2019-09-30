@@ -1,7 +1,7 @@
 (ns meins.jvm.graph.stats.location
   "Get stats from graph."
-  (:require [ubergraph.core :as uc]
-            [meins.jvm.graph.query :as gq]))
+  (:require [meins.jvm.graph.query :as gq]
+            [ubergraph.core :as uc]))
 
 #_
 (defn locations

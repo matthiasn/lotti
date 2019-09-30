@@ -1,9 +1,9 @@
 (ns meins.components.healthkit.sleep
-  (:require [meins.helpers :as h]
-            ["@matthiasn/rn-apple-healthkit" :as hk]
+  (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.components.healthkit.common :as hc]
-            [matthiasn.systems-toolbox.component :as st]))
+            [meins.helpers :as h]))
 
 (defn get-sleep-samples [{:keys [put-fn msg-payload current-state]}]
   (let [start (or (:last-read-sleep current-state)

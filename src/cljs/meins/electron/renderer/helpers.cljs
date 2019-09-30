@@ -1,21 +1,21 @@
 (ns meins.electron.renderer.helpers
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [meins.common.utils.parse :as p]
-            [goog.dom.Range]
-            ["ngeohash" :as geohash]
-            [reagent.core :as rc]
-            [taoensso.timbre :refer-macros [info debug error]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [path :refer [normalize]]
-            [globalize :as globalize]
+  (:require ["ngeohash" :as geohash]
             [cldr-data :as cldr-data]
-            [iana-tz-data :as iana-tz-data]
-            [moment]
-            [moment-duration-format]
-            [electron :refer [remote]]
             [cljs.nodejs :refer [process]]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [electron :refer [remote]]
+            [globalize :as globalize]
+            [goog.dom.Range]
+            [iana-tz-data :as iana-tz-data]
+            [matthiasn.systems-toolbox.component :as st]
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.common.utils.parse :as p]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [moment-duration-format]
+            [path :refer [normalize]]
+            [reagent.core :as rc]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 

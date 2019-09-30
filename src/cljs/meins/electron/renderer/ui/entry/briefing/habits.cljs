@@ -1,17 +1,17 @@
 (ns meins.electron.renderer.ui.entry.briefing.habits
-  (:require [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [meins.electron.renderer.ui.entry.utils :as eu]
-            [meins.common.utils.parse :as up]
-            [moment]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.helpers :as h]
-            [meins.common.utils.misc :as m]
-            [clojure.set :as set]
-            [meins.common.habits.util :as hu]
+  (:require [clojure.set :as set]
             [matthiasn.systems-toolbox.component :as stc]
-            [meins.common.utils.misc :as u]))
+            [meins.common.habits.util :as hu]
+            [meins.common.utils.misc :as m]
+            [meins.common.utils.misc :as u]
+            [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.utils :as eu]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn habit-sorter
   "Sorts habits."

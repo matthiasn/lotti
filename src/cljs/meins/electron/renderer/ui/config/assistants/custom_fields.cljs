@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.config.assistants.custom-fields
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info error]]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.helpers :as h]
-            [reagent.core :as r]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 
 (def custom-field-definitions

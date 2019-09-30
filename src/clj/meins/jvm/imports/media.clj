@@ -1,21 +1,21 @@
 (ns meins.jvm.imports.media
   "This namespace does imports, for example of photos."
-  (:require [clojure.pprint :as pp]
-            [clojure.java.shell :refer [sh]]
-            [clj-time.format :as tf]
+  (:require [cheshire.core :as cc]
+            [clj-http.client :as hc]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
-            [me.raynes.fs :as fs]
-            [meins.jvm.file-utils :as fu]
-            [clojure.string :as s]
+            [clj-time.format :as tf]
             [clojure.java.io :as io]
-            [taoensso.timbre :refer [info error warn]]
+            [clojure.java.shell :refer [sh]]
+            [clojure.pprint :as pp]
+            [clojure.string :as s]
+            [io.pedestal.log :as log]
+            [me.raynes.fs :as fs]
+            [meins.common.specs :as specs]
+            [meins.jvm.file-utils :as fu]
             [meins.jvm.files :as f]
             [meins.jvm.utils.images :as img]
-            [meins.common.specs :as specs]
-            [cheshire.core :as cc]
-            [clj-http.client :as hc]
-            [io.pedestal.log :as log])
+            [taoensso.timbre :refer [error info warn]])
   (:import [com.drew.imaging ImageMetadataReader]))
 
 (defn dms-to-dd

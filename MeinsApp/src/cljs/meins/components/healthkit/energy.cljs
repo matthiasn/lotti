@@ -1,8 +1,8 @@
 (ns meins.components.healthkit.energy
-  (:require [meins.components.healthkit.common :as hc]
-            ["@matthiasn/rn-apple-healthkit" :as hk]
+  (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
-            [matthiasn.systems-toolbox.component :as st]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.components.healthkit.common :as hc]))
 
 (defn res-cb [tag k offset put-fn err res]
   (when err (js/console.error err))

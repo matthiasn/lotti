@@ -1,8 +1,8 @@
 (ns meins.ui.settings.geolocation
-  (:require [meins.ui.styles :as styles]
-            [meins.ui.shared :refer [view settings-list settings-icon settings-list-item status-bar]]
-            [re-frame.core :refer [subscribe]]
-            [meins.ui.db :refer [emit]]))
+  (:require [meins.ui.db :refer [emit]]
+            [meins.ui.shared :refer [settings-icon settings-list settings-list-item status-bar view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [subscribe]]))
 
 (defn geo-settings [_]
   (let [theme (subscribe [:active-theme])

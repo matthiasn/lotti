@@ -1,11 +1,11 @@
 (ns meins.jvm.graph.stats
   "Get stats from graph."
-  (:require [ubergraph.core :as uber]
-            [meins.jvm.graph.query :as gq]
+  (:require [clj-pid.core :as pid]
+            [clojure.set :as set]
             [meins.common.utils.misc :as u]
-            [taoensso.timbre :refer [info error warn]]
-            [clj-pid.core :as pid]
-            [clojure.set :as set]))
+            [meins.jvm.graph.query :as gq]
+            [taoensso.timbre :refer [error info warn]]
+            [ubergraph.core :as uber]))
 
 (defn media-mapper
   "Create mapper function for media stats"

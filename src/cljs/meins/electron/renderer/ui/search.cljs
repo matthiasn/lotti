@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.search
-  (:require [meins.common.utils.parse :as p]
+  (:require [matthiasn.systems-toolbox.component :as st]
+            [meins.common.utils.parse :as p]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.draft :as d]
-            [taoensso.timbre :refer-macros [info]]
-            [reagent.ratom :refer-macros [reaction]]
+            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]
-            [meins.electron.renderer.helpers :as h]
-            [matthiasn.systems-toolbox.component :as st]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [info]]))
 
 (defn editor-state
   "Create editor-state, either from deserialized state or from search string."

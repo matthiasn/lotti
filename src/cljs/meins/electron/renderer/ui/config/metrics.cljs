@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.config.metrics
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error]]
+  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [moment]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn metrics []
   (let [metrics (subscribe [:metrics])

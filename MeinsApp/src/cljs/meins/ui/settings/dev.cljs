@@ -1,8 +1,8 @@
 (ns meins.ui.settings.dev
-  (:require [meins.ui.styles :as styles]
-            [meins.ui.shared :refer [view settings-list settings-list-item status-bar]]
-            [re-frame.core :refer [subscribe]]
-            [meins.ui.db :refer [emit]]))
+  (:require [meins.ui.db :refer [emit]]
+            [meins.ui.shared :refer [settings-list settings-list-item status-bar view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [subscribe]]))
 
 (defn dev-settings [_]
   (let [theme (subscribe [:active-theme])

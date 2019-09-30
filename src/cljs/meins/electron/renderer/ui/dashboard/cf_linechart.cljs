@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.dashboard.cf-linechart
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info debug]]
-            [clojure.string :as s]
-            [meins.electron.renderer.ui.dashboard.common :as dc]
+  (:require [clojure.string :as s]
+            [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
-            [meins.common.utils.parse :as up]))
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]

@@ -1,8 +1,8 @@
 (ns meins.jvm.datetime
-  (:require [clj-time.core :as ct]
-            [clj-time.coerce :as c]
-            [clj-time.format :as ctf]
-            [clj-time.coerce :as ctc]))
+  (:require [clj-time.coerce :as c]
+            [clj-time.coerce :as ctc]
+            [clj-time.core :as ct]
+            [clj-time.format :as ctf]))
 
 (def dtz (ct/default-time-zone))
 

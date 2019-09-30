@@ -1,8 +1,8 @@
 (ns meins.jvm.graphql.xforms
-  (:require [taoensso.timbre :refer [info error warn debug]]
+  (:require [clojure.tools.reader.edn :as edn]
             [clojure.walk :as walk]
             [com.walmartlabs.lacinia.schema :as schema]
-            [clojure.tools.reader.edn :as edn])
+            [taoensso.timbre :refer [debug error info warn]])
   (:import (clojure.lang IPersistentMap)))
 
 

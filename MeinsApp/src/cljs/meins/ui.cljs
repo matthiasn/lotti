@@ -1,19 +1,19 @@
 (ns meins.ui
-  (:require [reagent.core :as r]
-            [re-frame.db :as rdb]
-            ["react-native" :refer [AppRegistry Platform Animated]]
-            ["react" :refer [Component]]
+  (:require ["react" :refer [Component]]
+            ["react-native" :refer [Animated AppRegistry Platform]]
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-tabs" :refer [createBottomTabNavigator]]
-            [re-frame.core :refer [reg-sub]]
-            [meins.ui.shared :refer [view text fa-icon]]
-            [meins.ui.settings :as s]
             [meins.ui.db :as db]
-            [meins.ui.styles :as styles]
-            [meins.ui.photos :as photos]
-            [meins.ui.journal :as jrn]
             [meins.ui.editor :as ue]
-            [meins.ui.icons :as ico]))
+            [meins.ui.icons :as ico]
+            [meins.ui.journal :as jrn]
+            [meins.ui.photos :as photos]
+            [meins.ui.settings :as s]
+            [meins.ui.shared :refer [fa-icon text view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [reg-sub]]
+            [re-frame.db :as rdb]
+            [reagent.core :as r]))
 
 (reg-sub :active-theme (fn [_db _] :dark))
 

@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.geo.queries
-  (:require [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info error debug]]
+  (:require [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.graphql :as gql]
+            [reagent.core :as r]
+            [taoensso.timbre :refer-macros [debug error info]]
             [venia.core :as v]))
 
 (defn queries [local]

@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.dashboard.common
-  (:require [moment]
+  (:require [meins.electron.renderer.helpers :as h]
+            [moment]
             [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.helpers :as h]
-            [reagent.ratom :refer-macros [reaction]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info debug]]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (def month-day "DD.MM.")
 (def ymd "YYYY-MM-DD")

@@ -1,13 +1,13 @@
 (ns meins.jvm.ws
-  (:require [taoensso.timbre :refer [info debug warn trace error]]
-            [io.pedestal.http.jetty.websockets :as ws]
-            [clojure.core.async :as async]
-            [ring.util.response :as ring-resp]
-            [io.pedestal.http.route.definition :refer [defroutes]]
-            [io.pedestal.http.route :as route]
+  (:require [clojure.core.async :as async]
+            [clojure.edn :as edn]
             [io.pedestal.http :as server]
             [io.pedestal.http :as http]
-            [clojure.edn :as edn])
+            [io.pedestal.http.jetty.websockets :as ws]
+            [io.pedestal.http.route :as route]
+            [io.pedestal.http.route.definition :refer [defroutes]]
+            [ring.util.response :as ring-resp]
+            [taoensso.timbre :refer [debug error info trace warn]])
   (:import [org.eclipse.jetty.websocket.api Session]))
 
 (defn deserialize-meta [payload]

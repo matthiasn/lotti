@@ -1,16 +1,16 @@
 (ns meins.electron.renderer.ui.dashboard.cf_barchart
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.helpers :as h]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info debug]]
+  (:require [clojure.data.avl :as avl]
             [clojure.string :as s]
+            [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [clojure.data.avl :as avl]
-            [meins.common.utils.parse :as up]))
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))

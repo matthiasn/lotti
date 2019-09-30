@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.screenshot
-  (:require [taoensso.timbre :refer-macros [info debug]]
-            [meins.electron.renderer.helpers :as h]))
+  (:require [meins.electron.renderer.helpers :as h]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn screenshot [{:keys [msg-payload]}]
   (let [new-fn (h/new-entry msg-payload)]

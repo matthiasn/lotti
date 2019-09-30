@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.mapbox
-  (:require [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [cljs.nodejs :refer [process]]
+  (:require [cljs.nodejs :refer [process]]
             [mapbox-gl]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [reagent.impl.component :as ric]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.impl.component :as ric]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn mapbox-did-mount [props]
   (let [cfg (subscribe [:cfg])

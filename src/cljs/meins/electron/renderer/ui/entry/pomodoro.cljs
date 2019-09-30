@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.ui.entry.pomodoro
-  (:require [reagent.core :as r]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [re-frame.core :refer [subscribe]]
-            [moment]
-            [taoensso.timbre :refer-macros [info debug]]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [matthiasn.systems-toolbox.component :as st]))
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn pomodoro-time [entry _edit-mode?]
   (let [local (r/atom {:edit  false

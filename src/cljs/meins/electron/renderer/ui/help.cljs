@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.help
-  (:require [reagent.core :as r]
-            [re-frame.core :refer [subscribe]]
+  (:require [markdown.core :as md]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer [info error debug]]
-            [markdown.core :as md]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn help []
   (let [manual (subscribe [:manual])]

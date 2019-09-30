@@ -1,23 +1,23 @@
 (ns meins.jvm.graphql
   "GraphQL query component"
-  (:require [clojure.java.io :as io]
-            [clojure.edn :as edn]
-            [com.walmartlabs.lacinia.util :as util]
-            [com.walmartlabs.lacinia.schema :as schema]
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [com.walmartlabs.lacinia.pedestal :as lp]
+            [com.walmartlabs.lacinia.schema :as schema]
+            [com.walmartlabs.lacinia.util :as util]
             [io.pedestal.http :as http]
-            [meins.jvm.graphql.exec :as exec]
-            [meins.jvm.graphql.habits :as gh]
-            [meins.jvm.graphql.tasks :as gt]
-            [meins.jvm.graphql.opts :as opts]
-            [meins.jvm.graphql.geo-by-day :as geo]
-            [meins.jvm.graphql.misc-stats :as gms]
-            [meins.jvm.graphql.tab-search :as gts]
-            [meins.jvm.graphql.entry :as gte]
             [meins.jvm.graphql.briefings-logged :as gbl]
-            [taoensso.timbre :refer [info error warn debug]]
+            [meins.jvm.graphql.custom-fields :as gcf]
+            [meins.jvm.graphql.entry :as gte]
+            [meins.jvm.graphql.exec :as exec]
+            [meins.jvm.graphql.geo-by-day :as geo]
+            [meins.jvm.graphql.habits :as gh]
+            [meins.jvm.graphql.misc-stats :as gms]
+            [meins.jvm.graphql.opts :as opts]
+            [meins.jvm.graphql.tab-search :as gts]
+            [meins.jvm.graphql.tasks :as gt]
             [meins.jvm.graphql.usage-stats :as us]
-            [meins.jvm.graphql.custom-fields :as gcf]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn search-remove [{:keys [current-state msg-payload]}]
   (let [tab-group (:tab-group msg-payload)

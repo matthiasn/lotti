@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.entry.conflict
-  (:require [taoensso.timbre :refer-macros [info error debug]]
+  (:require [cljs.pprint :as pp]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
-            [cljs.pprint :as pp]))
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn conflict-view [entry]
   (let [local (r/atom {})]

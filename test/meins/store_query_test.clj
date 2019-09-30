@@ -1,12 +1,12 @@
 (ns meins.store-query-test
   "Here, we test the handler functions of the server side store component."
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [matthiasn.systems-toolbox.component :as comp]
-            [meins.store-test :as st]
-            [meins.jvm.graph.stats :as gs]
+            [meins.jvm.file-utils :as fu]
             [meins.jvm.graph.query :as gq]
-            [meins.store-test-common :as stc]
-            [meins.jvm.file-utils :as fu]))
+            [meins.jvm.graph.stats :as gs]
+            [meins.store-test :as st]
+            [meins.store-test-common :as stc]))
 
 (deftest query-test
   "Test that different queries return the expected results."

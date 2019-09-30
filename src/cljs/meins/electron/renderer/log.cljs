@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.log
-  (:require [taoensso.encore :as enc]
-            [electron-log :as l]
+  (:require [electron-log :as l]
+            [taoensso.encore :as enc]
             [taoensso.timbre :as timbre]))
 
 (enable-console-print!)

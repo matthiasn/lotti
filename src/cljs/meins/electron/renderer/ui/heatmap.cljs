@@ -1,17 +1,17 @@
 (ns meins.electron.renderer.ui.heatmap
-  (:require [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require [cljs-bean.core :refer [->clj ->js bean]]
             [cljs.nodejs :refer [process]]
-            [cljs-bean.core :refer [bean ->clj ->js]]
-            [mapbox-gl :refer [Map Popup]]
-            [meins.electron.renderer.ui.entry.carousel :as carousel]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.graphql :as gql]
             [cljs.tools.reader.edn :as edn]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [mapbox-gl :refer [Map Popup]]
+            [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.carousel :as carousel]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (def heatmap-data
   {:type "geojson"

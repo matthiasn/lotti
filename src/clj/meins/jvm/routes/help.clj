@@ -1,10 +1,10 @@
 (ns meins.jvm.routes.help
-  (:require [compojure.core :refer [GET]]
-            [taoensso.timbre :refer [info debug]]
+  (:require [clojure.string :as s]
+            [compojure.core :refer [GET]]
             [hiccup.page :refer [html5 include-css include-js]]
-            [meins.jvm.file-utils :as fu]
             [markdown.core :as mc]
-            [clojure.string :as s]))
+            [meins.jvm.file-utils :as fu]
+            [taoensso.timbre :refer [debug info]]))
 
 (def help-route
   (GET "/help/manual.html" []

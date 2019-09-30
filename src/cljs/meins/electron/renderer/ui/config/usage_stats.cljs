@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.config.usage-stats
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as rc]
-            ["ngeohash" :as geohash]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error]]
+  (:require ["ngeohash" :as geohash]
             [clojure.pprint :as pp]
-            [meins.electron.renderer.ui.leaflet :as l]
             [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.ui.leaflet :as l]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as rc]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]
             [venia.core :as v]))
 
 (defn gh-2-bounds [geohash]

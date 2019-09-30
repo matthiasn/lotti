@@ -1,7 +1,7 @@
 (ns meins.components.healthkit.storage
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [glittershark.core-async-storage :as as]
-            [cljs.core.async :refer [<!]]))
+  (:require [cljs.core.async :refer [<!]]
+            [glittershark.core-async-storage :as as]))
 
 
 (defn set-async [k v]

@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.stats
-  (:require [meins.electron.renderer.ui.charts.tasks :as ct]
-            [meins.electron.renderer.ui.charts.wordcount :as wc]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.charts.time.durations :as cd]
+  (:require [electron :refer [remote]]
             [meins.electron.renderer.ui.charts.media :as m]
-            [electron :refer [remote]]
-            [re-frame.core :refer [subscribe]]))
+            [meins.electron.renderer.ui.charts.tasks :as ct]
+            [meins.electron.renderer.ui.charts.time.durations :as cd]
+            [meins.electron.renderer.ui.charts.wordcount :as wc]
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]))
 
 (defn stats-text [rt-info]
   (let [gql-res (subscribe [:gql-res])

@@ -1,20 +1,20 @@
 (ns meins.jvm.learn
-  (:require [taoensso.timbre :refer [info]]
-            [meins.jvm.graph.query :as gq]
-            [cheshire.core :as cc]
+  (:require [cheshire.core :as cc]
             [clojure.data.csv :as csv]
-            [clojure.java.io :as io]
-            [meins.jvm.file-utils :as fu]
-            [clojure.string :as s]
-            [taoensso.timbre :refer [info error]]
-            [me.raynes.conch :refer [programs let-programs]]
-            [progrock.core :as pr]
-            [meins.jvm.datetime :as dt]
-    ;[geo [geohash :as geohash] [spatial :as spatial]]
-            [clojure.string :as str]
-            [clojure.set :as set]
             [clojure.edn :as edn]
-            [me.raynes.fs :as fs])
+            [clojure.java.io :as io]
+            [clojure.set :as set]
+            [clojure.string :as s]
+            [clojure.string :as str]
+            [me.raynes.conch :refer [let-programs programs]]
+            [me.raynes.fs :as fs]
+            [meins.jvm.datetime :as dt]
+            [meins.jvm.file-utils :as fu]
+    ;[geo [geohash :as geohash] [spatial :as spatial]]
+            [meins.jvm.graph.query :as gq]
+            [progrock.core :as pr]
+            [taoensso.timbre :refer [info]]
+            [taoensso.timbre :refer [error info]])
   (:import [java.math RoundingMode]))
 
 (def n Integer/MAX_VALUE)

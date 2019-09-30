@@ -1,9 +1,9 @@
 (ns meins.jvm.graphql.geo-by-day
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.graph.query :as gq]
-            [clj-time.coerce :as ctc]
+  (:require [clj-time.coerce :as ctc]
             [meins.jvm.datetime :as dt]
-            [meins.jvm.datetime :as h]))
+            [meins.jvm.datetime :as h]
+            [meins.jvm.graph.query :as gq]
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def n Integer/MAX_VALUE)
 

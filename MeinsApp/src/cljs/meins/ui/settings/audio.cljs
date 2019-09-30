@@ -1,14 +1,14 @@
 (ns meins.ui.settings.audio
-  (:require [meins.ui.styles :as styles]
-            [meins.ui.shared :refer [view text settings-list settings-list-item settings-icon
-                                     alert status-bar platform-os]]
-            [re-frame.core :refer [subscribe]]
+  (:require ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
             ["react-native-permissions" :as Permissions]
-            ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
-            [reagent.core :as r]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
-            [matthiasn.systems-toolbox.component :as st]))
+            [meins.ui.shared :refer [alert platform-os settings-icon settings-list settings-list-item
+                                     status-bar text view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]))
 
 (def perm (aget Permissions "default"))
 

@@ -1,14 +1,14 @@
 (ns meins.jvm.imports.git
-  (:require [clojure.pprint :as pp]
-            [me.raynes.conch :refer [programs let-programs]]
-            [taoensso.timbre :refer [info error warn]]
-            [meins.jvm.file-utils :as fu]
-            [camel-snake-kebab.core :refer :all]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [camel-snake-kebab.core :refer :all]
+            [cheshire.core :as cc]
             [clj-time.coerce :as c]
             [clj-time.format :as f]
-            [cheshire.core :as cc]
-            [clojure.string :as s]))
+            [clojure.pprint :as pp]
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [me.raynes.conch :refer [let-programs programs]]
+            [meins.jvm.file-utils :as fu]
+            [taoensso.timbre :refer [error info warn]]))
 
 (programs git)
 (def rfc822-fmt (f/formatters :rfc822))

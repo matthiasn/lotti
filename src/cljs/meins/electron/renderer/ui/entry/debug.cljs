@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.entry.debug
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error debug]]
+  (:require ["electron" :refer [clipboard]]
             [clojure.data :as cd]
-            ["electron" :refer [clipboard]]
+            [meins.electron.renderer.ui.data-explorer :as dex]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
-            [meins.electron.renderer.ui.data-explorer :as dex]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn debug-view [entry new-entry local]
   (let [click #(.writeText clipboard (pr-str entry))]

@@ -3,17 +3,17 @@
             ["react-native-exception-handler" :refer [setJSExceptionHandler
                                                       setNativeExceptionHandler]]
             ["react-native-gesture-handler"]
-            [meins.helpers]
-            [meins.crypto]
-            [meins.ui.shared :refer [alert]]
-            [meins.components.sync :as sync]
-            [meins.components.store :as store]
-            [meins.components.photos :as photos]
-            [meins.components.geolocation :as geo]
-            [meins.ui :as ui]
-            [matthiasn.systems-toolbox.switchboard :as sb]
             [matthiasn.systems-toolbox.scheduler :as sched]
-            [meins.components.healthkit :as hk]))
+            [matthiasn.systems-toolbox.switchboard :as sb]
+            [meins.components.geolocation :as geo]
+            [meins.components.healthkit :as hk]
+            [meins.components.photos :as photos]
+            [meins.components.store :as store]
+            [meins.components.sync :as sync]
+            [meins.crypto]
+            [meins.helpers]
+            [meins.ui :as ui]
+            [meins.ui.shared :refer [alert]]))
 
 (enable-console-print!)
 (defonce switchboard (sb/component :client/switchboard))

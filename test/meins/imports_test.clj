@@ -1,6 +1,6 @@
 (ns meins.imports-test
   "Here, we test the handler functions of the imports component."
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [meins.jvm.imports :as i]
             [meins.jvm.imports.media :as im]))
 

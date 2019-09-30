@@ -1,7 +1,7 @@
 (ns meins.jvm.net
   (:require [clojure.string :as s]
-            [taoensso.timbre :refer [info error]])
-  (:import (java.net NetworkInterface Inet4Address)))
+            [taoensso.timbre :refer [error info]])
+  (:import (java.net Inet4Address NetworkInterface)))
 
 ; ip-filter, ip-extract, and ips functions borrowed from:
 ; http://software-ninja-ninja.blogspot.de/2013/05/clojure-what-is-my-ip-address.html

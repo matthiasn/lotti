@@ -83,6 +83,12 @@ test: deps
 	@echo Running Clojure tests...
 	@lein test
 
+nsorg:
+	@echo Optimizing Imports...
+	@lein nsorg --replace
+	@lein nsorg --replace src/cljs
+	@lein nsorg --replace MeinsApp/src
+
 cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
 	@shadow-cljs compile shared-tests

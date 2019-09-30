@@ -1,6 +1,6 @@
 (ns meins.res-diff-test
-  (:require [clojure.test :refer [deftest testing is]]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
+            [clojure.test :refer [deftest is testing]]
             [meins.jvm.graphql.tab-search :as gts]))
 
 (def prev-res-1

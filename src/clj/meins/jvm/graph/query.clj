@@ -1,21 +1,21 @@
 (ns meins.jvm.graph.query
   "this namespace manages interactions with the graph data structure, which
   holds all entries and their connections."
-  (:require [ubergraph.core :as uc]
-            [meins.jvm.fulltext-search :as ft]
-            [clj-time.coerce :as ctc]
-            [clj-time.format :as ctf]
-            [clojure.string :as s]
-            [clojure.set :as set]
-            [meins.common.utils.misc :as um]
-            [taoensso.timbre :refer [info error warn debug]]
-            [matthiasn.systems-toolbox.component :as st]
-            [clj-uuid :as uuid]
+  (:require [clj-time.coerce :as ctc]
             [clj-time.core :as ct]
+            [clj-time.format :as ctf]
+            [clj-uuid :as uuid]
             [clojure.pprint :as pp]
+            [clojure.set :as set]
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.common.utils.misc :as um]
+            [meins.jvm.fulltext-search :as ft]
+            [meins.jvm.graphql.xforms :as xf]
             [meins.jvm.metrics :as mt]
             [metrics.timers :as tmr]
-            [meins.jvm.graphql.xforms :as xf]))
+            [taoensso.timbre :refer [debug error info warn]]
+            [ubergraph.core :as uc]))
 
 (defn get-node [state ts]
   (let [g (:graph state)]

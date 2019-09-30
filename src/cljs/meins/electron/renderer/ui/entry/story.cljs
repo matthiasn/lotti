@@ -1,15 +1,15 @@
 (ns meins.electron.renderer.ui.entry.story
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]
-            [taoensso.timbre :refer [info error debug]]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.set :as set]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [react-color :as react-color]
+  (:require [clojure.set :as set]
             [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.charts.common :as cc]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [meins.electron.renderer.ui.charts.common :as cc]))
+            [re-frame.core :refer [subscribe]]
+            [react-color :as react-color]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn editable-field [_ _ text]
   (fn [on-input-fn on-keydown-fn _]

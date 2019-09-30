@@ -1,12 +1,12 @@
 (ns meins.components.photos
-  (:require ["react-native" :as rn]
-            ["@matthiasn/cameraroll" :as cam-roll]
+  (:require ["@matthiasn/cameraroll" :as cam-roll]
+            ["react-native" :as rn]
             ["realm" :as realm]
-            [taoensso.timbre :refer-macros [info error warn debug]]
+            [cljs-bean.core :refer [->clj ->js bean]]
+            [clojure.string :as str]
             [matthiasn.systems-toolbox.component :as st]
-            [cljs-bean.core :refer [bean ->clj ->js]]
             [meins.ui.db :as uidb]
-            [clojure.string :as str]))
+            [taoensso.timbre :refer-macros [debug error info warn]]))
 
 (when (= "android" rn/Platform.OS)
   (.request rn/PermissionsAndroid rn/PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE))

@@ -1,11 +1,11 @@
 (ns meins.components.healthkit
-  (:require [meins.components.healthkit.storage :as hs]
-            [meins.components.healthkit.bp :as hb]
-            [meins.components.healthkit.weight :as hw]
+  (:require [meins.components.healthkit.bp :as hb]
             [meins.components.healthkit.energy :as he]
             [meins.components.healthkit.exercise :as hx]
+            [meins.components.healthkit.sleep :as hsl]
             [meins.components.healthkit.steps :as hst]
-            [meins.components.healthkit.sleep :as hsl]))
+            [meins.components.healthkit.storage :as hs]
+            [meins.components.healthkit.weight :as hw]))
 
 (enable-console-print!)
 

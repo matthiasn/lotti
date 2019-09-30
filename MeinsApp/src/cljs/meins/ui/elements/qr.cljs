@@ -1,8 +1,8 @@
 (ns meins.ui.elements.qr
-  (:require [meins.ui.shared :refer [touchable-opacity set-clipboard]]
-            ["react-native-qrcode-svg" :as qr]
-            [re-frame.core :refer [subscribe]]
+  (:require ["react-native-qrcode-svg" :as qr]
+            [meins.ui.shared :refer [set-clipboard touchable-opacity]]
             [meins.util.keychain :as kc]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
 (def qr-svg (r/adapt-react-class (aget qr "default")))

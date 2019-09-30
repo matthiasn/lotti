@@ -1,26 +1,26 @@
 (ns meins.ui.journal
-  (:require [reagent.core :as r]
-            [re-frame.core :refer [subscribe]]
-            [meins.helpers :as h]
-            [glittershark.core-async-storage :as as]
-            [meins.ui.styles :as styles]
-            [meins.ui.db :as uidb :refer [emit]]
-            [meins.ui.editor :as ed]
-            [cljs.reader :as rdr]
-            ["react-navigation-transitions" :refer [fadeIn]]
-            [meins.ui.shared :refer [view text text-input scroll search-bar flat-list
-                                     virtualized-list
-                                     fa-icon image #_swipeout keyboard-avoiding-view
-                                     touchable-opacity settings-list settings-list-item platform-os
-                                     alert status-bar]]
-            [meins.ui.elements.mapbox :as mb]
+  (:require ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-stack" :refer [createStackNavigator]]
-            ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
+            ["react-navigation-transitions" :refer [fadeIn]]
+            [cljs.reader :as rdr]
             [clojure.pprint :as pp]
-            [meins.common.utils.parse :as p]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [glittershark.core-async-storage :as as]
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.common.utils.parse :as p]
+            [meins.helpers :as h]
+            [meins.ui.db :as uidb :refer [emit]]
+            [meins.ui.editor :as ed]
+            [meins.ui.elements.mapbox :as mb]
+            [meins.ui.shared :refer [alert fa-icon flat-list image keyboard-avoiding-view platform-os
+                                     scroll
+                                     search-bar settings-list settings-list-item status-bar
+                                     #_swipeout text text-input touchable-opacity
+                                     view virtualized-list]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]))
 
 (defn get-entry [ts]
   (when (number? ts)

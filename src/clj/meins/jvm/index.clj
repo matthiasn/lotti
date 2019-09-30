@@ -1,10 +1,10 @@
 (ns meins.jvm.index
-  (:require [hiccup.page :refer [html5 include-css include-js]]
+  (:require [compojure.core :refer [GET]]
             [compojure.route :as r]
-            [compojure.core :refer [GET]]
+            [hiccup.page :refer [html5 include-css include-js]]
+            [meins.jvm.file-utils :as fu]
             [meins.jvm.routes.help :as h]
-            [meins.jvm.routes.map-tile :as mt]
-            [meins.jvm.file-utils :as fu]))
+            [meins.jvm.routes.map-tile :as mt]))
 
 (defn index-page [_]
   (html5

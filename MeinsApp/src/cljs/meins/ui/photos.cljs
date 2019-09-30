@@ -1,11 +1,11 @@
 (ns meins.ui.photos
-  (:require [meins.ui.shared :refer [view touchable-opacity image dimensions]]
-            ["react-native-super-grid" :as rn-super-grid]
+  (:require ["react-native-super-grid" :as rn-super-grid]
+            [cljs-bean.core :refer [->clj ->js bean]]
+            [matthiasn.systems-toolbox.component :as stc]
             [meins.helpers :as h]
-            [reagent.core :as r]
-            [cljs-bean.core :refer [bean ->clj ->js]]
             [meins.ui.db :as uidb :refer [emit]]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [meins.ui.shared :refer [dimensions image touchable-opacity view]]
+            [reagent.core :as r]))
 
 (def flat-grid (r/adapt-react-class (.-FlatGrid rn-super-grid)))
 (def screen-width (.-width (.get dimensions "window")))

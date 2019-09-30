@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.graphql
-  (:require [venia.core :as v]
-            #?(:clj
-                     [taoensso.timbre :refer [info debug warn]]
-               :cljs [taoensso.timbre :refer-macros [info debug warn]])
-            [clojure.string :as s]))
+  (:require #?(:clj
+                     [taoensso.timbre :refer [debug info warn]]
+               :cljs [taoensso.timbre :refer-macros [debug info warn]])
+            [clojure.string :as s]
+            [venia.core :as v]))
 
 (defn graphql-query [days offset tags]
   (let [qfn (fn [t]

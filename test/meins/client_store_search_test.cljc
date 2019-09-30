@@ -1,11 +1,11 @@
 (ns meins.client-store-search-test
   "Here, we test the search-related handler functions of the client side store
    component."
-  (:require #?(:clj  [clojure.test :refer [deftest testing is]]
-               :cljs [cljs.test :refer-macros [deftest testing is]])
+  (:require #?(:clj  [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer-macros [deftest is testing]])
+            [meins.client-store-test :as st]
             [meins.electron.renderer.client-store :as cs]
-            [meins.electron.renderer.client-store.search :as search]
-            [meins.client-store-test :as st]))
+            [meins.electron.renderer.client-store.search :as search]))
 
 (deftest update-query-test
   "Test that new query is updated properly in store component state"

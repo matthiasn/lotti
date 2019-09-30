@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.config.locale
-  (:require [re-frame.core :refer [subscribe]]
+  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error]]))
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn locale-preferences []
   (let [cfg (subscribe [:cfg])

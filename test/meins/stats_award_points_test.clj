@@ -1,8 +1,8 @@
 (ns meins.stats-award-points-test
   "Here, we test the handler functions of the server side store component."
-  (:require [clojure.test :refer [deftest testing is]]
-            [meins.jvm.graph.stats.awards :as aw]
-            [clojure.pprint :as pp]))
+  (:require [clojure.pprint :as pp]
+            [clojure.test :refer [deftest is testing]]
+            [meins.jvm.graph.stats.awards :as aw]))
 
 (def entries
   [{:habit {:completion_ts "2017-03-24T13:20:03+01:00" :done true :points 10}}

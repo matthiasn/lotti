@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.client-store.handlers
   (:require #?(:cljs [reagent.core :refer [atom]])
-            #?(:clj  [taoensso.timbre :refer [info debug]]
-               :cljs [taoensso.timbre :refer-macros [info debug]])))
+            #?(:clj  [taoensso.timbre :refer [debug info]]
+               :cljs [taoensso.timbre :refer-macros [debug info]])))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
   (let [old-page (:page (:current-page current-state))

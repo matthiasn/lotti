@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.entry.datetime
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info error debug]]
+  (:require [meins.common.utils.misc :as u]
             [meins.electron.renderer.helpers :as h]
-            [meins.common.utils.misc :as u]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [moment]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn datetime-edit [entry local2]
   (let [cfg (subscribe [:cfg])

@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.entry.reward
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.helpers :as h]
             [moment]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [meins.electron.renderer.helpers :as h]))
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn reward-details [entry put-fn]
   (let [claimed (fn [entry]

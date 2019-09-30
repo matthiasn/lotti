@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.client-store.entry
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
+            #?(:clj  [taoensso.timbre :refer [debug info]]
+               :cljs [taoensso.timbre :refer-macros [debug info]])
+            #?(:cljs [moment])
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as u]
-            #?(:clj  [taoensso.timbre :refer [info debug]]
-               :cljs [taoensso.timbre :refer-macros [info debug]])
-            #?(:cljs [moment])
             [meins.common.utils.parse :as p]))
 
 #?(:clj  (defonce new-entries-ls (atom {}))

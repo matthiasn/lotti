@@ -1,9 +1,9 @@
 (ns meins.electron.main.log
-  (:require [electron-log :as l]
-            [cljs.nodejs :as nodejs]
+  (:require [cljs.nodejs :as nodejs]
+            [electron-log :as l]
+            [meins.electron.main.runtime :as rt]
             [taoensso.encore :as enc]
-            [taoensso.timbre :as timbre]
-            [meins.electron.main.runtime :as rt]))
+            [taoensso.timbre :as timbre]))
 
 (aset l "transports" "console" "level" "info")
 (aset l "transports" "console" "format" "{h}:{i}:{s}:{ms} {text}")

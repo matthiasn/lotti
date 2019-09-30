@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.dashboard.scores
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [camel-snake-kebab.core :refer [->kebab-case]]
-            [meins.electron.renderer.ui.dashboard.common :as dc]
+  (:require [camel-snake-kebab.core :refer [->kebab-case]]
             [clojure.string :as s]
             [meins.common.utils.parse :as up]
-            [meins.electron.renderer.helpers :as h]))
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn scores-fn [stats k]
   (->> stats

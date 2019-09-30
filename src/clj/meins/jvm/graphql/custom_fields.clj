@@ -1,12 +1,12 @@
 (ns meins.jvm.graphql.custom-fields
-  (:require [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [info error warn debug]]
-            [matthiasn.systems-toolbox.component :as stc]
-            [ubergraph.core :as uber]
-            [meins.jvm.datetime :as dt]
+  (:require [clj-time.core :as ct]
             [clj-time.format :as ctf]
-            [clj-time.core :as ct]
-            [meins.jvm.graphql.common :as gc]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.jvm.datetime :as dt]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graphql.common :as gc]
+            [taoensso.timbre :refer [debug error info warn]]
+            [ubergraph.core :as uber]))
 
 (defn custom-fields-cfg
   "Generates the custom fields config map as required by the

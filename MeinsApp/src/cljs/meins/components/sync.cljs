@@ -1,18 +1,17 @@
 (ns meins.components.sync
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [glittershark.core-async-storage :as as]
-            [cljs.core.async :refer [<!]]
-            [taoensso.timbre :refer-macros [info error warn debug]]
-            [meins.ui.shared :as shared :refer [platform-os]]
-            [taoensso.timbre :refer-macros [info error warn debug]]
-            [meins.shared.encryption :as mse]
-            [re-frame.core :refer [subscribe]]
-            ["@matthiasn/react-native-mailcore" :default MailCore]
+  (:require ["@matthiasn/react-native-mailcore" :default MailCore]
             ["@react-native-community/netinfo" :as net-info]
-            [meins.ui.db :as uidb]
+            [cljs.core.async :refer [<!]]
             [cljs.reader :as edn]
             [clojure.string :as str]
-            [meins.util.keychain :as kc]))
+            [glittershark.core-async-storage :as as]
+            [meins.shared.encryption :as mse]
+            [meins.ui.db :as uidb]
+            [meins.ui.shared :as shared :refer [platform-os]]
+            [meins.util.keychain :as kc]
+            [re-frame.core :refer [subscribe]]
+            [taoensso.timbre :refer-macros [debug error info warn]]))
 
 (defn extract-body [s]
   (-> (str s)

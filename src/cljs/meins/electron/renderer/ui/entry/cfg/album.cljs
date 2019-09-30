@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.entry.cfg.album
-  (:require [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [reagent.core :as r]))
+            [meins.electron.renderer.ui.ui-components :as uc]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn album-config [entry]
   (let [title-path [:album_cfg :title]

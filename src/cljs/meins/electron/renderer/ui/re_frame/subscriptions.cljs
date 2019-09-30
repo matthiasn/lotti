@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.re-frame.subscriptions
   (:require-macros [reagent.ratom :refer [reaction]])
-  (:require [reagent.core :as rc]
+  (:require [electron :refer [remote]]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.utils :as eu]
             [re-frame.core :refer [reg-sub subscribe]]
             [re-frame.db :as rdb]
-            [electron :refer [remote]]
-            [taoensso.timbre :refer [info error debug]]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.entry.utils :as eu]))
+            [reagent.core :as rc]
+            [taoensso.timbre :refer [debug error info]]))
 
 ; to be overwritten with put-fn on ui startup
 (def emit-atom (atom (fn [])))

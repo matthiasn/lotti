@@ -1,13 +1,13 @@
 (ns meins.components.geolocation
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [meins.ui.shared :as shared :refer [platform-os]]
-            ["intl" :as intl]
-            ["realm" :as realm]
-            [cljs-bean.core :refer [bean ->clj ->js]]
+  (:require ["intl" :as intl]
             ["react-native-background-geolocation" :default BgGeo]
+            ["realm" :as realm]
+            [cljs-bean.core :refer [->clj ->js bean]]
             [cljs.tools.reader.edn :as edn]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
-            [meins.ui.db :as uidb]))
+            [meins.ui.db :as uidb]
+            [meins.ui.shared :as shared :refer [platform-os]]))
 
 (def accuracy
   (if (= platform-os "ios")

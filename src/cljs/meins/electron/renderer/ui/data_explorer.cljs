@@ -1,10 +1,10 @@
   (ns meins.electron.renderer.ui.data-explorer
   "Slightly modified from https://github.com/kamituel/systems-toolbox-chrome"
   (:require-macros [reagent.ratom :refer [reaction]])
-  (:require [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [meins.electron.renderer.localstorage :as sa]
-            [reagent.core :as r]))
+  (:require [meins.electron.renderer.localstorage :as sa]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn data->hiccup
   "Converts an arbitrary EDN data structure to the HTML where each element (i.e. map, vector,

@@ -1,6 +1,6 @@
 (ns meins.ui.settings.db
-  (:require [meins.ui.shared :refer [view text settings-list settings-list-item alert status-bar
-                                     settings-icon]]
+  (:require [meins.ui.shared :refer [alert settings-icon settings-list settings-list-item status-bar text
+                                     view]]
             [re-frame.core :refer [subscribe]]))
 
 (defn db-settings [_local put-fn]

@@ -1,9 +1,9 @@
 (ns meins.common.specs
-  (:require [meins.common.utils.parse :as p]
-            #?(:clj [clojure.spec.alpha :as s]
+  (:require #?(:clj [clojure.spec.alpha :as s]
                :cljs [cljs.spec.alpha :as s])
             [meins.common.specs.imap]
-            [meins.common.specs.updater]))
+            [meins.common.specs.updater]
+            [meins.common.utils.parse :as p]))
 
 (defn number-in-range?
   "Return function that returns true if start <= val and val < end"

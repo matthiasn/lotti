@@ -1,10 +1,10 @@
 (ns meins.ui.shared
-  (:require [reagent.core :as r]
-            ["react-native" :as react-native :refer [Clipboard]]
+  (:require ["react-native" :as react-native :refer [Clipboard]]
             ["react-native-camera" :as react-native-camera]
-            ["react-native-vector-icons/FontAwesome" :as FontAwesome]
+            ["react-native-elements" :as react-native-elements]
             ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
-            ["react-native-elements" :as react-native-elements]))
+            ["react-native-vector-icons/FontAwesome" :as FontAwesome]
+            [reagent.core :as r]))
 
 (def dimensions (.-Dimensions react-native))
 (def keyboard (.-Keyboard react-native))

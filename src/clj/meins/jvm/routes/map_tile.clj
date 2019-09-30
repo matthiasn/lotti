@@ -1,13 +1,13 @@
 (ns meins.jvm.routes.map-tile
   "Route for serving map tile images. These images are cached locally so they
    are only retrieved once and stay available offline."
-  (:require [compojure.core :refer [GET]]
-            [meins.jvm.files :as f]
+  (:require [clj-http.client :as client]
             [clojure.java.io :as io]
-            [clj-http.client :as client]
-            [taoensso.timbre :refer [debug]]
+            [compojure.core :refer [GET]]
             [me.raynes.fs :as fs]
-            [meins.jvm.file-utils :as fu]))
+            [meins.jvm.file-utils :as fu]
+            [meins.jvm.files :as f]
+            [taoensso.timbre :refer [debug]]))
 
 (def map-tile-route
   (GET "/tiles/:z/:x/:y" [z x y :as r]

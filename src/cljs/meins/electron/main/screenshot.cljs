@@ -1,10 +1,10 @@
 (ns meins.electron.main.screenshot
-  (:require [taoensso.timbre :refer-macros [info debug error]]
+  (:require [fs :refer [writeFile]]
             [matthiasn.systems-toolbox.component :as st]
-            [screenshot-desktop :as screenshot]
-            [meins.electron.main.runtime :as rt]
             [meins.common.utils.misc :as m]
-            [fs :refer [writeFile]]))
+            [meins.electron.main.runtime :as rt]
+            [screenshot-desktop :as screenshot]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn take-screenshot [{:keys [put-fn]}]
   (let [ts (st/now)

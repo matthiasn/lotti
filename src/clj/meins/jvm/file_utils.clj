@@ -1,11 +1,11 @@
 (ns meins.jvm.file-utils
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [taoensso.timbre :refer [info warn]]
-            [me.raynes.fs :as fs]
+  (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [clojure.pprint :as pp]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [me.raynes.fs :as fs]
+            [taoensso.timbre :refer [info warn]]))
 
 (def app-path (or (System/getenv "APP_PATH") "."))
 

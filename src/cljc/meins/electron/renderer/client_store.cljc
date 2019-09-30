@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.client-store
   (:require #?(:cljs [reagent.core :refer [atom]])
-            #?(:clj  [taoensso.timbre :refer [info debug]]
-               :cljs [taoensso.timbre :refer-macros [info debug]])
+            #?(:clj  [taoensso.timbre :refer [debug info]]
+               :cljs [taoensso.timbre :refer-macros [debug info]])
             [matthiasn.systems-toolbox.component :as st]
-            [meins.electron.renderer.client-store.entry :as cse]
-            [meins.electron.renderer.client-store.search :as s]
-            [meins.electron.renderer.client-store.initial :as csi]
-            [meins.electron.renderer.client-store.handlers :as csh]
             [meins.electron.renderer.client-store.cfg :as c]
+            [meins.electron.renderer.client-store.entry :as cse]
+            [meins.electron.renderer.client-store.handlers :as csh]
+            [meins.electron.renderer.client-store.initial :as csi]
+            [meins.electron.renderer.client-store.search :as s]
             [meins.electron.renderer.graphql :as gql]))
 
 (defn state-fn [put-fn]

@@ -1,14 +1,14 @@
 (ns meins.jvm.utils.images
   "Utils for image conversion and manipulation."
-  (:require [image-resizer.format :refer :all]
+  (:require [clojure.string :as s]
+            [image-resizer.format :refer :all]
             [image-resizer.resize :refer :all]
-            [image-resizer.scale-methods :refer :all]
             [image-resizer.rotate :refer :all]
+            [image-resizer.scale-methods :refer :all]
             [image-resizer.util :refer :all]
-            [clojure.string :as s]
-            [taoensso.timbre :refer [info error warn debug]]
+            [me.raynes.fs :as fs]
             [meins.jvm.file-utils :as fu]
-            [me.raynes.fs :as fs])
+            [taoensso.timbre :refer [debug error info warn]])
   (:import (com.drew.imaging ImageMetadataReader)))
 
 (defn extract-from-tag

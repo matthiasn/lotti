@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.entry.quill
   "Adapted from https://github.com/benhowell/reagent-quill/blob/master/quill.cljs"
-  (:require [reagent.core :as r]
-            [taoensso.timbre :refer [info error debug]]
-            [quill :as quill]))
+  (:require [quill :as quill]
+            [reagent.core :as r]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn quill-toolbar [id]
   [:div {:id (str "quill-toolbar-" id)}

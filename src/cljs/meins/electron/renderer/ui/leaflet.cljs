@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.leaflet
-  (:require [reagent.core :as rc]
+  (:require [leaflet]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer [info]]
-            [leaflet]))
+            [reagent.core :as rc]
+            [taoensso.timbre :refer [info]]))
 
 (defn leaflet-did-mount
   "Function using the did-mount lifecycle method. Uses :id from props map to

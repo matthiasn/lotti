@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.dashboard.commits
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
+            [moment]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [tinycolor2 :as tinycolor]
-            [meins.electron.renderer.ui.charts.common :as cc]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]
+            [tinycolor2 :as tinycolor]))
 
 (defn rect [{:keys []}]
   (let [local (r/atom {})

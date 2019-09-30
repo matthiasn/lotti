@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.ui.ui-components
   (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error debug]]))
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 
 (defn select [{:keys [options entry path on-change sorted-by] :as m}]

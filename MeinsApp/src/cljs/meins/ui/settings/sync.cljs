@@ -1,12 +1,12 @@
 (ns meins.ui.settings.sync
-  (:require [meins.ui.styles :as styles]
-            [meins.ui.shared :refer [scroll view settings-list alert cam text settings-list-item status-bar]]
-            [meins.ui.elements.qr :as qr]
-            [meins.util.keychain :as kc]
+  (:require [cljs.tools.reader.edn :as edn]
             [meins.shared.encryption :as mse]
-            [re-frame.core :refer [subscribe]]
-            [cljs.tools.reader.edn :as edn]
             [meins.ui.db :refer [emit]]
+            [meins.ui.elements.qr :as qr]
+            [meins.ui.shared :refer [alert cam scroll settings-list settings-list-item status-bar text view]]
+            [meins.ui.styles :as styles]
+            [meins.util.keychain :as kc]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
 (defn set-keypair

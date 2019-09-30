@@ -1,8 +1,8 @@
 (ns meins.common.utils.misc
-  (:require [clojure.string :as s]
-            [clojure.set :as set]
-            [taoensso.timbre :refer-macros [info debug]]
-            [meins.common.specs :as specs]))
+  (:require [clojure.set :as set]
+            [clojure.string :as s]
+            [meins.common.specs :as specs]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn duration-string
   "Format duration string from seconds."

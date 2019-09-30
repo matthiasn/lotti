@@ -1,10 +1,10 @@
 (ns meins.jvm.imports.flight
-  (:require [net.cgrand.enlive-html :as eh]
-            [camel-snake-kebab.core :refer :all]
+  (:require [camel-snake-kebab.core :refer :all]
             [clj-http.client :as hc]
-            [taoensso.timbre :refer [info error warn]]
+            [clj-time.format :as ctf]
             [clojure.string :as s]
-            [clj-time.format :as ctf]))
+            [net.cgrand.enlive-html :as eh]
+            [taoensso.timbre :refer [error info warn]]))
 
 (def timezones
   {"PDT"   "-07:00"

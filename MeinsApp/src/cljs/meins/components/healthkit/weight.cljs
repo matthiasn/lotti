@@ -1,9 +1,9 @@
 (ns meins.components.healthkit.weight
   (:require ["@matthiasn/rn-apple-healthkit" :as hk]
             ["moment" :as moment]
+            [cljs.pprint :as pp]
             [matthiasn.systems-toolbox.component :as st]
-            [meins.components.healthkit.common :as hc]
-            [cljs.pprint :as pp]))
+            [meins.components.healthkit.common :as hc]))
 
 (defn round [n d]
   (let [fmt (str "~," d "f")]

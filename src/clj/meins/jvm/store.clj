@@ -1,23 +1,23 @@
 (ns meins.jvm.store
   "This namespace contains the functions necessary to instantiate the store-cmp,
    which then holds the server side application state."
-  (:require [meins.jvm.files :as f]
-            [taoensso.timbre :refer [info error warn]]
-            [taoensso.timbre.profiling :refer [p profile]]
-            [meins.jvm.graph.query :as gq]
+  (:require [clojure.data.avl :as avl]
+            [meins.common.specs]
+            [meins.jvm.export :as e]
+            [meins.jvm.file-utils :as fu]
+            [meins.jvm.files :as f]
             [meins.jvm.graph.add :as ga]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graphql :as gql]
+            [meins.jvm.graphql.exec :as exec]
+            [meins.jvm.graphql.opts :as opts]
             [meins.jvm.learn :as tf]
             [meins.jvm.metrics :as m]
-            [meins.jvm.export :as e]
-            [meins.jvm.store.startup :as startup]
             [meins.jvm.store.cfg :as cfg]
-            [meins.common.specs]
-            [clojure.data.avl :as avl]
-            [ubergraph.core :as uber]
-            [meins.jvm.file-utils :as fu]
-            [meins.jvm.graphql :as gql]
-            [meins.jvm.graphql.opts :as opts]
-            [meins.jvm.graphql.exec :as exec]))
+            [meins.jvm.store.startup :as startup]
+            [taoensso.timbre :refer [error info warn]]
+            [taoensso.timbre.profiling :refer [p profile]]
+            [ubergraph.core :as uber]))
 
 (defn sync-done [{:keys [put-fn]}]
   (put-fn (with-meta [:search/refresh] {:sente-uid :broadcast}))

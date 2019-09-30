@@ -1,16 +1,16 @@
 (ns meins.electron.main.startup
-  (:require [taoensso.timbre :refer-macros [info error]]
-            [child_process :refer [spawn fork]]
-            [electron :refer [app session shell]]
-            [http :as http]
-            [find-process :as find-process]
+  (:require [child_process :refer [fork spawn]]
             [cljs.reader :refer [read-string]]
-            [path :refer [join normalize]]
-            [meins.electron.main.runtime :as rt]
-            [fs :refer [existsSync renameSync readFileSync writeFileSync]]
+            [cljs.reader :as edn]
             [clojure.string :as str]
             [clojure.string :as s]
-            [cljs.reader :as edn]))
+            [electron :refer [app session shell]]
+            [find-process :as find-process]
+            [fs :refer [existsSync readFileSync renameSync writeFileSync]]
+            [http :as http]
+            [meins.electron.main.runtime :as rt]
+            [path :refer [join normalize]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (def PORT (:port rt/runtime-info))
 (def data-path (:data-path rt/runtime-info))

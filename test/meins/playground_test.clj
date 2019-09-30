@@ -1,8 +1,8 @@
 (ns meins.playground-test
-  (:require [clojure.test :refer :all]
-            [taoensso.timbre :refer [info error warn]]
-            [clojure.string :as s]
-            [meins.jvm.playground :as pg]))
+  (:require [clojure.string :as s]
+            [clojure.test :refer :all]
+            [meins.jvm.playground :as pg]
+            [taoensso.timbre :refer [error info warn]]))
 
 (def parsed-file (pg/parse-txt "bfaut11.txt" Integer/MAX_VALUE))
 

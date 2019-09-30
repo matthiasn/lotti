@@ -1,14 +1,14 @@
 (ns meins.components.store
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [meins.ui.db :as uidb]
-            [glittershark.core-async-storage :as as]
-            [taoensso.timbre :refer-macros [info error warn debug]]
-            ["realm" :as realm]
-            [clojure.data.avl :as avl]
+  (:require ["realm" :as realm]
             [cljs.core.async :refer [<!]]
+            [cljs.tools.reader.edn :as edn]
+            [clojure.data.avl :as avl]
+            [glittershark.core-async-storage :as as]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
-            [cljs.tools.reader.edn :as edn]))
+            [meins.ui.db :as uidb]
+            [taoensso.timbre :refer-macros [debug error info warn]]))
 
 (defn persist [{:keys [current-state put-fn msg-payload msg-meta]}]
   (let [{:keys [timestamp vclock id]} msg-payload

@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.router
-  (:require [secretary.core :as secretary :refer-macros [defroute]]
-            [goog.events])
-  (:import [goog.history Html5History EventType]))
+  (:require [goog.events]
+            [secretary.core :as secretary :refer-macros [defroute]])
+  (:import [goog.history EventType Html5History]))
 
 (defn page-id
   "Maps page paths to view keywords."

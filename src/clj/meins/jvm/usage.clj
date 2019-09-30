@@ -1,7 +1,7 @@
 (ns meins.jvm.usage
   (:require [cheshire.core :as cc]
-            [taoensso.timbre :refer [info error]]
-            [clj-http.client :as client]))
+            [clj-http.client :as client]
+            [taoensso.timbre :refer [error info]]))
 
 (defn upload-usage [data]
   (try

@@ -1,7 +1,7 @@
 (ns meins.jvm.graph.stats.questionnaires
   "Get stats from graph."
-  (:require [meins.jvm.graph.query :as gq]
-            [meins.electron.renderer.ui.questionnaires :as q]))
+  (:require [meins.electron.renderer.ui.questionnaires :as q]
+            [meins.jvm.graph.query :as gq]))
 
 (defn questionnaires-by-tag
   "Calculates individual questionnaire scores."

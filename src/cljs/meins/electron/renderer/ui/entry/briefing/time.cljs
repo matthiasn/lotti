@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.entry.briefing.time
   (:require [matthiasn.systems-toolbox.component :as st]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.charts.common :as cc]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.charts.common :as cc]
             [moment]
-            [meins.electron.renderer.helpers :as h]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]))
 
 (defn time-by-stories
   "Render list of times spent on individual stories, plus the total."

@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.entry.cfg.shared
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [meins.electron.renderer.helpers :as h]
-            [moment]))
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn input-row [entry cfg]
   (let [{:keys [label validate path xf error default]} cfg

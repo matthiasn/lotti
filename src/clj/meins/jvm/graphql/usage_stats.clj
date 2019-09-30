@@ -1,11 +1,11 @@
 (ns meins.jvm.graphql.usage-stats
-  (:require [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [info error warn debug]]
-            [matthiasn.systems-toolbox.component :as stc]
+  (:require [buddy.core.codecs :refer :all]
             [buddy.core.hash :as hash]
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graph.stats :as gs]
             [meins.jvm.usage :as usage]
-            [buddy.core.codecs :refer :all]
-            [meins.jvm.graph.stats :as gs]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn usage-stats-by-day [state _context args _value]
   (let [start (stc/now)

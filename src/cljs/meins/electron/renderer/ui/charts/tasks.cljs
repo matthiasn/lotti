@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.charts.tasks
-  (:require [reagent.core :as rc]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.electron.renderer.helpers :as h]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as rc]
+            [reagent.ratom :refer-macros [reaction]]))
 
 (defn tasks-chart
   "Draws chart for opened and closed tasks, where the bars for the counts of

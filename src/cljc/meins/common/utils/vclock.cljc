@@ -1,8 +1,8 @@
 (ns meins.common.utils.vclock
   (:require [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [meins.common.specs]
-            [expound.alpha :as exp]))
+            [expound.alpha :as exp]
+            [meins.common.specs]))
 
 (defn next-global-vclock [current-state]
   (let [global-vclock (:global-vclock current-state)

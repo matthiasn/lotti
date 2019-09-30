@@ -1,15 +1,14 @@
 (ns meins.store-persist-test
   "Here, we test the handler functions of the server side store component."
-  (:require [clojure.test :refer [deftest testing is use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [matthiasn.systems-toolbox.component :as comp]
-            [meins.jvm.files :as f]
-            [meins.store-test :as st]
-            [meins.jvm.graph.stats :as gs]
-            [meins.jvm.graph.query :as gq]
-            [meins.store-test-common :as stc]
-            [meins.jvm.files :as f]
+            [me.raynes.fs :as fs]
             [meins.jvm.file-utils :as fu]
-            [me.raynes.fs :as fs]))
+            [meins.jvm.files :as f]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graph.stats :as gs]
+            [meins.store-test :as st]
+            [meins.store-test-common :as stc]))
 
 (deftest persist-test
   "Test that different queries return the expected results against app state

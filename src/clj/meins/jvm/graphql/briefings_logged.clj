@@ -1,15 +1,15 @@
 (ns meins.jvm.graphql.briefings-logged
   "GraphQL query component"
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.graphql.common :as gc]
-            [matthiasn.systems-toolbox.component :as stc]
-            [meins.jvm.graph.query :as gq]
-            [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
+  (:require [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
-            [meins.jvm.graph.stats.day :as gsd]
-            [meins.jvm.datetime :as dt]
             [clojure.set :as set]
-            [meins.jvm.graphql.tasks :as gt]))
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.jvm.datetime :as dt]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graph.stats.day :as gsd]
+            [meins.jvm.graphql.common :as gc]
+            [meins.jvm.graphql.tasks :as gt]
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def d (* 24 60 60 1000))
 

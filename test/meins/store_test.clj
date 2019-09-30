@@ -1,13 +1,12 @@
 (ns meins.store-test
   "Here, we test the handler functions of the server side store component."
-  (:require [clojure.test :refer [deftest testing is]]
-            [meins.jvm.files :as f]
-            [meins.jvm.store :as s]
-            [meins.jvm.graph.query :as gq]
+  (:require [clojure.set :as set]
+            [clojure.test :refer [deftest is testing]]
             [me.raynes.fs :as fs]
-            [meins.jvm.files :as f]
-            [clojure.set :as set]
             [meins.jvm.file-utils :as fu]
+            [meins.jvm.files :as f]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.store :as s]
             [meins.jvm.store.startup :as startup]))
 
 (def some-test-entry

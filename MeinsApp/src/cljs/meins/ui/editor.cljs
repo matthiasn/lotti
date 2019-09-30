@@ -1,14 +1,14 @@
 (ns meins.ui.editor
-  (:require [re-frame.core :refer [subscribe]]
-            [meins.ui.shared :refer [view text text-input touchable-opacity platform-os status-bar
-                                     keyboard-avoiding-view keyboard scroll]]
-            [meins.ui.db :refer [emit]]
-            [reagent.core :as r]
-            [meins.ui.styles :as styles]
-            [meins.helpers :as h]
-            [meins.common.utils.parse :as p]
+  (:require [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as stc]
-            [clojure.string :as s]))
+            [meins.common.utils.parse :as p]
+            [meins.helpers :as h]
+            [meins.ui.db :refer [emit]]
+            [meins.ui.shared :refer [keyboard keyboard-avoiding-view platform-os scroll status-bar text
+                                     text-input touchable-opacity view]]
+            [meins.ui.styles :as styles]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]))
 
 (def local (r/atom {:md ""}))
 

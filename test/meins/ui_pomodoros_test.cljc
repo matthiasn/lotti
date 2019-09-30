@@ -2,8 +2,8 @@
   "Here, we test the pomodoro UI functions. These tests are written in cljc and
    can also run on the JVM, as we only have pure functions in the target
     namespace."
-  (:require #?(:clj [clojure.test :refer [deftest testing is]]
-               :cljs [cljs.test :refer-macros [deftest testing is]])
+  (:require #?(:clj [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer-macros [deftest is testing]])
                     [meins.electron.renderer.ui.pomodoro :as p]))
 
 (def test-entries

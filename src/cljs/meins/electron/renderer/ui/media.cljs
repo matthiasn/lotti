@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.media
-  (:require [clojure.string :as s]
-            [reagent.core :as r]
+  (:require [clojure.pprint :as pp]
+            [clojure.string :as s]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [clojure.pprint :as pp]))
+            [reagent.core :as r]))
 
 (defn imdb-view [entry]
   (when-let [imdb-id (get-in entry [:custom-fields "#imdb" :imdb-id])]

@@ -1,7 +1,7 @@
 (ns meins.ui.settings.health
-  (:require [meins.ui.styles :as styles]
-            [meins.ui.shared :refer [view text fa-icon touchable-opacity status-bar]]
-            [meins.ui.db :refer [emit]]
+  (:require [meins.ui.db :refer [emit]]
+            [meins.ui.shared :refer [fa-icon status-bar text touchable-opacity view]]
+            [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]))
 
 (defn start-watching [])

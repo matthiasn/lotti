@@ -1,15 +1,15 @@
 (ns meins.electron.renderer.ui.entry.capture
-  (:require [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.questionnaires :as q]
-            [meins.electron.renderer.helpers :as h]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require [clojure.set :as set]
             [clojure.string :as s]
-            [reagent.core :as r]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.questionnaires :as q]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meins.electron.renderer.ui.ui-components :as uc]
             [moment]
-            [clojure.set :as set]
-            [meins.electron.renderer.ui.ui-components :as uc]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn parse-and-set [entry path tag input-type]
   (let [value (get-in entry path)]

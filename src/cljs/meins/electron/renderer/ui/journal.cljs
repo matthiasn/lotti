@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.ui.journal
-  (:require [meins.electron.renderer.ui.entry.entry :as e]
-            [taoensso.timbre :refer [info error debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
+  (:require [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.entry :as e]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
             [react-list :as rl]
             [reagent.core :as r]
-            [matthiasn.systems-toolbox.component :as st]
-            [meins.electron.renderer.helpers :as h]))
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (def react-list (r/adapt-react-class rl))
 

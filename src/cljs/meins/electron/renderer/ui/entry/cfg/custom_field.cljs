@@ -1,15 +1,15 @@
 (ns meins.electron.renderer.ui.entry.cfg.custom-field
-  (:require [react-color :as react-color]
-            [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [taoensso.timbre :refer-macros [info error debug]]
+  (:require [meins.common.utils.parse :as p]
             [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
+            [meins.electron.renderer.ui.entry.utils :as eu]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meins.electron.renderer.ui.ui-components :as uc]
             [moment]
-            [meins.common.utils.parse :as p]
-            [meins.electron.renderer.ui.entry.utils :as eu]))
+            [re-frame.core :refer [subscribe]]
+            [react-color :as react-color]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn is-tag? [s] (when (string? s) (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s)))
 

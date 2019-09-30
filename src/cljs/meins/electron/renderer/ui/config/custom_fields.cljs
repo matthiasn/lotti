@@ -1,15 +1,15 @@
 (ns meins.electron.renderer.ui.config.custom-fields
-  (:require [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info error]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.ui.config.assistants.custom-fields :as ac]
-            [meins.electron.renderer.helpers :as h]
-            [clojure.string :as s]
-            [reagent.core :as r]
+  (:require [clojure.string :as s]
+            [meins.common.utils.parse :as up]
             [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.config.assistants.custom-fields :as ac]
             [meins.electron.renderer.ui.journal :as j]
-            [meins.common.utils.parse :as up]))
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))

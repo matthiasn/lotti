@@ -1,14 +1,14 @@
 (ns meins.jvm.graphql.habits
-  (:require [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [info error warn debug]]
-            [meins.jvm.graphql.custom-fields :as cf]
-            [ubergraph.core :as uc]
-            [meins.jvm.datetime :as dt]
+  (:require [matthiasn.systems-toolbox.component :as stc]
             [meins.common.habits.util :as hu]
             [meins.common.utils.misc :as m]
-            [matthiasn.systems-toolbox.component :as stc]
+            [meins.common.utils.misc :as um]
+            [meins.jvm.datetime :as dt]
+            [meins.jvm.graph.query :as gq]
             [meins.jvm.graph.stats.day :as gsd]
-            [meins.common.utils.misc :as um]))
+            [meins.jvm.graphql.custom-fields :as cf]
+            [taoensso.timbre :refer [debug error info warn]]
+            [ubergraph.core :as uc]))
 
 (def d (* 24 60 60 1000))
 

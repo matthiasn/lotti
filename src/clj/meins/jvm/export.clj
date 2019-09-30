@@ -1,10 +1,10 @@
 (ns meins.jvm.export
-  (:require [taoensso.timbre :refer [info]]
-            [meins.jvm.graph.query :as gq]
-            [cheshire.core :as cc]
+  (:require [cheshire.core :as cc]
             [clj-time.coerce :as ctc]
             [meins.jvm.file-utils :as fu]
-            [taoensso.timbre :refer [info error]]))
+            [meins.jvm.graph.query :as gq]
+            [taoensso.timbre :refer [info]]
+            [taoensso.timbre :refer [error info]]))
 
 ;;; Export for mapbox heatmap
 

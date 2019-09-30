@@ -1,8 +1,8 @@
 (ns meins.jvm.metrics
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [metrics.timers :as tmr]
+  (:require [metrics.core :as mc]
             [metrics.histograms :as hist]
-            [metrics.core :as mc]))
+            [metrics.timers :as tmr]
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def metrics-registry (mc/new-registry))
 

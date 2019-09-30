@@ -1,16 +1,16 @@
 (ns meins.electron.renderer.ui.entry.post-mortem
-  (:require [re-frame.core :refer [subscribe]]
-            [meins.electron.renderer.ui.questionnaires :as q]
-            [meins.electron.renderer.helpers :as h]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require [clojure.set :as set]
             [clojure.string :as s]
-            [reagent.core :as r]
-            [moment]
-            [clojure.set :as set]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
+            [meins.electron.renderer.ui.questionnaires :as q]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [meins.electron.renderer.ui.entry.cfg.shared :as cs]))
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 
 (defn post-mortem

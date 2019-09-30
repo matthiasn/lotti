@@ -1,9 +1,9 @@
 (ns meins.vclock-test
   (:require [clojure.test :refer :all]
-            [meins.common.utils.vclock :as vc]
             [clojure.test.check :as tc]
             [clojure.test.check.generators :as gen]
-            [clojure.test.check.properties :as prop]))
+            [clojure.test.check.properties :as prop]
+            [meins.common.utils.vclock :as vc]))
 
 (def some-node-id "some-node-id")
 (def another-node-id "another-node-id")

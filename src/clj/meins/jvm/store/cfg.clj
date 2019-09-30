@@ -1,8 +1,8 @@
 (ns meins.jvm.store.cfg
-  (:require [taoensso.timbre :refer [info error warn]]
-            [meins.common.specs]
+  (:require [meins.common.specs]
             [meins.jvm.file-utils :as fu]
-            [meins.jvm.graphql.custom-fields :as gcf]))
+            [meins.jvm.graphql.custom-fields :as gcf]
+            [taoensso.timbre :refer [error info warn]]))
 
 (defn refresh-cfg
   "Refresh configuration by reloading the config file.

@@ -1,17 +1,17 @@
 (ns meins.electron.renderer.ui.entry.cfg.dashboard
-  (:require [react-color :as react-color]
-            [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.common.utils.misc :as m]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
+  (:require [meins.common.utils.misc :as m]
+            [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [reagent.core :as r]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meins.electron.renderer.ui.ui-components :as uc]
             [moment]
-            [meins.common.utils.parse :as up]))
+            [re-frame.core :refer [subscribe]]
+            [react-color :as react-color]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
 

@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.dashboard.habits
-  (:require [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [camel-snake-kebab.core :refer [->kebab-case]]
+  (:require [camel-snake-kebab.core :refer [->kebab-case]]
+            [clojure.string :as s]
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [clojure.string :as s]
             [moment]
-            [meins.electron.renderer.helpers :as h]
-            [matthiasn.systems-toolbox.component :as st]))
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn habits-chart
   [{:keys [habit]}]

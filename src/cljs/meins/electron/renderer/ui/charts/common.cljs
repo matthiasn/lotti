@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.charts.common
   (:require [clojure.string :as s]
-            [randomcolor]
-            [moment]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.charts.data :as cd]
+            [moment]
+            [randomcolor]
             [reagent.core :as rc]))
 
 (defn line-points

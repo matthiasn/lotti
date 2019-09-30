@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.entry.utils
-  (:require [re-frame.core :refer [subscribe]]
+  (:require [clojure.string :as s]
+            [meins.common.utils.misc :as u]
+            [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [clojure.string :as s]
-            [meins.common.utils.misc :as u]))
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])

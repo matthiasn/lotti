@@ -1,8 +1,8 @@
 (ns meins.shared.encryption
-  (:require [cljs.reader :as edn]
+  (:require ["tweetnacl" :refer [box randomBytes setPRNG]]
+            ["tweetnacl-util" :refer [decodeBase64 decodeUTF8 encodeBase64 encodeUTF8]]
+            [cljs.reader :as edn]
             [clojure.string :as s]
-            ["tweetnacl" :refer [box randomBytes setPRNG]]
-            ["tweetnacl-util" :refer [decodeUTF8 encodeUTF8 encodeBase64 decodeBase64]]
             [clojure.string :as str]))
 
 (defn buffer-convert [from to s]

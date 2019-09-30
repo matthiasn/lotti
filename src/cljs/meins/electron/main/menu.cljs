@@ -1,8 +1,8 @@
 (ns meins.electron.main.menu
-  (:require [taoensso.timbre :refer-macros [info debug]]
-            [electron :refer [app Menu dialog globalShortcut shell]]
+  (:require [clojure.walk :as walk]
+            [electron :refer [app dialog globalShortcut Menu shell]]
             [meins.electron.main.runtime :as rt]
-            [clojure.walk :as walk]))
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (def capabilities (:capabilities rt/runtime-info))
 (def platform (:platform rt/runtime-info))

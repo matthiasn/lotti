@@ -2,12 +2,12 @@
   "Component for interacting with the awesome blink1 USB RGB LED notification
    light: https://blink1.thingm.com. Here, this little device is used to
    display if I should be busy or not."
-  (:require [matthiasn.systems-toolbox.component :as st]
-            [taoensso.timbre :as timbre :refer-macros [debug]]
-            [meins.electron.main.runtime :as rt]
+  (:require [child_process :refer [spawn]]
             [fs :refer [existsSync]]
-            [child_process :refer [spawn]]
-            [moment]))
+            [matthiasn.systems-toolbox.component :as st]
+            [meins.electron.main.runtime :as rt]
+            [moment]
+            [taoensso.timbre :as timbre :refer-macros [debug]]))
 
 (def colors
   {:red    {:day "--hsb=10,255,255" :night "--hsb=10,255,100"}

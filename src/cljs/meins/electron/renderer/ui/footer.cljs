@@ -2,8 +2,8 @@
   (:require [meins.electron.renderer.ui.dashboard.core :as db]
 
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]))
 
 (defn dashboard []
   (let [local (r/atom {:days     21

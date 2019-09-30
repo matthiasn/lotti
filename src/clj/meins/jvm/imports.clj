@@ -1,8 +1,8 @@
 (ns meins.jvm.imports
-  (:require [meins.jvm.imports.spotify :as iss]
-            [meins.jvm.imports.flight :as fl]
+  (:require [meins.jvm.imports.flight :as fl]
             [meins.jvm.imports.git :as g]
-            [meins.jvm.imports.media :as im]))
+            [meins.jvm.imports.media :as im]
+            [meins.jvm.imports.spotify :as iss]))
 
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id

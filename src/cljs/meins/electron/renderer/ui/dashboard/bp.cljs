@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.ui.dashboard.bp
-  (:require [moment]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info debug]]
-            [reagent.ratom :refer-macros [reaction]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [meins.electron.renderer.ui.dashboard.common :as dc]
+  (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
-            [clojure.string :as s]
-            [meins.electron.renderer.helpers :as h]))
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.dashboard.common :as dc]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [moment]
+            [re-frame.core :refer [subscribe]]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug info]]))
 
 (defn line [y s w]
   [:line {:x1           200

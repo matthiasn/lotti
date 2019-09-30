@@ -1,8 +1,8 @@
 (ns meins.ui-markdown-test
   "Here, we test the markdown UI functions. These tests are written in cljc and can also run on the JVM,
   as we only have pure punctions in the target namespace."
-  (:require #?(:clj [clojure.test :refer [deftest testing is]]
-               :cljs [cljs.test :refer-macros [deftest testing is]])
+  (:require #?(:clj [clojure.test :refer [deftest is testing]]
+               :cljs [cljs.test :refer-macros [deftest is testing]])
     ;[meins.jvm.ui.markdown :as m]
                     ))
 

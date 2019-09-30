@@ -1,16 +1,16 @@
 (ns meins.jvm.graphql.misc-stats
   "GraphQL query component"
-  (:require [taoensso.timbre :refer [info error warn debug]]
-            [matthiasn.systems-toolbox.component :as stc]
-            [meins.jvm.graph.stats :as gs]
-            [meins.jvm.graph.query :as gq]
-            [meins.common.utils.parse :as p]
-            [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
+  (:require [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
             [camel-snake-kebab.extras :refer [transform-keys]]
+            [matthiasn.systems-toolbox.component :as stc]
+            [meins.common.utils.parse :as p]
             [meins.jvm.datetime :as dt]
+            [meins.jvm.graph.query :as gq]
+            [meins.jvm.graph.stats :as gs]
+            [meins.jvm.graph.stats.awards :as aw]
             [meins.jvm.graph.stats.git :as g]
             [meins.jvm.graph.stats.questionnaires :as q]
-            [meins.jvm.graph.stats.awards :as aw]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def d (* 24 60 60 1000))
 

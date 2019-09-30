@@ -1,17 +1,17 @@
 (ns meins.jvm.graph.add
   "Functions for adding new entries."
-  (:require [ubergraph.core :as uc]
+  (:require [clj-time.coerce :as c]
             [clj-time.core :as ct]
             [clj-time.format :as ctf]
-            [clojure.string :as s]
             [clojure.set :as set]
-            [taoensso.timbre :refer [info error warn debug]]
+            [clojure.string :as s]
             [meins.common.utils.misc :as u]
-            [meins.jvm.graph.query :as gq]
             [meins.jvm.datetime :as dt]
-            [clj-time.coerce :as c]
+            [meins.jvm.graph.query :as gq]
             [meins.jvm.metrics :as mt]
-            [metrics.timers :as tmr]))
+            [metrics.timers :as tmr]
+            [taoensso.timbre :refer [debug error info warn]]
+            [ubergraph.core :as uc]))
 
 (defn add-entry [state entry]
   (let [ts (:timestamp entry)]

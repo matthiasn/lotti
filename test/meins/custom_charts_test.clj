@@ -1,9 +1,9 @@
 (ns meins.custom-charts-test
   "Test that chart configuration map is proper created from the chart vector
    in the custom chart configuration."
-  (:require [clojure.test :refer [deftest testing is]]
-            [meins.electron.renderer.charts.custom-fields-cfg :as cf]
-            [clojure.pprint :as pp]))
+  (:require [clojure.pprint :as pp]
+            [clojure.test :refer [deftest is testing]]
+            [meins.electron.renderer.charts.custom-fields-cfg :as cf]))
 
 (def chart-def
   [{:label          "#pull-ups"

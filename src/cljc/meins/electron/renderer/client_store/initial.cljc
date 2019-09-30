@@ -1,13 +1,13 @@
 (ns meins.electron.renderer.client-store.initial
   (:require #?(:cljs [reagent.core :refer [atom]])
-            #?(:clj  [taoensso.timbre :refer [info debug]]
-               :cljs [taoensso.timbre :refer-macros [info debug]])
-            [meins.electron.renderer.client-store.entry :as cse]
-            [meins.electron.renderer.client-store.search :as s]
+            #?(:clj  [taoensso.timbre :refer [debug info]]
+               :cljs [taoensso.timbre :refer-macros [debug info]])
             #?(:clj  [meins.jvm.datetime :as h]
                :cljs [meins.electron.renderer.helpers :as h])
+            [matthiasn.systems-toolbox.component :as stc]
             [meins.electron.renderer.client-store.cfg :as c]
-            [matthiasn.systems-toolbox.component :as stc]))
+            [meins.electron.renderer.client-store.entry :as cse]
+            [meins.electron.renderer.client-store.search :as s]))
 
 (defn initial-queries [{:keys [current-state put-fn] :as m}]
   (info "performing initial queries")

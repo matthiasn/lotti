@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.localstorage
   "Adapted from https://github.com/alandipert/storage-atom"
-  (:require [cognitect.transit :as t]
-            [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [cognitect.transit :as t]))
 
 (def transit-read-handlers (atom {}))
 

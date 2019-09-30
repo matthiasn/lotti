@@ -1,14 +1,14 @@
 (ns meins.electron.renderer.ui.spotify
-  (:require [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info error debug]]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [cljs.nodejs :refer [process]]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.graphql :as gql]
+  (:require [cljs.nodejs :refer [process]]
             [clojure.pprint :as pp]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [meins.electron.renderer.graphql :as gql]
+            [meins.electron.renderer.helpers :as h]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [re-frame.core :refer [subscribe]]
+            [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn gql-query [n]
   (let [queries [[:spotify

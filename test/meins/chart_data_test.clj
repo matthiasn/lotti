@@ -1,5 +1,5 @@
 (ns meins.chart-data-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.test :refer [deftest is testing]]
             [meins.electron.renderer.charts.data :as cd]))
 
 (deftest remaining-times-test
