@@ -20,6 +20,10 @@
     max-height: 240px;
     max-width: 240px;
     border-radius: 9px;
+
+    &.pvt {
+      filter: blur(2px);
+    }
   }
 }
 
