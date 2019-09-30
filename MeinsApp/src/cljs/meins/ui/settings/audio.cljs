@@ -1,6 +1,7 @@
 (ns meins.ui.settings.audio
   (:require ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
             ["react-native-permissions" :as Permissions]
+            [cljs-bean.core :refer [->clj ->js bean]]
             [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
@@ -8,7 +9,8 @@
                                      status-bar text view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (def perm (aget Permissions "default"))
 
@@ -22,7 +24,9 @@
     (fn [{:keys [navigation] :as _props}]
       (let [{:keys [_navigate _goBack]} navigation
             record-cb (fn [e]
-                        (let [pos (.-current_position e)]
+                        (let [pos (.-current_position e)
+                              ev (->clj e)]
+                          (info ev)
                           (swap! player-state assoc-in [:pos] pos)
                           (swap! player-state assoc-in [:dur] pos)))
             record (fn [_]

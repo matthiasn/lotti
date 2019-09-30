@@ -3,6 +3,7 @@
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-stack" :refer [createStackNavigator]]
             ["react-navigation-transitions" :refer [fadeIn]]
+            [cljs-bean.core :refer [->clj ->js bean]]
             [cljs.reader :as rdr]
             [clojure.pprint :as pp]
             [clojure.string :as s]
@@ -20,7 +21,8 @@
                                      view virtualized-list]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [taoensso.timbre :refer-macros [debug error info]]))
 
 (defn get-entry [ts]
   (when (number? ts)
@@ -319,11 +321,14 @@
                     prefix (when (= "android" platform-os)
                              "/data/data/com.matthiasn.meins/")
                     pos (h/mm-ss (.floor js/Math (:pos @player-state)))
+                    listener-cb (fn [e]
+                                  (let [ev (->clj e)
+                                        pos (.-current_position e)]
+                                    (info ev)
+                                    (swap! player-state assoc-in [:pos] pos)))
                     play (fn [_]
                            (.startPlayer recorder-player (str prefix audio-file))
-                           (.addPlayBackListener
-                             recorder-player
-                             #(swap! player-state assoc-in [:pos] (.-current_position %)))
+                           (.addPlayBackListener recorder-player listener-cb)
                            (swap! player-state assoc-in [:status] :play))
                     stop (fn [_]
                            (.stopPlayer recorder-player)
