@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.habits
+(ns meins.electron.renderer.ui.preferences.habits
   (:require [clojure.string :as s]
             [meins.common.utils.misc :as m]
             [meins.electron.renderer.graphql :as gql]

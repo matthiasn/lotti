@@ -1,10 +1,10 @@
-(ns meins.electron.renderer.ui.config.custom-fields
+(ns meins.electron.renderer.ui.preferences.custom-fields
   (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.config.assistants.custom-fields :as ac]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.preferences.assistants.custom-fields :as ac]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]

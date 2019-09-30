@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.qr-scanner
+(ns meins.electron.renderer.ui.preferences.qr-scanner
   (:require ["@zxing/library" :refer [BrowserQRCodeReader]]
             [cljs.tools.reader.edn :as edn]
             [clojure.pprint :as pp]

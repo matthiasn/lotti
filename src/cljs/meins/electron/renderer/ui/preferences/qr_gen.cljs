@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.qr-gen
+(ns meins.electron.renderer.ui.preferences.qr-gen
   (:require ["@zxing/library" :refer [BrowserQRCodeSvgWriter]]
             [cljs.pprint :as pp]
             [meins.common.utils.misc :as u]

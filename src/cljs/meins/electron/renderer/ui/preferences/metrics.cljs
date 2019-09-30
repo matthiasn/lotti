@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.metrics
+(ns meins.electron.renderer.ui.preferences.metrics
   (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]

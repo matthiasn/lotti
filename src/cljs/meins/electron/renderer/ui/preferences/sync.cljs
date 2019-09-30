@@ -1,8 +1,8 @@
-(ns meins.electron.renderer.ui.config.sync
+(ns meins.electron.renderer.ui.preferences.sync
   (:require [clojure.pprint :as pp]
             [matthiasn.systems-toolbox.component :as stc]
-            [meins.electron.renderer.ui.config.qr-gen :as qrg]
-            [meins.electron.renderer.ui.config.qr-scanner :as qrs]
+            [meins.electron.renderer.ui.preferences.qr-gen :as qrg]
+            [meins.electron.renderer.ui.preferences.qr-scanner :as qrs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]

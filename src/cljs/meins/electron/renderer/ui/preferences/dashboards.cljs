@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.dashboards
+(ns meins.electron.renderer.ui.preferences.dashboards
   (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]

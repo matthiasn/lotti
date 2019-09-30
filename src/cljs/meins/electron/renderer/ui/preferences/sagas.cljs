@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.albums
+(ns meins.electron.renderer.ui.preferences.sagas
   (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
@@ -13,74 +13,63 @@
 (defn lower-case [str]
   (if str (s/lower-case str) ""))
 
-(defn album-gql [pvt search-text]
-  (let [queries [[:album
+(defn gql-query [pvt search-text]
+  (let [queries [[:sagas_cfg
                   {:search-text search-text
                    :n           1000}]]
         query (gql/tabs-query queries false pvt)]
     (emit [:gql/query {:q        query
-                       :id       :album
+                       :id       :sagas_cfg
                        :res-hash nil
                        :prio     11}])))
 
-(defn albums-gql [pvt search-text]
-  (let [queries [[:albums
-                  {:search-text search-text
-                   :n           1000}]]
-        query (gql/tabs-query queries false pvt)]
-    (emit [:gql/query {:q        query
-                       :id       :albums
-                       :res-hash nil
-                       :prio     11}])))
-
-(defn album-row [_saga local]
+(defn saga-row [_saga local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
-    (fn album-row-render [entry local]
-      (let [ts (:timestamp entry)
+    (fn saga-row-render [saga local]
+      (let [ts (:timestamp saga)
             sel (:selected @local)
             line-click (fn [_]
                          (swap! local assoc-in [:selected] ts)
-                         (album-gql @show-pvt (str ts)))
+                         (gql-query @show-pvt (str ts)))
             locale (:locale @cfg :en)
             date-str (h/localize-date (moment (or ts)) locale)
-            pvt (-> entry :album_cfg :pvt)
-            active (-> entry :album_cfg :active)]
+            pvt (:pvt saga)
+            active (:active saga)]
         [:tr {:key      ts
               :class    (when (= sel ts) "active")
               :on-click line-click}
          [:td date-str]
-         [:td [:strong (-> entry :album_cfg :title)]]
+         [:td [:strong (:saga_name saga)]]
          [:td [:i.fas {:class (if active "fa-toggle-on" "fa-toggle-off")}]]
          [:td [:i.fas {:class (if pvt "fa-toggle-on" "fa-toggle-off")}]]]))))
 
-(defn albums-list [local]
+(defn sagas-list [local]
   (let [pvt (subscribe [:show-pvt])
-        gql-res2 (subscribe [:gql-res2])
+        sagas (subscribe [:sagas])
         input-fn (fn [ev]
                    (let [text (lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]
                      (swap! local assoc-in [:selected] ts)
-                     (album-gql @pvt (str ts))))
-        add-click (h/new-entry {:perm_tags #{"#album"}
-                                :tags      #{"#album"}
-                                :album_cfg {:active true}} open-new)]
-    (albums-gql true "#album")
-    (fn albums-list-render [local]
-      (let [search-text (:search @local "")
-            search-match #(h/str-contains-lc? (-> % second :album_cfg :title)
-                                              (str search-text))
-            pvt-filter (fn [x] (if @pvt true (not (get-in x [1 :album_cfg :pvt]))))
-            albums (->> @gql-res2
-                        :albums
-                        :res
-                        (filter pvt-filter)
-                        (filter search-match)
-                        vals)]
+                     (gql-query @pvt (str ts))))
+        add-click (h/new-entry {:entry_type :saga
+                                :perm_tags  #{"#saga-cfg"}
+                                :tags       #{"#saga-cfg"}
+                                :saga_cfg   {:active true}} open-new)
+        show-pvt (subscribe [:show-pvt])]
+    (fn sagas-list-render [local]
+      (let [show-pvt @show-pvt
+            sagas (vals @sagas)
+            search-text (:search @local "")
+            search-match #(h/str-contains-lc? (:saga_name %) (str search-text))
+            pvt-filter (fn [x] (if show-pvt true (not (:pvt x))))
+            sagas (filter search-match sagas)
+            sagas (filter pvt-filter sagas)
+            sagas (reverse (sort-by :timestamp sagas))]
         [:div.col.habits.sagas
-         [:h2 "Photo Albums"]
+         [:h2 "Sagas Editor"]
          [:div.input-line
           [:span.search
            [:i.far.fa-search]
@@ -92,28 +81,29 @@
           [:tbody
            [:tr
             [:th "Created"]
-            [:th "Album Title"]
+            [:th "Saga"]
             [:th "Active"]
             [:th "Private"]]
-           (for [album albums]
-             ^{:key (:timestamp album)}
-             [album-row album local])]]]))))
+           (for [saga sagas]
+             ^{:key (:timestamp saga)}
+             [saga-row saga local])]]]))))
 
-(defn albums-tab [tab-group]
+(defn sagas-tab [tab-group]
   (let [query-cfg (subscribe [:query-cfg])
         query-id (reaction (get-in @query-cfg [:tab-groups tab-group :active]))
         search-text (reaction (get-in @query-cfg [:queries @query-id :search-text]))
         local-cfg (reaction {:query-id    @query-id
                              :search-text @search-text
+                             :show-more   false
                              :tab-group   tab-group})]
     (fn tabs-render [_tab-group]
       [:div.tile-tabs
        [j/journal-view @local-cfg]])))
 
-(defn albums [local]
+(defn sagas [local]
   [:div.habit-cfg-row
    [h/error-boundary
-    [albums-list local]]
+    [sagas-list local]]
    (when (:selected @local)
      [h/error-boundary
-      [albums-tab :album]])])
+      [sagas-tab :sagas_cfg]])])

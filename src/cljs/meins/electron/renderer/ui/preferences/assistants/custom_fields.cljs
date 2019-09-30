@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.assistants.custom-fields
+(ns meins.electron.renderer.ui.preferences.assistants.custom-fields
   (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]

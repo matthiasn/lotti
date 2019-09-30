@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.usage-stats
+(ns meins.electron.renderer.ui.preferences.usage-stats
   (:require ["ngeohash" :as geohash]
             [clojure.pprint :as pp]
             [meins.electron.renderer.graphql :as gql]

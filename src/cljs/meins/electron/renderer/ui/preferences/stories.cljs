@@ -1,4 +1,4 @@
-(ns meins.electron.renderer.ui.config.stories
+(ns meins.electron.renderer.ui.preferences.stories
   (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
