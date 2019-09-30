@@ -48,7 +48,7 @@
 (defn server [_local]
   (let [imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
-        cfg (r/atom (or @imap-cfg {}))
+        cfg (r/atom (or @imap-cfg {:server defaults}))
         save (fn [_] (info "save") (emit [:imap/save-cfg @cfg]))]
     (fn [local]
       (let [connected (= (:status @imap-status) :read-mailboxes)
@@ -121,8 +121,12 @@
           [:button {:on-click #(swap! local assoc :page :show-qr)}
            "Next: Display encrypted configuration"]]
          [:h1 "Getting to know the mobile device"]
-         [:p "Here, you scan the public key of your smartphone."]
-         [qrs/scanner cfg]]))))
+         (if (:scanned @local)
+           [:div
+            [:p "Thanks for scanning" [:i.fas.fa-check]]]
+           [:div
+            [:p "Here, you scan the public key of your smartphone."]
+            [qrs/scanner local cfg]])]))))
 
 (defn show-qr [local]
   [:div.page
@@ -138,8 +142,7 @@
 (defn done [_local]
   [:div.page
    [:h1 "High Five, all set up!"]
-   [:p "You may now close this assistant."]
-   [qrg/qr-code-gen]])
+   [:p "You may now close this assistant."]])
 
 (defn sync []
   (let [imap-cfg (subscribe [:imap-cfg])

@@ -17,6 +17,7 @@
             (.getTracks)
             (aget 0)
             (.stop))
+    (swap! local assoc :scanned true)
     (.stopAsyncDecode qr-reader)))
 
 (defn did-mount [local cfg _]
@@ -50,10 +51,10 @@
   (info "QR scanner will unmount")
   (stop-scanning local))
 
-(defn scanner [cfg]
-  (let [local (r/atom {:local "foo"})]
-    (r/create-class
-      {:component-did-mount    (partial did-mount local cfg)
-       :component-will-unmount (partial will-unmount local)
-       :display-name           "QR-Scanner"
-       :reagent-render         qr-render})))
+(defn scanner [local cfg]
+  (swap! local assoc :scanned false)
+  (r/create-class
+    {:component-did-mount    (partial did-mount local cfg)
+     :component-will-unmount (partial will-unmount local)
+     :display-name           "QR-Scanner"
+     :reagent-render         qr-render}))

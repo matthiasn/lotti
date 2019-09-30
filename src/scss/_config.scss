@@ -457,6 +457,11 @@
     background-color: #4A546E;
     font-weight: lighter;
     outline: 0;
+
+    &:hover {
+      transition: all 0.4s ease 0s;
+      background-color: lighten(#4A546E, 5);
+    }
   }
 
   p {
