@@ -2,10 +2,10 @@
 
 .config {
   display: flex;
-  background-color: $tab-bg;
+  background-color: $cfg-bg;
 
   #qr-video {
-    width: 300px;
+    width: 500px;
     height: 300px;
   }
 
@@ -321,6 +321,7 @@
       padding-right: 0;
       margin-right: 10px;
       margin-left: 16px;
+      background-color: $cfg-bg;
 
       .fa-plus {
         padding: 6px 6px;
@@ -440,12 +441,42 @@
 }
 
 .sync-cfg {
-  display: flex;
-  flex-flow: row;
-  justify-content: space-evenly;
-  background-color: $tab-bg;
+  background-color: $cfg-bg;
   width: 100%;
-  margin-left: 16px;
+  padding-left: 50px;
+  height: 100%;
+  overflow-y: auto;
+  color: #EEE;
+
+  .fa-check {
+    color: #79C693;
+  }
+
+  button {
+    border-radius: 18px;
+    background-color: #4A546E;
+    font-weight: lighter;
+    outline: 0;
+  }
+
+  p {
+    font-size: 16px;
+  }
+
+  .page {
+    width: 500px;
+  }
+
+  .nav {
+    margin-top: 50px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .welcome {
+    color: #EEE;
+  }
 
   #sync-cfg-qr {
     svg {
@@ -468,12 +499,13 @@
       margin: 6px;
       padding: 6px 12px;
       width: 350px;
-      color: orange;
+      color: #EEE;
       font-size: 14px;
       font-family: monospace;
-      background-color: $body-background-color;
+      background-color: #4A546E;
       outline: none;
       border-width: 0;
+      border-radius: 18px;
     }
 
     .fas {
@@ -483,7 +515,6 @@
     }
 
     table {
-      background-color: $tab-bg;
       margin-top: 20px;
 
       tr.spacer {
@@ -514,15 +545,14 @@
       td {
         font-size: 14px;
         text-align: right;
-        font-family: monospace;
         margin-left: 20px;
-        color: orange;
+        color: #EEE;
         &.r {
           align-content: flex-end;
         }
 
         &.success {
-          color: $green;
+          color: #79C693;
         }
         &.fail {
           color: $red;

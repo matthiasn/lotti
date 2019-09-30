@@ -11,7 +11,7 @@
   (r/create-class
     {:component-did-mount (fn [_]
                             (let [qr-writer (BrowserQRCodeSvgWriter.)]
-                              (.writeToDom qr-writer "#sync-cfg-qr" s 600 600)
+                              (.writeToDom qr-writer "#sync-cfg-qr" s 450 450)
                               (info "QR-Code generated.")))
      :display-name        "QR-Generator"
      :reagent-render      (fn [_]
@@ -28,10 +28,11 @@
             our-public-key (some-> @crypto-cfg :publicKey)
             their-public-key (some-> @imap-cfg :mobile :publicKey)]
         [:div
-         [:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @crypto-cfg))]]
-         (when (and our-secret-key their-public-key)
+         ;[:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @crypto-cfg))]]
+         (if (and our-secret-key their-public-key)
            (let [cfg-ciphertext (mse/encrypt-asymm s their-public-key our-secret-key)
                  qr-data {:cfg       cfg-ciphertext
                           :publicKey our-public-key}]
              [:div
-              [qr-code (pr-str qr-data)]]))]))))
+              [qr-code (pr-str qr-data)]])
+           [:div "error"])]))))
