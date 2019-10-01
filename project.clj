@@ -16,7 +16,7 @@
                  [com.drewnoakes/metadata-extractor "2.12.0"]
                  [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
-                 [com.walmartlabs/lacinia "0.35.0"]
+                 [com.walmartlabs/lacinia "0.32.0"]
                  [com.walmartlabs/lacinia-pedestal "0.12.0"]
                  [danlentz/clj-uuid "0.1.9"]
                  [enlive "1.1.6"]
