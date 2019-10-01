@@ -1,17 +1,20 @@
 (ns meins.electron.main.imap
   "Component for encrypting and decrypting log files."
-  (:require [buildmail :as BuildMail]
+  (:require ["shortid" :as short-id]
+            [buildmail :as BuildMail]
             [child_process :refer [spawn]]
+            [cljs-bean.core :refer [->clj ->js bean]]
             [cljs.reader :as edn]
             [clojure.data :as data]
             [clojure.pprint :as pp]
             [clojure.string :as s]
             [fs :refer [existsSync mkdirSync readFileSync statSync writeFile writeFileSync]]
             [imap :as imap]
-            [meins.electron.main.crypto :as kc]
             [meins.electron.main.runtime :as rt]
             [meins.shared.encryption :as mse]
             [taoensso.timbre :refer-macros [debug error info warn]]))
+
+(short-id/characters "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$@")
 
 (def data-path (:data-path rt/runtime-info))
 (def img-path (:img-path rt/runtime-info))
@@ -239,7 +242,7 @@
                      cb (fn [_err rfc-2822]
                           (info "RFC2822\n" mailbox rfc-2822)
                           (.append conn rfc-2822 append-cb)
-                          (js/console.log (aget conn "_queue")))
+                          (js/console.log "imap-save" (aget conn "_queue")))
                      opts (clj->js {:textEncoding encoding})]
                  (-> (BuildMail. content-type opts)
                      (.setContent ciphertext)
@@ -275,7 +278,7 @@
     (let [cb (fn [conn _err mb]
                (try
                  (.getBoxes conn (fn [err boxes]
-                                   (.log js/console boxes)
+                                   (js/console.log "read-mb" boxes)
                                    (put-fn [:imap/status {:status k
                                                           :detail d}])
                                    (info "read mailboxes")))
@@ -284,7 +287,8 @@
                  (finally (.end conn))))
           conn (imap. (clj->js (:server cfg)))]
       (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
-      (.once conn "error" #(put-fn [:imap/status {:status :error :detail (str %)}]))
+      (.once conn "error" #(put-fn [:imap/status {:status :error
+                                                  :detail (str %)}]))
       (.once conn "end" #(info "IMAP connection ended"))
       (.connect conn)
       (js/setTimeout #(.end conn) 120000))
@@ -307,25 +311,33 @@
 (defn get-cfg [{:keys []}]
   {:emit-msg [:imap/cfg (imap-cfg)]})
 
-(defn add-mailbox [cfg mb]
-  (let [conn (imap. (clj->js (:server cfg)))
-        create (fn []
-                 (info "adding mailbox" mb)
-                 (.addBox conn mb (fn [err] (when err (error "addBox" mb err))))
-                 (.end conn))]
-    (.once conn "ready" create)
-    (.connect conn)))
-
 (defn save-cfg [{:keys [msg-payload put-fn]}]
-  (let [s (pp-str msg-payload)
-        write-mb (-> msg-payload :sync :write :mailbox)
-        read-mbs (-> msg-payload :sync :read)]
-    (add-mailbox msg-payload write-mb)
-    (doseq [[_ {:keys [mailbox]}] read-mbs]
-      (add-mailbox msg-payload mailbox))
-    (when (read-mb :saved (str "saved: " cfg-path) msg-payload put-fn)
-      (writeFileSync cfg-path s)))
-  {:emit-msg [[:imap/cfg (imap-cfg)]]})
+  (info "adding mailboxes")
+  (let [id (short-id/generate)
+        cfg msg-payload
+        conn (imap. (clj->js (:server cfg)))
+        add-box (fn [err]
+                  (when err (js/console.error "addBox" id err)))
+        get-boxes (fn [err boxes]
+                    (let [prefix (first (->clj (js/Object.keys boxes)))
+                          inbox (aget boxes prefix)
+                          delimiter (.-delimiter inbox)
+                          mb (str prefix delimiter "meins-sync" delimiter id delimiter)
+                          mb-read (str mb "mobile")
+                          mb-write (str mb "desktop")
+                          cfg (-> cfg
+                                  (assoc-in [:sync :write :mailbox] mb-write)
+                                  (assoc-in [:sync :read :mobile :mailbox] mb-read))]
+                      (info "adding mailbox" mb)
+                      (.addBox conn mb-read add-box)
+                      (.addBox conn mb-write add-box)
+                      (when (read-mb :saved (str "saved: " cfg-path) msg-payload put-fn)
+                        (writeFileSync cfg-path (pp-str cfg))
+                        (put-fn [:imap/cfg (imap-cfg)]))))
+        create (fn [] (.getBoxes conn get-boxes))]
+    (.once conn "ready" create)
+    (.connect conn)
+    {}))
 
 (defn save-crypto [{:keys [current-state msg-payload]}]
   {:new-state (assoc current-state :crypto-cfg msg-payload)})

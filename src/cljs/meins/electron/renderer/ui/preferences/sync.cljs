@@ -1,6 +1,7 @@
 (ns meins.electron.renderer.ui.preferences.sync
   (:require [cljs-bean.core :refer [->clj ->js bean]]
             [clojure.pprint :as pp]
+            [clojure.string :as str]
             [meins.electron.renderer.ui.preferences.qr-gen :as qrg]
             [meins.electron.renderer.ui.preferences.qr-scanner :as qrs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -45,20 +46,27 @@
         generating both a public and a private key, shares the public key with the other participant,
         and stores the private key in the keychain."]])
 
-(defn server [_local]
+(defn server [local]
   (let [imap-status (subscribe [:imap-status])
         imap-cfg (subscribe [:imap-cfg])
-        cfg (r/atom (or @imap-cfg {:server defaults}))
-        save (fn [_] (info "save") (emit [:imap/save-cfg @cfg]))]
+        cfg (r/atom (or @imap-cfg {:server  defaults
+                                   :checked false}))
+        save (fn [_]
+               (info "save IMAP cfg")
+               (emit [:imap/save-cfg @cfg])
+               (swap! local assoc :page :key-pair))]
     (fn [local]
       (let [connected (= (:status @imap-status) :read-mailboxes)
-            verify-account #(emit [:imap/get-status @cfg])]
+            verify-account (fn [_]
+                             (swap! cfg assoc :checked true)
+                             (emit [:imap/get-status @cfg]))]
         [:div.settings.page
          [:div.nav
           [:button {:on-click #(swap! local assoc :page :welcome)}
            "Previous"]
-          [:button {:on-click #(swap! local assoc :page :key-pair)}
-           "Next"]]
+          (when (and connected (:checked @cfg))
+            [:button {:on-click save}
+             "Create Folders & continue"])]
          [:h1 "IMAP Server Settings"]
          [:p "Please enter your server details?"]
          [:table
@@ -70,18 +78,13 @@
            [:tr.btn-check
             [:td
              [:button {:on-click verify-account}
-              "Check server"]]
+              "Check connection"]]
             (when (= :saved (:status @imap-status))
               [:td.success (:detail @imap-status) [:i.fas.fa-check]])
             (when connected
-              [:td.success "connection successful" [:i.fas.fa-check]
-               (when-not (= @cfg @imap-cfg)
-                 [:button.save {:on-click save}
-                  "save"])])
+              [:td.success "connection successful" [:i.fas.fa-check]])
             (when (= :error (:status @imap-status))
-              [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]
-           [settings-item cfg :text [:sync :write :mailbox] "Write Mailbox:" connected]
-           [settings-item cfg :text [:sync :read :fred :mailbox] "Read Mailbox:" connected]]]]))))
+              [:td.fail (:detail @imap-status) [:i.fas.fa-exclamation-triangle]])]]]]))))
 
 (defn key-pair [_local]
   (let [crypto-cfg (subscribe [:crypto-cfg])
@@ -91,7 +94,7 @@
             our-public-key (some-> @crypto-cfg :publicKey)]
         [:div.page
          [:div.nav
-          [:button {:on-click #(swap! local assoc :page :scan-qr)}
+          [:button {:on-click #(swap! local assoc :page :server)}
            "Previous"]
           [:button {:on-click #(swap! local assoc :page :scan-qr)}
            "Next: Scan mobile device QR code"]]
@@ -116,7 +119,7 @@
       (let []
         [:div.page
          [:div.nav
-          [:button {:on-click #(swap! local assoc :page :server)}
+          [:button {:on-click #(swap! local assoc :page :key-pair)}
            "Previous"]
           [:button {:on-click #(swap! local assoc :page :show-qr)}
            "Next: Display encrypted configuration"]]
