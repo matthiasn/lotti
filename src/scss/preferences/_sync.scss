@@ -1,0 +1,135 @@
+@import "../variables";
+
+.sync-cfg {
+  background-color: $cfg-bg;
+  width: 100%;
+  padding-left: 50px;
+  height: 100%;
+  overflow-y: auto;
+  color: #EEE;
+
+  .fa-check {
+    color: #79C693;
+  }
+
+  #qr-video {
+    width: 640px;
+    height: 360px;
+    border-radius: 18px;
+  }
+
+  button {
+    border-radius: 18px;
+    background-color: #4A546E;
+    font-weight: lighter;
+    outline: 0;
+
+    &:hover {
+      transition: all 0.4s ease 0s;
+      background-color: lighten(#4A546E, 5);
+    }
+  }
+
+  p {
+    font-size: 16px;
+  }
+
+  .page {
+    width: 500px;
+  }
+
+  .nav {
+    margin-top: 40px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .welcome {
+    color: #EEE;
+  }
+
+  #sync-cfg-qr {
+    svg {
+      background-color: white;
+      border-radius: 18px;
+    }
+  }
+
+  .scanned {
+    color: white;
+    font-size: $font-size-xs;
+  }
+
+  img {
+    margin-top: 60px;
+    margin-right: 30px;
+  }
+  .settings {
+
+    input {
+      margin: 6px;
+      padding: 6px 12px;
+      width: 350px;
+      color: #EEE;
+      font-size: 14px;
+      font-family: monospace;
+      background-color: #4A546E;
+      outline: none;
+      border-width: 0;
+      border-radius: 18px;
+    }
+
+    .fas {
+      padding: 0 20px;
+      font-weight: bold;
+      font-size: 2em;
+    }
+
+    table {
+      margin-top: 20px;
+
+      tr.spacer {
+        height: 20px;
+      }
+
+      .btn-check {
+        height: 30px
+      }
+
+      tr {
+        cursor: default;
+        background-color: transparent;
+
+        &.invisible {
+          opacity: 0;
+        }
+
+        button {
+          float: right;
+          font-size: 14px;
+          &.save {
+            background-color: $red;
+          }
+        }
+      }
+
+      td {
+        font-size: 14px;
+        text-align: right;
+        margin-left: 20px;
+        color: #EEE;
+        &.r {
+          align-content: flex-end;
+        }
+
+        &.success {
+          color: #79C693;
+        }
+        &.fail {
+          color: $red;
+        }
+      }
+    }
+  }
+}

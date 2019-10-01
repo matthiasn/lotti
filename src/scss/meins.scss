@@ -173,7 +173,8 @@ i {
 @import "menu";
 @import "conflict";
 @import "search";
-@import "config";
+@import "preferences/config";
+@import "preferences/sync";
 @import "stats";
 @import "grid";
 @import "cf_hashtag";

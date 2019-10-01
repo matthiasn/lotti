@@ -125,8 +125,8 @@
            [:div
             [:p "Thanks for scanning" [:i.fas.fa-check]]]
            [:div
-            [:p "Here, you scan the public key of your smartphone."]
-            [qrs/scanner local cfg]])]))))
+            [qrs/scanner local cfg]
+            [:p "Here, you scan the public key of your smartphone."]])]))))
 
 (defn show-qr [local]
   [:div.page
@@ -136,8 +136,8 @@
     [:button {:on-click #(swap! local assoc :page :done)}
      "Finish"]]
    [:h1 "Introducing ourselves to the mobile device"]
-   [:p "Scan this in meins on your smartphone."]
-   [qrg/qr-code-gen]])
+   [qrg/qr-code-gen]
+   [:p "Scan this in meins on your smartphone."]])
 
 (defn done [_local]
   [:div.page
