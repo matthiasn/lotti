@@ -33,7 +33,8 @@
 (defn imap-open [mailbox-name open-mb-cb]
   (when-let [cfg (imap-cfg)]
     (try
-      (let [conn (imap. (clj->js (:server cfg)))]
+      (let [conn (imap. (clj->js (merge (:server cfg)
+                                        {:debug #(debug %)})))]
         (.once conn "ready" #(do
                                (info "conn ready" mailbox-name)
                                (.openBox conn mailbox-name false (partial open-mb-cb conn))))
@@ -130,6 +131,7 @@
     (imap-open mailbox mb-cb)))
 
 (defn extract-body [s]
+  (info :extract-body s)
   (let [body (-> s
                  (s/replace "=\r\n" "")
                  (s/replace "\r\n" "")
@@ -143,13 +145,17 @@
       body)))
 
 (defn read-mailbox [[k mb-cfg] cfg current-state put-fn]
+  (info "read-mailbox" k)
   (let [{:keys [mailbox body-part]} mb-cfg
         their-public-key (some-> cfg :mobile :publicKey)
         our-private-key (some-> current-state :crypto-cfg :secretKey)
         path [:sync :read k :last-read]
         body-cb (fn [buffer seqn stream stream-info]
+                  (info "read-mailbox body-cb")
                   (let [end-cb (fn []
-                                 (let [hex-body (extract-body (apply str @buffer))]
+                                 (let [body (apply str @buffer)
+                                       _ (info body)
+                                       hex-body (extract-body body)]
                                    (info "end-cb buffer" seqn "- size" (count hex-body))
                                    (debug hex-body)
                                    (when-let [decrypted (mse/decrypt hex-body their-public-key our-private-key)]
@@ -168,8 +174,10 @@
                                           (info "IMAP body data seqno" seqn "- size" (.-size stream-info))))
                     (.once stream "end" end-cb)))
         msg-cb (fn [msg seqn]
+                 (info "msg-cb" seqn)
                  (let [buffer (atom [])
                        attr-cb (fn [attrs]
+                                 (js/console.info "attr-cb" attrs)
                                  (let [uid (.-uid attrs)
                                        struct (js->clj (.-struct attrs) :keywordize-keys true)
                                        attachment (-> struct last last)
@@ -205,6 +213,8 @@
                                      {:timeout 100
                                       :message [:sync/read-imap]}]))
                         cb (fn [err res]
+                             (when err (error "mb-cb cb" err))
+                             (info "mb-cb cb" res)
                              (let [parsed-res (js->clj res)]
                                (when (and (seq parsed-res) (> (last parsed-res) last-read))
                                  (let [last-read (last parsed-res)
@@ -327,7 +337,9 @@
                           mb-write (str mb "desktop")
                           cfg (-> cfg
                                   (assoc-in [:sync :write :mailbox] mb-write)
-                                  (assoc-in [:sync :read :mobile :mailbox] mb-read))]
+                                  (assoc-in [:sync :read :mobile :mailbox] mb-read)
+                                  (assoc-in [:sync :read :mobile :body-part] "1")
+                                  (assoc-in [:sync :read :mobile :last-read] 0))]
                       (info "adding mailbox" mb)
                       (.addBox conn mb-read add-box)
                       (.addBox conn mb-write add-box)

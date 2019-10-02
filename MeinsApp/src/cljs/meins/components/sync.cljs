@@ -99,6 +99,8 @@
                            :minUid min-uid
                            :length 1000})
               fetch-cb (fn [data]
+                         (info "fetch-cb min-uid folder" min-uid folder)
+                         (info "fetch-cb data" data)
                          (let [uids (edn/read-string (str "[" data "]"))]
                            (info "fetch-cb" data)
                            (swap! cmp-state update :not-fetched into uids)
@@ -158,7 +160,10 @@
   {})
 
 (defn set-secrets [{:keys [current-state msg-payload]}]
-  (let [new-state (assoc-in current-state [:secrets] msg-payload)]
+  (let [new-state (-> current-state
+                      (assoc-in [:secrets] msg-payload)
+                      (assoc-in [:last-uid-read] 0))]
+    (go (<! (as/set-item :last-uid-read 0)))
     (info "set-secrets" (str msg-payload))
     {:new-state new-state}))
 
@@ -168,7 +173,7 @@
     {:new-state new-state}))
 
 (defn state-fn [put-fn]
-  (let [state (atom {:last-uid-read 1
+  (let [state (atom {:last-uid-read 0
                      :not-fetched   (sorted-set)
                      :open-writes   #{}
                      :fetched       #{}
