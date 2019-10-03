@@ -37,7 +37,6 @@
                                       :msg-meta    {}}]     ; save battery and bandwidth
               serialized (pr-str serializable)
               _ (info "their-public-key" their-public-key)
-              _ (info "our-secret-key" our-secret-key)
               hex-cipher (mse/encrypt-asymm serialized their-public-key our-secret-key)
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
