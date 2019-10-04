@@ -19,7 +19,10 @@
 (def settings-xml
   "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='12px' height='11px' viewBox='0 0 12 11' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>4C0B5D51-B404-41CC-AB66-55C091D2AA31@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Journal' transform='translate(-306.000000, -987.000000)'>\n            <g id='Menu-Bar-Bottom' transform='translate(0.000000, 961.000000)'>\n                <g id='Settings-Icon' transform='translate(297.224995, 17.650001)'>\n                    <g id='Group-19' transform='translate(9.349998, 8.499999)'>\n                        <path d='M10.9049,1.2971 L0.1499,1.2971' id='Stroke-1' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M10.9049,8.717 L0.1499,8.717' id='Stroke-3' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M10.9049,5.007 L0.1499,5.007' id='Stroke-5' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M4.2349,1.2971 C4.2349,1.9301 3.7209,2.4431 3.0879,2.4431 C2.4539,2.4431 1.9399,1.9301 1.9399,1.2971 C1.9399,0.6631 2.4539,0.1501 3.0879,0.1501 C3.7209,0.1501 4.2349,0.6631 4.2349,1.2971' id='Fill-7' fill='#2C3246'></path>\n                        <path d='M4.2349,1.2971 C4.2349,1.9301 3.7209,2.4431 3.0879,2.4431 C2.4539,2.4431 1.9399,1.9301 1.9399,1.2971 C1.9399,0.6631 2.4539,0.1501 3.0879,0.1501 C3.7209,0.1501 4.2349,0.6631 4.2349,1.2971 Z' id='Stroke-9' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M9.6412,5.007 C9.6412,5.641 9.1272,6.154 8.4942,6.154 C7.8602,6.154 7.3472,5.641 7.3472,5.007 C7.3472,4.373 7.8602,3.86 8.4942,3.86 C9.1272,3.86 9.6412,4.373 9.6412,5.007' id='Fill-11' fill='#2C3246'></path>\n                        <path d='M9.6412,5.007 C9.6412,5.641 9.1272,6.154 8.4942,6.154 C7.8602,6.154 7.3472,5.641 7.3472,5.007 C7.3472,4.373 7.8602,3.86 8.4942,3.86 C9.1272,3.86 9.6412,4.373 9.6412,5.007 Z' id='Stroke-13' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M6.4884,8.717 C6.4884,9.351 5.9744,9.864 5.3414,9.864 C4.7074,9.864 4.1944,9.351 4.1944,8.717 C4.1944,8.083 4.7074,7.571 5.3414,7.571 C5.9744,7.571 6.4884,8.083 6.4884,8.717' id='Fill-15' fill='#2C3246'></path>\n                        <path d='M6.4884,8.717 C6.4884,9.351 5.9744,9.864 5.3414,9.864 C4.7074,9.864 4.1944,9.351 4.1944,8.717 C4.1944,8.083 4.7074,7.571 5.3414,7.571 C5.9744,7.571 6.4884,8.083 6.4884,8.717 Z' id='Stroke-17' stroke='#FEFEFE' stroke-width='0.299'></path>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
 
-(defn icon [w h color xml]
+(def x-icon-xml
+  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='14px' height='14px' viewBox='0 0 14 14' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>2906D8C7-494D-42F1-9813-A0DBCECB1B74@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <defs>\n        <path d='M13.6991387,0.269611344 C14.0586204,0.629093137 14.0586204,1.21192828 13.6991387,1.57141007 L8.286,6.984 L13.6991387,12.3973399 C14.0586204,12.7568217 14.0586204,13.3396569 13.6991387,13.6991387 C13.3396569,14.0586204 12.7568217,14.0586204 12.3973399,13.6991387 L6.984,8.286 L1.57141007,13.6991387 C1.21192828,14.0586204 0.629093137,14.0586204 0.269611344,13.6991387 C-0.0898704481,13.3396569 -0.0898704481,12.7568217 0.269611344,12.3973399 L5.682,6.984 L0.269611344,1.57141007 C-0.0898704481,1.21192828 -0.0898704481,0.629093137 0.269611344,0.269611344 C0.629093137,-0.0898704481 1.21192828,-0.0898704481 1.57141007,0.269611344 L6.984,5.682 L12.3973399,0.269611344 C12.7568217,-0.0898704481 13.3396569,-0.0898704481 13.6991387,0.269611344 Z' id='path-1'></path>\n    </defs>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'>\n        <g id='New-Entry' transform='translate(-18.000000, -63.000000)' fill='#FFFFFF' fill-rule='nonzero'>\n            <g id='Header-Bar-with-Cancel-&amp;-Save'>\n                <g id='Icon-Cancel' transform='translate(18.000000, 63.000000)'>\n                    <g id='Combined-Shape'>\n                        <use fill-opacity='0.349999994' xlink:href='#path-1'></use>\n                        <use fill-opacity='0.599999964' style='mix-blend-mode: overlay;' xlink:href='#path-1'></use>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
+
+(defn nav-icon [w h color xml]
   (let [opacity (if (= color "#FFF") 1 0.45186942)
         border-top-color (if (= 1 opacity)
                            "#FFF"
@@ -36,14 +39,23 @@
                :height h
                :xml    xml}]]))
 
+(defn icon [w h xml]
+  [view {:style {}}
+   [svg-xml {:width  w
+             :height h
+             :xml    xml}]])
+
 (defn add-icon [size color]
-  [icon size size color add-xml])
+  [nav-icon size size color add-xml])
 
 (defn journal-icon [size color]
-  [icon size size color journal-xml])
+  [nav-icon size size color journal-xml])
 
 (defn photos-icon [size color]
-  [icon size size color photos-xml])
+  [nav-icon size size color photos-xml])
 
 (defn settings-icon [size color]
-  [icon size size color settings-xml])
+  [nav-icon size size color settings-xml])
+
+(defn x-icon [size]
+  [icon size size x-icon-xml])

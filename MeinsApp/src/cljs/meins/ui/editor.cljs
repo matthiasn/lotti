@@ -8,7 +8,8 @@
                                      text-input touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [meins.ui.icons :as ico]))
 
 (def local (r/atom {:md ""}))
 
@@ -23,14 +24,14 @@
                        :justify-content "space-between"
                        :height          45}}
          [touchable-opacity {:on-press cancel-fn
-                             :style    {:width         100
-                                        :margin-left   10
-                                        :border-radius 18
-                                        :padding       8}}
-          [text {:style {:font-size  20
-                         :text-align "left"
-                         :color      btn-text}}
-           "X"]]
+                             :style    {:width          81
+                                        :margin-left    18
+                                        :height         36
+                                        :vertical-align :center
+                                        :border-radius  18
+                                        :padding-left   8
+                                        :justifyContent :center}}
+          [ico/x-icon 14]]
          [text {:style {:padding     8
                         :color       header-color
                         :font-family "Montserrat-SemiBold"
