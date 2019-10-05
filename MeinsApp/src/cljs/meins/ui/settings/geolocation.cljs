@@ -16,9 +16,7 @@
     (fn [{:keys [_navigation] :as _props}]
       (let [bg (get-in styles/colors [:list-bg @theme])]
         [view {:style {:flex-direction   "column"
-                       :padding-top      10
-                       :background-color bg
-                       :height           "100%"}}
+                       :background-color bg}}
          [status-bar {:barStyle "light-content"}]
          [view {:style {:display       :flex
                         :padding-left  24
