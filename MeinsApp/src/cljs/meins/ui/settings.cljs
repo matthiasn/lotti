@@ -14,6 +14,7 @@
             [reagent.core :as r]))
 
 (def nav-bg (get-in styles/colors [:nav-bg :dark]))
+(def bg (get-in styles/colors [:list-bg :dark]))
 
 (def local (r/atom {:cam      false
                     :contacts (clj->js [])
@@ -92,5 +93,6 @@
     (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   nav-bg
                                                        :height            60
                                                        :borderBottomWidth 0}}
+              :cardStyle                {:backgroundColor bg}
               :height                   100
               :headerMode               :float})))
