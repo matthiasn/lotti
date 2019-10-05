@@ -1,27 +1,22 @@
 (ns meins.ui.settings.db
-  (:require [meins.ui.shared :refer [alert settings-icon settings-list settings-list-item status-bar text
-                                     view]]
+  (:require [meins.ui.settings.items :refer [item switch-item]]
+            [meins.ui.shared :refer [status-bar text view]]
+            [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]))
 
-(defn db-settings [_local put-fn]
-  (let [_theme (subscribe [:active-theme])]
-    (fn [{:keys [_screenProps navigation] :as _props}]
+(defn db-settings [_ put-fn]
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [navigation] :as _props} _put-fn]
       (let [{:keys [_navigate goBack]} (js->clj navigation :keywordize-keys true)
-            reset-state #(do (put-fn [:state/reset]) (goBack))
-            bg "#445"                                       ;(get-in c/colors [:list-bg @theme])
-            item-bg "#556"                                  ;(get-in c/colors [:text-bg @theme])
-            text-color "white"                              ;(get-in c/colors [:text @theme])
-            ]
+            bg (get-in styles/colors [:list-bg @theme])
+            reset-state #(do (put-fn [:state/reset]) (goBack))]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
-                       :background-color bg
-                       :height           "100%"}}
+                       :height           "100%"
+                       :background-color bg}}
          [status-bar {:barStyle "light-content"}]
-         [settings-list {:border-color bg
-                         :width        "100%"}
-          [settings-list-item {:title            "Reset"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :icon             (settings-icon "bolt" "#999")
-                               :on-press         reset-state}]]]))))
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          [item {:label    "RESET"
+                 :on-press reset-state}]]]))))

@@ -17,6 +17,7 @@
 (def image (r/adapt-react-class (.-Image react-native)))
 (def progress-bar (r/adapt-react-class (.-ProgressBarAndroid react-native)))
 (def text (r/adapt-react-class (.-Text react-native)))
+(def switch (r/adapt-react-class (.-Switch react-native)))
 (def input (r/adapt-react-class (.-TextInput react-native)))
 (def flat-list (r/adapt-react-class (.-FlatList react-native)))
 (def virtualized-list (r/adapt-react-class (.-VirtualizedList react-native)))

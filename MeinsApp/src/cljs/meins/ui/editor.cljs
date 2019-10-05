@@ -4,12 +4,12 @@
             [meins.common.utils.parse :as p]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
+            [meins.ui.icons :as ico]
             [meins.ui.shared :refer [keyboard keyboard-avoiding-view platform-os scroll status-bar text
                                      text-input touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
-            [reagent.core :as r]
-            [meins.ui.icons :as ico]))
+            [reagent.core :as r]))
 
 (def local (r/atom {:md ""}))
 

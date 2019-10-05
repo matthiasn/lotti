@@ -1,5 +1,6 @@
 (ns meins.ui.settings.geolocation
   (:require [meins.ui.db :refer [emit]]
+            [meins.ui.settings.items :refer [item switch-item]]
             [meins.ui.shared :refer [settings-icon settings-list settings-list-item status-bar view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]))
@@ -13,33 +14,21 @@
                        (emit [:bg-geo/start]))
                      (emit [:cfg/set {:bg-geo (not (:bg-geo @cfg))}]))]
     (fn [{:keys [_navigation] :as _props}]
-      (let [bg (get-in styles/colors [:list-bg @theme])
-            item-bg (get-in styles/colors [:button-bg @theme])
-            text-color (get-in styles/colors [:btn-text @theme])]
+      (let [bg (get-in styles/colors [:list-bg @theme])]
         [view {:style {:flex-direction   "column"
                        :padding-top      10
                        :background-color bg
                        :height           "100%"}}
          [status-bar {:barStyle "light-content"}]
-         [settings-list {:border-color bg
-                         :width        "100%"}
-          [settings-list-item {:title               "Enable Background Location Tracking"
-                               :has-switch          true
-                               :switchState         (:bg-geo @cfg)
-                               :switchOnValueChange toggle-geo
-                               :hasNavArrow         false
-                               :background-color    item-bg
-                               :titleStyle          {:color text-color}}]
-
-          [settings-list-item {:hasNavArrow      false
-                               :background-color item-bg
-                               :title            "Sync"
-                               :titleStyle       {:color text-color}
-                               :icon             (settings-icon "save" text-color)
-                               :on-press         #(emit [:bg-geo/save])}]
-          [settings-list-item {:hasNavArrow      false
-                               :background-color item-bg
-                               :title            "Mail Logs"
-                               :titleStyle       {:color text-color}
-                               :icon             (settings-icon "envelope" text-color)
-                               :on-press         #(emit [:bg-geo/email-logs])}]]]))))
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          [switch-item {:label       "Background Location Tracking"
+                        :on-toggle   toggle-geo
+                        :initial-val (:bg-geo @cfg)}]
+          [item {:label         "SYNC"
+                 :has-nav-arrow false
+                 :on-press      #(emit [:bg-geo/save])}]
+          [item {:label         "EMAIL LOG FILES"
+                 :has-nav-arrow false
+                 :on-press      #(emit [:bg-geo/email-logs])}]]]))))
