@@ -20,9 +20,9 @@
          [view {:style {:display       :flex
                         :padding-left  24
                         :padding-right 24}}
-          [switch-item {:label       "Show Private Entries"
-                        :on-toggle   toggle-pvt
-                        :initial-val (:show-pvt @cfg)}]
-          [switch-item {:label       "Debug Entry"
-                        :on-toggle   toggle-debug
-                        :initial-val (:entry-pprint @cfg)}]]]))))
+          [switch-item {:label     "Show Private Entries"
+                        :on-toggle toggle-pvt
+                        :value     (:show-pvt @cfg)}]
+          [switch-item {:label     "Debug Entry"
+                        :on-toggle toggle-debug
+                        :value     (:entry-pprint @cfg)}]]]))))

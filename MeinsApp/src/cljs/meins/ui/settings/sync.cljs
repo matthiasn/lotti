@@ -1,8 +1,10 @@
 (ns meins.ui.settings.sync
-  (:require [cljs.tools.reader.edn :as edn]
+  (:require ["react-navigation-stack" :refer [createStackNavigator]]
+            [cljs.tools.reader.edn :as edn]
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
+            [meins.ui.settings.items :refer [item screen switch-item] :as items]
             [meins.ui.shared :refer [alert cam scroll settings-list settings-list-item status-bar text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
@@ -17,7 +19,7 @@
     (swap! local assoc :key-pair kp)
     (emit [:secrets/set-kp kp])))
 
-(defn on-barcode-read [local e]
+(defn on-barcode-read [local f e]
   (let [qr-code (js->clj e)
         payload (get qr-code "data")
         data (edn/read-string payload)
@@ -37,24 +39,31 @@
         local (r/atom {:show-qr false})
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
     (kc/get-keypair #(swap! local assoc :key-pair %))
-    (fn [_props]
-      (let [bg (get-in styles/colors [:list-bg @theme])
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            bg (get-in styles/colors [:list-bg @theme])
             item-bg (get-in styles/colors [:button-bg @theme])
             text-color (get-in styles/colors [:btn-text @theme])]
-        [scroll {:style {:flex-direction   "column"
-                         :padding-top      10
-                         :background-color bg
-                         :height           "100%"}}
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
          [status-bar {:barStyle "light-content"}]
+
+         [view {:style {:display        :flex
+                        :padding-left   24
+                        :padding-right  24
+                        :padding-bottom 24}}
+          [switch-item {:label     "ENABLE SYNC"
+                        :on-toggle toggle-enable
+                        :value     (:sync-active @cfg)}]
+          [item {:label         "ASSISTANT"
+                 :has-nav-arrow true
+                 :on-press      #(navigate "sync-intro")}]]
+
          [settings-list {:border-color bg
-                         :width        "100%"}
-          [settings-list-item {:title               "Enable Sync"
-                               :has-switch          true
-                               :switchState         (:sync-active @cfg)
-                               :switchOnValueChange toggle-enable
-                               :hasNavArrow         false
-                               :background-color    item-bg
-                               :titleStyle          {:color text-color}}]
+                         :width        "100%"
+                         :margin-top   20}
           (if (:key-pair @local)
             [settings-list-item {:title            "Delete Keypair"
                                  :hasNavArrow      false
@@ -87,7 +96,7 @@
            [cam {:style         {:width  "100%"
                                  :flex   5
                                  :height 300}
-                 :onBarCodeRead (partial on-barcode-read local)}])
+                 :onBarCodeRead (partial on-barcode-read local (fn []))}])
          (when-let [kp (:key-pair @local)]
            [text {:style {:font-size   8
                           :color       "#888"
@@ -106,3 +115,128 @@
             (str barcode)])
          (when (:show-qr @local)
            [qr/qr-code (-> @local :key-pair :publicKey)])]))))
+
+(defn intro [_]
+  (let [theme (subscribe [:active-theme])
+        cfg (subscribe [:cfg])
+        local (r/atom {:show-qr false})]
+    (kc/get-keypair #(swap! local assoc :key-pair %))
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            bg (get-in styles/colors [:list-bg @theme])
+            public-key (-> @local :key-pair :publicKey)]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          [text {:style {:font-size   12
+                         :font-family "Montserrat-Regular"
+                         :text-align  "left"
+                         :opacity     0.68
+                         :color       "white"}}
+           "Let's set up the communication with the desktop and start syncing. For that, we need a public/private key pair."]
+          (if public-key
+            [item {:label         "NEXT"
+                   :has-nav-arrow true
+                   :on-press      #(navigate "sync-show-qr")}]
+            [item {:label         "GENERATE KEY PAIR"
+                   :has-nav-arrow false
+                   :on-press      #(set-keypair local)}])
+          (when (:entry-pprint @cfg)
+            (when-let [kp (:key-pair @local)]
+              [text {:style {:font-size   8
+                             :color       "#888"
+                             :font-weight "100"
+                             :flex        2
+                             :margin      2
+                             :padding-top 30
+                             :text-align  "center"}}
+               (str kp)]))]]))))
+
+(defn show-qr [_]
+  (let [theme (subscribe [:active-theme])
+        local (r/atom {:show-qr false})]
+    (kc/get-keypair #(swap! local assoc :key-pair %))
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            bg (get-in styles/colors [:list-bg @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          (when-let [public-key (-> @local :key-pair :publicKey)]
+            [qr/qr-code public-key])
+          [text {:style {:font-size   12
+                         :font-family "Montserrat-Regular"
+                         :text-align  "center"
+                         :opacity     0.68
+                         :padding-top 30
+                         :color       "white"}}
+           "Scan this code with your desktop webcam."]
+          [item {:label         "NEXT"
+                 :has-nav-arrow true
+                 :on-press      #(navigate "sync-scan-qr")}]]]))))
+
+(defn scan-qr [_]
+  (let [theme (subscribe [:active-theme])
+        local (r/atom {:show-qr false})]
+    (kc/get-keypair #(swap! local assoc :key-pair %))
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            bg (get-in styles/colors [:list-bg @theme])
+            on-read (partial on-barcode-read local #(navigate "sync-success"))]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          [cam {:style         {:width  "100%"
+                                :flex   5
+                                :height 300}
+                :onBarCodeRead on-read}]
+          [text {:style {:font-size   12
+                         :font-family "Montserrat-Regular"
+                         :text-align  "center"
+                         :opacity     0.68
+                         :padding-top 30
+                         :color       "white"}}
+           "Scan the barcode shown on the desktop."]
+          [item {:label         "NEXT"
+                 :has-nav-arrow true
+                 :on-press      #(navigate "sync-success")}]]]))))
+
+(defn success [_]
+  (let [theme (subscribe [:active-theme])
+        local (r/atom {:show-qr false})]
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            bg (get-in styles/colors [:list-bg @theme])]
+        [view {:style {:flex-direction   "column"
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         [view {:style {:display       :flex
+                        :padding-left  24
+                        :padding-right 24}}
+          [text {:style {:font-size   12
+                         :font-family "Montserrat-Regular"
+                         :text-align  "center"
+                         :opacity     0.68
+                         :padding-top 30
+                         :color       "white"}}
+           "Congrats, all set up."]
+          [item {:label         "FINISH"
+                 :has-nav-arrow true
+                 :on-press      #(navigate "sync")}]]]))))

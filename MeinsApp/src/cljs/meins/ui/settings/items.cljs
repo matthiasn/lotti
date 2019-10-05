@@ -37,13 +37,11 @@
                      :style {:color       "#BBBDBF"
                              :margin-left 25}}])]))))
 
-(defn switch-item [{:keys [initial-val]}]
-  (let [theme (subscribe [:active-theme])
-        local (r/atom {:on initial-val})]
-    (fn [{:keys [label info on-toggle]}]
+(defn switch-item [{:keys []}]
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [label info on-toggle value]}]
       (let [header-color (get-in styles/colors [:header-text @theme])
             toggle (fn [_]
-                     (swap! local update :on not)
                      (on-toggle))]
         [touchable-opacity {:style {:color             header-color
                                     :margin-left       9
@@ -62,10 +60,24 @@
                         :color       "white"}}
           label]
          [switch {:onValueChange toggle
-                  :value         (:on @local)
-                  :thumbColor    (if (:on @local)
+                  :value         value
+                  :thumbColor    (if value
                                    "#79C693"
                                    "#BBBDBF")
                   :trackColor    {:true  "#FFF"
                                   :false "#808080"}}
           info]]))))
+
+(defn screen [{:keys [screen title]}]
+  {:screen            (r/reactify-component screen)
+   :navigationOptions {:title                title
+                       :headerBackTitle      "BACK"
+                       :headerBackTitleStyle {:fontSize      12
+                                              :letterSpacing 0.02
+                                              :fontFamily    "Montserrat-Regular"
+                                              :color         "white"}
+                       :headerTitleStyle     {:fontSize      18
+                                              :lineHeight    22
+                                              :letterSpacing 0.02
+                                              :fontFamily    "Montserrat-SemiBold"
+                                              :color         "white"}}})

@@ -16,6 +16,7 @@
           [touchable-opacity {:on-press #(set-clipboard qr-value)
                               :style    {:background-color "white"
                                          :padding          20
+                                         :border-radius    18
                                          :align-items      "center"}}
            [qr-svg {:value qr-value
                     :size  300}]])))))

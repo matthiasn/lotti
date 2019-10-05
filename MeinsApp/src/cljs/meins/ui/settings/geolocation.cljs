@@ -21,9 +21,9 @@
          [view {:style {:display       :flex
                         :padding-left  24
                         :padding-right 24}}
-          [switch-item {:label       "Background Location Tracking"
-                        :on-toggle   toggle-geo
-                        :initial-val (:bg-geo @cfg)}]
+          [switch-item {:label     "Background Location Tracking"
+                        :on-toggle toggle-geo
+                        :value     (:bg-geo @cfg)}]
           [item {:label         "SYNC"
                  :has-nav-arrow false
                  :on-press      #(emit [:bg-geo/save])}]

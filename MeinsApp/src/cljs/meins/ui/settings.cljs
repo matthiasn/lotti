@@ -6,7 +6,7 @@
             [meins.ui.settings.dev :as dev]
             [meins.ui.settings.geolocation :as geo]
             [meins.ui.settings.health :as sh]
-            [meins.ui.settings.items :refer [item] :as items]
+            [meins.ui.settings.items :refer [item screen] :as items]
             [meins.ui.settings.sync :as sync]
             [meins.ui.shared :refer [fa-icon settings-icon status-bar text touchable-opacity view]]
             [meins.ui.styles :as styles]
@@ -60,39 +60,34 @@
                  :has-nav-arrow true
                  :on-press      #(navigate "sync")}]]]))))
 
-(defn screen [{:keys [screen title]}]
-  {:screen            (r/reactify-component screen)
-   :navigationOptions {:title                title
-                       :headerBackTitle      "BACK"
-                       :headerBackTitleStyle {:fontSize      12
-                                              :letterSpacing 0.02
-                                              :fontFamily    "Montserrat-Regular"
-                                              :color         "white"}
-                       :headerTitleStyle     {:fontSize      18
-                                              :lineHeight    22
-                                              :letterSpacing 0.02
-                                              :fontFamily    "Montserrat-SemiBold"
-                                              :color         "white"}}})
-
 (def settings-stack
   (createStackNavigator
-    (clj->js {:settings (screen {:title  "Settings"
-                                 :screen settings-wrapper})
-              :sync     (screen {:title  "Sync"
-                                 :screen sync/sync-settings})
-              :dev      (screen {:title  "Entry View"
-                                 :screen dev/dev-settings})
-              :geo      (screen {:title  "Geolocation"
-                                 :screen geo/geo-settings})
-              :db       (screen {:title  "Database"
-                                 :screen db/db-settings})
-              :audio    (screen {:title  "Audio Recorder"
-                                 :screen audio/audio-settings})
-              :health   (screen {:title  "Health"
-                                 :screen sh/health-settings})})
+    (clj->js {:settings     (screen {:title  "Settings"
+                                     :screen settings-wrapper})
+              :sync         (screen {:title  "Sync"
+                                     :screen sync/sync-settings})
+              :sync-intro   (screen {:title  "Sync Assistant"
+                                     :screen sync/intro})
+              :sync-show-qr (screen {:title  "Sync Assistant"
+                                     :screen sync/show-qr})
+              :sync-scan-qr (screen {:title  "Sync Assistant"
+                                     :screen sync/scan-qr})
+              :sync-success (screen {:title  "Sync Assistant"
+                                     :screen sync/success})
+              :dev          (screen {:title  "Entry View"
+                                     :screen dev/dev-settings})
+              :geo          (screen {:title  "Geolocation"
+                                     :screen geo/geo-settings})
+              :db           (screen {:title  "Database"
+                                     :screen db/db-settings})
+              :audio        (screen {:title  "Audio Recorder"
+                                     :screen audio/audio-settings})
+              :health       (screen {:title  "Health"
+                                     :screen sh/health-settings})})
     (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   nav-bg
                                                        :height            60
                                                        :borderBottomWidth 0}}
               :cardStyle                {:backgroundColor bg}
+              :initialRouteName         "settings"
               :height                   100
               :headerMode               :float})))
