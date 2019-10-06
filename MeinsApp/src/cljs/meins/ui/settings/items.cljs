@@ -40,19 +40,20 @@
 
 (defn button [_]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [label on-press]}]
+    (fn [{:keys [label on-press style]}]
       (let [header-color (get-in styles/colors [:header-text @theme])
             nav-bg (get-in styles/colors [:nav-bg @theme])]
         [touchable-opacity {:on-press on-press
-                            :style    {:color           header-color
-                                       :margin-left     9
-                                       :margin-right    15
-                                       :height          80
-                                       :margin-top      30
-                                       :display         :flex
-                                       :flex-direction  :row
-                                       :align-items     :center
-                                       :justify-content :space-between}}
+                            :style    (merge {:color           header-color
+                                              :margin-left     9
+                                              :margin-right    15
+                                              :height          80
+                                              :margin-top      30
+                                              :display         :flex
+                                              :flex-direction  :row
+                                              :justify-content :space-between
+                                              :align-items     :center}
+                                             style)}
          [view {:style {:background-color nav-bg
                         :display          :flex
                         :flex-direction   :row

@@ -65,8 +65,7 @@
            [item {:label    "GENERATE KEYPAIR"
                   :on-press #(set-keypair local)}])
          [modal {:isVisible (:del-visible @local)}
-          [view {:style {:height          250
-                         :width           "100%"
+          [view {:style {:width           "100%"
                          :border-radius   18
                          :backgroundColor "red"}}
            [text {:style {:font-size   30
@@ -76,7 +75,11 @@
                           :text-align  :center}}
             "CAUTION: run Assistant again after deleting key pair."]
            [button {:label    "DELETE KEYPAIR"
-                    :on-press del-keypair}]]]
+                    :style    {:margin-top 20}
+                    :on-press del-keypair}]
+           [button {:label    "CANCEL"
+                    :style    {:margin-top 0}
+                    :on-press #(swap! local dissoc :del-visible)}]]]
          (when (and (:entry-pprint @cfg) (:key-pair @local))
            [text {:style {:font-size   8
                           :color       "#888"
