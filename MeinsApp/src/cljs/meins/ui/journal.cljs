@@ -15,9 +15,7 @@
             [meins.ui.editor :as ed]
             [meins.ui.elements.mapbox :as mb]
             [meins.ui.shared :refer [alert fa-icon flat-list image keyboard-avoiding-view platform-os
-                                     scroll
-                                     search-bar settings-list settings-list-item status-bar
-                                     #_swipeout text text-input touchable-opacity
+                                     scroll search-bar status-bar text text-input touchable-opacity
                                      view virtualized-list]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]

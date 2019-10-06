@@ -17,7 +17,6 @@
             (.getTracks)
             (aget 0)
             (.stop))
-    (swap! local assoc :scanned true)
     (.stopAsyncDecode qr-reader)))
 
 (defn did-mount [local cfg _]
@@ -26,10 +25,9 @@
                      (try
                        (let [data (edn/read-string (.-text qr))]
                          (info "Scanned data:" data)
-                         ;                         (swap! cfg assoc :mobile data)
-                         (emit [:imap/save-cfg
-                                (merge @cfg {:mobile data})])
-                         (stop-scanning local))
+                         (emit [:imap/save-cfg (merge @cfg {:mobile data})])
+                         (stop-scanning local)
+                         (swap! local assoc :page :show-qr))
                        (catch :default e (error e))))
         scan (fn [cameras]
                (when (pos? (.-length cameras))

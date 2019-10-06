@@ -99,9 +99,10 @@
           [:button {:on-click #(swap! local assoc :page :scan-qr)}
            "Next: Scan mobile device QR code"]]
          [:h1 "Crypto Key Assistant"]
+         [:p "IMAP folders were created successfully." [:i.fas.fa-check]]
          (if (and our-secret-key our-public-key)
            [:div
-            [:p "You're all set, public and private exist already." [:i.fas.fa-check]]
+            [:p "Using existing public and private key pair." [:i.fas.fa-check]]
             [:div {:style {:margin-bottom 5
                            :margin-top    100}}
              [:button {:on-click create-key-pair}
@@ -120,16 +121,11 @@
         [:div.page
          [:div.nav
           [:button {:on-click #(swap! local assoc :page :key-pair)}
-           "Previous"]
-          [:button {:on-click #(swap! local assoc :page :show-qr)}
-           "Next: Display encrypted configuration"]]
-         [:h1 "Getting to know the mobile device"]
-         (if (:scanned @local)
-           [:div
-            [:p "Thanks for scanning" [:i.fas.fa-check]]]
-           [:div
-            [qrs/scanner local cfg]
-            [:p "Here, you scan the public key of your smartphone."]])]))))
+           "Previous"]]
+         [:h1 "Hello App!"]
+         [:div
+          [qrs/scanner local cfg]
+          [:p "Here, you scan the public key of your smartphone."]]]))))
 
 (defn show-qr [local]
   [:div.page
@@ -138,7 +134,7 @@
      "Previous"]
     [:button {:on-click #(swap! local assoc :page :done)}
      "Finish"]]
-   [:h1 "Introducing ourselves to the mobile device"]
+   [:h1 "Hello App, here's the SYNC configuration"]
    [qrg/qr-code-gen]
    [:p "Scan this in meins on your smartphone."]])
 

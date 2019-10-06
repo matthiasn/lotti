@@ -62,28 +62,30 @@
 
 (def settings-stack
   (createStackNavigator
-    (clj->js {:settings     (screen {:title  "Settings"
-                                     :screen settings-wrapper})
-              :sync         (screen {:title  "Sync"
-                                     :screen sync/sync-settings})
-              :sync-intro   (screen {:title  "Sync Assistant"
-                                     :screen sync/intro})
-              :sync-show-qr (screen {:title  "Sync Assistant"
-                                     :screen sync/show-qr})
-              :sync-scan-qr (screen {:title  "Sync Assistant"
-                                     :screen sync/scan-qr})
-              :sync-success (screen {:title  "Sync Assistant"
-                                     :screen sync/success})
-              :dev          (screen {:title  "Entry View"
-                                     :screen dev/dev-settings})
-              :geo          (screen {:title  "Geolocation"
-                                     :screen geo/geo-settings})
-              :db           (screen {:title  "Database"
-                                     :screen db/db-settings})
-              :audio        (screen {:title  "Audio Recorder"
-                                     :screen audio/audio-settings})
-              :health       (screen {:title  "Health"
-                                     :screen sh/health-settings})})
+    (clj->js {:settings      (screen {:title  "Settings"
+                                      :screen settings-wrapper})
+              :sync          (screen {:title  "Sync"
+                                      :screen sync/sync-settings})
+              :sync-intro    (screen {:title  "Sync Assistant"
+                                      :screen sync/intro})
+              :sync-show-qr  (screen {:title  "Sync Assistant"
+                                      :screen sync/show-qr})
+              :sync-scan-qr  (screen {:title  "Sync Assistant"
+                                      :screen sync/scan-qr})
+              :sync-success  (screen {:title  "Sync Assistant"
+                                      :screen sync/success})
+              :sync-advanced (screen {:title  "Sync Advanced"
+                                      :screen sync/sync-advanced})
+              :dev           (screen {:title  "Entry View"
+                                      :screen dev/dev-settings})
+              :geo           (screen {:title  "Geolocation"
+                                      :screen geo/geo-settings})
+              :db            (screen {:title  "Database"
+                                      :screen db/db-settings})
+              :audio         (screen {:title  "Audio Recorder"
+                                      :screen audio/audio-settings})
+              :health        (screen {:title  "Health"
+                                      :screen sh/health-settings})})
     (clj->js {:defaultNavigationOptions {:headerStyle {:backgroundColor   nav-bg
                                                        :height            60
                                                        :borderBottomWidth 0}}

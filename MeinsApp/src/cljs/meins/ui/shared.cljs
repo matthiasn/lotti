@@ -1,35 +1,37 @@
 (ns meins.ui.shared
   (:require ["react-native" :as react-native :refer [Clipboard]]
+            ["react-native-modal" :default Modal]
             ["react-native-camera" :as react-native-camera]
             ["react-native-elements" :as react-native-elements]
             ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             [reagent.core :as r]))
 
-(def dimensions (.-Dimensions react-native))
-(def keyboard (.-Keyboard react-native))
-(def platform-os (aget react-native "Platform" "OS"))
 (def app-registry (.-AppRegistry react-native))
-(def view (r/adapt-react-class (.-View react-native)))
-(def status-bar (r/adapt-react-class (.-StatusBar react-native)))
+(def dimensions (.-Dimensions react-native))
+(def flat-list (r/adapt-react-class (.-FlatList react-native)))
+(def image (r/adapt-react-class (.-Image react-native)))
+(def input (r/adapt-react-class (.-TextInput react-native)))
+(def keyboard (.-Keyboard react-native))
+(def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView react-native)))
+(def modal (r/adapt-react-class Modal))
+(def picker (r/adapt-react-class (.-Picker react-native)))
+(def picker-item (r/adapt-react-class (aget react-native "Picker" "Item")))
+(def platform-os (aget react-native "Platform" "OS"))
+(def progress-bar (r/adapt-react-class (.-ProgressBarAndroid react-native)))
 (def safe-area-view (r/adapt-react-class (.-SafeAreaView react-native)))
 (def scroll (r/adapt-react-class (.-ScrollView react-native)))
-(def image (r/adapt-react-class (.-Image react-native)))
-(def progress-bar (r/adapt-react-class (.-ProgressBarAndroid react-native)))
-(def text (r/adapt-react-class (.-Text react-native)))
+(def status-bar (r/adapt-react-class (.-StatusBar react-native)))
 (def switch (r/adapt-react-class (.-Switch react-native)))
-(def input (r/adapt-react-class (.-TextInput react-native)))
-(def flat-list (r/adapt-react-class (.-FlatList react-native)))
-(def virtualized-list (r/adapt-react-class (.-VirtualizedList react-native)))
+(def tab-bar (r/adapt-react-class (.-TabBarIOS react-native)))
+(def text (r/adapt-react-class (.-Text react-native)))
+(def text-input (r/adapt-react-class (.-TextInput react-native)))
 (def touchable (r/adapt-react-class (.-TouchableWithoutFeedback react-native)))
 (def touchable-highlight (r/adapt-react-class (.-TouchableHighlight react-native)))
 (def touchable-opacity (r/adapt-react-class (.-TouchableOpacity react-native)))
-(def text-input (r/adapt-react-class (.-TextInput react-native)))
-(def tab-bar (r/adapt-react-class (.-TabBarIOS react-native)))
-(def picker (r/adapt-react-class (.-Picker react-native)))
-(def picker-item (r/adapt-react-class (aget react-native "Picker" "Item")))
-(def keyboard-avoiding-view (r/adapt-react-class (.-KeyboardAvoidingView react-native)))
 (def vibration (.-Vibration react-native))
+(def view (r/adapt-react-class (.-View react-native)))
+(def virtualized-list (r/adapt-react-class (.-VirtualizedList react-native)))
 
 (defn alert [title] (.alert (.-Alert react-native) (str title)))
 

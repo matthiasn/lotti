@@ -1,7 +1,7 @@
 (ns meins.ui.settings.geolocation
   (:require [meins.ui.db :refer [emit]]
             [meins.ui.settings.items :refer [item switch-item]]
-            [meins.ui.shared :refer [settings-icon settings-list settings-list-item status-bar view]]
+            [meins.ui.shared :refer [status-bar view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]))
 

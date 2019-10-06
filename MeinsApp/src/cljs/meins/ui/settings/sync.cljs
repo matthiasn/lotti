@@ -5,7 +5,7 @@
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
             [meins.ui.settings.items :refer [item screen switch-item button] :as items]
-            [meins.ui.shared :refer [alert cam scroll settings-list settings-list-item status-bar text view]]
+            [meins.ui.shared :refer [alert cam scroll modal status-bar text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
             [re-frame.core :refer [subscribe]]
@@ -47,11 +47,17 @@
                               :padding-right 24}}]
                args)]))))
 
+(defn settings-text [s]
+  [text {:style {:font-size   12
+                 :font-family :Montserrat-Regular
+                 :text-align  :left
+                 :opacity     0.68
+                 :color       :white}}
+   s])
+
 (defn sync-settings [_]
   (let [cfg (subscribe [:cfg])
-        local (r/atom {:show-qr false})
         toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
-    (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
         [settings-page
@@ -61,15 +67,39 @@
          [item {:label         "ASSISTANT"
                 :has-nav-arrow true
                 :on-press      #(navigate "sync-intro")}]
+         [item {:label         "ADVANCED"
+                :has-nav-arrow true
+                :on-press      #(navigate "sync-advanced")}]]))))
+
+(defn sync-advanced [_]
+  (let [cfg (subscribe [:cfg])
+        local (r/atom {})]
+    (kc/get-keypair #(swap! local assoc :key-pair %))
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+            del-keypair (fn [_]
+                          (kc/del-keypair)
+                          (swap! local assoc :key-pair nil)
+                          (swap! local dissoc :del-visible))]
+        [settings-page
          (if (:key-pair @local)
            [item {:label    "DELETE KEYPAIR"
-                  :on-press (fn [_]
-                              (kc/del-keypair)
-                              (swap! local assoc :key-pair nil))}]
+                  :on-press #(swap! local assoc :del-visible true)}]
            [item {:label    "GENERATE KEYPAIR"
                   :on-press #(set-keypair local)}])
-         [item {:label    "RESET LAST READ"
-                :on-press #(emit [:state/reset {:type :last-uid-read}])}]
+         [modal {:isVisible (:del-visible @local)}
+          [view {:style {:height          250
+                         :width           "100%"
+                         :border-radius   18
+                         :backgroundColor "red"}}
+           [text {:style {:font-size   30
+                          :padding     20
+                          :font-family :Montserrat-SemiBold
+                          :color       :white
+                          :text-align  :center}}
+            "CAUTION: run Assistant again after deleting key pair."]
+           [button {:label    "DELETE KEYPAIR"
+                    :on-press del-keypair}]]]
          (when (and (:entry-pprint @cfg) (:key-pair @local))
            [text {:style {:font-size   8
                           :color       "#888"
@@ -79,17 +109,8 @@
                           :text-align  "center"}}
             (str (:key-pair @local))])]))))
 
-(defn settings-text [s]
-  [text {:style {:font-size   12
-                 :font-family :Montserrat-Regular
-                 :text-align  :left
-                 :opacity     0.68
-                 :color       :white}}
-   s])
-
 (defn intro [_]
-  (let [cfg (subscribe [:cfg])
-        local (r/atom {:show-qr false})]
+  (let [local (r/atom {})]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
@@ -98,25 +119,13 @@
          [settings-text
           "Let's set up the communication with the desktop and start syncing. For that, we need a public/private key pair."]
          (if public-key
-           [button {:label         "NEXT"
-                    :has-nav-arrow true
-                    :on-press      #(navigate "sync-show-qr")}]
-           [button {:label         "GENERATE KEY PAIR"
-                    :has-nav-arrow false
-                    :on-press      #(set-keypair local)}])
-         (when (:entry-pprint @cfg)
-           (when-let [kp (:key-pair @local)]
-             [text {:style {:font-size   8
-                            :color       "#888"
-                            :font-weight "100"
-                            :flex        2
-                            :margin      2
-                            :padding-top 30
-                            :text-align  "center"}}
-              (str kp)]))]))))
+           [button {:label    "NEXT"
+                    :on-press #(navigate "sync-show-qr")}]
+           [button {:label    "GENERATE KEY PAIR"
+                    :on-press #(set-keypair local)}])]))))
 
 (defn show-qr [_]
-  (let [local (r/atom {:show-qr false})]
+  (let [local (r/atom {})]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
@@ -124,12 +133,11 @@
          (when-let [public-key (-> @local :key-pair :publicKey)]
            [qr/qr-code public-key])
          [settings-text "Scan this code with your desktop webcam."]
-         [button {:label         "DONE? NEXT"
-                  :has-nav-arrow true
-                  :on-press      #(navigate "sync-scan-qr")}]]))))
+         [button {:label    "DONE? NEXT"
+                  :on-press #(navigate "sync-scan-qr")}]]))))
 
 (defn scan-qr [_]
-  (let [local (r/atom {:show-qr false})]
+  (let [local (r/atom {})]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
@@ -148,6 +156,5 @@
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
         [settings-page
          [settings-text "Congrats, all set up."]
-         [button {:label         "FINISH"
-                  :has-nav-arrow true
-                  :on-press      #(navigate "sync")}]]))))
+         [button {:label    "FINISH"
+                  :on-press #(navigate "sync")}]]))))
