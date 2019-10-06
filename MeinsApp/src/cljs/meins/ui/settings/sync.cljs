@@ -33,98 +33,7 @@
     (emit [:secrets/set cfg])
     (swap! local assoc-in [:cam] false)))
 
-(defn sync-settings [_]
-  (let [theme (subscribe [:active-theme])
-        cfg (subscribe [:cfg])
-        local (r/atom {:show-qr false})
-        toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
-    (kc/get-keypair #(swap! local assoc :key-pair %))
-    (fn [{:keys [navigation]}]
-      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            bg (get-in styles/colors [:list-bg @theme])
-            item-bg (get-in styles/colors [:button-bg @theme])
-            text-color (get-in styles/colors [:btn-text @theme])]
-        [view {:style {:flex-direction   "column"
-                       :padding-top      10
-                       :background-color bg
-                       :height           "100%"}}
-         [status-bar {:barStyle "light-content"}]
-
-         [view {:style {:display        :flex
-                        :padding-left   24
-                        :padding-right  24
-                        :padding-bottom 24}}
-          [switch-item {:label     "ENABLE SYNC"
-                        :on-toggle toggle-enable
-                        :value     (:sync-active @cfg)}]
-          [item {:label         "ASSISTANT"
-                 :has-nav-arrow true
-                 :on-press      #(navigate "sync-intro")}]]
-
-         [settings-list {:border-color bg
-                         :width        "100%"
-                         :margin-top   20}
-          (if (:key-pair @local)
-            [settings-list-item {:title            "Delete Keypair"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :on-press         (fn [_]
-                                                     (kc/del-keypair)
-                                                     (swap! local assoc :key-pair nil))}]
-            [settings-list-item {:title            "Generate Keypair"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :on-press         #(set-keypair local)}])
-          [settings-list-item {:title            "Show barcode"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(swap! local update-in [:show-qr] not)}]
-          [settings-list-item {:title            "Scan barcode"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(swap! local update-in [:cam] not)}]
-          [settings-list-item {:title            "Reset last read"
-                               :hasNavArrow      false
-                               :background-color item-bg
-                               :titleStyle       {:color text-color}
-                               :on-press         #(emit [:state/reset {:type :last-uid-read}])}]]
-         (when (:cam @local)
-           [cam {:style         {:width  "100%"
-                                 :flex   5
-                                 :height 300}
-                 :onBarCodeRead (partial on-barcode-read local (fn []))}])
-         (when-let [kp (:key-pair @local)]
-           [text {:style {:font-size   8
-                          :color       "#888"
-                          :font-weight "100"
-                          :flex        2
-                          :margin      2
-                          :text-align  "center"}}
-            (str kp)])
-         (when-let [barcode (:barcode @local)]
-           [text {:style {:font-size   8
-                          :color       "#888"
-                          :font-weight "100"
-                          :flex        2
-                          :margin      2
-                          :text-align  "center"}}
-            (str barcode)])
-         (when (:show-qr @local)
-           [qr/qr-code (-> @local :key-pair :publicKey)])]))))
-
-(defn settings-text [s]
-  [text {:style {:font-size   12
-                 :font-family :Montserrat-Regular
-                 :text-align  :left
-                 :opacity     0.68
-                 :color       :white}}
-   s])
-
-(defn sync-page [& args]
+(defn settings-page [& args]
   (let [theme (subscribe [:active-theme])]
     (fn [& args]
       (let [bg (get-in styles/colors [:list-bg @theme])]
@@ -138,6 +47,46 @@
                               :padding-right 24}}]
                args)]))))
 
+(defn sync-settings [_]
+  (let [cfg (subscribe [:cfg])
+        local (r/atom {:show-qr false})
+        toggle-enable #(emit [:cfg/set {:sync-active (not (:sync-active @cfg))}])]
+    (kc/get-keypair #(swap! local assoc :key-pair %))
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
+        [settings-page
+         [switch-item {:label     "ENABLE SYNC"
+                       :on-toggle toggle-enable
+                       :value     (:sync-active @cfg)}]
+         [item {:label         "ASSISTANT"
+                :has-nav-arrow true
+                :on-press      #(navigate "sync-intro")}]
+         (if (:key-pair @local)
+           [item {:label    "DELETE KEYPAIR"
+                  :on-press (fn [_]
+                              (kc/del-keypair)
+                              (swap! local assoc :key-pair nil))}]
+           [item {:label    "GENERATE KEYPAIR"
+                  :on-press #(set-keypair local)}])
+         [item {:label    "Reset last read"
+                :on-press #(emit [:state/reset {:type :last-uid-read}])}]
+         (when (and (:entry-pprint @cfg) (:key-pair @local))
+           [text {:style {:font-size   8
+                          :color       "#888"
+                          :font-weight "100"
+                          :flex        2
+                          :margin      2
+                          :text-align  "center"}}
+            (str (:key-pair @local))])]))))
+
+(defn settings-text [s]
+  [text {:style {:font-size   12
+                 :font-family :Montserrat-Regular
+                 :text-align  :left
+                 :opacity     0.68
+                 :color       :white}}
+   s])
+
 (defn intro [_]
   (let [cfg (subscribe [:cfg])
         local (r/atom {:show-qr false})]
@@ -145,7 +94,7 @@
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             public-key (-> @local :key-pair :publicKey)]
-        [sync-page
+        [settings-page
          [settings-text
           "Let's set up the communication with the desktop and start syncing. For that, we need a public/private key pair."]
          (if public-key
@@ -171,7 +120,7 @@
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
-        [sync-page
+        [settings-page
          (when-let [public-key (-> @local :key-pair :publicKey)]
            [qr/qr-code public-key])
          [settings-text "Scan this code with your desktop webcam."]
@@ -185,7 +134,7 @@
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             on-read (partial on-barcode-read local #(navigate "sync-success"))]
-        [sync-page
+        [settings-page
          [cam {:style         {:width  "100%"
                                :height 300}
                :onBarCodeRead on-read}]
@@ -198,7 +147,7 @@
   (let []
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
-        [sync-page
+        [settings-page
          [settings-text "Congrats, all set up."]
          [button {:label         "FINISH"
                   :has-nav-arrow true
