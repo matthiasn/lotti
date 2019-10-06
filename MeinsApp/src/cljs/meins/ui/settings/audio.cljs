@@ -5,7 +5,8 @@
             [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
-            [meins.ui.shared :refer [alert platform-os settings-icon settings-list settings-list-item
+            [meins.ui.settings.items :refer [item button settings-page settings-text]]
+            [meins.ui.shared :refer [alert platform-os settings-icon
                                      status-bar text view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
@@ -15,8 +16,7 @@
 (def perm (aget Permissions "default"))
 
 (defn audio-settings [_]
-  (let [theme (subscribe [:active-theme])
-        player-state (r/atom {:status :paused
+  (let [player-state (r/atom {:status :paused
                               :pos    0})
         recorder-player (rn-audio-recorder-player.)]
     (-> (.request perm "microphone" (clj->js {}))
@@ -60,57 +60,33 @@
                                 :audio_file (:file @player-state)}]
                      (h/new-entry-fn emit entry)
                      (reset! player-state {:pos 0 :status :paused})))
-            bg (get-in styles/colors [:list-bg @theme])
-            item-bg (get-in styles/colors [:text-bg @theme])
-            text-color (get-in styles/colors [:text @theme])
             status (:status @player-state)
             pos (h/mm-ss (.floor js/Math (:pos @player-state)))
             dur (h/mm-ss (.floor js/Math (:dur @player-state)))
             file (:file @player-state)]
-        [view {:style {:flex-direction   "column"
-                       :padding-top      10
-                       :background-color bg
-                       :height           "100%"}}
-         [status-bar {:barStyle "light-content"}]
-         [settings-list {:border-color bg
-                         :width        "100%"}
-          (if (= :rec status)
-            [settings-list-item {:title            "Stop Recording"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :icon             (settings-icon "stop" "#F66")
-                                 :on-press         stop-recording}]
-            [settings-list-item {:title            "Record"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :icon             (settings-icon "microphone" "#999")
-                                 :on-press         record}])
-          (if (= :play status)
-            [settings-list-item {:title            "Stop"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :icon             (settings-icon "stop" "#66F")
-                                 :on-press         stop}]
-            [settings-list-item {:title            "Play"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :icon             (settings-icon "play" "#999")
-                                 :on-press         play}])
-          (when (and file (= :paused status))
-            [settings-list-item {:title            "Save"
-                                 :hasNavArrow      false
-                                 :background-color item-bg
-                                 :titleStyle       {:color text-color}
-                                 :icon             (settings-icon "save" "#66F")
-                                 :on-press         save}])
-          (when file
-            [text {:style {:font-size   32
-                           :color       "#888"
-                           :font-weight "100"
-                           :font-family "Courier"
-                           :margin      20}}
-             pos "/" dur])]]))))
+        [settings-page
+         (if (= :rec status)
+           [item {:label    "Stop Recording"
+                  :icon     (settings-icon "stop" "#F66")
+                  :on-press stop-recording}]
+           [item {:label    "Record"
+                  :icon     (settings-icon "microphone" "#999")
+                  :on-press record}])
+         (if (= :play status)
+           [item {:label    "Stop"
+                  :icon     (settings-icon "stop" "#66F")
+                  :on-press stop}]
+           [item {:label    "Play"
+                  :icon     (settings-icon "play" "#999")
+                  :on-press play}])
+         (when (and file (= :paused status))
+           [item {:label    "Save"
+                  :icon     (settings-icon "save" "#66F")
+                  :on-press save}])
+         (when file
+           [text {:style {:font-size   32
+                          :color       "#888"
+                          :font-weight "100"
+                          :font-family "Courier"
+                          :margin      20}}
+            pos "/" dur])]))))

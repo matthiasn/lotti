@@ -3,7 +3,6 @@
             ["react-native-modal" :default Modal]
             ["react-native-camera" :as react-native-camera]
             ["react-native-elements" :as react-native-elements]
-            ["react-native-settings-list" :as rn-settings-list :refer [Header Item]]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             [reagent.core :as r]))
 
@@ -50,10 +49,6 @@
 (def divider (r/adapt-react-class (aget react-native-elements "Divider")))
 
 (def contacts (js/require "react-native-contacts"))
-
-(def settings-list (r/adapt-react-class rn-settings-list))
-(def settings-list-header (r/adapt-react-class Header))
-(def settings-list-item (r/adapt-react-class Item))
 
 (defn settings-icon [icon-name color]
   (r/as-element

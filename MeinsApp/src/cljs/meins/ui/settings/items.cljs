@@ -1,12 +1,12 @@
 (ns meins.ui.settings.items
-  (:require [meins.ui.shared :refer [fa-icon switch text touchable-opacity view]]
+  (:require [meins.ui.shared :refer [fa-icon status-bar switch text touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [reg-sub subscribe]]
             [reagent.core :as r]))
 
 (defn item [_]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [label info on-press has-nav-arrow]}]
+    (fn [{:keys [label icon info on-press has-nav-arrow]}]
       (let [header-color (get-in styles/colors [:header-text @theme])]
         [touchable-opacity {:on-press on-press
                             :style    {:color             header-color
@@ -19,6 +19,7 @@
                                        :flex-direction    :row
                                        :align-items       :center
                                        :justify-content   :space-between}}
+         icon
          [text {:style {:font-size   12
                         :font-family "Montserrat-Regular"
                         :text-align  "center"
@@ -98,6 +99,29 @@
                   :trackColor    {:true  "#FFF"
                                   :false "#808080"}}
           info]]))))
+
+(defn settings-page [& args]
+  (let [theme (subscribe [:active-theme])]
+    (fn [& args]
+      (let [bg (get-in styles/colors [:list-bg @theme])]
+        [view {:style {:display          :flex
+                       :flex-direction   :column
+                       :padding-top      10
+                       :background-color bg
+                       :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         (into [view {:style {:display       :flex
+                              :padding-left  24
+                              :padding-right 24}}]
+               args)]))))
+
+(defn settings-text [s]
+  [text {:style {:font-size   12
+                 :font-family :Montserrat-Regular
+                 :text-align  :left
+                 :opacity     0.68
+                 :color       :white}}
+   s])
 
 (defn screen [{:keys [screen title]}]
   {:screen            (r/reactify-component screen)

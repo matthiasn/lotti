@@ -4,8 +4,8 @@
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
-            [meins.ui.settings.items :refer [item screen switch-item button] :as items]
-            [meins.ui.shared :refer [alert cam scroll modal status-bar text view]]
+            [meins.ui.settings.items :refer [item screen switch-item button settings-page settings-text]]
+            [meins.ui.shared :refer [alert cam scroll modal text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
             [re-frame.core :refer [subscribe]]
@@ -31,29 +31,6 @@
                    {:desktop {:publicKey their-public-key}})]
     (emit [:secrets/set cfg])
     (cb)))
-
-(defn settings-page [& args]
-  (let [theme (subscribe [:active-theme])]
-    (fn [& args]
-      (let [bg (get-in styles/colors [:list-bg @theme])]
-        [view {:style {:display          :flex
-                       :flex-direction   :column
-                       :padding-top      10
-                       :background-color bg
-                       :height           "100%"}}
-         [status-bar {:barStyle "light-content"}]
-         (into [view {:style {:display       :flex
-                              :padding-left  24
-                              :padding-right 24}}]
-               args)]))))
-
-(defn settings-text [s]
-  [text {:style {:font-size   12
-                 :font-family :Montserrat-Regular
-                 :text-align  :left
-                 :opacity     0.68
-                 :color       :white}}
-   s])
 
 (defn sync-settings [_]
   (let [cfg (subscribe [:cfg])
