@@ -37,12 +37,43 @@
                      :style {:color       "#BBBDBF"
                              :margin-left 25}}])]))))
 
+(defn button [_]
+  (let [theme (subscribe [:active-theme])]
+    (fn [{:keys [label on-press]}]
+      (let [header-color (get-in styles/colors [:header-text @theme])
+            nav-bg (get-in styles/colors [:nav-bg @theme])]
+        [touchable-opacity {:on-press on-press
+                            :style    {:color           header-color
+                                       :margin-left     9
+                                       :margin-right    15
+                                       :height          80
+                                       :margin-top      30
+                                       :display         :flex
+                                       :flex-direction  :row
+                                       :align-items     :center
+                                       :justify-content :space-between}}
+         [view {:style {:background-color nav-bg
+                        :display          :flex
+                        :flex-direction   :row
+                        :flex             1
+                        :align-items      :center
+                        :justify-content  :center
+                        :padding-top      10
+                        :padding-right    20
+                        :padding-bottom   10
+                        :padding-left     10
+                        :border-radius    18}}
+          [text {:style {:font-size   12
+                         :font-family :Montserrat-SemiBold
+                         :text-align  :center
+                         :opacity     0.68
+                         :color       "white"}}
+           label]]]))))
+
 (defn switch-item [{:keys []}]
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [label info on-toggle value]}]
-      (let [header-color (get-in styles/colors [:header-text @theme])
-            toggle (fn [_]
-                     (on-toggle))]
+      (let [header-color (get-in styles/colors [:header-text @theme])]
         [touchable-opacity {:style {:color             header-color
                                     :margin-left       9
                                     :margin-right      15
@@ -59,7 +90,7 @@
                         :opacity     0.68
                         :color       "white"}}
           label]
-         [switch {:onValueChange toggle
+         [switch {:onValueChange on-toggle
                   :value         value
                   :thumbColor    (if value
                                    "#79C693"
