@@ -19,7 +19,7 @@
     (swap! local assoc :key-pair kp)
     (emit [:secrets/set-kp kp])))
 
-(defn on-barcode-read [local f e]
+(defn on-barcode-read [local cb e]
   (let [qr-code (js->clj e)
         payload (get qr-code "data")
         data (edn/read-string payload)
@@ -29,15 +29,15 @@
         decrypted (mse/decrypt-asymm ciphertext their-public-key our-secret-key)
         cfg (merge (edn/read-string decrypted)
                    {:desktop {:publicKey their-public-key}})]
-    (swap! local assoc-in [:barcode] cfg)
     (emit [:secrets/set cfg])
-    (swap! local assoc-in [:cam] false)))
+    (cb)))
 
 (defn settings-page [& args]
   (let [theme (subscribe [:active-theme])]
     (fn [& args]
       (let [bg (get-in styles/colors [:list-bg @theme])]
-        [view {:style {:flex-direction   "column"
+        [view {:style {:display          :flex
+                       :flex-direction   :column
                        :padding-top      10
                        :background-color bg
                        :height           "100%"}}
@@ -68,7 +68,7 @@
                               (swap! local assoc :key-pair nil))}]
            [item {:label    "GENERATE KEYPAIR"
                   :on-press #(set-keypair local)}])
-         [item {:label    "Reset last read"
+         [item {:label    "RESET LAST READ"
                 :on-press #(emit [:state/reset {:type :last-uid-read}])}]
          (when (and (:entry-pprint @cfg) (:key-pair @local))
            [text {:style {:font-size   8
@@ -135,13 +135,12 @@
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             on-read (partial on-barcode-read local #(navigate "sync-success"))]
         [settings-page
-         [cam {:style         {:width  "100%"
-                               :height 300}
+         [cam {:style         {:width         "100%"
+                               :height        300
+                               :margin-bottom 30
+                               :padding-top   30}
                :onBarCodeRead on-read}]
-         [settings-text "Scan the barcode shown on the desktop."]
-         [button {:label         "NEXT"
-                  :has-nav-arrow true
-                  :on-press      #(navigate "sync-success")}]]))))
+         [settings-text "Scan the barcode shown on the desktop."]]))))
 
 (defn success [_]
   (let []
