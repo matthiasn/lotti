@@ -17,8 +17,7 @@
      :reagent-render      (fn [_]
                             [:div#sync-cfg-qr])}))
 
-(defn qr-code-gen
-  []
+(defn qr-code-gen []
   (let [crypto-cfg (subscribe [:crypto-cfg])
         imap-cfg (subscribe [:imap-cfg])]
     (fn [_]
@@ -27,6 +26,8 @@
             our-secret-key (some-> @crypto-cfg :secretKey)
             our-public-key (some-> @crypto-cfg :publicKey)
             their-public-key (some-> @imap-cfg :mobile :publicKey)]
+        (info "qr-code-gen their-public-key" their-public-key)
+        (info "qr-code-gen our-public-key" our-public-key)
         [:div
          ;[:pre {:style {:color :white}} [:code (with-out-str (pp/pprint @crypto-cfg))]]
          (if (and our-secret-key their-public-key)
@@ -34,5 +35,6 @@
                  qr-data {:cfg       cfg-ciphertext
                           :publicKey our-public-key}]
              [:div
+              ^{:key qr-data}
               [qr-code (pr-str qr-data)]])
            [:div "error"])]))))

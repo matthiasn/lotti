@@ -12,8 +12,13 @@
 
 
 (s/def :meins.imap.server/host string?)
+(s/def :meins.imap.server/hostname string?)
 (s/def :meins.imap.server/password string?)
 (s/def :meins.imap.server/user string?)
+(s/def :meins.imap.server/username string?)
+(s/def :meins.imap.server/folder string?)
+(s/def :meins.imap.server/length integer?)
+(s/def :meins.imap.server/minUid integer?)
 (s/def :meins.imap.server/authTimeout integer?)
 (s/def :meins.imap.server/connTimeout integer?)
 (s/def :meins.imap.server/port integer?)
@@ -29,6 +34,15 @@
                    :meins.imap.server/port
                    :meins.imap.server/autotls
                    :meins.imap.server/tls]))
+
+(s/def :meins.imap/server-app
+  (s/keys :req-un [:meins.imap.server/hostname
+                   :meins.imap.server/password
+                   :meins.imap.server/username
+                   :meins.imap.server/port
+                   :meins.imap.server/folder]
+          :opt-un [:meins.imap.server/length
+                   :meins.imap.server/minUid]))
 
 (s/def :meins.imap.sync/mailbox string?)
 (s/def :meins.imap.sync/last-read integer?)

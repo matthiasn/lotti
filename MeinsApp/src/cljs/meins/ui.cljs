@@ -40,8 +40,6 @@
                           "photos" [ico/photos-icon size color]
                           "settings" [ico/settings-icon size color]))))})
 
-(defn put-fn [])
-
 (def bg (get-in styles/colors [:nav-bg :dark]))
 
 (defn opts [title]

@@ -1,8 +1,8 @@
 (ns meins.ui.shared
   (:require ["react-native" :as react-native :refer [Clipboard]]
-            ["react-native-modal" :default Modal]
             ["react-native-camera" :as react-native-camera]
             ["react-native-elements" :as react-native-elements]
+            ["react-native-modal" :default Modal]
             ["react-native-vector-icons/FontAwesome" :as FontAwesome]
             [reagent.core :as r]))
 

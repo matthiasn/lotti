@@ -50,10 +50,12 @@
        [:cmd/observe-state {:from :app/store
                             :to   :app/ui-cmp}]
 
+       [:cmd/observe-state {:from :app/store
+                            :to   :app/sync}]
+
        [:cmd/route {:from #{:app/healthkit
                             :app/geo}
                     :to   :app/store}]
-
 
        [:cmd/route {:from :app/store
                     :to   :app/sync}]

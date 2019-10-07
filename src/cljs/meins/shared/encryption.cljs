@@ -3,7 +3,8 @@
             ["tweetnacl-util" :refer [decodeBase64 decodeUTF8 encodeBase64 encodeUTF8]]
             [cljs.reader :as edn]
             [clojure.string :as s]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (defn buffer-convert [from to s]
   (let [buffer (.from js/Buffer s from)]
@@ -46,17 +47,18 @@
   "Decrypt x25519-xsalsa20-poly1305 encrypted message using the public key
    of the encryptor and the local private key."
   [message their-public-key our-secret-key]
-  (js/console.info "decrypt-asymm their-public-key" their-public-key)
-  (js/console.info "decrypt-asymm our-secret-key" (subs our-secret-key 5))
+  (info "decrypt-asymm message" message)
+  (info "decrypt-asymm their-public-key" their-public-key)
+  (info "decrypt-asymm our-secret-key" (subs our-secret-key 5))
   (try
-    (let [their-public-key (hex->array their-public-key)
-          our-secret-key (hex->array our-secret-key)
-          [_version nonce-hex ciphertext] (str/split message ".")
+    (let [[_version nonce-hex ciphertext] (str/split message ".")
           nonce (hex->array nonce-hex)
           encrypted (hex->array ciphertext)
+          their-public-key (hex->array their-public-key)
+          our-secret-key (hex->array our-secret-key)
           decrypted (.open box encrypted nonce their-public-key our-secret-key)]
       (encodeUTF8 decrypted))
-    (catch :default e (js/console.error "decrypt-asymm" e))))
+    (catch :default e (error "decrypt-asymm" e))))
 
 (defn set-prng [f]
   (setPRNG f))

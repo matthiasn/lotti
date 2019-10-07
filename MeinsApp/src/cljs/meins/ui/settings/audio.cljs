@@ -5,7 +5,7 @@
             [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
-            [meins.ui.settings.items :refer [item button settings-page settings-text]]
+            [meins.ui.settings.items :refer [button item settings-page settings-text]]
             [meins.ui.shared :refer [alert platform-os settings-icon
                                      status-bar text view]]
             [meins.ui.styles :as styles]

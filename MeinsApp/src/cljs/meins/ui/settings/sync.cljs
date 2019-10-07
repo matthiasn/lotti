@@ -4,8 +4,8 @@
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
-            [meins.ui.settings.items :refer [item screen switch-item button settings-page settings-text]]
-            [meins.ui.shared :refer [alert cam scroll modal text view]]
+            [meins.ui.settings.items :refer [button item screen settings-page settings-text switch-item]]
+            [meins.ui.shared :refer [alert cam modal scroll text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
             [re-frame.core :refer [subscribe]]
@@ -25,12 +25,13 @@
         data (edn/read-string payload)
         their-public-key (:publicKey data)
         ciphertext (:cfg data)
-        our-secret-key (:secretKey (:key-pair @local))
-        decrypted (mse/decrypt-asymm ciphertext their-public-key our-secret-key)
-        cfg (merge (edn/read-string decrypted)
-                   {:desktop {:publicKey their-public-key}})]
-    (emit [:secrets/set cfg])
-    (cb)))
+        our-secret-key (:secretKey (:key-pair @local))]
+    (when (and ciphertext their-public-key our-secret-key)
+      (let [decrypted (mse/decrypt-asymm ciphertext their-public-key our-secret-key)
+            cfg (merge (edn/read-string decrypted)
+                       {:desktop {:publicKey their-public-key}})]
+        (emit [:secrets/set cfg])
+        (cb cfg)))))
 
 (defn sync-settings [_]
   (let [cfg (subscribe [:cfg])
@@ -117,21 +118,36 @@
                   :on-press #(navigate "sync-scan-qr")}]]))))
 
 (defn scan-qr [_]
-  (let [local (r/atom {})]
+  (let [local (r/atom {})
+        cfg (subscribe [:cfg])]
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            on-read (partial on-barcode-read local #(navigate "sync-success"))]
+            on-read (partial on-barcode-read local #(do
+                                                      (swap! local assoc :cfg %)
+                                                      ;(navigate "sync-success")
+                                                      ))]
         [settings-page
          [cam {:style         {:width         "100%"
                                :height        300
                                :margin-bottom 30
                                :padding-top   30}
                :onBarCodeRead on-read}]
-         [settings-text "Scan the barcode shown on the desktop."]]))))
+         [settings-text "Scan the barcode shown on the desktop."]
+         (when (:cfg @local)
+           [button {:label    "NEXT"
+                    :on-press #(navigate "sync-success")}])
+         (when (:entry-pprint @cfg)
+           [text {:style {:font-size   8
+                          :color       "#888"
+                          :font-weight "100"
+                          :flex        2
+                          :margin      2
+                          :text-align  "center"}}
+            (str @local)])]))))
 
 (defn success [_]
-  (let []
+  (let [cfg (subscribe [:cfg])]
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
         [settings-page
