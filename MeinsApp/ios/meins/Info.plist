@@ -19,11 +19,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.129</string>
+	<string>1.0.131</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>138</string>
+	<string>139</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true />
 	<key>MGLMapboxAccessToken</key>
