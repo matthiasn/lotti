@@ -23,6 +23,19 @@ platform :ios do
     enable_automatic_code_signing
     # increment_build_number(xcodeproj: "meins.xcodeproj")
     build_app(workspace: "meins.xcworkspace", scheme: "meins")
-    upload_to_testflight(skip_waiting_for_build_processing: true)
+    upload_to_testflight(skip_waiting_for_build_processing: false)
+    deliver(
+      submission_information: {
+          export_compliance_platform: 'ios',
+          export_compliance_compliance_required: false,
+          export_compliance_encryption_updated: false,
+          export_compliance_app_type: nil,
+          export_compliance_uses_encryption: true,
+          export_compliance_is_exempt: true,
+          export_compliance_contains_third_party_cryptography: true,
+          export_compliance_contains_proprietary_cryptography: false,
+          export_compliance_available_on_french_store: false
+        }
+    )
   end
 end
