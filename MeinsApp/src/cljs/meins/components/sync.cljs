@@ -141,8 +141,9 @@
                                                       :uid         uid}))
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
-                             (info data)
+                             (js/console.warn data)
                              (let [body (get (js->clj data) "body")
+                                   _ (info body)
                                    decrypted (mse/decrypt body their-public-key our-private-key)
                                    msg-type (first decrypted)
                                    {:keys [msg-payload msg-meta]} (second decrypted)
