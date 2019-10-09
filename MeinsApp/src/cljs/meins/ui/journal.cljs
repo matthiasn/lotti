@@ -288,17 +288,19 @@
                      (map :name)
                      (interpose ", ")
                      (apply str))]]
-              [text-input {:style              {:flex             2
-                                                :font-weight      "100"
-                                                :padding          16
-                                                :font-size        15
-                                                :max-height       400
-                                                :min-height       100
-                                                :background-color text-bg
-                                                :margin-bottom    5
-                                                :font-family      "Montserrat-Regular"
-                                                :color            text-color
-                                                :width            "100%"}
+              [text-input {:style              {:flex              2
+                                                :font-weight       "100"
+                                                :padding           16
+                                                :font-size         15
+                                                :max-height        400
+                                                :min-height        100
+                                                :background-color  text-bg
+                                                :margin-bottom     5
+                                                :border-radius     18
+                                                :textAlignVertical :top
+                                                :font-family       :Montserrat-Regular
+                                                :color             text-color
+                                                :width             "100%"}
                            :multiline          true
                            :default-value      (:md entry "")
                            :keyboard-type      "twitter"

@@ -110,18 +110,19 @@
                            :padding-left   18
                            :padding-right  16
                            :padding-bottom 10}}
-           [text-input {:style              {:flex             2
-                                             :font-weight      "100"
-                                             :padding          16
-                                             :font-size        15
-                                             :max-height       400
-                                             :min-height       240
-                                             :border-radius    18
-                                             :font-family      "Montserrat-Regular"
-                                             :background-color text-bg
-                                             :margin-bottom    20
-                                             :color            text-color
-                                             :width            "auto"}
+           [text-input {:style              {:flex              2
+                                             :font-weight       "100"
+                                             :padding           16
+                                             :font-size         15
+                                             :max-height        400
+                                             :min-height        240
+                                             :border-radius     18
+                                             :textAlignVertical :top
+                                             :font-family       "Montserrat-Regular"
+                                             :background-color  text-bg
+                                             :margin-bottom     20
+                                             :color             text-color
+                                             :width             "auto"}
                         :multiline          true
                         :default-value      (:md @local)
                         :keyboard-type      "twitter"
