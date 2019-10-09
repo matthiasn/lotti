@@ -13,7 +13,8 @@
             [meins.crypto]
             [meins.helpers]
             [meins.ui :as ui]
-            [meins.ui.shared :refer [alert]]))
+            [meins.ui.shared :refer [alert]]
+            [taoensso.timbre :refer-macros [error info]]))
 
 (enable-console-print!)
 (defonce switchboard (sb/component :client/switchboard))
@@ -81,4 +82,5 @@
                                             :repeat  true
                                             :initial false}]}]])
     (.registerComponent AppRegistry "meins" #(identity ui/app-container))
-    (setJSExceptionHandler (fn [error _is-fatal] (alert error)))))
+    (setJSExceptionHandler (fn [error _is-fatal] (error error)))
+    (setNativeExceptionHandler #(error %) false)))

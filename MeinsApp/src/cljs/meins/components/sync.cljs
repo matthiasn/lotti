@@ -63,9 +63,10 @@
                                 (when audiofile {:audiofile audiofile})
                                 (when (and (= "android" platform-os) audiofile)
                                   {:audiopath (str "/data/data/com.matthiasn.meins/" audiofile)})
-                                (when (and (= :entry/sync msg-type) filename)
+                                (when (and (= :entry/sync msg-type) filename photo-uri)
                                   {:attachmentUri photo-uri
                                    :filename      filename})))
+              _ (info mail-cfg)
               success-cb (fn []
                            (when db-item
                              (.write @uidb/realm-db #(set! (.-sync db-item) "DONE"))
@@ -75,16 +76,20 @@
               error-cb (fn [err]
                          (when db-item
                            (.write @uidb/realm-db #(set! (.-sync db-item) "ERROR"))
-                           (error (js->clj err))
-                           (put-fn [:schedule/new {:timeout 100
+                           (error "write error-cb" (js->clj err))
+                           (put-fn [:schedule/new {:timeout 10000
                                                    :message [:sync/retry]
                                                    :id      :sync}])))]
           (swap! cmp-state update-in [:open-writes] conj msg-payload)
           (if (and hex-cipher folder)
             (when mail-cfg
-              (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
-              (-> (.saveImap MailCore (clj->js mail-cfg))
-                  (.then success-cb)
+              (-> (.loginImapWrite MailCore (clj->js mail-cfg))
+                  (.then (fn [res]
+                           (info res)
+                           (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
+                           (-> (.saveImap MailCore (clj->js mail-cfg))
+                               (.then success-cb)
+                               (.catch error-cb))))
                   (.catch error-cb)))
             (error "ciphertext" hex-cipher "folder" folder))))
       (catch :default e (error (str e)))))
@@ -115,8 +120,16 @@
                            (swap! cmp-state update :not-fetched into uids)
                            (schedule-read cmp-state put-fn)))]
           (when mail-cfg
-            (-> (.fetchImap MailCore (clj->js mail-cfg))
-                (.then fetch-cb)
+            #_(-> (.fetchImap MailCore (clj->js mail-cfg))
+                  (.then fetch-cb)
+                  (.catch #(error (str %))))
+
+            (-> (.loginImap MailCore (clj->js mail-cfg))
+                (.then (fn [res]
+                         (info res)
+                         (-> (.fetchImap MailCore (clj->js mail-cfg))
+                             (.then fetch-cb)
+                             (.catch #(error (str %))))))
                 (.catch #(error (str %))))))
         (catch :default e (error (str e))))))
   {})
@@ -129,11 +142,13 @@
               their-public-key (-> secrets :desktop :publicKey)
               our-private-key (-> @cmp-state :key-pair :secretKey)
               not-fetched (drop-while #(contains? fetched %) not-fetched)]
-          (doseq [uid not-fetched]
+          (when-let [uid (first not-fetched)]
             (let [folder (-> secrets :sync :read :folder)
                   mail-cfg (validate-mail-cfg (merge (:server secrets)
-                                                     {:folder folder
-                                                      :uid    uid}))
+                                                     {:folder      folder
+                                                      :messageId   uid
+                                                      :requestKind 0
+                                                      :uid         uid}))
                   fetch-cb (fn [data]
                              (schedule-read cmp-state put-fn)
                              (info data)
@@ -147,11 +162,24 @@
                                (go (<! (as/set-item :last-uid-read uid)))
                                (swap! cmp-state update-in [:not-fetched] disj uid)
                                (swap! cmp-state update-in [:fetched] conj uid)
-                               (put-fn msg)))]
+                               (put-fn msg)
+                               (schedule-read cmp-state put-fn)))]
               (when mail-cfg
-                (-> (.fetchImapByUid MailCore (clj->js mail-cfg))
+                (-> (.getMailByUid MailCore (clj->js mail-cfg))
                     (.then fetch-cb)
-                    (.catch #(error (js->clj %)))))))))
+                    (.catch #(error (js->clj %))))
+                #_
+                (-> (.loginImap MailCore (clj->js mail-cfg))
+                    (.then (fn [res]
+                             (info res)
+                             (-> (.getMailByUid MailCore (clj->js mail-cfg))
+                                 (.then fetch-cb)
+                                 (.catch #(error (js->clj %))))
+                             #_(-> (.fetchImapByUid MailCore (clj->js mail-cfg))
+                                   (.then fetch-cb)
+                                   (.catch #(error (js->clj %))))
+                             ))
+                    (.catch #(error (str %)))))))))
       (catch :default e (error (str e)))))
   {})
 
@@ -213,8 +241,7 @@
 (defn cmp-map [cmp-id]
   {:cmp-id      cmp-id
    :state-fn    state-fn
-   :handler-map {:entry/sync     (when-active sync-write)
-                 :sync/fetch     (when-active sync-get-uids)
+   :handler-map {:sync/fetch     (when-active sync-get-uids)
                  :sync/retry     (when-active retry-write)
                  :sync/read      (when-active sync-read-msg)
                  :secrets/set    set-secrets
