@@ -83,7 +83,7 @@
           (swap! cmp-state update-in [:open-writes] conj msg-payload)
           (if (and hex-cipher folder)
             (when mail-cfg
-              (-> (.loginImapWrite MailCore (clj->js mail-cfg))
+              (-> (.loginImap MailCore (clj->js mail-cfg))
                   (.then (fn [res]
                            (info res)
                            (.write @uidb/realm-db #(set! (.-sync db-item) "STARTED"))
