@@ -50,15 +50,9 @@
               photo-uri (-> msg-payload :media :image :uri)
               filename (:img_file msg-payload)
               audiofile (:audio_file msg-payload)
-              mb (-> secrets :server :username)
               mail-cfg (validate-mail-cfg
                          (merge (:server secrets)
                                 {:folder   folder
-                                 :from     {:addressWithDisplayName mb
-                                            :mailbox                mb}
-                                 :to       {:addressWithDisplayName mb
-                                            :mailbox                mb}
-                                 :subject  (str (:timestamp msg-payload))
                                  :textBody hex-cipher}
                                 (when audiofile {:audiofile audiofile})
                                 (when (and (= "android" platform-os) audiofile)
@@ -120,10 +114,6 @@
                            (swap! cmp-state update :not-fetched into uids)
                            (schedule-read cmp-state put-fn)))]
           (when mail-cfg
-            #_(-> (.fetchImap MailCore (clj->js mail-cfg))
-                  (.then fetch-cb)
-                  (.catch #(error (str %))))
-
             (-> (.loginImap MailCore (clj->js mail-cfg))
                 (.then (fn [res]
                          (info res)
@@ -167,19 +157,7 @@
               (when mail-cfg
                 (-> (.getMailByUid MailCore (clj->js mail-cfg))
                     (.then fetch-cb)
-                    (.catch #(error (js->clj %))))
-                #_
-                (-> (.loginImap MailCore (clj->js mail-cfg))
-                    (.then (fn [res]
-                             (info res)
-                             (-> (.getMailByUid MailCore (clj->js mail-cfg))
-                                 (.then fetch-cb)
-                                 (.catch #(error (js->clj %))))
-                             #_(-> (.fetchImapByUid MailCore (clj->js mail-cfg))
-                                   (.then fetch-cb)
-                                   (.catch #(error (js->clj %))))
-                             ))
-                    (.catch #(error (str %)))))))))
+                    (.catch #(error (js->clj %)))))))))
       (catch :default e (error (str e)))))
   {})
 
