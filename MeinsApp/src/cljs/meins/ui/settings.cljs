@@ -1,6 +1,7 @@
 (ns meins.ui.settings
   (:require ["react-native-version-number" :as rnvn]
             ["react-navigation-stack" :refer [createStackNavigator]]
+            [meins.ui.icons :as icns]
             [meins.ui.settings.audio :as audio]
             [meins.ui.settings.db :as db]
             [meins.ui.settings.dev :as dev]
@@ -24,39 +25,54 @@
   (let [theme (subscribe [:active-theme])]
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            bg (get-in styles/colors [:list-bg @theme])]
+            bg (get-in styles/colors [:list-bg @theme])
+            icon-size 26]
         [view {:style {:display          "flex"
                        :flex-direction   "column"
                        :height           "100%"
+                       :padding-top      21
+                       :padding-right    24
+                       :padding-bottom   21
+                       :padding-left     24
                        :background-color bg}}
          [status-bar {:barStyle "light-content"}]
-         [view {:style {:display       :flex
-                        :padding-left  24
-                        :padding-right 24
-                        :height        "100%"}}
+         [view {:style {:display          :flex
+                        :background-color "rgba(74,84,110,0.29)"
+                        :border-radius    18
+                        :margin-top       10
+                        :height           "100%"}}
           [item {:label "VERSION"
+                 :icon  (icns/version-icon icon-size)
                  :info  (aget rnvn "default" "appVersion")}]
           [item {:label "CONTACTS"
+                 :icon  (icns/contacts-icon icon-size)
                  :info  0}]
           [item {:label         "HEALTH"
+                 :icon          (icns/health-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "health")}]
           [item {:label         "THEME"
+                 :icon          (icns/theme-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "theme")}]
           [item {:label         "DATABASE"
+                 :icon          (icns/db-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "db")}]
           [item {:label         "ENTRY VIEW"
+                 :icon          (icns/entries-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "dev")}]
           [item {:label         "GEOLOCATION"
+                 :icon          (icns/map-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "geo")}]
           [item {:label         "AUDIO"
+                 :icon          (icns/audio-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "audio")}]
           [item {:label         "SYNC"
+                 :icon          (icns/sync-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "sync")}]]]))))
 

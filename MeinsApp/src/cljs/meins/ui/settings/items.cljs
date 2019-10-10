@@ -1,5 +1,6 @@
 (ns meins.ui.settings.items
-  (:require [meins.ui.shared :refer [fa-icon status-bar switch text touchable-opacity view]]
+  (:require [meins.ui.icons :as icns]
+            [meins.ui.shared :refer [fa-icon status-bar switch text touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [reg-sub subscribe]]
             [reagent.core :as r]))
@@ -10,21 +11,23 @@
       (let [header-color (get-in styles/colors [:header-text @theme])]
         [touchable-opacity {:on-press on-press
                             :style    {:color             header-color
-                                       :margin-left       9
-                                       :margin-right      15
+                                       :margin-left       27
+                                       :padding-right     17
                                        :height            58
                                        :display           :flex
-                                       :borderBottomColor "#BBBDBF"
+                                       :borderBottomColor "#4A546E"
                                        :borderBottomWidth 0.5
                                        :flex-direction    :row
                                        :align-items       :center
                                        :justify-content   :space-between}}
          icon
-         [text {:style {:font-size   12
-                        :font-family "Montserrat-Regular"
-                        :text-align  "center"
-                        :opacity     0.68
-                        :color       "white"}}
+         [text {:style {:font-size    12
+                        :font-family  :Montserrat-Regular
+                        :text-align   :left
+                        :opacity      0.68
+                        :flex         2
+                        :padding-left 20
+                        :color        :white}}
           label]
          (when info
            [text {:style {:font-size   12
@@ -33,10 +36,7 @@
                           :color       "white"}}
             info])
          (when has-nav-arrow
-           [fa-icon {:name  "angle-right"
-                     :size  30
-                     :style {:color       "#BBBDBF"
-                             :margin-left 25}}])]))))
+           [icns/caret-icon 12])]))))
 
 (defn button [_]
   (let [theme (subscribe [:active-theme])]
