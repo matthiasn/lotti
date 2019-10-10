@@ -44,12 +44,6 @@ deps: npm-deps pod-deps
 
 npm-deps:
 	@echo Fetching NPM dependencies...
-	@nvm use 12
-	@yarn install
-
-npm-rn-deps:
-	@echo Fetching NPM dependencies...
-	@nvm use 10
 	@yarn install
 
 pod-deps:
@@ -85,7 +79,7 @@ fastlane-beta:
 	@echo Building and publishing via Fastlane
 	cd ios && fastlane beta && cd ..
 
-testflight: npm-rn-deps pod-install package fastlane-beta
+testflight: npm-deps pod-install package fastlane-beta
 
 jsbundle-android:
 	@echo Packaging jsbundle for Android...
@@ -99,7 +93,7 @@ metro:
 	@echo Starting Metro Bundler...
 	node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js start --reset-cache
 
-android: npm-rn-deps cljs fastlane-beta-android
+android: npm-deps cljs fastlane-beta-android
 
 android-install:
 	adb install android/app/build/outputs/apk/release/app-release.apk
