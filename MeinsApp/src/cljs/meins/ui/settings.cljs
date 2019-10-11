@@ -9,7 +9,7 @@
             [meins.ui.settings.health :as sh]
             [meins.ui.settings.items :refer [item screen] :as items]
             [meins.ui.settings.sync :as sync]
-            [meins.ui.shared :refer [fa-icon settings-icon status-bar text touchable-opacity view]]
+            [meins.ui.shared :refer [scroll settings-icon status-bar text touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [reg-sub subscribe]]
             [reagent.core :as r]))
@@ -27,7 +27,7 @@
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             bg (get-in styles/colors [:list-bg @theme])
             icon-size 26]
-        [view {:style {:display          "flex"
+        [scroll {:style {:display          "flex"
                        :flex-direction   "column"
                        :height           "100%"
                        :padding-top      21
@@ -39,11 +39,11 @@
          [view {:style {:display          :flex
                         :background-color "rgba(74,84,110,0.29)"
                         :border-radius    18
-                        :margin-top       10
-                        :height           "100%"}}
+                        :margin-top       10}}
           [item {:label "VERSION"
                  :icon  (icns/version-icon icon-size)
                  :info  (aget rnvn "default" "appVersion")}]
+          #_
           [item {:label "CONTACTS"
                  :icon  (icns/contacts-icon icon-size)
                  :info  0}]
