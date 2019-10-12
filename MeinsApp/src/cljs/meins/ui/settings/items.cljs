@@ -7,8 +7,9 @@
 
 (defn item [_]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [label icon info on-press has-nav-arrow]}]
-      (let [header-color (get-in styles/colors [:header-text @theme])]
+    (fn [{:keys [label icon info on-press has-nav-arrow btm-border-width]}]
+      (let [header-color (get-in styles/colors [:header-text @theme])
+            btm-border-width (or btm-border-width 0.5)]
         [touchable-opacity {:on-press on-press
                             :style    {:color             header-color
                                        :margin-left       27
@@ -16,7 +17,7 @@
                                        :height            58
                                        :display           :flex
                                        :borderBottomColor "#4A546E"
-                                       :borderBottomWidth 0.5
+                                       :borderBottomWidth btm-border-width
                                        :flex-direction    :row
                                        :align-items       :center
                                        :justify-content   :space-between}}
@@ -74,23 +75,25 @@
 
 (defn switch-item [{:keys []}]
   (let [theme (subscribe [:active-theme])]
-    (fn [{:keys [label info on-toggle value]}]
-      (let [header-color (get-in styles/colors [:header-text @theme])]
+    (fn [{:keys [label info on-toggle value btm-border-width]}]
+      (let [header-color (get-in styles/colors [:header-text @theme])
+            btm-border-width (or btm-border-width 0.5)]
         [touchable-opacity {:style {:color             header-color
-                                    :margin-left       9
-                                    :margin-right      15
+                                    :margin-left       27
+                                    :padding-right     17
                                     :height            58
                                     :display           :flex
-                                    :borderBottomColor "#BBBDBF"
-                                    :borderBottomWidth 0.5
+                                    :borderBottomColor "#4A546E"
+                                    :borderBottomWidth btm-border-width
                                     :flex-direction    :row
                                     :align-items       :center
                                     :justify-content   :space-between}}
-         [text {:style {:font-size   12
-                        :font-family "Montserrat-Regular"
-                        :text-align  "center"
-                        :opacity     0.68
-                        :color       "white"}}
+         [text {:style {:font-size    12
+                        :font-family  "Montserrat-Regular"
+                        :text-align   "center"
+                        :opacity      0.68
+                        :padding-left 20
+                        :color        "white"}}
           label]
          [switch {:onValueChange on-toggle
                   :value         value
@@ -107,13 +110,17 @@
       (let [bg (get-in styles/colors [:list-bg @theme])]
         [view {:style {:display          :flex
                        :flex-direction   :column
-                       :padding-top      10
                        :background-color bg
+                       :padding-top      21
+                       :padding-right    24
+                       :padding-bottom   21
+                       :padding-left     24
                        :height           "100%"}}
          [status-bar {:barStyle "light-content"}]
-         (into [view {:style {:display       :flex
-                              :padding-left  24
-                              :padding-right 24}}]
+         (into [view {:style {:display          :flex
+                              :background-color "rgba(74,84,110,0.29)"
+                              :border-radius    18
+                              :margin-top       10}}]
                args)]))))
 
 (defn settings-text [s]

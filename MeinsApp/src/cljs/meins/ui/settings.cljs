@@ -28,13 +28,13 @@
             bg (get-in styles/colors [:list-bg @theme])
             icon-size 26]
         [scroll {:style {:display          "flex"
-                       :flex-direction   "column"
-                       :height           "100%"
-                       :padding-top      21
-                       :padding-right    24
-                       :padding-bottom   21
-                       :padding-left     24
-                       :background-color bg}}
+                         :flex-direction   "column"
+                         :height           "100%"
+                         :padding-top      21
+                         :padding-right    24
+                         :padding-bottom   21
+                         :padding-left     24
+                         :background-color bg}}
          [status-bar {:barStyle "light-content"}]
          [view {:style {:display          :flex
                         :background-color "rgba(74,84,110,0.29)"
@@ -43,10 +43,9 @@
           [item {:label "VERSION"
                  :icon  (icns/version-icon icon-size)
                  :info  (aget rnvn "default" "appVersion")}]
-          #_
-          [item {:label "CONTACTS"
-                 :icon  (icns/contacts-icon icon-size)
-                 :info  0}]
+          #_[item {:label "CONTACTS"
+                   :icon  (icns/contacts-icon icon-size)
+                   :info  0}]
           [item {:label         "HEALTH"
                  :icon          (icns/health-icon icon-size)
                  :has-nav-arrow true
@@ -71,10 +70,11 @@
                  :icon          (icns/audio-icon icon-size)
                  :has-nav-arrow true
                  :on-press      #(navigate "audio")}]
-          [item {:label         "SYNC"
-                 :icon          (icns/sync-icon icon-size)
-                 :has-nav-arrow true
-                 :on-press      #(navigate "sync")}]]]))))
+          [item {:label            "SYNC"
+                 :icon             (icns/sync-icon icon-size)
+                 :has-nav-arrow    true
+                 :btm-border-width 0
+                 :on-press         #(navigate "sync")}]]]))))
 
 (def settings-stack
   (createStackNavigator

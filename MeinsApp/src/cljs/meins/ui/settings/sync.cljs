@@ -45,9 +45,10 @@
          [item {:label         "ASSISTANT"
                 :has-nav-arrow true
                 :on-press      #(navigate "sync-intro")}]
-         [item {:label         "ADVANCED"
-                :has-nav-arrow true
-                :on-press      #(navigate "sync-advanced")}]]))))
+         [item {:label            "ADVANCED"
+                :has-nav-arrow    true
+                :btm-border-width 0
+                :on-press         #(navigate "sync-advanced")}]]))))
 
 (defn sync-advanced [_]
   (let [cfg (subscribe [:cfg])
