@@ -1,6 +1,6 @@
 (ns meins.ui.settings.items
-  (:require [meins.ui.icons :as icns]
-            [meins.ui.shared :refer [fa-icon status-bar switch text touchable-opacity view]]
+  (:require [meins.ui.icons.settings :as icns]
+            [meins.ui.shared :refer [scroll status-bar switch text touchable-opacity view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [reg-sub subscribe]]
             [reagent.core :as r]))
@@ -108,14 +108,14 @@
   (let [theme (subscribe [:active-theme])]
     (fn [& args]
       (let [bg (get-in styles/colors [:list-bg @theme])]
-        [view {:style {:display          :flex
-                       :flex-direction   :column
-                       :background-color bg
-                       :padding-top      21
-                       :padding-right    24
-                       :padding-bottom   21
-                       :padding-left     24
-                       :height           "100%"}}
+        [scroll {:style {:display          :flex
+                         :flex-direction   :column
+                         :background-color bg
+                         :padding-top      21
+                         :padding-right    24
+                         :padding-bottom   21
+                         :padding-left     24
+                         :height           "100%"}}
          [status-bar {:barStyle "light-content"}]
          (into [view {:style {:display          :flex
                               :background-color "rgba(74,84,110,0.29)"

@@ -119,7 +119,7 @@
                          (info res)
                          (-> (.fetchImap MailCore (clj->js mail-cfg))
                              (.then fetch-cb)
-                             (.catch #(error (str %))))))
+                             (.catch #(error (str %) mail-cfg)))))
                 (.catch #(error (str %))))))
         (catch :default e (error (str e))))))
   {})

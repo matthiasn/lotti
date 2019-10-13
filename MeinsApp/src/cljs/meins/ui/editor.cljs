@@ -4,7 +4,7 @@
             [meins.common.utils.parse :as p]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
-            [meins.ui.icons :as ico]
+            [meins.ui.icons.misc :as ico]
             [meins.ui.shared :refer [keyboard keyboard-avoiding-view platform-os scroll status-bar text
                                      text-input touchable-opacity view]]
             [meins.ui.styles :as styles]

@@ -1,26 +1,12 @@
-(ns meins.ui.icons
+(ns meins.ui.icons.settings
   (:require ["react-native" :as react-native :refer [Clipboard]]
             ["react-native-svg" :refer [SvgXml] :as Svg]
+            [meins.ui.icons.misc :as icns]
             [meins.ui.shared :refer [view]]
             [meins.ui.styles :as styles]
             [reagent.core :as r]))
 
 (def svg-xml (r/adapt-react-class SvgXml))
-
-(def add-xml
-  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='13px' height='12px' viewBox='0 0 13 12' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>96458E24-7135-48AF-A0F9-9081EE0F964D@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Journal-Scroll-Transparencies-w/out-Search' transform='translate(-143.000000, -763.000000)' stroke='#FEFEFE' stroke-width='0.299'>\n            <g id='Menu-Bar-Bottom' transform='translate(0.000000, 737.000000)'>\n                <g id='Add-Icon-Add-Icons' transform='translate(132.458336, 17.650001)'>\n                    <g id='Group-9' transform='translate(11.049999, 9.349998)'>\n                        <path d='M1.2844,8.4171 C0.6574,8.4171 0.1494,7.9091 0.1494,7.2821 L0.1494,1.2841 C0.1494,0.6571 0.6574,0.1491 1.2844,0.1491 L8.4764,0.1491 C9.1034,0.1491 9.6114,0.6571 9.6114,1.2841' id='Stroke-1'></path>\n                        <path d='M10.9651,10.6906 L3.7731,10.6906 C3.1461,10.6906 2.6381,10.1816 2.6381,9.5546 L2.6381,3.5576 C2.6381,2.9306 3.1461,2.4216 3.7731,2.4216 L10.9651,2.4216 C11.5921,2.4216 12.1001,2.9306 12.1001,3.5576 L12.1001,9.5546 C12.1001,10.1816 11.5921,10.6906 10.9651,10.6906 Z' id='Stroke-3'></path>\n                        <path d='M7.3689,4.254 L7.3689,8.858' id='Stroke-5'></path>\n                        <path d='M9.6711,6.5568 L5.0671,6.5568' id='Stroke-7'></path>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
-
-(def journal-xml
-  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='35px' height='31px' viewBox='0 0 35 31' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>432E24C7-3FFB-49C0-A53C-37B629587A76@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Journal' transform='translate(-49.000000, -978.000000)' stroke='#FEFEFE' stroke-width='0.807299943'>\n            <g id='Menu-Bar-Bottom' transform='translate(0.000000, 961.000000)'>\n                <g id='Journal-Icon-2' transform='translate(50.000000, 18.000000)'>\n                    <g id='Journal-Icon'>\n                        <g>\n                            <path d='M3.45626976,9.32633934 C1.76876988,9.32633934 0.402569972,7.96013944 0.402569972,6.27263956 L0.402569972,3.45653976 C0.402569972,1.76903988 1.76876988,0.402839972 3.45626976,0.402839972 L22.8989684,0.402839972 C24.5837683,0.402839972 25.9526682,1.76903988 25.9526682,3.45653976' id='Stroke-1'></path>\n                            <path d='M29.6179179,15.4620889 L10.1752193,15.4620889 C8.4877194,15.4620889 7.1215195,14.095889 7.1215195,12.4110891 L7.1215195,9.59228932 C7.1215195,7.90748944 8.4877194,6.53858954 10.1752193,6.53858954 L29.6179179,6.53858954 C31.3054178,6.53858954 32.6689177,7.90748944 32.6689177,9.59228932 L32.6689177,12.4110891 C32.6689177,14.095889 31.3054178,15.4620889 29.6179179,15.4620889 Z' id='Stroke-3'></path>\n                            <path d='M3.45626976,22.7261684 C1.76876988,22.7261684 0.402569972,21.3599685 0.402569972,19.6751686 L0.402569972,16.8563688 C0.402569972,15.1688689 1.76876988,13.802669 3.45626976,13.802669' id='Stroke-5'></path>\n                            <path d='M29.6179179,28.864618 L10.1752193,28.864618 C8.4877194,28.864618 7.1215195,27.4957181 7.1215195,25.8109182 L7.1215195,22.9921184 C7.1215195,21.3073185 8.4877194,19.9411186 10.1752193,19.9411186 L29.6179179,19.9411186 C31.3054178,19.9411186 32.6689177,21.3073185 32.6689177,22.9921184 L32.6689177,25.8109182 C32.6689177,27.4957181 31.3054178,28.864618 29.6179179,28.864618 Z' id='Stroke-7'></path>\n                        </g>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
-
-(def photos-xml
-  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='14px' height='12px' viewBox='0 0 14 12' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>F9E2108D-1AD8-4958-AE70-5B72A1A52270@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Journal' transform='translate(-225.000000, -987.000000)' stroke='#FEFEFE' stroke-width='0.299'>\n            <g id='Menu-Bar-Bottom' transform='translate(0.000000, 961.000000)'>\n                <g id='Photos-Icon-Photos-Icons' transform='translate(214.841666, 17.650001)'>\n                    <g id='Group-13' transform='translate(11.049999, 9.349998)'>\n                        <path d='M1.2843,8.4171 C0.6573,8.4171 0.1493,7.9091 0.1493,7.2821 L0.1493,1.2841 C0.1493,0.6571 0.6573,0.1491 1.2843,0.1491 L8.4763,0.1491 C9.1033,0.1491 9.6113,0.6571 9.6113,1.2841' id='Stroke-1'></path>\n                        <path d='M10.965,10.6906 L3.773,10.6906 C3.146,10.6906 2.638,10.1816 2.638,9.5546 L2.638,3.5576 C2.638,2.9306 3.146,2.4216 3.773,2.4216 L10.965,2.4216 C11.592,2.4216 12.1,2.9306 12.1,3.5576 L12.1,9.5546 C12.1,10.1816 11.592,10.6906 10.965,10.6906 Z' id='Stroke-3'></path>\n                        <path d='M2.6378,8.4171 L12.0998,8.4171' id='Stroke-5'></path>\n                        <polyline id='Stroke-7' points='3.798 5.4611 5.441 4.0931 6.177 4.7781'></polyline>\n                        <polyline id='Stroke-9' points='5.8903 6.5568 7.3903 5.0728 9.6113 6.8908'></polyline>\n                        <path d='M10.5011,4.3234 C10.5011,4.6044 10.2721,4.8334 9.9911,4.8334 C9.7091,4.8334 9.4801,4.6044 9.4801,4.3234 C9.4801,4.0414 9.7091,3.8124 9.9911,3.8124 C10.2721,3.8124 10.5011,4.0414 10.5011,4.3234 Z' id='Stroke-11'></path>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
-
-(def settings-xml
-  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='12px' height='11px' viewBox='0 0 12 11' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>4C0B5D51-B404-41CC-AB66-55C091D2AA31@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Journal' transform='translate(-306.000000, -987.000000)'>\n            <g id='Menu-Bar-Bottom' transform='translate(0.000000, 961.000000)'>\n                <g id='Settings-Icon' transform='translate(297.224995, 17.650001)'>\n                    <g id='Group-19' transform='translate(9.349998, 8.499999)'>\n                        <path d='M10.9049,1.2971 L0.1499,1.2971' id='Stroke-1' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M10.9049,8.717 L0.1499,8.717' id='Stroke-3' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M10.9049,5.007 L0.1499,5.007' id='Stroke-5' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M4.2349,1.2971 C4.2349,1.9301 3.7209,2.4431 3.0879,2.4431 C2.4539,2.4431 1.9399,1.9301 1.9399,1.2971 C1.9399,0.6631 2.4539,0.1501 3.0879,0.1501 C3.7209,0.1501 4.2349,0.6631 4.2349,1.2971' id='Fill-7' fill='#2C3246'></path>\n                        <path d='M4.2349,1.2971 C4.2349,1.9301 3.7209,2.4431 3.0879,2.4431 C2.4539,2.4431 1.9399,1.9301 1.9399,1.2971 C1.9399,0.6631 2.4539,0.1501 3.0879,0.1501 C3.7209,0.1501 4.2349,0.6631 4.2349,1.2971 Z' id='Stroke-9' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M9.6412,5.007 C9.6412,5.641 9.1272,6.154 8.4942,6.154 C7.8602,6.154 7.3472,5.641 7.3472,5.007 C7.3472,4.373 7.8602,3.86 8.4942,3.86 C9.1272,3.86 9.6412,4.373 9.6412,5.007' id='Fill-11' fill='#2C3246'></path>\n                        <path d='M9.6412,5.007 C9.6412,5.641 9.1272,6.154 8.4942,6.154 C7.8602,6.154 7.3472,5.641 7.3472,5.007 C7.3472,4.373 7.8602,3.86 8.4942,3.86 C9.1272,3.86 9.6412,4.373 9.6412,5.007 Z' id='Stroke-13' stroke='#FEFEFE' stroke-width='0.299'></path>\n                        <path d='M6.4884,8.717 C6.4884,9.351 5.9744,9.864 5.3414,9.864 C4.7074,9.864 4.1944,9.351 4.1944,8.717 C4.1944,8.083 4.7074,7.571 5.3414,7.571 C5.9744,7.571 6.4884,8.083 6.4884,8.717' id='Fill-15' fill='#2C3246'></path>\n                        <path d='M6.4884,8.717 C6.4884,9.351 5.9744,9.864 5.3414,9.864 C4.7074,9.864 4.1944,9.351 4.1944,8.717 C4.1944,8.083 4.7074,7.571 5.3414,7.571 C5.9744,7.571 6.4884,8.083 6.4884,8.717 Z' id='Stroke-17' stroke='#FEFEFE' stroke-width='0.299'></path>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
-
-(def x-icon-xml
-  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='14px' height='14px' viewBox='0 0 14 14' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>2906D8C7-494D-42F1-9813-A0DBCECB1B74@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <defs>\n        <path d='M13.6991387,0.269611344 C14.0586204,0.629093137 14.0586204,1.21192828 13.6991387,1.57141007 L8.286,6.984 L13.6991387,12.3973399 C14.0586204,12.7568217 14.0586204,13.3396569 13.6991387,13.6991387 C13.3396569,14.0586204 12.7568217,14.0586204 12.3973399,13.6991387 L6.984,8.286 L1.57141007,13.6991387 C1.21192828,14.0586204 0.629093137,14.0586204 0.269611344,13.6991387 C-0.0898704481,13.3396569 -0.0898704481,12.7568217 0.269611344,12.3973399 L5.682,6.984 L0.269611344,1.57141007 C-0.0898704481,1.21192828 -0.0898704481,0.629093137 0.269611344,0.269611344 C0.629093137,-0.0898704481 1.21192828,-0.0898704481 1.57141007,0.269611344 L6.984,5.682 L12.3973399,0.269611344 C12.7568217,-0.0898704481 13.3396569,-0.0898704481 13.6991387,0.269611344 Z' id='path-1'></path>\n    </defs>\n    <g id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'>\n        <g id='New-Entry' transform='translate(-18.000000, -63.000000)' fill='#FFFFFF' fill-rule='nonzero'>\n            <g id='Header-Bar-with-Cancel-&amp;-Save'>\n                <g id='Icon-Cancel' transform='translate(18.000000, 63.000000)'>\n                    <g id='Combined-Shape'>\n                        <use fill-opacity='0.349999994' xlink:href='#path-1'></use>\n                        <use fill-opacity='0.599999964' style='mix-blend-mode: overlay;' xlink:href='#path-1'></use>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
 
 (def pref-db-xml
   "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='24px' height='24px' viewBox='0 0 24 24' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>D011999E-E01C-4C06-A27C-82C858F071E0@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Mobile-App' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'>\n        <g id='Settings' transform='translate(-54.000000, -403.000000)' fill-rule='nonzero'>\n            <g id='Group-4' transform='translate(54.272500, 403.000000)'>\n                <g id='Icon-Icon-Database'>\n                    <g id='Asset-13'>\n                        <path d='M9.25714286,23.4162152 C4.15542857,23.4162152 0,21.0032424 0,18.0324317 L0,5.38378356 C0,2.41297287 4.15542857,0 9.25714286,0 C14.3588571,0 18.5142857,2.41297287 18.5142857,5.38378356 L18.5142857,18.0324317 C18.5142857,21.0032424 14.3588571,23.4162152 9.25714286,23.4162152 Z M9.25714286,0.648648649 C4.53257143,0.648648649 0.685714286,2.76972963 0.685714286,5.38378357 L0.685714286,18.0324317 C0.685714286,20.6270261 4.53257143,22.7675666 9.25714286,22.7675666 C13.9817143,22.7675666 17.8285714,20.6464856 17.8285714,18.0324317 L17.8285714,5.38378357 C17.8285714,2.76972963 13.9817143,0.648648649 9.25714286,0.648648649 Z' id='Shape' fill='#FFFFFF'></path>\n                        <path d='M9.25714286,10.7675678 C4.15542857,10.7675678 0,8.35459479 0,5.38378391 C0,5.20466453 0.153502371,5.05945958 0.342857143,5.05945958 C0.532211914,5.05945958 0.685714286,5.20466453 0.685714286,5.38378391 C0.685714286,7.97837857 4.53257143,10.1189192 9.25714286,10.1189192 C13.9817143,10.1189192 17.8285714,7.99783803 17.8285714,5.38378391 C17.8285714,5.20466453 17.9820738,5.05945958 18.1714286,5.05945958 C18.3607833,5.05945958 18.5142857,5.20466453 18.5142857,5.38378391 C18.5142857,8.35459479 14.3588571,10.7675678 9.25714286,10.7675678 Z' id='Path' fill='#FFFFFF'></path>\n                        <path d='M9.25714286,14.983784 C4.15542857,14.983784 0,12.570811 0,9.60000013 C0,9.42088075 0.153502371,9.2756758 0.342857143,9.2756758 C0.532211914,9.2756758 0.685714286,9.42088075 0.685714286,9.60000013 C0.685714286,12.1945948 4.53257143,14.3351354 9.25714286,14.3351354 C13.9817143,14.3351354 17.8285714,12.2140542 17.8285714,9.60000013 C17.8285714,9.42088075 17.9820738,9.2756758 18.1714286,9.2756758 C18.3607833,9.2756758 18.5142857,9.42088075 18.5142857,9.60000013 C18.5142857,12.570811 14.3588571,14.983784 9.25714286,14.983784 Z' id='Path' fill='#FFFFFF'></path>\n                        <path d='M9.25714286,19.1999996 C4.15542857,19.1999996 0,16.7870266 0,13.8162157 C0,13.6370963 0.153502371,13.4918914 0.342857143,13.4918914 C0.532211914,13.4918914 0.685714286,13.6370963 0.685714286,13.8162157 C0.685714286,16.4108104 4.53257143,18.551351 9.25714286,18.551351 C13.9817143,18.551351 17.8285714,16.4302698 17.8285714,13.8162157 C17.8285714,13.6370963 17.9820738,13.4918914 18.1714286,13.4918914 C18.3607833,13.4918914 18.5142857,13.6370963 18.5142857,13.8162157 C18.5142857,16.7870266 14.3588571,19.1999996 9.25714286,19.1999996 Z' id='Path' fill='#FFFFFF'></path>\n                        <path d='M22.3199995,18.6486486 C21.7519352,18.6486486 21.291428,18.2130338 21.291428,17.6756757 L21.291428,9.72972973 C21.291428,9.19237159 21.7519352,8.75675676 22.3199995,8.75675676 C22.8880638,8.75675676 23.3485709,9.19237159 23.3485709,9.72972973 L23.3485709,17.6756757 C23.3485709,18.2130338 22.8880638,18.6486486 22.3199995,18.6486486 L22.3199995,18.6486486 Z' id='Path' fill='#7AC794'></path>\n                    </g>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
@@ -52,70 +38,32 @@
 (def caret-right-xml
   "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='7px' height='11px' viewBox='0 0 7 11' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>6967F4D2-EA7D-475B-8132-9C64BE8F30B8@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Mobile-App' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Settings' transform='translate(-327.000000, -285.000000)' stroke='#2C3246' stroke-width='1.5'>\n            <g id='Group-2' transform='translate(49.509986, 277.500000)'>\n                <polyline id='Rectangle' transform='translate(278.345101, 13.000000) rotate(-45.000000) translate(-278.345101, -13.000000) ' points='281.700189 9.64491254 281.700189 16.3550875 274.990014 16.3550875'></polyline>\n            </g>\n        </g>\n    </g>\n</svg>")
 
-(defn nav-icon [w h color xml]
-  (let [opacity (if (= color "#FFF") 1 0.45186942)
-        border-top-color (if (= 1 opacity)
-                           "#FFF"
-                           (get-in styles/colors [:nav-bg :dark]))
-        style {:display          :flex
-               :justify-content  :center
-               :flex-direction   :column
-               :height           57
-               :border-top-color border-top-color
-               :border-top-width 3}]
-    [view {:opacity opacity
-           :style   style}
-     [svg-xml {:width  w
-               :height h
-               :xml    xml}]]))
-
-(defn icon [w h xml]
-  [view {:style {}}
-   [svg-xml {:width  w
-             :height h
-             :xml    xml}]])
-
-(defn add-icon [size color]
-  [nav-icon size size color add-xml])
-
-(defn journal-icon [size color]
-  [nav-icon size size color journal-xml])
-
-(defn photos-icon [size color]
-  [nav-icon size size color photos-xml])
-
-(defn settings-icon [size color]
-  [nav-icon size size color settings-xml])
-
-(defn x-icon [size]
-  [icon size size x-icon-xml])
-
 (defn version-icon [size]
-  [icon size size pref-version-xml])
+  [icns/icon size size pref-version-xml])
 
 (defn contacts-icon [size]
-  [icon size size pref-contacts-xml])
+  [icns/icon size size pref-contacts-xml])
 
 (defn health-icon [size]
-  [icon size size pref-health-xml])
+  [icns/icon size size pref-health-xml])
 
 (defn theme-icon [size]
-  [icon size size pref-theme-xml])
+  [icns/icon size size pref-theme-xml])
 
 (defn db-icon [size]
-  [icon size size pref-db-xml])
+  [icns/icon size size pref-db-xml])
 
 (defn entries-icon [size]
-  [icon size size pref-entries-xml])
+  [icns/icon size size pref-entries-xml])
 
 (defn map-icon [size]
-  [icon size size pref-map-xml])
+  [icns/icon size size pref-map-xml])
 
 (defn audio-icon [size]
-  [icon size size pref-audio-xml])
+  [icns/icon size size pref-audio-xml])
 
 (defn sync-icon [size]
-  [icon size size pref-sync-xml])
+  [icns/icon size size pref-sync-xml])
 
 (defn caret-icon [size]
-  [icon size size caret-right-xml])
+  [icns/icon size size caret-right-xml])

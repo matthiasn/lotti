@@ -5,7 +5,7 @@
             ["react-navigation-tabs" :refer [createBottomTabNavigator]]
             [meins.ui.db :as db]
             [meins.ui.editor :as ue]
-            [meins.ui.icons :as ico]
+            [meins.ui.icons.misc :as ico]
             [meins.ui.journal :as jrn]
             [meins.ui.photos :as photos]
             [meins.ui.settings :as s]
