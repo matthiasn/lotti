@@ -25,6 +25,10 @@ platform :ios do
     build_app(workspace: "meins.xcworkspace", scheme: "meins")
     upload_to_testflight(skip_waiting_for_build_processing: false)
     deliver(
+      force: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: true,
       submission_information: {
           export_compliance_platform: 'ios',
           export_compliance_compliance_required: false,
