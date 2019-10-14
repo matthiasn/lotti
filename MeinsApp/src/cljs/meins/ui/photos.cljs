@@ -50,27 +50,32 @@
       (when imported
         [icns/photo-checkmark-icon 26])]]))
 
-(defn button [{:keys [label bg font]}]
-  [view {:style {:background-color bg
-                 :width            92
-                 :height           36
-                 :align-items      :center
-                 :justify-content  :center
-                 :border-color     "#4A546E"
-                 :borderWidth      1
-                 :border-radius    18}}
-   [text {:style {:font-size   15
-                  :height      22
-                  :line-height 22
-                  :font-family font
-                  :text-align  :center
-                  :color       "white"}}
-    label]])
+(defn button [{:keys [label active on-press]}]
+  (let [font (if active :Montserrat-SemiBold :Montserrat-Regular)
+        bg-color "#4A546E"
+        bg (when active bg-color)]
+    [touchable-opacity {:style    {:background-color bg
+                                   :width            92
+                                   :height           36
+                                   :align-items      :center
+                                   :justify-content  :center
+                                   :border-color     bg-color
+                                   :borderWidth      1
+                                   :border-radius    18}
+                        :on-press on-press}
+     [text {:style {:font-size   15
+                    :height      22
+                    :line-height 22
+                    :font-family font
+                    :text-align  :center
+                    :color       "white"}}
+      label]]))
 
 (defn photos-tab []
   (let [realm-db @uidb/realm-db
         theme (subscribe [:active-theme])
-        local (r/atom {:last-updated 0})
+        local (r/atom {:last-updated 0
+                       :filter       :all})
         update-local #(swap! local assoc :last-updated (stc/now))
         refresh (fn [_]
                   (emit [:photos/import {:n 1000}])
@@ -78,9 +83,14 @@
     (refresh nil)
     (fn []
       (let [bg (get-in styles/colors [:list-bg @theme])
+            k (:filter @local)
             items (some-> realm-db
                           (.objects "Image")
-                          (.sorted "timestamp" true))]
+                          (.sorted "timestamp" true))
+            items (if (= :all k)
+                    items
+                    (let [imported (if (= :added (:filter @local)) true false)]
+                      (.filtered items (str "imported = " imported))))]
         @local
         [view {:style {:width  "100%"
                        :height "100%"}}
@@ -90,12 +100,18 @@
                         :background-color "rgba(44,50,70,0.9)"
                         :padding-top      52
                         :padding-bottom   15}}
-          [button {:label "ADDED"
-                   :bg    "#4A546E"
-                   :font  :Montserrat-SemiBold}]
+          [button {:label    "ADDED"
+                   :bg       "#4A546E"
+                   :active  (= (:filter @local) :added)
+                   :on-press #(swap! local assoc :filter :added)}]
           [view {:style {:width 18}}]
-          [button {:label "ALL"
-                   :font  :Montserrat-Regular}]]
+          [button {:label    "ALL"
+                   :active  (= (:filter @local) :all)
+                   :on-press #(swap! local assoc :filter :all)}]
+          [view {:style {:width 18}}]
+          [button {:label    "NEW"
+                   :active  (= (:filter @local) :new)
+                   :on-press #(swap! local assoc :filter :new)}]]
          [flat-grid
           {:itemDimension img-dimension
            :items         items
