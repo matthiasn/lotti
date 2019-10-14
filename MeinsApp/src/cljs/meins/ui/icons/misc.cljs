@@ -25,6 +25,9 @@
 (def caret-right-xml
   "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='7px' height='11px' viewBox='0 0 7 11' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>6967F4D2-EA7D-475B-8132-9C64BE8F30B8@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Mobile-App' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' stroke-linecap='round' stroke-linejoin='round'>\n        <g id='Settings' transform='translate(-327.000000, -285.000000)' stroke='#2C3246' stroke-width='1.5'>\n            <g id='Group-2' transform='translate(49.509986, 277.500000)'>\n                <polyline id='Rectangle' transform='translate(278.345101, 13.000000) rotate(-45.000000) translate(-278.345101, -13.000000) ' points='281.700189 9.64491254 281.700189 16.3550875 274.990014 16.3550875'></polyline>\n            </g>\n        </g>\n    </g>\n</svg>")
 
+(def photo-checkmark-xml
+  "<?xml version='1.0' encoding='UTF-8'?>\n<svg width='32px' height='32px' viewBox='0 0 32 32' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>\n    <!-- Generator: sketchtool 58 (101010) - https://sketch.com -->\n    <title>BC9F201B-65F0-4E1D-B360-9B3ED9838C2D@2x</title>\n    <desc>Created with sketchtool.</desc>\n    <g id='Mobile-App' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' opacity='0.767113095'>\n        <g id='Photos-All' transform='translate(-206.000000, -247.000000)'>\n            <g id='Group-3-3' transform='translate(206.500000, 247.500000)'>\n                <circle id='Oval' fill-opacity='0.8' fill='#2C3246' cx='15.6994829' cy='15.6994829' r='15.6994829'></circle>\n                <g id='Group-5' transform='translate(5.199483, 5.199483)' stroke='#EDE7F2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.20000007'>\n                    <polyline id='Stroke-1' points='5.81659232 9.39153651 10.5371526 14.1119768 19.4797931 5.32305629'></polyline>\n                    <path d='M19.4798411,5.32302029 C20.3215211,6.82482037 20.8014011,8.55666047 20.8014011,10.4007006 C20.8014011,16.1448609 16.1448009,20.8013411 10.4006406,20.8013411 C4.65660025,20.8013411 0,16.1448609 0,10.4007006 C0,4.65654025 4.65660025,6.00000033e-05 10.4006406,6.00000033e-05' id='Stroke-3'></path>\n                </g>\n            </g>\n        </g>\n    </g>\n</svg>")
+
 (defn nav-icon [w h color xml]
   (let [opacity (if (= color "#FFF") 1 0.45186942)
         border-top-color (if (= 1 opacity)
@@ -42,12 +45,6 @@
                :height h
                :xml    xml}]]))
 
-(defn icon [w h xml]
-  [view {:style {}}
-   [svg-xml {:width  w
-             :height h
-             :xml    xml}]])
-
 (defn add-icon [size color]
   [nav-icon size size color add-xml])
 
@@ -60,8 +57,17 @@
 (defn settings-icon [size color]
   [nav-icon size size color settings-xml])
 
+(defn icon [w h xml]
+  [view {:style {}}
+   [svg-xml {:width  w
+             :height h
+             :xml    xml}]])
+
 (defn x-icon [size]
   [icon size size x-icon-xml])
 
 (defn caret-icon [size]
   [icon size size caret-right-xml])
+
+(defn photo-checkmark-icon [size]
+  [icon size size photo-checkmark-xml])
