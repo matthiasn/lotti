@@ -21,6 +21,7 @@
          [item {:label         "SYNC"
                 :has-nav-arrow false
                 :on-press      #(emit [:bg-geo/save])}]
-         [item {:label         "EMAIL LOG FILES"
-                :has-nav-arrow false
-                :on-press      #(emit [:bg-geo/email-logs])}]]))))
+         [item {:label            "EMAIL LOG FILES"
+                :has-nav-arrow    false
+                :btm-border-width 0
+                :on-press         #(emit [:bg-geo/email-logs])}]]))))
