@@ -27,7 +27,7 @@
                                         :margin-left    18
                                         :height         36
                                         :vertical-align :center
-                                        :border-radius  18
+                                        :border-radius  styles/border-radius
                                         :padding-left   8
                                         :justifyContent :center}}
           [ico/x-icon 14]]
@@ -42,7 +42,7 @@
                                         :background-color button-bg
                                         :width            81
                                         :margin-right     17
-                                        :border-radius    18
+                                        :border-radius    styles/border-radius
                                         :height           36
                                         :align-items      :center}}
           [text {:style {:color       btn-text
@@ -89,7 +89,7 @@
            (s/upper-case
              (h/entry-date-fmt (stc/now)))]
           [text {:style {:color       text-color
-                         :text-align  "center"
+                         :text-align  :center
                          :margin-left 12
                          :font-family :Montserrat-Regular
                          :font-size   12}}
@@ -115,7 +115,7 @@
                                              :font-size         15
                                              :max-height        400
                                              :min-height        240
-                                             :border-radius     18
+                                             :border-radius     styles/border-radius
                                              :textAlignVertical :top
                                              :font-family       :Montserrat-Regular
                                              :background-color  text-bg

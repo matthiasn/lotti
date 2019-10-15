@@ -22,7 +22,7 @@
                                        :align-items       :center
                                        :justify-content   :space-between}}
          icon
-         [text {:style {:font-size    12
+         [text {:style {:font-size    13
                         :font-family  :Montserrat-Regular
                         :text-align   :left
                         :opacity      0.68
@@ -46,8 +46,8 @@
             nav-bg (get-in styles/colors [:nav-bg @theme])]
         [touchable-opacity {:on-press on-press
                             :style    (merge {:color           header-color
-                                              :margin-left     9
-                                              :margin-right    15
+                                              :margin-left     33
+                                              :margin-right    39
                                               :height          80
                                               :margin-top      30
                                               :display         :flex
@@ -88,7 +88,7 @@
                                     :flex-direction    :row
                                     :align-items       :center
                                     :justify-content   :space-between}}
-         [text {:style {:font-size    12
+         [text {:style {:font-size    13
                         :font-family  "Montserrat-Regular"
                         :text-align   "center"
                         :opacity      0.68
@@ -123,12 +123,28 @@
                               :margin-top       10}}]
                args)]))))
 
+(defn sync-assistant-page [& args]
+  (let [theme (subscribe [:active-theme])]
+    (fn [& args]
+      (let [bg (get-in styles/colors [:list-bg @theme])]
+        [scroll {:style {:display          :flex
+                         :flex-direction   :column
+                         :background-color bg
+                         :padding-bottom   21
+                         :height           "100%"}}
+         [status-bar {:barStyle "light-content"}]
+         (into [view {:style {:display    :flex}}]
+               args)]))))
+
 (defn settings-text [s]
-  [text {:style {:font-size   12
-                 :font-family :Montserrat-Regular
-                 :text-align  :left
-                 :opacity     0.68
-                 :color       :white}}
+  [text {:style {:font-size     12
+                 :font-family   :Montserrat-Regular
+                 :text-align    :left
+                 :opacity       0.68
+                 :padding-top   10
+                 :padding-left  34
+                 :padding-right 34
+                 :color         :white}}
    s])
 
 (defn screen [{:keys [screen title]}]
@@ -144,3 +160,6 @@
                                               :letterSpacing 0.02
                                               :fontFamily    "Montserrat-SemiBold"
                                               :color         "white"}}})
+
+(defn spacer-x [n] [view {:style {:width n}}])
+(defn spacer-y [n] [view {:style {:height n}}])

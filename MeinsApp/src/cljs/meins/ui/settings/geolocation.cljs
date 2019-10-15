@@ -18,10 +18,10 @@
          [switch-item {:label     "Background Location Tracking"
                        :on-toggle toggle-geo
                        :value     (:bg-geo @cfg)}]
-         [item {:label         "SYNC"
+         [item {:label         "Sync"
                 :has-nav-arrow false
                 :on-press      #(emit [:bg-geo/save])}]
-         [item {:label            "EMAIL LOG FILES"
+         [item {:label            "Email Log Files"
                 :has-nav-arrow    false
                 :btm-border-width 0
                 :on-press         #(emit [:bg-geo/email-logs])}]]))))

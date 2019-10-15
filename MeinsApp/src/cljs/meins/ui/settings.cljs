@@ -26,37 +26,37 @@
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             icon-size 26]
         [settings-page
-         [item {:label "VERSION"
+         [item {:label "Version"
                 :icon  (icns/version-icon icon-size)
                 :info  (aget rnvn "default" "appVersion")}]
          #_[item {:label "CONTACTS"
                   :icon  (icns/contacts-icon icon-size)
                   :info  0}]
-         [item {:label         "HEALTH"
+         [item {:label         "Health"
                 :icon          (icns/health-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "health")}]
-         [item {:label         "THEME"
+         [item {:label         "Theme"
                 :icon          (icns/theme-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "theme")}]
-         [item {:label         "DATABASE"
+         [item {:label         "Database"
                 :icon          (icns/db-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "db")}]
-         [item {:label         "ENTRY VIEW"
+         [item {:label         "Entry View"
                 :icon          (icns/entries-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "dev")}]
-         [item {:label         "GEOLOCATION"
+         [item {:label         "Geolocation"
                 :icon          (icns/map-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "geo")}]
-         [item {:label         "AUDIO"
+         [item {:label         "Audio"
                 :icon          (icns/audio-icon icon-size)
                 :has-nav-arrow true
                 :on-press      #(navigate "audio")}]
-         [item {:label            "SYNC"
+         [item {:label            "Sync"
                 :icon             (icns/sync-icon icon-size)
                 :has-nav-arrow    true
                 :btm-border-width 0

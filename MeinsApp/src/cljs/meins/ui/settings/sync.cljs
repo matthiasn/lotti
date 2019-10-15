@@ -4,7 +4,8 @@
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
-            [meins.ui.settings.items :refer [button item screen settings-page settings-text switch-item]]
+            [meins.ui.settings.items :refer [button item screen settings-page settings-text switch-item
+                                             sync-assistant-page spacer-y]]
             [meins.ui.shared :refer [alert cam modal scroll text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
@@ -39,13 +40,13 @@
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
         [settings-page
-         [switch-item {:label     "ENABLE SYNC"
+         [switch-item {:label     "Enable Sync"
                        :on-toggle toggle-enable
                        :value     (:sync-active @cfg)}]
-         [item {:label         "ASSISTANT"
+         [item {:label         "Assistant"
                 :has-nav-arrow true
                 :on-press      #(navigate "sync-intro")}]
-         [item {:label            "ADVANCED"
+         [item {:label            "Advanced"
                 :has-nav-arrow    true
                 :btm-border-width 0
                 :on-press         #(navigate "sync-advanced")}]]))))
@@ -62,13 +63,13 @@
                           (swap! local dissoc :del-visible))]
         [settings-page
          (if (:key-pair @local)
-           [item {:label    "DELETE KEYPAIR"
+           [item {:label    "Delete Keypair"
                   :on-press #(swap! local assoc :del-visible true)}]
-           [item {:label    "GENERATE KEYPAIR"
+           [item {:label    "Generate Keypair"
                   :on-press #(set-keypair local)}])
          [modal {:isVisible (:del-visible @local)}
           [view {:style {:width           "100%"
-                         :border-radius   18
+                         :border-radius   styles/border-radius
                          :backgroundColor "red"}}
            [text {:style {:font-size   30
                           :padding     20
@@ -76,7 +77,7 @@
                           :color       :white
                           :text-align  :center}}
             "CAUTION: run Assistant again after deleting key pair."]
-           [button {:label    "DELETE KEYPAIR"
+           [button {:label    "Delete Keypair"
                     :style    {:margin-top 20}
                     :on-press del-keypair}]
            [button {:label    "CANCEL"
@@ -88,7 +89,7 @@
                           :font-weight "100"
                           :flex        2
                           :margin      2
-                          :text-align  "center"}}
+                          :text-align  :center}}
             (str (:key-pair @local))])]))))
 
 (defn intro [_]
@@ -97,7 +98,8 @@
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             public-key (-> @local :key-pair :publicKey)]
-        [settings-page
+        [sync-assistant-page
+         [spacer-y 24]
          [settings-text
           "Let's set up the communication with the desktop and start syncing. For that, we need a public/private key pair."]
          (if public-key
@@ -111,7 +113,8 @@
     (kc/get-keypair #(swap! local assoc :key-pair %))
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
-        [settings-page
+        [sync-assistant-page
+         [spacer-y 24]
          (when-let [public-key (-> @local :key-pair :publicKey)]
            [qr/qr-code public-key])
          [settings-text "Scan this code with your desktop webcam."]
@@ -128,9 +131,9 @@
                                                       (swap! local assoc :cfg %)
                                                       ;(navigate "sync-success")
                                                       ))]
-        [settings-page
+        [sync-assistant-page
          [cam {:style         {:width         "100%"
-                               :height        300
+                               :height        400
                                :margin-bottom 30
                                :padding-top   30}
                :onBarCodeRead on-read}]
@@ -151,7 +154,8 @@
   (let [cfg (subscribe [:cfg])]
     (fn [{:keys [navigation]}]
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
-        [settings-page
+        [sync-assistant-page
+         [spacer-y 24]
          [settings-text "Congrats, all set up."]
          [button {:label    "FINISH"
                   :on-press #(navigate "sync")}]]))))

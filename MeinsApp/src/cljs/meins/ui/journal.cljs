@@ -69,7 +69,7 @@
                            :background-color text-bg
                            :margin-top       4
                            :margin-bottom    8
-                           :border-radius    18
+                           :border-radius    styles/border-radius
                            :padding-bottom   4
                            :width            "auto"}}
              (when-let [media (:media entry)]
@@ -79,21 +79,20 @@
                                 :height                  300}
                        :source {:uri (-> media :image :uri)}}])
              (when-let [spotify (:spotify entry)]
-               [image {:style      {:background-color "black"
-                                    :height           150
-                                    :width            "100%"}
+               [image {:style      {:height 150
+                                    :width  "100%"}
                        :resizeMode "contain"
                        :source     {:uri (:image spotify)}}])
-             [view {:style {:padding-top    2
+             [view {:style {:padding-top    6
+                            :height         22
                             :padding-left   22
-                            :padding-right  22
+                            :padding-right  16
                             :padding-bottom 2}}
               [text {:style {:color         text-color
                              :opacity       0.68
-                             :text-align    "right"
+                             :text-align    :right
                              :font-size     12
-                             :font-family   "Montserrat-Regular"
-                             :margin-top    6
+                             :font-family   :Montserrat-Regular
                              :padding-right 3
                              :font-weight   "100"}}
                (h/hh-mm ts)]]
@@ -104,16 +103,16 @@
                               :padding-bottom 4}}
                 [text {:style {:background-color text-bg
                                :color            text-color
-                               :text-align       "left"
-                               :font-weight      "bold"
-                               :font-family      "Montserrat-SemiBold"
+                               :text-align       :left
+                               :font-weight      :bold
+                               :font-family      :Montserrat-SemiBold
                                :font-size        12}}
                  (:name spotify)]
                 [text {:style {:background-color text-bg
                                :color            text-color
-                               :text-align       "left"
+                               :text-align       :left
                                :font-size        12
-                               :font-family      "Montserrat-Regular"
+                               :font-family      :Montserrat-Regular
                                :padding-top      1}}
                  (->> (:artists spotify)
                       (map :name)
@@ -121,14 +120,14 @@
                       (apply str))]]
                [view {:style {:padding-top    1
                               :padding-left   22
-                              :padding-right  22
-                              :padding-bottom 4
+                              :padding-right  16
+                              :padding-bottom 15
                               :margin-top     3}}
                 [text {:style {:color       text-color
-                               :text-align  "left"
-                               :font-size   14
-                               :line-height 21
-                               :font-family "Montserrat-Regular"}}
+                               :text-align  :left
+                               :font-size   15
+                               :line-height 22
+                               :font-family :Montserrat-Regular}}
                  md]])]]])))))
 
 (defn render-item [navigate]
@@ -158,7 +157,7 @@
                       :keyboardAppearance  (if light-theme "light" "dark")
                       :inputStyle          {:font-family "Montserrat-Regular"}
                       :inputContainerStyle {:backgroundColor search-field-bg
-                                            :border-radius   18}
+                                            :border-radius   styles/search-border-radius}
                       :containerStyle      {:backgroundColor   "transparent"
                                             :borderTopWidth    0
                                             :padding-top       8
@@ -296,7 +295,7 @@
                                                 :min-height        100
                                                 :background-color  text-bg
                                                 :margin-bottom     5
-                                                :border-radius     18
+                                                :border-radius     styles/border-radius
                                                 :textAlignVertical :top
                                                 :font-family       :Montserrat-Regular
                                                 :color             text-color

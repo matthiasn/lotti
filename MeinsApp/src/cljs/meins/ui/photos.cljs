@@ -7,6 +7,7 @@
             [meins.ui.icons.misc :as icns]
             [meins.ui.shared :refer [dimensions image text touchable-opacity view]]
             [meins.ui.styles :as styles]
+            [meins.ui.settings.items :refer [spacer-x]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
@@ -61,7 +62,7 @@
                                    :justify-content  :center
                                    :border-color     bg-color
                                    :border-width     1
-                                   :border-radius    18}
+                                   :border-radius    styles/border-radius}
                         :on-press on-press}
      [text {:style {:font-size   15
                     :height      22
@@ -104,11 +105,11 @@
                    :bg       "#4A546E"
                    :active   (= (:filter @local) :added)
                    :on-press #(swap! local assoc :filter :added)}]
-          [view {:style {:width 18}}]
+          [spacer-x 18]
           [button {:label    "ALL"
                    :active   (= (:filter @local) :all)
                    :on-press #(swap! local assoc :filter :all)}]
-          [view {:style {:width 18}}]
+          [spacer-x 18]
           [button {:label    "NEW"
                    :active   (= (:filter @local) :new)
                    :on-press #(swap! local assoc :filter :new)}]]

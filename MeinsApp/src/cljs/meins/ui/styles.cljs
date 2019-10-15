@@ -1,6 +1,7 @@
 (ns meins.ui.styles)
 
-(def border-radius 18)
+(def search-border-radius 18)
+(def border-radius 12)
 
 (def colors
   {:header-tab      {:light "#FAFAFA"
