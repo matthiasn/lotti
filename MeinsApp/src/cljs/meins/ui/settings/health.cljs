@@ -28,6 +28,7 @@
          [item {:label    "Sleep"
                 :icon     (icns/sleep-icon icon-size)
                 :on-press (import :healthkit/sleep)}]
-         [item {:label    "Heart Rate Variability"
-                :icon     (icns/hrv-icon icon-size)
-                :on-press (import :healthkit/hrv)}]]))))
+         [item {:label            "Heart Rate Variability"
+                :icon             (icns/hrv-icon icon-size)
+                :btm-border-width 0
+                :on-press         (import :healthkit/hrv)}]]))))

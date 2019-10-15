@@ -73,12 +73,14 @@
                   :icon     (settings-icon "microphone" "#999")
                   :on-press record}])
          (if (= :play status)
-           [item {:label    "Stop"
-                  :icon     (settings-icon "stop" "#66F")
-                  :on-press stop}]
-           [item {:label    "Play"
-                  :icon     (settings-icon "play" "#999")
-                  :on-press play}])
+           [item {:label            "Stop"
+                  :icon             (settings-icon "stop" "#66F")
+                  :btm-border-width (if file 0.5 0)
+                  :on-press         stop}]
+           [item {:label            "Play"
+                  :icon             (settings-icon "play" "#999")
+                  :btm-border-width (if file 0.5 0)
+                  :on-press         play}])
          (when (and file (= :paused status))
            [item {:label    "Save"
                   :icon     (settings-icon "save" "#66F")

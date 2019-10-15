@@ -60,7 +60,7 @@
                                    :align-items      :center
                                    :justify-content  :center
                                    :border-color     bg-color
-                                   :borderWidth      1
+                                   :border-width     1
                                    :border-radius    18}
                         :on-press on-press}
      [text {:style {:font-size   15
@@ -98,19 +98,19 @@
                         :flex-direction   :row
                         :justify-content  :center
                         :background-color "rgba(44,50,70,0.9)"
-                        :padding-top      52
+                        :padding-top      50
                         :padding-bottom   15}}
           [button {:label    "ADDED"
                    :bg       "#4A546E"
-                   :active  (= (:filter @local) :added)
+                   :active   (= (:filter @local) :added)
                    :on-press #(swap! local assoc :filter :added)}]
           [view {:style {:width 18}}]
           [button {:label    "ALL"
-                   :active  (= (:filter @local) :all)
+                   :active   (= (:filter @local) :all)
                    :on-press #(swap! local assoc :filter :all)}]
           [view {:style {:width 18}}]
           [button {:label    "NEW"
-                   :active  (= (:filter @local) :new)
+                   :active   (= (:filter @local) :new)
                    :on-press #(swap! local assoc :filter :new)}]]
          [flat-grid
           {:itemDimension img-dimension
