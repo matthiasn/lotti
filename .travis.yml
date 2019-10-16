@@ -15,4 +15,4 @@ install:
   - npm install -g shadow-cljs
   - npm install -g electron-rebuild
 
-script: make release
+script: make

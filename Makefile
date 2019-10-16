@@ -21,13 +21,8 @@ endif
 package: install package-only
 
 deps-mac:
-	npm install -g electron
-	npm install -g electron-builder
-	npm install -g electron-cli
-	npm install -g electron-build-env
-	npm install -g node-gyp
+	npm install -g electron-rebuild
 	npm install -g yarn
-	npm install -g webpack
 	npm install -g shadow-cljs
 	mkdir ./bin
 
@@ -56,6 +51,7 @@ deps-ubuntu:
 	npm install -g electron-builder@20.38.5
 	npm install -g electron-cli
 	npm install -g electron-build-env
+	npm install -g electron-rebuild
 	npm install -g node-gyp
 	npm install -g yarn
 	npm install -g webpack
