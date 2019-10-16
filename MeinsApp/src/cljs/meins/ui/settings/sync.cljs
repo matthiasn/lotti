@@ -129,8 +129,7 @@
       (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             on-read (partial on-barcode-read local #(do
                                                       (swap! local assoc :cfg %)
-                                                      ;(navigate "sync-success")
-                                                      ))]
+                                                      (navigate "sync-success")))]
         [sync-assistant-page
          [cam {:style         {:width         "100%"
                                :height        400
@@ -138,9 +137,6 @@
                                :padding-top   30}
                :onBarCodeRead on-read}]
          [settings-text "Scan the barcode shown on the desktop."]
-         (when (:cfg @local)
-           [button {:label    "NEXT"
-                    :on-press #(navigate "sync-success")}])
          (when (:entry-pprint @cfg)
            [text {:style {:font-size   8
                           :color       "#888"
