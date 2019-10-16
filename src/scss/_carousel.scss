@@ -75,7 +75,7 @@
 }
 
 .carousel img {
-  width: 80%;
+  width: 100%;
   display: inline-block;
 }
 
@@ -90,10 +90,7 @@
 }
 
 .carousel .thumbs-wrapper {
-  margin: 16px;
-  overflow-x: scroll;
-  white-space: nowrap;
-}
+  }
 
 .carousel .thumbs {
   -webkit-transition: all 0.15s ease-in;
@@ -109,11 +106,11 @@
   -webkit-transition: border 0.15s ease-in;
   transition: border 0.15s ease-in;
   display: inline-block;
-  margin-right: 6px;
+  margin-right: 1px;
   white-space: nowrap;
   overflow: hidden;
-  border: 3px solid #444;
-  padding: 2px;
+  border: 2px solid #444;
+  padding: 1px;
   position: relative;
 
   .fa-times {
@@ -126,15 +123,15 @@
 }
 
 .carousel .thumb.selected, .carousel .thumb:hover {
-  border: 3px solid #fff;
-  padding: 2px;
+  border: 2px solid #fff;
+  padding: 1px;
 }
 
 .carousel .thumb img {
   vertical-align: center;
   object-fit: cover;
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
 }
 
 .carousel.carousel-slider {
@@ -226,15 +223,17 @@
   background: #000;
   z-index: 1111;
   color: #fff;
-  padding: 6px 15px;
-  font-size: $font-size-small;
+  padding: 3px 8px;
+  font-size: $font-size-xs;
   text-align: center;
   opacity: 0.25;
   -webkit-transition: opacity 0.35s ease-in-out;
   transition: opacity 0.35s ease-in-out;
 
   ul {
-    margin-left: 25px;
+    margin-block-start: 0;
+    padding-inline-start: 0;
+    margin-block-end: 0;
   }
 
   div {
@@ -277,8 +276,6 @@
   }
 
   .carousel .slide img {
-    height: 260px;
-    width: auto;
   }
 
   .row {

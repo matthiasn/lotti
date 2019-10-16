@@ -2,12 +2,12 @@
   (:require [clojure.data.avl :as avl]
             [clojure.set :as set]
             [clojure.string :as s]
-            [clojure.string :as str]
             [markdown.core :as md]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.actions :as a]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [meins.electron.renderer.ui.img.thumb :refer [thumb-view thumb-view2]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer-macros [reaction]]
@@ -69,7 +69,7 @@
              [:div.legend
               [:div.row
                (h/localize-datetime ts locale)
-               [stars-view entry]
+               ;[stars-view entry]
                [:span {:on-click toggle-expanded}
                 (if fullscreen
                   [:i.fas.fa-compress]
@@ -96,7 +96,13 @@
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when two-or-more
-            [:p.carousel-status (inc selected-idx) "/" n])]]))))
+            [:p.carousel-status (inc selected-idx) "/" n])]
+         (when two-or-more
+           [:div.carousel
+            [:div.thumbs-wrapper.axis-horizontal
+             (for [entry filtered]
+               ^{:key (:timestamp entry)}
+               [thumb-view2 album-ts entry selected local])]])]))))
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."

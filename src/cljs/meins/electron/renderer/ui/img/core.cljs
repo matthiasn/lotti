@@ -2,14 +2,12 @@
   (:require [clojure.data.avl :as avl]
             [clojure.set :as set]
             [clojure.string :as s]
-            [clojure.string :as str]
             [mapbox-gl]
             [markdown.core :as md]
-            [meins.common.utils.misc :as u]
+            [meins.electron.renderer.ui.img.thumb :refer [thumb-view]]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.entry :as e]
             [meins.electron.renderer.ui.entry.quill :as q]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.leaflet :as l]
             [meins.electron.renderer.ui.mapbox :as mb]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -46,20 +44,6 @@
       [:div.slide
        [:img {:class (when fullscreen "full")
               :src   resized-rotated}]])))
-
-(defn thumb-view [album-ts entry selected local]
-  (when-let [file (:img_file entry)]
-    (let [thumb (h/thumbs-256 file)
-          click (fn [_] (swap! local assoc-in [:selected] entry))
-          unlink (fn [_]
-                   (let [timestamps [album-ts (:timestamp entry)]]
-                     (emit [:entry/unlink timestamps])))]
-      [:li.thumb
-       {:on-click click
-        :class    (when (= entry selected) "selected")}
-       [:img {:src       thumb
-              :draggable false}]
-       [:i.fas.fa-times {:on-click unlink}]])))
 
 (defn stars-filter [local]
   (let [selected (:filter @local)

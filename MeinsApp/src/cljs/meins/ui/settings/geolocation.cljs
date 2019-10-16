@@ -2,7 +2,6 @@
   (:require [meins.ui.db :refer [emit]]
             [meins.ui.settings.items :refer [item settings-page switch-item]]
             [meins.ui.shared :refer [status-bar view]]
-            [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]))
 
 (defn geo-settings [_]
