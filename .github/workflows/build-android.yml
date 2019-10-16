@@ -1,0 +1,35 @@
+name: Android
+on: [push]
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Prepare java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Install yarn
+        run: npm install -g yarn
+      - name: Install shadow-cljs
+        run: npm install -g shadow-cljs
+      - name: Install gradle
+        run: brew install gradle
+      - name: Yarn
+        working-directory: MeinsApp
+        run: yarn
+      - name: Gradlew
+        working-directory: MeinsApp/android
+        run: |
+          gradle wrapper
+          ./gradlew
+      - name: Release
+        working-directory: MeinsApp
+        run: make android

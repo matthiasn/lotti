@@ -1,6 +1,6 @@
 appId: "matthiasn.meins"
 asar: false
-afterSign: "build/notarize.js"
+afterSign: "./build/notarize.js"
 
 files:
   - "bin/jlink/**"
