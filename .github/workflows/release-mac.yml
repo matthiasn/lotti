@@ -5,6 +5,7 @@ jobs:
   build:
     name: Build & Release macOS
     runs-on: macOS-latest
+    if: github.ref == 'refs/heads/release'
     steps:
       - uses: actions/checkout@v1
         with:

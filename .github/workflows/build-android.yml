@@ -5,6 +5,7 @@ jobs:
   build:
     name: Build APK
     runs-on: macOS-latest
+    if: github.ref == 'refs/heads/android-release'
     steps:
       - uses: actions/checkout@v1
         with:
@@ -13,6 +14,14 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.11
+      - name: Set up gradle.properties
+        run: echo "$GRADLE_PROPERTIES" | base64 -D > ~/.gradle/gradle.properties
+        env:
+          GRADLE_PROPERTIES: ${{ secrets.GRADLE_PROPERTIES }}
+      - name: Set up android keystore
+        run: echo "$ANDROID_KEYSTORE" | base64 -D > ~/.android/android-release-key.keystore
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
       - uses: actions/setup-node@v1
         with:
           node-version: '10.x'
@@ -20,16 +29,10 @@ jobs:
         run: npm install -g yarn
       - name: Install shadow-cljs
         run: npm install -g shadow-cljs
-      - name: Install gradle
-        run: brew install gradle
-      - name: Yarn
-        working-directory: MeinsApp
-        run: yarn
-      - name: Gradlew
-        working-directory: MeinsApp/android
-        run: |
-          gradle wrapper
-          ./gradlew
       - name: Release
         working-directory: MeinsApp
         run: make android
+      - uses: actions/upload-artifact@master
+        with:
+          name: release-apk
+          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
