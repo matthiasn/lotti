@@ -1,9 +1,9 @@
-name: iOS
+name: iOS-nightly
 on: [push]
 
 jobs:
   build:
-    name: Build & Release on TestFlight
+    name: Build & Release on TestFlight - Nightly
     runs-on: macOS-latest
     if: github.ref == 'refs/heads/master'
     steps:
