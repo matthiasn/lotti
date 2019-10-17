@@ -5,7 +5,7 @@ jobs:
   build:
     name: Build & Release on TestFlight - Nightly
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v1
         with:
