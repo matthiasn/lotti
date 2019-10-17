@@ -10,23 +10,9 @@ jobs:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Retrieve certificate
-        run: echo "$DEV_CERT" | base64 -D > Certificates.p12
-        env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
-      - name: Set up keychain
-        run: |
-          security create-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security import Certificates.p12 -k ~/Library/Keychains/build.keychain -P ${{ secrets.DEV_CERT_PW }} -A
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PW }} build.keychain
-        env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
-          DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
-          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
-      - name: List identities
-        run: security find-identity -v
+      - uses: webfactory/ssh-agent@v0.1.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Prepare java
         uses: actions/setup-java@v1
         with:
@@ -38,8 +24,6 @@ jobs:
         run: npm install -g yarn
       - name: Install shadow-cljs
         run: npm install -g shadow-cljs
-      - name: Install fastlane
-        run: brew cask install fastlane
       - name: Release
         run: |
           cd MeinsApp
