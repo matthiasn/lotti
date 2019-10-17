@@ -76,10 +76,20 @@ pod-install:
 	cd ios && pod install && cd ..
 
 fastlane-beta:
-	@echo Building and publishing via Fastlane
+	@echo Building and publishing Beta via Fastlane
 	cd ios && fastlane beta && cd ..
 
-testflight: npm-deps pod-install package fastlane-beta
+fastlane-nightly:
+	@echo Building and publishing Nightly via Fastlane
+	cd ios && fastlane nightly && cd ..
+
+fastlane-certificates:
+	@echo Installing Certificates via Fastlane
+	cd ios && fastlane certificates && cd ..
+
+testflight-nightly: npm-deps pod-install package fastlane-certificates fastlane-nightly
+
+testflight: npm-deps pod-install package fastlane-certificates fastlane-beta
 
 jsbundle-android:
 	@echo Packaging jsbundle for Android...

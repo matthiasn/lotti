@@ -1,0 +1,50 @@
+name: iOS
+on: [push]
+
+jobs:
+  build:
+    name: Build & Release on TestFlight
+    runs-on: macOS-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Retrieve certificate
+        run: echo "$DEV_CERT" | base64 -D > Certificates.p12
+        env:
+          DEV_CERT: ${{ secrets.DEV_CERT }}
+      - name: Set up keychain
+        run: |
+          security create-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
+          security import Certificates.p12 -k ~/Library/Keychains/build.keychain -P ${{ secrets.DEV_CERT_PW }} -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PW }} build.keychain
+        env:
+          DEV_CERT: ${{ secrets.DEV_CERT }}
+          DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
+          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
+      - name: List identities
+        run: security find-identity -v
+      - name: Prepare java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Install yarn
+        run: npm install -g yarn
+      - name: Install shadow-cljs
+        run: npm install -g shadow-cljs
+      - name: Install fastlane
+        run: brew cask install fastlane
+      - name: Release
+        run: |
+          cd MeinsApp
+          make testflight-nightly
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}

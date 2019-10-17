@@ -1,29 +1,59 @@
-# This file contains the fastlane.tools configuration
-# You can find the documentation at https://docs.fastlane.tools
-#
-# For a list of all available actions, check out
-#
-#     https://docs.fastlane.tools/actions
-#
-# For a list of all available plugins, check out
-#
-#     https://docs.fastlane.tools/plugins/available-plugins
-#
-
-# Uncomment the line if you want fastlane to automatically update itself
-# update_fastlane
-
 default_platform(:ios)
 
 platform :ios do
   desc "Push a new beta build to TestFlight"
+
+  lane :certificates do
+    match(app_identifier: ["com.matthiasn.meins", "com.matthiasn.meinsNightly"])
+  end
+
+  lane :nightly do
+    update_app_identifier(
+      plist_path: "meins/Info.plist",
+      app_identifier: "com.matthiasn.meinsNightly"
+    )
+    update_info_plist(
+      plist_path: "meins/Info.plist",
+      display_name: "meins-nightly"
+    )
+    build_app(workspace: "meins.xcworkspace", scheme: "meinsNightly")
+    upload_to_testflight(
+      skip_waiting_for_build_processing: false,
+      app_identifier: "com.matthiasn.meinsNightly"
+    )
+    deliver(
+      force: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      submission_information: {
+          export_compliance_platform: 'ios',
+          export_compliance_compliance_required: false,
+          export_compliance_encryption_updated: false,
+          export_compliance_app_type: nil,
+          export_compliance_uses_encryption: true,
+          export_compliance_is_exempt: true,
+          export_compliance_contains_third_party_cryptography: true,
+          export_compliance_contains_proprietary_cryptography: false,
+          export_compliance_available_on_french_store: false
+        }
+    )
+  end
+
   lane :beta do
-    get_certificates
-    get_provisioning_profile
-    enable_automatic_code_signing
-    # increment_build_number(xcodeproj: "meins.xcodeproj")
+    update_app_identifier(
+      plist_path: "meins/Info.plist",
+      app_identifier: "com.matthiasn.meins"
+    )
+    update_info_plist(
+      plist_path: "meins/Info.plist",
+      display_name: "meins"
+    )
     build_app(workspace: "meins.xcworkspace", scheme: "meins")
-    upload_to_testflight(skip_waiting_for_build_processing: false)
+    upload_to_testflight(
+      skip_waiting_for_build_processing: false,
+      app_identifier: "com.matthiasn.meins"
+    )
     deliver(
       force: true,
       skip_metadata: true,
