@@ -2,7 +2,6 @@ opt_out_usage
 default_platform(:ios)
 
 platform :ios do
-  desc "Push a new beta build to TestFlight"
 
   lane :certificates do
     create_keychain(
@@ -45,11 +44,9 @@ platform :ios do
       }
     )
     upload_to_testflight(
-      skip_waiting_for_build_processing: false,
-      app_identifier: "com.matthiasn.meinsNightly"
+      skip_waiting_for_build_processing: false
     )
     deliver(
-      app_identifier: "com.matthiasn.meinsNightly",
       force: true,
       skip_metadata: true,
       skip_screenshots: true,
@@ -69,25 +66,18 @@ platform :ios do
   end
 
   lane :beta do
-    update_app_identifier(
-      app_identifier: "com.matthiasn.meins"
-    )
     update_info_plist(
       plist_path: "meins/Info.plist",
-      display_name: "meins",
-      app_identifier: "com.matthiasn.meins"
+      display_name: "meins"
     )
     build_app(
       workspace: "meins.xcworkspace",
-      scheme: "meins",
-      app_identifier: "com.matthiasn.meins",
+      scheme: "meins"
     )
     upload_to_testflight(
-      skip_waiting_for_build_processing: false,
-      app_identifier: "com.matthiasn.meins"
+      skip_waiting_for_build_processing: false
     )
     deliver(
-      app_identifier: "com.matthiasn.meins",
       force: true,
       skip_metadata: true,
       skip_screenshots: true,

@@ -50,7 +50,7 @@ jobs:
         run: npm install -g shadow-cljs
       - name: Release
         working-directory: MeinsApp
-        run: make testflight-nightly
+        run: make testflight
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
