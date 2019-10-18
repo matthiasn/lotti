@@ -5,8 +5,7 @@ jobs:
   build:
     name: Build & Release on TestFlight
     runs-on: macOS-latest
-    #if: github.ref == 'refs/heads/ios-release'
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/ios-release'
     steps:
       - uses: actions/checkout@v1
         with:
