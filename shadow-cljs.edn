@@ -15,7 +15,7 @@
                 [re-frame "0.11.0-rc1"]
                 [reagent "0.9.0-rc2"]
                 [ring/ring-core "1.7.1"]
-                [secretary "1.2.4"]
+                [secretary "1.2.3"]
                 [vincit/venia "0.2.5"]]
 
  :source-paths ["src/cljc" "src/cljs" "src/js" "src/test"]
