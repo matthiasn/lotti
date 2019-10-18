@@ -17,41 +17,50 @@
     (fn [save-fn cancel-fn label]
       (let [button-bg (get-in styles/colors [:button-bg @theme])
             btn-text (get-in styles/colors [:btn-text @theme])
-            header-color (get-in styles/colors [:header-text @theme])]
-        [view {:style {:display         "flex"
-                       :flex-direction  "row"
-                       :justify-content "space-between"
-                       :height          45}}
-         [touchable-opacity {:on-press cancel-fn
-                             :style    {:width          81
-                                        :margin-left    18
-                                        :height         36
-                                        :vertical-align :center
-                                        :border-radius  styles/border-radius
-                                        :padding-left   8
-                                        :justifyContent :center}}
-          [ico/x-icon 14]]
-         [text {:style {:padding     8
-                        :color       header-color
-                        :font-family :Montserrat-SemiBold
-                        :font-weight :bold
-                        :font-size   18}}
-          label]
-         [touchable-opacity {:on-press save-fn
-                             :style    {:display          :flex
-                                        :background-color button-bg
-                                        :width            81
-                                        :margin-right     17
-                                        :border-radius    styles/border-radius
-                                        :height           36
-                                        :align-items      :center}}
-          [text {:style {:color       btn-text
-                         :text-align  "center"
-                         :line-height 21
-                         :font-family :Montserrat-Regular
-                         :padding-top 7
-                         :font-size   15}}
-           "SAVE"]]]))))
+            header-color (get-in styles/colors [:header-text @theme])
+            pt (if (= platform-os "ios") 50 20)]
+        [view {:style {:display          :flex
+                       :flex-direction   :row
+                       :justify-content  :center
+                       :background-color "rgba(44,50,70,0.9)"
+                       :padding-top      pt
+                       :padding-bottom   15}}
+         [status-bar {:barStyle "light-content"}]
+         [view {:style {:display         "flex"
+                        :flex-direction  "row"
+                        :width           "100%"
+                        :justify-content "space-between"
+                        :height          45}}
+          [touchable-opacity {:on-press cancel-fn
+                              :style    {:width          81
+                                         :margin-left    18
+                                         :height         36
+                                         :vertical-align :center
+                                         :border-radius  styles/search-border-radius
+                                         :padding-left   8
+                                         :justifyContent :center}}
+           [ico/x-icon 14]]
+          [text {:style {:padding     8
+                         :color       header-color
+                         :font-family :Montserrat-SemiBold
+                         :font-weight :bold
+                         :font-size   18}}
+           label]
+          [touchable-opacity {:on-press save-fn
+                              :style    {:display          :flex
+                                         :background-color button-bg
+                                         :width            81
+                                         :margin-right     17
+                                         :border-radius    styles/search-border-radius
+                                         :height           36
+                                         :align-items      :center}}
+           [text {:style {:color       btn-text
+                          :text-align  "center"
+                          :line-height 21
+                          :font-family :Montserrat-Regular
+                          :padding-top 7
+                          :font-size   15}}
+            "SAVE"]]]]))))
 
 (defn editor [_]
   (let [theme (subscribe [:active-theme])]
@@ -67,14 +76,11 @@
                        (js/setTimeout (fn [_] (navigate "Journal")) 500))
             bg (get-in styles/colors [:list-bg @theme])
             text-bg (get-in styles/colors [:text-bg @theme])
-            text-color (get-in styles/colors [:text @theme])
-            pt (if (= platform-os "ios") 40 10)]
+            text-color (get-in styles/colors [:text @theme])]
         [view {:style {:display          "flex"
                        :flex-direction   "column"
                        :height           "100%"
-                       :background-color bg
-                       :padding-top      pt}}
-         [status-bar {:barStyle "light-content"}]
+                       :background-color bg}}
          [header save-fn cancel-fn "New Entry"]
          [view {:display         :flex
                 :flex-direction  :row

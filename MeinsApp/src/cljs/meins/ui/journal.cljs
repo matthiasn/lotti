@@ -74,8 +74,8 @@
                            :width            "auto"}}
              (when-let [media (:media entry)]
                [image {:style  {:width                   "auto"
-                                :border-top-left-radius  18
-                                :border-top-right-radius 18
+                                :border-top-left-radius  styles/border-radius
+                                :border-top-right-radius styles/border-radius
                                 :height                  300}
                        :source {:uri (-> media :image :uri)}}])
              (when-let [spotify (:spotify entry)]
@@ -214,21 +214,19 @@
                         (emit [:entry/persist (merge entry updated)])
                         (reset! entry-local {})
                         (navigate "Journal")))
-            cancel-fn (fn [] (navigate "Journal"))
-            pt (if (= platform-os "ios") 40 10)]
+            cancel-fn (fn [] (navigate "Journal"))]
         ;(reset! nav navigation)
         [view {:style {:display          "flex"
                        :flex-direction   "column"
                        :height           "100%"
-                       :background-color bg
-                       :padding-top      pt}}
-         [status-bar {:barStyle "light-content"}]
-         [ed/header save-fn cancel-fn "Edit"]
+                       :background-color bg}}
+         [ed/header save-fn cancel-fn "Edit Entry"]
          [keyboard-avoiding-view {:behavior "padding"
                                   :style    {:display         "flex"
                                              :flex-direction  "column"
                                              :justify-content "space-between"
                                              :width           "100%"
+                                             :margin-top      15
                                              :flex            1
                                              :align-items     "center"}}
           [scroll {:style {:flex-direction "column"
