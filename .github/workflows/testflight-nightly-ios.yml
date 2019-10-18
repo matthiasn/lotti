@@ -13,6 +13,29 @@ jobs:
       - uses: webfactory/ssh-agent@v0.1.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Clone mailcore
+        working-directory: ../
+        run: git clone https://github.com/MailCore/mailcore2.git
+      - name: Git setup
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+      - name: Fastlane match certificates
+        working-directory: MeinsApp/ios
+        run: fastlane certificates
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
+      - name: Install iOS Distribution certificate
+        run: |
+          echo "$IOS_DISTRIBUTION_CERT" | base64 -D > ios_distribution.p12
+          security import ios_distribution.p12 -k ~/Library/Keychains/fastlane.keychain -P ${{ secrets.DEV_CERT_PW }} -A
+        env:
+          IOS_DISTRIBUTION_CERT: ${{ secrets.IOS_DISTRIBUTION_CERT }}
+          DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
+          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
+      - name: List identities
+        run: |
+          security list-keychains
+          security find-identity -v fastlane.keychain
       - name: Prepare java
         uses: actions/setup-java@v1
         with:
@@ -25,10 +48,10 @@ jobs:
       - name: Install shadow-cljs
         run: npm install -g shadow-cljs
       - name: Release
-        run: |
-          cd MeinsApp
-          make testflight-nightly
+        working-directory: MeinsApp
+        run: make testflight-nightly
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          APPLEID: ${{ secrets.APPLEID }}
-          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          DEVELOPER_DIR: /Applications/Xcode_11.1.app/Contents/Developer

@@ -5,28 +5,38 @@ jobs:
   build:
     name: Build & Release on TestFlight
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/ios-release'
+    #if: github.ref == 'refs/heads/ios-release'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Retrieve certificate
-        run: echo "$DEV_CERT" | base64 -D > Certificates.p12
+      - uses: webfactory/ssh-agent@v0.1.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Clone mailcore
+        working-directory: ../
+        run: git clone https://github.com/MailCore/mailcore2.git
+      - name: Git setup
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+      - name: Fastlane match certificates
+        working-directory: MeinsApp/ios
+        run: fastlane certificates
         env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
-      - name: Set up keychain
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
+      - name: Install iOS Distribution certificate
         run: |
-          security create-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security import Certificates.p12 -k ~/Library/Keychains/build.keychain -P ${{ secrets.DEV_CERT_PW }} -A
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PW }} build.keychain
+          echo "$IOS_DISTRIBUTION_CERT" | base64 -D > ios_distribution.p12
+          security import ios_distribution.p12 -k ~/Library/Keychains/fastlane.keychain -P ${{ secrets.DEV_CERT_PW }} -A
         env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
+          IOS_DISTRIBUTION_CERT: ${{ secrets.IOS_DISTRIBUTION_CERT }}
           DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
           KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
       - name: List identities
-        run: security find-identity -v
+        run: |
+          security list-keychains
+          security find-identity -v fastlane.keychain
       - name: Prepare java
         uses: actions/setup-java@v1
         with:
@@ -38,13 +48,11 @@ jobs:
         run: npm install -g yarn
       - name: Install shadow-cljs
         run: npm install -g shadow-cljs
-      - name: Install fastlane
-        run: brew cask install fastlane
       - name: Release
-        run: |
-          cd MeinsApp
-          make testflight
+        working-directory: MeinsApp
+        run: make testflight-nightly
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          APPLEID: ${{ secrets.APPLEID }}
-          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_PASSWORD: ${{ secrets.FASTLANE_PASSWORD }}
+          DEVELOPER_DIR: /Applications/Xcode_11.1.app/Contents/Developer

@@ -87,9 +87,9 @@ fastlane-certificates:
 	@echo Installing Certificates via Fastlane
 	cd ios && fastlane certificates && cd ..
 
-testflight-nightly: npm-deps pod-install package fastlane-certificates fastlane-nightly
+testflight-nightly: npm-deps pod-install package fastlane-nightly
 
-testflight: npm-deps pod-install package fastlane-certificates fastlane-beta
+testflight: npm-deps pod-install package fastlane-beta
 
 jsbundle-android:
 	@echo Packaging jsbundle for Android...

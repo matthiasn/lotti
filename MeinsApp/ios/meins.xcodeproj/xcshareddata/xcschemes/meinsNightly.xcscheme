@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ADFDCE18235802C600EDD14A"
+               BlueprintIdentifier = "ADDDCEE12359139C00C5EFE0"
                BuildableName = "meinsNightly.app"
                BlueprintName = "meinsNightly"
                ReferencedContainer = "container:meins.xcodeproj">
@@ -31,9 +31,9 @@
       </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      buildConfiguration = "Release"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -44,7 +44,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ADFDCE18235802C600EDD14A"
+            BlueprintIdentifier = "ADDDCEE12359139C00C5EFE0"
             BuildableName = "meinsNightly.app"
             BlueprintName = "meinsNightly"
             ReferencedContainer = "container:meins.xcodeproj">
@@ -57,16 +57,6 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "ADFDCE18235802C600EDD14A"
-            BuildableName = "meinsNightly.app"
-            BlueprintName = "meinsNightly"
-            ReferencedContainer = "container:meins.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

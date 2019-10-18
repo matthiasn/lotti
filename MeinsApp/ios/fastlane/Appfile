@@ -1,5 +1,4 @@
-app_identifier("com.matthiasn.meins") # The bundle identifier of your app
-apple_id("mn@nehlsen-edv.de") # Your Apple email address
+app_identifier("com.matthiasn.meinsNightly") # The bundle identifier of your app
 
 itc_team_id("459041") # App Store Connect Team ID
 team_id("7DN35ABWYL") # Developer Portal Team ID

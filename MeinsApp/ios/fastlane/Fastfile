@@ -1,22 +1,49 @@
+opt_out_usage
 default_platform(:ios)
 
 platform :ios do
   desc "Push a new beta build to TestFlight"
 
   lane :certificates do
-    match(app_identifier: ["com.matthiasn.meins", "com.matthiasn.meinsNightly"])
+    create_keychain(
+      name: "fastlane.keychain",
+      password: ENV['KEYCHAIN_PW'],
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: true
+    )
+    match(
+      app_identifier: ["com.matthiasn.meins", "com.matthiasn.meinsNightly"],
+      type: "development",
+      readonly: true,
+      keychain_name: "fastlane.keychain",
+      keychain_password: ENV['KEYCHAIN_PW']
+    )
+    match(
+      app_identifier: ["com.matthiasn.meins", "com.matthiasn.meinsNightly"],
+      type: "appstore",
+      readonly: true,
+      keychain_name: "fastlane.keychain",
+      keychain_password: ENV['KEYCHAIN_PW']
+    )
   end
 
   lane :nightly do
-    update_app_identifier(
-      plist_path: "meins/Info.plist",
-      app_identifier: "com.matthiasn.meinsNightly"
-    )
     update_info_plist(
       plist_path: "meins/Info.plist",
       display_name: "meins-nightly"
     )
-    build_app(workspace: "meins.xcworkspace", scheme: "meinsNightly")
+    build_app(
+      export_method: "app-store",
+      workspace: "meins.xcworkspace",
+      scheme: "meinsNightly",
+      export_options: {
+        provisioningProfiles: {
+          "com.matthiasn.meinsNightly" => "match AppStore com.matthiasn.meinsNightly"
+        }
+      }
+    )
     upload_to_testflight(
       skip_waiting_for_build_processing: false,
       app_identifier: "com.matthiasn.meinsNightly"
@@ -41,15 +68,14 @@ platform :ios do
   end
 
   lane :beta do
-    update_app_identifier(
-      plist_path: "meins/Info.plist",
-      app_identifier: "com.matthiasn.meins"
-    )
     update_info_plist(
       plist_path: "meins/Info.plist",
       display_name: "meins"
     )
-    build_app(workspace: "meins.xcworkspace", scheme: "meins")
+    build_app(
+      workspace: "meins.xcworkspace",
+      scheme: "meins"
+    )
     upload_to_testflight(
       skip_waiting_for_build_processing: false,
       app_identifier: "com.matthiasn.meins"
