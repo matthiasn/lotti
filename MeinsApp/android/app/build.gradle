@@ -129,7 +129,7 @@ android {
         applicationId "com.matthiasn.meins"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 168
+        versionCode 169
         versionName "1.0.152"
         missingDimensionStrategy 'react-native-camera', 'general'
         multiDexEnabled true
