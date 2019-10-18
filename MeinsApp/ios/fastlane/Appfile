@@ -1,4 +1,4 @@
-app_identifier("com.matthiasn.meinsNightly") # The bundle identifier of your app
+app_identifier("com.matthiasn.meinsNightly")
 
 itc_team_id("459041") # App Store Connect Team ID
 team_id("7DN35ABWYL") # Developer Portal Team ID

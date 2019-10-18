@@ -49,6 +49,7 @@ platform :ios do
       app_identifier: "com.matthiasn.meinsNightly"
     )
     deliver(
+      app_identifier: "com.matthiasn.meinsNightly",
       force: true,
       skip_metadata: true,
       skip_screenshots: true,
@@ -68,19 +69,25 @@ platform :ios do
   end
 
   lane :beta do
+    update_app_identifier(
+      app_identifier: "com.matthiasn.meins"
+    )
     update_info_plist(
       plist_path: "meins/Info.plist",
-      display_name: "meins"
+      display_name: "meins",
+      app_identifier: "com.matthiasn.meins"
     )
     build_app(
       workspace: "meins.xcworkspace",
-      scheme: "meins"
+      scheme: "meins",
+      app_identifier: "com.matthiasn.meins",
     )
     upload_to_testflight(
       skip_waiting_for_build_processing: false,
       app_identifier: "com.matthiasn.meins"
     )
     deliver(
+      app_identifier: "com.matthiasn.meins",
       force: true,
       skip_metadata: true,
       skip_screenshots: true,
