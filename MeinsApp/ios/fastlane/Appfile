@@ -5,3 +5,9 @@ team_id("7DN35ABWYL") # Developer Portal Team ID
 
 # For more information about the Appfile, see:
 #     https://docs.fastlane.tools/advanced/#appfile
+
+for_platform :ios do
+  for_lane :beta do
+    app_identifier "com.matthiasn.meins"
+  end
+end
