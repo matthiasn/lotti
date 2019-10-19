@@ -27,8 +27,8 @@ import com.android.build.OutputFile
  *   // whether to bundle JS and assets in another build variant (if configured).
  *   // See http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Build-Variants
  *   // The configuration property can be in the following formats
- *   //         'bundleIn${productFlavor}${buildType}'
- *   //         'bundleIn${buildType}'
+ *   //         "bundleIn${productFlavor}${buildType}"
+ *   //         "bundleIn${buildType}"
  *   // bundleInFreeDebug: true,
  *   // bundleInPaidRelease: true,
  *   // bundleInBeta: true,
@@ -37,8 +37,8 @@ import com.android.build.OutputFile
  *   // for example: to disable dev mode in the staging build type (if configured)
  *   devDisabledInStaging: true,
  *   // The configuration property can be in the following formats
- *   //         'devDisabledIn${productFlavor}${buildType}'
- *   //         'devDisabledIn${buildType}'
+ *   //         "devDisabledIn${productFlavor}${buildType}"
+ *   //         "devDisabledIn${buildType}"
  *
  *   // the root of your project, i.e. where "package.json" lives
  *   root: "../../",
@@ -50,15 +50,15 @@ import com.android.build.OutputFile
  *   jsBundleDirRelease: "$buildDir/intermediates/assets/release",
  *
  *   // where to put drawable resources / React Native assets, e.g. the ones you use via
- *   // require('./image.png')), in debug mode
+ *   // require("./image.png")), in debug mode
  *   resourcesDirDebug: "$buildDir/intermediates/res/merged/debug",
  *
  *   // where to put drawable resources / React Native assets, e.g. the ones you use via
- *   // require('./image.png')), in release mode
+ *   // require("./image.png")), in release mode
  *   resourcesDirRelease: "$buildDir/intermediates/res/merged/release",
  *
  *   // by default the gradle tasks are skipped if none of the JS files or assets change; this means
- *   // that we don't look at files in android/ or ios/ to determine whether the tasks are up to
+ *   // that we don"t look at files in android/ or ios/ to determine whether the tasks are up to
  *   // date; if you have any other folders that you want to ignore for performance reasons (gradle
  *   // indexes the entire tree), add them here. Alternatively, if you have JS files in android/
  *   // for example, you might want to remove it from here.
@@ -82,14 +82,14 @@ project.ext.react = [
  * The preferred build flavor of JavaScriptCore.
  *
  * For example, to use the international variant, you can use:
- * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`
+ * `def jscFlavor = "org.webkit:android-jsc-intl:+"`
  *
  * The international variant includes ICU i18n library and necessary data
  * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
  * give correct results when using with locales other than en-US.  Note that
  * this variant is about 6MiB larger per architecture than default.
  */
-def jscFlavor = 'org.webkit:android-jsc:+'
+def jscFlavor = "org.webkit:android-jsc:+"
 
 apply from: "../../node_modules/react-native/react.gradle"
 
@@ -131,7 +131,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 174
         versionName "1.0.156"
-        missingDimensionStrategy 'react-native-camera', 'general'
+        missingDimensionStrategy "react-native-camera", "general"
         multiDexEnabled true
         buildConfigField "String", "MGLMapboxAccessToken", MAPBOX_ACCESS_TOKEN
         manifestPlaceholders = [rnBackgroundGeolocationKey: System.getenv("RN_BG_GEO_KEY")]
@@ -176,10 +176,10 @@ android {
 }
 
 dependencies {
-    implementation project(':realm')
-    implementation project(':@matthiasn_react-native-mailcore')
+    implementation project(":realm")
+    implementation project(":@matthiasn_react-native-mailcore")
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation "androidx.appcompat:appcompat:1.0.0"
     implementation "com.facebook.react:react-native:+"  // From node_modules
 
     if (enableHermes) {
@@ -195,7 +195,7 @@ dependencies {
 // puts all compile dependencies into folder libs for BUCK to use
 task copyDownloadableDepsToLibs(type: Copy) {
     from configurations.compile
-    into 'libs'
+    into "libs"
 }
 
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
