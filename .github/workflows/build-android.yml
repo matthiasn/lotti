@@ -5,7 +5,7 @@ jobs:
   build:
     name: Build APK
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v1
         with:
@@ -13,7 +13,7 @@ jobs:
       - name: Prepare java
         uses: actions/setup-java@v1
         with:
-          java-version: 1.11
+          java-version: 1.8
       - name: Set up gradle.properties
         run: echo "$GRADLE_PROPERTIES" | base64 -D > ~/.gradle/gradle.properties
         env:
@@ -22,6 +22,7 @@ jobs:
         run: echo "$ANDROID_KEYSTORE" | base64 -D > ~/.android/android-release-key.keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - uses: malinskiy/action-android/install-sdk@release/0.0.2
       - uses: actions/setup-node@v1
         with:
           node-version: '10.x'
@@ -30,9 +31,9 @@ jobs:
       - name: Install shadow-cljs
         run: npm install -g shadow-cljs
       - name: Release
-        working-directory: MeinsApp
-        run: make android
-      - uses: actions/upload-artifact@master
-        with:
-          name: release-apk
-          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
+        working-directory: MeinsApp/android
+        run: .gradlew compileReleaseSources
+#      - uses: actions/upload-artifact@master
+#        with:
+#          name: release-apk
+#          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
