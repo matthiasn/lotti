@@ -28,7 +28,7 @@ install:
   - npm install -g electron-rebuild
 
 test_script:
-  - cmd: make release
+  - cmd: make
 
 # Don't actually build (MSBuild).
 build: off

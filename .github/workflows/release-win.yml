@@ -5,7 +5,7 @@ jobs:
   build:
     name: Build & Release Windows
     runs-on: windows-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v1
         with:
@@ -16,7 +16,7 @@ jobs:
           java-version: 1.11
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: '12.4.0'
       - name: Setup build dependencies
         run: |
           choco install make -y
@@ -24,13 +24,13 @@ jobs:
           choco install python2 -y
           npm install -g yarn
           npm install -g shadow-cljs
-          #npm install -g windows-build-tools
-          npm install --global --production windows-build-tools@4.0.0
+          npm install -g windows-build-tools@4.0.0
           npm install -g node-gyp
           npm install -g electron-rebuild
         shell: pwsh
-      - name: Test and assemble
-        #run: make release # currently failing with electron-rebuild keytar
-        run: |
-          lein test
-          lein jlink assemble
+      - name: Test & Build
+        run: make install
+      - name: Publish via GitHub Releases
+        run: make publish-github
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

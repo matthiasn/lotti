@@ -42,8 +42,10 @@ jobs:
           node-version: '12.x'
       - name: Setup build dependencies
         run: make deps-mac
-      - name: Release
-        run: make release
+      - name: Test & Build
+        run: make install
+      - name: Publish via GitHub Releases
+        run: make publish-github
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CSC_LINK: Certificates.p12
