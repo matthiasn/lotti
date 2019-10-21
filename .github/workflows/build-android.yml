@@ -26,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '10.x'
+      - name: Update fastlane
+        working-directory: MeinsApp/android
+        run: fastlane update_fastlane
       - name: Install yarn
         run: npm install -g yarn
       - name: Install shadow-cljs
@@ -39,9 +42,8 @@ jobs:
         working-directory: MeinsApp
         run: make npm-deps cljs
       - name: Release
-        working-directory: MeinsApp/android
-        run: |
-          ./gradlew clean
+        working-directory: MeinsApp
+        run: make fastlane-beta-android
 #      - uses: actions/upload-artifact@master
 #        with:
 #          name: release-apk
