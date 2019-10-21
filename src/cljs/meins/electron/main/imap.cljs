@@ -30,11 +30,18 @@
   (when (existsSync cfg-path)
     (edn/read-string (readFileSync cfg-path "utf-8"))))
 
+(defn imap-conf [cfg]
+  (let [server-cfg (:server cfg)
+        tls-options {:rejectUnauthorized (contains? (:host server-cfg) "gmail")}
+        conf (merge server-cfg
+               {:debug      #(debug %)
+                :tlsOptions tls-options})]
+    (clj->js conf)))
+
 (defn imap-open [mailbox-name open-mb-cb]
   (when-let [cfg (imap-cfg)]
     (try
-      (let [conn (imap. (clj->js (merge (:server cfg)
-                                        {:debug #(debug %)})))]
+      (let [conn (imap. (imap-conf cfg))]
         (.once conn "ready" #(do
                                (info "conn ready" mailbox-name)
                                (.openBox conn mailbox-name false (partial open-mb-cb conn))))
@@ -295,7 +302,7 @@
                  (catch :default e (put-fn [:imap/status {:status :error
                                                           :detail (str e)}]))
                  (finally (.end conn))))
-          conn (imap. (clj->js (:server cfg)))]
+          conn (imap. (imap-conf cfg))]
       (.once conn "ready" #(.openBox conn "INBOX" false (partial cb conn)))
       (.once conn "error" #(put-fn [:imap/status {:status :error
                                                   :detail (str %)}]))
@@ -305,7 +312,7 @@
     (catch :default e (put-fn [:imap/status {:status :error :detail (str e)}]))))
 
 (defn read-mailboxes [{:keys [put-fn msg-payload]}]
-  (info "read-mailboxes" (update-in msg-payload [:server :password] #(str (subs % 0 2) "...")))
+  (info "read-mailboxes" (assoc-in msg-payload [:server :password] "REDACTED"))
   (when-let [cfg msg-payload]
     (read-mb :read-mailboxes "" cfg put-fn))
   {})
@@ -325,7 +332,7 @@
   (info "adding mailboxes")
   (let [id (short-id/generate)
         cfg msg-payload
-        conn (imap. (clj->js (:server cfg)))
+        conn (imap. (imap-conf cfg))
         add-box (fn [err]
                   (when err (js/console.error "addBox" id err)))
         get-boxes (fn [err boxes]
