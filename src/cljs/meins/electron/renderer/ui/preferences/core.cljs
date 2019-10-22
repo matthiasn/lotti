@@ -30,8 +30,10 @@
                     [:div.menu-item
                      {:on-click #(swap! local merge {:page k :search ""})
                       :class    (str
-                                  (when (= active k) "active ")
-                                  (when (= (:highlighted @local) k) "highlight"))}
+                                  (when (= active k)
+                                    "active ")
+                                  (when (and (not active) (= (:highlighted @local) k))
+                                    "highlight"))}
                      t])
         sections [:sagas :stories :custom-fields :habits :dashboards
                   :metrics :sync :photos :localization :usage :exit]
@@ -73,21 +75,22 @@
                       [:div.config
                        [:div.menu
                         [:h1 "Settings"]
-                        [menu-item :sagas "Sagas" page]
-                        [menu-item :stories "Stories" page]
-                        [menu-item :albums "Albums" page]
-                        [menu-item :custom-fields "Custom Fields" page]
-                        [menu-item :habits "Habits" page]
-                        [menu-item :dashboards "Dashboards" page]
-                        [menu-item :metrics "Metrics" page]
-                        [menu-item :sync "Synchronization" page]
-                        [menu-item :photos "Photos" page]
-                        [menu-item :localization "Localization" page]
-                        [menu-item :usage "Usage Stats" page]
-                        [:div.menu-item.exit
-                         {:on-click exit
-                          :class    (when (= :exit (:highlighted @local)) "highlight")}
-                         "Exit"]]
+                        [:div.items
+                         [menu-item :sagas "Sagas" page]
+                         [menu-item :stories "Stories" page]
+                         [menu-item :albums "Albums" page]
+                         [menu-item :custom-fields "Custom Fields" page]
+                         [menu-item :habits "Habits" page]
+                         [menu-item :dashboards "Dashboards" page]
+                         [menu-item :metrics "Metrics" page]
+                         [menu-item :sync "Synchronization" page]
+                         [menu-item :photos "Photos" page]
+                         [menu-item :localization "Localization" page]
+                         [menu-item :usage "Usage Stats" page]
+                         [:div.menu-item.exit
+                          {:on-click exit
+                           :class    (when (= :exit (:highlighted @local)) "highlight")}
+                          "Exit"]]]
                        (when (= :sagas page)
                          [cs/sagas local])
                        (when (= :albums page)

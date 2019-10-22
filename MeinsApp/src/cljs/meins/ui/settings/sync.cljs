@@ -4,8 +4,8 @@
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
-            [meins.ui.settings.items :refer [button item screen settings-page settings-text switch-item
-                                             sync-assistant-page spacer-y]]
+            [meins.ui.settings.items :refer [button item screen settings-page settings-text spacer-y
+                                             switch-item sync-assistant-page]]
             [meins.ui.shared :refer [alert cam modal scroll text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]

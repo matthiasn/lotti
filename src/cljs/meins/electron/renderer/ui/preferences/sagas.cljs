@@ -3,6 +3,7 @@
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]
@@ -69,14 +70,7 @@
             sagas (filter pvt-filter sagas)
             sagas (reverse (sort-by :timestamp sagas))]
         [:div.col.habits.sagas
-         [:h2 "Sagas Editor"]
-         [:div.input-line
-          [:span.search
-           [:i.far.fa-search]
-           [:input {:on-change input-fn
-                    :value     search-text}]
-           [:span.add {:on-click add-click}
-            [:i.fas.fa-plus]]]]
+         [header "Sagas Editor" input-fn search-text add-click]
          [:table.sagas-stories
           [:tbody
            [:tr

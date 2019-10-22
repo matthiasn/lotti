@@ -3,6 +3,7 @@
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]
@@ -79,14 +80,7 @@
                              (swap! local update-in [:stories_cfg :reverse] not)
                              (swap! local assoc-in [:stories_cfg :sorted-by] k))))]
         [:div.col.habits.stories
-         [:h2 "Stories Editor"]
-         [:div.input-line
-          [:span.search
-           [:i.far.fa-search]
-           [:input {:on-change input-fn
-                    :value     search-text}]
-           [:span.add {:on-click add-click}
-            [:i.fas.fa-plus]]]]
+         [header "Stories Editor" input-fn search-text add-click]
          [:table.sagas-stories
           [:tbody
            [:tr

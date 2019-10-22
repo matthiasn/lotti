@@ -5,6 +5,7 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]
@@ -92,14 +93,7 @@
             habits (sort-by sort-fn habits)
             habits (if (:reverse (:habits_cfg @local)) (reverse habits) habits)]
         [:div.col.habits
-         [:h2 "Habits Editor"]
-         [:div.input-line
-          [:span.search
-           [:i.far.fa-search]
-           [:input {:on-change input-fn
-                    :value     search-text}]
-           [:span.add {:on-click add-click}
-            [:i.fas.fa-plus]]]]
+         [header "Habits Editor" input-fn search-text add-click]
          [:table.habit_cfg
           [:tbody
            [:tr

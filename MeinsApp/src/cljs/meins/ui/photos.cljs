@@ -5,9 +5,9 @@
             [meins.helpers :as h]
             [meins.ui.db :as uidb :refer [emit]]
             [meins.ui.icons.misc :as icns]
+            [meins.ui.settings.items :refer [spacer-x]]
             [meins.ui.shared :refer [dimensions image text touchable-opacity view]]
             [meins.ui.styles :as styles]
-            [meins.ui.settings.items :refer [spacer-x]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 

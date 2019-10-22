@@ -5,6 +5,7 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.preferences.assistants.custom-fields :as ac]
+            [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
@@ -58,14 +59,7 @@
                     items
                     (filter #(not (get-in % [1 :pvt])) items))]
         [:div.col.custom-fields
-         [:h2 "Custom Fields Editor"]
-         [:div.input-line
-          [:span.search
-           [:i.far.fa-search]
-           [:input {:on-change input-fn
-                    :value     search-text}]
-           [:span.add {:on-click add-click}
-            [:i.fas.fa-plus]]]]
+         [header "Custom Fields" input-fn search-text add-click]
          [:div.cfg-items
           (for [[tag cfg] items]
             (let [ds (:default-story cfg)

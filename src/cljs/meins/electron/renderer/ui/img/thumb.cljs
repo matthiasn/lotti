@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.ui.img.thumb
   (:require [meins.electron.renderer.helpers :as h]
-            [reagent.core :as r]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+            [reagent.core :as r]
             [reagent.ratom :refer-macros [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 

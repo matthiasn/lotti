@@ -3,6 +3,7 @@
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]
@@ -80,14 +81,7 @@
                         (filter search-match)
                         vals)]
         [:div.col.habits.sagas
-         [:h2 "Photo Albums"]
-         [:div.input-line
-          [:span.search
-           [:i.far.fa-search]
-           [:input {:on-change input-fn
-                    :value     search-text}]
-           [:span.add {:on-click add-click}
-            [:i.fas.fa-plus]]]]
+         [header "Photo Albums" input-fn search-text add-click]
          [:table.sagas-stories
           [:tbody
            [:tr
