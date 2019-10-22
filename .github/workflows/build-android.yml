@@ -5,7 +5,7 @@ jobs:
   build:
     name: Build APK
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/master' || 'refs/heads/dev'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
         with:
@@ -14,14 +14,25 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+      - name: Gradle version
+        run: gradle -v
       - name: Set up gradle.properties
         run: echo "$GRADLE_PROPERTIES" | base64 -D > ~/.gradle/gradle.properties
         env:
           GRADLE_PROPERTIES: ${{ secrets.GRADLE_PROPERTIES }}
       - name: Set up android keystore
-        run: echo "$ANDROID_KEYSTORE" | base64 -D > ~/.android/android-release-key.keystore
+        working-directory: MeinsApp/android/app
+        run: echo "$ANDROID_KEYSTORE" | base64 -D > release.keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      - name: Debug app folder
+        working-directory: MeinsApp/android/app
+        run: ls
+      - name: Debug up android keystore
+        run: |
+          cd ~/.android
+          pwd
+          ls -la
       - uses: malinskiy/action-android/install-sdk@release/0.0.2
       - uses: actions/setup-node@v1
         with:
@@ -44,7 +55,9 @@ jobs:
       - name: Release
         working-directory: MeinsApp
         run: make fastlane-beta-android
-#      - uses: actions/upload-artifact@master
-#        with:
-#          name: release-apk
-#          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
+        env:
+          RN_BG_GEO_KEY: ${{ secrets.RN_BG_GEO_KEY }}
+      - uses: actions/upload-artifact@master
+        with:
+          name: release-apk
+          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
