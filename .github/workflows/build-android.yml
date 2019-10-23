@@ -58,18 +58,18 @@ jobs:
       - name: Build JS
         working-directory: MeinsApp
         run: make npm-deps cljs
-      - name: Release
-        working-directory: MeinsApp
-        run: make fastlane-beta-android
+      - name: Create app bundle
+        working-directory: MeinsApp/android
+        run: fastlane bundle
         env:
           RN_BG_GEO_KEY: ${{ secrets.RN_BG_GEO_KEY }}
       - uses: actions/upload-artifact@master
         with:
-          name: release-apk
-          path: MeinsApp/android/app/build/outputs/apk/release/app-release.apk
+          name: release-aab
+          path: MeinsApp/android/app/build/outputs/bundle/release/app-release.aab
       - name: Playstore init
         working-directory: MeinsApp/android
         run: fastlane supply init
       - name: Playstore upload
-        working-directory: MeinsApp
-        run: make playstore-upload
+        working-directory: MeinsApp/android
+        run: fastlane supply --aab app/build/outputs/bundle/release/app-release.aab --track internal

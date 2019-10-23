@@ -97,7 +97,7 @@ jsbundle-android:
 
 fastlane-beta-android:
 	@echo Building Android via Fastlane
-	cd android && fastlane build && cd ..
+	cd android && fastlane bundle && cd ..
 
 metro:
 	@echo Starting Metro Bundler...
@@ -107,7 +107,7 @@ android: npm-deps cljs fastlane-beta-android
 
 playstore-upload:
 	@echo Uploading to Playstore
-	cd android && fastlane supply --apk app/build/outputs/apk/release/app-release.apk && cd ..
+	cd android && fastlane supply --aab app/build/outputs/bundle/release/app-release.aab --track internal && cd ..
 
 playstore: npm-deps cljs fastlane-beta-android playstore-upload
 

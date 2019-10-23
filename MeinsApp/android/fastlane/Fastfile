@@ -26,6 +26,11 @@ platform :android do
     gradle(task: "clean assembleRelease")
   end
 
+  desc "Bundle locally"
+  lane :bundle do
+    gradle(task: "clean bundleRelease")
+  end
+
   desc "Submit a new Beta Build to Crashlytics Beta"
   lane :beta do
     gradle(task: "clean assembleRelease")
