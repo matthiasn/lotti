@@ -1,4 +1,5 @@
 name: iOS-nightly
+on: [push]
 #on:
 #  schedule:
 #    - cron:  '0 21 * * *'
@@ -7,7 +8,7 @@ jobs:
   build:
     name: Build & Release on TestFlight - Nightly
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
         with:
