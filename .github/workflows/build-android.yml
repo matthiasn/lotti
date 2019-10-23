@@ -5,7 +5,7 @@ jobs:
   build:
     name: Build APK
     runs-on: macOS-latest
-    if: github.ref == 'refs/heads/master' || 'refs/heads/playstore'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v1
         with:
