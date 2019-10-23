@@ -73,7 +73,7 @@ npm-deps: clean
 	@echo Fetching NPM dependencies...
 	@yarn install
 	@npm install -g electron-builder
-	@electron-rebuild -v 6.0.10 -w keytar
+	@electron-rebuild -v 7.0.0 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
