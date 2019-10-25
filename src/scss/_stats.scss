@@ -1,7 +1,7 @@
-@import "variables.scss";
+@import 'variables.scss';
 
-$chart-bg: white;
-$completed: steelblue;
+$chart-bg: #fff;
+$completed: #4682b4;
 $total: lighten($completed, 30);
 
 $completed-weekend: rgb(249, 166, 53);
@@ -13,10 +13,10 @@ $done-weekend: rgb(65, 189, 70);
 $tasks: rgb(188, 30, 30);
 $tasks-weekend: lighten($tasks, 30);
 
-$closed: rgba(249, 166, 30, 0.8);
+$closed: rgba(249, 166, 30, .8);
 $closed-weekend: lighten($closed, 30);
 
-$backlog: darkorange;
+$backlog: #ff8c00;
 $backlog-weekend: lighten($backlog, 30);
 
 .questionnaires {
@@ -24,44 +24,48 @@ $backlog-weekend: lighten($backlog, 30);
   position: relative;
 
   .controls {
+    bottom: 8px;
     position: absolute;
     right: 3px;
-    bottom: 8px;
     z-index: 1111;
 
     .display-text {
-      margin-right: 40px;
       font-size: $font-size-small;
+      margin-right: 40px;
     }
 
     input {
+      color: #999;
       font-size: $font-size-small;
+      height: 14px;
       margin-right: 10px;
       padding: 0 0 0 4px;
-      height: 14px;
-      width: 38px!important;
-      color: #999;
+      width: 38px !important;
     }
+
     .fas {
-      color: #BBB;
-      font-size: $font-size-small;
-      float: right;
-      cursor: pointer;
-      padding: 1px 4px;
+      background-color: #eee;
       border-radius: 2px;
+      color: #bbb;
+      cursor: pointer;
+      float: right;
+      font-size: $font-size-small;
       margin-left: 2px;
-      background-color: #EEE;
+      padding: 1px 4px;
       &:hover {
         color: #999;
       }
+
       &:active {
         color: $hashtag-blue;
       }
     }
   }
+
   .done {
     fill: $done;
   }
+
   .done-weekend {
     fill: lighten($done, 25);
   }
@@ -69,6 +73,7 @@ $backlog-weekend: lighten($backlog, 30);
   .failed {
     fill: $tasks;
   }
+
   .failed-weekend {
     fill: lighten($tasks, 25);
   }
@@ -79,8 +84,8 @@ $backlog-weekend: lighten($backlog, 30);
   overflow: auto;
 
   button {
-    line-height: 0.8em;
-    font-size: 0.8em;
+    font-size: .8em;
+    line-height: .8em;
   }
 
   .charts {
@@ -89,14 +94,14 @@ $backlog-weekend: lighten($backlog, 30);
   }
 
   svg {
-    margin: 2px 0;
     background-color: $chart-bg;
+    margin: 2px 0;
     //width: 100%;
 
     text {
-      -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
+      -webkit-user-select: none;
       user-select: none;
     }
 
@@ -107,137 +112,161 @@ $backlog-weekend: lighten($backlog, 30);
     .bar-bg {
       fill: rgba(0, 0, 0, 0)
     }
+
     .completed {
       fill: $completed;
     }
+
     .completed-weekend {
       fill: $completed-weekend;
     }
+
     .total {
       fill: $total;
     }
+
     .total-time {
       fill: $completed;
     }
+
     .total-time-weekend {
       fill: $completed-weekend;
     }
+
     .total-weekend {
       fill: $total-weekend;
     }
+
     .done {
       fill: $done;
     }
+
     .done-weekend {
       fill: $done-weekend;
     }
+
     .tasks {
       fill: $tasks;
     }
+
     .tasks-weekend {
       fill: $tasks-weekend;
     }
+
     .failed {
       fill: lighten($tasks, 30)
     }
+
     .failed-weekend {
       fill: lighten($tasks-weekend, 10)
     }
+
     .closed {
       fill: $closed;
     }
+
     .closed-weekend {
       fill: $closed-weekend;
     }
+
     .backlog {
       fill: $backlog;
     }
+
     .backlog-weekend {
       fill: $backlog-weekend;
     }
+
     .line {
       polyline {
-        stroke-width: 4;
         fill: none;
+        stroke-width: 4;
       }
+
       circle {
+        fill: #d3d3d3;
         stroke-width: 1;
-        fill: lightgrey;
       }
     }
 
     .lbm {
       opacity: 0.5;
       polyline {
-        stroke: grey;
-        stroke-width: 4;
         fill: none;
+        stroke: #808080;
+        stroke-width: 4;
       }
+
       circle {
-        stroke: grey;
+        fill: #d3d3d3;
+        stroke: #808080;
         stroke-width: 1;
-        fill: lightgrey;
       }
     }
 
     .weight {
       polyline {
-        stroke: steelblue;
-        stroke-width: 3;
         fill: none;
+        stroke: #4682b4;
+        stroke-width: 3;
       }
+
       circle {
-        stroke: steelblue;
+        fill: #add8e6;
+        stroke: #4682b4;
         stroke-width: 1;
-        fill: lightblue;
       }
     }
 
     .girth {
       polyline {
+        fill: none;
         stroke: $done;
         stroke-width: 3;
-        fill: none;
       }
+
       circle {
+        fill: lighten($done, 20);
         stroke: $done;
         stroke-width: 1;
-        fill: lighten($done, 20);
       }
     }
   }
 
   .story-time {
-    font-size: 0.8em;
+    font-size: .8em;
 
     table {
       border-spacing: 0;
       th {
         background-color: #e8ecef;
       }
+
       td:nth-of-type(2) {
         min-width: 90px;
       }
     }
+
     .legend {
-      padding-right: 12px;
-      margin-right: 4px;
       height: 1.2em;
+      margin-right: 4px;
+      padding-right: 12px;
     }
+
     .fa {
-      position: absolute;
       font-size: 1.3em;
       padding-top: 3px;
+      position: absolute;
       //top: 3px;
       right: 5px;
     }
   }
 
   .mouse-over-info {
-    padding: 5px;
-    background-color: white;
+    background-color: #fff;
     border: 1px solid darken($hashtag-blue, 25%);
     border-radius: $info-border-radius;
+    padding: 5px;
     position: fixed;
 
     .date {
@@ -248,123 +277,132 @@ $backlog-weekend: lighten($backlog, 30);
 
 .stats-string {
   background-color: $stats-bg-color;
+  bottom: 0;
   color: $stats-color;
-  font-size: 0.9em;
+  font-size: .9em;
   padding: 4px 20px 4px 30px;
   position: absolute;
-  bottom: 0;
   width: 100%;
   z-index: 111;
 
   .highlight {
-    font-weight: bold;
     color: darken($orange, 10);
+    font-weight: bold;
   }
 }
 
 .story-time {
-  padding-top: 4px;
+  font-size: .8em;
   //background-color: white;
-  font-size: 0.8em;
+  padding-top: 4px;
   .legend {
-    padding-right: 12px;
     margin-right: 4px;
+    padding-right: 12px;
   }
+
   .name {
-    min-width: 80px;
-    margin-right: 5px;
     display: inline-block;
+    margin-right: 5px;
+    min-width: 80px;
   }
+
   div {
     cursor: pointer;
   }
+
   .selected {
-    background-color: #CCC;
+    background-color: #ccc;
   }
 }
 
 .times-by-day {
-  padding-left: 2px;
+  font-size: .8em;
   //background-color: white;
-  font-size: 0.8em;
+  padding-left: 2px;
   time {
     font-weight: bold;
   }
 }
 
 .expanded {
-  z-index: 1000;
   background-color: rgba(0,0,0,0.5);
-  position: fixed;
+  height: 100vh;
   left: 0;
+  margin: 0;
+  position: fixed;
   top: 0;
   width: 100vw;
-  height: 100vh;
-  margin: 0;
+  z-index: 1000;
 
   .content {
     &.expanded {
       display: flex;
     }
+    height: 80vh;
+    left: 25vw;
+    overflow-y: auto;
     padding: 1vh;
     position: fixed;
-    top: 80px;
-    left: 25vw;
     right: 25vw;
+    top: 80px;
     width: auto;
-    height: 80vh;
-    overflow-y: auto;
   }
 }
 
 .white {
-  background-color: white;
+  background-color: #fff;
 }
 
 .location-stats {
   .expand {
     .fa {
-      padding: 4px;
       float: right;
+      padding: 4px;
     }
   }
+
   .row {
     display: flex;
   }
+
   table {
     padding: 0 3px;
   }
+
   .left-padding {
     padding-left: 30px;
   }
+
   .flag {
     font-size: 1.6em;
     padding: 0 3px;
     position: relative;
     vertical-align: bottom;
   }
+
   .cnt, .rank {
-    text-align: center;
     padding-right: 3px;
+    text-align: center;
   }
+
   .country {
   }
 }
 
 .award {
-  display: flex;
   align-items: center;
-  padding: 2px 3px;
-  font-weight: bold;
+  display: flex;
   font-family: $header-font-family;
   font-size: $font-size-small;
+  font-weight: bold;
+  padding: 2px 3px;
 
   .fa-diamond {
-    font-size: 0.8em;
+    color: #ffd700;
+    font-size: .8em;
     margin-right: 3px;
-    top: -2px;
-    color: gold;
     position: relative;
+    top: -2px;
   }
 
   .total {
@@ -372,12 +410,13 @@ $backlog-weekend: lighten($backlog, 30);
     margin-left: 5px;
     margin-right: 3px;
   }
+
   .claimed {
-    color: orange;
+    color: #ffa500;
   }
 
   svg {
-    padding: 2px 5px;
     height: 15px;
+    padding: 2px 5px;
   }
 }

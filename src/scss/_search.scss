@@ -1,11 +1,11 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .search {
-  padding: 0 0.4em 3px 0;
-  flex-flow: column;
+  background-color: $tab-bg;
   display: flex;
   flex: 0 0 auto;
-  background-color: $tab-bg;
+  flex-flow: column;
+  padding: 0 .4em 3px 0;
 
   .hashtags {
     height: 20px;
@@ -15,33 +15,36 @@
 .infinite-cal-search {
 
   .from-to {
-    text-align: center;
     padding: 1px;
+    text-align: center;
   }
+
   .from, .to, .label {
-    font-size: $font-size-small;
     color: $orange;
     font-family: $header-font-family;
-    margin-right: 10px;
+    font-size: $font-size-small;
     font-weight: 400;
+    margin-right: 10px;
   }
 
   .label {
-    margin: 6px;
-    color: #CCC;
+    color: #ccc;
     font-weight: 100;
+    margin: 6px;
   }
 
   .Cal__Header__root {
-    padding: 0 16px;
-    min-height: 30px;
-    display: block;
     border-radius: 0;
+    display: block;
+    min-height: 30px;
+    padding: 0 16px;
   }
+
   .Cal__Container__listWrapper {
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
   }
+
   .Cal__Weekdays__day {
     padding: 3px 0;
   }
@@ -49,20 +52,22 @@
   .Cal__Header__dateWrapper {
 
     &.Cal__Header__year {
-      height: 15px;
       font-size: $font-size-small;
+      height: 15px;
     }
+
     &.Cal__Header__day {
       font-size: $font-size-large;
     }
   }
+
   .Cal__Weekdays__root {
     font-size: $font-size-small;
   }
 
   .Cal__Today__root {
-    height: 22px;
     font-size: $font-size-medium;
+    height: 22px;
   }
 
   .Cal__Day__range {
@@ -76,16 +81,16 @@
 
   .header-only {
     .Cal__Header__root {
-      border-bottom-right-radius: 5px;
       border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px;
     }
   }
 }
 
 .search-row {
-  display: flex;
   background-color: $search-field-color;
   border-radius: 5px;
+  display: flex;
 
   &.cal-open {
     border-bottom-left-radius: 0;
@@ -105,14 +110,16 @@
     }
 
     .starred {
-      color: gold;
+      color: #ffd700;
     }
   }
+
   .cal {
     i {
       padding-left: 0;
     }
   }
+
   .flag {
     cursor: pointer;
 
@@ -127,11 +134,11 @@
 }
 
 .search-field {
+  background-color: $search-field-color;
   display: flex;
   flex: 1;
   margin: 2px 5px 2px 0;
   padding: 4px;
-  background-color: $search-field-color;
 
   .DraftEditor-root {
     width: 100%;
@@ -139,10 +146,10 @@
 }
 
 .linked-search-field {
+  background-color: $search-field-color;
   display: flex;
   flex: 0 0 auto;
+  height: 2em;
   margin: 2px 0;
   padding: 4px;
-  height: 2em;
-  background-color: $search-field-color;
 }

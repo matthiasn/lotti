@@ -1,16 +1,16 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 
 .habit-details {
+  background-color: #fff;
+  border-radius: $entry-border-radius;
   font-size: $font-size-medium;
   margin: 8px 0;
-  background-color: white;
-  border-radius: $entry-border-radius;
 
   .btn {
     background-color: $green;
-    font-weight: bold;
     border-radius: 3px;
+    font-weight: bold;
   }
 
   .err {
@@ -30,23 +30,24 @@
   .days {
     padding-bottom: 5px;
   }
+
   .day-toggle {
-    background-color: #EEEEEE;
-    margin-right: 2px;
+    background-color: #eee;
     border-radius: 2px;
-    margin-bottom: 3px;
-    font-weight: bold;
     color: #999;
-    display: inline-block;
-    width: 30px;
-    text-align: center;
-    font-size: $font-size-small;
     cursor: pointer;
+    display: inline-block;
+    font-size: $font-size-small;
+    font-weight: bold;
+    margin-bottom: 3px;
+    margin-right: 2px;
+    text-align: center;
     user-select: none;
+    width: 30px;
 
     &.selected {
       background-color: $hashtag-blue;
-      color: white;
+      color: #fff;
     }
   }
 
@@ -54,17 +55,19 @@
     border-collapse: collapse;
 
     .prio {
-      min-width: 12px;
-      text-align: center;
+      background-color: #bbb;
+      color: #fff;
       display: inline-block;
-      color: white;
       font-weight: bold;
-      background-color: #BBB;
+      min-width: 12px;
       padding: 0 2px;
+      text-align: center;
     }
+
     .A {
       background-color: $red;
     }
+
     .B {
       background-color: $link-color;
     }
@@ -78,20 +81,25 @@
       height: 1.3em;
 
       &:hover {
-        background-color: antiquewhite;
+        background-color: #faebd7;
       }
+
       &.selected {
         background-color: desaturate(lighten($hashtag-blue, 30), 15);
       }
+
       &.active-timer {
         background-color: desaturate(lighten($green, 40), 15);
       }
+
       &.active-timer-selected {
         background-color: desaturate(lighten($green, 30), 10);
       }
+
       &.active-timer-selected-busy {
         background-color: desaturate(lighten($red, 35), 10);
       }
+
       &.active-timer-busy {
         background-color: desaturate(lighten($red, 40), 15);
       }
@@ -109,8 +117,8 @@
       }
 
       &.time {
-        text-align: center;
         min-width: 50px;
+        text-align: center;
       }
 
       &.habit {
@@ -120,31 +128,31 @@
   }
 
   .criterion {
-    border: 1px solid #DDD;
+    border: 1px solid #ddd;
     border-radius: $entry-border-radius;
     margin: 5px 0;
+    min-height: 22px;
     padding-bottom: 10px;
     position: relative;
-    min-height: 22px;
 
     .fas {
+      color: #bbb;
       cursor: pointer;
-      padding: 4px;
-      font-weight: bold;
-      font-size: $font-size-small;
-      color: #BBB;
       float: right;
+      font-size: $font-size-small;
+      font-weight: bold;
+      padding: 4px;
 
       &:hover {
-        color: red;
+        color: #f00;
       }
     }
   }
 
   .row {
-    margin-top: 10px;
-    display: flex;
     align-items: center;
+    display: flex;
+    margin-top: 10px;
 
     &.space-between {
       justify-content: space-between;
@@ -156,26 +164,26 @@
 
     .add-criterion, .save {
       background-color: desaturate(lighten($green, 10), 5);
-      padding: 2px 6px 1px 6px;
-      color: #EEE;
       border-radius: 3px;
-      right: 0;
+      color: #eee;
+      cursor: pointer;
       font-size: 12px;
       height: 17px;
       margin-left: 10px;
-      cursor: pointer;
+      padding: 2px 6px 1px 6px;
+      right: 0;
       user-select: none;
 
       &:hover {
         background-color: $green;
-        color: white;
+        color: #fff;
       }
 
       &.save {
-        text-align: right;
         background-color: $red;
-        width: 55px;
         font-weight: bold;
+        text-align: right;
+        width: 55px;
         i {
           margin-right: 4px;
         }
@@ -196,23 +204,26 @@
   }
 
   label {
+    color: #666;
+    display: inline-block;
+    font-family: $header-font-family;
+    font-size: $font-size-small;
+    padding-right: 3px;
+    text-align: end;
     white-space: nowrap;
     width: 60px;
-    text-align: end;
-    padding-right: 3px;
-    display: inline-block;
-    font-size: $font-size-small;
-    font-family: $header-font-family;
-    color: #666;
   }
+
   input {
+    font-size: $font-size-small;
     min-width: 90px;
     padding: 4px 8px;
-    font-size: $font-size-small;
   }
+
   input[type="number"], input[type="time"] {
     width: 65px;
   }
+
   input[type="text"] {
     min-width: 120px;
     &.url {
@@ -222,13 +233,14 @@
 
   &.album {
     .detail-switch {
-      color: #AAA;
+      color: #aaa;
       font-size: $font-size-small;
     }
 
     input {
       min-width: 170px;
     }
+
     i {
       margin-left: 6px;
     }
@@ -236,40 +248,45 @@
   }
 
   input[type="checkbox"] {
-    width: 15px;
     margin-right: 7px;
+    width: 15px;
   }
+
   input[type="date"] {
     min-width: 130px;
   }
+
   input[type="datetime-local"] {
     min-width: 150px;
   }
+
   div {
     line-height: 16px;
   }
+
   .name {
-    min-width: 100px;
+    display: inline-block;
     margin-right: 5px;
-    display: inline-block;
+    min-width: 100px;
   }
+
   .allocated, .actual, .remaining {
-    min-width: 50px;
     display: inline-block;
+    min-width: 50px;
   }
 
   .copy-dashboard {
     background-color: desaturate(lighten($green, 10), 5);
     border-radius: $entry-border-radius;
-    color: #EEE;
-    margin-left: 12px;
-    font-weight: bold;
-    padding: 2px 6px;
-    height: 19px;
+    color: #eee;
     cursor: pointer;
+    font-weight: bold;
+    height: 19px;
+    margin-left: 12px;
+    padding: 2px 6px;
     &:hover {
       background-color: $green;
-      color: white;
+      color: #fff;
     }
 
     i {
@@ -279,27 +296,28 @@
 }
 
 .habit-monitor {
-  color: red;
+  color: #f00;
   display: flex;
-  flex-direction: row;
   flex: 2;
+  flex-direction: row;
   margin-left: 4px;
 
   .status {
-    width: 16px;
-    height: 10px;
-    border-radius: 2px;
-    margin-right: 4px;
     background-color: $red;
+    border-radius: 2px;
     cursor: pointer;
+    height: 10px;
+    margin-right: 4px;
     overflow: hidden;
+    width: 16px;
 
     .progress {
+      background-color: #ffa500;
+      border-radius: 2px;
       height: 100%;
       opacity: 0.7;
-      border-radius: 2px;
-      background-color: orange;
     }
+
     &.completed {
       background-color: $green;
     }
@@ -307,17 +325,17 @@
 }
 
 .completion {
-  text-align: center;
+  margin-top: 6px;
   padding-left: 0;
   padding-right: 0;
-  margin-top: 6px;
+  text-align: center;
   .status {
+    background-color: $red;
+    border-radius: 4px;
     display: inline-block;
-    width: 8px;
     height: 8px;
     margin-right: 1px;
-    border-radius: 4px;
-    background-color: $red;
+    width: 8px;
 
     &.success {
       background-color: $green;
@@ -333,7 +351,7 @@
   }
 
   .start {
-    opacity: 0.2;
+    opacity: .2;
     text-align: right;
 
     &:hover {
@@ -346,16 +364,16 @@
   }
 
   .completion {
-    text-align: center;
     padding-right: 0;
+    text-align: center;
   }
 
   .add-habit {
     display: inline-block;
     float: right;
     height: 16px;
-    width: 16px;
     text-align: center;
+    width: 16px;
   }
 
   .filter {

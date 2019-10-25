@@ -1,13 +1,13 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 img {
   height: auto;
 }
 
 video {
-  width: 100%;
+  background-color: #000;
   max-width: 500px;
-  background-color: black;
+  width: 100%;
 }
 
 .leaflet-map {
@@ -22,34 +22,36 @@ video {
 
     .ctrl-btn  {
       cursor: pointer;
-      text-align: center;
-      margin-top: 5px;
       display: inline-block;
-      width: 18px;
+      margin-top: 5px;
       padding: 3px;
+      text-align: center;
+      width: 18px;
       &:hover {
         background-color: #ddd;
       }
     }
+
     i {
 
     }
+
     .time {
+      font-family: monospace;
       font-size: 0.7em;
       font-weight: bold;
-      font-family: monospace;
       .duration, .progress {
         padding: 0 2px;
       }
     }
 
     input[type="range"] {
+      border: 0;
+      box-shadow: none;
       margin-left: 5px;
-      width: 150px;
       position: relative;
       top: 4px;
-      border: none;
-      box-shadow: none;
+      width: 150px;
     }
   }
 }

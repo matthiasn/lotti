@@ -1,36 +1,36 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 body {
   background-color: $tab-bg;
+  font-family: $font-family;
   font-size: 12px;
   font-weight: 300;
-  font-family: $font-family;
   overflow: hidden;
 }
 
 h1 {
+  color: #ddd;
   text-align: center;
-  color: #DDD;
 }
 
 // from http://tobiasahlin.com/spinkit/
 
 .spinner {
-  margin: 50px auto;
-  width: 60px;
-  height: 50px;
-  text-align: center;
   font-size: 10px;
+  height: 50px;
+  margin: 50px auto;
+  text-align: center;
+  width: 60px;
 }
 
 .spinner > div {
-  background-color: darken($orange, 15);
-  height: 100%;
-  width: 6px;
-  display: inline-block;
-
   -webkit-animation: sk-stretchdelay 1.2s infinite ease-in-out;
   animation: sk-stretchdelay 1.2s infinite ease-in-out;
+  background-color: darken($orange, 15);
+  display: inline-block;
+
+  height: 100%;
+  width: 6px;
 }
 
 .spinner .rect2 {
@@ -39,31 +39,38 @@ h1 {
 }
 
 .spinner .rect3 {
-  -webkit-animation-delay: -1.0s;
-  animation-delay: -1.0s;
+  -webkit-animation-delay: -1s;
+  animation-delay: -1s;
 }
 
 .spinner .rect4 {
-  -webkit-animation-delay: -0.9s;
-  animation-delay: -0.9s;
+  -webkit-animation-delay: -.9s;
+  animation-delay: -.9s;
 }
 
 .spinner .rect5 {
-  -webkit-animation-delay: -0.8s;
-  animation-delay: -0.8s;
+  -webkit-animation-delay: -.8s;
+  animation-delay: -.8s;
 }
 
 @-webkit-keyframes sk-stretchdelay {
-  0%, 40%, 100% { -webkit-transform: scaleY(0.4) }
-  20% { -webkit-transform: scaleY(1.0) }
+  0%, 40%, 100% {
+    -webkit-transform: scaleY(.4)
+  }
+
+  20% {
+    -webkit-transform: scaleY(1)
+  }
 }
 
 @keyframes sk-stretchdelay {
   0%, 40%, 100% {
-    transform: scaleY(0.4);
-    -webkit-transform: scaleY(0.4);
-  }  20% {
-       transform: scaleY(1.0);
-       -webkit-transform: scaleY(1.0);
-     }
+    -webkit-transform: scaleY(.4);
+    transform: scaleY(.4);
+  }
+
+  20% {
+    -webkit-transform: scaleY(1);
+    transform: scaleY(1);
+  }
 }

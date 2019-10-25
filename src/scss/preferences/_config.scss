@@ -1,8 +1,8 @@
 @import "../variables";
 
 .config {
-  display: flex;
   background-color: $cfg-bg;
+  display: flex;
   font-family: Montserrat;
 
   th {
@@ -10,68 +10,70 @@
   }
 
   .header {
+    align-items: center;
     display: flex;
     flex-direction: row;
-    align-items: center;
+    justify-content: space-between;
     margin-bottom: 37px;
     width: 100%;
-    justify-content: space-between;
   }
 
   h2 {
+    color: #fff;
     flex: 2;
-    margin-top: 18px;
-    font-size: $font-size-meins-header;
     font-family: Montserrat;
-    margin-block-start: 0;
-    margin-block-end: 0;
+    font-size: $font-size-meins-header;
+    font-weight: 600;
     letter-spacing: 0.02px;
     line-height: 24px;
-    color: white;
-    font-weight: 600;
+    margin-block-end: 0;
+    margin-block-start: 0;
+    margin-top: 18px;
   }
 
   .assistant {
-    color: white;
+    color: #fff;
     margin-bottom: 40px;
 
     .tag {
       background-color: $hashtag-blue;
-      padding: 2px 4px;
-      margin: 0 4px 2px 0;
       border-radius: $entry-border-radius;
-      font-weight: bold;
       cursor: pointer;
+      font-weight: bold;
+      margin: 0 4px 2px 0;
+      padding: 2px 4px;
     }
   }
 
   table {
+    border: 1px solid #4a546e;
+    border-collapse: separate;
+    border-radius: 10px;
+    border-spacing: 0;
+    box-sizing: border-box;
     color: $font-color;
     line-height: 22px;
     margin-bottom: 20px;
-    border-radius: 10px;
-    border: 1px solid #4A546E;
-    border-collapse:separate;
-    border-spacing: 0;
-    box-sizing: border-box;
 
     tr {
       cursor: pointer;
 
       &:hover {
         &:not(:first-child) {
-          background-color: rgba(74,84,110,0.2);
+          background-color: rgba(74, 84, 110, .2);
         }
       }
+
       &.active {
-        background-color: rgba(74,84,110,0.4);
-        color: white;
+        background-color: rgba(74, 84, 110, .4);
+        color: #fff;
       }
 
       td {
         &.c {
           text-align: center;
         }
+
         &:last-child {
           padding-right: 8px;
         }
@@ -102,20 +104,18 @@
       text-align: left;
     }
 
-    .title {
-    }
-
     &.sagas-stories, &.habit_cfg {
       font-size: $font-size-medium;
 
       tr {
+        border-top: 1px solid #4a546e;
         height: 52px;
-        border-top: 1px solid #4A546E;
 
         &:first-child {
           th:first-child {
             border-top-left-radius: 10px;
           }
+
           th:last-child {
             border-top-right-radius: 10px;
           }
@@ -125,6 +125,7 @@
           td:first-child {
             border-bottom-left-radius: 10px;
           }
+
           td:last-child {
             border-bottom-right-radius: 10px;
           }
@@ -132,11 +133,10 @@
       }
 
       th {
-        background-color: rgba(74,84,110,0.2);
-      ;
-        color: rgba(255,255,255,0.31);
-        text-align: center;
+        background-color: rgba(74, 84, 110, .2);;
+        color: rgba(255, 255, 255, 0.31);
         font-weight: 600;
+        text-align: center;
       }
 
       th, td {
@@ -145,27 +145,31 @@
         &:first-child {
           padding-left: 24px;
         }
+
         &:last-child {
           padding-right: 24px;
         }
       }
 
       td {
+        color: #fff;
         padding-left: 24px;
-        color: white;
       }
 
       .fa-toggle-on {
         color: $green;
       }
+
       .fa-toggle-off {
-        color: #AAA;
+        color: #aaa;
       }
 
     }
   }
 
-  .stories, .sagas, .habits {
+  .stories,
+  .sagas,
+  .habits {
     overflow-y: scroll;
     width: auto;
 
@@ -178,15 +182,16 @@
     display: flex;
     flex-flow: column;
     height: 100%;
-    width: 100%;
     overflow-y: auto;
+    width: 100%;
 
     .dashboards {
       flex: 1;
     }
+
     .dashboard {
-      z-index: 111;
       border-top: $tab-bg 4px solid;
+      z-index: 111;
     }
   }
 
@@ -205,56 +210,56 @@
   }
 
   .tile-tabs {
+    background-color: $cfg-bg;
     margin-left: 4px;
     margin-top: 12px;
     width: 380px;
-    background-color: $cfg-bg;
   }
 
   .menu {
-    background-color: #1D212F;
+    background-color: #1d212f;
     height: 100%;
     max-width: 311px;
     min-width: 311px;
     z-index: 11;
 
     h1 {
-      padding-top: 30px;
-      padding-bottom: 25px;
-      padding-left: 35px;
+      color: #fff;
       font-family: Montserrat;
+      font-size: 24px;
+      font-weight: 600;
       letter-spacing: 0.02px;
       line-height: 29px;
-      font-weight: 600;
-      font-size: 24px;
       margin: 0;
-      color: white;
+      padding-bottom: 25px;
+      padding-left: 35px;
+      padding-top: 30px;
     }
 
     .items {
-      width: 230px;
+      border: 1px solid #4a546e;
+      border-radius: 10px;
       margin-left: 34.5px;
       margin-right: 47.5px;
-      border: 1px solid #4A546E;
-      border-radius: 10px;
       padding: 0;
+      width: 230px;
     }
 
     .menu-item {
+      color: rgba(255, 255, 255, .68);
       cursor: pointer;
+      font-family: Montserrat;
       font-size: $font-size-large;
       line-height: 19px;
       padding: 12px 12px 9px 26px;
-      font-family: Montserrat;
-      color: rgba(255,255,255,0.68);;
 
       &:hover, &.highlight {
-        background-color: rgba(74,84,110,0.1);;
+        background-color: rgba(74, 84, 110, .1);;
       }
 
       &.active {
-        background-color: rgba(74,84,110,0.3);;
-        color: white;
+        background-color: rgba(74, 84, 110, .3);;
+        color: #fff;
         font-weight: 600;
       }
 
@@ -271,15 +276,15 @@
   }
 
   .metrics {
+    color: #ddd;
     display: flex;
     flex-flow: column;
-    color: #DDD;
 
     table {
-      text-align: right;
       margin-top: 20px;
-      width: auto;
       padding: 5px;
+      text-align: right;
+      width: auto;
 
       td, th {
         padding: 0 7px;
@@ -291,69 +296,70 @@
     }
 
     .btn {
-      padding: 10px 20px;
-      width: 100px;
-      font-size: $font-size-large;
-      text-align: center;
-      margin: 10px;
-      border-radius: $entry-border-radius;
       background-color: $green;
+      border-radius: $entry-border-radius;
+      font-size: $font-size-large;
+      margin: 10px;
+      padding: 10px 20px;
+      text-align: center;
+      width: 100px;
     }
 
     pre {
-      background-color: white;
-      overflow-y: scroll;
-      margin-left: 20px;
+      background-color: #fff;
       height: auto;
+      margin-left: 20px;
+      overflow-y: scroll;
     }
   }
 
   input {
     border: 0;
+    border-radius: $entry-border-radius;
     outline: none;
     padding: 4px 8px;
-    border-radius: $entry-border-radius;
   }
 
   .col {
-    padding-left: 46px;
-    padding-top: 46px;
     display: flex;
     flex-direction: column;
+    padding-left: 46px;
+    padding-top: 46px;
   }
 
   .cfg-items {
-    overflow-x: hidden;
-    overflow-y: scroll;
     flex: 1;
     height: 50vh;
+    overflow-x: hidden;
+    overflow-y: scroll;
 
     .story {
+      color: #666;
       font-size: $font-size-small;
       padding-bottom: 5px;
-      color: #666;
     }
   }
 
   .custom-field {
-    flex: 1;
     background-color: #fafafa;
-    padding: 6px 15px;
-    margin: 0 6px 5px 0;
-    cursor: pointer;
-    user-select: none;
     border-radius: 2px;
+    cursor: pointer;
+    flex: 1;
+    margin: 0 6px 5px 0;
+    padding: 6px 15px;
+    user-select: none;
 
     h3 {
       margin: 2px 0;
+
       &:hover {
         color: $link-color;
       }
     }
 
     ul {
-      padding: 0 0 0 15px;
       margin: 5px 0;
+      padding: 0 0 0 15px;
     }
 
     &.active {
@@ -362,14 +368,14 @@
   }
 
   .add {
+    border: 1.12px solid #1d212f;
     border-radius: 18px;
-    color: #8E8E93;
+    color: #8e8e93;
     font-size: $font-size-large;
-    border: 1.12px solid #1D212F;
-    width: 45px;
     height: 37px;
-    text-align: center;
     margin-left: 17px;
+    text-align: center;
+    width: 45px;
 
     .fa-plus {
       padding-top: 9px;
@@ -384,41 +390,41 @@
     font-size: $font-size-large;
 
     .search {
-      display: inline-block;
-      border-radius: $entry-border-radius;
-      padding: 0;
-      margin-right: 10px;
-      margin-left: 16px;
       background-color: $cfg-bg;
+      border-radius: $entry-border-radius;
+      display: inline-block;
+      margin-left: 16px;
+      margin-right: 10px;
+      padding: 0;
 
       .fa-search {
-        position: absolute;
-        padding-top: 11px;
+        color: #8e8e93;
         padding-left: 15px;
-        color: #8E8E93;
+        padding-top: 11px;
+        position: absolute;
       }
     }
 
     input {
-      width: 200px;
-      color: #8E8E93;
       background-color: $cfg-bg;
+      border: 1.12px solid #1d212f;
       border-radius: 18px;
-      padding-top: 7.5px;
+      box-shadow: none;
+      color: #8e8e93;
+      font-size: $font-size-medium;
+      font-weight: bold;
       padding-bottom: 7.5px;
       padding-left: 42px;
-      font-weight: bold;
-      font-size: $font-size-medium;
-      border: 1.12px solid #1D212F;
-      box-shadow: none;
+      padding-top: 7.5px;
+      width: 200px;
     }
   }
 
   .detail {
+    background-color: #fafafa;
     flex: 1;
-    background-color: #FAFAFA;
-    padding: 5px;
     margin-right: 5px;
+    padding: 5px;
 
     label {
       display: inline-block;
@@ -426,7 +432,7 @@
     }
 
     .warn {
-      color: red;
+      color: #f00;
 
       .fa {
         padding: 0 3px 0 6px;
@@ -438,16 +444,17 @@
     }
 
     .field {
+      background-color: #f1f1f1;
+      border-radius: $entry-border-radius;
+      line-height: 2em;
       margin-top: 5px;
       padding: 5px 10px;
-      background-color: #f1f1f1;
-      line-height: 2em;
-      border-radius: $entry-border-radius;
 
       .row {
         margin: 10px 0;
       }
     }
+
     .story-line {
       padding: 5px 10px;
     }
@@ -472,23 +479,24 @@
 }
 
 .usage {
-  padding: 20px;
+  overflow-y: auto;
 
   .view {
     .leaflet {
-      width: 500px;
       height: 250px;
       margin-bottom: 20px;
+      width: 500px;
     }
 
     tr {
       background-color: transparent;
-      color: white;
+      color: #fff;
       font-weight: 400;
 
       td {
         padding-right: 20px;
       }
+
       &:hover {
         background-color: transparent;
         cursor: default;
@@ -496,5 +504,5 @@
     }
   }
 
-  overflow-y: auto;
+  padding: 20px;
 }

@@ -1,4 +1,4 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .conflict {
 
@@ -7,25 +7,26 @@
   }
 
   button {
-    margin-top: 6px;
     font-family: $header-font-family;
     font-size: $font-size-medium;
-    padding: 4px 8px;
     font-weight: lighter;
+    margin-top: 6px;
+    padding: 4px 8px;
   }
 
   pre {
     code {
-      font-size: 9px!important;
+      font-size: 9px !important;
     }
-    cursor: pointer;
-    background-color: #EEE;
-    padding: 4px;
+    background-color: #eee;
     border-radius: $entry-border-radius;
+    cursor: pointer;
+    padding: 4px;
   }
+
   .warn {
     background-color: $red;
-    color: white;
+    color: #fff;
     font-family: $header-font-family;
     font-size: $font-size-large;
     padding: 5px 10px;

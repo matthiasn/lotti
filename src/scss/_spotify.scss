@@ -1,105 +1,106 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 
 .spotify-list {
-  font-size: $font-size-medium;
-  border-radius: $entry-border-radius;
   align-items: center;
-  overflow: auto;
+  border-radius: $entry-border-radius;
+  font-size: $font-size-medium;
   height: 100vh;
+  overflow: auto;
   text-align: center;
 
   .controls {
+    align-items: center;
     display: flex;
     justify-content: center;
-    align-items: center;
     padding-left: 30px;
     user-select: none;
 
     .size {
-      display: flex;
       align-items: center;
+      display: flex;
       margin-right: 50px;
 
       strong {
-        font-weight: bold;
+        color: #aaa;
         display: block;
+        font-weight: bold;
         padding-bottom: 2px;
-        color: #AAA;
       }
+
       input {
         box-shadow: none;
-        width: 450px;
         margin-left: 10px;
+        width: 450px;
       }
     }
 
 
     .spotify-search {
+      align-items: center;
       display: flex;
       margin: 5px 0;
-      align-items: center;
 
       i {
-        padding: 5px;
+        color: #aaa;
         font-size: 20px;
-        color: #AAA;
+        padding: 5px;
       }
 
 
       input {
-        width: 250px;
         box-shadow: none;
+        width: 250px;
       }
     }
 
   }
 
   .menu-header {
-    width: 100vw;
     height: 40px;
+    width: 100vw;
     h2 {
+      padding-left: 60px;
       text-align: center;
       width: 90vw;
-      padding-left: 60px;
     }
   }
 
   .img-container {
     position: relative;
     img {
-      width: 120px;
+      cursor: pointer;
       height: 120px;
       padding-top: 0;
-      cursor: pointer;
+      width: 120px;
     }
 
     .cnt {
+      background-color: #999;
+      border-radius: 1px;
+      color: #eee;
+      font-family: $header-font-family;
+      font-size: $font-size-small;
+      font-weight: bold;
+      //mix-blend-mode: exclusion;
+      padding: 1px 2px 2px 2px;
       position: absolute;
       right: 4px;
       top: 2px;
-      color: #EEE;
-      font-weight: bold;
-      font-family: $header-font-family;
-      //mix-blend-mode: exclusion;
-      font-size: $font-size-small;
-      background-color: #999;
-      border-radius: 1px;
-      padding: 1px 2px 2px 2px;
     }
   }
 
 
   .tooltip {
-    position: relative;
     display: inline-block;
+    position: relative;
   }
 
   .tooltip .tooltiptext {
-    width: 102px!important;
-    margin-top: -30px;
     font-family: $header-font-family;
     font-size: $font-size-small;
+    margin-top: -30px;
+    width: 102px !important;
 
     .title {
       font-weight: bold;

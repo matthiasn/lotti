@@ -1,10 +1,10 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .btn {
-  padding: 1px 5px;
-  color: white;
-  font-size: 0.8em;
+  color: #fff;
   cursor: pointer;
+  font-size: .8em;
+  padding: 1px 5px;
   white-space: nowrap;
 
   .fa {
@@ -13,39 +13,39 @@
 }
 
 .not-saved, .cancel {
-  padding: 1px 5px;
-  color: white;
   background-color: $red;
+  color: #fff;
   cursor: pointer;
+  padding: 1px 5px;
 }
 
 .cancel {
-  background-color: #BBB;
+  background-color: #bbb;
 }
 
 .link-btn {
-  padding: 1px 3px 1px 4px;
-  color: white;
+  background-color: $green;
+  border-radius: 2px;
+  color: #fff;
+  cursor: pointer;
   font-size: $font-size-xs;
   font-weight: bold;
-  background-color: $green;
-  cursor: pointer;
+  padding: 1px 3px 1px 4px;
   white-space: nowrap;
-  border-radius: 2px;
 }
 
 button {
   background-color: $green;
-  border: none;
-  color: white;
+  border: 0;
+  border-radius: 3px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 16px;
   padding: 0.5em 1em;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  cursor: pointer;
   white-space: nowrap;
-  border-radius: 3px;
 }
 
 .menu-new {
@@ -54,30 +54,30 @@ button {
 
 .show-more-btn {
   background-color: $show-more;
-  color: whitesmoke;
-  font-size: 0.8em;
+  color: #f5f5f5;
+  font-size: .8em;
   padding: 1px 5px;
 }
 
 
 .delete-btn {
-  position: relative;
+  color: #fff;
   display: inline-block;
-  color: white;
+  position: relative;
 
   .warn {
+    background-color: $delete-warning;
+    cursor: pointer;
+    font-size: .8em;
+    font-weight: bold;
+    height: 20px;
+    margin-top: 21px;
+    padding: 0 5px;
     position: absolute;
     z-index: 1002;
-    margin-top: 21px;
-    height: 20px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.8em;
-    padding: 0 5px;
-    background-color: $delete-warning;
 
     i {
-      color: white;
+      color: #fff;
       margin-right: 2px;
     }
 
@@ -96,16 +96,16 @@ button {
 }
 
 a, a:visited {
-  text-decoration: none;
-  font-weight: 400;
   color: $link-color;
-  outline: none!important;
+  font-weight: 400;
+  outline: none !important;
+  text-decoration: none;
 }
 
 .toggle {
-  padding: 2px;
-  margin-left: 4px;
   cursor: pointer;
+  margin-left: 4px;
+  padding: 2px;
 
   &.green {
     color: darken($green, 10);
@@ -113,15 +113,15 @@ a, a:visited {
 }
 
 .fa-thumbs-up, .fa-thumbs-down {
-  color: #006C91;
+  color: #006c91;
 }
 
 .inactive {
-  color: #AAA;
+  color: #aaa;
 }
 
 .hidden-comments {
-  color: red;
+  color: #f00;
 }
 
 a .toggle {
@@ -129,16 +129,16 @@ a .toggle {
 }
 
 .upvotes {
-  vertical-align: super;
-  color: #006C91;
-  font-size: 0.7em;
-  line-height: 1.2em;
-  font-weight: bold;
-  padding: 0 2px 0 1px;
-  margin-left: 1px;
-  margin-bottom: 3px;
-  border: 1px solid #006C91;
+  border: 1px solid #006c91;
   border-radius: 2px;
+  color: #006c91;
+  font-size: 0.7em;
+  font-weight: bold;
+  line-height: 1.2em;
+  margin-bottom: 3px;
+  margin-left: 1px;
+  padding: 0 2px 0 1px;
+  vertical-align: super;
 }
 
 .toggle-cmds {
@@ -148,21 +148,21 @@ a .toggle {
 .linked-tasks {
   padding: 4px 0;
   .filter {
-    background-color: #DDE;
-    color: #555;
-    font-size: $font-size-small;
-    padding: 0 4px;
-    margin: 0 1px;
+    background-color: #dde;
     border-bottom: #ddd 1px solid;
-    cursor: pointer;
-    border-top-right-radius: 2px;
     border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    color: #555;
+    cursor: pointer;
     font-family: $header-font-family;
+    font-size: $font-size-small;
+    margin: 0 1px;
+    padding: 0 4px;
   }
 
   .current {
     background-color: $show-more;
-    color: white;
     border-bottom: #00a699 1px solid;
+    color: #fff;
   }
 }

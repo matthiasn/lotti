@@ -1,21 +1,22 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .post-mortem {
   margin: 20px 0;
 
   .input {
     &.time {
-      width: 60px!important;
+      width: 60px !important;
 
     }
   }
+
   select {
     width: 90px;
   }
 }
 
 .post-mortem-timeline {
-  background-color: white;
+  background-color: #fff;
   height: 70px;
 
   ul:first-of-type {
@@ -23,8 +24,8 @@
   }
 
   h1 {
-    margin-top: 0;
     margin-bottom: 0;
+    margin-top: 0;
     text-align: center;
   }
 }

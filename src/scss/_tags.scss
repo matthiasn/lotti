@@ -1,4 +1,4 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .hashtags {
   display: flex;
@@ -7,13 +7,13 @@
 }
 
 .hashtag, .mention {
+  background-color: $hashtag-blue;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.7em;
   margin: 2px;
   padding: 2px 3px;
-  color: white;
-  font-size: 0.7em;
-  background-color: $hashtag-blue;
   white-space: nowrap;
-  cursor: pointer;
 }
 
 .not-tag {
@@ -21,20 +21,20 @@
 }
 
 .suggestions {
-  margin-bottom: 0.5em;
-  line-height: 1.4em;
-  position: relative;
   display: inline-block;
+  line-height: 1.4em;
+  margin-bottom: 0.5em;
+  position: relative;
 }
 
 .suggestions-list {
+  background-color: #fff;
+  border: #bbb 1px solid;
+  padding: 2px 0 4px 4px;
   position: absolute;
   top: -4px;
-  background-color: white;
-  z-index: 1002;
-  padding: 2px 0 4px 4px;
   white-space: nowrap;
-  border: #BBB 1px solid;
+  z-index: 1002;
 }
 
 .mention {

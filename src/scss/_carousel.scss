@@ -1,4 +1,4 @@
-@import "variables";
+@import 'variables';
 
 /********************************************
 	BREAKPOINT WIDTHS
@@ -14,37 +14,37 @@
 /*  Horizontal Gradient
 ========================================================================== */
 .carousel .control-arrow, .carousel.carousel-slider .control-arrow {
-  -webkit-transition: all 0.25s ease-in;
-  transition: opacity 0.25s ease-in;
-  opacity: 0.4;
-  filter: alpha(opacity=40);
-  position: absolute;
-  z-index: 2;
-  top: 20px;
+  -webkit-transition: all .25s ease-in;
   background: none;
   border: 0;
-  font-size: 32px;
   cursor: pointer;
+  filter: alpha(opacity=40);
+  font-size: 32px;
+  opacity: .4;
+  position: absolute;
+  top: 20px;
+  transition: opacity .25s ease-in;
+  z-index: 2;
 }
 
 .carousel .control-arrow:hover {
-  opacity: 1;
   filter: alpha(opacity=100);
+  opacity: 1;
 }
 
 .carousel .control-arrow:before, .carousel.carousel-slider .control-arrow:before {
-  margin: 0 5px;
-  display: inline-block;
-  border-top: 8px solid transparent;
   border-bottom: 8px solid transparent;
+  border-top: 8px solid transparent;
   content: '';
+  display: inline-block;
+  margin: 0 5px;
 }
 
 .carousel .control-disabled.control-arrow {
-  opacity: 0;
-  filter: alpha(opacity=0);
   cursor: inherit;
   display: none;
+  filter: alpha(opacity=0);
+  opacity: 0;
 }
 
 .carousel .control-prev.control-arrow {
@@ -69,14 +69,14 @@
 }
 
 .carousel button {
-  outline: 0;
-  border: 0;
   background: none;
+  border: 0;
+  outline: 0;
 }
 
 .carousel img {
-  width: 100%;
   display: inline-block;
+  width: 100%;
 }
 
 .carousel .carousel {
@@ -84,41 +84,41 @@
 }
 
 .carousel .control-arrow {
-  top: 50%;
-  margin-top: -13px;
   font-size: 18px;
+  margin-top: -13px;
+  top: 50%;
 }
 
 .carousel .thumbs-wrapper {
   }
 
 .carousel .thumbs {
-  -webkit-transition: all 0.15s ease-in;
-  transition: all 0.15s ease-in;
   -webkit-transform: translate3d(0, 0, 0);
-  transform: translate3d(0, 0, 0);
-  position: relative;
+  -webkit-transition: all 0.15s ease-in;
   list-style: none;
+  position: relative;
+  transform: translate3d(0, 0, 0);
+  transition: all 0.15s ease-in;
   white-space: nowrap;
 }
 
 .carousel .thumb {
   -webkit-transition: border 0.15s ease-in;
-  transition: border 0.15s ease-in;
+  border: 2px solid #444;
   display: inline-block;
   margin-right: 1px;
-  white-space: nowrap;
   overflow: hidden;
-  border: 2px solid #444;
   padding: 1px;
   position: relative;
+  transition: border 0.15s ease-in;
+  white-space: nowrap;
 
   .fa-times {
+    color: $orange;
     position: absolute;
     right: 4px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, .9);
     top: 4px;
-    color: $orange;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
   }
 }
 
@@ -128,38 +128,38 @@
 }
 
 .carousel .thumb img {
-  vertical-align: center;
-  object-fit: cover;
-  width: 60px;
   height: 60px;
+  object-fit: cover;
+  vertical-align: center;
+  width: 60px;
 }
 
 .carousel.carousel-slider {
-  position: relative;
+  display: flex;
   margin: 0;
   overflow: hidden;
-  display: flex;
+  position: relative;
 }
 
 .carousel.carousel-slider .control-arrow {
-  top: 0;
+  bottom: 0;
   color: #fff;
   font-size: 26px;
-  bottom: 0;
   margin-top: 0;
   padding: 5px;
+  top: 0;
 }
 
 .carousel.carousel-slider .control-arrow:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, .2);
 }
 
 .carousel .slider-wrapper {
-  overflow: hidden;
-  margin: auto;
-  width: 100%;
   -webkit-transition: height 0.15s ease-in;
+  margin: auto;
+  overflow: hidden;
   transition: height 0.15s ease-in;
+  width: 100%;
 }
 
 .carousel .slider-wrapper.axis-horizontal .slider {
@@ -181,59 +181,59 @@
 }
 
 .carousel .slider {
-  position: relative;
   list-style: none;
+  position: relative;
   width: 100%;
 }
 
 .carousel .slider.animated {
-  -webkit-transition: all 0.25s ease-in-out;
-  transition: all 0.25s ease-in-out;
+  -webkit-transition: all .25s ease-in-out;
+  transition: all .25s ease-in-out;
 }
 
 .carousel .slide {
-  min-width: 100%;
+  background: #000;
   margin: 0;
+  min-width: 100%;
   position: relative;
   text-align: center;
-  background: #000;
 }
 
 .carousel .slide img {
-  vertical-align: top;
   border: 0;
+  vertical-align: top;
 }
 
 .carousel .slide iframe {
-  display: inline-block;
-  width: calc(100% - 80px);
-  margin: 0 40px 40px;
   border: 0;
+  display: inline-block;
+  margin: 0 40px 40px;
+  width: calc(100% - 80px);
 }
 
 .carousel .slide .legend {
   -webkit-transition: all 0.5s ease-in-out;
-  transition: all 0.5s ease-in-out;
-  position: absolute;
+  -webkit-transition: opacity 0.35s ease-in-out;
+  background: #000;
+  border-radius: 3px;
   bottom: 10px;
+  color: #fff;
+  font-size: $font-size-xs;
   left: 50%;
   margin-left: -40%;
-  width: 80%;
-  border-radius: 3px;
-  background: #000;
-  z-index: 1111;
-  color: #fff;
+  opacity: .25;
   padding: 3px 8px;
-  font-size: $font-size-xs;
+  position: absolute;
   text-align: center;
-  opacity: 0.25;
-  -webkit-transition: opacity 0.35s ease-in-out;
   transition: opacity 0.35s ease-in-out;
+  transition: all 0.5s ease-in-out;
+  width: 80%;
+  z-index: 1111;
 
   ul {
+    margin-block-end: 0;
     margin-block-start: 0;
     padding-inline-start: 0;
-    margin-block-end: 0;
   }
 
   div {
@@ -241,27 +241,27 @@
   }
 
   a {
-    color: white;
+    color: #fff;
   }
 }
 
 .carousel .carousel-status {
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 5px;
-  font-size: 10px;
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.9);
   color: #ccc;
+  font-size: 10px;
+  padding: 5px;
+  position: absolute;
+  right: 0;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, .9);
+  top: 0;
 }
 
 .carousel:hover .slide .legend {
-  opacity: 0.75;
+  opacity: .75;
 }
 
 .gallery {
+  background-color: #000;
   margin: 0;
-  background-color: black;
 
   &.page {
     height: 100vh;
@@ -293,44 +293,44 @@
 
       &.fa-star {
         &.fas {
-          color: gold;
+          color: #ffd700;
         }
       }
     }
   }
 
   &.fullscreen {
-    position: fixed;
-    left: 0;
-    top: 0;
-
-    width: 100vw;
     height: 100vh;
+    left: 0;
+    position: fixed;
+
+    top: 0;
+    width: 100vw;
     z-index: 1111;
 
     .filters {
       background-color: #111;
 
       .stars-filter {
-        width: 100px;
-        margin-top: 40px;
-        margin-left: 10px;
         line-height: 1.5em;
+        margin-left: 10px;
+        margin-top: 40px;
+        width: 100px;
 
         .fa-star {
           &.fas {
-            color: gold;
+            color: #ffd700;
           }
         }
       }
 
       .btn {
         background-color: $green;
-        color: white;
-        padding: 3px 6px;
         border-radius: 3px;
-        text-align: center;
+        color: #fff;
         margin-top: 20px;
+        padding: 3px 6px;
+        text-align: center;
       }
     }
 
@@ -358,36 +358,36 @@
           }
 
           .header {
-            line-height: 8px;
             height: 20px;
+            line-height: 8px;
           }
         }
       }
 
       .stars {
-        margin: 7px;
-        display: inline-block;
-        width: 360px;
         color: #ccc;
+        display: inline-block;
+        margin: 7px;
+        width: 360px;
       }
 
       time {
         display: block;
-        font-size: 0.9em;
+        font-size: .9em;
         margin: 10px;
       }
 
       .gallery-editor {
         .save {
-          font-size: $font-size-large;
-          padding: 10px 0;
-          margin: 12px 6px;
-          width: 90px;
-          text-align: center;
-          font-weight: bold;
           background-color: $red;
           border-radius: $entry-border-radius;
           cursor: pointer;
+          font-size: $font-size-large;
+          font-weight: bold;
+          margin: 12px 6px;
+          padding: 10px 0;
+          text-align: center;
+          width: 90px;
 
           i {
             margin-right: 6px;
@@ -402,28 +402,28 @@
       .map, .mapbox {
         background-color: #333;
         height: 40vh;
-        width: 360px;
         position: relative;
+        width: 360px;
         i {
           position: absolute;
-          top: 6px;
           right: 6px;
+          top: 6px;
           z-index: 1111;
         }
       }
     }
 
     .carousel .slide img {
-      object-fit: contain;
+      height: calc(100vh - 116px);
       margin-left: 5px;
       margin-right: 5px;
-      height: calc(100vh - 116px);
+      object-fit: contain;
       width: calc(100vw - 480px);
 
       &.full {
         height: 100vh;
-        width: 100vw;
         margin: 0;
+        width: 100vw;
       }
     }
 
@@ -441,7 +441,7 @@
   }
 
   i {
-    margin-left: 5px;
     cursor: pointer;
+    margin-left: 5px;
   }
 }

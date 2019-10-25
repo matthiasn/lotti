@@ -1,64 +1,66 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .menu-header {
   -webkit-app-region: drag;
-  width: 100%;
-  user-select: none;
-  flex: 0 0 auto;
-  display: flex;
-  z-index: 1004;
-  flex-flow: row;
   align-items: center;
-  justify-content: space-between;
-  height: 25px;
   background-color: $menu-bg;
+  display: flex;
+  flex: 0 0 auto;
+  flex-flow: row;
+  height: 25px;
+  justify-content: space-between;
   padding-left: 70px;
+  user-select: none;
+  width: 100%;
+  z-index: 1004;
 
   .new-import {
     padding-left: 10px;
   }
 
   img {
-    width: 100px;
-    position: fixed;
-    top: 0;
-    right: 0;
-    margin: -4px -4px;
-    z-index: 111;
-    clip-path: inset(4px 4px 4px 4px);
     -webkit-clip-path: inset(4px 4px 4px 4px);
+    clip-path: inset(4px 4px 4px 4px);
+    margin: -4px -4px;
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 100px;
+    z-index: 111;
   }
 
   h1 {
-    padding-left: 100px;
-    font-size: $font-size-meins-header;
-    color: whitesmoke;
+    color: #f5f5f5;
     font-family: $header-font-family;
+    font-size: $font-size-meins-header;
+    padding-left: 100px;
   }
 
   button {
     font-size: $font-size-medium;
-    margin-right: 5px;
     height: 22px;
+    margin-right: 5px;
   }
 
   i {
-    font-size: $font-size-medium;
     cursor: pointer;
+    font-size: $font-size-medium;
   }
 }
 
 .busy-status {
+  cursor: pointer;
   height: 100%;
   width: 100%;
-  cursor: pointer;
 
   &.red {
     background-color: $red;
   }
+
   &.green {
     background-color: $green;
   }
+
   &.orange {
     background-color: $orange;
   }

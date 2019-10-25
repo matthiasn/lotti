@@ -1,10 +1,10 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .infinite-cal {
   display: flex;
-  justify-content: space-between;
   flex-flow: column;
   height: calc(100vh - 44px);
+  justify-content: space-between;
 
   .habit-details {
     max-height: calc(55vh - 22px);
@@ -17,13 +17,13 @@
 }
 
 .big-calendar {
+  -webkit-font-smoothing: antialiased;
   background-color: $entry-bg;
+  color: rgb(51,51,51);
   flex: 2;
   font-size: $font-size-cal;
-  width: 100%;
-  color: rgb(51,51,51);
   font-weight: 300;
-  -webkit-font-smoothing: antialiased;
+  width: 100%;
 }
 
 .rbc-btn {
@@ -33,9 +33,9 @@
 }
 
 button.rbc-btn {
+  cursor: pointer;
   overflow: visible;
   text-transform: none;
-  cursor: pointer;
 }
 
 button[disabled].rbc-btn {
@@ -48,12 +48,12 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-calendar {
+  align-items: stretch;
   box-sizing: border-box;
-  height: 100%;
-  min-width: 100px;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  height: 100%;
+  min-width: 100px;
 }
 
 .rbc-calendar *,
@@ -64,12 +64,12 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-abs-full,
 .rbc-row-bg {
+  bottom: 0;
+  left: 0;
   overflow: hidden;
   position: absolute;
-  top: 0;
-  left: 0;
   right: 0;
-  bottom: 0;
+  top: 0;
 }
 
 .rbc-ellipsis,
@@ -92,15 +92,15 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-header {
   display: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  //padding: 0 3px;
-  text-align: center;
-  vertical-align: middle;
-  font-weight: bold;
   font-size: 0;
+  font-weight: bold;
   min-height: 0;
+  //padding: 0 3px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .rbc-header > a,
@@ -121,54 +121,54 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-toolbar {
-  display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  display: flex;
   font-size: $font-size-large;
+  margin-bottom: 10px;
 }
 
 .rbc-toolbar button {
-  color: #373a3c;
-  display: inline-block;
-  margin: 0;
-  text-align: center;
-  vertical-align: middle;
   background: none;
   background-image: none;
   border: 1px solid #ccc;
-  //padding: .375rem 1rem;
   border-radius: 3px;
+  color: #373a3c;
+  display: inline-block;
   line-height: normal;
+  margin: 0;
+  //padding: .375rem 1rem;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
 .rbc-toolbar button:active,
 .rbc-toolbar button.rbc-active {
-  background-image: none;
-  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
   background-color: #e6e6e6;
+  background-image: none;
   border-color: #adadad;
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
 }
 
 .rbc-toolbar button:active:hover,
 .rbc-toolbar button.rbc-active:hover,
 .rbc-toolbar button:active:focus,
 .rbc-toolbar button.rbc-active:focus {
-  color: #373a3c;
   background-color: #d4d4d4;
   border-color: #8c8c8c;
+  color: #373a3c;
 }
 
 .rbc-toolbar button:focus {
-  color: #373a3c;
   background-color: #e6e6e6;
   border-color: #adadad;
+  color: #373a3c;
 }
 
 .rbc-toolbar button:hover {
-  color: #373a3c;
   background-color: #e6e6e6;
   border-color: #adadad;
+  color: #373a3c;
 }
 
 .rbc-btn-group {
@@ -177,25 +177,25 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-btn-group > button:first-child:not(:last-child) {
-  border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .rbc-btn-group > button:last-child:not(:first-child) {
-  border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
 }
 
 .rbc-rtl .rbc-btn-group > button:first-child:not(:last-child) {
+  border-bottom-left-radius: 0;
   border-radius: 3px;
   border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
 }
 
 .rbc-rtl .rbc-btn-group > button:last-child:not(:first-child) {
+  border-bottom-right-radius: 0;
   border-radius: 3px;
   border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
 }
 
 .rbc-btn-group > button:not(:first-child):not(:last-child) {
@@ -217,10 +217,10 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-event {
-  cursor: pointer;
-  padding: 2px 4px 0 4px;
   border-radius: 3px;
   color: #fff;
+  cursor: pointer;
+  padding: 2px 4px 0 4px;
 }
 
 .rbc-event.rbc-selected {
@@ -228,8 +228,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-event-label {
-  font-size: 0;
   color: $font-color;
+  font-size: 0;
 }
 
 .rbc-event-overlaps {
@@ -237,13 +237,13 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-event-continues-prior {
-  border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  border-top-left-radius: 0;
 }
 
 .rbc-event-continues-after {
-  border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .rbc-event-continues-earlier {
@@ -282,8 +282,8 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-row-bg {
   display: flex;
-  flex-direction: row;
   flex: 1 0 0;
+  flex-direction: row;
   overflow: hidden;
 }
 
@@ -293,16 +293,16 @@ button.rbc-input::-moz-focus-inner {
 
 .rbc-rtl .rbc-day-bg + .rbc-day-bg {
   border-left-width: 0;
-  border-right: 1px solid #DDD;
+  border-right: 1px solid #ddd;
 }
 
 .rbc-overlay {
+  background-color: #fff;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .25);
+  padding: 10px;
   position: absolute;
   z-index: 5;
-  border: 1px solid #e5e5e5;
-  background-color: #fff;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
-  padding: 10px;
 }
 
 .rbc-overlay > * + * {
@@ -326,10 +326,10 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-timeslot-group {
-  border-bottom: 1px solid #F9F9F9;
-  min-height: 10px;
+  border-bottom: 1px solid #f9f9f9;
   display: flex;
   flex-flow: column nowrap;
+  min-height: 10px;
 }
 
 .rbc-time-gutter,
@@ -338,8 +338,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-label {
-  padding: 0 3px;
   font-size: $font-size-small;
+  padding: 0 3px;
 }
 
 .rbc-day-slot {
@@ -347,11 +347,11 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-day-slot .rbc-event {
-  box-shadow: 0 0 1px 1px #AAA;
-  display: flex;
-  max-height: 100%;
-  flex-flow: column wrap;
   align-items: flex-start;
+  box-shadow: 0 0 1px 1px #aaa;
+  display: flex;
+  flex-flow: column wrap;
+  max-height: 100%;
   overflow: hidden;
 }
 
@@ -362,11 +362,11 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-day-slot .rbc-event-content {
-  width: 100%;
   flex: 1 1 0;
-  word-wrap: break-word;
-  height: 100%;
   font-weight: bold;
+  height: 100%;
+  width: 100%;
+  word-wrap: break-word;
 }
 
 .rbc-day-slot .rbc-time-slot {
@@ -391,22 +391,22 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-slot-selection {
-  z-index: 10;
-  position: absolute;
-  cursor: default;
   background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+  color: #fff;
+  cursor: default;
   font-size: $font-size-small;
   padding: 3px;
+  position: absolute;
+  z-index: 10;
 }
 
 .rbc-time-view {
   display: flex;
-  flex-direction: column;
   flex: 1;
-  width: 100%;
-  //border: 1px solid #DDD;
+  flex-direction: column;
   min-height: 0;
+  //border: 1px solid #DDD;
+  width: 100%;
 }
 
 .rbc-time-view .rbc-time-gutter {
@@ -414,8 +414,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-time-view .rbc-allday-cell {
-  width: 100%;
   position: relative;
+  width: 100%;
 }
 
 .rbc-time-view .rbc-allday-events {
@@ -428,8 +428,8 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-time-view .rbc-row div:nth-child(1) {
-  min-height: 0 !important;
   height: 0 !important;
+  min-height: 0 !important;
 }
 
 .rbc-time-header {
@@ -444,7 +444,7 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-time-header > .rbc-row > * + * {
-  border-left: 1px solid #F9F9F9;
+  border-left: 1px solid #f9f9f9;
 }
 
 .rbc-time-header > .rbc-row:first-child {
@@ -460,13 +460,13 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-time-content {
+  align-items: flex-start;
+  border-top: 1px solid #ddd;
   display: flex;
   flex: 1 0 0;
-  align-items: flex-start;
-  width: 100%;
-  border-top: 1px solid #DDD;
   overflow: hidden;
   position: relative;
+  width: 100%;
 }
 
 .rbc-time-content > .rbc-time-gutter {
@@ -474,38 +474,38 @@ button.rbc-input::-moz-focus-inner {
 }
 
 .rbc-time-content > * + * > * {
-  border-left: 2px solid #F9F9F9;
+  border-left: 2px solid #f9f9f9;
 }
 
 .rbc-rtl .rbc-time-content > * + * > * {
   border-left-width: 0;
-  border-right: 1px solid #DDD;
+  border-right: 1px solid #ddd;
 }
 
 .rbc-time-content > .rbc-day-slot {
-  width: 100%;
   user-select: none;
+  width: 100%;
 }
 
 .rbc-current-time-indicator {
+  background-color: #74ad31;
+  height: 1px;
+  left: 0;
+  pointer-events: none;
   position: absolute;
   z-index: 1;
-  left: 0;
-  height: 1px;
-  background-color: #74ad31;
-  pointer-events: none;
 }
 
 .rbc-current-time-indicator::before {
-  display: block;
-  position: absolute;
-  left: -3px;
-  top: -3px;
-  content: ' ';
   background-color: #74ad31;
   border-radius: 4px;
-  width: 8px;
+  content: ' ';
+  display: block;
   height: 8px;
+  left: -3px;
+  position: absolute;
+  top: -3px;
+  width: 8px;
 }
 
 .rbc-rtl .rbc-current-time-indicator::before {

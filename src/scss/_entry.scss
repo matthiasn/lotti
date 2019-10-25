@@ -1,16 +1,16 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .entry-with-comments {
-  margin: 0 0 0.25em 0;
   background: $entry-bg;
-  height: inherit;
-  flex-shrink: 0;
   border-radius: $entry-border-radius;
+  flex-shrink: 0;
+  height: inherit;
+  margin: 0 0 .25em 0;
 }
 
 .entry {
-  padding: 0.5em 0.8em 0.2em 0.8em;
   font-size: $font-size-medium;
+  padding: 0.5em .8em .2em .8em;
 
   .fa-trash-alt {
     &:hover {
@@ -23,18 +23,18 @@
   }
 
   .mapbox {
-    width: 100%;
     height: 200px;
     position: relative;
+    width: 100%;
 
     .fa-trash-alt {
-      position: absolute;
       color: lighten($red, 20);
-      top: 5px;
-      right: 5px;
-      z-index: 11;
-      font-size: $font-size-small;
       cursor: pointer;
+      font-size: $font-size-small;
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      z-index: 11;
     }
   }
 
@@ -43,7 +43,7 @@
   }
 
   .active {
-    border: 1px solid red;
+    border: 1px solid #f00;
   }
 
   .fa-floppy-o {
@@ -51,21 +51,21 @@
   }
 
   .entry-footer {
+    align-items: center;
+    color: $body-background-color;
     display: flex;
     flex-flow: row;
     justify-content: space-between;
-    align-items: center;
-    user-select: none;
-    color: $body-background-color;
     padding-top: 5px;
+    user-select: none;
 
     .word-count {
-      flex: 1;
-      padding-top: 4px;
-      font-size: $font-size-small;
-      text-align: right;
-      font-family: monospace;
       color: $body-background-color;
+      flex: 1;
+      font-family: monospace;
+      font-size: $font-size-small;
+      padding-top: 4px;
+      text-align: right;
     }
 
     .likes {
@@ -81,14 +81,14 @@
       }
 
       .dur {
-        margin-right: 6px;
         font-family: monospace;
         font-size: $font-size-small;
+        margin-right: 6px;
       }
 
       .fas {
-        padding-right: 5px;
         cursor: pointer;
+        padding-right: 5px;
       }
 
       .start-stop {
@@ -103,8 +103,8 @@
       }
 
       input {
-        min-width: 60px;
         font-size: $font-size-small;
+        min-width: 60px;
       }
 
       i {
@@ -115,8 +115,8 @@
 
   .hashtags {
     span {
-      cursor: pointer;
       border-radius: 2px;
+      cursor: pointer;
     }
   }
 
@@ -150,12 +150,12 @@
 
   h1, h2 {
     font-size: $font-size-large;
-    margin-top: 0.2em;
+    margin-top: .2em;
   }
 
   h3 {
     font-size: $font-size-medium;
-    margin-top: 0.2em;
+    margin-top: .2em;
   }
 
   .edit-md pre code {
@@ -177,8 +177,8 @@
     justify-content: space-between;
 
     .geoname {
-      font-size: $font-size-small;
       display: flex;
+      font-size: $font-size-small;
     }
 
     .loc {
@@ -186,19 +186,19 @@
     }
 
     .fa {
-      padding-top: 7px;
       padding-left: 0;
+      padding-top: 7px;
     }
 
     .flag {
-      position: relative;
       font-size: $font-size-medium;
+      position: relative;
       top: -2px;
     }
 
     .fa {
-      position: relative;
       padding-left: 4px;
+      position: relative;
     }
 
     .up {
@@ -207,22 +207,22 @@
   }
 
   .header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     line-height: 1.4em;
     overflow-wrap: normal;
-    flex-wrap: wrap;
-    display: flex;
-    justify-content: space-between;
     width: 100%;
 
     .action-row {
       display: flex;
       flex-flow: row;
-      width: 100%;
       justify-content: space-between;
+      width: 100%;
     }
 
     .starred {
-      color: gold;
+      color: #ffd700;
       font-weight: 900;
     }
 
@@ -232,11 +232,11 @@
     }
 
     .actions {
-      flex: 2;
       align-items: flex-end;
       display: flex;
-      justify-content: flex-end;
+      flex: 2;
       flex-wrap: nowrap;
+      justify-content: flex-end;
 
       .items {
         white-space: nowrap;
@@ -247,10 +247,11 @@
           color: $green;
         }
       }
+
       .fa {
+        font-size: 11px;
         margin: 0;
         padding: 1px 0 5px 3px;
-        font-size: 11px;
 
         &.album-activated {
           color: $green;
@@ -259,17 +260,17 @@
     }
 
     .datetime {
+      display: flex;
       font-size: $font-size-xs;
       width: 100%;
-      display: flex;
 
       time {
         font-weight: bold;
       }
 
       .visit {
-        margin-left: 6px;
         font-weight: lighter;
+        margin-left: 6px;
 
         time {
           font-weight: normal;
@@ -282,17 +283,17 @@
 
         input {
           font-size: $font-size-xs;
-          padding: 0 0 0 3px;
-          width: 150px !important;
           height: auto;
           margin: 0;
+          padding: 0 0 0 3px;
+          width: 150px !important;
         }
 
         i {
-          cursor: pointer;
-          padding: 3px 3px;
           color: #999;
+          cursor: pointer;
           font-size: $font-size-medium;
+          padding: 3px 3px;
         }
 
       }
@@ -317,8 +318,8 @@
       text-align: center;
 
       .incomplete {
-        font-size: 1em;
         color: #999;
+        font-size: 1em;
       }
 
       .completed {
@@ -328,14 +329,14 @@
 
       .completed-cnt {
         color: $green;
-        font-size: 0.8em;
+        font-size: .8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
 
       .incomplete-cnt {
         color: #999;
-        font-size: 0.8em;
+        font-size: .8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
@@ -347,15 +348,15 @@
 
       .bolt-cnt {
         color: $red;
-        font-size: 0.8em;
+        font-size: .8em;
         font-weight: bold;
       }
 
       .dur {
-        margin-left: 0.2em;
-        margin-right: 0.3em;
-        font-size: 0.8em;
+        font-size: .8em;
         font-weight: bold;
+        margin-left: .2em;
+        margin-right: 0.3em;
       }
     }
 
@@ -365,18 +366,18 @@
     }
 
     div:nth-child(4) {
-      flex-grow: 2;
-      display: flex;
-      justify-content: flex-end;
       align-items: flex-end;
+      display: flex;
+      flex-grow: 2;
       flex-wrap: wrap;
+      justify-content: flex-end;
       transition: opacity 0.5s;
     }
   }
 
   p, ul {
-    margin-top: 0.2em;
-    margin-bottom: 0.4em;
+    margin-bottom: .4em;
+    margin-top: .2em;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -394,16 +395,16 @@
 }
 
 .show-comments {
-  margin-top: -2px;
   height: 22px;
+  margin-top: -2px;
 
   span {
-    margin-left: 0.8em;
-    padding: 1px 5px;
-    color: white;
     background-color: lighten(desaturate($hashtag-blue, 35%), 15%);
+    color: #fff;
     cursor: pointer;
     font-size: $font-size-small;
+    margin-left: .8em;
+    padding: 1px 5px;
   }
 }
 
@@ -428,19 +429,19 @@
   }
 
   h2 {
-    margin-top: 8px;
     font-weight: lighter;
+    margin-top: 8px;
   }
 
   .overview {
-    position: relative;
     left: auto;
+    position: relative;
     right: 0;
 
     .click {
-      padding: 3px;
+      color: #aaa;
       cursor: pointer;
-      color: #AAA;
+      padding: 3px;
 
       i {
         font-size: 1.2em;
@@ -458,22 +459,22 @@
 }
 
 input {
+  border: 0;
   border-radius: $entry-border-radius;
-  outline: none !important;
   //border:1px solid #CCC;
-  border: none;
-  box-shadow: 0 0 2px #AAA;
-  padding: 3px 6px;
+  box-shadow: 0 0 2px #aaa;
+  color: #444;
+  display: inline-block;
   font-size: $font-size-medium;
   font-weight: bold;
-  color: #444;
   height: 20px;
-  display: inline-block;
+  outline: none !important;
+  padding: 3px 6px;
 }
 
 input[type="number"] {
-  width: 100px !important;
   margin-right: 8px;
+  width: 100px !important;
 }
 
 input[type="checkbox"] {
@@ -481,13 +482,13 @@ input[type="checkbox"] {
 }
 
 input[type="time"] {
-  width: 100px !important;
   margin-right: 8px;
+  width: 100px !important;
 }
 
 input[type="datetime-local"] {
-  width: 170px !important;
   margin-right: 8px;
+  width: 170px !important;
 }
 
 .task-details, .habit-details {
@@ -519,8 +520,8 @@ u {
 }
 
 .habits, .tasks {
-  width: 100%;
   font-size: $font-size-small;
+  width: 100%;
 
   .fa-diamond {
     color: $green;
@@ -531,12 +532,12 @@ u {
   }
 
   .xs {
-    width: 10px;
     padding-left: 0;
+    width: 10px;
   }
 
   .fa-star {
-    color: gold;
+    color: #ffd700;
   }
 
   .fa-unlink {
@@ -548,8 +549,8 @@ u {
     width: 32px;
 
     .neg {
-      font-weight: 400;
       color: $red;
+      font-weight: 400;
     }
   }
 
@@ -588,11 +589,11 @@ u {
   background-color: lighten($edit-menu-bg, 7);
 
   i.fa {
-    color: #BBB;
+    color: #bbb;
   }
 
   .active-button {
-    background-color: #DDD;
+    background-color: #ddd;
     color: #333;
   }
 
@@ -608,26 +609,26 @@ u {
     }
 
     .active-button {
-      background-color: #BBB;
+      background-color: #bbb;
       color: #333;
     }
 
     i.fa-save {
       background-color: $red;
-      color: white;
+      color: #fff;
       font-weight: 500;
     }
   }
 
-  padding: 0 4px;
   margin: 0 -9px 5px -9px;
+  padding: 0 4px;
 
   .header-2 {
-    font-size: 0.9em;
+    font-size: .9em;
   }
 
   .header-3 {
-    font-size: 0.8em;
+    font-size: .8em;
   }
 
   .header-4 {
@@ -643,8 +644,8 @@ u {
   }
 
   .fa {
-    padding: 3px 2px;
     cursor: pointer;
+    padding: 3px 2px;
   }
 
   .fa-wide {

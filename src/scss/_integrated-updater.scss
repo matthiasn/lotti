@@ -1,38 +1,38 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .updater {
-  z-index: 1111;
+  background-color: #fff;
+  border-left: $red solid 3px;
+  border-top: $red solid 3px;
+  border-top-left-radius: 10px;
+  bottom: 0;
+  height: auto;
   padding: 10px 24px;
   position: fixed;
   right: 0;
-  bottom: 0;
-  background-color: white;
   width: 360px;
-  height: auto;
-  border-top-left-radius: 10px;
-  border-left: $red solid 3px;
-  border-top: $red solid 3px;
+  z-index: 1111;
 
   .fa-chevron-double-down, .fa-chevron-double-up {
-    position: absolute;
-    right: 8px;
     bottom: 12px;
     cursor: pointer;
+    position: absolute;
+    right: 8px;
   }
 
   h2 {
-    margin-top: 6px;
     margin-bottom: 10px;
+    margin-top: 6px;
   }
 
   button {
     background-color: $hashtag-blue;
-    padding: 4px 10px 6px 10px;
-    font-size: $font-size-medium;
     font-family: $header-font-family;
+    font-size: $font-size-medium;
+    padding: 4px 10px 6px 10px;
 
     &:focus {
-      outline:0;
+      outline: 0;
     }
   }
 
@@ -43,18 +43,18 @@
 
 // adapted from https://css-tricks.com/css3-progress-bars/
 .meter {
-  height: 10px;
-  position: relative;
-  background-color: #DDD;
+  background-color: #ddd;
   border-radius: 6px;
+  height: 10px;
   padding: 3px;
+  position: relative;
 }
 
 .meter > span {
+  background-color: $orange;
+  border-radius: 4px;
   display: block;
   height: 100%;
-  border-radius: 4px;
-  background-color: $orange;
-  position: relative;
   overflow: hidden;
+  position: relative;
 }

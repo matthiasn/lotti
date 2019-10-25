@@ -1,39 +1,41 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .problem {
+  color: #5d7186;
   font-family: $header-font-family;
   font-size: 12px;
-  color: #5d7186;
 
   .btn {
     background-color: $green;
-    padding: 3px 6px;
     border-radius: 3px;
     font-size: $font-size-small;
+    padding: 3px 6px;
 
     &.conclusion {
-      width: 50px;
       margin-right: 20px;
       text-align: center;
+      width: 50px;
     }
+
     &.pivot {
       background-color: $red;
     }
+
     &.gray {
-      background-color: #CCC;
+      background-color: #ccc;
     }
   }
 
   .name-edit-field {
-    padding: 4px 6px;
     background-color: $search-field-color;
-    font-family: $header-font-family;
     display: inline-block;
-    min-width: 200px;
-    margin-bottom: 10px;
-    outline: none;
+    font-family: $header-font-family;
     font-size: $font-size-medium;
     font-weight: bold;
+    margin-bottom: 10px;
+    min-width: 200px;
+    outline: none;
+    padding: 4px 6px;
   }
 
   h2 {
@@ -41,9 +43,9 @@
   }
 
   hr {
-    height:1px;
-    border:none;
-    background-color:#5d7186;
+    background-color: #5d7186;
+    border: 0;
+    height: 1px;
   }
 
   .row {
@@ -52,13 +54,13 @@
   }
 
   &.story-name {
+    border-radius: $entry-border-radius;
+    cursor: pointer;
+    display: flex;
     font-size: $font-size-medium;
     font-weight: normal;
-    display: flex;
-    cursor: pointer;
     margin-bottom: 4px;
     padding: 2px 4px;
-    border-radius: $entry-border-radius;
 
     i {
       margin-right: 6px;
@@ -74,12 +76,12 @@
   .badge {
     text-align: center;
     .story-badge {
+      border-radius: $entry-border-radius;
+      display: inline-block;
       font-size: $header-font-family;
       font-weight: bold;
-      display: inline-block;
-      padding: 8px 12px;
       margin: 12px 0 20px 12px;
-      border-radius: $entry-border-radius;
+      padding: 8px 12px;
     }
   }
 
@@ -98,8 +100,8 @@
 
   .saga {
     select {
-      min-width: 200px;
       margin: 10px 0 20px 0;
+      min-width: 200px;
     }
 
     .fa-toggle-on {
@@ -117,18 +119,18 @@
   }
 
   .stories {
-    margin-bottom: 0.5em;
-    line-height: 1.4em;
     font-size: 2em;
+    line-height: 1.4em;
+    margin-bottom: 0.5em;
     position: relative;
   }
 
   .story-list {
-    position: absolute;
-    background-color: white;
-    z-index: 1002;
+    background-color: #fff;
+    border: #bbb 1px solid;
     padding: 2px 4px 4px 4px;
+    position: absolute;
     white-space: nowrap;
-    border: #BBB 1px solid;
+    z-index: 1002;
   }
 }

@@ -1,11 +1,11 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .dashboard {
-  background-color: white;
-  width: 350px;
   align-self: flex-end;
-  overflow-y: auto;
+  background-color: #fff;
   max-height: calc(100vh - 45px);
+  overflow-y: auto;
+  width: 350px;
 
   .display-text {
     margin-right: 64px;
@@ -13,15 +13,15 @@
   }
 
   pre {
-    color: white!important;
+    color: #fff !important;
   }
 
   h2 {
+    color: $font-color;
+    flex: 2;
+    font-size: $font-size-medium;
     margin-bottom: 4px;
     padding-top: 10px;
-    flex: 2;
-    color: $font-color;
-    font-size: $font-size-medium;
     text-align: center;
   }
 
@@ -32,9 +32,9 @@
 
     .ctrl {
       display: flex;
+      flex-flow: row;
       justify-content: center;
       padding-top: 4px;
-      flex-flow: row;
 
       .offset {
         padding-left: 20px;
@@ -45,16 +45,16 @@
     .btns {
       padding-bottom: 2px;
       i {
-        width: 14px;
-        height: 12px;
-        padding: 3px 6px;
+        background-color: #ddd;
         border-radius: 2px;
-        background-color: #DDD;
-        text-align: center;
+        height: 12px;
         margin-left: 4px;
+        padding: 3px 6px;
+        text-align: center;
+        width: 14px;
         &:hover {
           background-color: $hashtag-blue;
-          color: white;
+          color: #fff;
         }
       }
     }

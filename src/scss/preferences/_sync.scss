@@ -2,31 +2,31 @@
 
 .sync-cfg {
   background-color: $cfg-bg;
-  width: 100%;
-  padding-left: 50px;
+  color: #eee;
   height: 100%;
   overflow-y: auto;
-  color: #EEE;
+  padding-left: 50px;
+  width: 100%;
 
   .fa-check {
-    color: #79C693;
+    color: #79c693;
   }
 
   #qr-video {
-    width: 640px;
-    height: 360px;
     border-radius: 18px;
+    height: 360px;
+    width: 640px;
   }
 
   button {
+    background-color: #4a546e;
     border-radius: 18px;
-    background-color: #4A546E;
     font-weight: lighter;
     outline: 0;
 
     &:hover {
-      transition: all 0.4s ease 0s;
-      background-color: lighten(#4A546E, 5);
+      background-color: lighten(#4a546e, 5);
+      transition: all .4s ease 0s;
     }
   }
 
@@ -39,67 +39,69 @@
   }
 
   .nav {
-    margin-top: 40px;
-    margin-bottom: 30px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    margin-bottom: 30px;
+    margin-top: 40px;
   }
+
   .welcome {
-    color: #EEE;
+    color: #eee;
   }
 
   #sync-cfg-qr {
     svg {
-      background-color: white;
+      background-color: #fff;
       border-radius: 18px;
     }
   }
 
   .scanned {
-    color: white;
+    color: #fff;
     font-size: $font-size-xs;
   }
 
   img {
-    margin-top: 60px;
     margin-right: 30px;
+    margin-top: 60px;
   }
+
   .settings {
 
     input {
+      background-color: #4a546e;
+      border-radius: 18px;
+      border-width: 0;
+      color: #eee;
+      font-family: monospace;
+      font-size: 14px;
       margin: 6px;
+      outline: none;
       padding: 6px 12px;
       width: 350px;
-      color: #EEE;
-      font-size: 14px;
-      font-family: monospace;
-      background-color: #4A546E;
-      outline: none;
-      border-width: 0;
-      border-radius: 18px;
     }
 
     .fas {
-      padding: 0 20px;
-      font-weight: bold;
       font-size: 2em;
+      font-weight: bold;
+      padding: 0 20px;
     }
 
     table {
       margin-top: 20px;
-
-      tr.spacer {
-        height: 20px;
-      }
 
       .btn-check {
         height: 30px
       }
 
       tr {
-        cursor: default;
         background-color: transparent;
+        cursor: default;
+
+        &.spacer {
+          height: 20px;
+        }
 
         &.invisible {
           opacity: 0;
@@ -108,6 +110,7 @@
         button {
           float: right;
           font-size: 14px;
+
           &.save {
             background-color: $red;
           }
@@ -115,17 +118,19 @@
       }
 
       td {
+        color: #eee;
         font-size: 14px;
-        text-align: right;
         margin-left: 20px;
-        color: #EEE;
+        text-align: right;
+
         &.r {
           align-content: flex-end;
         }
 
         &.success {
-          color: #79C693;
+          color: #79c693;
         }
+
         &.fail {
           color: $red;
         }

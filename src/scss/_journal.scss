@@ -1,9 +1,9 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 #content {
   display: flex;
-  flex-grow: 1;
   flex-flow: column;
+  flex-grow: 1;
   min-height: 0;
 }
 
@@ -14,57 +14,58 @@
 
   .tab-items {
     display: flex;
+    margin-right: 5px;
     overflow-x: auto;
     overflow-y: hidden;
-    margin-right: 5px;
     width: 100%;
   }
 
   .tab-item {
-    position: relative;
-    height: 16px;
+    background-color: #fff;
+    border-bottom: 3px inset $tab-bg;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    cursor: pointer;
     display: flex;
-    background-color: white;
-    padding: 3px;
+    font-family: $header-font-family;
+    font-size: .8em;
+    font-weight: 300;
+    height: 16px;
     margin: 0 2px 0 0;
     min-width: 14px;
-    cursor: pointer;
-    font-size: 0.8em;
-    font-family: $header-font-family;
-    font-weight: 300;
+    padding: 3px;
+    position: relative;
     white-space: nowrap;
-    border-top-right-radius: 2px;
-    border-top-left-radius: 2px;
-    border-bottom: 3px inset $tab-bg;
 
     &.add-tab {
       background-color: lighten($green, 10);
-      font-weight: bold;
       color: lighten($green, 50);
-      padding-left: 6px;
+      font-weight: bold;
       min-width: 9px;
+      padding-left: 6px;
     }
 
     &.full {
       border-radius: $entry-border-radius;
-      padding: 8px 18px 8px 10px;
       font-size: $font-size-large;
       margin: 6px;
+      padding: 8px 18px 8px 10px;
 
       .fa-plus {
-        margin-left: 6px!important;
+        margin-left: 6px !important;
         margin-right: 16px;
       }
     }
 
     &.close-all {
       background-color: lighten($red, 30);
-      font-weight: bold;
       color: #999;
+      font-weight: bold;
 
       span {
         margin-top: 7px;
       }
+
       i {
         margin-top: 1px;
       }
@@ -75,30 +76,31 @@
     }
 
     .fa-times {
-      position: absolute;
       cursor: default;
-      top: 0;
+      position: absolute;
       right: 2px;
+      top: 0;
     }
   }
+
   .active {
-    border-bottom-width: 6px;
-    height: 13px;
     border-bottom-style: inset;
+    border-bottom-width: 6px;
     font-weight: 400;
+    height: 13px;
   }
 }
 
 .journal {
   display: flex;
   flex-flow: row;
-  min-height: 0;
   height: 100%;
+  min-height: 0;
 }
 
 .journal-entries {
-  flex-flow: column;
   flex: 1;
+  flex-flow: column;
   overflow-x: hidden;
   overflow-y: scroll;
   width: 100%;
@@ -109,25 +111,25 @@
 }
 
 .new-entries {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  align-items: center;
   background-color: rgba(55,55,55,0.7);
   display: flex;
-  align-items: center;
+  height: 100%;
   justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
   z-index: 1111;
 
   .new-entries-list {
     flex-flow: column;
     flex-grow: 1;
     flex-shrink: 0;
-    margin: 6em 0.6em 5em 0.4em;
+    margin: 6em 0.6em 5em .4em;
+    max-height: 80%;
     max-width: 600px;
     min-height: 70%;
-    max-height: 80%;
     overflow-y: auto;
   }
 }

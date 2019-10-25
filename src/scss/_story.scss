@@ -1,20 +1,20 @@
-@import "variables.scss";
+@import 'variables.scss';
 
 .story-edit-field {
-  padding: 4px 6px;
-  height: 2em;
   background-color: $search-field-color;
-  font-size: 12px;
-  font-family: $header-font-family;
   display: inline-block;
-  min-width: 200px;
+  font-family: $header-font-family;
+  font-size: 12px;
+  height: 2em;
   margin-bottom: 20px;
+  min-width: 200px;
+  padding: 4px 6px;
 }
 
 .story {
+  color: #5d7186;
   font-family: $header-font-family;
   font-size: 12px;
-  color: #5d7186;
 
   .row {
     display: flex;
@@ -22,13 +22,13 @@
   }
 
   &.story-name {
+    border-radius: $entry-border-radius;
+    cursor: pointer;
+    display: flex;
     font-size: $font-size-medium;
     font-weight: normal;
-    display: flex;
-    cursor: pointer;
     margin-bottom: 4px;
     padding: 2px 4px;
-    border-radius: $entry-border-radius;
 
     i {
       margin-right: 6px;
@@ -44,12 +44,12 @@
   .badge {
     text-align: center;
     .story-badge {
+      border-radius: $entry-border-radius;
+      display: inline-block;
       font-size: $header-font-family;
       font-weight: bold;
-      display: inline-block;
-      padding: 8px 12px;
       margin: 12px 0 20px 12px;
-      border-radius: $entry-border-radius;
+      padding: 8px 12px;
     }
   }
 
@@ -65,8 +65,8 @@
 
   .saga {
     select {
-      min-width: 200px;
       margin: 10px 0 20px 0;
+      min-width: 200px;
     }
 
     .fa-toggle-on {
@@ -84,19 +84,19 @@
   }
 
   .stories {
-    margin-bottom: 0.5em;
-    line-height: 1.4em;
     font-size: 2em;
+    line-height: 1.4em;
+    margin-bottom: 0.5em;
     position: relative;
   }
 
   .story-list {
-    position: absolute;
-    background-color: white;
-    z-index: 1002;
+    background-color: #fff;
+    border: #bbb 1px solid;
     padding: 2px 4px 4px 4px;
+    position: absolute;
     white-space: nowrap;
-    border: #BBB 1px solid;
+    z-index: 1002;
   }
 }
 
@@ -112,8 +112,8 @@
     }
 
     &.predicted {
-      background-color: lightgreen;
-      color: black;
+      background-color: #90ee90;
+      color: #000;
     }
 
     &:hover {
@@ -122,21 +122,21 @@
   }
 
   .story-search {
-    position: absolute;
-    background-color: white;
-    top: 0;
-    z-index: 1002;
-    padding: 4px 0;
-    white-space: nowrap;
+    background-color: #fff;
     border: #aaa 1px solid;
     border-radius: 5px;
-    box-shadow: 0 0 1px 1px #AAA;
-    font-size: 0.8em;
+    box-shadow: 0 0 1px 1px #aaa;
+    font-size: .8em;
+    padding: 4px 0;
+    position: absolute;
+    top: 0;
+    white-space: nowrap;
+    z-index: 1002;
 
     table {
-      max-width: 260px;
       border-spacing: 0;
       font-size: $font-size-small;
+      max-width: 260px;
     }
 
     tr:nth-child(even) {
@@ -161,22 +161,22 @@
     }
 
     input {
-      width: 100px;
-      outline: none;
-      margin-right: 10px;
-      background-color: #EEE;
-      border: none;
+      background-color: #eee;
+      border: 0;
       box-shadow: none;
-      padding: 0 6px;
       margin-bottom: 5px;
+      margin-right: 10px;
+      outline: none;
+      padding: 0 6px;
+      width: 100px;
     }
 
     i {
+      color: #777;
       font-size: 12px;
       font-weight: bold;
-      padding: 0 4px;
       opacity: 1;
-      color: #777;
+      padding: 0 4px;
     }
   }
 }
