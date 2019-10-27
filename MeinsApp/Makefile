@@ -112,4 +112,4 @@ playstore-upload:
 playstore: npm-deps cljs fastlane-beta-android playstore-upload
 
 android-install:
-	adb install android/app/build/outputs/apk/release/app-release.apk
+	adb install app/build/outputs/bundle/release/app-release.aab
