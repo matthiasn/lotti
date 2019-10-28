@@ -99,11 +99,15 @@ fastlane-beta-android:
 	@echo Building Android via Fastlane
 	cd android && fastlane bundle && cd ..
 
+fastlane-apk-android:
+	@echo Building Android via Fastlane
+	cd android && fastlane build && cd ..
+
 metro:
 	@echo Starting Metro Bundler...
 	node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js start --reset-cache
 
-android: npm-deps cljs fastlane-beta-android
+android: npm-deps cljs fastlane-apk-android
 
 playstore-upload:
 	@echo Uploading to Playstore
@@ -112,4 +116,4 @@ playstore-upload:
 playstore: npm-deps cljs fastlane-beta-android playstore-upload
 
 android-install:
-	adb install app/build/outputs/bundle/release/app-release.aab
+	adb install android/app/build/outputs/apk/release/app-release.apk
