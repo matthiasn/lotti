@@ -134,4 +134,10 @@ publish-github:
 	@echo Publishing to GitHub Releases - requires GH_TOKEN in ENV...
 	@electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
+lint-classpath:
+	clj-kondo --lint "$$(shadow-cljs classpath)" || true
+
+lint:
+	clj-kondo --lint src
+
 release: install publish-github
