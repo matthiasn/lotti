@@ -4,7 +4,7 @@
   :license {:name "GNU AFFERO GENERAL PUBLIC LICENSE"
             :url  "https://www.gnu.org/licenses/agpl-3.0.en.html"}
   :dependencies [[buddy/buddy-sign "3.1.0"]
-                 [camel-snake-kebab "0.4.0"]
+                 [camel-snake-kebab "0.4.1"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [cheshire "5.9.0"]
                  [clj-http "3.10.0"]
@@ -20,7 +20,7 @@
                  [com.walmartlabs/lacinia-pedestal "0.12.0"]
                  [danlentz/clj-uuid "0.1.9"]
                  [enlive "1.1.6"]
-                 [factual/geo "2.1.1"]
+                 [factual/geo "3.0.1"]
                  [hiccup "1.0.5"]
                  [image-resizer "0.1.10"]
                  [markdown-clj "1.10.0"]
@@ -40,7 +40,7 @@
                  [org.eclipse.jetty.websocket/websocket-server "9.4.7.v20170914"]
                  [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
                  [progrock "0.1.2"]
-                 [ring/ring-core "1.7.1"]
+                 [ring/ring-core "1.8.0"]
                  [ubergraph "0.8.1"]
                  [vincit/venia "0.2.5"]]
 
@@ -68,29 +68,16 @@
 
   :doo {:paths {:karma "./node_modules/karma/bin/karma"}}
 
-  :plugins [[deraen/lein-sass4clj "0.4.1"]
+  :plugins [[deraen/lein-sass4clj "0.5.0"]
             [lein-ancient "0.6.15"]
-            [lein-cloverage "1.1.1"]
             [lein-jlink "0.2.1"]
             [lein-nsorg "0.3.0"]
-            [lein-shell "0.5.0"]
             [test2junit "1.4.2"]]
 
   :jlink-modules ["java.base" "java.sql" "java.desktop" "java.naming"
                   "java.management" "jdk.unsupported" "jdk.crypto.cryptoki"]
 
-  ;:global-vars {*assert* false}
-
   :test2junit-run-ant true
 
   :sass {:source-paths ["src/scss/"]
-         :target-path  "resources/public/css/"}
-
-  :aliases {"sass" ["sass4clj" "once"]
-            "dist" ["do"
-                    ["clean"]
-                    ["test"]
-                    ["cljs-main"]
-                    ["cljs-renderer"]
-                    ["sass4clj" "once"]
-                    ["jlink" "assemble"]]})
+         :target-path  "resources/public/css/"})
