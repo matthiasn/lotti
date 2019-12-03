@@ -22,7 +22,6 @@ package: install package-only
 
 deps-mac:
 	npm install -g electron-rebuild
-	npm install -g yarn
 	npm install -g shadow-cljs
 	mkdir ./bin
 
@@ -32,7 +31,6 @@ deps-win:
 	choco install nvm -y
 	nvm install 12.8.1
 	nvm use 12.8.1
-	npm install -g yarn
 	npm install -g shadow-cljs
 	npm install -g windows-build-tools
 	npm install -g electron-rebuild
@@ -53,7 +51,6 @@ deps-ubuntu:
 	npm install -g electron-build-env
 	npm install -g electron-rebuild
 	npm install -g node-gyp
-	npm install -g yarn
 	npm install -g webpack
 	npm install -g shadow-cljs
 	mkdir ./bin
@@ -63,7 +60,7 @@ clean:
 	@rm -rf ./bin
 	@rm -rf ./dist
 	@lein clean
-	@rm -f ./yarn.lock
+	@rm -f ./package-lock.json
 
 deps: clean
 	@echo Fetching Leiningen dependencies...
@@ -71,9 +68,9 @@ deps: clean
 
 npm-deps: clean
 	@echo Fetching NPM dependencies...
-	@yarn install
+	@npm install
 	@npm install -g electron-builder
-	@electron-rebuild -v 7.0.0 -w keytar
+	@electron-rebuild -v 7.1.3 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
