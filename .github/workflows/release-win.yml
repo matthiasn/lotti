@@ -22,7 +22,7 @@ jobs:
           choco install make -y
           choco install lein -y
           choco install python2 -y
-          npm install -g yarn
+          npm set progress=false
           npm install -g shadow-cljs
           npm install -g windows-build-tools@4.0.0
           npm install -g node-gyp
