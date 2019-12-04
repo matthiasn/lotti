@@ -51,3 +51,5 @@ dist/
 __pycache__/
 
 SPOTIFY_SECRET
+
+.clj-kondo/.cache/
