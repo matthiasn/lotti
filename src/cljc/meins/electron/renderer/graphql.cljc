@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.graphql
   (:require #?(:clj
                      [taoensso.timbre :refer [debug info warn]]
-               :cljs [taoensso.timbre :refer-macros [debug info warn]])
+               :cljs [taoensso.timbre :refer [debug info warn]])
             [clojure.string :as s]
             [venia.core :as v]))
 

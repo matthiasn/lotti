@@ -34,8 +34,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn hashtags-mentions [entry tab-group]
   (let [clear-import #(emit [:entry/update (update entry :tags disj "#import")])

@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.charts.common :as cc]
             [moment]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn time-by-stories
   "Render list of times spent on individual stories, plus the total."

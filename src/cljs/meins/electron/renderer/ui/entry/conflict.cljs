@@ -2,7 +2,7 @@
   (:require [cljs.pprint :as pp]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn conflict-view [entry]
   (let [local (r/atom {})]

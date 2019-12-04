@@ -8,8 +8,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [info]]))
 
 (defn day-bars [day-stats local idx chart-h y-scale put-fn]
   (let [options (subscribe [:options])

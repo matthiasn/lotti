@@ -11,8 +11,8 @@
             [moment]
             [moment-duration-format]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn task-sorter [x y]
   (let [c0 (compare (get-in x [:task :closed]) (get-in y [:task :closed]))

@@ -1,7 +1,7 @@
 (ns meins.electron.main.update
   (:require [electron-log :as electron-log]
             [electron-updater :refer [autoUpdater]]
-            [taoensso.timbre :refer-macros [error info]]))
+            [taoensso.timbre :refer [error info]]))
 
 (defn state-fn [put-fn]
   (try

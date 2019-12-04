@@ -1,7 +1,7 @@
 (ns meins.parse-test
   "Here, we test the parsing functions."
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
-               :cljs [cljs.test :refer-macros [deftest is testing]])
+               :cljs [cljs.test :refer [deftest is testing]])
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]))
 

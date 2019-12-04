@@ -2,7 +2,7 @@
   "Parsing functions, tested in 'meins.jvm.parse-test' namespace."
   (:require [clojure.set :as set]
             [clojure.string :as s]
-            [taoensso.timbre :refer-macros [info]]))
+            [taoensso.timbre :refer [info]]))
 
 (def tag-char-cls "[\\w\\-\\u00C0-\\u017F]")
 

@@ -6,8 +6,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn pomodoro-time [entry _edit-mode?]
   (let [local (r/atom {:edit  false

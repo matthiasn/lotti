@@ -2,7 +2,7 @@
   (:require [clojure.walk :as walk]
             [electron :refer [app dialog globalShortcut Menu shell]]
             [meins.electron.main.runtime :as rt]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [taoensso.timbre :refer [debug info]]))
 
 (def capabilities (:capabilities rt/runtime-info))
 (def platform (:platform rt/runtime-info))

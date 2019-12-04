@@ -2,7 +2,7 @@
   (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
+            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn thumb-view [album-ts entry selected local]

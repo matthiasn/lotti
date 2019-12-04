@@ -5,8 +5,8 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn debug-view [entry new-entry local]
   (let [click #(.writeText clipboard (pr-str entry))]

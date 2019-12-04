@@ -2,7 +2,7 @@
   (:require [clojure.set :as set]
             [clojure.string :as s]
             [meins.common.specs :as specs]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [taoensso.timbre :refer [debug info]]))
 
 (defn duration-string
   "Format duration string from seconds."

@@ -8,8 +8,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn parse-and-set [entry path tag input-type]
   (let [value (get-in entry path)]

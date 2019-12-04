@@ -6,7 +6,7 @@
             [electron :refer [app systemPreferences]]
             [fs :refer [existsSync readFileSync renameSync]]
             [path :refer [join normalize]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (def runtime-info
   (let [cwd (.cwd process)

@@ -3,7 +3,7 @@
    can also run on the JVM, as we only have pure punctions in the target
    namespace."
   (:require #?(:clj  [clojure.test :refer [deftest is testing]]
-               :cljs [cljs.test :refer-macros [deftest is testing]])
+               :cljs [cljs.test :refer [deftest is testing]])
             [meins.common.utils.misc :as u]
             [meins.jvm.file-utils :as fu]))
 

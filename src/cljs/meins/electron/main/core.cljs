@@ -18,7 +18,7 @@
             [meins.electron.main.screenshot :as screen]
             [meins.electron.main.startup :as st]
             [meins.electron.main.update :as upd]
-            [taoensso.timbre :refer-macros [info]]))
+            [taoensso.timbre :refer [info]]))
 
 (aset process "env" "GOOGLE_API_KEY" "AIzaSyD78NTnhgt--LCGBdIGPEg8GtBYzQl0gKU")
 

@@ -2,7 +2,7 @@
   (:require ["keytar" :as keytar :refer [getPassword setPassword]]
             [meins.electron.main.runtime :as rt]
             [meins.shared.encryption :as mse]
-            [taoensso.timbre :refer-macros [debug error info warn]]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def app-key
   (if (:repo-dir rt/runtime-info)

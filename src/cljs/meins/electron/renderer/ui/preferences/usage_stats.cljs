@@ -7,8 +7,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [error info]]
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [error info]]
             [venia.core :as v]))
 
 (defn gh-2-bounds [geohash]

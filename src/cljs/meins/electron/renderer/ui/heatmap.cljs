@@ -10,8 +10,8 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (def heatmap-data
   {:type "geojson"

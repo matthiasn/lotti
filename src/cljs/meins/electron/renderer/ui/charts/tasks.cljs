@@ -3,7 +3,7 @@
             [meins.electron.renderer.ui.charts.common :as cc]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn tasks-chart
   "Draws chart for opened and closed tasks, where the bars for the counts of

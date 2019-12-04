@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.spellcheck
   (:require #_[electron-spellchecker
              :refer [SpellCheckHandler ContextMenuListener ContextMenuBuilder]]
-            [taoensso.timbre :refer-macros [info]]))
+            [taoensso.timbre :refer [info]]))
 
 (defn set-lang [{:keys [msg-payload current-state]}]
   (let [cc msg-payload

@@ -7,8 +7,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn chart-line [scores point-mapper cfg]
   (let [active-dashboard (subscribe [:active-dashboard])]

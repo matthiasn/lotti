@@ -15,7 +15,7 @@
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.impl.component :as ric]
-            [reagent.ratom :refer-macros [reaction]]
+            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]
             [turndown :as turndown]))
 

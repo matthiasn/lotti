@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.router
   (:require [goog.events]
-            [secretary.core :as secretary :refer-macros [defroute]])
+            [secretary.core :as secretary :refer [defroute]])
   (:import [goog.history EventType Html5History]))
 
 (defn page-id

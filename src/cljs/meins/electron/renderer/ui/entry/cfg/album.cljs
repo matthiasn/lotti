@@ -4,8 +4,8 @@
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn album-config [entry]
   (let [title-path [:album_cfg :title]

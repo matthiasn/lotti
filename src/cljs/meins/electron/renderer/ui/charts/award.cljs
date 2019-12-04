@@ -2,7 +2,7 @@
   (:require [meins.electron.renderer.helpers :as h]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn points-by-day-chart
   "Renders bars."

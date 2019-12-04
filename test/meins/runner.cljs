@@ -1,5 +1,5 @@
 (ns meins.runner
-  (:require [cljs.test :refer-macros [deftest is run-tests testing]]
+  (:require [cljs.test :refer [deftest is run-tests testing]]
             [clojure.string :as s]
             [meins.electron.renderer.client-store-entry-test]
             [meins.electron.renderer.client-store-search-test]

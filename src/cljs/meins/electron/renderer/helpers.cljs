@@ -15,7 +15,7 @@
             [moment-duration-format]
             [path :refer [normalize]]
             [reagent.core :as rc]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn target-val [ev] (-> ev .-nativeEvent .-target .-value))
 

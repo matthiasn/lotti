@@ -2,8 +2,8 @@
   (:require [clojure.string :as s]
             [meins.common.utils.misc :as u]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn entry-reaction [ts]
   (let [new-entries (subscribe [:new-entries])

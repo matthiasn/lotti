@@ -10,7 +10,7 @@
             [http :as http]
             [meins.electron.main.runtime :as rt]
             [path :refer [join normalize]]
-            [taoensso.timbre :refer-macros [error info]]))
+            [taoensso.timbre :refer [error info]]))
 
 (def PORT (:port rt/runtime-info))
 (def data-path (:data-path rt/runtime-info))

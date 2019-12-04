@@ -7,8 +7,8 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [moment]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn habits-chart
   [{:keys [habit]}]

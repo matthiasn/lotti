@@ -6,7 +6,7 @@
             [re-frame.core :refer [subscribe]]
             [react-list :as rl]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
+            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (def react-list (r/adapt-react-class rl))

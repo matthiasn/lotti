@@ -11,8 +11,8 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [info]]))
 
 (defn trash-icon [trash-fn]
   (let [local (r/atom {:visible false})

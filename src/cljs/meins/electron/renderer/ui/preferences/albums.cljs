@@ -8,8 +8,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [error info]]))
 
 (defn lower-case [str]
   (if str (s/lower-case str) ""))

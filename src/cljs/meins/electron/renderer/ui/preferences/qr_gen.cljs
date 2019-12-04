@@ -5,7 +5,7 @@
             [meins.shared.encryption :as mse]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [error info]]))
+            [taoensso.timbre :refer [error info]]))
 
 (defn qr-code [s]
   (r/create-class

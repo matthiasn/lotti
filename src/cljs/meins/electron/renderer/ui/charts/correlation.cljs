@@ -4,8 +4,8 @@
             [meins.electron.renderer.ui.data-explorer :as dex]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn scatter-plot [combined xk yk x-off y-off]
   (let [avg (fn [v] (if (seq? v)

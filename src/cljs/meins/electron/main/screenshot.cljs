@@ -4,7 +4,7 @@
             [meins.common.utils.misc :as m]
             [meins.electron.main.runtime :as rt]
             [screenshot-desktop :as screenshot]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn take-screenshot [{:keys [put-fn]}]
   (let [ts (st/now)

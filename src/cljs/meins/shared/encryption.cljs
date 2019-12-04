@@ -4,7 +4,7 @@
             [cljs.reader :as edn]
             [clojure.string :as s]
             [clojure.string :as str]
-            [taoensso.timbre :refer-macros [error info]]))
+            [taoensso.timbre :refer [error info]]))
 
 (defn buffer-convert [from to s]
   (let [buffer (.from js/Buffer s from)]

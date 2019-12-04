@@ -9,7 +9,7 @@
             [meins.electron.main.runtime :as rt]
             [path :refer [join normalize]]
             [process]
-            [taoensso.timbre :as timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :as timbre :refer [debug error info]]))
 
 (defn fork-process [args opts]
   (info "forking" args opts)

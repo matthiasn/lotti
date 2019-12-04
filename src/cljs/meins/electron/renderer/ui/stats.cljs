@@ -5,7 +5,7 @@
             [meins.electron.renderer.ui.charts.time.durations :as cd]
             [meins.electron.renderer.ui.charts.wordcount :as wc]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn stats-text [rt-info]
   (let [gql-res (subscribe [:gql-res])

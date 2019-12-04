@@ -3,7 +3,7 @@
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [re-frame.core :refer [subscribe]]
-            [taoensso.timbre :refer-macros [info]]))
+            [taoensso.timbre :refer [info]]))
 
 (defn create-entry [{:keys [msg-payload msg-meta put-fn]}]
   (info "create entry:" msg-payload)

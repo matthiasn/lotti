@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.entry.cfg.habit
   (:require [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.misc :as m]
             [meins.electron.renderer.helpers :as h]
@@ -10,8 +9,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn a-z [x] (s/lower-case (second x)))
 

@@ -3,7 +3,7 @@
             [meins.electron.renderer.ui.charts.common :as cc]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn stacked-bars-fn
   "Renders bars for data set."

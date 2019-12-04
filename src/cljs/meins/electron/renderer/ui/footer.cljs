@@ -3,7 +3,7 @@
 
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]))
+            [reagent.ratom :refer [reaction]]))
 
 (defn dashboard []
   (let [local (r/atom {:days     21

@@ -8,8 +8,8 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [react-color :as react-color]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn is-tag? [s] (when (string? s) (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s)))
 

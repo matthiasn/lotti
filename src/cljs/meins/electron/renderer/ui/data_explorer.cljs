@@ -4,7 +4,7 @@
   (:require [meins.electron.renderer.localstorage :as sa]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [taoensso.timbre :refer [debug info]]))
 
 (defn data->hiccup
   "Converts an arbitrary EDN data structure to the HTML where each element (i.e. map, vector,

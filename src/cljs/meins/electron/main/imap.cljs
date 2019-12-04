@@ -12,7 +12,7 @@
             [imap :as imap]
             [meins.electron.main.runtime :as rt]
             [meins.shared.encryption :as mse]
-            [taoensso.timbre :refer-macros [debug error info warn]]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (short-id/characters "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$@")
 

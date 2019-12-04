@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.client-store.initial
   (:require #?(:cljs [reagent.core :refer [atom]])
             #?(:clj  [taoensso.timbre :refer [debug info]]
-               :cljs [taoensso.timbre :refer-macros [debug info]])
+               :cljs [taoensso.timbre :refer [debug info]])
             #?(:clj  [meins.jvm.datetime :as h]
                :cljs [meins.electron.renderer.helpers :as h])
             [matthiasn.systems-toolbox.component :as stc]

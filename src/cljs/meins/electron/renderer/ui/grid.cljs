@@ -11,7 +11,7 @@
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
-            [reagent.ratom :refer-macros [reaction]]
+            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]
             [tinycolor2 :as tinycolor]))
 

@@ -1,7 +1,7 @@
 (ns meins.client-store-test
   "Here, we test the handler functions of the server side store component."
   (:require #?(:clj [clojure.test :refer [deftest is testing]]
-               :cljs [cljs.test :refer-macros [deftest is testing]])
+               :cljs [cljs.test :refer [deftest is testing]])
                     [meins.electron.renderer.client-store :as cs]
                     [meins.electron.renderer.client-store.cfg :as c]))
 

@@ -3,7 +3,7 @@
    can also run on the JVM, as we only have pure functions in the target
     namespace."
   (:require #?(:clj [clojure.test :refer [deftest is testing]]
-               :cljs [cljs.test :refer-macros [deftest is testing]])
+               :cljs [cljs.test :refer [deftest is testing]])
                     [meins.electron.renderer.ui.pomodoro :as p]))
 
 (def test-entries

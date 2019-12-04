@@ -28,8 +28,8 @@
             [react-event-timeline :as ret]
             [react-horizontal-timeline :as rht]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (def timeline (r/adapt-react-class ret/Timeline))
 (def timeline-event (r/adapt-react-class ret/TimelineEvent))

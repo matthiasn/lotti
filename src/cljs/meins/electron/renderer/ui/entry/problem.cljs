@@ -5,7 +5,7 @@
             [re-frame.core :refer [subscribe]]
             [react-color :as react-color]
             [reagent.core :as r]
-            [reagent.ratom :refer-macros [reaction]]
+            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn editable-field [_ _ text]

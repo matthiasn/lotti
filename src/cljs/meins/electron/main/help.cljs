@@ -2,7 +2,7 @@
   (:require [clojure.string :as s]
             [fs :refer [readFileSync]]
             [meins.electron.main.runtime :as rt]
-            [taoensso.timbre :refer-macros [debug error info warn]]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn get-help [{:keys []}]
   (let [path (:manual-path rt/runtime-info)

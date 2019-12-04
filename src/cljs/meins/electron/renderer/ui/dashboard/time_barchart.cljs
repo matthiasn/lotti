@@ -3,8 +3,8 @@
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [moment]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug info]]))
 
 (defn rect [{:keys []}]
   (let []

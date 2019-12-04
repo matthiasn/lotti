@@ -13,7 +13,7 @@
             [meins.electron.renderer.screenshot :as screenshot]
             [meins.electron.renderer.spellcheck :as spellcheck]
             [meins.electron.renderer.ui.re-frame :as rf]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (def sente-base-cfg
   {:sente-opts {:host     (.-iwwHOST js/window)

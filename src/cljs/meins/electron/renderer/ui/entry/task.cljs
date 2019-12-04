@@ -1,14 +1,13 @@
 (ns meins.electron.renderer.ui.entry.task
   (:require [clojure.pprint :as pp]
             [clojure.set :as set]
-            [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
             [moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [taoensso.timbre :refer-macros [debug info]]))
+            [taoensso.timbre :refer [debug info]]))
 
 (defn allocation-row [entry]
   (let [allocation (h/m-to-hh-mm (or (get-in entry [:task :estimate_m]) 0))

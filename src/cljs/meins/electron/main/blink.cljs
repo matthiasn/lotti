@@ -7,7 +7,7 @@
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.main.runtime :as rt]
             [moment]
-            [taoensso.timbre :as timbre :refer-macros [debug]]))
+            [taoensso.timbre :as timbre :refer [debug]]))
 
 (def colors
   {:red    {:day "--hsb=10,255,255" :night "--hsb=10,255,100"}

@@ -5,8 +5,8 @@
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.impl.component :as ric]
-            [reagent.ratom :refer-macros [reaction]]
-            [taoensso.timbre :refer-macros [debug error info]]))
+            [reagent.ratom :refer [reaction]]
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn mapbox-did-mount [props]
   (let [cfg (subscribe [:cfg])

@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.client-store.entry
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
             #?(:clj  [taoensso.timbre :refer [debug info]]
-               :cljs [taoensso.timbre :refer-macros [debug info]])
+               :cljs [taoensso.timbre :refer [debug info]])
             #?(:cljs [moment])
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as u]
