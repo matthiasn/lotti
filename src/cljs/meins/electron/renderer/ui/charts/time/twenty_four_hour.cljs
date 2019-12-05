@@ -3,7 +3,7 @@
             [meins.common.utils.misc :as u]
             [meins.electron.renderer.charts.data :as cd]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]

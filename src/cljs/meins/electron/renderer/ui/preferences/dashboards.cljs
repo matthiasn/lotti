@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
@@ -30,7 +30,7 @@
     (fn habit-line-render [entry local]
       (let [ts (:timestamp entry)
             text (eu/first-line entry)
-            text (or (when-not (empty? text)
+            text (or (when (seq text)
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")
             locale (:locale @cfg :en)

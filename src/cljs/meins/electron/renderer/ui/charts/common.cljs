@@ -2,7 +2,7 @@
   (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.charts.data :as cd]
-            [moment]
+            ["moment" :as moment]
             [randomcolor]
             [reagent.core :as rc]))
 

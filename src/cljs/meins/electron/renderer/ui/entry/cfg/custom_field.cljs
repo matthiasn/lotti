@@ -5,7 +5,7 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-color :as react-color]
             [reagent.ratom :refer [reaction]]

@@ -4,7 +4,7 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))

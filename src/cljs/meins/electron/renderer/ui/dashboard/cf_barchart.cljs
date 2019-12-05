@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

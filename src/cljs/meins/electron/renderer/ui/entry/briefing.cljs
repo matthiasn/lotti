@@ -18,7 +18,7 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

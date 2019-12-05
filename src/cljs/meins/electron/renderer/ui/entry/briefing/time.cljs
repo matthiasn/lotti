@@ -4,7 +4,7 @@
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]))
 

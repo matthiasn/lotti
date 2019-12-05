@@ -6,7 +6,7 @@
             [fs :refer [existsSync]]
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.main.runtime :as rt]
-            [moment]
+            ["moment" :as moment]
             [taoensso.timbre :as timbre :refer [debug]]))
 
 (def colors

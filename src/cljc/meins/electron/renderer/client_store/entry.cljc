@@ -2,7 +2,7 @@
   (:require #?(:cljs [meins.electron.renderer.localstorage :as sa])
             #?(:clj  [taoensso.timbre :refer [debug info]]
                :cljs [taoensso.timbre :refer [debug info]])
-            #?(:cljs [moment])
+            #?(:cljs ["moment" :as moment])
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as p]))

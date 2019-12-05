@@ -1,5 +1,5 @@
 (ns meins.electron.renderer.ui.entry.reward
-  (:require [moment]
+  (:require ["moment" :as moment]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn reward-details [entry put-fn]

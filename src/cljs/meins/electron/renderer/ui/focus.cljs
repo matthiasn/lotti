@@ -23,7 +23,7 @@
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.ui-components :as uc]
             [meins.electron.renderer.ui.updater :as upd]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-event-timeline :as ret]
             [react-horizontal-timeline :as rht]

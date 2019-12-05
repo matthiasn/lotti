@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.ui.dashboard.earlybird
   (:require [meins.electron.renderer.ui.charts.common :as cc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

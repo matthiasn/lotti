@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-color :as react-color]
             [reagent.core :as r]
@@ -117,7 +117,7 @@
             glow-path [:dashboard_cfg :items idx :glow]
             csw-path [:dashboard_cfg :items idx :circle_stroke_width]
             cr-path [:dashboard_cfg :items idx :circle_radius]
-            show-details (and (not (empty? (str (get-in entry k-path))))
+            show-details (and (seq (str (get-in entry k-path)))
                               (not collapsed))
             select-q (fn [{:keys [entry xf options]}]
                        (let [xf (or xf identity)]
@@ -192,7 +192,7 @@
             h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
-            show-details (and (not (empty? (str (get-in entry tag-path))))
+            show-details (and (seq (str (get-in entry tag-path)))
                               (not collapsed))
             field-path [:dashboard_cfg :items idx :field]
             tag (get-in entry tag-path)
@@ -241,14 +241,14 @@
             h-path [:dashboard_cfg :items idx :h]
             mn-path [:dashboard_cfg :items idx :mn]
             mx-path [:dashboard_cfg :items idx :mx]
-            show-details (and (not (empty? (str (get-in entry saga-path))))
+            show-details (and (seq (str (get-in entry saga-path)))
                               (not collapsed))
             saga (get-in entry saga-path)
             field-cfg {:type :time}
             sagas (into {}
                         (->> @sagas
                              (map (fn [[ts m]] [ts (:saga_name m)]))
-                             (filter #(not (empty? (second %))))))]
+                             (filter #(seq (second %)))))]
         [:div
          [:h4 "Recorded Time Bar Chart"]
          [:div.row
@@ -300,8 +300,6 @@
             sw-path [:dashboard_cfg :items idx :stroke_width]
             csw-path [:dashboard_cfg :items idx :circle_stroke_width]
             cr-path [:dashboard_cfg :items idx :circle_radius]
-            show-details (and (not (empty? (str (get-in entry tag-path))))
-                              (not collapsed))
             field-path [:dashboard_cfg :items idx :field]
             tag (get-in entry tag-path)
             show-fields (and (get-in entry field-path)

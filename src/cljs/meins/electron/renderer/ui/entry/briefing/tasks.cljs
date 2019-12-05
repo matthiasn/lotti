@@ -8,7 +8,7 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [moment-duration-format]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]

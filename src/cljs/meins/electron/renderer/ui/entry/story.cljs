@@ -211,7 +211,7 @@
                 :class    (str icon-cls)})]
             [:span {:on-click open-story}
              saga-name
-             (when-not (empty? saga-name) ": ")
+             (when (seq saga-name) ": ")
              story-name]]
            (when (:show @local)
              (let [curr-idx (:idx @local)]
@@ -236,5 +236,5 @@
                       ^{:key (:timestamp story)}
                       [:tr {:on-click click}
                        [:td {:class cls}
-                        saga-name (when-not (empty? saga-name) ": ")
+                        saga-name (when (seq saga-name) ": ")
                         (:story_name story)]]))]]]))])))))

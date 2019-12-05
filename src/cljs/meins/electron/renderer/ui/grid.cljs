@@ -8,7 +8,7 @@
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.search :as search]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]
@@ -76,7 +76,7 @@
                  {:style    {:color (cc/item-color search-text "dark")}
                   :on-click #(do (emit [:search/remove query-coord])
                                  (.stopPropagation %))}]]
-               (when-not (empty? tooltip-text)
+               (when (seq tooltip-text)
                  [:div.tooltiptext
                   [:h4 tooltip-text]])]))]]))))
 

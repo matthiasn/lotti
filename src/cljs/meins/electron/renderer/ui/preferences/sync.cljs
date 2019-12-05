@@ -5,7 +5,7 @@
             [meins.electron.renderer.ui.preferences.qr-gen :as qrg]
             [meins.electron.renderer.ui.preferences.qr-scanner :as qrs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

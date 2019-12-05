@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.ui.dashboard.commits
   (:require [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

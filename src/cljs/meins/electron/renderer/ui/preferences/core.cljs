@@ -14,7 +14,7 @@
             [meins.electron.renderer.ui.preferences.usage-stats :as usage]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.stats :as stats]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.ui.dashboard.time_barchart
   (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))

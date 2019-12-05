@@ -14,7 +14,7 @@
             [meins.electron.renderer.ui.dashboard.time_barchart :as dt]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
@@ -156,7 +156,7 @@
                     :days     days}
             end-y (+ (:last-y charts-pos) (:last-h charts-pos))
             text (eu/first-line dashboard)
-            text (or (when-not (empty? text)
+            text (or (when (seq text)
                        text)
                      "YOUR DASHBOARD DESCRIPTION HERE")]
         (when dashboard

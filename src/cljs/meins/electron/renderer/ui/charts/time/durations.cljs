@@ -5,7 +5,7 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.charts.time.twenty-four-hour :as tfh]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]

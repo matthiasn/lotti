@@ -6,7 +6,7 @@
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [moment]
+            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
@@ -42,14 +42,14 @@
   (let [backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
-    (fn [{:keys [entry idx version] :as params}]
-      (let [cf-path [:habit :versions version  :criteria idx :cf-tag]
+    (fn [{:keys [entry idx version]}]
+      (let [cf-path [:habit :versions version :criteria idx :cf-tag]
             cf-tag (get-in entry cf-path "")
             cfk-path [:habit :versions version :criteria idx :cf-key]
             k (get-in entry cfk-path)
             fields (get-in @custom-fields [cf-tag :fields])
             min-path [:habit :versions version :criteria idx :min-val]
-            max-path [:habit :versions version :criteria  idx :max-val]
+            max-path [:habit :versions version :criteria idx :max-val]
             field-cfg (get-in fields [k :cfg])
             custom-fields (vec @custom-fields)
             tags (if @pvt
@@ -64,7 +64,7 @@
                       :path      cf-path
                       :sorted-by a-z
                       :options   (map first tags)}]]
-         (when-not (empty? (name cf-tag))
+         (when (seq (name cf-tag))
            (let [opts (map (fn [[k v]] [k (:label v)]) fields)]
              [:div.row
               [:label "Key:"]
@@ -73,11 +73,11 @@
                           :path      cfk-path
                           :xf        keyword
                           :options   (into {} opts)}]]))
-         (when-not (empty? (str k))
+         (when (seq (str k))
            [cs/input-row entry (merge field-cfg
                                       {:label "Minimum:"
                                        :path  min-path}) emit])
-         (when-not (empty? (str k))
+         (when (seq (str k))
            [cs/input-row entry (merge field-cfg
                                       {:label "Maximum:"
                                        :path  max-path}) emit])]))))

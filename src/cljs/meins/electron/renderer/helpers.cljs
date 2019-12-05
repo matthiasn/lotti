@@ -11,7 +11,7 @@
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [moment]
+            ["moment" :as moment]
             [moment-duration-format]
             [path :refer [normalize]]
             [reagent.core :as rc]
