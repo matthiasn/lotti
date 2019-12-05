@@ -1,2 +1,6 @@
 {:linters {:unused-referred-var {:exclude {taoensso.timbre [info warn error debug]}}
-           :unused-namespace {:exclude [meins.common.specs cljs.pprint]}}}
+           :unused-namespace {:exclude [meins.common.specs
+                                        cljs.pprint
+                                        reagent.core
+                                        reagent.ratom
+                                        taoensso.timbre]}}}
