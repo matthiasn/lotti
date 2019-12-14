@@ -1,6 +1,5 @@
 (ns meins.jvm.datetime
-  (:require [clj-time.coerce :as c]
-            [clj-time.coerce :as ctc]
+  (:require [clj-time.coerce :as ctc]
             [clj-time.core :as ct]
             [clj-time.format :as ctf]))
 
@@ -14,11 +13,11 @@
 
 (defn fmt-from-long
   [ts]
-  (ctf/unparse dt-local-fmt (c/from-long ts)))
+  (ctf/unparse dt-local-fmt (ctc/from-long ts)))
 
 (def ymd-fmt (ctf/formatter "yyyy-MM-dd" dtz))
-(defn ymd [ts] (when (number? ts) (ctf/unparse ymd-fmt (c/from-long ts))))
-(defn ymd-to-ts [s] (c/to-long (ctf/parse ymd-fmt s)))
+(defn ymd [ts] (when (number? ts) (ctf/unparse ymd-fmt (ctc/from-long ts))))
+(defn ymd-to-ts [s] (ctc/to-long (ctf/parse ymd-fmt s)))
 
 (defn days-before [day n]
   (let [ts (ymd-to-ts day)]
@@ -29,7 +28,7 @@
              (ct/time-zone-for-id tz)
              dtz)]
     (ctf/unparse (ctf/formatter "yyyy-MM-dd" tz)
-                 (c/from-long ts))))
+                 (ctc/from-long ts))))
 
 (defn local-dt [ts]
   (-> ts

@@ -1,11 +1,13 @@
 (ns meins.jvm.utils.images
   "Utils for image conversion and manipulation."
   (:require [clojure.string :as s]
-            [image-resizer.format :refer :all]
-            [image-resizer.resize :refer :all]
-            [image-resizer.rotate :refer :all]
-            [image-resizer.scale-methods :refer :all]
-            [image-resizer.util :refer :all]
+            [image-resizer.format :refer [as-file]]
+            [image-resizer.resize :refer [resize-fn]]
+            [image-resizer.rotate :refer [rotate-180-counter-clockwise-fn
+                                          rotate-270-counter-clockwise-fn
+                                          rotate-90-counter-clockwise-fn]]
+            [image-resizer.scale-methods :refer [quality]]
+            [image-resizer.util :refer [buffered-image]]
             [me.raynes.fs :as fs]
             [meins.jvm.file-utils :as fu]
             [taoensso.timbre :refer [debug error info warn]])
@@ -24,7 +26,7 @@
           tags (map #(.getTags %) exif-directories)
           exif (into {} (map extract-from-tag tags))]
       exif)
-    (catch Exception ex (do (warn "could not parse EXIF in" file) {}))))
+    (catch Exception ex (warn "could not parse EXIF in" file ex) {})))
 
 (defn rotate [file]
   (let [exif (extract-exif file)

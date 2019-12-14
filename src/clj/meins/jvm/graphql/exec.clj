@@ -34,7 +34,7 @@
 (def prio-thread-pool (cp/priority-threadpool 5))
 (alter-var-root #'resolve/*callback-executor* (constantly executor-thread-pool))
 
-(defn async-wrapper [k f]
+(defn async-wrapper [f]
   (fn [state context args value]
     (let [result-promise (resolve/resolve-promise)
           p (:prio args 10)

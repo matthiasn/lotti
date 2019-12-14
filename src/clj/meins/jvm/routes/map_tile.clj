@@ -6,11 +6,10 @@
             [compojure.core :refer [GET]]
             [me.raynes.fs :as fs]
             [meins.jvm.file-utils :as fu]
-            [meins.jvm.files :as f]
             [taoensso.timbre :refer [debug]]))
 
 (def map-tile-route
-  (GET "/tiles/:z/:x/:y" [z x y :as r]
+  (GET "/tiles/:z/:x/:y" [z x y]
     (let [file-path (str z "/" x "/" y)
           filename (str fu/data-path "/tiles/" file-path)
           file (java.io.File. filename)]

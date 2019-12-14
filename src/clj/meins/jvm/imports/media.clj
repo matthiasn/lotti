@@ -6,17 +6,12 @@
             [clj-time.core :as t]
             [clj-time.format :as tf]
             [clojure.java.io :as io]
-            [clojure.java.shell :refer [sh]]
-            [clojure.pprint :as pp]
             [clojure.string :as s]
-            [io.pedestal.log :as log]
             [me.raynes.fs :as fs]
-            [meins.common.specs :as specs]
+            [meins.common.specs]
             [meins.jvm.file-utils :as fu]
-            [meins.jvm.files :as f]
             [meins.jvm.utils.images :as img]
-            [taoensso.timbre :refer [error info warn]])
-  (:import [com.drew.imaging ImageMetadataReader]))
+            [taoensso.timbre :refer [error info warn]]))
 
 (defn dms-to-dd
   "Converts DMS (degree, minute, second) to DD (decimal degree) format. Returns
@@ -160,7 +155,8 @@
                                            filename) ex)))))
   {})
 
-(defn gen-cache [{:keys [put-fn]}]
+(defn gen-cache
+  [{:keys []}]
   (let [files (file-seq (io/file fu/img-path))
         done (atom 0)
         n (count files)]

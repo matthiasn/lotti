@@ -1,5 +1,5 @@
 (ns meins.jvm.graphql.usage-stats
-  (:require [buddy.core.codecs :refer :all]
+  (:require [buddy.core.codecs :refer [bytes->hex]]
             [buddy.core.hash :as hash]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.jvm.graph.query :as gq]
@@ -7,7 +7,8 @@
             [meins.jvm.usage :as usage]
             [taoensso.timbre :refer [debug error info warn]]))
 
-(defn usage-stats-by-day [state _context args _value]
+(defn usage-stats-by-day
+  [state _context args _value]
   (let [start (stc/now)
         {:keys [geohash_precision]} args
         current-state @state

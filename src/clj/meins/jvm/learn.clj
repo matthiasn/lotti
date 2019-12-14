@@ -1,19 +1,14 @@
 (ns meins.jvm.learn
-  (:require [cheshire.core :as cc]
-            [clojure.data.csv :as csv]
+  (:require [clojure.data.csv :as csv]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.set :as set]
             [clojure.string :as s]
-            [clojure.string :as str]
-            [me.raynes.conch :refer [let-programs programs]]
+            [me.raynes.conch :refer [let-programs]]
             [me.raynes.fs :as fs]
-            [meins.jvm.datetime :as dt]
             [meins.jvm.file-utils :as fu]
     ;[geo [geohash :as geohash] [spatial :as spatial]]
             [meins.jvm.graph.query :as gq]
-            [progrock.core :as pr]
-            [taoensso.timbre :refer [info]]
             [taoensso.timbre :refer [error info]])
   (:import [java.math RoundingMode]))
 
@@ -46,14 +41,30 @@
                :quarter-day :half-quarter-day :hour :tags1 :mentions1])
 (def features-label (conj features :primary-story))
 
-(defn bool2int [k x] (if (boolean (k x)) 1 0))
-(defn word-count [k x] (if-let [s (k x)] (count (s/split (k x) #" ")) 0))
-(defn round-geo [k x] (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
-(defn join [k x] (or (when (seq (k x)) (str/join "|" (sort (k x)))) "0"))
-(defn has-tag? [t] (fn [k x] (if (contains? (set (:tags x)) t) 1 0)))
+(defn bool2int
+  [k x]
+  (if (boolean (k x)) 1 0))
+
+(defn word-count
+  [k x]
+  (if (k x) (count (s/split (k x) #" ")) 0))
+
+(defn round-geo
+  [k x]
+  (double (.setScale (bigdec (k x)) 3 RoundingMode/HALF_EVEN)))
+
+(defn join
+  [k x]
+  (or (when (seq (k x)) (s/join "|" (sort (k x)))) "0"))
+
+(defn has-tag?
+  [t]
+  (fn
+    [_k x]
+    (if (contains? (set (:tags x)) t) 1 0)))
 
 (defn t-day [t]
-  (fn [k x]
+  (fn [_k x]
     (int (/ (rem (:timestamp x) d) t))))
 #_
 (defn geohash [bits]
@@ -63,7 +74,7 @@
       (geohash/string h))))
 
 (defn t-ago [t]
-  (fn [k x]
+  (fn [_k x]
     (let [ts (:timestamp x)
           june-30-2018 1530403199000]
       (int (/ (- june-30-2018 ts) t)))))
@@ -150,7 +161,7 @@
         geohashes-labeled (set (map second examples))
         geohashes-unlabeled (set (map second unlabeled))
         geohashes (set/union geohashes-labeled geohashes-unlabeled)
-        geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
+        _geo-idx-m (into {} (map-indexed (fn [idx v] [v idx]) geohashes))
         n (count examples)
         n-stories (count stories)
         [training-data test-data] (split-at (int (* n 0.7)) examples)]
@@ -172,12 +183,12 @@
   (try
     (when (fs/exists? predictions-csv)
       (with-open [reader (clojure.java.io/reader predictions-csv)]
-        (let [stories (mapv #(Long/parseLong %) (str/split-lines (slurp stories-csv)))
+        (let [stories (mapv #(Long/parseLong %) (s/split-lines (slurp stories-csv)))
               lines (line-seq reader)]
           (swap! cmp-state assoc-in [:story-predictions] {})
           (doseq [line lines]
             (try
-              (let [[ts p-1 ranked] (str/split line #",")
+              (let [[ts p-1 ranked] (s/split line #",")
                     ts (Long/parseLong ts)
                     p-1 (Float/parseFloat p-1)
                     ranked (edn/read-string ranked)
@@ -191,7 +202,7 @@
           (info (count (:story-predictions @cmp-state)) "predictions added"))))
     (catch Exception ex (error ex))))
 
-(defn learn-stories [{:keys [cmp-state msg-payload] :as msg-map}]
+(defn learn-stories [{:keys [cmp-state] :as msg-map}]
   (future
     (try
       (let [stories (export-entry-stories msg-map)

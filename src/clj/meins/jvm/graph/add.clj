@@ -199,15 +199,14 @@
     tags))
 
 (defn remove-node [current-state ts]
-  (let [g (:graph current-state)]
-    (if-let [entry (gq/get-entry current-state ts)]
-      (-> current-state
-          (update-in [:graph] uc/remove-nodes ts)
-          (update-in [:sorted-entries] disj ts)
-          (update-in [:graph] remove-unused-tags (:mentions entry) :mention)
-          (update-in [:graph] remove-unused-tags (:tags entry) :tag)
-          (update-in [:graph] remove-unused-tags (:tags entry) :ptag))
-      current-state)))
+  (if-let [entry (gq/get-entry current-state ts)]
+    (-> current-state
+        (update-in [:graph] uc/remove-nodes ts)
+        (update-in [:sorted-entries] disj ts)
+        (update-in [:graph] remove-unused-tags (:mentions entry) :mention)
+        (update-in [:graph] remove-unused-tags (:tags entry) :tag)
+        (update-in [:graph] remove-unused-tags (:tags entry) :ptag))
+    current-state))
 
 (defn add-location [graph entry]
   (if (:location entry)

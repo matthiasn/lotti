@@ -1,6 +1,5 @@
 (ns meins.jvm.imports.flight
-  (:require [camel-snake-kebab.core :refer :all]
-            [clj-http.client :as hc]
+  (:require [clj-http.client :as hc]
             [clj-time.format :as ctf]
             [clojure.string :as s]
             [net.cgrand.enlive-html :as eh]

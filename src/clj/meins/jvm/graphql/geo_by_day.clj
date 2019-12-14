@@ -1,7 +1,6 @@
 (ns meins.jvm.graphql.geo-by-day
   (:require [clj-time.coerce :as ctc]
             [meins.jvm.datetime :as dt]
-            [meins.jvm.datetime :as h]
             [meins.jvm.graph.query :as gq]
             [taoensso.timbre :refer [debug error info warn]]))
 
@@ -35,13 +34,13 @@
 
 (defn geo-by-days
   [state _context args _value]
-  (let [{:keys [from to] :as m} args
+  (let [{:keys [from to]} args
         d (* 24 60 60 1000)
         from-ts (if from (dt/ymd-to-ts from) 0)
         to-ts (if to (+ (dt/ymd-to-ts to) d) Long/MAX_VALUE)
         current-state @state
         g (:graph current-state)
-        days (map h/ymd (range from-ts to-ts d))
+        days (map dt/ymd (range from-ts to-ts d))
         days-nodes (apply concat (map #(gq/get-nodes-for-day g {:date_string %}) days))
         day-nodes-attrs (map #(gq/get-entry current-state %) days-nodes)
         features (filter identity (map entry-fmt day-nodes-attrs))
@@ -69,7 +68,7 @@
 
 (defn geo-lines-by-days
   [state _context args _value]
-  (let [{:keys [accuracy] :as m} args
+  (let [{:keys [accuracy]} args
         accuracy (or accuracy 250)
         res (geo-by-days state _context args _value)
         accuracy-filter #(let [actual-accuracy (-> % :properties :accuracy)]

@@ -1,8 +1,7 @@
 (ns meins.jvm.graph.stats.git
   "Get stats about git commits from graph."
   (:require [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [debug error info warn]]
-            [ubergraph.core :as uber]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn git-mapper
   "Creates mapper function for git stats. Takes current state. Returns

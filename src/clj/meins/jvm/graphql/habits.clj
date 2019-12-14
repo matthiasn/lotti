@@ -1,20 +1,17 @@
 (ns meins.jvm.graphql.habits
   (:require [matthiasn.systems-toolbox.component :as stc]
             [meins.common.habits.util :as hu]
-            [meins.common.utils.misc :as m]
             [meins.common.utils.misc :as um]
             [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
             [meins.jvm.graph.stats.day :as gsd]
             [meins.jvm.graphql.custom-fields :as cf]
-            [taoensso.timbre :refer [debug error info warn]]
-            [ubergraph.core :as uc]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (def d (* 24 60 60 1000))
 
 (defn success? [day nodes cmp-state [idx c]]
-  (let [state @cmp-state
-        g (:graph state)]
+  (let [state @cmp-state]
     (case (:type c)
 
       :min-max-sum
@@ -61,7 +58,7 @@
           path [:stats-cache :days day :habits habit-ts]]
       (or (get-in @state path)
           (let [success? (partial success? day nodes state)
-                criteria (m/idxd (hu/get-criteria habit day))
+                criteria (um/idxd (hu/get-criteria habit day))
                 by-criterion (mapv success? criteria)
                 res {:success    (every? #(true? (:success %)) by-criterion)
                      :day        day
@@ -72,7 +69,7 @@
             res)))
     (catch Exception ex (error ex))))
 
-(defn habits-success [state context args value]
+(defn habits-success [state _context args _value]
   (try
     (let [days (range (:days args 5))
           offset (* (:offset args 0) 24 60 60 1000)
@@ -96,7 +93,7 @@
       res)
     (catch Exception ex (error ex))))
 
-(defn habits-success-by-day [state context args value]
+(defn habits-success-by-day [state context args _value]
   (try
     (let [args (merge args (-> context :msg-payload :new-args))
           {:keys [day_strings pvt]} args
@@ -116,7 +113,7 @@
     (catch Exception ex (error ex))))
 
 
-(defn waiting-habits [state context args value]
+(defn waiting-habits [state _context args _value]
   (let [q {:tags #{"#habit"}
            :opts #{":waiting"}
            :n    100

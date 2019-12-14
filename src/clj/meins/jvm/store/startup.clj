@@ -1,7 +1,6 @@
 (ns meins.jvm.store.startup
   "This namespace contains the functions necessary to instantiate the store-cmp."
-  (:require [clojure.data.avl :as avl]
-            [clojure.edn :as edn]
+  (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
             [clojure.string :as str]
@@ -14,8 +13,7 @@
             [meins.jvm.graph.add :as ga]
             [meins.jvm.graphql.opts :as opts]
             [progrock.core :as pr]
-            [taoensso.timbre :refer [error info warn]]
-            [taoensso.timbre.profiling :refer [p profile]]))
+            [taoensso.timbre :refer [error info warn]]))
 
 (defn process-line [parsed node-id state entries-to-index]
   (let [ts (:timestamp parsed)

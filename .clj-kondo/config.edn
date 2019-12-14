@@ -1,6 +1,14 @@
-{:linters {:unused-referred-var {:exclude {taoensso.timbre [info warn error debug]}}
-           :unused-namespace {:exclude [meins.common.specs
-                                        cljs.pprint
-                                        reagent.core
-                                        reagent.ratom
-                                        taoensso.timbre]}}}
+{:linters {:unused-referred-var
+           {:exclude {taoensso.timbre [info warn error debug]}}
+
+           :unused-namespace
+           {:exclude [meins.common.specs
+                      cljs.pprint
+                      clojure.pprint
+                      reagent.core
+                      reagent.ratom
+                      taoensso.timbre]}
+
+           :unresolved-symbol
+           {:exclude [git
+                      python3]}}}

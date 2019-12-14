@@ -32,9 +32,9 @@
 
 (defn load-repos []
   (try (edn/read-string (slurp repos-path))
-       (catch Exception ex
-         (do (warn "No repos config found.")
-             {:repos {}}))))
+       (catch Exception _
+         (warn "No repos config found.")
+         {:repos {}})))
 
 (defn paths []
   (let [trash-path (str data-path "/trash/")]
@@ -72,15 +72,15 @@
         questionnaires-path (str data-path "/questionnaires.edn")
         questionnaires (try (edn/read-string (slurp questionnaires-path))
                             (catch Exception _
-                              (do (warn "No questionnaires config found.")
-                                  {})))
+                              (warn "No questionnaires config found.")
+                              {}))
         ca-path (str data-path "/capabilities.edn")
         capabilities (try (edn/read-string (slurp ca-path))
                           (catch Exception _
-                            (do (warn "No capabilities config found.")
-                                {})))
+                            (warn "No capabilities config found.")
+                            {}))
         conf (try (edn/read-string (slurp conf-path))
-                  (catch Exception ex
+                  (catch Exception _
                     (let [default (edn/read-string
                                     (slurp (io/resource "default-conf.edn")))]
                       (warn "No config found -> copying from default.")

@@ -1,12 +1,11 @@
 (ns meins.jvm.imports.git
-  (:require [camel-snake-kebab.core :refer :all]
-            [cheshire.core :as cc]
+  (:require [cheshire.core :as cc]
             [clj-time.coerce :as c]
             [clj-time.format :as f]
             [clojure.pprint :as pp]
             [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
-            [me.raynes.conch :refer [let-programs programs]]
+            [me.raynes.conch :refer [programs]]
             [meins.jvm.file-utils :as fu]
             [taoensso.timbre :refer [error info warn]]))
 

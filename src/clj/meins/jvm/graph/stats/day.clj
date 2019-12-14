@@ -1,14 +1,11 @@
 (ns meins.jvm.graph.stats.day
   "Get day stats from graph."
-  (:require [camel-snake-kebab.core :refer [->snake_case]]
-            [camel-snake-kebab.extras :refer [transform-keys]]
-            [clj-time.coerce :as ctc]
+  (:require [clj-time.coerce :as ctc]
             [clj-time.core :as ct]
             [clj-time.format :as ctf]
             [meins.common.utils.misc :as u]
             [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [error info warn]]
-            [ubergraph.core :as uc]))
+            [taoensso.timbre :refer [error info warn]]))
 
 (defn time-by-sagas
   "Calculate time spent per saga, plus time not assigned to any saga."

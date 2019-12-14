@@ -1,5 +1,5 @@
 (ns meins.jvm.imports.spotify
-  (:require [camel-snake-kebab.core :refer :all]
+  (:require [camel-snake-kebab.core :refer [->kebab-case]]
             [cheshire.core :as cc]
             [clj-http.client :as hc]
             [clj-time.coerce :as c]

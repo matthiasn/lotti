@@ -1,8 +1,6 @@
 (ns meins.jvm.graphql.briefings-logged
   "GraphQL query component"
-  (:require [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
-            [camel-snake-kebab.extras :refer [transform-keys]]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
@@ -26,7 +24,7 @@
          (filter :timestamp)
          (set))))
 
-(defn briefing [state context args value]
+(defn briefing [state _context args _value]
   (let [g (:graph @state)
         d (:day args)
         ts (first (gq/get-briefing-for-day g {:briefing d}))]
@@ -49,7 +47,7 @@
         nodes (gq/get-nodes-for-day g {:date_string day})]
     (map #(gq/get-entry state %) nodes)))
 
-(defn logged-time [state context args value]
+(defn logged-time [state _context args _value]
   (let [day (:day args)
         current-state @state
         stories (gq/find-all-stories current-state)
@@ -61,7 +59,7 @@
         day-stats (gsd/day-stats current-state nodes cal-nodes stories sagas day)]
     day-stats))
 
-(defn day-stats [state context args value]
+(defn day-stats [state _context args _value]
   (let [current-state @state
         g (:graph current-state)
         stories (gq/find-all-stories current-state)

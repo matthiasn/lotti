@@ -3,7 +3,6 @@
             [clj-time.coerce :as ctc]
             [meins.jvm.file-utils :as fu]
             [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [info]]
             [taoensso.timbre :refer [error info]]))
 
 ;;; Export for mapbox heatmap

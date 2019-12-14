@@ -1,10 +1,8 @@
 (ns meins.jvm.graphql.xforms
   (:require [clojure.tools.reader.edn :as edn]
             [clojure.walk :as walk]
-            [com.walmartlabs.lacinia.schema :as schema]
             [taoensso.timbre :refer [debug error info warn]])
   (:import (clojure.lang IPersistentMap)))
-
 
 (defn simplify [m]
   (walk/postwalk (fn [node]

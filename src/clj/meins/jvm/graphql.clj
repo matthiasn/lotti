@@ -105,7 +105,7 @@
   (let [port (Integer/parseInt (get (System/getenv) "GQL_PORT" "8766"))
         attach-state (fn [m]
                        (into {} (map (fn [[k f]]
-                                       [k (partial (exec/async-wrapper k f) state)])
+                                       [k (partial (exec/async-wrapper f) state)])
                                      m)))
         schema (compile-schema attach-state put-fn)
         server (-> schema

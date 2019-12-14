@@ -1,9 +1,8 @@
 (ns meins.jvm.index
   (:require [compojure.core :refer [GET]]
             [compojure.route :as r]
-            [hiccup.page :refer [html5 include-css include-js]]
+            [hiccup.page :refer [html5]]
             [meins.jvm.file-utils :as fu]
-            [meins.jvm.routes.help :as h]
             [meins.jvm.routes.map-tile :as mt]))
 
 (defn index-page [_]
@@ -18,9 +17,7 @@
 (defn routes-fn [_put-fn]
   [(r/files "/audio" {:root (str fu/data-path "/audio/")})
    (GET "/package.json" [] package-json)
-   mt/map-tile-route
-   h/help-img-route
-   h/help-route])
+   mt/map-tile-route])
 
 (def sente-map
   {:index-page-fn index-page

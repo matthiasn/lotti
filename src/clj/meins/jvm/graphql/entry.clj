@@ -3,7 +3,7 @@
             [meins.jvm.graphql.common :as gc]
             [taoensso.timbre :refer [debug error info warn]]))
 
-(defn entry-by-ts [state context args value]
+(defn entry-by-ts [state _context args _value]
   (let [{:keys [ts]} args
         ts (Long/parseLong ts)
         current-state @state

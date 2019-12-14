@@ -4,8 +4,7 @@
             [clojure.set :as set]
             [meins.common.utils.misc :as u]
             [meins.jvm.graph.query :as gq]
-            [taoensso.timbre :refer [error info warn]]
-            [ubergraph.core :as uber]))
+            [taoensso.timbre :refer [error info warn]]))
 
 (defn media-mapper
   "Create mapper function for media stats"
@@ -61,8 +60,7 @@
 (defn count-words
   "Count total number of words."
   [current-state]
-  (let [g (:graph current-state)
-        counts (map #(u/count-words (gq/get-entry current-state %))
+  (let [counts (map #(u/count-words (gq/get-entry current-state %))
                     (:sorted-entries current-state))]
     (apply + counts)))
 

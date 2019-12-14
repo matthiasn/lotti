@@ -1,8 +1,6 @@
 (ns meins.jvm.graphql.misc-stats
   "GraphQL query component"
-  (:require [camel-snake-kebab.core :refer [->kebab-case-keyword ->snake_case]]
-            [camel-snake-kebab.extras :refer [transform-keys]]
-            [matthiasn.systems-toolbox.component :as stc]
+  (:require [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
@@ -14,10 +12,10 @@
 
 (def d (* 24 60 60 1000))
 
-(defn match-count [state context args value]
+(defn match-count [state _context args _value]
   (gs/res-count @state (p/parse-search (:query args))))
 
-(defn bp-field-stats [state context args value]
+(defn bp-field-stats [state _context args _value]
   (let [{:keys [days]} args
         from (- (stc/now) (* (+ days (* -1 (:offset args 0))) d))
         q (merge (p/parse-search "#BP"))
@@ -33,7 +31,7 @@
                                    (> (:adjusted_ts %) from))))]
     filtered))
 
-(defn git-stats [state context args value]
+(defn git-stats [state _context args _value]
   (let [{:keys [days]} args
         days (reverse (range days))
         now (stc/now)
@@ -43,7 +41,7 @@
     (debug stats)
     stats))
 
-(defn questionnaires [state context args value]
+(defn questionnaires [state _context args _value]
   (let [{:keys [days tag k offset]} args
         newer-than (- (stc/now) (* d (or (+ days (* -1 offset)) 90)))
         older-than (- (stc/now) (* d (* -1 offset) 0))
@@ -54,7 +52,7 @@
     (debug stats)
     stats))
 
-(defn questionnaires-by-days [state context args value]
+(defn questionnaires-by-days [state context args _value]
   (let [args (merge args (-> context :msg-payload :new-args))
         {:keys [day_strings tag k]} args
         f #(q/questionnaires-by-tag-day @state tag % (keyword k))
@@ -63,7 +61,7 @@
     (debug stats)
     stats))
 
-(defn award-points [state context args value]
+(defn award-points [state _context args _value]
   (let [{:keys [days]} args
         newer-than (dt/ymd (- (stc/now) (* d (or days 90))))
         stats (aw/award-points @state)

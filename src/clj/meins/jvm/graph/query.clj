@@ -247,13 +247,12 @@
   [state query]
   (let [started-timer (mt/start-timer ["graph" "query" "extract-sorted-entries"])
         g (:graph state)
-        n (:n query 20)
-        mapper-fn (fn [n]
-                    (if-let [entry (get-entry state n)]
+        mapper-fn (fn [ts]
+                    (if-let [entry (get-entry state ts)]
                       (-> entry
-                          (get-comments g n)
-                          (get-linked-entries g n))
-                      (debug "extract-sorted-entries can't find node: " n)))
+                          (get-comments g ts)
+                          (get-linked-entries g ts))
+                      (debug "extract-sorted-entries can't find node: " ts)))
         sort-fn #(into (sorted-set-by (if (:sort-asc query) < >)) %)
         opts (:opts query)
         matched-ids (cond

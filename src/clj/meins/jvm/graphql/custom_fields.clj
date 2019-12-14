@@ -5,8 +5,7 @@
             [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
             [meins.jvm.graphql.common :as gc]
-            [taoensso.timbre :refer [debug error info warn]]
-            [ubergraph.core :as uber]))
+            [taoensso.timbre :refer [debug error info warn]]))
 
 (defn custom-fields-cfg
   "Generates the custom fields config map as required by the

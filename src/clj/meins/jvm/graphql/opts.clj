@@ -8,15 +8,33 @@
             [meins.jvm.graphql.custom-fields :as gcf]
             [taoensso.timbre :refer [debug error info warn]]))
 
-(defn entry-count [state context args value] (count (:sorted-entries @state)))
-(defn hours-logged [state context args value] (gs/hours-logged @state))
-(defn word-count [state context args value] (gs/count-words @state))
-(defn tag-count [state context args value] (count (gq/find-all-hashtags @state)))
-(defn mention-count [state context args value] (count (gq/find-all-mentions @state)))
-(defn completed-count [state context args value] (gs/completed-count @state))
+(defn entry-count
+  [state _context _args _value]
+  (count (:sorted-entries @state)))
 
-(defn hashtags [state context args value]
+(defn hours-logged
+  [state _context _args _value]
+  (gs/hours-logged @state))
+
+(defn word-count
+  [state _context _args _value]
+  (gs/count-words @state))
+
+(defn tag-count
+  [state _context _args _value]
+  (count (gq/find-all-hashtags @state)))
+
+(defn mention-count
+  [state _context _args _value]
+  (count (gq/find-all-mentions @state)))
+
+(defn completed-count
+  [state _context _args _value]
+  (gs/completed-count @state))
+
+(defn hashtags
   "Regular tags without private tags"
+  [state _context _args _value]
   (let [tags (-> @state :options :hashtags)
         pvt-tags (-> @state :options :pvt-hashtags)
         without-pvt (apply dissoc tags (keys pvt-tags))]
@@ -25,8 +43,9 @@
          reverse
          (map first))))
 
-(defn pvt-hashtags [state context args value]
+(defn pvt-hashtags
   "All tags, including private."
+  [state _context _args _value]
   (let [tags (-> @state :options :hashtags)
         pvt-tags (-> @state :options :pvt-hashtags)
         merged (merge tags pvt-tags)]
@@ -35,14 +54,28 @@
          reverse
          (map first))))
 
-(defn mentions [state context args value] (-> @state :options :mentions))
-(defn stories [state context args value] (gq/find-all-stories2 @state))
-(defn sagas [state context args value] (gq/find-all-sagas2 @state))
+(defn mentions
+  [state _context _args _value]
+  (-> @state :options :mentions))
 
-(defn thread-count [state context args value] (Thread/activeCount))
-(defn pid [state context args value] (pid/current))
+(defn stories
+  [state _context _args _value]
+  (gq/find-all-stories2 @state))
 
-(defn briefings [state context args value]
+(defn sagas
+  [state _context _args _value]
+  (gq/find-all-sagas2 @state))
+
+(defn thread-count
+  [_state _context _args _value]
+  (Thread/activeCount))
+
+(defn pid
+  [_state _context _args _value]
+  (pid/current))
+
+(defn briefings
+  [state _context _args _value]
   (map (fn [[k v]] {:day k :timestamp v})
        (gq/find-all-briefings @state)))
 

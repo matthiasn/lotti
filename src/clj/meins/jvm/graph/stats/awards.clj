@@ -1,7 +1,6 @@
 (ns meins.jvm.graph.stats.awards
   "Get stats from graph."
-  (:require [meins.jvm.datetime :as dt]
-            [meins.jvm.graph.query :as gq]))
+  (:require [meins.jvm.graph.query :as gq]))
 
 (defn award-points-by [k entries]
   (let [done-entries (filter #(and (-> % k :done) (-> % k :points)) entries)

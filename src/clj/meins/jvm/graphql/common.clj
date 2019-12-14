@@ -17,19 +17,7 @@
 
 (defn distinct-by
   "Returns a lazy sequence of the elements of coll removing duplicates of (f item).
-   Returns a stateful transducer when no collection is provided.
    From: https://gist.github.com/briansunter/24cf3a357aaf2c4993cd6d6fd4c47980"
-  ([f]
-   (fn [rf]
-     (let [seen (volatile! #{})]
-       (fn
-         ([] (rf))
-         ([result] (rf result))
-         ([result input]
-          (if (contains? @seen input)
-            result
-            (do (vswap! seen conj input)
-                (rf result input))))))))
   ([f coll]
    (let [step (fn step [xs seen]
                 (lazy-seq

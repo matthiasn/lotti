@@ -10,7 +10,8 @@
         story (merge story (:story_cfg story))]
     (assoc entry :story story)))
 
-(defn started-tasks [state context args value]
+(defn started-tasks
+  [state _context args _value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
            :opts     #{":started"}
@@ -24,7 +25,8 @@
                    (mapv (partial gc/entry-w-comments current-state)))]
     tasks))
 
-(defn open-tasks [state context args value]
+(defn open-tasks
+  [state _context args _value]
   (let [q {:tags     #{"#task"}
            :not-tags #{"#done" "#backlog" "#closed"}
            :n        Integer/MAX_VALUE

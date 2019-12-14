@@ -16,7 +16,6 @@
             [meins.jvm.store.cfg :as cfg]
             [meins.jvm.store.startup :as startup]
             [taoensso.timbre :refer [error info warn]]
-            [taoensso.timbre.profiling :refer [p profile]]
             [ubergraph.core :as uber]))
 
 (defn sync-done [{:keys [put-fn]}]

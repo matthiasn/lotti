@@ -16,8 +16,9 @@
     {:res diff
      :del del-ts}))
 
-(defn tab-search [put-fn]
-  (fn [state context args value]
+(defn tab-search
+  [put-fn]
+  (fn [state context args _value]
     (let [{:keys [query n pvt story tab incremental starred flagged from to] :as m} args
           msg-meta (:msg-meta context)
           msg-meta (assoc msg-meta :sente-uid :broadcast)

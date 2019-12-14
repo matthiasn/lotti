@@ -31,8 +31,8 @@
 
 (defn append-daily-log
   "Appends journal entry to the current day's log file."
-  [cfg entry put-fn]
-  (let [node-id (:node-id cfg)
+  [cfg entry _put-fn]
+  (let [_node-id (:node-id cfg)
         filename (str (tf/unparse (tf/formatters :year-month-day) (time/now))
                       ".jrn")
         full-path (str (:daily-logs-path (fu/paths))
@@ -170,7 +170,7 @@
 
 (defn sync-fn
   "Handler function for syncing journal entry."
-  [{:keys [current-state cmp-state msg-payload msg-meta put-fn]}]
+  [{:keys [current-state msg-payload put-fn]}]
   (let [ts (:timestamp msg-payload)
         entry msg-payload
         rcv-vclock (:vclock entry)
@@ -222,7 +222,7 @@
       {:new-state new-state
        :emit-msg  [:ft/add entry]})))
 
-(defn move-attachment-to-trash [cfg entry dir k]
+(defn move-attachment-to-trash [entry dir k]
   (when-let [filename (k entry)]
     (let [{:keys [data-path trash-path]} (fu/paths)]
       (fs/rename (str data-path "/" dir "/" filename)
@@ -250,8 +250,8 @@
     (put-fn [:schedule/new
              {:message [:gql/run-registered {:new-args {:day_strings day-strings}}]
               :timeout 10}])
-    (move-attachment-to-trash cfg msg-payload "images" :img_file)
-    (move-attachment-to-trash cfg msg-payload "audio" :audio-file)
-    (move-attachment-to-trash cfg msg-payload "videos" :video-file)
+    (move-attachment-to-trash msg-payload "images" :img_file)
+    (move-attachment-to-trash msg-payload "audio" :audio-file)
+    (move-attachment-to-trash msg-payload "videos" :video-file)
     {:new-state new-state
      :emit-msg  [:ft/remove {:timestamp ts}]}))
