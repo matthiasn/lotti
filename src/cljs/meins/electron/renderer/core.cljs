@@ -8,7 +8,6 @@
             [meins.electron.renderer.exec :as exec]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.log]
-            [meins.electron.renderer.router :as router]
             [meins.electron.renderer.screenshot :as screenshot]
             [meins.electron.renderer.spellcheck :as spellcheck]
             [meins.electron.renderer.ui.re-frame :as rf]
@@ -69,7 +68,6 @@
     (sente/cmp-map :renderer/ws-cmp sente-cfg)
     (when OBSERVER
       (sente/cmp-map :renderer/ws-firehose sente-base-cfg))
-    (router/cmp-map :renderer/router)
     (store/cmp-map :renderer/store)
     (sched/cmp-map :renderer/scheduler)
     (rf/cmp-map :renderer/ui-cmp)
@@ -89,9 +87,6 @@
                             :renderer/spellcheck
                             :renderer/ws-cmp}}]
 
-       [:cmd/route {:from #{:renderer/router}
-                    :to   :renderer/store}]
-
        [:cmd/route {:from :renderer/exec-cmp
                     :to   #{:renderer/ws-cmp
                             :renderer/store}}]
@@ -107,8 +102,7 @@
                             :renderer/store}}]
 
        [:cmd/route {:from :renderer/store
-                    :to   #{:renderer/router
-                            :renderer/scheduler}}]
+                    :to   #{:renderer/scheduler}}]
 
        [:cmd/route {:from #{:renderer/ui-cmp
                             :renderer/store}
