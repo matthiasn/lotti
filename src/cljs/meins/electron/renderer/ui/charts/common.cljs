@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.charts.common
-  (:require [clojure.string :as s]
+  (:require ["moment" :as moment]
+            [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.charts.data :as cd]
-            ["moment" :as moment]
             [randomcolor]
             [reagent.core :as rc]))
 

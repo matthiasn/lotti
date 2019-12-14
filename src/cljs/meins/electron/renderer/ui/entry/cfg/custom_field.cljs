@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.entry.cfg.custom-field
-  (:require [meins.common.utils.parse :as p]
+  (:require ["moment" :as moment]
+            [meins.common.utils.parse :as p]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-color :as react-color]
             [reagent.ratom :refer [reaction]]

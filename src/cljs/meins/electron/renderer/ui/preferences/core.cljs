@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.preferences.core
-  (:require [meins.electron.renderer.helpers :as h]
+  (:require ["moment" :as moment]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.footer :as f]
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.ui.preferences.albums :as ca]
@@ -14,7 +15,6 @@
             [meins.electron.renderer.ui.preferences.usage-stats :as usage]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.stats :as stats]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

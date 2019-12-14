@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.entry.entry
-  (:require [clojure.data :as cd]
+  (:require ["moment" :as moment]
+            [clojure.data :as cd]
             [clojure.pprint :as pp]
             [clojure.set :as set]
             [matthiasn.systems-toolbox.component :as st]
@@ -31,7 +32,6 @@
             [meins.electron.renderer.ui.mapbox :as mb]
             [meins.electron.renderer.ui.media :as m]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

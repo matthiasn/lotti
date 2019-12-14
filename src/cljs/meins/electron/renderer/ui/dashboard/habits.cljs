@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.dashboard.habits
-  (:require [camel-snake-kebab.core :refer [->kebab-case]]
+  (:require ["moment" :as moment]
+            [camel-snake-kebab.core :refer [->kebab-case]]
             [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))

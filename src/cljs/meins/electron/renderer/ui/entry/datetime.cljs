@@ -1,8 +1,8 @@
 (ns meins.electron.renderer.ui.entry.datetime
-  (:require [meins.common.utils.misc :as u]
+  (:require ["moment" :as moment]
+            [meins.common.utils.misc :as u]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.entry.briefing
-  (:require [cljs.pprint :as pp]
+  (:require ["moment" :as moment]
+            [cljs.pprint :as pp]
             [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
             [matthiasn.systems-toolbox.component :as stc]
@@ -18,7 +19,6 @@
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

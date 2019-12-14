@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.post-mortems
-  (:require [cljs.pprint :as pp]
+  (:require ["moment" :as moment]
+            [cljs.pprint :as pp]
             [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.graphql :as gql]
@@ -12,7 +13,6 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.updater :as upd]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-event-timeline :as ret]
             [react-horizontal-timeline :as rht]

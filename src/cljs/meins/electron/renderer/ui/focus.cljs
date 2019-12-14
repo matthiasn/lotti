@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.focus
-  (:require [cljs.pprint :as pp]
+  (:require ["moment" :as moment]
+            [cljs.pprint :as pp]
             [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
             [matthiasn.systems-toolbox.component :as stc]
@@ -23,7 +24,6 @@
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.ui-components :as uc]
             [meins.electron.renderer.ui.updater :as upd]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [react-event-timeline :as ret]
             [react-horizontal-timeline :as rht]

@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.entry.pomodoro
-  (:require [matthiasn.systems-toolbox.component :as st]
+  (:require ["moment" :as moment]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

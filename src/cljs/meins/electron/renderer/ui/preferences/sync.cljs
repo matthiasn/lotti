@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.preferences.sync
-  (:require [cljs-bean.core :refer [->clj ->js bean]]
+  (:require ["moment" :as moment]
+            [cljs-bean.core :refer [->clj ->js bean]]
             [clojure.pprint :as pp]
             [clojure.string :as str]
             [meins.electron.renderer.ui.preferences.qr-gen :as qrg]
             [meins.electron.renderer.ui.preferences.qr-scanner :as qrs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

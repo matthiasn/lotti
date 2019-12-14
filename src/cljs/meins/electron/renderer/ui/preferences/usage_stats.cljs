@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.preferences.usage-stats
-  (:require ["ngeohash" :as geohash]
+  (:require ["moment" :as moment]
+            ["ngeohash" :as geohash]
             [clojure.pprint :as pp]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.ui.leaflet :as l]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]

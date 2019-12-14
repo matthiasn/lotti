@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.helpers
-  (:require ["ngeohash" :as geohash]
+  (:require ["moment" :as moment]
+            ["ngeohash" :as geohash]
             [cldr-data :as cldr-data]
             [cljs.nodejs :refer [process]]
             [clojure.string :as s]
@@ -11,7 +12,6 @@
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [moment-duration-format]
             [path :refer [normalize]]
             [reagent.core :as rc]

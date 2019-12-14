@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.menu
-  (:require [cljs.reader :refer [read-string]]
+  (:require ["moment" :as moment]
+            [cljs.reader :refer [read-string]]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.habits.util :as hu]
             [meins.common.utils.misc :as u]
@@ -9,7 +10,6 @@
             [meins.electron.renderer.ui.charts.award :as ca]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.dashboard.bp
-  (:require [clojure.string :as s]
+  (:require ["moment" :as moment]
+            [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))

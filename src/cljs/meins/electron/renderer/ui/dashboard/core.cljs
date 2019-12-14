@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.dashboard.core
-  (:require [clojure.string :as s]
+  (:require ["moment" :as moment]
+            [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as rh]
@@ -14,7 +15,6 @@
             [meins.electron.renderer.ui.dashboard.time_barchart :as dt]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

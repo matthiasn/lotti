@@ -1,7 +1,7 @@
 (ns meins.electron.renderer.ui.entry.cfg.shared
-  (:require [meins.electron.renderer.helpers :as h]
+  (:require ["moment" :as moment]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))

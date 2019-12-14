@@ -1,11 +1,11 @@
 (ns meins.electron.renderer.ui.entry.capture
-  (:require [clojure.set :as set]
+  (:require ["moment" :as moment]
+            [clojure.set :as set]
             [clojure.string :as s]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.questionnaires :as q]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

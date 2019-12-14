@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.ui.dashboard.common
-  (:require [meins.electron.renderer.helpers :as h]
-            ["moment" :as moment]
+  (:require ["moment" :as moment]
+            [meins.electron.renderer.helpers :as h]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

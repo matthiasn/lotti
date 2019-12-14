@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.ui.preferences.metrics
-  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
+  (:require ["moment" :as moment]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

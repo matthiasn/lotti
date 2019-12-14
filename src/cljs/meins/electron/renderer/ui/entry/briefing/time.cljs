@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.entry.briefing.time
-  (:require [matthiasn.systems-toolbox.component :as st]
+  (:require ["moment" :as moment]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]))
 

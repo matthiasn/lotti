@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.entry.task
-  (:require [clojure.pprint :as pp]
+  (:require ["moment" :as moment]
+            [clojure.pprint :as pp]
             [clojure.set :as set]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [taoensso.timbre :refer [debug info]]))

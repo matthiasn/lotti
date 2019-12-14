@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.preferences.dashboards
-  (:require [clojure.string :as s]
+  (:require ["moment" :as moment]
+            [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))

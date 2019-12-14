@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.charts.time.twenty-four-hour
-  (:require [clojure.pprint :as pp]
+  (:require ["moment" :as moment]
+            [clojure.pprint :as pp]
             [meins.common.utils.misc :as u]
             [meins.electron.renderer.charts.data :as cd]
             [meins.electron.renderer.ui.charts.common :as cc]
-            ["moment" :as moment]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]
