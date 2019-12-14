@@ -1,15 +1,11 @@
 (ns meins.electron.renderer.ui.geo.locations-map
   (:require ["mapbox-gl" :refer [LngLat LngLatBounds Map Marker Popup] :as mapbox-gl]
             ["moment" :as moment]
-            [cljs-bean.core :refer [->clj ->js bean]]
-            [cljs.nodejs :refer [process]]
-            [cljs.tools.reader.edn :as edn]
-            [clojure.pprint :as pp]
+            [cljs-bean.core :refer [->js]]
             [markdown.core :as mc]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.briefing.calendar :as ebc]
-            [meins.electron.renderer.ui.entry.carousel :as carousel]
             [meins.electron.renderer.ui.geo.queries :as qry]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
@@ -207,7 +203,7 @@
                      ;(img-markers mb-map img-features)
                      (.addLayer mb-map (->js lines-cfg))
                      (.addLayer mb-map (->js img-points-cfg))
-                     (.loadImage mb-map icon-url (fn [err img]
+                     (.loadImage mb-map icon-url (fn [_err img]
                                                    (.addImage mb-map "img-icon" img))
                                  (.addLayer mb-map (->js img-icons-cfg))))
             hide-gallery #(swap! local assoc-in [:gallery] false)
@@ -297,7 +293,7 @@
     {:component-did-mount          (map-did-mount props)
      :component-will-receive-props will-receive-props
      :reagent-render               (fn [props]
-                                     (let [{:keys [local]} props]
+                                     (let [{:keys []} props]
                                        [:div#heatmap {:style {:width            "100vw"
                                                               :height           "100vh"
                                                               :background-color "#333"}}]))}))
@@ -344,7 +340,7 @@
                        :style     :le-shine
                        :from      (h/ymd (stc/now))
                        :to        (h/ymd (stc/now))})
-        render (fn [props] [map-render local])
+        render (fn [_props] [map-render local])
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)]
                     (when (.-metaKey ev)

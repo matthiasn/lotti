@@ -1,10 +1,8 @@
 (ns meins.electron.renderer.ui.dashboard.cf_barchart
   (:require ["moment" :as moment]
-            [clojure.data.avl :as avl]
             [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
@@ -15,31 +13,30 @@
 (def ymd "YYYY-MM-DD")
 (defn df [ts format] (.format (moment ts) format))
 
-(defn rect [{:keys []}]
-  (let []
-    (fn [{:keys [v x w y h tag ymd color label local]}]
-      (let [display-text [:span ymd ": " [:strong v] " " label]
-            enter #(swap! local assoc :display-text display-text)
-            leave #(swap! local assoc :display-text "")
-            click #(let [q (merge (up/parse-search tag)
-                                  {:from ymd
-                                   :to   ymd})]
-                     (emit [:search/add {:tab-group :right
-                                         :query     q}]))]
-        [:g
-         [:rect {:on-mouse-enter enter
-                 :on-mouse-leave leave
-                 :on-click       click
-                 :x              x
-                 :y              (- y h)
-                 :width          w
-                 :height         h
-                 :fill           color}]]))))
+(defn rect
+  [{:keys [v x w y h tag ymd color label local]}]
+  (let [display-text [:span ymd ": " [:strong v] " " label]
+        enter #(swap! local assoc :display-text display-text)
+        leave #(swap! local assoc :display-text "")
+        click #(let [q (merge (up/parse-search tag)
+                              {:from ymd
+                               :to   ymd})]
+                 (emit [:search/add {:tab-group :right
+                                     :query     q}]))]
+    [:g
+     [:rect {:on-mouse-enter enter
+             :on-mouse-leave leave
+             :on-click       click
+             :x              x
+             :y              (- y h)
+             :width          w
+             :height         h
+             :fill           color}]]))
 
 (defn indexed-days [stats tag k start days]
   (let [d (* 24 60 60 1000)
         rng (range (inc days))
-        indexed (map-indexed (fn [n v]
+        indexed (map-indexed (fn [n _v]
                                (let [offset (* n d)
                                      ts (+ start offset)
                                      ymd (df ts ymd)
@@ -55,7 +52,7 @@
         pvt (subscribe [:show-pvt])
         custom-fields (reaction (:custom-fields @backend-cfg))]
     (fn barchart-row [{:keys [days span mx tag h y field color local
-                              cls threshold success-cls start end] :as m}]
+                              cls threshold success-cls start end]}]
       (when (and tag field (seq tag))
         (let [btm-y (+ y h)
               qid (keyword (s/replace (subs (str tag) 1) "-" "_"))
@@ -90,7 +87,7 @@
                          (> mx 400) 250
                          (> mx 100) 50
                          (> mx 40) 25
-                         :default 10)
+                         :else 10)
               lines (filter #(zero? (mod % line-inc)) (range 1 mx))]
           [:g
            [dc/row-label (or label tag) y h]
@@ -106,7 +103,7 @@
                        :fill        "black"
                        :text-anchor "start"}
                 (+ n)]))
-           (for [[n {:keys [date_string day-ts fields] :as m}] indexed]
+           (for [[n {:keys [date_string day-ts fields]}] indexed]
              (let [field (first (filter #(= (name field) (:field %)) fields))
                    v (:value field 0)
                    offset (- day-ts start)

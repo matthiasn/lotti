@@ -1,15 +1,12 @@
 (ns meins.electron.renderer.ui.preferences.usage-stats
-  (:require ["moment" :as moment]
-            ["ngeohash" :as geohash]
+  (:require ["ngeohash" :as geohash]
             [clojure.pprint :as pp]
-            [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.ui.leaflet :as l]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]
-            [taoensso.timbre :refer [error info]]
-            [venia.core :as v]))
+            [taoensso.timbre :refer [error info]]))
 
 (defn gh-2-bounds [geohash]
   (let [bounding-box (js->clj (geohash/decode_bbox geohash))
@@ -29,8 +26,7 @@
 
 
 (defn usage []
-  (let [local (rc/atom {})
-        gql-res (subscribe [:gql-res])
+  (let [gql-res (subscribe [:gql-res])
         usage-by-day (reaction (-> @gql-res :usage-by-day :data :usage_by_day))]
     (fn usage-render []
       (let [usage @usage-by-day]

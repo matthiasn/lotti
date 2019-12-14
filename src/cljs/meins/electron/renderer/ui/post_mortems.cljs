@@ -1,7 +1,6 @@
 (ns meins.electron.renderer.ui.post-mortems
-  (:require ["moment" :as moment]
-            [cljs.pprint :as pp]
-            [clojure.string :as s]
+  (:require ["react-event-timeline" :refer [Timeline TimelineEvent]]
+            ["react-horizontal-timeline" :default rht]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
@@ -14,18 +13,16 @@
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.updater :as upd]
             [re-frame.core :refer [subscribe]]
-            [react-event-timeline :as ret]
-            [react-horizontal-timeline :as rht]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(def timeline (r/adapt-react-class ret/Timeline))
-(def timeline-event (r/adapt-react-class ret/TimelineEvent))
+(def timeline (r/adapt-react-class Timeline))
+(def timeline-event (r/adapt-react-class TimelineEvent))
 
-(def horizontal-timeline (r/adapt-react-class (aget rht "default")))
+(def horizontal-timeline (r/adapt-react-class rht))
 
-(defn entry-card [entry]
+(defn entry-card [_]
   (let [locale     (subscribe [:locale])
         gql-res    (subscribe [:gql-res2])
         left-entry (reaction (first (vals (get-in @gql-res [:left :res]))))]
@@ -38,7 +35,7 @@
                              (:task entry) "open"
                              (:git_commit entry) "commit"
                              (:img_file entry) "img"
-                             :default nil)
+                             :else nil)
             status-cls     (case status
                              "rejected" "fa-times red"
                              "completed" "fa-check green"
@@ -109,7 +106,7 @@
                                :search-text @search-text
                                :tab-group   tab-group
                                :story       @story})]
-    (fn tabs-render [tab-group]
+    (fn tabs-render [_tab-group]
       [:div.tile-tabs
        (when @query-id
          [j/journal-view @local-cfg])])))
@@ -139,21 +136,19 @@
      :index  0}]])
 
 (defn post-mortem-page []
-  (let [cfg (subscribe [:cfg])]
-    (fn []
-      [:div.flex-container
-       [:div.grid
-        [:div.post-mortem-wrapper.post-mortems
-         [h/error-boundary [menu-view]]
-         [h/error-boundary [menu/busy-status]]
-         [:div.timeline
-          [h/error-boundary [timeline-view]]]
-         [:div.left
-          [h/error-boundary [tabs-view :post-mortem]]]
-         [h/error-boundary [timeline-column :post-mortem-tl]]
-         [:div.right
-          [h/error-boundary [g/tabs-view :right]]]]]
-       [h/error-boundary
-        [stats/stats-text]]
-       [h/error-boundary
-        [upd/updater]]])))
+  [:div.flex-container
+   [:div.grid
+    [:div.post-mortem-wrapper.post-mortems
+     [h/error-boundary [menu-view]]
+     [h/error-boundary [menu/busy-status]]
+     [:div.timeline
+      [h/error-boundary [timeline-view]]]
+     [:div.left
+      [h/error-boundary [tabs-view :post-mortem]]]
+     [h/error-boundary [timeline-column :post-mortem-tl]]
+     [:div.right
+      [h/error-boundary [g/tabs-view :right]]]]]
+   [h/error-boundary
+    [stats/stats-text]]
+   [h/error-boundary
+    [upd/updater]]])

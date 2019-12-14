@@ -26,7 +26,7 @@
                        :res-hash nil
                        :prio     11}])))
 
-(defn habit-line [_habit local]
+(defn habit-line [_habit _local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn habit-line-render [habit local]

@@ -1,9 +1,9 @@
 (ns meins.electron.renderer.ui.charts.common
   (:require ["moment" :as moment]
+            ["randomcolor" :as randomcolor]
             [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.charts.data :as cd]
-            [randomcolor]
             [reagent.core :as rc]))
 
 (defn line-points
@@ -69,7 +69,7 @@
   [snapshot]
   (let [mouse-pos (:mouse-pos snapshot)
         mouse-x (:x mouse-pos)
-        page-w (.-scrollWidth (.-body js/document))
+        ;page-w (.-scrollWidth (.-body js/document))
         page-h (.-scrollHeight (.-body js/document))
         dom-node (rc/dom-node (rc/current-component))
         w (if dom-node (.-offsetWidth dom-node) 300)]

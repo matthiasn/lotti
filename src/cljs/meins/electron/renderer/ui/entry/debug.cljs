@@ -1,11 +1,7 @@
 (ns meins.electron.renderer.ui.entry.debug
   (:require ["electron" :refer [clipboard]]
-            ["moment" :as moment]
             [clojure.data :as cd]
             [meins.electron.renderer.ui.data-explorer :as dex]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn debug-view [entry new-entry local]

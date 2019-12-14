@@ -1,11 +1,9 @@
 (ns meins.electron.renderer.ui.entry.problem
-  (:require [meins.electron.renderer.helpers :as h]
+  (:require ["react-color" :as react-color]
+            [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
-            [react-color :as react-color]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn editable-field [_ _ text]
@@ -40,7 +38,7 @@
 
 (defn problem-form
   "Renders fields for rendering the definition of a problem."
-  [entry local-cfg]
+  [entry _local-cfg]
   (when (= (:entry_type entry) :problem)
     (let [ts (:timestamp entry)
           name-path [:problem_cfg :name]

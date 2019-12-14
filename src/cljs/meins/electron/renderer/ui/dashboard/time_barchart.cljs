@@ -1,32 +1,29 @@
 (ns meins.electron.renderer.ui.dashboard.time_barchart
-  (:require ["moment" :as moment]
-            [meins.electron.renderer.helpers :as h]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(defn rect [{:keys []}]
-  (let []
-    (fn [{:keys [v x w y h cls ymd color label local]}]
-      (let [display-text [:span ymd ": " [:strong v] " " label]
-            enter        #(swap! local assoc :display-text display-text)
-            leave        #(swap! local assoc :display-text "")]
-        [:g
-         [:rect {:on-mouse-enter enter
-                 :on-mouse-leave leave
-                 :x              x
-                 :y              (- y h)
-                 :width          w
-                 :height         h
-                 :fill           color}]]))))
+(defn rect
+  [{:keys [v x w y h ymd color label local]}]
+  (let [display-text [:span ymd ": " [:strong v] " " label]
+        enter #(swap! local assoc :display-text display-text)
+        leave #(swap! local assoc :display-text "")]
+    [:g
+     [:rect {:on-mouse-enter enter
+             :on-mouse-leave leave
+             :x              x
+             :y              (- y h)
+             :width          w
+             :height         h
+             :fill           color}]]))
 
 (defn barchart-row [_]
   (let [dashboard-data (subscribe [:dashboard-data])
         pvt            (subscribe [:show-pvt])
         sagas          (subscribe [:sagas])]
     (fn barchart-row [{:keys [days span mx mn tag saga h y color fail-color local
-                              cls threshold success-cls start end] :as m}]
+                              cls threshold success-cls start end]}]
       (let [btm-y      (+ y h)
             start-ymd  (h/ymd start)
             end-ymd    (h/ymd end)
@@ -53,7 +50,7 @@
                          (> mx2 400) 250
                          (> mx2 100) 50
                          (> mx2 40) 25
-                         :default 10)
+                         :else 10)
             lines      (filter #(zero? (mod % line-inc)) (range 1 mx))]
         [:g
          [dc/row-label label y h]

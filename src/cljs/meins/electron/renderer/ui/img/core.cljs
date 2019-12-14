@@ -1,5 +1,6 @@
 (ns meins.electron.renderer.ui.img.core
-  (:require [clojure.data.avl :as avl]
+  (:require ["turndown" :as turndown]
+            [clojure.data.avl :as avl]
             [clojure.set :as set]
             [clojure.string :as s]
             [mapbox-gl]
@@ -13,14 +14,12 @@
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.impl.component :as ric]
             [reagent.ratom :refer [reaction]]
-            [taoensso.timbre :refer [debug error info]]
-            [turndown :as turndown]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn stars-view [entry local]
   (let [star (fn [idx n]
-               (let [click (fn [ev]
+               (let [click (fn [_ev]
                              (let [updated (assoc-in entry [:stars] idx)]
                                (debug "stars click" updated)
                                (swap! local assoc :selected updated)
@@ -38,7 +37,7 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry fullscreen locale local]
+  [entry fullscreen]
   (when-let [file (:img_file entry)]
     (let [resized-rotated (h/thumbs-2048 file)]
       [:div.slide
@@ -87,7 +86,7 @@
     (fn [entry]
       (let [html (md/md->html (:md @local))
             td (turndown. (clj->js {:headingStyle "atx"}))
-            on-change (fn [x html]
+            on-change (fn [_x html]
                         (let [md (.turndown td html)
                               updated (assoc-in @local [:md] md)]
                           (reset! local updated)
@@ -104,10 +103,10 @@
              [:i.fas.fa-save]
              "save"])]]))))
 
-(defn info-drawer [selected locale stop-watch]
+(defn info-drawer [_selected _stop-watch]
   (let [local (r/atom {})
         backend-cfg (subscribe [:backend-cfg])]
-    (fn [selected locale stop-watch]
+    (fn [selected stop-watch]
       (let [ts (:timestamp selected)
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
@@ -134,46 +133,43 @@
           [:span original-filename]
           [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]]))))
 
-(defn carousel [_]
-  (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered album-ts local start-watch stop-watch selected-idx
-                 prev-click next-click]}]
-      (let [locale @locale
-            selected (or (:selected @local)
-                         (first filtered))
-            n (count filtered)
-            two-or-more (< 1 n)
-            fullscreen (or (:fullscreen @local)
-                           (not two-or-more))]
-        [:div
-         [:div.carousel.carousel-slider {:style {:width "100%"}}
-          (when-not fullscreen
-            [:div.filters
-             [stars-filter local]])
-          [:div.slider-wrapper.axis-horizontal {:on-mouse-enter start-watch
-                                                :on-mouse-over  start-watch
-                                                :on-mouse-leave stop-watch}
-           (when-not fullscreen
-             [:button.control-arrow.control-prev {:on-click prev-click}])
+(defn carousel [{:keys [filtered album-ts local start-watch stop-watch selected-idx
+                        prev-click next-click]}]
+  (let [selected (or (:selected @local)
+                     (first filtered))
+        n (count filtered)
+        two-or-more (< 1 n)
+        fullscreen (or (:fullscreen @local)
+                       (not two-or-more))]
+    [:div
+     [:div.carousel.carousel-slider {:style {:width "100%"}}
+      (when-not fullscreen
+        [:div.filters
+         [stars-filter local]])
+      [:div.slider-wrapper.axis-horizontal {:on-mouse-enter start-watch
+                                            :on-mouse-over  start-watch
+                                            :on-mouse-leave stop-watch}
+       (when-not fullscreen
+         [:button.control-arrow.control-prev {:on-click prev-click}])
 
-           [image-view selected fullscreen locale local]
-           (when-not fullscreen
-             [:button.control-arrow.control-next {:on-click next-click}])]
-          (when-not fullscreen
-            [info-drawer selected locale stop-watch])
-          (when-not fullscreen
-            [:p.carousel-status (inc selected-idx) "/" n])]
-         (when-not fullscreen
-           [:div.carousel
-            [:div.thumbs-wrapper.axis-horizontal
-             [:ul
-              (for [entry filtered]
-                ^{:key (:timestamp entry)}
-                [thumb-view album-ts entry selected local])]]])]))))
+       [image-view selected fullscreen]
+       (when-not fullscreen
+         [:button.control-arrow.control-next {:on-click next-click}])]
+      (when-not fullscreen
+        [info-drawer selected stop-watch])
+      (when-not fullscreen
+        [:p.carousel-status (inc selected-idx) "/" n])]
+     (when-not fullscreen
+       [:div.carousel
+        [:div.thumbs-wrapper.axis-horizontal
+         [:ul
+          (for [entry filtered]
+            ^{:key (:timestamp entry)}
+            [thumb-view album-ts entry selected local])]]])]))
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [album-ts entries]
+  [_album-ts entries]
   (let [local (r/atom {:filter     #{}
                        :fullscreen false})
         filter-by-stars (fn [entry]
@@ -214,7 +210,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [album-ts entries]
+    (fn gallery-render [album-ts _entries]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery.page.fullscreen

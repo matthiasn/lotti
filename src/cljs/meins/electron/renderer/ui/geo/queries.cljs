@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.geo.queries
-  (:require [meins.electron.renderer.graphql :as gql]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]
             [taoensso.timbre :refer [debug error info]]
             [venia.core :as v]))

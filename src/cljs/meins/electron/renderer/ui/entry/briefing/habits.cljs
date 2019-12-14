@@ -1,9 +1,7 @@
 (ns meins.electron.renderer.ui.entry.briefing.habits
-  (:require ["moment" :as moment]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.habits.util :as hu]
-            [meins.common.utils.misc :as m]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
@@ -12,14 +10,6 @@
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
-
-(defn habit-sorter
-  "Sorts habits."
-  [x y]
-  (let [c (compare (or (get-in x [:habit :priority]) :X)
-                   (or (get-in y [:habit :priority]) :X))]
-    (if (not= c 0) c (compare (get-in y [:habit :points])
-                              (get-in x [:habit :points])))))
 
 (defn percent-achieved [habit]
   (let [completed (first (:completed habit))
@@ -112,15 +102,7 @@
                            @habits-success)
             habits (filter #(or pvt (not (get-in % [:habit_entry :habit :pvt]))) habits)
             habits (filter #(-> % :habit_entry :habit :active) habits)
-            tab-group :briefing
-            open-new (fn [x]
-                       (emit [:search/add
-                              {:tab-group :left
-                               :query     (up/parse-search (:timestamp x))}]))
-            habit-default {:entry_type :habit
-                           :starred    true
-                           :perm_tags  #{"#habit"}}
-            new-habit (h/new-entry habit-default open-new)]
+            tab-group :briefing]
         [:div.waiting-habits
          [:table.habits
           [:tbody

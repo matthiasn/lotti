@@ -31,8 +31,7 @@
           :style       {:font-size 12}}
    text])
 
-(defn ts-bars [{:keys [day-stats item-name-k idx chart-h y-offset x-offset w
-                       x-step]} local put-fn]
+(defn ts-bars [{:keys [day-stats item-name-k idx chart-h y-offset x-offset w x-step]} local]
   (let [day (moment (:day day-stats))
         mouse-enter-fn (cc/mouse-enter-fn local day-stats)
         mouse-leave-fn (cc/mouse-leave-fn local day-stats)
@@ -46,7 +45,7 @@
                            [h x])) time-by-ts)]
     [:g {:on-mouse-enter mouse-enter-fn
          :on-mouse-leave mouse-leave-fn}
-     (for [[hh {:keys [summed manual story] :as data}] time-by-h]
+     (for [[hh {:keys [summed manual story]}] time-by-h]
        (let [item-name (if (= item-name-k :story_name)
                          (:story_name story)
                          (:saga_name (:saga story)))
@@ -93,11 +92,10 @@
 
 (defn earlybird-chart [_ _]
   (let [local (r/atom {})
-        show-pvt (subscribe [:show-pvt])
         gql-res (subscribe [:gql-res])
         idx-fn (fn [idx v] [idx v])
         stats (reaction (:day_stats (:data (:day-stats @gql-res))))]
-    (fn earlybird-chart-row [{:keys [days span start h y]} put-fn]
+    (fn earlybird-chart-row [{:keys [days span h y]} put-fn]
       (let [indexed2 (map-indexed idx-fn @stats)
             l (/ h 5)]
         [:g

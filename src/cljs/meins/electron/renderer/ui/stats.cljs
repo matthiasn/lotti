@@ -1,9 +1,5 @@
 (ns meins.electron.renderer.ui.stats
   (:require [electron :refer [remote]]
-            [meins.electron.renderer.ui.charts.media :as m]
-            [meins.electron.renderer.ui.charts.tasks :as ct]
-            [meins.electron.renderer.ui.charts.time.durations :as cd]
-            [meins.electron.renderer.ui.charts.wordcount :as wc]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]))
 
@@ -32,10 +28,3 @@
         (when rt-info
           [:span (:pid @stats) " | "])
         " © Matthias Nehlsen"]])))
-
-(defn stats-view [put-fn]
-  [:div.stats.charts
-   [cd/durations-table 200 5 put-fn]
-   [ct/tasks-chart 250 put-fn]
-   [wc/wordcount-chart 150 put-fn 1000]
-   [m/media-chart 150 put-fn]])

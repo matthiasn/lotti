@@ -1,28 +1,23 @@
 (ns meins.electron.renderer.ui.grid
   (:require ["moment" :as moment]
+            ["tinycolor2" :as tinycolor]
             [clojure.string :as s]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.electron.renderer.ui.entry.briefing :as b]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [meins.electron.renderer.ui.entry.entry :as e]
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.search :as search]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]
             [reagent.ratom :refer [reaction]]
-            [taoensso.timbre :refer [debug error info]]
-            [tinycolor2 :as tinycolor]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn fmt-ts [q]
   (let [ts (:timestamp q)]
     (.format (moment (js/parseInt ts)) "YY-MM-DD HH:mm")))
 
-(defn tabs-header-view [tab-group]
-  (let [query-cfg (subscribe [:query-cfg])
-        gql-res (subscribe [:gql-res2])
-        first-res (reaction (first (vals (get-in @gql-res [tab-group :res]))))]
+(defn tabs-header-view [_tab-group]
+  (let [query-cfg (subscribe [:query-cfg])]
     (fn tabs-header-view-render [tab-group]
       (let [query-config @query-cfg
             queries (-> query-config :tab-groups tab-group :all)

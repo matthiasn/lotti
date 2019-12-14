@@ -1,8 +1,5 @@
 (ns meins.electron.renderer.ui.entry.briefing
-  (:require ["moment" :as moment]
-            [cljs.pprint :as pp]
-            [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
@@ -11,12 +8,9 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.entry.actions :as a]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as cal]
             [meins.electron.renderer.ui.entry.briefing.habits :as habits]
             [meins.electron.renderer.ui.entry.briefing.tasks :as tasks]
-            [meins.electron.renderer.ui.entry.briefing.time :as time]
             [meins.electron.renderer.ui.entry.entry :as e]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
@@ -24,7 +18,7 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(defn planned-actual [entry]
+(defn planned-actual [_entry]
   (let [chart-data (subscribe [:chart-data])
         sagas (subscribe [:sagas])
         y-scale 0.0045]
@@ -120,7 +114,7 @@
                  [uc/switch2 {:v selected?}]
                  (s/trim (:saga_name saga))]))])]))))
 
-(defn add-task [ts]
+(defn add-task [_ts]
   (let [open-new (fn [x]
                    (emit
                      [:schedule/new
@@ -145,12 +139,11 @@
                       {:tab-group :left
                        :query     (up/parse-search @cal-day)}])]
     (fn []
-      (let []
-        [:div.add-task
-         [:div.toggle-visible
-          {:on-click click}
-          "show all"
-          [:i.fas.fa-chevron-square-right]]]))))
+      [:div.add-task
+       [:div.toggle-visible
+        {:on-click click}
+        "show all"
+        [:i.fas.fa-chevron-square-right]]])))
 
 (defn problems-gql-query [n]
   (let [queries [[:problems
@@ -203,7 +196,7 @@
                    ^{:key (:timestamp r)}
                    [:span.conclusion {:class cls}]))]]))]]])))
 
-(defn briefing-view [local-cfg]
+(defn briefing-view [_local-cfg]
   (let [gql-res (subscribe [:gql-res])
         briefing (reaction (:briefing (:data (:briefing @gql-res))))
         day-stats (reaction (:logged_time (:data (:logged-by-day @gql-res))))
@@ -215,7 +208,7 @@
                        :show-points             false
                        :on-hold                 false})
         pvt (subscribe [:show-pvt])]
-    (h/to-day (h/ymd (st/now)) pvt)
+    (h/to-day (h/ymd (stc/now)) pvt)
     (fn briefing-render [local-cfg]
       (let [ts (:timestamp @briefing)
             excluded (:excluded (:briefing @cfg))
@@ -280,7 +273,7 @@
                              :search-text @search-text
                              :tab-group   tab-group
                              :story       @story})]
-    (fn briefing-column-view-render [tab-group]
+    (fn briefing-column-view-render [_tab-group]
       [:div.briefing-container
        [:div.tile-tabs
         [:div.journal

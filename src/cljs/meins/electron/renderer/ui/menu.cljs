@@ -1,21 +1,12 @@
 (ns meins.electron.renderer.ui.menu
-  (:require ["moment" :as moment]
-            [cljs.reader :refer [read-string]]
-            [matthiasn.systems-toolbox.component :as stc]
-            [meins.common.habits.util :as hu]
-            [meins.common.utils.misc :as u]
-            [meins.common.utils.misc :as m]
+  (:require [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as up]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.award :as ca]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(defn toggle-option-view [{:keys [option cls]}]
+(defn toggle-option-view [{:keys []}]
   (let [cfg (subscribe [:cfg])]
     (fn toggle-option-render [{:keys [option cls]}]
       (let [show-option? (option @cfg)

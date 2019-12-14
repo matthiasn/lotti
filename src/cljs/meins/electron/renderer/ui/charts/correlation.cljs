@@ -1,7 +1,5 @@
 (ns meins.electron.renderer.ui.charts.correlation
   (:require [matthiasn.systems-toolbox.switchboard.helpers :as sh]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.data-explorer :as dex]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]

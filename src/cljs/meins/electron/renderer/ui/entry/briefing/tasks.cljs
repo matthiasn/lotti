@@ -3,7 +3,6 @@
             [clojure.pprint :as pp]
             [clojure.set :as set]
             [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
@@ -94,7 +93,7 @@
       (let [text (eu/first-line entry)
             active (= ts (:active @busy-status))
             active-selected (and (= (str ts) search-text) active)
-            busy (> 1000 (- (st/now) (:last @busy-status)))
+            busy (> 1000 (- (stc/now) (:last @busy-status)))
             cls (cond
                   (and active-selected busy) "active-timer-selected-busy"
                   (and active busy) "active-timer-busy"
@@ -168,11 +167,9 @@
 
 (defn open-task-row [entry _cfg]
   (let [ts (:timestamp entry)]
-    (fn [entry {:keys [tab-group search-text unlink show-logged?
-                       show-points]}]
+    (fn [entry {:keys [tab-group search-text unlink show-points]}]
       (let [text (str (eu/first-line entry))
             cls (when (= (str ts) search-text) "selected")
-            estimate (get-in entry [:task :estimate_m] 0)
             age (time-ago (- (stc/now) (:timestamp entry)))]
         [:tr.task {:on-click (up/add-search {:tab-group    tab-group
                                              :story-name   (-> entry :story :story_name)
@@ -260,11 +257,11 @@
   (let [c0 (compare (or (get-in x [:task :priority]) :X)
                     (or (get-in y [:task :priority]) :X))
         c1 (compare (:timestamp y) (:timestamp x))]
-    (if (not= c0 0) c0 (if (not= c1 0) c1))))
+    (if (not= c0 0) c0 c1)))
 
 (defn open-tasks
   "Renders table with open tasks."
-  [local local-cfg]
+  [local _local-cfg]
   (let [gql-res (subscribe [:gql-res])
         show-pvt (subscribe [:show-pvt])
         open-tasks (reaction (-> @gql-res :open-tasks :data :open_tasks))

@@ -2,7 +2,6 @@
   (:require ["tweetnacl" :refer [box randomBytes setPRNG]]
             ["tweetnacl-util" :refer [decodeBase64 decodeUTF8 encodeBase64 encodeUTF8]]
             [cljs.reader :as edn]
-            [clojure.string :as s]
             [clojure.string :as str]
             [taoensso.timbre :refer [error info]]))
 
@@ -68,7 +67,7 @@
    of the ciphertext leading up to the first dot."
   [cipher their-public-key our-secret-key]
   (try
-    (case (first (s/split cipher "."))
+    (case (first (str/split cipher "."))
       "v2" (edn/read-string (decrypt-asymm cipher their-public-key our-secret-key))
       nil)
     (catch :default e (js/console.error "decrypt" e))))

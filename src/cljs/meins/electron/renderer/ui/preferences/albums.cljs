@@ -34,7 +34,7 @@
                        :res-hash nil
                        :prio     11}])))
 
-(defn album-row [_saga local]
+(defn album-row [_saga _local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn album-row-render [entry local]

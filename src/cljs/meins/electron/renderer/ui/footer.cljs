@@ -1,9 +1,6 @@
 (ns meins.electron.renderer.ui.footer
   (:require [meins.electron.renderer.ui.dashboard.core :as db]
-
-            [re-frame.core :refer [subscribe]]
-            [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]))
+            [reagent.core :as r]))
 
 (defn dashboard []
   (let [local (r/atom {:days     21

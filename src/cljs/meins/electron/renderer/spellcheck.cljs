@@ -5,7 +5,7 @@
 
 (defn set-lang [{:keys [msg-payload current-state]}]
   (let [cc msg-payload
-        spellcheck-handler (:spellcheck-handler current-state)]
+        _spellcheck-handler (:spellcheck-handler current-state)]
     (info "Setting SpellChecker language:" cc)
     ;(.switchLanguage spellcheck-handler cc)
     {}))

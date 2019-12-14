@@ -1,6 +1,6 @@
 (ns meins.electron.renderer.ui.entry.quill
   "Adapted from https://github.com/benhowell/reagent-quill/blob/master/quill.cljs"
-  (:require [quill :as quill]
+  (:require ["quill" :as quill]
             [reagent.core :as r]
             [taoensso.timbre :refer [debug error info]]))
 
@@ -74,7 +74,7 @@
             (reset! this q))
 
           (.on @this "text-change"
-               (fn [delta old-delta source]
+               (fn [_delta _old-delta source]
                  (on-change-fn source (value))))
 
           (if (= selection nil)

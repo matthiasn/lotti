@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.charts.award
-  (:require [meins.electron.renderer.helpers :as h]
-            [re-frame.core :refer [subscribe]]
+  (:require [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]))
 
@@ -28,10 +27,10 @@
 
 (defn award-points
   "Simple view for points awarded."
-  [put-fn]
+  []
   (let [gql-res (subscribe [:gql-res])
         stats (reaction (:award_points (:data (:award-points @gql-res))))]
-    (fn [put-fn]
+    (fn []
       (let [total (:total @stats 0)
             claimed (:claimed @stats 0)
             balance (- total claimed)]

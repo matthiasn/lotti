@@ -1,17 +1,11 @@
 (ns meins.electron.renderer.ui.entry.entry
-  (:require ["moment" :as moment]
-            [clojure.data :as cd]
-            [clojure.pprint :as pp]
-            [clojure.set :as set]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [clojure.set :as set]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.data-explorer :as dex]
             [meins.electron.renderer.ui.draft :as d]
             [meins.electron.renderer.ui.entry.actions :as a]
             [meins.electron.renderer.ui.entry.capture :as c]
-            [meins.electron.renderer.ui.entry.carousel :as cl]
             [meins.electron.renderer.ui.entry.cfg.album :as ca]
             [meins.electron.renderer.ui.entry.cfg.custom-field :as cfc]
             [meins.electron.renderer.ui.entry.cfg.dashboard :as db]
@@ -130,7 +124,7 @@
           [:div.header
            [:div.action-row
             (if (:show-adjust-ts @local)
-              [dt/datetime-edit merged local]
+              [dt/datetime-edit merged]
               [dt/datetime-header merged local])
             [a/entry-actions merged local edit-mode? toggle-edit local-cfg]]]]
          [prb/problem-form merged local-cfg]
@@ -140,10 +134,10 @@
          (when-not (:spotify entry)
            [d/entry-editor entry errors])
          [es/story-form merged]
-         [es/saga-name-field merged edit-mode?]
+         [es/saga-name-field merged]
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
-           [task/task-details merged local-cfg edit-mode?])
+           [task/task-details merged])
          (when (or (contains? (set (:perm_tags entry)) "#album")
                    (contains? (set (:tags entry)) "#album"))
            [ca/album-config merged])

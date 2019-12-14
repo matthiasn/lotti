@@ -1,14 +1,10 @@
 (ns meins.electron.renderer.ui.preferences.sync
-  (:require ["moment" :as moment]
-            [cljs-bean.core :refer [->clj ->js bean]]
-            [clojure.pprint :as pp]
-            [clojure.string :as str]
+  (:require [cljs.pprint :as pp]
             [meins.electron.renderer.ui.preferences.qr-gen :as qrg]
             [meins.electron.renderer.ui.preferences.qr-scanner :as qrs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
 
 (defn input [t v cb]
@@ -117,15 +113,14 @@
   (let [imap-cfg (subscribe [:imap-cfg])
         cfg (r/atom (or @imap-cfg {}))]
     (fn [local]
-      (let []
-        [:div.page
-         [:div.nav
-          [:button {:on-click #(swap! local assoc :page :key-pair)}
-           "Previous"]]
-         [:h1 "Hello App!"]
-         [:div
-          [qrs/scanner local cfg]
-          [:p "Here, you scan the public key of your smartphone."]]]))))
+      [:div.page
+       [:div.nav
+        [:button {:on-click #(swap! local assoc :page :key-pair)}
+         "Previous"]]
+       [:h1 "Hello App!"]
+       [:div
+        [qrs/scanner local cfg]
+        [:p "Here, you scan the public key of your smartphone."]]])))
 
 (defn show-qr [local]
   [:div.page

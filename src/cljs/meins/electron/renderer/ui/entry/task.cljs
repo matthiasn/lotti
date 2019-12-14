@@ -5,7 +5,6 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
             [taoensso.timbre :refer [debug info]]))
 
@@ -24,9 +23,9 @@
                   :value       (:value @local)
                   :type        :time}]]))))
 
-(defn task-details [entry local-cfg edit-mode?]
+(defn task-details [_entry]
   (let [local (r/atom {:show false})]
-    (fn [entry local-cfg edit-mode?]
+    (fn [entry]
       (let [prio-select (fn [entry]
                           (fn [ev]
                             (let [sel (keyword (h/target-val ev))
@@ -68,7 +67,6 @@
                                       (update-in [:perm_tags] set-fn #{"#closed"})
                                       (update-in [:tags] set-fn #{"#closed"}))]
                         (emit [:entry/update entry]))))
-            allocation (or (get-in entry [:task :estimate_m]) 0)
             priority (get-in entry [:task :priority])
             done-checked (get-in entry [:task :done])
             closed (get-in entry [:task :closed])]

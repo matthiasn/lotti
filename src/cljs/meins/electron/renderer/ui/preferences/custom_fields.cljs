@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.preferences.custom-fields
   (:require [clojure.string :as s]
-            [meins.common.utils.parse :as up]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.journal :as j]
@@ -29,7 +28,7 @@
   (let [stories (subscribe [:stories])
         backend-cfg (subscribe [:backend-cfg])
         pvt (subscribe [:show-pvt])
-        select-item (fn [tag cfg]
+        select-item (fn [_tag cfg]
                       (let [ts (:timestamp cfg)
                             select-toggle #(when-not (= % ts) ts)]
                         (swap! local assoc-in [:new-field-input] "")

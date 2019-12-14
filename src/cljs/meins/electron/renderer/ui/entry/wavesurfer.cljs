@@ -1,9 +1,8 @@
 (ns meins.electron.renderer.ui.entry.wavesurfer
-  (:require [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require ["wavesurfer.js" :as wavesurfer]
+            [meins.electron.renderer.helpers :as h]
             [reagent.core :as r]
-            [taoensso.timbre :refer [debug info]]
-            [wavesurfer.js :as wavesurfer]))
+            [taoensso.timbre :refer [debug info]]))
 
 (def intersection-observer (aget js/window "IntersectionObserver"))
 

@@ -1,30 +1,25 @@
 (ns meins.electron.renderer.ui.entry.carousel
-  (:require [clojure.data.avl :as avl]
-            [clojure.set :as set]
+  (:require ["turndown" :as turndown]
+            [clojure.data.avl :as avl]
             [clojure.string :as s]
-            [clojure.string :as str]
             [mapbox-gl]
             [markdown.core :as md]
-            [meins.common.utils.misc :as u]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.entry.actions :as a]
             [meins.electron.renderer.ui.entry.quill :as q]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.leaflet :as l]
             [meins.electron.renderer.ui.mapbox :as mb]
+            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.impl.component :as ric]
             [reagent.ratom :refer [reaction]]
-            [taoensso.timbre :refer [debug error info]]
-            [turndown :as turndown]))
+            [taoensso.timbre :refer [debug error info]]))
 
-(defn stars-view [entry put-fn]
+(defn stars-view [entry]
   (let [star (fn [idx n]
-               (let [click (fn [ev]
+               (let [click (fn [_ev]
                              (let [updated (assoc-in entry [:stars] idx)]
                                (debug "stars click" updated)
-                               (put-fn [:entry/update updated])))]
+                               (emit [:entry/update updated])))]
                  [:i.fa-star {:class    (if (<= idx n) "fas" "fal")
                               :on-click click}]))
         stars (:stars entry 0)]
@@ -38,7 +33,7 @@
 (defn image-view
   "Renders image view. Uses resized and properly rotated image endpoint
    when JPEG file requested."
-  [entry locale local put-fn]
+  [entry locale]
   (when-let [file (:img_file entry)]
     (let [resized-rotated (h/thumbs-512 file)
           ts (:timestamp entry)
@@ -46,14 +41,14 @@
           html (md/md->html md)
           toggle-expanded (fn [_]
                             (info :toggle-expanded)
-                            (put-fn [:nav/to {:page :gallery}]))
+                            (emit [:nav/to {:page :gallery}]))
           original-filename (last (s/split (:img_rel_path entry) #"[/\\\\]"))]
       [:div.slide
        [:img {:src resized-rotated}]
        [:div.legend
         [:div (h/localize-datetime-full ts locale)]
         [:div
-         [stars-view entry put-fn]
+         [stars-view entry]
          [:span {:on-click toggle-expanded}
           [:i.fas.fa-expand]]]
         [:div original-filename]
@@ -106,18 +101,18 @@
    has given me more problems than I anticipated. Working mostly fine now,
    but won't hurt to have a potential alternative. Curious about your
    experience with either."
-  [entry put-fn]
+  [entry]
   (let [local (r/atom entry)]
-    (fn [entry put-fn]
+    (fn [entry]
       (let [html (md/md->html (:md @local))
             td (turndown. (clj->js {:headingStyle "atx"}))
-            on-change (fn [x html]
+            on-change (fn [_x html]
                         (let [md (.turndown td html)
                               updated (assoc-in @local [:md] md)]
                           (reset! local updated)
-                          (put-fn [:entry/update-local updated])))
+                          (emit [:entry/update-local updated])))
             on-save (fn [_]
-                      (put-fn [:entry/update @local]))]
+                      (emit [:entry/update @local]))]
         [:div.gallery-editor
          [q/editor {:id           :quill-editor
                     :content      html
@@ -129,12 +124,10 @@
              [:i.fas.fa-save]
              "save"])]]))))
 
-(defn info-drawer [selected locale put-fn]
+(defn info-drawer [_ _]
   (let [local (r/atom {})
-        backend-cfg (subscribe [:backend-cfg])
-        cfg       (subscribe [:cfg])
-        satellite (reaction (:satellite-view @cfg))]
-    (fn [selected locale put-fn]
+        backend-cfg (subscribe [:backend-cfg])]
+    (fn [selected locale]
       (let [ts (:timestamp selected)
             file (:img_file selected)
             mapbox-token (:mapbox-token @backend-cfg)
@@ -149,19 +142,18 @@
              [mb/mapbox-cls {:local        local
                              :id           (str ts)
                              :selected     selected
-                             :mapbox-token mapbox-token
-                             :put-fn       put-fn}]
+                             :mapbox-token mapbox-token}]
              [l/leaflet-map selected true {}]))
          [:time (h/localize-datetime-full ts locale)]
-         [text-editor selected put-fn]
-         [stars-view selected put-fn]
+         [text-editor selected]
+         [stars-view selected]
          [:div.stars
           [:span original-filename]
           [:a {:href external :target "_blank"} [:i.fas.fa-external-link-alt]]]]))))
 
 (defn carousel [_]
   (let [locale (subscribe [:locale])]
-    (fn [{:keys [filtered local put-fn selected-idx prev-click next-click]}]
+    (fn [{:keys [filtered local selected-idx prev-click next-click]}]
       (let [fullscreen (:fullscreen @local)
             locale @locale
             selected (or (:selected @local) (first filtered))
@@ -175,12 +167,12 @@
           [:div.slider-wrapper.axis-horizontal
            (when two-or-more
              [:button.control-arrow.control-prev {:on-click prev-click}])
-           [image-view selected locale local put-fn]
+           [image-view selected locale]
            (when two-or-more
              [:button.control-arrow.control-next {:on-click next-click}])]
           (when fullscreen
             ;^{:key (:timestamp selected)}
-            [info-drawer selected locale put-fn])
+            [info-drawer selected locale])
           (when two-or-more
             [:p.carousel-status (inc selected-idx) "/" n])]
          (when fullscreen
@@ -193,7 +185,7 @@
 
 (defn gallery
   "Renders thumbnails of photos in linked entries. Respects private entries."
-  [entries local-cfg put-fn]
+  [entries _local-cfg]
   (let [local (r/atom {:filter #{}})
         filter-by-stars (fn [entry]
                           (or (empty? (:filter @local))
@@ -219,7 +211,7 @@
                                     (let [selected @selected
                                           updated (assoc-in selected [:stars] n)]
                                       (debug updated)
-                                      (put-fn [:entry/update updated])))]
+                                      (emit [:entry/update updated])))]
                     (info key-code meta-key)
                     (when (= key-code 27)
                       (swap! local assoc-in [:fullscreen] false))
@@ -236,7 +228,7 @@
         stop-watch #(.removeEventListener js/document "keydown" keydown)
         start-watch #(do (.addEventListener js/document "keydown" keydown)
                          (js/setTimeout stop-watch 60000))]
-    (fn gallery-render [entries local-cfg put-fn]
+    (fn gallery-render [_entries local-cfg]
       (let [sorted-filtered (filter filter-by-stars @sorted)
             selected-idx (avl/rank-of (avl-sort sorted-filtered) @selected)]
         [:div.gallery {:class          (when (:fullscreen @local) "fullscreen")
@@ -248,8 +240,7 @@
                     :local        local
                     :selected-idx selected-idx
                     :next-click   next-click
-                    :prev-click   prev-click
-                    :put-fn       put-fn}]]))))
+                    :prev-click   prev-click}]]))))
 
 (defn gallery-entries [entry]
   (filter :img_file (concat [entry]

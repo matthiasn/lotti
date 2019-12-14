@@ -4,7 +4,7 @@
 
 (defn reward-details [entry put-fn]
   (let [claimed (fn [entry]
-                  (fn [ev]
+                  (fn [_ev]
                     (let [completion-ts (.format (moment))
                           updated (-> entry
                                       (assoc-in [:reward :claimed-ts] completion-ts)

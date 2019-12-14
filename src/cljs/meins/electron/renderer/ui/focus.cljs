@@ -1,20 +1,9 @@
 (ns meins.electron.renderer.ui.focus
-  (:require ["moment" :as moment]
-            [cljs.pprint :as pp]
-            [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
-            [matthiasn.systems-toolbox.component :as stc]
-            [meins.common.utils.misc :as u]
+  (:require ["react-event-timeline" :refer [Timeline TimelineEvent]]
+            ["react-horizontal-timeline" :default rht]
             [meins.common.utils.parse :as up]
-            [meins.electron.renderer.charts.data :as cd]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.common :as cc]
-            [meins.electron.renderer.ui.entry.actions :as a]
-            [meins.electron.renderer.ui.entry.briefing.calendar :as cal]
-            [meins.electron.renderer.ui.entry.briefing.habits :as habits]
-            [meins.electron.renderer.ui.entry.briefing.tasks :as tasks]
-            [meins.electron.renderer.ui.entry.briefing.time :as time]
             [meins.electron.renderer.ui.entry.entry :as e]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.grid :as g]
@@ -22,21 +11,18 @@
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.stats :as stats]
-            [meins.electron.renderer.ui.ui-components :as uc]
             [meins.electron.renderer.ui.updater :as upd]
             [re-frame.core :refer [subscribe]]
-            [react-event-timeline :as ret]
-            [react-horizontal-timeline :as rht]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(def timeline (r/adapt-react-class ret/Timeline))
-(def timeline-event (r/adapt-react-class ret/TimelineEvent))
+(def timeline (r/adapt-react-class Timeline))
+(def timeline-event (r/adapt-react-class TimelineEvent))
 
-(def horizontal-timeline (r/adapt-react-class (aget rht "default")))
+(def horizontal-timeline (r/adapt-react-class rht))
 
-(defn entry-card [entry local]
+(defn entry-card [_entry _local]
   (let [locale (subscribe [:locale])
         gql-res (subscribe [:gql-res2])
         left-entry (reaction (first (vals (get-in @gql-res [:left :res]))))]
@@ -50,7 +36,7 @@
                      (:comment_for entry) "comment"
                      (:git_commit entry) "commit"
                      (:img_file entry) "img"
-                     :default nil)
+                     :else nil)
             status-cls (case status
                          "rejected" "fa-times red"
                          "comment" "fa-comment"
@@ -59,7 +45,7 @@
                          "commit" "fa-code-commit"
                          "img" "fa-image"
                          "fa-sticky-note")
-            on-click (fn [ev]
+            on-click (fn [_ev]
                        (let [el (.getElementById js/document (str ":left" ts))]
                          (if el
                            (do
@@ -133,7 +119,7 @@
                              :search-text @search-text
                              :tab-group   tab-group
                              :story       @story})]
-    (fn tabs-render [tab-group]
+    (fn tabs-render [_tab-group]
       [:div.tile-tabs
        (when @query-id
          [j/journal-view @local-cfg])])))
@@ -173,8 +159,7 @@
          :linePadding 60}]])))
 
 (defn focus-page []
-  (let [cfg (subscribe [:cfg])
-        local (r/atom {:tl-idx 0})]
+  (let [local (r/atom {:tl-idx 0})]
     (fn []
       [:div.flex-container
        [:div.grid

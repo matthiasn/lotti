@@ -1,7 +1,8 @@
 (ns meins.electron.renderer.localstorage
   "Adapted from https://github.com/alandipert/storage-atom"
   (:require [clojure.string :as string]
-            [cognitect.transit :as t]))
+            [cognitect.transit :as t]
+            [taoensso.timbre :refer [debug error info]]))
 
 (def transit-read-handlers (atom {}))
 
@@ -79,7 +80,7 @@ discarded an only the new one is committed."
                              (if-not (string/blank? value)
                                (json->clj value)
                                default))))))
-        (catch :default e)))))
+        (catch :default e (error e))))))
 
 (defn link-storage
   [atom storage k]

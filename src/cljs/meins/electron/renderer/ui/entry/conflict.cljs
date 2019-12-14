@@ -4,7 +4,7 @@
             [reagent.core :as r]
             [taoensso.timbre :refer [debug error info]]))
 
-(defn conflict-view [entry]
+(defn conflict-view [_entry]
   (let [local (r/atom {})]
     (fn [entry]
       (when-let [conflict (:conflict entry)]

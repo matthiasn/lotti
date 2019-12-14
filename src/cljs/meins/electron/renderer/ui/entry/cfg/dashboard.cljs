@@ -1,16 +1,12 @@
 (ns meins.electron.renderer.ui.entry.cfg.dashboard
-  (:require ["moment" :as moment]
-            [meins.common.utils.misc :as m]
-            [meins.common.utils.parse :as up]
-            [meins.electron.renderer.helpers :as h]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
-            [react-color :as react-color]
+            ["react-color" :as react-color]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (def chrome-picker (r/adapt-react-class react-color/ChromePicker))
@@ -18,7 +14,7 @@
 (defn habit-success [_]
   (let [habits (subscribe [:habits])
         pvt (subscribe [:show-pvt])]
-    (fn [{:keys [entry idx] :as habit}]
+    (fn [{:keys [entry idx]}]
       (let [path [:dashboard_cfg :items idx :habit]
             pvt-filter #(-> % second :habit_entry :habit :pvt not)
             habits (if @pvt
@@ -54,54 +50,53 @@
                      :color            (get-in entry color-path "#ccc")
                      :onChangeComplete set-color}]]))
 
-(defn bp-chart [_]
-  (let []
-    (fn [{:keys [entry idx collapsed]}]
-      (let [h-path [:dashboard_cfg :items idx :h]
-            mn-path [:dashboard_cfg :items idx :mn]
-            mx-path [:dashboard_cfg :items idx :mx]
-            sw-path [:dashboard_cfg :items idx :stroke_width]
-            csw-path [:dashboard_cfg :items idx :circle_stroke_width]
-            cr-path [:dashboard_cfg :items idx :circle_radius]
-            glow-path [:dashboard_cfg :items idx :glow]]
-        [:div
-         [:h4 "Blood pressure chart"]
-         (when-not collapsed
-           [:div
-            [cs/input-row entry {:type    :number
-                                 :label   "Height:"
-                                 :path    h-path
-                                 :default 130}]
-            [cs/input-row entry {:label   "Min:"
-                                 :type    :number
-                                 :path    mn-path
-                                 :default 60}]
-            [cs/input-row entry {:type    :number
-                                 :label   "Max:"
-                                 :path    mx-path
-                                 :default 220}]
-            [cs/input-row entry {:type    :number
-                                 :label   "Stroke:"
-                                 :path    sw-path
-                                 :default 3}]
-            [cs/input-row entry {:type    :number
-                                 :label   "Circle Radius:"
-                                 :path    cr-path
-                                 :default 5}]
-            [cs/input-row entry {:type    :number
-                                 :label   "Circle Stroke:"
-                                 :path    csw-path
-                                 :default 1}]
+(defn bp-chart
+  [{:keys [entry idx collapsed]}]
+  (let [h-path [:dashboard_cfg :items idx :h]
+        mn-path [:dashboard_cfg :items idx :mn]
+        mx-path [:dashboard_cfg :items idx :mx]
+        sw-path [:dashboard_cfg :items idx :stroke_width]
+        csw-path [:dashboard_cfg :items idx :circle_stroke_width]
+        cr-path [:dashboard_cfg :items idx :circle_radius]
+        glow-path [:dashboard_cfg :items idx :glow]]
+    [:div
+     [:h4 "Blood pressure chart"]
+     (when-not collapsed
+       [:div
+        [cs/input-row entry {:type    :number
+                             :label   "Height:"
+                             :path    h-path
+                             :default 130}]
+        [cs/input-row entry {:label   "Min:"
+                             :type    :number
+                             :path    mn-path
+                             :default 60}]
+        [cs/input-row entry {:type    :number
+                             :label   "Max:"
+                             :path    mx-path
+                             :default 220}]
+        [cs/input-row entry {:type    :number
+                             :label   "Stroke:"
+                             :path    sw-path
+                             :default 3}]
+        [cs/input-row entry {:type    :number
+                             :label   "Circle Radius:"
+                             :path    cr-path
+                             :default 5}]
+        [cs/input-row entry {:type    :number
+                             :label   "Circle Stroke:"
+                             :path    csw-path
+                             :default 1}]
 
-            [color-picker entry idx :systolic_color "Systolic Stroke:" "#CA3C3C"]
-            [color-picker entry idx :systolic_fill "Systolic Fill:" "#CA3C3C"]
+        [color-picker entry idx :systolic_color "Systolic Stroke:" "#CA3C3C"]
+        [color-picker entry idx :systolic_fill "Systolic Fill:" "#CA3C3C"]
 
-            [color-picker entry idx :diastolic_color "Diastolic Stroke:" "#1f8dd6"]
-            [color-picker entry idx :diastolic_fill "Diastolic Fill:" "#1f8dd6"]
+        [color-picker entry idx :diastolic_color "Diastolic Stroke:" "#1f8dd6"]
+        [color-picker entry idx :diastolic_fill "Diastolic Fill:" "#1f8dd6"]
 
-            [:div.row
-             [:label "Glow? "]
-             [uc/switch {:entry entry :path glow-path}]]])]))))
+        [:div.row
+         [:label "Glow? "]
+         [uc/switch {:entry entry :path glow-path}]]])]))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
@@ -275,20 +270,18 @@
                                 :type  :number
                                 :path  h-path}])]))))
 
-(defn gitstats-row [_]
-  (let [backend-cfg (subscribe [:backend-cfg])
-        pvt (subscribe [:show-pvt])]
-    (fn [{:keys [entry idx collapsed]}]
-      (let [h-path [:dashboard_cfg :items idx :h]
-            show-details (not collapsed)]
-        [:div
-         [:h4 "Git Stats Bar Chart"]
-         (when show-details
-           [color-picker entry idx :color "Stroke:"])
-         (when show-details
-           [cs/input-row entry {:label "Height:"
-                                :type  :number
-                                :path  h-path}])]))))
+(defn gitstats-row
+  [{:keys [entry idx collapsed]}]
+  (let [h-path [:dashboard_cfg :items idx :h]
+        show-details (not collapsed)]
+    [:div
+     [:h4 "Git Stats Bar Chart"]
+     (when show-details
+       [color-picker entry idx :color "Stroke:"])
+     (when show-details
+       [cs/input-row entry {:label "Height:"
+                            :type  :number
+                            :path  h-path}])]))
 
 (defn linechart-row [_]
   (let [backend-cfg (subscribe [:backend-cfg])
@@ -344,7 +337,6 @@
            [cs/input-row entry {:label "Circle Stroke:"
                                 :type  :number
                                 :path  csw-path}])]))))
-
 
 (defn item [_]
   (let [local (r/atom {:collapsed true})]
@@ -412,7 +404,7 @@
 
 (defonce clipboard (r/atom {}))
 
-(defn dashboard-config [entry]
+(defn dashboard-config [_]
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:dashboard_cfg :items] #(vec (conj % {})))]
@@ -449,7 +441,7 @@
              {:on-click paste-click}
              [:i.fas.fa-paste]
              "paste"])]
-         (for [[i c] (map-indexed (fn [i v] [i v]) items)]
+         (for [[i _c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry entry
                   :idx   i}])]))))

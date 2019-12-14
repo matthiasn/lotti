@@ -18,12 +18,11 @@
             [meins.electron.renderer.ui.post-mortems :as pm]
             [meins.electron.renderer.ui.preferences.core :as cfg]
             [meins.electron.renderer.ui.re-frame.db :as rfd]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.re-frame.subscriptions]
             [meins.electron.renderer.ui.spotify :as sp]
             [meins.electron.renderer.ui.stats :as stats]
             [meins.electron.renderer.ui.updater :as upd]
-            [re-frame.core :refer [reg-sub subscribe]]
+            [re-frame.core :refer [subscribe]]
             [re-frame.db :as rdb]
             [reagent.core :as r]
             [taoensso.timbre :refer [debug error info]]))

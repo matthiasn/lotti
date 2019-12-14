@@ -1,15 +1,12 @@
 (ns meins.electron.renderer.ui.entry.briefing.calendar
   (:require ["cldr-data" :as cldr-data]
             ["globalize" :as globalize]
-            ["iana-tz-data" :as iana-tz-data]
             ["moment" :as moment]
             ["react-big-calendar" :as rbc]
             ["react-infinite-calendar" :as ric]
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.parse :as up]
-            [meins.common.utils.parse :as p]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.award :as ca]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -52,7 +49,7 @@
                     (let [weekday (.format (moment. ymd) "dddd")
                           md (str "## " weekday "'s #briefing")
                           entry (merge
-                                  (p/parse-entry md)
+                                  (up/parse-entry md)
                                   {:briefing      {:day ymd}
                                    :timestamp     (st/now)
                                    :timezone      h/timezone
@@ -84,7 +81,7 @@
 (.load globalize (.entireMainFor cldr-data "en" "de" "fr" "es"))
 (.locale globalize "de")
 
-(defn event-prop-getter [event start end isSelected]
+(defn event-prop-getter [event _start _end _isSelected]
   (clj->js {:style {:backgroundColor (.-bgColor event)
                     :color           (.-color event)}}))
 
@@ -99,7 +96,7 @@
       (let [today (h/ymd (st/now))
             day (or @cal-day today)
             xf (fn [entry]
-                 (let [{:keys [completed manual story text adjusted_ts
+                 (let [{:keys [completed manual adjusted_ts
                                comment_for timestamp]} entry
                        timestamp (js/parseInt timestamp)
                        adjusted_ts (when adjusted_ts (js/parseInt adjusted_ts))

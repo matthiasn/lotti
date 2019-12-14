@@ -24,7 +24,7 @@
                          :res-hash nil
                          :prio     11}])))
 
-(defn story-row [_story local ]
+(defn story-row [_story _local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn story-row-render [story local]

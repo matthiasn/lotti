@@ -1,12 +1,10 @@
 (ns meins.electron.renderer.ui.dashboard.bp
-  (:require ["moment" :as moment]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
 (defn line [y s w]
@@ -17,10 +15,10 @@
           :stroke-width w
           :stroke       s}])
 
-(defn chart-line [scores point-mapper cfg]
+(defn chart-line [_ _ _]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg]
-      (let [{:keys [color fill glow local tag]} cfg
+      (let [{:keys [color fill glow local]} cfg
             points (map-indexed point-mapper scores)
             points (filter #(pos? (:v %)) (apply concat points))
             points (sort-by :ts points)
@@ -104,7 +102,7 @@
             systolic (fields "bp_systolic" data)
             diastolic (fields "bp_diastolic" data)
             values (map vector systolic diastolic)
-            mapper (fn [pos idx both]
+            mapper (fn [pos _idx both]
                       (let [data (pos both)
                             ts (:ts data)
                             v (:v data)

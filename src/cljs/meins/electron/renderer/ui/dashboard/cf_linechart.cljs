@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.dashboard.cf-linechart
-  (:require ["moment" :as moment]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
@@ -10,7 +9,7 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
-(defn chart-line [scores point-mapper cfg]
+(defn chart-line [_ _ _]
   (let [active-dashboard (subscribe [:active-dashboard])]
     (fn chart-line-render [scores point-mapper cfg]
       (let [{:keys [color label local fill tag]} cfg
@@ -85,13 +84,13 @@
                          (> rng 30) 20
                          (> rng 15) 10
                          (> rng 5) 5
-                         :default 1)
+                         :else 1)
               mn (- mn (mod mn line-inc))
               mx (+ (- mx (mod mx line-inc)) line-inc)
               rng (- mx mn)
               scale (if (pos? mx) (/ (- h 3) rng) 1)
               lines (filter #(zero? (mod % line-inc)) (range 1 rng))
-              mapper (fn [idx data]
+              mapper (fn [_idx data]
                        (let [ts (:ts data)
                              v (:v data)
                              from-beginning (- ts start)

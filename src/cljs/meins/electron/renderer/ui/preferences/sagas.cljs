@@ -24,7 +24,7 @@
                        :res-hash nil
                        :prio     11}])))
 
-(defn saga-row [_saga local]
+(defn saga-row [_saga _local]
   (let [show-pvt (subscribe [:show-pvt])
         cfg (subscribe [:cfg])]
     (fn saga-row-render [saga local]

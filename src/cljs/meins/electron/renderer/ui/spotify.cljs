@@ -1,7 +1,5 @@
 (ns meins.electron.renderer.ui.spotify
-  (:require [cljs.nodejs :refer [process]]
-            [clojure.pprint :as pp]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -29,7 +27,7 @@
                                               (assoc-in item [:spotify :played_cnt] n)))))
     @local))
 
-(defn menu-view [local]
+(defn menu-view [_local]
   [:div.menu
    [:div.menu-header
     [:h2 "Songs I listened to on Spotify"]]])
@@ -49,10 +47,10 @@
         sorted (reaction
                  (sort-by #(-> % second :spotify :played_cnt)
                           (:by-cnt @entries)))
-        cmp-did-mount (fn [props] (gql-query 2000))
+        cmp-did-mount (fn [_props] (gql-query 2000))
         will-unmount (fn [] (gql-query 0))
         change-search #(swap! local assoc :search (h/target-val %))
-        render (fn [props]
+        render (fn [_props]
                  (let [img-size (:img-size @local)
                        search-filter
                        (fn [[_ entry]]
@@ -73,7 +71,7 @@
                      [:div.spotify-search
                       [:i.fas.fa-search]
                       [:input {:on-change change-search}]]]
-                    (for [[ts entry] (reverse (filter search-filter @sorted))]
+                    (for [[_ts entry] (reverse (filter search-filter @sorted))]
                       [:span.img-container.tooltip
                        {:key (:timestamp entry)}
                        [:img {:on-click #(emit [:spotify/play {:uri (-> entry :spotify :uri)}])
@@ -90,7 +88,7 @@
         spotify (r/create-class {:component-did-mount    cmp-did-mount
                                  :component-will-unmount will-unmount
                                  :reagent-render         render})]
-    (fn spotify-render [put-fn]
+    (fn spotify-render [_put-fn]
       [:div.flex-container
        [menu-view local]
        [spotify {}]])))

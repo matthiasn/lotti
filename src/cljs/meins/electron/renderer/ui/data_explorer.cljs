@@ -1,6 +1,5 @@
   (ns meins.electron.renderer.ui.data-explorer
   "Slightly modified from https://github.com/kamituel/systems-toolbox-chrome"
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [meins.electron.renderer.localstorage :as sa]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]

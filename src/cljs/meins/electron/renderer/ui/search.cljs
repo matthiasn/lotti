@@ -31,7 +31,7 @@
                                        :to   end})]
                          ;(swap! local assoc-in [:show-range-picker] false)
                          (emit [:search/update q])))))]
-    (fn [query local]
+    (fn [_query local]
       (let [selected (:selected @local)
             from (:start selected)
             to (:end selected)]

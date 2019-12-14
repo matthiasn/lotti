@@ -1,9 +1,6 @@
 (ns meins.electron.renderer.ui.dashboard.common
   (:require ["moment" :as moment]
-            [meins.electron.renderer.helpers :as h]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
 (def month-day "DD.MM.")
@@ -55,63 +52,3 @@
           :fill        "#333"
           :text-anchor "end"}
    label])
-
-(defn points-by-day-chart [{:keys [y h label]}]
-  (let [gql-res (subscribe [:gql-res])]
-    (fn points-by-day-render [{:keys [y h label days span]}]
-      (let [data (get-in @gql-res [:dashboard :data :award-points])
-            btm-y (+ y h)
-            by-day (map (fn [m] [(:date_string m) m]) (:by-day data))
-            daily-totals (map (fn [[d v]] (h/add (:task v) (:habit v))) by-day)
-            max-val (apply max daily-totals)
-            w (dec (/ 1400 days))
-            indexed (map-indexed (fn [idx [day v]] [idx [day v]]) by-day)]
-        [:g
-         (for [[idx [day v]] indexed]
-           (let [v (h/add (:task v) (:habit v))
-                 y-scale (/ h (or max-val 1))
-                 h (if (pos? v) (* y-scale v) 0)
-                 d (* 24 60 60 1000)
-                 offset (* idx d)
-                 span (if (zero? span) 1 span)
-                 scaled (* 1800 (/ offset span))
-                 x (+ 201 scaled)]
-             (when (pos? max-val)
-               ^{:key (str day idx)}
-               [:rect {:x      x
-                       :y      (- btm-y h)
-                       :fill   "#7FE283"
-                       :width  w
-                       :height h}])))
-         (for [[idx [day v]] indexed]
-           (let [v (:task v)
-                 y-scale (/ h (or max-val 1))
-                 h (if (pos? v) (* y-scale v) 0)
-                 d (* 24 60 60 1000)
-                 offset (* idx d)
-                 span (if (zero? span) 1 span)
-                 scaled (* 1800 (/ offset span))
-                 x (+ 201 scaled)]
-             (when (pos? max-val)
-               ^{:key (str day idx)}
-               [:rect {:x      x
-                       :y      (- btm-y h)
-                       :fill   "#42b8dd"
-                       :width  w
-                       :height h}])))
-         [line (+ y h) "#000" 2]
-         [row-label label y h]]))))
-
-(defn points-lost-by-day-chart [{:keys [y h label]}]
-  (let [stats (subscribe [:stats])]
-    (fn points-by-day-render [{:keys [y h label]}]
-      (let [btm-y (+ y h)
-            award-points (:award-points @stats)
-            by-day (sort-by first (:by-day-skipped award-points))
-            daily-totals (map (fn [[d v]] (:habit v)) by-day)
-            max-val (apply max daily-totals)
-            indexed (map-indexed (fn [idx [day v]] [idx [day v]])
-                                 (take-last 180 by-day))]
-        [:g
-         [line (+ y h) "#000" 2]
-         [row-label label y h]]))))

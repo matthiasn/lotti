@@ -28,7 +28,7 @@
                   updated (assoc-in entry path m)]
               (emit [:entry/update-local updated]))))))))
 
-(defn field-input [entry edit-mode? field tag k]
+(defn field-input [entry field tag k]
   (let [input-cfg (:cfg field)
         input-type (:type input-cfg)
         path [:custom_fields tag k]
@@ -47,7 +47,7 @@
                     {:on-change on-change-fn
                      :class     (when (= input-type :time) "time")
                      :type      input-type})]
-    (fn [entry edit-mode? field tag k]
+    (fn [entry field tag _k]
       (parse-and-set entry path tag input-type)
       (let [value (get-in entry path)
             value (if (and value (= :time input-type))
@@ -67,7 +67,7 @@
 
 (defn custom-fields-div
   "In edit mode, allow editing of custom fields, otherwise show a summary."
-  [entry edit-mode?]
+  [_entry _edit-mode?]
   (let [options (subscribe [:options])
         custom-fields (reaction (:custom-fields @options))]
     (fn custom-fields-render [entry edit-mode?]
@@ -76,7 +76,7 @@
               tags (set/union (set (:tags entry)) (set (:perm_tags entry)))
               entry-field-tags (select-keys custom-fields tags)
               default-story (->> entry-field-tags
-                                 (map (fn [[k v]] (:default-story v)))
+                                 (map (fn [[_k v]] (:default-story v)))
                                  (filter identity)
                                  first)]
           (when (and edit-mode? default-story (not (:primary_story entry)))
@@ -91,11 +91,11 @@
                [:tbody
                 (for [[k field] (:fields conf)]
                   ^{:key (str "cf" ts tag k)}
-                  [field-input entry edit-mode? field tag k])]]])])))))
+                  [field-input entry field tag k])]]])])))))
 
 (defn questionnaire-div
   "In edit mode, allow editing of questionnaire, otherwise show a summary."
-  [entry edit-mode?]
+  [_entry _edit-mode?]
   (let [options (subscribe [:options])
         local (r/atom {:expanded false})
         questionnaires (reaction (:questionnaires @options))]
@@ -105,7 +105,7 @@
               questionnaire-tags (:mapping questionnaires)
               tags (set/union (set (:tags entry)) (set (:perm_tags entry)))
               q-tags (select-keys questionnaire-tags tags)
-              q-mapper (fn [[t k]] [k (get-in questionnaires [:items k])])
+              q-mapper (fn [[_t k]] [k (get-in questionnaires [:items k])])
               pomo-q [:pomo1 (get-in questionnaires [:items :pomo1])]
               entry-questionnaires (map q-mapper q-tags)
               completed-pomodoro (and (>= (:completed_time entry)

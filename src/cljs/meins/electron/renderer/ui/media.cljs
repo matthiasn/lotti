@@ -1,7 +1,5 @@
 (ns meins.electron.renderer.ui.media
-  (:require [clojure.pprint :as pp]
-            [clojure.string :as s]
-            [meins.electron.renderer.ui.re-frame.db :refer [emit]]
+  (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [reagent.core :as r]))
 
 (defn imdb-view [entry]

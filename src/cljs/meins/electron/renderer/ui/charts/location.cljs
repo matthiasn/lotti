@@ -1,8 +1,6 @@
 (ns meins.electron.renderer.ui.charts.location
-  (:require [cljs.pprint :as pp]
-            [emoji-flags]
-            [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.common :as cc]
+  (:require ["emoji-flags" :refer [countryCode]]
+            [cljs.pprint :as pp]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as rc]))
 
@@ -17,7 +15,7 @@
        [:th "Days"]]
       (for [[i [loc cnt]] per-location]
         (let [cc (:country loc)
-              country (when cc (js->clj (.countryCode emoji-flags cc)))
+              country (when cc (js->clj (countryCode cc)))
               flag (get country "emoji")]
           ^{:key loc}
           [:tr
@@ -26,15 +24,12 @@
            [:td.country (:name loc)]
            [:td.cnt cnt]]))]]))
 
-(defn location-chart [chart-h put-fn]
+(defn location-chart []
   (let [local (rc/atom {:last-fetched 0
                         :expanded     true})
-        stats (subscribe [:stats])
-        emoji-flags (aget js/window "deps" "emojiFlags")
-        last-update (subscribe [:last-update])]
-    (fn [chart-h put-fn]
-      (let [loc-stats (:locations @stats)
-            expanded? (:expanded @local)
+        stats (subscribe [:stats])]
+    (fn []
+      (let [expanded? (:expanded @local)
             per-entity (fn [k]
                          (->> (:locations @stats)
                               k
@@ -63,7 +58,7 @@
                 [:th "Country"]
                 [:th "Days"]])
              (for [[i [cc cnt]] per-country]
-               (let [country (js->clj (.countryCode emoji-flags cc))
+               (let [country (js->clj (countryCode cc))
                      flag (get country "emoji")
                      cname (get country "name")]
                  ^{:key cc}

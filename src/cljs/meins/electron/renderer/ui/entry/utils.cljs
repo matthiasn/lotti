@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.entry.utils
   (:require [clojure.string :as s]
-            [meins.common.utils.misc :as u]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))

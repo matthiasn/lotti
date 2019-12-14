@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.entry.cfg.habit
-  (:require ["moment" :as moment]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.misc :as m]
             [meins.electron.renderer.helpers :as h]
@@ -86,14 +85,13 @@
   (let [sagas (subscribe [:sagas])
         pvt (subscribe [:show-pvt])
         stories (subscribe [:stories])]
-    (fn [{:keys [entry idx version] :as params}]
+    (fn [{:keys [entry idx version]}]
       (let [saga-path [:habit :versions version :criteria idx :saga]
             saga (get-in entry saga-path "")
             sagas (filter #(:active (second %)) @sagas)
             sagas (if @pvt sagas (filter #(not (:pvt (second %))) sagas))
             sagas (into {} (map (fn [[k v]] [k (:saga_name v)]) sagas))
             story-path [:habit :versions version :criteria idx :story]
-            story (get-in entry story-path)
             min-path [:habit :versions version :criteria idx :min-time]
             max-path [:habit :versions version :criteria idx :max-time]]
         [:div
@@ -219,7 +217,7 @@
           [:h3 "Criteria"]
           [:div.add-criterion {:on-click (add-criterion entry)}
            [:i.fas.fa-plus]]]
-         (for [[i c] (map-indexed (fn [i v] [i v]) criteria)]
+         (for [[i _] (map-indexed (fn [i v] [i v]) criteria)]
            ^{:key i}
            [criterion {:entry   entry
                        :version version

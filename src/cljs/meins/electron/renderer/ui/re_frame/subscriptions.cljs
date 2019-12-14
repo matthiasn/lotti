@@ -1,10 +1,7 @@
 (ns meins.electron.renderer.ui.re-frame.subscriptions
-  (:require-macros [reagent.ratom :refer [reaction]])
-  (:require [electron :refer [remote]]
-            [meins.electron.renderer.helpers :as h]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
-            [re-frame.core :refer [reg-sub subscribe]]
-            [re-frame.db :as rdb]
+            [re-frame.core :refer [reg-sub]]
             [reagent.core :as rc]
             [taoensso.timbre :refer [debug error info]]))
 

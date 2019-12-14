@@ -1,12 +1,10 @@
 (ns meins.electron.renderer.ui.dashboard.commits
-  (:require ["moment" :as moment]
+  (:require ["tinycolor2" :as tinycolor]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
-            [taoensso.timbre :refer [debug error info]]
-            [tinycolor2 :as tinycolor]))
+            [taoensso.timbre :refer [debug error info]]))
 
 (defn rect [{:keys []}]
   (let [local (r/atom {})
@@ -33,15 +31,14 @@
 
 (defn commits-chart [_]
   (let [gql-res (subscribe [:gql-res])]
-    (fn barchart-row [{:keys [days span start h y color]}]
+    (fn barchart-row [{:keys [days span h y color]}]
       (let [btm-y (+ y h)
             data (get-in @gql-res [:dashboard :data :git_stats])
             indexed (map-indexed (fn [i x] [i x]) data)
-            mx (apply max (map #(:commits (second %)) indexed))
-            scale (if (pos? mx) (/ (- h 3) mx) 1)]
+            mx (apply max (map #(:commits (second %)) indexed))]
         [:g
          [dc/row-label "#git-commit" y h]
-         (for [[n {:keys [date-string commits weekday]}] indexed]
+         (for [[n {:keys [date-string commits]}] indexed]
            (let [d (* 24 60 60 1000)
                  offset (* n d)
                  span (if (zero? span) 1 span)

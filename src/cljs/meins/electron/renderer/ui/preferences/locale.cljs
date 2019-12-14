@@ -1,7 +1,6 @@
 (ns meins.electron.renderer.ui.preferences.locale
   (:require [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
 
 (defn locale-preferences []

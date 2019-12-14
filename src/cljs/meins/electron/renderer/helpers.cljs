@@ -1,19 +1,18 @@
 (ns meins.electron.renderer.helpers
-  (:require ["moment" :as moment]
+  (:require ["cldr-data" :as cldr-data]
+            ["electron" :refer [remote]]
+            ["globalize" :as globalize]
+            ["iana-tz-data" :as iana-tz-data]
+            ["moment" :as moment]
             ["ngeohash" :as geohash]
-            [cldr-data :as cldr-data]
+            ["path" :refer [normalize]]
             [cljs.nodejs :refer [process]]
             [clojure.string :as s]
-            [electron :refer [remote]]
-            [globalize :as globalize]
             [goog.dom.Range]
-            [iana-tz-data :as iana-tz-data]
-            [matthiasn.systems-toolbox.component :as st]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [moment-duration-format]
-            [path :refer [normalize]]
             [reagent.core :as rc]
             [taoensso.timbre :refer [debug error info]]))
 
@@ -69,7 +68,7 @@
     (.formatDate locale (.toDate (moment. s)) (clj->js {:skeleton "yMMMEdHm"}))))
 
 (defn create-entry [opts]
-  (let [ts (st/now)
+  (let [ts (stc/now)
         entry (merge (p/parse-entry "")
                      {:timestamp  ts
                       :timezone   timezone
@@ -171,7 +170,7 @@
     (when (or (>= last-update last-fetched)
               (not= n (get-in @local [stats-key :n])))
       (swap! local assoc-in [stats-key :n] n)
-      (swap! local assoc-in [:last-fetched stats-key] (st/now))
+      (swap! local assoc-in [:last-fetched stats-key] (stc/now))
       (get-stats stats-key n (:meta last-update {})))))
 
 (defn str-contains-lc?
@@ -215,10 +214,10 @@
   "Error boundary for isolating React components. From:
   https://github.com/reagent-project/reagent/blob/master/test/reagenttest/testreagent.cljs#L1035
   Also see: https://reactjs.org/blog/2017/07/26/error-handling-in-react-16.html"
-  [comp]
+  [_comp]
   (let [err (atom nil)]
     (rc/create-class
-      {:component-did-catch (fn [this e info]
+      {:component-did-catch (fn [_this e _info]
                               (reset! err e))
        :reagent-render      (fn [comp]
                               (if @err

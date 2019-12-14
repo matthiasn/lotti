@@ -1,12 +1,12 @@
 (ns meins.electron.renderer.ui.entry.story
-  (:require [clojure.set :as set]
+  (:require ["react-color" :as react-color]
+            [clojure.set :as set]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
-            [react-color :as react-color]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
@@ -77,7 +77,7 @@
 (defn saga-name-field
   "Renders editable field for saga name when the entry is of type :saga.
    Updates local entry on input, and saves the entry when CMD-S is pressed."
-  [entry edit-mode?]
+  [entry]
   (when (= (:entry_type entry) :saga)
     (let [on-input-fn (input-fn entry :saga_name)
           on-keydown-fn (h/keydown-fn entry [:saga_name])
@@ -126,7 +126,7 @@
       (concat ranked without-predictions)
       stories)))
 
-(defn story-select [entry tab-group]
+(defn story-select [entry _tab-group]
   (let [stories (subscribe [:stories])
         show-pvt (subscribe [:show-pvt])
         ts (:timestamp entry)

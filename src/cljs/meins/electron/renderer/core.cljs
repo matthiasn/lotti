@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.core
-  (:require [cljs.nodejs :refer [process]]
-            [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
+  (:require [matthiasn.systems-toolbox-electron.ipc-renderer :as ipc]
             [matthiasn.systems-toolbox-sente.client :as sente]
             [matthiasn.systems-toolbox.scheduler :as sched]
             [matthiasn.systems-toolbox.switchboard :as sb]
@@ -142,7 +141,7 @@
                                         :repeat  true
                                         :initial true}]}]])))
 
-(defn load-handler [ev]
+(defn load-handler [_ev]
   (info "RENDERER loaded")
   (init))
 

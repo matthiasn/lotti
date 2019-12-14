@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.exec
-  (:require [cljs.spec.alpha :as s]
-            [meins.common.utils.parse :as up]
+  (:require [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [re-frame.core :refer [subscribe]]
             [taoensso.timbre :refer [info]]))

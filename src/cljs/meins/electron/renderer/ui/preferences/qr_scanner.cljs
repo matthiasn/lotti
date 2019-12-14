@@ -1,13 +1,9 @@
 (ns meins.electron.renderer.ui.preferences.qr-scanner
   (:require ["@zxing/library" :refer [BrowserQRCodeReader]]
-            ["moment" :as moment]
             [cljs.tools.reader.edn :as edn]
             [clojure.pprint :as pp]
-            [matthiasn.systems-toolbox.component :as stc]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
 
 (defn stop-scanning [local]

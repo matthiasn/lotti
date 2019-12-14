@@ -1,7 +1,5 @@
 (ns meins.electron.renderer.ui.dashboard.core
-  (:require ["moment" :as moment]
-            [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as rh]
             [meins.electron.renderer.ui.dashboard.bp :as bp]
@@ -9,7 +7,6 @@
             [meins.electron.renderer.ui.dashboard.cf_barchart :as db]
             [meins.electron.renderer.ui.dashboard.commits :as c]
             [meins.electron.renderer.ui.dashboard.common :as dc]
-            [meins.electron.renderer.ui.dashboard.earlybird :as eb]
             [meins.electron.renderer.ui.dashboard.habits :as h]
             [meins.electron.renderer.ui.dashboard.scores :as ds]
             [meins.electron.renderer.ui.dashboard.time_barchart :as dt]
@@ -33,12 +30,12 @@
                     (filter #(contains? #{:barchart_row
                                           :linechart_row} (:type %)))
                     (mapv :tag)
-                    (concat ["#BP" "#sleep"]))]
-      (let [day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) days days))))]
-        (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tags :custom_fields_by_days)
-                           :res-hash nil
-                           :id       :custom_fields_by_days
-                           :prio     15}])))
+                    (concat ["#BP" "#sleep"]))
+          day-strings (mapv rh/n-days-ago-fmt (reverse (range offset (+ (* -1 offset) days days))))]
+      (emit [:gql/query {:q        (gql/graphql-query-by-days day-strings tags :custom_fields_by_days)
+                         :res-hash nil
+                         :id       :custom_fields_by_days
+                         :prio     15}]))
     (let [items (->> (:charts charts-pos)
                      (filter #(= :questionnaire (:type %))))
           day-strings (mapv rh/n-days-ago-fmt (range 0 (+ (* -1 offset) days days)))]
@@ -76,7 +73,7 @@
                :charts (conj (:charts acc) cfg)}))]
     (reduce f acc items)))
 
-(defn dashboard [{:keys [days controls dashboard-ts]}]
+(defn dashboard [{:keys [days]}]
   (let [gql-res2 (subscribe [:gql-res2])
         dashboard-data (subscribe [:dashboard-data])
         habits (subscribe [:habits])
@@ -101,9 +98,9 @@
                       (when (pos? n)
                         (try
                           (nth (vals @dashboards) dashboard-idx)
-                          (catch js/Object e (do
-                                               (error dashboard-idx e)
-                                               (first @dashboards)))))))
+                          (catch js/Object e
+                            (error dashboard-idx e)
+                            (first @dashboards))))))
         charts-pos (reaction (charts-positions @dashboard habits))
         run-query #(let [dashboard-ts (:timestamp @dashboard)]
                      (when (not= dashboard-ts (:dashboard-ts @local))

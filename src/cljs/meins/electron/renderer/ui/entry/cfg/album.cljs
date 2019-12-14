@@ -2,9 +2,7 @@
   (:require [meins.electron.renderer.ui.entry.cfg.shared :as cs]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn album-config [entry]

@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.mapbox
-  (:require [cljs.nodejs :refer [process]]
-            [mapbox-gl]
+  (:require ["mapbox-gl" :as mapbox-gl]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]

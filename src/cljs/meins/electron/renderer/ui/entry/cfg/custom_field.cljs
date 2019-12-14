@@ -1,14 +1,9 @@
 (ns meins.electron.renderer.ui.entry.cfg.custom-field
-  (:require ["moment" :as moment]
-            [meins.common.utils.parse :as p]
-            [meins.electron.renderer.helpers :as h]
+  (:require [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.ui-components :as uc]
             [re-frame.core :refer [subscribe]]
-            [react-color :as react-color]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn is-tag? [s] (when (string? s) (re-find (re-pattern (str "^#" p/tag-char-cls "+$")) s)))
@@ -105,15 +100,13 @@
                 "already defined"))]
     (if res [res] [])))
 
-(defn custom-field-config [entry]
+(defn custom-field-config [_]
   (let [add-item (fn [entry]
                    (fn [_]
                      (let [updated (update-in entry [:custom_field_cfg :items] #(vec (conj % {})))]
                        (emit [:entry/update-local updated]))))
         tag-path [:custom_field_cfg :tag]
-        backend-cfg (subscribe [:backend-cfg])
-        ts (:timestamp entry)
-        {:keys [edit-mode]} (eu/entry-reaction ts)]
+        backend-cfg (subscribe [:backend-cfg])]
     (fn [entry]
       (let [items (get-in entry [:custom_field_cfg :items])
             tag-err (first (validate-cfg entry backend-cfg))]
@@ -135,7 +128,7 @@
           [:div.add-criterion {:on-click (add-item entry)}
            [:i.fas.fa-plus]]
           [:div.spacer]]
-         (for [[i c] (map-indexed (fn [i v] [i v]) items)]
+         (for [[i _c] (map-indexed (fn [i v] [i v]) items)]
            ^{:key i}
            [item {:entry  entry
                   :idx    i}])]))))

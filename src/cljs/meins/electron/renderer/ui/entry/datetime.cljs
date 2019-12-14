@@ -1,26 +1,17 @@
 (ns meins.electron.renderer.ui.entry.datetime
   (:require ["moment" :as moment]
-            [meins.common.utils.misc :as u]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
-(defn datetime-edit [entry local2]
-  (let [cfg (subscribe [:cfg])
-        toggle-adjust #(swap! local2 update-in [:show-adjust-ts] not)
-        ts (:timestamp entry)
+(defn datetime-edit [entry]
+  (let [ts (:timestamp entry)
         adjusted-ts (:adjusted_ts entry)
         local (r/atom {:value (h/format-time (or adjusted-ts ts))})]
-    (fn [entry local2]
-      (let [adjusted-ts (:adjusted_ts entry)
-            rm-adjusted-ts (fn [_]
-                             (let [updated (assoc-in entry [:adjusted_ts] ts)]
-                               (emit [:entry/update-local updated])
-                               (toggle-adjust)))
-            on-change (fn [ev]
+    (fn [entry]
+      (let [on-change (fn [ev]
                         (let [v (h/target-val ev)
                               adjusted-ts (.valueOf (moment v))
                               _ (info v adjusted-ts)
@@ -42,7 +33,7 @@
   (let [cfg (subscribe [:cfg])
         toggle-adjust #(swap! local update-in [:show-adjust-ts] not)
         ts (:timestamp entry)]
-    (fn [entry local]
+    (fn [entry _local]
       (let [locale (:locale @cfg :en)
             adjusted-ts (:adjusted_ts entry)
             formatted-time (h/localize-datetime (moment (or adjusted-ts ts)) locale)]

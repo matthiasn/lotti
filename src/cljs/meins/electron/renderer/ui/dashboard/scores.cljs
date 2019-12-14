@@ -1,7 +1,5 @@
 (ns meins.electron.renderer.ui.dashboard.scores
-  (:require ["moment" :as moment]
-            [camel-snake-kebab.core :refer [->kebab-case]]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
@@ -21,17 +19,16 @@
 (defn scatter-chart
   [{:keys [k score-k]}]
   (let [stats (subscribe [:stats])
-        show-pvt (subscribe [:show-pvt])
         scores (reaction (filter score-k (scores-fn @stats k)))]
     (fn scores-chart-render [{:keys [y k w h score-k start end mn mx color
-                                     x-offset label scatter]}]
+                                     x-offset label]}]
       (let [span (- end start)
             rng (- mx mn)
             scale (/ h rng)
             btm-y (+ y h)
             line-inc (if (> mx 100) 50 10)
             lines (filter #(zero? (mod % line-inc)) (range 1 rng))
-            mapper (fn [idx itm]
+            mapper (fn [_idx itm]
                      (let [ts (:timestamp itm)
                            from-beginning (- ts start)
                            x (+ x-offset (* w (/ from-beginning span)))
@@ -53,44 +50,43 @@
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))
 
-(defn chart-line [scores point-mapper cfg start-ymd]
-  (let [active-dashboard (subscribe [:active-dashboard])]
-    (fn chart-line-render [scores point-mapper cfg start-ymd]
-      (let [points (map-indexed point-mapper scores)
-            {:keys [color fill glow label tag]} cfg
-            line-points (s/join " " (map :s points))
-            stroke (:stroke_width cfg 1)]
-        [:g
-         (when glow
-           [:g {:filter "url(#blur1)"}
-            [:rect {:width  "100%"
-                    :height "100%"
-                    :style  {:fill   :none
-                             :stroke :none}}]
-            [:polyline {:points line-points
-                        :style  {:stroke       color
-                                 :stroke-width stroke
-                                 :fill         :none}}]])
-         [:g
-          [:polyline {:points line-points
-                      :style  {:stroke       color
-                               :stroke-width stroke
-                               :fill         :none}}]
-          (for [[i p] (map-indexed (fn [i v] [i v]) points)]
-            (let [ymd (h/ymd (:ts p))
-                  click #(let [q (merge (up/parse-search tag)
-                                        {:from ymd
-                                         :to   ymd})]
-                           (emit [:search/add {:tab-group :right
-                                               :query     q}]))]
-              ^{:key (str label i)}
-              [:circle {:cx       (:x p)
-                        :cy       (:y p)
-                        :on-click click
-                        :r        (:circle_radius cfg 3)
-                        :fill     fill
-                        :style    {:stroke       color
-                                   :stroke-width (:circle_stroke_width cfg 3)}}]))]]))))
+(defn chart-line
+  [scores point-mapper cfg]
+  (let [points (map-indexed point-mapper scores)
+        {:keys [color fill glow label tag]} cfg
+        line-points (s/join " " (map :s points))
+        stroke (:stroke_width cfg 1)]
+    [:g
+     (when glow
+       [:g {:filter "url(#blur1)"}
+        [:rect {:width  "100%"
+                :height "100%"
+                :style  {:fill   :none
+                         :stroke :none}}]
+        [:polyline {:points line-points
+                    :style  {:stroke       color
+                             :stroke-width stroke
+                             :fill         :none}}]])
+     [:g
+      [:polyline {:points line-points
+                  :style  {:stroke       color
+                           :stroke-width stroke
+                           :fill         :none}}]
+      (for [[i p] (map-indexed (fn [i v] [i v]) points)]
+        (let [ymd (h/ymd (:ts p))
+              click #(let [q (merge (up/parse-search tag)
+                                    {:from ymd
+                                     :to   ymd})]
+                       (emit [:search/add {:tab-group :right
+                                           :query     q}]))]
+          ^{:key (str label i)}
+          [:circle {:cx       (:x p)
+                    :cy       (:y p)
+                    :on-click click
+                    :r        (:circle_radius cfg 3)
+                    :fill     fill
+                    :style    {:stroke       color
+                               :stroke-width (:circle_stroke_width cfg 3)}}]))]]))
 
 (defn scores-chart
   [{:keys []}]
@@ -113,7 +109,7 @@
             scale (/ h rng)
             btm-y (+ y h)
             lines (filter #(zero? (mod % line-inc)) (range mn mx))
-            mapper (fn [idx itm]
+            mapper (fn [_idx itm]
                      (let [ts (:timestamp itm)
                            offset (* offset (* 24 60 60 1000))
                            from-beginning (- ts start offset)
@@ -139,7 +135,7 @@
                    :fill        "black"
                    :text-anchor "start"}
             n])
-         [chart-line data mapper cfg start-ymd]
+         [chart-line data mapper cfg]
          [dc/line y "#000" 2]
          [dc/line (+ y h) "#000" 2]
          [dc/row-label label y h]]))))

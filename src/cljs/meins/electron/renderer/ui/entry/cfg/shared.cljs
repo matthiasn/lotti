@@ -2,8 +2,6 @@
   (:require ["moment" :as moment]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
-            [re-frame.core :refer [subscribe]]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn input-row [entry cfg]
@@ -38,7 +36,7 @@
                  [:span.err "Invalid input"]))]))
 
 (defn input-table-row [entry cfg]
-  (let [{:keys [label validate path xf error default]} cfg
+  (let [{:keys [label path xf default]} cfg
         update-entry (fn [entry v]
                        (let [updated (assoc-in entry path v)]
                          (emit [:entry/update-local updated])))
@@ -54,8 +52,7 @@
                               (.asMinutes (.duration moment v))
                               v)
                           updated (assoc-in entry path v)]
-                      (emit [:entry/update-local updated])))
-        valid? (if validate (validate v) true)]
+                      (emit [:entry/update-local updated])))]
     (when (and default (not v))
       (update-entry entry default))
     [:tr

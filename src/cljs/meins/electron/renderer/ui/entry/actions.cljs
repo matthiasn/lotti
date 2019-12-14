@@ -5,7 +5,6 @@
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.charts.common :as cc]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.pomodoro :as p]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -14,7 +13,7 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [info]]))
 
-(defn trash-icon [trash-fn]
+(defn trash-icon [_]
   (let [local (r/atom {:visible false})
         toggle-visible (fn [_]
                          (swap! local update-in [:visible] not)
@@ -34,7 +33,7 @@
    clicked again for actually discarding changes. This label is a little to the
    right, so it can't be clicked accidentally, and disappears again within 5
    seconds."
-  [toggle-edit edit-mode? entry]
+  [_ _ _]
   (let [clicked (r/atom false)
         guarded-edit-fn (fn [_ev]
                           (swap! clicked not)
@@ -104,15 +103,15 @@
       (aset dt "effectAllowed" "move")
       (aset dt "dropEffect" "link"))))
 
-(defn cf-tag-select [entry tab-group]
+(defn cf-tag-select [entry]
   (let [show-pvt (subscribe [:show-pvt])
         local (r/atom {:search "" :show false :idx 0})
-        active-filter (fn [[tag x]] (:active x))
+        active-filter (fn [[_tag x]] (:active x))
         backend-cfg (subscribe [:backend-cfg])
         cfg (reaction (:custom-fields @backend-cfg))
         indexed (reaction
                   (->> (sort-by #(s/lower-case (first %)) @cfg)
-                       (filter (fn [[tag x]]
+                       (filter (fn [[_tag x]]
                                  (if @show-pvt true (not (:pvt x)))))
                        (filter active-filter)
                        (map-indexed (fn [i v] [i v]))))
@@ -124,7 +123,7 @@
                            updated (update-in entry [:perm_tags] toggle-tag)]
                        (swap! local assoc-in [:show] false)
                        (emit [:entry/update-local updated])))
-        match (fn [[i [tag x]]]
+        match (fn [[_i [tag _x]]]
                 (h/str-contains-lc? tag (:search @local "")))
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
@@ -149,7 +148,7 @@
                     (.stopPropagation ev)))
         start-watch #(.addEventListener js/document "keydown" keydown)
         stop-watch #(.removeEventListener js/document "keydown" keydown)]
-    (fn story-select-filter-render [entry tab-group]
+    (fn story-select-filter-render [entry]
       (let [linked-story (get-in entry [:story :timestamp])
             input-fn (fn [ev]
                        (let [s (-> ev .-nativeEvent .-target .-value)]
@@ -201,7 +200,7 @@
 (defn entry-actions
   "Entry-related action buttons. Hidden by default, become visible when mouse
    hovers over element, stays visible for a little while after mose leaves."
-  [entry local edit-mode? toggle-edit local-cfg]
+  [entry _local edit-mode? _toggle-edit local-cfg]
   (let [visible (r/atom false)
         backend-cfg (subscribe [:backend-cfg])
         ts (:timestamp entry)
@@ -258,7 +257,7 @@
         [:div.actions {:on-mouse-enter mouse-enter
                        :on-mouse-leave hide-fn}
          [:div.items
-          [cf-tag-select entry tab-group]
+          [cf-tag-select entry]
           (when map? [:i.fa.fa-map.toggle {:on-click toggle-map}])
           (when prev-saved? [edit-icon toggle-edit edit-mode? entry])
           (when-not comment? [:i.fa.fa-stopwatch.toggle {:on-click new-pomodoro}])

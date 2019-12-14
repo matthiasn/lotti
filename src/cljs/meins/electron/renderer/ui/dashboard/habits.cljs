@@ -1,8 +1,5 @@
 (ns meins.electron.renderer.ui.dashboard.habits
-  (:require ["moment" :as moment]
-            [camel-snake-kebab.core :refer [->kebab-case]]
-            [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as st]
+  (:require [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.dashboard.common :as dc]
             [meins.electron.renderer.ui.entry.utils :as eu]

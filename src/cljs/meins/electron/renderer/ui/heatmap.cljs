@@ -1,8 +1,7 @@
 (ns meins.electron.renderer.ui.heatmap
-  (:require [cljs-bean.core :refer [->clj ->js bean]]
-            [cljs.nodejs :refer [process]]
+  (:require [cljs-bean.core :refer [->js]]
+            [cljs.pprint :as pp]
             [cljs.tools.reader.edn :as edn]
-            [clojure.pprint :as pp]
             [mapbox-gl :refer [Map Popup]]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
@@ -89,7 +88,6 @@
                         (let [canvas (.getCanvas mb-map)
                               feature (aget e "features" 0)
                               coords (aget feature "geometry" "coordinates")
-                              text (h/format-time (aget feature "properties" "timestamp"))
                               data (edn/read-string (aget feature "properties" "data"))
                               html (str "<pre><code>" (with-out-str (pp/pprint data)) "</code></pre>")]
                           (aset canvas "style" "cursor" "pointer")
@@ -109,7 +107,7 @@
   (r/create-class
     {:component-did-mount (heatmap-did-mount props)
      :reagent-render      (fn [props]
-                            (let [{:keys [local]} props]
+                            (let [{:keys []} props]
                               [:div#heatmap {:style {:width            "100vw"
                                                      :height           "100vh"
                                                      :background-color "#333"}}]))}))
@@ -178,7 +176,7 @@
             [heatmap-cls {:local local}]
             (when (:gallery @local)
               [:div.fixed-gallery
-               [carousel/gallery @entries {} emit]])]]
+               [carousel/gallery @entries {}]])]]
           [:div.flex-container
            [:div.error
             [:h1

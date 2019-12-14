@@ -19,7 +19,7 @@
    [:h2 "Checking for latest version of meins..."]
    [cancel-btn]])
 
-(defn no-update [local]
+(defn no-update [_local]
   (js/setTimeout #(cancel) 12000)
   ((fn []
      (let [check (fn [_]

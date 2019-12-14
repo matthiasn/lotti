@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.preferences.core
-  (:require ["moment" :as moment]
-            [meins.electron.renderer.helpers :as h]
+  (:require [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.footer :as f]
             [meins.electron.renderer.ui.menu :as menu]
             [meins.electron.renderer.ui.preferences.albums :as ca]
@@ -15,9 +14,7 @@
             [meins.electron.renderer.ui.preferences.usage-stats :as usage]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [meins.electron.renderer.ui.stats :as stats]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn config []
@@ -45,7 +42,7 @@
         keydown (fn [ev]
                   (let [key-code (.. ev -keyCode)
                         arrow-up (= key-code 38)
-                        arrow-left (= key-code 37)
+                        ;arrow-left (= key-code 37)
                         arrow-right (= key-code 39)
                         arrow-down (= key-code 40)
                         enter (= key-code 13)

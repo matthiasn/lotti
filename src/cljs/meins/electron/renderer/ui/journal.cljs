@@ -1,10 +1,10 @@
 (ns meins.electron.renderer.ui.journal
-  (:require [matthiasn.systems-toolbox.component :as st]
+  (:require ["react-list" :as rl]
+            [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.entry :as e]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
-            [react-list :as rl]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
@@ -50,7 +50,7 @@
         tab-group (:tab-group local-cfg)
         entries-list (reaction (vals (get-in @gql-res [tab-group :res])))]
     (fn journal-view-render [local-cfg]
-      (let [{:keys [show-more query-id]} local-cfg
+      (let [{:keys [query-id]} local-cfg
             cnt (count @entries-list)
             on-scroll (fn [ev]
                         (let [elem (-> ev .-nativeEvent .-srcElement)

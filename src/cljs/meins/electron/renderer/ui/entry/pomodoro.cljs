@@ -2,11 +2,9 @@
   (:require ["moment" :as moment]
             [matthiasn.systems-toolbox.component :as st]
             [meins.electron.renderer.helpers :as h]
-            [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
-            [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug info]]))
 
 (defn pomodoro-time [entry _edit-mode?]
@@ -36,7 +34,7 @@
            [:div.dur {:on-click time-click}
             formatted])]))))
 
-(defn pomodoro-btn [entry _edit-mode?]
+(defn pomodoro-btn [_entry _edit-mode?]
   (let [busy-status (subscribe [:busy-status])
         running-pomodoro (subscribe [:running-pomodoro])]
     (fn [entry edit-mode?]
