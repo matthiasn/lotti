@@ -25,7 +25,7 @@
 (s/def :meins.vclock/counter int?)
 (s/def :meins.vclock/map (s/map-of :meins.vclock/node-id :meins.vclock/counter))
 
-(defn vclock-compare [a b]
+(defn vclock-compare
   "Compares two vector clocks. A and B are maps with node id strings as keys
    and an integer as value, which is the offset on the node associated with
    persisting the particular entry. See examples in the tests.
@@ -35,6 +35,7 @@
    be determined.
 
    Throws an exception when input is invalid."
+  [a b]
   (let [a-valid (s/valid? :meins.vclock/map a)
         b-valid (s/valid? :meins.vclock/map b)]
     (if (and a-valid b-valid)

@@ -1,9 +1,7 @@
 (ns meins.common.specs.imap
   "Specs for sync via IMAP."
   (:require #?(:clj [clojure.spec.alpha :as s]
-               :cljs [cljs.spec.alpha :as s])
-            [meins.common.utils.parse :as p]))
-
+               :cljs [cljs.spec.alpha :as s])))
 
 (s/def :sync/start-server nil?)
 (s/def :sync/stop-server (s/nilable keyword?))

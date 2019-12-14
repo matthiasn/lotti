@@ -1,8 +1,7 @@
 (ns meins.electron.renderer.ui.pomodoro
   "This namespace holds the functions for rendering the text (markdown) content
    of a journal entry. This includes both a properly styled element for static
-   content and the edit-mode view, with autosuggestions for tags and mentions."
-  (:require [meins.common.utils.misc :as u]))
+   content and the edit-mode view, with autosuggestions for tags and mentions.")
 
 (defn pomodoro-defaults [ts]
   {:comment_for    ts

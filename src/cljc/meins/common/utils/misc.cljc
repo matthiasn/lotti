@@ -110,16 +110,6 @@
       (dissoc :linked-entries-list)
       (dissoc :linked_entries_list)))
 
-(defn linked-filter-fn
-  "Filter linked entries by search."
-  [entries-map linked-filter put-fn]
-  (fn [entry]
-    (let [comments (:comments entry)
-          combined-tags (reduce #(set/union %1 (:tags %2)) (:tags entry) comments)]
-      (and (set/subset? (:tags linked-filter) combined-tags)
-           (empty? (set/intersection (:not-tags linked-filter)
-                                     combined-tags))))) )
-
 (defn search-from-cfg [state] (select-keys (:query-cfg state) #{:queries}))
 
 (defn cleaned-queries [state]

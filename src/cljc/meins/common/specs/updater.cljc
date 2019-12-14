@@ -1,8 +1,7 @@
 (ns meins.common.specs.updater
   "Specs for Updater."
   (:require #?(:clj [clojure.spec.alpha :as s]
-               :cljs [cljs.spec.alpha :as s])
-            [meins.common.utils.parse :as p]))
+               :cljs [cljs.spec.alpha :as s])))
 
 (s/def :meins.update/status keyword?)
 (s/def :meins.update/info map?)

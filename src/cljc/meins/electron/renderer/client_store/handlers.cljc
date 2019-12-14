@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.client-store.handlers
-  (:require #?(:cljs [reagent.core :refer [atom]])
-            #?(:clj  [taoensso.timbre :refer [debug info]]
+  (:require #?(:clj  [taoensso.timbre :refer [debug info]]
                :cljs [taoensso.timbre :refer [debug info]])))
 
 (defn nav-handler [{:keys [current-state msg-payload]}]
@@ -44,13 +43,13 @@
     (reduce f state coll)))
 
 (defn save-habits-by-day [state coll]
-  (let [f (fn [acc {:keys [day habit_ts success] :as m}]
+  (let [f (fn [acc {:keys [day habit_ts] :as m}]
             (let [path [:dashboard-data day :habits habit_ts]]
               (assoc-in acc path m)))]
     (reduce f state coll)))
 
 (defn save-day-stats-by-day [state coll]
-  (let [f (fn [acc {:keys [day by_saga] :as m}]
+  (let [f (fn [acc {:keys [day by_saga]}]
             (let [path [:dashboard-data day :by-saga]
                   by-saga (reduce (fn [acc x]
                                     (let [ts (:timestamp (:saga x))

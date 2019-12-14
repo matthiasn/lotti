@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.graphql
-  (:require #?(:clj
-                     [taoensso.timbre :refer [debug info warn]]
+  (:require #?(:clj  [taoensso.timbre :refer [debug info warn]]
                :cljs [taoensso.timbre :refer [debug info warn]])
             [clojure.string :as s]
             [venia.core :as v]))
@@ -18,9 +17,6 @@
         git-query {:query/data [:git_stats {:days   days
                                             :offset offset}
                                 [:date_string :commits]]}
-        award-query {:query/data [:award_points {:days (inc days)}
-                                  [:total :claimed
-                                   [:by_day [:date_string :task]]]]}
         queries (conj queries git-query)]
     (when (seq queries)
       (v/graphql-query {:venia/queries queries}))))

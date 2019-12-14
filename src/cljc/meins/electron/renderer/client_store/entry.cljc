@@ -42,11 +42,12 @@
     {:new-state new-state}))
 
 (defn entry-day [adjusted_ts]
-  #?(:cljs (.format (moment adjusted_ts) "YYYY-MM-DD")))
+  #?(:clj (prn adjusted_ts)
+     :cljs (.format (moment adjusted_ts) "YYYY-MM-DD")))
 
 (defn entry-saved-fn
   "Remove new entry from local when saving is confirmed by backend."
-  [{:keys [current-state msg-payload put-fn]}]
+  [{:keys [current-state msg-payload]}]
   (let [ts (:timestamp msg-payload)
         curr-local (get-in current-state [:new-entries ts])
         new-state (if (or (= (:md curr-local)
@@ -64,7 +65,8 @@
 (defn play-audio
   "Start playing audio element with provided DOM id."
   [id]
-  #?(:cljs (.play (.getElementById js/document id))))
+  #?(:clj (prn id)
+     :cljs (.play (.getElementById js/document id))))
 
 (defn parse-int-js [n]
   #?(:cljs (js/parseInt n)
