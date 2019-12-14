@@ -8,7 +8,6 @@
             [matthiasn.systems-toolbox.scheduler :as sched]
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
-            [meins.electron.main.blink :as bl]
             [meins.electron.main.crypto :as kc]
             [meins.electron.main.geocoder :as geocoder]
             [meins.electron.main.imap :as imap]
@@ -71,7 +70,6 @@
   (let [components #{(wm/cmp-map :main/window-manager wm-relay app-path)
                      (st/cmp-map :main/startup)
                      (ipc/cmp-map :main/ipc-cmp)
-                     (bl/cmp-map :main/blink)
                      (screen/cmp-map :main/screenshot)
                      (imap/cmp-map :main/sync)
                      (kc/cmp-map :main/crypto)
@@ -98,22 +96,17 @@
                             :main/menu-cmp
                             :main/geocoder
                             :main/sync
-                            :main/blink
                             :main/startup}}]
 
        [:cmd/route {:from :main/ipc-cmp
                     :to   #{:main/startup
                             :main/updater
                             :main/geocoder
-                            :main/blink
                             :main/crypto
                             :main/screenshot
                             :main/sync
                             :main/scheduler
                             :main/window-manager}}]
-
-       [:cmd/route {:from :main/blink
-                    :to   :main/scheduler}]
 
        [:cmd/route {:from :main/window-manager
                     :to   :main/startup}]
