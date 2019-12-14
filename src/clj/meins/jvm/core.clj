@@ -9,7 +9,6 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.common.utils.misc :refer [connect]]
-            [meins.jvm.backup :as bak]
             [meins.jvm.file-utils :as fu]
             [meins.jvm.firehose :as fh]
             [meins.jvm.fulltext-search :as ft]
@@ -28,7 +27,6 @@
     (i/cmp-map :backend/imports)
     (st/cmp-map :backend/store)
     (pg/cmp-map :backend/playground)
-    (bak/cmp-map :backend/backup)
     (ft/cmp-map :backend/ft)})
 
 (defn make-observable [components]
@@ -64,11 +62,8 @@
      (connect :backend/store :backend/scheduler)
 
      (connect :backend/scheduler :backend/store)
-     (connect :backend/scheduler :backend/backup)
      (connect :backend/scheduler :backend/imports)
      (connect :backend/scheduler :backend/ws)
-
-     (connect :backend/backup :backend/scheduler)
 
      [:cmd/attach-to-firehose :backend/firehose]
 
