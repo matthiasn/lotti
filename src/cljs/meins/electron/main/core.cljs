@@ -9,7 +9,6 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.electron.main.crypto :as kc]
-            [meins.electron.main.geocoder :as geocoder]
             [meins.electron.main.imap :as imap]
             [meins.electron.main.log]
             [meins.electron.main.menu :as menu]
@@ -23,8 +22,7 @@
 
 (defonce switchboard (sb/component :main/switchboard))
 
-;(def OBSERVER (:repo-dir rt/runtime-info))
-(def OBSERVER true)
+(def OBSERVER (:repo-dir rt/runtime-info))
 
 (defn make-observable [components]
   (if OBSERVER
@@ -75,8 +73,7 @@
                      (kc/cmp-map :main/crypto)
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
-                     (menu/cmp-map :main/menu-cmp)
-                     (geocoder/cmp-map :main/geocoder #{:geonames/lookup})}
+                     (menu/cmp-map :main/menu-cmp)}
         components (make-observable components)]
     (sb/send-mult-cmd
       switchboard
@@ -87,21 +84,18 @@
                             :main/startup
                             :main/scheduler
                             :main/screenshot
-                            :main/geocoder
                             :main/updater}}]
 
        [:cmd/route {:from :main/scheduler
                     :to   #{:main/updater
                             :main/window-manager
                             :main/menu-cmp
-                            :main/geocoder
                             :main/sync
                             :main/startup}}]
 
        [:cmd/route {:from :main/ipc-cmp
                     :to   #{:main/startup
                             :main/updater
-                            :main/geocoder
                             :main/crypto
                             :main/screenshot
                             :main/sync
@@ -114,9 +108,6 @@
        [:cmd/route {:from :main/crypto
                     :to   #{:main/window-manager
                             :main/sync}}]
-
-       [:cmd/route {:from :main/geocoder
-                    :to   :main/window-manager}]
 
        [:cmd/route {:from :main/screenshot
                     :to   :main/window-manager}]
