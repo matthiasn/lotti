@@ -1,15 +1,12 @@
 (ns meins.electron.main.startup
-  (:require [child_process :refer [fork spawn]]
+  (:require ["child_process" :refer [spawn]]
+            ["electron" :refer [app session shell]]
+            ["find-process" :as find-process]
+            ["fs" :refer [existsSync readFileSync renameSync writeFileSync]]
+            ["http" :as http]
             [cljs.reader :refer [read-string]]
-            [cljs.reader :as edn]
             [clojure.string :as str]
-            [clojure.string :as s]
-            [electron :refer [app session shell]]
-            [find-process :as find-process]
-            [fs :refer [existsSync readFileSync renameSync writeFileSync]]
-            [http :as http]
             [meins.electron.main.runtime :as rt]
-            [path :refer [join normalize]]
             [taoensso.timbre :refer [error info]]))
 
 (def PORT (:port rt/runtime-info))
@@ -18,7 +15,7 @@
 
 (defn window-cfg []
   (when (existsSync cfg-path)
-    (edn/read-string (readFileSync cfg-path "utf-8"))))
+    (read-string (readFileSync cfg-path "utf-8"))))
 
 (defn spawn-process [cmd args opts]
   (info "STARTUP: spawning" cmd args opts)
@@ -45,8 +42,8 @@
       (let [lsof (spawn-process lsof-path ["-n" (str "-i4TCP:" port)] {})
             stdout (aget lsof "stdout")
             cb (fn [data]
-                 (let [lines (s/split-lines data)
-                       line (first (filter #(s/includes? % "java") lines))
+                 (let [lines (str/split-lines data)
+                       line (first (filter #(str/includes? % "java") lines))
                        pid (re-find #"[0-9]{1,5}" (str line))
                        pid (when pid (js/parseInt pid))]
                    (when pid (kill pid))))]
@@ -169,17 +166,10 @@
   {})
 
 (defn open-external [{:keys [msg-payload]}]
-  (let [url msg-payload
-        img-path (:img-path rt/runtime-info)]
+  (let [url msg-payload]
     (when-not (str/includes? url (str "localhost:" (:port rt/runtime-info)))
       (info "Opening" url)
-      (.openExternal shell url))
-    ; not working with blank spaces, e.g. Library/Application Support/
-    #_(when (str/includes? url "localhost:7788/photos")
-        (let [img (str/replace url "http://localhost:7788/photos/" "")
-              path (str "'" (join img-path img) "'")]
-          (info "Opening item" path
-                (.openItem shell path)))))
+      (.openExternal shell url)))
   {})
 
 (defn shutdown-jvm [{:keys [msg-payload put-fn]}]
@@ -203,7 +193,7 @@
   (let [cache-file (:cache rt/runtime-info)
         cache-exists? (existsSync cache-file)]
     (when cache-exists?
-      (.renameSync fs cache-file (str cache-file ".bak"))))
+      (renameSync cache-file (str cache-file ".bak"))))
   {})
 
 (defn cmp-map [cmp-id]
@@ -219,7 +209,7 @@
                  :app/clear-cache     clear-cache}})
 
 (.on app "window-all-closed"
-     (fn [ev]
+     (fn [_ev]
        (info "window-all-closed")
        (when-not (= (:platform rt/runtime-info) "darwin")
          (.quit app))))

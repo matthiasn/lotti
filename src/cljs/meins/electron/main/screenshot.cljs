@@ -1,9 +1,9 @@
 (ns meins.electron.main.screenshot
-  (:require [fs :refer [writeFile]]
+  (:require ["screenshot-desktop" :as screenshot]
+            [fs :refer [writeFile]]
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as m]
             [meins.electron.main.runtime :as rt]
-            [screenshot-desktop :as screenshot]
             [taoensso.timbre :refer [debug error info]]))
 
 (defn take-screenshot [{:keys [put-fn]}]

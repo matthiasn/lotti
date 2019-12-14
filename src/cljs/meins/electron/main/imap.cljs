@@ -1,15 +1,13 @@
 (ns meins.electron.main.imap
   "Component for encrypting and decrypting log files."
-  (:require ["shortid" :as short-id]
-            [buildmail :as BuildMail]
-            [child_process :refer [spawn]]
-            [cljs-bean.core :refer [->clj ->js bean]]
+  (:require ["buildmail" :as BuildMail]
+            ["imap" :as imap]
+            ["shortid" :as short-id]
+            [cljs-bean.core :refer [->clj]]
             [cljs.reader :as edn]
-            [clojure.data :as data]
             [clojure.pprint :as pp]
             [clojure.string :as s]
-            [fs :refer [existsSync mkdirSync readFileSync statSync writeFile writeFileSync]]
-            [imap :as imap]
+            [fs :refer [existsSync readFileSync writeFile writeFileSync]]
             [meins.electron.main.runtime :as rt]
             [meins.shared.encryption :as mse]
             [taoensso.timbre :refer [debug error info warn]]))
@@ -81,10 +79,10 @@
                  (let [buffer (atom [])]
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "image msg end" seqn))))
-        mb-cb (fn [conn err box]
+        mb-cb (fn [conn _err _box]
                 (try
                   (let [s (clj->js ["UNDELETED" ["UID" uid]])
-                        cb (fn [err res]
+                        cb (fn [_err res]
                              (let [f (.fetch conn res (clj->js {:bodies [partID]
                                                                 :struct true}))
                                    cb (fn []
@@ -96,16 +94,16 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (do (error e) (.end conn)))))]
+                  (catch :default e (error e) (.end conn))))]
     (imap-open mailbox mb-cb)))
 
-(defn read-audio [mailbox uid partID filename put-fn]
+(defn read-audio [mailbox uid partID filename _put-fn]
   (let [body-cb (fn [buffer seqn stream stream-info]
                   (let [end-cb (fn []
                                  (let [base-64-img (apply str @buffer)
                                        buf (buf-from-base64 base-64-img)
                                        full-path (str audio-path "/" filename)
-                                       write-cb (fn [err])]
+                                       write-cb (fn [_err])]
                                    (info "audio" filename (count base-64-img))
                                    (writeFile full-path buf "binary" write-cb)))]
                     (info "audio body stream-info" (js->clj stream-info))
@@ -118,10 +116,10 @@
                  (let [buffer (atom [])]
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" #(debug "audio msg end" seqn))))
-        mb-cb (fn [conn err box]
+        mb-cb (fn [conn _err _box]
                 (try
                   (let [s (clj->js ["UNDELETED" ["UID" uid]])
-                        cb (fn [err res]
+                        cb (fn [_err res]
                              (let [
                                    f (.fetch conn res (clj->js {:bodies [partID]
                                                                 :struct true}))
@@ -134,7 +132,7 @@
                                (.once f "end" cb)))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (do (error e) (.end conn)))))]
+                  (catch :default e (error e) (.end conn))))]
     (imap-open mailbox mb-cb)))
 
 (defn extract-body [s]
@@ -207,13 +205,13 @@
                    (.once msg "attributes" attr-cb)
                    (.on msg "body" (partial body-cb buffer seqn))
                    (.once msg "end" (fn [] (info "IMAP msg end" seqn)))))
-        mb-cb (fn [conn err box]
+        mb-cb (fn [conn _err _box]
                 (try
                   (let [last-read (:last-read mb-cfg)
                         uid (str (inc last-read) ":*")
                         _ (info "last-read" last-read uid)
                         s (clj->js ["UNDELETED" ["UID" uid]])
-                        idle-cb (fn [msg]
+                        idle-cb (fn [_msg]
                                   (.end conn)
                                   (put-fn
                                     [:schedule/new
@@ -239,7 +237,7 @@
                                    (.once f "end" cb)))))]
                     (info "search" mailbox s)
                     (.search conn s cb))
-                  (catch :default e (do (error e) (.end conn)))))]
+                  (catch :default e (error e) (.end conn))))]
     (imap-open mailbox mb-cb)))
 
 (defn read-email [{:keys [put-fn current-state]}]
@@ -249,7 +247,7 @@
     {}))
 
 (defn imap-save [{:keys [ciphertext subject content-type mailbox encoding]}]
-  (let [cb (fn [conn _err box]
+  (let [cb (fn [conn _err _box]
              (try
                (let [append-cb (fn [err]
                                  (when err
@@ -292,9 +290,9 @@
 
 (defn read-mb [k d cfg put-fn]
   (try
-    (let [cb (fn [conn _err mb]
+    (let [cb (fn [conn _err _mb]
                (try
-                 (.getBoxes conn (fn [err boxes]
+                 (.getBoxes conn (fn [_err boxes]
                                    (js/console.log "read-mb" boxes)
                                    (put-fn [:imap/status {:status k
                                                           :detail d}])
@@ -335,7 +333,7 @@
         conn (imap. (imap-conf cfg))
         add-box (fn [err]
                   (when err (js/console.error "addBox" id err)))
-        get-boxes (fn [err boxes]
+        get-boxes (fn [_err boxes]
                     (let [prefix (first (->clj (js/Object.keys boxes)))
                           inbox (aget boxes prefix)
                           delimiter (.-delimiter inbox)

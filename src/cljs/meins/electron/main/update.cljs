@@ -1,5 +1,5 @@
 (ns meins.electron.main.update
-  (:require [electron-log :as electron-log]
+  (:require ["electron-log" :as electron-log]
             [electron-updater :refer [autoUpdater]]
             [taoensso.timbre :refer [error info]]))
 
@@ -22,7 +22,7 @@
           checking (fn [_]
                      (info "Checking for update...")
                      (put-fn [:update/status {:status :update/checking}]))
-          downloaded (fn [ev]
+          downloaded (fn [_ev]
                        (info "Update downloaded")
                        (when (:immediate @state)
                          (put-fn [:app/shutdown-jvm {:environments #{:live :playground}}])
@@ -66,7 +66,7 @@
 (defn download-updates [{:keys [current-state msg-payload put-fn]}]
   (info "UPDATE: download")
   (-> (.downloadUpdate autoUpdater)
-      (.then (fn [ev]
+      (.then (fn [_ev]
                (info "Update downloaded")
                (put-fn [:update/status {:status :update/downloaded}]))))
   {:new-state (assoc-in current-state [:immediate] msg-payload)})
@@ -74,7 +74,6 @@
 (defn install-updates [_]
   (info "UPDATE: install")
   {:emit-msg [[:app/clear-cache]
-              ;[:app/clear-iww-cache]
               [:app/shutdown-jvm {:environments #{:live :playground}}]
               [:schedule/new {:timeout 1000
                               :message [:update/quit-install]}]]})

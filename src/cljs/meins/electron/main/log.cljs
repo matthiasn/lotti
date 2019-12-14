@@ -1,6 +1,6 @@
 (ns meins.electron.main.log
-  (:require [cljs.nodejs :as nodejs]
-            [electron-log :as l]
+  (:require ["electron-log" :as l]
+            [cljs.nodejs :as nodejs]
             [meins.electron.main.runtime :as rt]
             [taoensso.encore :as enc]
             [taoensso.timbre :as timbre]))

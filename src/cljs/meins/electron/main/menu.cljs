@@ -241,10 +241,10 @@
         learn #(put-fn [:tf/learn-stories #{:learn}])
         export-learn #(put-fn [:tf/learn-stories #{:export :learn}])]
     {:label   "Learn"
-     :submenu [#_{:label "Export for Stories Model"
-                  :click export}
-               #_{:label "Train Stories Model"
-                  :click learn}
+     :submenu [{:label "Export for Stories Model"
+                :click export}
+               {:label "Train Stories Model"
+                :click learn}
                {:label "Export and Train"
                 :click export-learn}]}))
 
@@ -293,7 +293,7 @@
               :accelerator "CmdOrCtrl+Alt+I"
               :click       #(put-fn [:window/dev-tools])}]})
 
-(defn help-menu [put-fn]
+(defn help-menu [_put-fn]
   (let [help-page "https://meins.readthedocs.io/en/latest/"
         open-help #(.openExternal shell help-page)]
     {:label   "Help"

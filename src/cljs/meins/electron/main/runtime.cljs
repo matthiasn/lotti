@@ -4,8 +4,8 @@
             [clojure.string :as s]
             [clojure.tools.reader.edn :as edn]
             [electron :refer [app systemPreferences]]
-            [fs :refer [existsSync readFileSync renameSync]]
-            [path :refer [join normalize]]
+            [fs :refer [existsSync readFileSync]]
+            [path :refer [normalize]]
             [taoensso.timbre :refer [debug error info]]))
 
 (def runtime-info
