@@ -1,15 +1,12 @@
 (ns meins.ui.settings.audio
   (:require ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
             ["react-native-permissions" :as Permissions]
-            [cljs-bean.core :refer [->clj ->js bean]]
+            [cljs-bean.core :refer [->clj]]
             [matthiasn.systems-toolbox.component :as st]
             [meins.helpers :as h]
             [meins.ui.db :refer [emit]]
-            [meins.ui.settings.items :refer [button item settings-page settings-text]]
-            [meins.ui.shared :refer [alert platform-os settings-icon
-                                     status-bar text view]]
-            [meins.ui.styles :as styles]
-            [re-frame.core :refer [subscribe]]
+            [meins.ui.settings.items :refer [item settings-page]]
+            [meins.ui.shared :refer [platform-os settings-icon text]]
             [reagent.core :as r]
             [taoensso.timbre :refer-macros [debug error info]]))
 

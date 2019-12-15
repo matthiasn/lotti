@@ -2,7 +2,7 @@
   (:require [meins.ui.icons.settings :as icns]
             [meins.ui.shared :refer [scroll status-bar switch text touchable-opacity view]]
             [meins.ui.styles :as styles]
-            [re-frame.core :refer [reg-sub subscribe]]
+            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
 (defn item [_]
@@ -104,7 +104,7 @@
                                   :false "#808080"}}
           info]]))))
 
-(defn settings-page [& args]
+(defn settings-page [& _args]
   (let [theme (subscribe [:active-theme])]
     (fn [& args]
       (let [bg (get-in styles/colors [:list-bg @theme])]
@@ -123,7 +123,7 @@
                               :margin-top       10}}]
                args)]))))
 
-(defn sync-assistant-page [& args]
+(defn sync-assistant-page [& _args]
   (let [theme (subscribe [:active-theme])]
     (fn [& args]
       (let [bg (get-in styles/colors [:list-bg @theme])]

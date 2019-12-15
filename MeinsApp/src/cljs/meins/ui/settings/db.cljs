@@ -1,9 +1,7 @@
 (ns meins.ui.settings.db
   (:require [meins.ui.db :refer [emit]]
             [meins.ui.icons.settings :as icns]
-            [meins.ui.settings.items :refer [item settings-page switch-item]]
-            [meins.ui.shared :refer [status-bar text view]]
-            [re-frame.core :refer [subscribe]]))
+            [meins.ui.settings.items :refer [item settings-page]]))
 
 (defn db-settings [{:keys [navigation]}]
   (let [{:keys [_navigate goBack]} (js->clj navigation :keywordize-keys true)

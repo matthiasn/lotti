@@ -114,8 +114,7 @@
   (go
     (try
       (let [instance-id (str (or (second (<! (as/get-item :instance-id)))
-                                 (st/make-uuid)))
-            timestamps (second (<! (as/get-item :timestamps)))]
+                                 (st/make-uuid)))]
         (swap! cmp-state assoc-in [:instance-id] instance-id)
         (<! (as/set-item :instance-id instance-id)))
       (catch js/Object e (error "load-state" e))))

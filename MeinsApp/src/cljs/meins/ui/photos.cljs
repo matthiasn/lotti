@@ -1,6 +1,5 @@
 (ns meins.ui.photos
   (:require ["react-native-super-grid" :as rn-super-grid]
-            [cljs-bean.core :refer [->clj ->js bean]]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.helpers :as h]
             [meins.ui.db :as uidb :refer [emit]]
@@ -34,10 +33,10 @@
                    (refresh nil)
                    (emit [:photos/import {:n 10000}])
                    (emit [:entry/new entry])))
-        hide (fn [_]
-               (let [entry {:timestamp  timestamp
-                            :entry-type :hide}]
-                 (emit [:entry/hide entry])))]
+        _hide (fn [_]
+                (let [entry {:timestamp  timestamp
+                             :entry-type :hide}]
+                  (emit [:entry/hide entry])))]
     [touchable-opacity {:on-press import
                         :style    {:flex 1}}
      [image {:style  {:width           img-dimension

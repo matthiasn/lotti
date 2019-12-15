@@ -10,7 +10,6 @@
             [meins.ui.settings.items :refer [item screen settings-page]]
             [meins.ui.settings.sync :as sync]
             [meins.ui.styles :as styles]
-            [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 
 (def nav-bg (get-in styles/colors [:nav-bg :dark]))
@@ -21,46 +20,45 @@
                     :active   "journal"}))
 
 (defn settings-wrapper [_props]
-  (let []
-    (fn [{:keys [navigation]}]
-      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            icon-size 26]
-        [settings-page
-         [item {:label "Version"
-                :icon  (icns/version-icon icon-size)
-                :info  (aget rnvn "default" "appVersion")}]
-         #_[item {:label "CONTACTS"
-                  :icon  (icns/contacts-icon icon-size)
-                  :info  0}]
-         [item {:label         "Health"
-                :icon          (icns/health-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "health")}]
-         [item {:label         "Theme"
-                :icon          (icns/theme-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "theme")}]
-         [item {:label         "Database"
-                :icon          (icns/db-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "db")}]
-         [item {:label         "Entry View"
-                :icon          (icns/entries-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "dev")}]
-         [item {:label         "Geolocation"
-                :icon          (icns/map-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "geo")}]
-         [item {:label         "Audio"
-                :icon          (icns/audio-icon icon-size)
-                :has-nav-arrow true
-                :on-press      #(navigate "audio")}]
-         [item {:label            "Sync"
-                :icon             (icns/sync-icon icon-size)
-                :has-nav-arrow    true
-                :btm-border-width 0
-                :on-press         #(navigate "sync")}]]))))
+  (fn [{:keys [navigation]}]
+    (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+          icon-size 26]
+      [settings-page
+       [item {:label "Version"
+              :icon  (icns/version-icon icon-size)
+              :info  (aget rnvn "default" "appVersion")}]
+       #_[item {:label "CONTACTS"
+                :icon  (icns/contacts-icon icon-size)
+                :info  0}]
+       [item {:label         "Health"
+              :icon          (icns/health-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "health")}]
+       [item {:label         "Theme"
+              :icon          (icns/theme-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "theme")}]
+       [item {:label         "Database"
+              :icon          (icns/db-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "db")}]
+       [item {:label         "Entry View"
+              :icon          (icns/entries-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "dev")}]
+       [item {:label         "Geolocation"
+              :icon          (icns/map-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "geo")}]
+       [item {:label         "Audio"
+              :icon          (icns/audio-icon icon-size)
+              :has-nav-arrow true
+              :on-press      #(navigate "audio")}]
+       [item {:label            "Sync"
+              :icon             (icns/sync-icon icon-size)
+              :has-nav-arrow    true
+              :btm-border-width 0
+              :on-press         #(navigate "sync")}]])))
 
 (def settings-stack
   (createStackNavigator

@@ -1,10 +1,8 @@
 (ns meins.components.photos
   (:require ["@matthiasn/cameraroll" :as cam-roll]
             ["react-native" :as rn]
-            ["realm" :as realm]
-            [cljs-bean.core :refer [->clj ->js bean]]
+            [cljs-bean.core :refer [->clj]]
             [clojure.string :as str]
-            [matthiasn.systems-toolbox.component :as st]
             [meins.ui.db :as uidb]
             [taoensso.timbre :refer-macros [debug error info warn]]))
 

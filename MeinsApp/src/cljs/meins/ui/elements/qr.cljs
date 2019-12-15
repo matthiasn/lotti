@@ -2,7 +2,6 @@
   (:require ["react-native-qrcode-svg" :as qr]
             [meins.ui.shared :refer [set-clipboard touchable-opacity]]
             [meins.ui.styles :as styles]
-            [meins.util.keychain :as kc]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]))
 

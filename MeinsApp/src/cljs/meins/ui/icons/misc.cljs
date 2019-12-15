@@ -1,6 +1,5 @@
 (ns meins.ui.icons.misc
-  (:require ["react-native" :as react-native :refer [Clipboard]]
-            ["react-native-svg" :refer [SvgXml] :as Svg]
+  (:require ["react-native-svg" :refer [SvgXml] :as Svg]
             [meins.ui.shared :refer [view]]
             [meins.ui.styles :as styles]
             [reagent.core :as r]))

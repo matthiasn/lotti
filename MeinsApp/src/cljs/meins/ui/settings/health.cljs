@@ -1,13 +1,12 @@
 (ns meins.ui.settings.health
   (:require [meins.ui.db :refer [emit]]
             [meins.ui.icons.health :as icns]
-            [meins.ui.settings.items :refer [item settings-page]]
-            [re-frame.core :refer [subscribe]]))
+            [meins.ui.settings.items :refer [item settings-page]]))
 
 (defn health-settings [_props]
   (let [import (fn [msg-type] (fn [_] (emit [msg-type {:n 30}])))]
     (fn [{:keys [navigation]}]
-      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
+      (let [{:keys [_navigate]} (js->clj navigation :keywordize-keys true)
             icon-size 26]
         [settings-page
          [item {:label    "Weight"

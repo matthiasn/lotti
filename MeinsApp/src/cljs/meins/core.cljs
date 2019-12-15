@@ -13,7 +13,6 @@
             [meins.crypto]
             [meins.helpers]
             [meins.ui :as ui]
-            [meins.ui.shared :refer [alert]]
             [taoensso.timbre :refer-macros [error info]]))
 
 (enable-console-print!)

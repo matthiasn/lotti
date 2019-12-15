@@ -1,22 +1,19 @@
 (ns meins.ui.journal
   (:require ["@matthiasn/react-native-audio-recorder-player" :default rn-audio-recorder-player]
-            ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-stack" :refer [createStackNavigator]]
             ["react-navigation-transitions" :refer [fadeIn]]
-            [cljs-bean.core :refer [->clj ->js bean]]
+            [cljs-bean.core :refer [->clj]]
             [cljs.reader :as rdr]
             [clojure.pprint :as pp]
             [clojure.string :as s]
-            [glittershark.core-async-storage :as as]
-            [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.helpers :as h]
             [meins.ui.db :as uidb :refer [emit]]
             [meins.ui.editor :as ed]
             [meins.ui.elements.mapbox :as mb]
-            [meins.ui.shared :refer [alert fa-icon flat-list image keyboard-avoiding-view platform-os
+            [meins.ui.shared :refer [fa-icon flat-list image keyboard-avoiding-view platform-os
                                      scroll search-bar status-bar text text-input touchable-opacity
-                                     view virtualized-list]]
+                                     view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
@@ -47,7 +44,7 @@
             md (if (> (count md) 100)
                  (str (subs md 0 100) "...")
                  md)
-            delete #(emit [:entry/persist (assoc-in entry [:deleted] true)])]
+            _delete #(emit [:entry/persist (assoc-in entry [:deleted] true)])]
         (when (or (not (or (:pvt entry)
                            (:pvt (:story entry))
                            (-> entry :story :saga :pvt)
@@ -171,8 +168,8 @@
         global-vclock (subscribe [:global-vclock])
         local (r/atom {:jrn-search ""})
         realm-db @uidb/realm-db]
-    (fn [{:keys [navigation] :as props}]
-      (let [{:keys [navigate] :as n} (js->clj navigation :keywordize-keys true)
+    (fn [{:keys [navigation]}]
+      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
             res (some-> realm-db
                         (.objects "Entry")
                         (.filtered (str "md CONTAINS[c] \"" (:jrn-search @local) "\""))

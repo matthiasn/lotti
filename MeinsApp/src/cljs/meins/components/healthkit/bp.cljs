@@ -4,7 +4,7 @@
             [matthiasn.systems-toolbox.component :as st]
             [meins.components.healthkit.common :as hc]))
 
-(defn bp-cb [put-fn err res]
+(defn bp-cb [put-fn _err res]
   (doseq [sample (js->clj res)]
     (let [bp-systolic (get-in sample ["bloodPressureSystolicValue"])
           bp-diastolic (get-in sample ["bloodPressureDiastolicValue"])

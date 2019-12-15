@@ -1,9 +1,6 @@
 (ns meins.ui.icons.settings
-  (:require ["react-native" :as react-native :refer [Clipboard]]
-            ["react-native-svg" :refer [SvgXml] :as Svg]
+  (:require ["react-native-svg" :refer [SvgXml] :as Svg]
             [meins.ui.icons.misc :as icns]
-            [meins.ui.shared :refer [view]]
-            [meins.ui.styles :as styles]
             [reagent.core :as r]))
 
 (def svg-xml (r/adapt-react-class SvgXml))

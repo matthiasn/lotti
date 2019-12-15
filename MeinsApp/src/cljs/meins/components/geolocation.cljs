@@ -1,12 +1,8 @@
 (ns meins.components.geolocation
   (:require ["intl" :as intl]
             ["react-native-background-geolocation" :default BgGeo]
-            ["realm" :as realm]
-            [cljs-bean.core :refer [->clj ->js bean]]
-            [cljs.tools.reader.edn :as edn]
+            [cljs-bean.core :refer [->clj ->js]]
             [matthiasn.systems-toolbox.component :as st]
-            [meins.helpers :as h]
-            [meins.ui.db :as uidb]
             [meins.ui.shared :as shared :refer [platform-os]]))
 
 (def accuracy
@@ -64,7 +60,7 @@
     (.getLocations BgGeo cb))
   {})
 
-(defn email-logs [{:keys [put-fn]}]
+(defn email-logs [_]
   (-> (.emailLog BgGeo "")
       (.then #(js/console.warn "BgGeo logs sent")))
   {})

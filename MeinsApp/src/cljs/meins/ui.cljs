@@ -1,6 +1,5 @@
 (ns meins.ui
-  (:require ["react" :refer [Component]]
-            ["react-native" :refer [Animated AppRegistry Platform]]
+  (:require ["react-native" :refer [Animated]]
             ["react-navigation" :refer [createAppContainer]]
             ["react-navigation-tabs" :refer [createBottomTabNavigator]]
             [meins.ui.db :as db]
@@ -9,7 +8,6 @@
             [meins.ui.journal :as jrn]
             [meins.ui.photos :as photos]
             [meins.ui.settings :as s]
-            [meins.ui.shared :refer [fa-icon text view]]
             [meins.ui.styles :as styles]
             [re-frame.core :refer [reg-sub]]
             [re-frame.db :as rdb]

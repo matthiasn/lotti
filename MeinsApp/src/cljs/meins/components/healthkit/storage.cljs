@@ -5,9 +5,8 @@
 
 
 (defn set-async [k v]
-  (let []
-    (js/console.info k)
-    (go (<! (as/set-item k v)))))
+  (js/console.info k)
+  (go (<! (as/set-item k v))))
 
 
 (defn get-async [k cb]

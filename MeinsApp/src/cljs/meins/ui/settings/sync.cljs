@@ -1,12 +1,11 @@
 (ns meins.ui.settings.sync
-  (:require ["react-navigation-stack" :refer [createStackNavigator]]
-            [cljs.tools.reader.edn :as edn]
+  (:require [cljs.tools.reader.edn :as edn]
             [meins.shared.encryption :as mse]
             [meins.ui.db :refer [emit]]
             [meins.ui.elements.qr :as qr]
-            [meins.ui.settings.items :refer [button item screen settings-page settings-text spacer-y
+            [meins.ui.settings.items :refer [button item settings-page settings-text spacer-y
                                              switch-item sync-assistant-page]]
-            [meins.ui.shared :refer [alert cam modal scroll text view]]
+            [meins.ui.shared :refer [cam modal text view]]
             [meins.ui.styles :as styles]
             [meins.util.keychain :as kc]
             [re-frame.core :refer [subscribe]]
@@ -55,9 +54,8 @@
   (let [cfg (subscribe [:cfg])
         local (r/atom {})]
     (kc/get-keypair #(swap! local assoc :key-pair %))
-    (fn [{:keys [navigation]}]
-      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)
-            del-keypair (fn [_]
+    (fn [_]
+      (let [del-keypair (fn [_]
                           (kc/del-keypair)
                           (swap! local assoc :key-pair nil)
                           (swap! local dissoc :del-visible))]
@@ -146,12 +144,11 @@
                           :text-align  "center"}}
             (str @local)])]))))
 
-(defn success [_]
-  (let [cfg (subscribe [:cfg])]
-    (fn [{:keys [navigation]}]
-      (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
-        [sync-assistant-page
-         [spacer-y 24]
-         [settings-text "Congrats, all set up."]
-         [button {:label    "FINISH"
-                  :on-press #(navigate "sync")}]]))))
+(defn success
+  [{:keys [navigation]}]
+  (let [{:keys [navigate]} (js->clj navigation :keywordize-keys true)]
+    [sync-assistant-page
+     [spacer-y 24]
+     [settings-text "Congrats, all set up."]
+     [button {:label    "FINISH"
+              :on-press #(navigate "sync")}]]))
