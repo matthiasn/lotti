@@ -1,14 +1,15 @@
-name: Build & Release Desktop
+name: Test & Build Desktop
 
 on:
   push:
     branches:
-      - master
+      - '**'
+      - '!master'
 
 jobs:
 
-  build-release-linux:
-    name: Build & Release Linux
+  test-build-linux:
+    name: Test & Build Linux
     runs-on: ubuntu-latest
     steps:
       - name: Prepare java
@@ -30,37 +31,16 @@ jobs:
       - name: Setup build dependencies
         run: make deps-ubuntu
       - name: Test & Build
-        run: make install
-      - name: Publish via GitHub Releases
-        run: make publish-github
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: make
 
 
-  build-release-macos:
-    name: Build & Release macOS
+  test-build-macos:
+    name: Test & Build macOS
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v1
         with:
           fetch-depth: 1
-      - name: Retrieve certificate
-        run: echo "$DEV_CERT" | base64 -D > Certificates.p12
-        env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
-      - name: Set up keychain
-        run: |
-          security create-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p ${{ secrets.KEYCHAIN_PW }} build.keychain
-          security import Certificates.p12 -k ~/Library/Keychains/build.keychain -P ${{ secrets.DEV_CERT_PW }} -A
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${{ secrets.KEYCHAIN_PW }} build.keychain
-        env:
-          DEV_CERT: ${{ secrets.DEV_CERT }}
-          DEV_CERT_PW: ${{ secrets.DEV_CERT_PW }}
-          KEYCHAIN_PW: ${{ secrets.KEYCHAIN_PW }}
-      - name: List identities
-        run: security find-identity -v
       - name: Prepare java
         uses: actions/setup-java@v1
         with:
@@ -77,19 +57,11 @@ jobs:
       - name: Setup build dependencies
         run: make deps-mac
       - name: Test & Build
-        run: make install
-      - name: Publish via GitHub Releases
-        run: make publish-github
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          CSC_LINK: Certificates.p12
-          CSC_KEY_PASSWORD: ${{ secrets.DEV_CERT_PW }}
-          APPLEID: ${{ secrets.APPLEID }}
-          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+        run: make
 
 
-  build-release-windows:
-    name: Build & Release Windows
+  test-build-windows:
+    name: Test & Build Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
@@ -114,8 +86,4 @@ jobs:
           npm install -g electron-rebuild
         shell: pwsh
       - name: Test & Build
-        run: make install
-      - name: Publish via GitHub Releases
-        run: make publish-github
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: make
