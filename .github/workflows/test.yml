@@ -76,9 +76,9 @@ jobs:
           node-version: '12.x'
       - name: Setup build dependencies
         run: |
-          choco install make -y
-          choco install lein -y
-          choco install python2 -y
+          choco install make -y --no-progress
+          choco install lein -y --no-progress
+          choco install python2 -y --no-progress
           npm set progress=false
           npm install -g shadow-cljs
           npm install -g windows-build-tools@4.0.0
