@@ -105,10 +105,6 @@ or
     $ lein test2junit
 
 
-[![CircleCI Build Status](https://circleci.com/gh/matthiasn/meins.svg?&style=shield)](https://circleci.com/gh/matthiasn/meins)
-[![TravisCI Build Status](https://travis-ci.org/matthiasn/meins.svg?branch=master)](https://travis-ci.org/matthiasn/meins)
-
-
 ## How to help
 
 Contributions and pull requests are **very welcome**. Please check the open issues for where help is required the most, and file issues for anything else that you find.
