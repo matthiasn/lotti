@@ -41,7 +41,7 @@
                  [org.eclipse.jetty/jetty-server "9.4.7.v20170914"]
                  [progrock "0.1.2"]
                  [ring/ring-core "1.8.0"]
-                 [ubergraph "0.8.1"]
+                 [ubergraph "0.8.2"]
                  [vincit/venia "0.2.5"]]
 
   :source-paths ["src/cljc" "src/clj/"]
