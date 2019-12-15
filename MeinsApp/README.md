@@ -19,7 +19,7 @@ Note that after running `deps-pods`, you need to modify the Pods project as desc
 
 ## Start metro bundler with more appropriate mem settings
 
-    $ node --expose-gc --max_old_space_size=4096 ./node_modules/react-native/local-cli/cli.js start --reset-cache
+    $ make metro
 
 
 ## Creating Release Bundle on iOS

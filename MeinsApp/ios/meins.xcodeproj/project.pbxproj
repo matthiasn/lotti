@@ -15,7 +15,7 @@
 		16E8ECB5E9302E44AE6A72C8 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2EC0F1F9967194AEDF89FE26 /* libPods-meins.a */; };
 		4C0B5FC7958946B1AB0CE717 /* libRealmReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A19503B19096498B94E081E8 /* libRealmReact.a */; };
 		5E9303DF98654384967FD081 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48AE0CA838C74A0F9AC833DA /* Montserrat-SemiBold.ttf */; };
-		8E3A92DBE289413B56321451 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD9909E8235963BF00390386 /* libPods-meins.a */; };
+		8E3A92DBE289413B56321451 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
 		AD67467E22D910B9002B1FB7 /* libMailCore-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD67465422D910B9002B1FB7 /* libMailCore-ios.a */; };
 		AD6746E522DC895D002B1FB7 /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
 		AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */; };
@@ -208,7 +208,7 @@
 				E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */,
 				16E8ECB5E9302E44AE6A72C8 /* libPods-meins.a in Frameworks */,
 				B17A62DE4E187BC3AEE1EFF7 /* libPods-meins.a in Frameworks */,
-				8E3A92DBE289413B56321451 /* libPods-meins.a in Frameworks */,
+				8E3A92DBE289413B56321451 /* BuildFile in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -789,7 +789,7 @@
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 183;
+				CURRENT_PROJECT_VERSION = 185;
 				DEAD_CODE_STRIPPING = NO;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
@@ -835,7 +835,7 @@
 				CODE_SIGN_ENTITLEMENTS = meins/meins.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 183;
+				CURRENT_PROJECT_VERSION = 185;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				HEADER_SEARCH_PATHS = (
