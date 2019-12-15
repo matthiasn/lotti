@@ -57,7 +57,7 @@ jobs:
       - name: Setup build dependencies
         run: make deps-mac
       - name: Test & Build
-        run: make
+        run: make test cljs-shared-tests cljs
 
 
   test-build-windows:
