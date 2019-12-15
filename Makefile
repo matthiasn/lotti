@@ -22,6 +22,7 @@ package: install package-only
 
 deps-mac:
 	npm install -g electron-rebuild
+	npm install -g electron-builder@20.38.5
 	npm install -g shadow-cljs
 	mkdir ./bin
 
@@ -29,10 +30,14 @@ deps-win:
 	choco install make -y
 	choco install lein -y
 	choco install nvm -y
+	choco install python2 -y
 	nvm install 12.8.1
 	nvm use 12.8.1
+	npm set progress=false
 	npm install -g shadow-cljs
-	npm install -g windows-build-tools
+	npm install -g windows-build-tools@4.0.0
+	npm install -g node-gyp
+	npm install -g electron-builder@20.38.5
 	npm install -g electron-rebuild
 
 deps-ubuntu:
