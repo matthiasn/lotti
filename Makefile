@@ -22,7 +22,7 @@ package: install package-only
 
 deps-mac:
 	npm install -g electron-rebuild
-	npm install -g electron-builder@20.38.5
+	npm install -g electron-builder
 	npm install -g shadow-cljs
 	mkdir ./bin
 
@@ -37,7 +37,7 @@ deps-win:
 	npm install -g shadow-cljs
 	npm install -g windows-build-tools@4.0.0
 	npm install -g node-gyp
-	npm install -g electron-builder@20.38.5
+	npm install -g electron-builder
 	npm install -g electron-rebuild
 
 deps-ubuntu:
@@ -51,7 +51,7 @@ deps-ubuntu:
 	sudo apt-get install libxkbfile-dev
 	sudo apt-get install libgconf-2-4
 	npm install -g electron
-	npm install -g electron-builder@20.38.5
+	npm install -g electron-builder
 	npm install -g electron-cli
 	npm install -g electron-build-env
 	npm install -g electron-rebuild
