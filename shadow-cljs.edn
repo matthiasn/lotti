@@ -18,7 +18,7 @@
 
  :source-paths ["src/cljc" "src/cljs" "src/js" "src/test"]
 
- :nrepl        {:port 8230}
+ :nrepl        {:port 8231}
 
  :builds       {:main
                 {:target           :node-script

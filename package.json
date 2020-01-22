@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.322",
+  "version": "0.6.323",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "create-react-class": "15.6.3",
     "draft-js": "0.11.4",
     "draft-js-linkify-plugin": "2.0.2",
-    "draft-js-mention-plugin": "3.1.5",
+    "draft-js-mention-plugin": "3.1.4",
     "draft-js-plugins-editor": "3.0.0",
     "electron-context-menu": "0.15.2",
     "electron-fetch": "1.4.0",
@@ -45,7 +45,7 @@
     "imap": "0.8.19",
     "immutable": "3.8.2",
     "install": "0.13.0",
-    "keytar": "4.13.0",
+    "keytar": "5.0.0",
     "lato-font": "3.0.0",
     "leaflet": "1.6.0",
     "lodash": "4.17.15",
@@ -85,8 +85,8 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "7.1.9",
-    "electron-builder": "22.2.0",
+    "electron": "7.1.10",
+    "electron-builder": "22.3.2",
     "electron-notarize": "0.2.1",
     "module-deps": "6.2.2",
     "resolve": "1.14.2",
