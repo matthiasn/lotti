@@ -80,19 +80,24 @@
                                     :width  "100%"}
                        :resizeMode "contain"
                        :source     {:uri (:image spotify)}}])
-             [view {:style {:padding-top    6
-                            :height         22
-                            :padding-left   22
-                            :padding-right  16
-                            :padding-bottom 2}}
-              [text {:style {:color         text-color
-                             :opacity       0.68
-                             :text-align    :right
-                             :font-size     12
-                             :font-family   :Montserrat-Regular
-                             :padding-right 3
-                             :font-weight   "100"}}
-               (h/hh-mm ts)]]
+             [view {:display         :flex
+                    :flex-direction  :row
+                    :justify-content :center
+                    :padding-top     7
+                    :opacity         0.68}
+              [text {:style {:color       text-color
+                             :text-align  "center"
+                             :font-family "Montserrat-SemiBold"
+                             :font-size   12}}
+               (s/upper-case
+                 (h/entry-date-fmt (:timestamp entry)))]
+              [text {:style {:color       text-color
+                             :text-align  "center"
+                             :margin-left 12
+                             :font-family "Montserrat-Regular"
+                             :font-size   12}}
+               (h/hh-mm (:timestamp entry))]]
+
              (if-let [spotify (:spotify entry)]
                [view {:style {:padding-top    1
                               :padding-left   4

@@ -12,15 +12,16 @@
 		13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB11A68108700A75B9A /* LaunchScreen.xib */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		16E8ECB5E9302E44AE6A72C8 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2EC0F1F9967194AEDF89FE26 /* libPods-meins.a */; };
+		2529C83973BB1276BBDE86D8 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D76C83EDA12503206F62E3C1 /* libPods-meins.a */; };
 		4C0B5FC7958946B1AB0CE717 /* libRealmReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A19503B19096498B94E081E8 /* libRealmReact.a */; };
 		5E9303DF98654384967FD081 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48AE0CA838C74A0F9AC833DA /* Montserrat-SemiBold.ttf */; };
-		8E3A92DBE289413B56321451 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
+		9888785D4D53DE01E78716A6 /* libPods-meinsNightly.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F901BE0C49ACBFA7839BCE0C /* libPods-meinsNightly.a */; };
 		AD67467E22D910B9002B1FB7 /* libMailCore-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD67465422D910B9002B1FB7 /* libMailCore-ios.a */; };
 		AD6746E522DC895D002B1FB7 /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
 		AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */; };
 		AD6AA066233F6CDF0092174A /* libRCTAppleHealthKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6AA043233F65AA0092174A /* libRCTAppleHealthKit.a */; };
 		AD6AA07F233F7BB40092174A /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6AA07E233F79F50092174A /* libRNMailCore.a */; };
+		AD8BDC4923DDB4670091D0ED /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D6E136EC6B5F480C9329FF74 /* libc++.tbd */; };
 		ADDDCEE42359139C00C5EFE0 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.m */; };
 		ADDDCEE52359139C00C5EFE0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		ADDDCEE72359139C00C5EFE0 /* libRNMailCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6AA07E233F79F50092174A /* libRNMailCore.a */; };
@@ -29,7 +30,6 @@
 		ADDDCEEA2359139C00C5EFE0 /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED297162215061F000B7C4FE /* JavaScriptCore.framework */; };
 		ADDDCEEB2359139C00C5EFE0 /* libRealmReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A19503B19096498B94E081E8 /* libRealmReact.a */; };
 		ADDDCEEC2359139C00C5EFE0 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */; };
-		ADDDCEED2359139C00C5EFE0 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = D6E136EC6B5F480C9329FF74 /* libc++.tbd */; };
 		ADDDCEEE2359139C00C5EFE0 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 65BCA4EE270E457584AA1A37 /* libz.tbd */; };
 		ADDDCEF12359139C00C5EFE0 /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = 008F07F21AC5B25A0029DE68 /* main.jsbundle */; };
 		ADDDCEF22359139C00C5EFE0 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
@@ -37,8 +37,6 @@
 		ADDDCEF42359139C00C5EFE0 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3206D8AAF46B4454A2F0A26C /* Montserrat-Medium.ttf */; };
 		ADDDCEF52359139C00C5EFE0 /* Montserrat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5D20F8B5C98844CA8FDEE8C9 /* Montserrat-Regular.ttf */; };
 		ADDDCEF62359139C00C5EFE0 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48AE0CA838C74A0F9AC833DA /* Montserrat-SemiBold.ttf */; };
-		B17A62DE4E187BC3AEE1EFF7 /* libPods-meins.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2EC0F1F9967194AEDF89FE26 /* libPods-meins.a */; };
-		BF000C0D6126ED0AB7AC4986 /* libPods-meinsNightly.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D5FDE6A9D872FBB030264767 /* libPods-meinsNightly.a */; };
 		E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 65BCA4EE270E457584AA1A37 /* libz.tbd */; };
 		EC54267ABE1C473CA035B27F /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3206D8AAF46B4454A2F0A26C /* Montserrat-Medium.ttf */; };
 		ED297163215061F000B7C4FE /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED297162215061F000B7C4FE /* JavaScriptCore.framework */; };
@@ -151,7 +149,6 @@
 		19958F53C016481F9109B97D /* libRCTAppleHealthKit.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRCTAppleHealthKit.a; sourceTree = "<group>"; };
 		262FB1565EBC482CB902D864 /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = SimpleLineIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/SimpleLineIcons.ttf"; sourceTree = "<group>"; };
 		2D16E6891FA4F8E400B85C8A /* libReact.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReact.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		2EC0F1F9967194AEDF89FE26 /* libPods-meins.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meins.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3206D8AAF46B4454A2F0A26C /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Montserrat-Medium.ttf"; path = "../assets/fonts/Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		3B62FFCA1B054193A3E48A4A /* Entypo.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Entypo.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Entypo.ttf"; sourceTree = "<group>"; };
 		3C56FD2ACA9F4A3E8A964BEA /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
@@ -179,17 +176,21 @@
 		AD6AA06F233F79F50092174A /* RNMailCore.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RNMailCore.xcodeproj; path = "../node_modules/@matthiasn/react-native-mailcore/ios/RNMailCore.xcodeproj"; sourceTree = "<group>"; };
 		AD7A621922D90DAE00056A04 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		AD7A621B22D90DB900056A04 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		AD8BDC4A23DDB4670091D0ED /* libc++abi.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++abi.tbd"; path = "usr/lib/libc++abi.tbd"; sourceTree = SDKROOT; };
+		AD8BDC4C23DDB4FE0091D0ED /* libreact-native-mapbox-gl.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = "libreact-native-mapbox-gl.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD8BDC5823DDB6AF0091D0ED /* libMapboxMobileEvents.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libMapboxMobileEvents.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADDDCEFD2359139C00C5EFE0 /* meinsNightly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = meinsNightly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADFDCE40235802C700EDD14A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = /Users/mn/github/meins/MeinsApp/ios/meins/Info.plist; sourceTree = "<absolute>"; };
 		CE3C398D218A448298BF10BA /* Octicons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Octicons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Octicons.ttf"; sourceTree = "<group>"; };
 		D16408854AA047FDAFCFCCD0 /* FontAwesome5_Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome5_Regular.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf"; sourceTree = "<group>"; };
-		D5FDE6A9D872FBB030264767 /* libPods-meinsNightly.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meinsNightly.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6E136EC6B5F480C9329FF74 /* libc++.tbd */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
+		D76C83EDA12503206F62E3C1 /* libPods-meins.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meins.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E74B42C04057435496B793F1 /* MaterialCommunityIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = MaterialCommunityIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf"; sourceTree = "<group>"; };
 		EC4BBEE8E36C4055BADFE7DB /* Foundation.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Foundation.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Foundation.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F026EFFA19D34AF5A3EB0679 /* FontAwesome.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf"; sourceTree = "<group>"; };
 		F637DF3630264546895472F0 /* Feather.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Feather.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Feather.ttf"; sourceTree = "<group>"; };
+		F901BE0C49ACBFA7839BCE0C /* libPods-meinsNightly.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meinsNightly.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FCCED74F18A3EBD942E68FBF /* Pods-meins.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins.release.xcconfig"; path = "Target Support Files/Pods-meins/Pods-meins.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -206,9 +207,7 @@
 				AD6746E822DC8D2E002B1FB7 /* HealthKit.framework in Frameworks */,
 				FA4C049D32F2465B9D215E9C /* libc++.tbd in Frameworks */,
 				E1307DD10C72450EA941AC97 /* libz.tbd in Frameworks */,
-				16E8ECB5E9302E44AE6A72C8 /* libPods-meins.a in Frameworks */,
-				B17A62DE4E187BC3AEE1EFF7 /* libPods-meins.a in Frameworks */,
-				8E3A92DBE289413B56321451 /* BuildFile in Frameworks */,
+				2529C83973BB1276BBDE86D8 /* libPods-meins.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,15 +215,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD8BDC4923DDB4670091D0ED /* libc++.tbd in Frameworks */,
 				ADDDCEE72359139C00C5EFE0 /* libRNMailCore.a in Frameworks */,
 				ADDDCEE82359139C00C5EFE0 /* libRCTAppleHealthKit.a in Frameworks */,
 				ADDDCEE92359139C00C5EFE0 /* libMailCore-ios.a in Frameworks */,
 				ADDDCEEA2359139C00C5EFE0 /* JavaScriptCore.framework in Frameworks */,
 				ADDDCEEB2359139C00C5EFE0 /* libRealmReact.a in Frameworks */,
 				ADDDCEEC2359139C00C5EFE0 /* HealthKit.framework in Frameworks */,
-				ADDDCEED2359139C00C5EFE0 /* libc++.tbd in Frameworks */,
 				ADDDCEEE2359139C00C5EFE0 /* libz.tbd in Frameworks */,
-				BF000C0D6126ED0AB7AC4986 /* libPods-meinsNightly.a in Frameworks */,
+				9888785D4D53DE01E78716A6 /* libPods-meinsNightly.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,6 +248,9 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AD8BDC5823DDB6AF0091D0ED /* libMapboxMobileEvents.a */,
+				AD8BDC4C23DDB4FE0091D0ED /* libreact-native-mapbox-gl.a */,
+				AD8BDC4A23DDB4670091D0ED /* libc++abi.tbd */,
 				AD6746E722DC8D2E002B1FB7 /* HealthKit.framework */,
 				AD67465422D910B9002B1FB7 /* libMailCore-ios.a */,
 				AD7A621B22D90DB900056A04 /* Security.framework */,
@@ -257,8 +259,8 @@
 				2D16E6891FA4F8E400B85C8A /* libReact.a */,
 				D6E136EC6B5F480C9329FF74 /* libc++.tbd */,
 				65BCA4EE270E457584AA1A37 /* libz.tbd */,
-				2EC0F1F9967194AEDF89FE26 /* libPods-meins.a */,
-				D5FDE6A9D872FBB030264767 /* libPods-meinsNightly.a */,
+				D76C83EDA12503206F62E3C1 /* libPods-meins.a */,
+				F901BE0C49ACBFA7839BCE0C /* libPods-meinsNightly.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -399,7 +401,7 @@
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				78746F7B5B90194E3A07191A /* [CP] Embed Pods Frameworks */,
-				257C2470FAA5BD7D74FF235F /* [CP] Copy Pods Resources */,
+				A46FCC2BE75EF340FD839717 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 				AD990A05235966A600390386 /* PBXBuildRule */,
@@ -421,7 +423,7 @@
 				ADDDCEF02359139C00C5EFE0 /* Resources */,
 				ADDDCEF72359139C00C5EFE0 /* Bundle React Native code and images */,
 				78746F7B5B90194E3A07191A /* [CP] Embed Pods Frameworks */,
-				257C2470FAA5BD7D74FF235F /* [CP] Copy Pods Resources */,
+				C9D700B9853B4491A3CD17CB /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -438,7 +440,7 @@
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1100;
+				LastUpgradeCheck = 1130;
 				ORGANIZATIONNAME = Facebook;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
@@ -621,7 +623,87 @@
 			shellPath = /bin/sh;
 			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
-		257C2470FAA5BD7D74FF235F /* [CP] Copy Pods Resources */ = {
+		78746F7B5B90194E3A07191A /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-meinsNightly/Pods-meinsNightly-frameworks.sh",
+				"${PODS_ROOT}/../../node_modules/@react-native-mapbox-gl/maps/ios/Mapbox.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Mapbox.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-meinsNightly/Pods-meinsNightly-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A46FCC2BE75EF340FD839717 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-meins/Pods-meins-resources.sh",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/AntDesign.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Entypo.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Feather.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Fontisto.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Foundation.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Ionicons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/MaterialIcons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Octicons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/SimpleLineIcons.ttf",
+				"${PODS_ROOT}/../../node_modules/react-native-vector-icons/Fonts/Zocial.ttf",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/AntDesign.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Entypo.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EvilIcons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Feather.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FontAwesome.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FontAwesome5_Brands.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FontAwesome5_Regular.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FontAwesome5_Solid.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Fontisto.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Foundation.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Ionicons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MaterialCommunityIcons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MaterialIcons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Octicons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SimpleLineIcons.ttf",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Zocial.ttf",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-meins/Pods-meins-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		ADDDCEF72359139C00C5EFE0 /* Bundle React Native code and images */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle React Native code and images";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
+		};
+		C9D700B9853B4491A3CD17CB /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -668,38 +750,6 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-meinsNightly/Pods-meinsNightly-resources.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		78746F7B5B90194E3A07191A /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-meinsNightly/Pods-meinsNightly-frameworks.sh",
-				"${PODS_ROOT}/../../node_modules/@react-native-mapbox-gl/maps/ios/Mapbox.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Mapbox.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-meinsNightly/Pods-meinsNightly-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		ADDDCEF72359139C00C5EFE0 /* Bundle React Native code and images */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Bundle React Native code and images";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
 		D9D1F7C97DE8E2B040CF88A1 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
