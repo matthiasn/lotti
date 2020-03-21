@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "1.0.164",
+  "version": "1.0.165",
   "private": true,
   "scripts": {
     "start": "node --max-old-space-size=8192 node_modules/react-native/local-cli/cli.js start",
@@ -43,6 +43,7 @@
     "react-native-permissions": "2.0.9",
     "react-native-qrcode-svg": "6.0.3",
     "react-native-reanimated": "1.7.0",
+    "react-native-screens": "^2.4.0",
     "react-native-super-grid": "3.1.2",
     "react-native-svg": "9.13.6",
     "react-native-swipe-cards": "0.1.1",
@@ -53,7 +54,7 @@
     "react-navigation-stack": "1.10.3",
     "react-navigation-tabs": "2.7.0",
     "react-navigation-transitions": "1.0.12",
-    "realm": "3.6.3",
+    "realm": "5.0.1",
     "s": "1.0.0",
     "stream": "0.0.2",
     "timers": "0.1.1",
