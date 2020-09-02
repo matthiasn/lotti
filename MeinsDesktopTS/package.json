@@ -19,6 +19,7 @@
   },
   "homepage": "https://gitlab.com/github.com/matthiasn/meins#readme",
   "dependencies": {
+    "edn-to-js": "^0.1.2",
     "electron": "^10.1.1",
     "loglevel": "^1.7.0",
     "typescript": "^4.0.2"
