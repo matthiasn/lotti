@@ -1,0 +1,29 @@
+{
+  "name": "meins-desktop",
+  "version": "0.1.1",
+  "description": "Meins Desktop App",
+  "main": "build/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "tsc && cp src/index.html build",
+    "start": "npm run compile && electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/github.com/matthiasn/meins.git"
+  },
+  "author": "Matthias Nehlsen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/github.com/matthiasn/meins/issues"
+  },
+  "homepage": "https://gitlab.com/github.com/matthiasn/meins#readme",
+  "dependencies": {
+    "electron": "^10.1.1",
+    "loglevel": "^1.7.0",
+    "typescript": "^4.0.2"
+  },
+  "devDependencies": {
+    "prettier": "2.1.1"
+  }
+}
