@@ -1,4 +1,4 @@
-import {Entry, TabSearchInput} from '../../generated/graphql'
+import {Entry, TabSearchInput} from '../../../generated/graphql'
 import {Context} from '../../types'
 import log from 'loglevel'
 import {ORMEntry} from '../../db/entities/entry'

@@ -2,7 +2,7 @@
   "name": "meins-desktop",
   "version": "0.1.1",
   "description": "Meins Desktop App",
-  "main": "build/index.js",
+  "main": "build/main/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "graphql-codegen --config codegen.yml",

@@ -17,7 +17,7 @@ function createWindow() {
     },
   })
 
-  const indexHTML = path.join(__dirname + '/index.html')
+  const indexHTML = path.join(__dirname + '/../index.html')
   win.loadFile(indexHTML).then(() => {
     log.info('Main window loaded')
     //importEdn()

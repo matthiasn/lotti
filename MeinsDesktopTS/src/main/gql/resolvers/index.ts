@@ -1,5 +1,5 @@
 import {tabSearch} from './tab-search'
-import {Entry} from '../../generated/graphql'
+import {Entry} from '../../../generated/graphql'
 import moment from 'moment'
 import {Context} from '../../types'
 
