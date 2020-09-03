@@ -5,7 +5,9 @@
   "main": "build/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "compile": "tsc && cp src/index.html build",
+    "codegen": "graphql-codegen --config codegen.yml",
+    "compile": "npm run codegen && tsc && cp src/index.html build",
+    "prettier": "npx prettier --write ./src/",
     "start": "npm run compile && electron ."
   },
   "repository": {
@@ -29,6 +31,10 @@
     "typescript": "^4.0.2"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "~1.17.0",
+    "@graphql-codegen/introspection": "~1.17.0",
+    "@graphql-codegen/typescript": "~1.17.0",
+    "@graphql-codegen/typescript-resolvers": "~1.17.0",
     "prettier": "2.1.1"
   }
 }
