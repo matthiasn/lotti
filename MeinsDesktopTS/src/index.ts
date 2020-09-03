@@ -3,6 +3,7 @@ import * as path from 'path'
 import * as electron from 'electron'
 import log from 'loglevel'
 import {importEdn} from './import'
+import {startApollo} from './gql'
 
 function createWindow() {
   log.setDefaultLevel('info')
@@ -19,8 +20,12 @@ function createWindow() {
   const indexHTML = path.join(__dirname + '/index.html')
   win.loadFile(indexHTML).then(() => {
     log.info('Main window loaded')
-    importEdn()
+    //importEdn()
+    startApollo()
   })
 }
 
-app.whenReady().then(createWindow)
+app
+  .whenReady()
+  .then(createWindow)
+  .catch((e) => log.error(e))

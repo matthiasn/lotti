@@ -19,8 +19,10 @@
   },
   "homepage": "https://gitlab.com/github.com/matthiasn/meins#readme",
   "dependencies": {
+    "apollo-server": "^2.17.0",
     "edn-to-js": "^0.1.2",
     "electron": "^10.1.1",
+    "graphql": "^15.3.0",
     "loglevel": "^1.7.0",
     "sqlite3": "^5.0.0",
     "typeorm": "^0.2.25",
