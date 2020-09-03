@@ -121,6 +121,7 @@ export const typeDefs = gql`
     primary_story: ID
     problem_cfg: ProblemCfg
     questionnaires: String
+    created: String
     reward: Reward
     saga_cfg: Saga
     saga_name: String
@@ -137,19 +138,22 @@ export const typeDefs = gql`
     vclock: [Vclock]
   }
 
+  input TabSearchInput {
+    flagged: Boolean
+    from: String
+    incremental: Boolean
+    skip: Int
+    take: Int
+    prio: Int
+    pvt: Boolean
+    query: String
+    starred: Boolean
+    story: ID
+    tab: String
+    to: String
+  }
+
   type Query {
-    tabSearch(
-      flagged: Boolean
-      from: String
-      incremental: Boolean
-      n: Int
-      prio: Int
-      pvt: Boolean
-      query: String
-      starred: Boolean
-      story: ID
-      tab: String
-      to: String
-    ): [Entry]
+    tabSearch(input: TabSearchInput!): [Entry]
   }
 `

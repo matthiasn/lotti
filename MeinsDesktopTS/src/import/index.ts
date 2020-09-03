@@ -4,7 +4,7 @@ import log from 'loglevel'
 import {asyncForEach} from './util'
 import fs from 'fs'
 import {dbConnection} from '../db'
-import {Entry} from '../db/entities/entry'
+import {ORMEntry} from '../db/entities/entry'
 import path from 'path'
 import os from 'os'
 
@@ -25,10 +25,10 @@ export async function processFile(fileName: string) {
       n += 1
       const db = await dbConnection()
       parsed = edn(line)
-      const entry = new Entry()
-      entry.entry = JSON.stringify(parsed)
+      const entry = new ORMEntry()
+      entry.entryJson = JSON.stringify(parsed)
       entry.timestamp = parsed.timestamp
-      const dbRes = await db.getRepository(Entry).insert(entry)
+      const dbRes = await db.getRepository(ORMEntry).insert(entry)
       if (n % 10000 === 0) {
         log.info('entryProcessor', fileName, n)
       }

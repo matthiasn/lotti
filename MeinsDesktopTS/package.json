@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "graphql-codegen --config codegen.yml",
-    "compile": "npm run codegen && tsc && cp src/index.html build",
+    "compile": "npm run codegen && npm run prettier && tsc && cp src/index.html build",
     "prettier": "npx prettier --write ./src/",
     "start": "npm run compile && electron ."
   },
@@ -26,6 +26,7 @@
     "electron": "^10.1.1",
     "graphql": "^15.3.0",
     "loglevel": "^1.7.0",
+    "moment": "^2.27.0",
     "sqlite3": "^5.0.0",
     "typeorm": "^0.2.25",
     "typescript": "^4.0.2"

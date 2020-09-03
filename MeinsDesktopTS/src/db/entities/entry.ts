@@ -1,13 +1,15 @@
 import {Entity, PrimaryGeneratedColumn, Column, BaseEntity} from 'typeorm'
+import {Index} from 'typeorm/index'
 
 @Entity({name: 'entry'})
-export class Entry extends BaseEntity {
+export class ORMEntry extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number | undefined
 
   @Column()
-  entry: string = ''
+  entryJson: string = ''
 
   @Column()
+  @Index()
   timestamp: number = 0
 }

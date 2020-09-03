@@ -5,7 +5,7 @@ import log from 'loglevel'
 import * as path from 'path'
 import * as os from 'os'
 import {dbConnection} from '../db'
-import {Entry} from '../db/entities/entry'
+import {ORMEntry} from '../db/entities/entry'
 import {asyncForEach} from './util'
 
 const directoryPath = '/tmp/daily-logs'
@@ -19,10 +19,10 @@ async function entryProcessor(line: string) {
   try {
     const db = await dbConnection()
     const parsed = edn(line)
-    const entry = new Entry()
-    entry.entry = JSON.stringify(parsed)
+    const entry = new ORMEntry()
+    entry.entryJson = JSON.stringify(parsed)
     entry.timestamp = parsed.timestamp
-    const dbRes = await db.getRepository(Entry).insert(entry)
+    const dbRes = await db.getRepository(ORMEntry).insert(entry)
   } catch (e) {
     log.error('entryProcessor', e)
   }

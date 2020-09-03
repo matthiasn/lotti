@@ -147,6 +147,7 @@ export type Entry = {
   primary_story?: Maybe<Scalars['ID']>
   problem_cfg?: Maybe<ProblemCfg>
   questionnaires?: Maybe<Scalars['String']>
+  created?: Maybe<Scalars['String']>
   reward?: Maybe<Reward>
   saga_cfg?: Maybe<Saga>
   saga_name?: Maybe<Scalars['String']>
@@ -163,16 +164,12 @@ export type Entry = {
   vclock?: Maybe<Array<Maybe<Vclock>>>
 }
 
-export type Query = {
-  __typename?: 'Query'
-  tabSearch?: Maybe<Array<Maybe<Entry>>>
-}
-
-export type QueryTabSearchArgs = {
+export type TabSearchInput = {
   flagged?: Maybe<Scalars['Boolean']>
   from?: Maybe<Scalars['String']>
   incremental?: Maybe<Scalars['Boolean']>
-  n?: Maybe<Scalars['Int']>
+  skip?: Maybe<Scalars['Int']>
+  take?: Maybe<Scalars['Int']>
   prio?: Maybe<Scalars['Int']>
   pvt?: Maybe<Scalars['Boolean']>
   query?: Maybe<Scalars['String']>
@@ -180,6 +177,15 @@ export type QueryTabSearchArgs = {
   story?: Maybe<Scalars['ID']>
   tab?: Maybe<Scalars['String']>
   to?: Maybe<Scalars['String']>
+}
+
+export type Query = {
+  __typename?: 'Query'
+  tabSearch?: Maybe<Array<Maybe<Entry>>>
+}
+
+export type QueryTabSearchArgs = {
+  input: TabSearchInput
 }
 
 export type ResolverTypeWrapper<T> = Promise<T> | T
@@ -314,6 +320,7 @@ export type ResolversTypes = {
   Vclock: ResolverTypeWrapper<Vclock>
   Entry: ResolverTypeWrapper<Entry>
   Float: ResolverTypeWrapper<Scalars['Float']>
+  TabSearchInput: TabSearchInput
   Query: ResolverTypeWrapper<{}>
 }
 
@@ -336,6 +343,7 @@ export type ResolversParentTypes = {
   Vclock: Vclock
   Entry: Entry
   Float: Scalars['Float']
+  TabSearchInput: TabSearchInput
   Query: {}
 }
 
@@ -614,6 +622,7 @@ export type EntryResolvers<
     ParentType,
     ContextType
   >
+  created?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>
   reward?: Resolver<Maybe<ResolversTypes['Reward']>, ParentType, ContextType>
   saga_cfg?: Resolver<Maybe<ResolversTypes['Saga']>, ParentType, ContextType>
   saga_name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>
@@ -651,7 +660,7 @@ export type QueryResolvers<
     Maybe<Array<Maybe<ResolversTypes['Entry']>>>,
     ParentType,
     ContextType,
-    RequireFields<QueryTabSearchArgs, never>
+    RequireFields<QueryTabSearchArgs, 'input'>
   >
 }
 
