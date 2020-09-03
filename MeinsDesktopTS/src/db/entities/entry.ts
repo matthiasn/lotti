@@ -7,6 +7,7 @@ export class ORMEntry extends BaseEntity {
   id: number | undefined
 
   @Column()
+  @Index({fulltext: true})
   entryJson: string = ''
 
   @Column()
