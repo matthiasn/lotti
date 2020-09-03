@@ -22,6 +22,8 @@
     "edn-to-js": "^0.1.2",
     "electron": "^10.1.1",
     "loglevel": "^1.7.0",
+    "sqlite3": "^5.0.0",
+    "typeorm": "^0.2.25",
     "typescript": "^4.0.2"
   },
   "devDependencies": {

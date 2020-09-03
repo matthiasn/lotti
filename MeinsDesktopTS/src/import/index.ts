@@ -1,10 +1,53 @@
+// @ts-ignore
+import edn from 'edn-to-js'
 import log from 'loglevel'
-import {listJrnFiles, processFile} from './files'
+import {asyncForEach} from './util'
+import fs from 'fs'
+import {dbConnection} from '../db'
+import {Entry} from '../db/entities/entry'
+import path from 'path'
+import os from 'os'
 
-export function importEdn(): boolean {
+let n = 0
+const directoryPath = '/tmp/daily-logs'
+const fileRegex = /\d{4}-\d{2}-\d{2}.jrn/g
+
+export function listJrnFiles() {
+  return fs.readdirSync(directoryPath).filter((s) => s.match(fileRegex))
+}
+
+export async function processFile(fileName: string) {
+  async function entryProcessor(line: string) {
+    if (line.length === 0) return
+
+    let parsed
+    try {
+      n += 1
+      const db = await dbConnection()
+      parsed = edn(line)
+      const entry = new Entry()
+      entry.entry = JSON.stringify(parsed)
+      entry.timestamp = parsed.timestamp
+      const dbRes = await db.getRepository(Entry).insert(entry)
+      if (n % 10000 === 0) {
+        log.info('entryProcessor', fileName, n)
+      }
+    } catch (e) {
+      log.error('entryProcessor', fileName, e.message)
+      log.error('line', line)
+      log.error('parsed', parsed)
+    }
+  }
+
+  const filePath = path.join(directoryPath, fileName)
+  const lines: string[] = fs.readFileSync(filePath).toString().split('\n')
+  await asyncForEach(lines, entryProcessor)
+}
+
+export async function importEdn(): Promise<boolean> {
   const files = listJrnFiles()
   log.info(files)
-  files.forEach(processFile)
+  await asyncForEach(files, processFile)
 
   return true
 }
