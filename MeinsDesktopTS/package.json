@@ -25,6 +25,7 @@
     "edn-to-js": "^0.1.2",
     "electron": "^10.1.1",
     "graphql": "^15.3.0",
+    "graphql-transport-electron": "^1.0.5",
     "loglevel": "^1.7.0",
     "moment": "^2.27.0",
     "sqlite3": "^5.0.0",
