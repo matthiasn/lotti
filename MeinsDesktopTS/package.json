@@ -10,7 +10,8 @@
     "prettier": "npx prettier --write ./src/",
     "start": "yarn run compile && electron .",
     "sass": "npx node-sass src/scss/ -o build",
-    "sass-watch": "npx node-sass -w src/scss/ -o build"
+    "sass-watch": "npx node-sass -w src/scss/ -o build",
+    "build": "webpack --config ./webpack.config.js --display-error-details"
   },
   "repository": {
     "type": "git",
@@ -50,6 +51,9 @@
     "electron": "^10.1.1",
     "electron-builder": "^22.8.0",
     "node-sass": "^4.14.1",
-    "prettier": "2.1.1"
+    "prettier": "2.1.1",
+    "ts-loader": "^8.0.3",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   }
 }
