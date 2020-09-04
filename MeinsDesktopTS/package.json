@@ -49,6 +49,7 @@
     "@graphql-codegen/introspection": "~1.17.0",
     "@graphql-codegen/typescript": "~1.17.0",
     "@graphql-codegen/typescript-resolvers": "~1.17.0",
+    "electron-builder": "^22.8.0",
     "prettier": "2.1.1"
   }
 }
