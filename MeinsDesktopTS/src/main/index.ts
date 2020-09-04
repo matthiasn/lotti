@@ -8,6 +8,8 @@ import {startApollo} from './gql'
 function createWindow() {
   log.setDefaultLevel('info')
   log.info('App is ready')
+  startApollo()
+
   const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize
   const win = new BrowserWindow({
     width: width - 100,
@@ -21,7 +23,6 @@ function createWindow() {
   win.loadFile(indexHTML).then(() => {
     log.info('Main window loaded')
     //importEdn()
-    startApollo()
   })
 }
 

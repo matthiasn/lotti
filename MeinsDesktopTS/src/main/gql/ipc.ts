@@ -1,7 +1,9 @@
 import {ipcMain} from 'electron'
-import {createSchemaLink, createIpcExecutor} from 'graphql-transport-electron'
-const {makeExecutableSchema} = require('apollo-server')
-
+import {
+  createSchemaLink,
+  createIpcExecutor,
+} from '@matthiasn/graphql-transport-electron'
+import {makeExecutableSchema} from 'apollo-server'
 import {typeDefs} from './schema'
 import {resolvers} from './resolvers'
 import log from 'loglevel'
