@@ -7,12 +7,12 @@ import moment from 'moment'
 export function Spotify({entry}: {entry: Entry}) {
   const spotify = entry?.spotify
   const image = spotify?.image
+  const when = moment(parseInt(entry.timestamp)).fromNow()
 
   if (!spotify) return null
 
   return (
-    <div>
-      {moment(parseInt(entry.timestamp)).fromNow()}
+    <div className={'img-container'}>
       {image && (
         <img
           className={'album-cover'}
@@ -31,7 +31,7 @@ export function Journal() {
   }).data?.tabSearch
 
   return (
-    <div>
+    <div className={'spotify-list'}>
       {entries &&
         entries.map((entry: Entry) => {
           return <Spotify entry={entry} />
