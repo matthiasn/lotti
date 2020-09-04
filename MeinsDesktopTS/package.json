@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "codegen": "graphql-codegen --config codegen.yml",
-    "compile": "npm run codegen && npm run sass && npm run prettier && tsc && cp src/index.html build",
+    "compile": "yarn run codegen && yarn run sass && yarn run prettier && tsc && cp src/index.html build",
     "prettier": "npx prettier --write ./src/",
-    "start": "npm run compile && electron .",
+    "start": "yarn run compile && electron .",
     "sass": "npx node-sass src/scss/ -o build",
     "sass-watch": "npx node-sass -w src/scss/ -o build"
   },
