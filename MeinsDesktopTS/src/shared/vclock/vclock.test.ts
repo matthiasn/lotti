@@ -1,18 +1,54 @@
-import {VClock} from './index'
+import {compareVClocks, VClock, VClockNode, VClockStatus} from './index'
 
-describe('Vector clock implementation', () => {
+describe('Vector clock comparison function', () => {
+  test('returns EQUAL when both clocks are the same & empty', () => {
+    const vc0: VClock = []
 
-  test('generates Firebase token for random id', async () => {
-    const vc0 = <VClock>{
-      hostId: "foo",
-      seq: 0,
-    }
+    const res = compareVClocks(vc0, vc0)
+    expect(res).toEqual(VClockStatus.EQUAL)
+  })
 
-    const vc1 = <VClock>{
-      hostId: "foo",
-      seq: 1,
-    }
+  test('returns EQUAL when both clocks are the same', () => {
+    const vc0: VClock = [
+      <VClockNode>{
+        hostId: "foo",
+        seq: 0,
+      },
+      <VClockNode>{
+        hostId: "bar",
+        seq: 0,
+      },
+    ]
 
-    expect(vc0).not.toEqual(vc1)
+    const res = compareVClocks(vc0, vc0)
+    expect(res).toEqual(VClockStatus.EQUAL)
+  })
+
+  test('return EQUAL when both clocks are the same but in different order', () => {
+    const vc0: VClock = [
+      <VClockNode>{
+        hostId: "foo",
+        seq: 0,
+      },
+      <VClockNode>{
+        hostId: "bar",
+        seq: 0,
+      },
+    ]
+
+    const vc1: VClock = [
+      <VClockNode>{
+        hostId: "bar",
+        seq: 0,
+      },
+      <VClockNode>{
+        hostId: "foo",
+        seq: 0,
+      },
+    ]
+
+    const res = compareVClocks(vc0, vc1)
+    expect(res).toEqual(VClockStatus.EQUAL)
   })
 })
+
