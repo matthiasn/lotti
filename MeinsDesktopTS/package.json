@@ -4,7 +4,7 @@
   "description": "Meins Desktop App",
   "main": "build/main/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --coverage --silent",
     "codegen": "graphql-codegen --config codegen.yml",
     "compile": "yarn run codegen && yarn run sass && yarn run prettier && tsc && cp src/index.html build",
     "prettier": "npx prettier --write ./src/",
@@ -59,6 +59,7 @@
     "jest": "~26.4.0",
     "node-sass": "^4.14.1",
     "prettier": "2.1.1",
+    "ts-jest": "~26.3.0",
     "ts-loader": "^8.0.3",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
