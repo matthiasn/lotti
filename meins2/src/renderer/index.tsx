@@ -4,7 +4,7 @@ import { ApolloProvider } from '@apollo/client'
 import { apolloClient } from './gql/client'
 import '../scss/meins.scss'
 import { Stats } from './stats'
-import {Briefing} from './briefing'
+import { Briefing } from './briefing'
 
 const client = apolloClient()
 

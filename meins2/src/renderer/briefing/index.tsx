@@ -1,6 +1,6 @@
 import React from 'react'
-import {OpenTasks} from './open-tasks'
-import {StartedTasks} from './started-tasks'
+import { OpenTasks } from './open-tasks'
+import { StartedTasks } from './started-tasks'
 
 export function Briefing() {
   return (
@@ -9,8 +9,7 @@ export function Briefing() {
         <div className="journal">
           <div className="journal-entries">
             <div className="briefing">
-              <div className="briefing-header">
-              </div>
+              <div className="briefing-header"></div>
               <div className="scroll">
                 <StartedTasks />
                 <OpenTasks />
