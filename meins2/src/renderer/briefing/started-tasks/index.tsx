@@ -12,7 +12,7 @@ function StartedTask({ item }: { item: Entry }) {
   return (
     <tr className="task">
       <td className="tooltip">
-        <i className="fal fa-info-circle" />X
+        <i className="fal fa-info-circle" />
         <div className="tooltiptext">
           <div>
             <span className="story">{item.story?.story_name}</span>

@@ -9,6 +9,18 @@ rules.push({
 })
 
 rules.push({
+  test: /\.css$/i,
+  use: [
+    {
+      loader: 'style-loader',
+    },
+    {
+      loader: 'css-loader',
+    },
+  ],
+})
+
+rules.push({
   test: /\.s[ac]ss$/i,
   use: [
     {
