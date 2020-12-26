@@ -111,6 +111,7 @@
         server (-> schema
                    (lp/service-map {:graphiql true
                                     :port     port})
+                   (merge {::http/allowed-origins (constantly true)})
                    (assoc-in [::http/host] "localhost")
                    http/create-server)]
     (swap! state assoc-in [:server] server)
