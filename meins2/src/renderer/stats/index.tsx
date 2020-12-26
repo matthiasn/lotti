@@ -20,6 +20,8 @@ export function Stats() {
       {`${data.entry_count} entries | `}
       {`${data.tag_count} tags | `}
       {`${data.mention_count} people | `}
+      {`${data.hours_logged} hours | `}
+      {`${data.open_tasks?.length} open tasks | `}
       {`${data.completed_count} done | `}
       {`${data.word_count} words | `}
       {`${data.active_threads} threads | `}

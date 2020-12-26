@@ -8,5 +8,11 @@ export const STATS = gql`
         entry_count
         mention_count
         word_count
+
+        hours_logged
+
+        open_tasks {
+            timestamp
+        }
     }
 `

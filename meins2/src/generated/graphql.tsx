@@ -728,7 +728,11 @@ export type StatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type StatsQuery = (
   { __typename?: 'QueryRoot' }
-  & Pick<QueryRoot, 'active_threads' | 'completed_count' | 'tag_count' | 'entry_count' | 'mention_count' | 'word_count'>
+  & Pick<QueryRoot, 'active_threads' | 'completed_count' | 'tag_count' | 'entry_count' | 'mention_count' | 'word_count' | 'hours_logged'>
+  & { open_tasks?: Maybe<Array<Maybe<(
+    { __typename?: 'Entry' }
+    & Pick<Entry, 'timestamp'>
+  )>>> }
 );
 
 
@@ -740,6 +744,10 @@ export const StatsDocument = gql`
   entry_count
   mention_count
   word_count
+  hours_logged
+  open_tasks {
+    timestamp
+  }
 }
     `;
 

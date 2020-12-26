@@ -6,7 +6,7 @@
   "main": ".webpack/main",
   "scripts": {
     "codegen": "graphql-codegen --config codegen.yml",
-    "start": "electron-forge start",
+    "start": "yarn codegen && electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
