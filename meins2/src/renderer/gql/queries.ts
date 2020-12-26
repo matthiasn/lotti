@@ -7,5 +7,6 @@ export const STATS = gql`
         tag_count
         entry_count
         mention_count
+        word_count
     }
 `

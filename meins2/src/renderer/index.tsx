@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import {ApolloProvider} from '@apollo/client'
 import {apolloClient} from './gql/client'
-import './index.css';
+import '../scss/meins.scss'
 import {Stats} from './stats'
 
 const client = apolloClient()
