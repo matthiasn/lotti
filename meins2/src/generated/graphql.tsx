@@ -728,12 +728,13 @@ export type StatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type StatsQuery = (
   { __typename?: 'QueryRoot' }
-  & Pick<QueryRoot, 'completed_count' | 'tag_count' | 'entry_count' | 'mention_count'>
+  & Pick<QueryRoot, 'active_threads' | 'completed_count' | 'tag_count' | 'entry_count' | 'mention_count'>
 );
 
 
 export const StatsDocument = gql`
     query stats {
+  active_threads
   completed_count
   tag_count
   entry_count
