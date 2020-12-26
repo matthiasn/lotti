@@ -761,7 +761,10 @@ export type StartedTasksQuery = (
     & { comments?: Maybe<Array<Maybe<(
       { __typename?: 'Entry' }
       & Pick<Entry, 'timestamp' | 'completed_time'>
-    )>>>, task?: Maybe<(
+    )>>>, story?: Maybe<(
+      { __typename?: 'Story' }
+      & Pick<Story, 'story_name'>
+    )>, task?: Maybe<(
       { __typename?: 'Task' }
       & Pick<Task, 'priority' | 'closed' | 'completion_ts' | 'estimate_m' | 'on_hold' | 'done'>
     )> }
@@ -855,6 +858,9 @@ export const StartedTasksDocument = gql`
     comments {
       timestamp
       completed_time
+    }
+    story {
+      story_name
     }
     task {
       priority

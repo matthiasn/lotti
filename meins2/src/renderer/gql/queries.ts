@@ -28,7 +28,6 @@ export const OPEN_TASKS = gql`
   }
 `
 
-
 export const STARTED_TASKS = gql`
     query startedTasks {
         started_tasks {
@@ -39,6 +38,9 @@ export const STARTED_TASKS = gql`
             comments {
                 timestamp
                 completed_time
+            }
+            story {
+                story_name
             }
             task {
                 priority
