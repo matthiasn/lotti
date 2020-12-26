@@ -735,6 +735,21 @@ export type StatsQuery = (
   )>>> }
 );
 
+export type OpenTasksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type OpenTasksQuery = (
+  { __typename?: 'QueryRoot' }
+  & { open_tasks?: Maybe<Array<Maybe<(
+    { __typename?: 'Entry' }
+    & Pick<Entry, 'timestamp' | 'md'>
+    & { task?: Maybe<(
+      { __typename?: 'Task' }
+      & Pick<Task, 'priority'>
+    )> }
+  )>>> }
+);
+
 
 export const StatsDocument = gql`
     query stats {
@@ -775,3 +790,39 @@ export function useStatsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Stat
 export type StatsQueryHookResult = ReturnType<typeof useStatsQuery>;
 export type StatsLazyQueryHookResult = ReturnType<typeof useStatsLazyQuery>;
 export type StatsQueryResult = Apollo.QueryResult<StatsQuery, StatsQueryVariables>;
+export const OpenTasksDocument = gql`
+    query openTasks {
+  open_tasks {
+    timestamp
+    md
+    task {
+      priority
+    }
+  }
+}
+    `;
+
+/**
+ * __useOpenTasksQuery__
+ *
+ * To run a query within a React component, call `useOpenTasksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOpenTasksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOpenTasksQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useOpenTasksQuery(baseOptions?: Apollo.QueryHookOptions<OpenTasksQuery, OpenTasksQueryVariables>) {
+        return Apollo.useQuery<OpenTasksQuery, OpenTasksQueryVariables>(OpenTasksDocument, baseOptions);
+      }
+export function useOpenTasksLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<OpenTasksQuery, OpenTasksQueryVariables>) {
+          return Apollo.useLazyQuery<OpenTasksQuery, OpenTasksQueryVariables>(OpenTasksDocument, baseOptions);
+        }
+export type OpenTasksQueryHookResult = ReturnType<typeof useOpenTasksQuery>;
+export type OpenTasksLazyQueryHookResult = ReturnType<typeof useOpenTasksLazyQuery>;
+export type OpenTasksQueryResult = Apollo.QueryResult<OpenTasksQuery, OpenTasksQueryVariables>;

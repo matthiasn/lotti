@@ -16,3 +16,15 @@ export const STATS = gql`
         }
     }
 `
+
+export const OPEN_TASKS = gql`
+    query openTasks {
+        open_tasks {
+            timestamp
+            md
+            task {
+                priority
+            }
+        }
+    }
+`
