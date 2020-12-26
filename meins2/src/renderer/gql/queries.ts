@@ -8,9 +8,7 @@ export const STATS = gql`
     entry_count
     mention_count
     word_count
-
     hours_logged
-
     open_tasks {
       timestamp
     }
@@ -22,6 +20,7 @@ export const OPEN_TASKS = gql`
     open_tasks {
       timestamp
       md
+      text
       task {
         priority
       }

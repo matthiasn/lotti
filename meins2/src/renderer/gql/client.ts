@@ -39,7 +39,7 @@ export function apolloClient() {
       const [_, options] = pl
       const body = JSON.parse(options.body.toString())
       console.log(
-        `📡${body.operationName || ''}\n${body.query}`,
+        `📡 ${body.operationName || ''}\n${body.query}`,
         body.variables,
       )
       const res = fetch(...pl)

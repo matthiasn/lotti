@@ -17,8 +17,7 @@ export function Stats() {
 
   return (
     <div className={'stats-string'}>
-      {`meins `}
-      <span className={'highlight'}>{appVersion}</span>
+      <span className={'highlight'}>meins {appVersion}</span>
       {` beta | `}
       {`${data.entry_count} entries | `}
       {`${data.tag_count} tags | `}
@@ -27,7 +26,8 @@ export function Stats() {
       {`${data.open_tasks?.length} open tasks | `}
       {`${data.completed_count} done | `}
       {`${data.word_count} words | `}
-      {`${data.active_threads} threads | `}© Matthias Nehlsen
+      {`${data.active_threads} threads | `}
+      <span className={'highlight'}>© Matthias Nehlsen</span>
     </div>
   )
 }
