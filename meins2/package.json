@@ -65,6 +65,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.3.6",
+    "@types/react-infinite-calendar": "^2.3.5",
     "@types/react-list": "^0.8.5",
     "electron-squirrel-startup": "^1.0.0",
     "graphql": "^15.4.0",
@@ -74,6 +75,7 @@
     "normalize.css": "^8.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
+    "react-infinite-calendar": "^2.3.1",
     "react-list": "^0.8.16",
     "typeface-montserrat": "^1.1.13",
     "typeface-oswald": "^1.1.13"

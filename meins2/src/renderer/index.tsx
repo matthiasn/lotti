@@ -10,7 +10,8 @@ import 'typeface-montserrat/index.css'
 import 'typeface-oswald/index.css'
 import { Stats } from './stats'
 import { Briefing } from './briefing'
-import {TopBar} from './modules/top-bar'
+import { TopBar } from './modules/top-bar'
+import { InfiniteCalPicker } from './modules/infinite-calendar'
 
 const client = apolloClient()
 
@@ -21,6 +22,7 @@ function App() {
         <div className={'grid'}>
           <div className={'wrapper col-3'}>
             <TopBar />
+            <InfiniteCalPicker />
             <Briefing />
           </div>
         </div>
