@@ -1,5 +1,5 @@
 import React from 'react'
-import InifiniteCalendar, {
+import InfiniteCalendar, {
   Calendar,
   withDateSelection,
   withKeyboardSupport,
@@ -11,7 +11,7 @@ export function InfiniteCalPicker() {
   return (
     <div className="inf-cal">
       <div className="infinite-cal">
-        <InifiniteCalendar
+        <InfiniteCalendar
           width={400}
           height={600}
           selected={today}

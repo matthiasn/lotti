@@ -12,6 +12,7 @@ import { Stats } from './stats'
 import { Briefing } from './briefing'
 import { TopBar } from './modules/top-bar'
 import { InfiniteCalPicker } from './modules/infinite-calendar'
+import { BusyStatus } from './modules/busy-status'
 
 const client = apolloClient()
 
@@ -22,6 +23,7 @@ function App() {
         <div className={'grid'}>
           <div className={'wrapper col-3'}>
             <TopBar />
+            <BusyStatus />
             <InfiniteCalPicker />
             <Briefing />
           </div>
