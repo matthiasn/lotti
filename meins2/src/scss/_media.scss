@@ -16,11 +16,10 @@ video {
 }
 
 .wavesurfer {
-
   .controls {
     user-select: none;
 
-    .ctrl-btn  {
+    .ctrl-btn {
       cursor: pointer;
       display: inline-block;
       margin-top: 5px;
@@ -33,19 +32,19 @@ video {
     }
 
     i {
-
     }
 
     .time {
       font-family: monospace;
       font-size: 0.7em;
       font-weight: bold;
-      .duration, .progress {
+      .duration,
+      .progress {
         padding: 0 2px;
       }
     }
 
-    input[type="range"] {
+    input[type='range'] {
       border: 0;
       box-shadow: none;
       margin-left: 5px;

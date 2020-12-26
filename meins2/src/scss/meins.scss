@@ -2,7 +2,7 @@
 
 body {
   background-color: $body-background-color;
-  box-shadow: 0 0 1px rgba(0, 0, 0, .05);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.05);
   color: $font-color;
   font-family: $font-family;
   font-size: 12px;
@@ -54,8 +54,8 @@ h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
-  background-color: rgba(0, 0, 0, .5);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 4px;
 }
 

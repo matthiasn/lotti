@@ -13,17 +13,18 @@
 ========================================================================== */
 /*  Horizontal Gradient
 ========================================================================== */
-.carousel .control-arrow, .carousel.carousel-slider .control-arrow {
-  -webkit-transition: all .25s ease-in;
+.carousel .control-arrow,
+.carousel.carousel-slider .control-arrow {
+  -webkit-transition: all 0.25s ease-in;
   background: none;
   border: 0;
   cursor: pointer;
   filter: alpha(opacity=40);
   font-size: 32px;
-  opacity: .4;
+  opacity: 0.4;
   position: absolute;
   top: 20px;
-  transition: opacity .25s ease-in;
+  transition: opacity 0.25s ease-in;
   z-index: 2;
 }
 
@@ -32,7 +33,8 @@
   opacity: 1;
 }
 
-.carousel .control-arrow:before, .carousel.carousel-slider .control-arrow:before {
+.carousel .control-arrow:before,
+.carousel.carousel-slider .control-arrow:before {
   border-bottom: 8px solid transparent;
   border-top: 8px solid transparent;
   content: '';
@@ -90,7 +92,7 @@
 }
 
 .carousel .thumbs-wrapper {
-  }
+}
 
 .carousel .thumbs {
   -webkit-transform: translate3d(0, 0, 0);
@@ -117,12 +119,13 @@
     color: $orange;
     position: absolute;
     right: 4px;
-    text-shadow: 0 0 4px rgba(0, 0, 0, .9);
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
     top: 4px;
   }
 }
 
-.carousel .thumb.selected, .carousel .thumb:hover {
+.carousel .thumb.selected,
+.carousel .thumb:hover {
   border: 2px solid #fff;
   padding: 1px;
 }
@@ -151,7 +154,7 @@
 }
 
 .carousel.carousel-slider .control-arrow:hover {
-  background: rgba(0, 0, 0, .2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .carousel .slider-wrapper {
@@ -187,8 +190,8 @@
 }
 
 .carousel .slider.animated {
-  -webkit-transition: all .25s ease-in-out;
-  transition: all .25s ease-in-out;
+  -webkit-transition: all 0.25s ease-in-out;
+  transition: all 0.25s ease-in-out;
 }
 
 .carousel .slide {
@@ -221,7 +224,7 @@
   font-size: $font-size-xs;
   left: 50%;
   margin-left: -40%;
-  opacity: .25;
+  opacity: 0.25;
   padding: 3px 8px;
   position: absolute;
   text-align: center;
@@ -251,12 +254,12 @@
   padding: 5px;
   position: absolute;
   right: 0;
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, .9);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.9);
   top: 0;
 }
 
 .carousel:hover .slide .legend {
-  opacity: .75;
+  opacity: 0.75;
 }
 
 .gallery {
@@ -352,7 +355,6 @@
         border-top-right-radius: 0;
 
         .entry {
-
           .story-name {
             margin-bottom: 0;
           }
@@ -373,7 +375,7 @@
 
       time {
         display: block;
-        font-size: .9em;
+        font-size: 0.9em;
         margin: 10px;
       }
 
@@ -395,11 +397,14 @@
         }
       }
 
-      h1, h2, h3 {
+      h1,
+      h2,
+      h3 {
         font-size: 1em;
       }
 
-      .map, .mapbox {
+      .map,
+      .mapbox {
         background-color: #333;
         height: 40vh;
         position: relative;

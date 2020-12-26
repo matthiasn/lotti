@@ -69,7 +69,8 @@
   color: #fff;
 }
 
-.CalendarDay--selected-span.CalendarDay--hovered, .CalendarDay--selected-span:active {
+.CalendarDay--selected-span.CalendarDay--hovered,
+.CalendarDay--selected-span:active {
   background: #33dacd;
   border: 1px double #00a699;
 }
@@ -183,9 +184,9 @@
 }
 
 .CalendarMonthGrid--animating {
-  -moz-transition: -moz-transform .2s ease-in-out;
-  -webkit-transition: -webkit-transform .2s ease-in-out;
-  transition: transform .2s ease-in-out;
+  -moz-transition: -moz-transform 0.2s ease-in-out;
+  -webkit-transition: -webkit-transform 0.2s ease-in-out;
+  transition: transform 0.2s ease-in-out;
   z-index: 1;
 }
 
@@ -299,7 +300,7 @@
 }
 
 .transition-container--horizontal {
-  transition: height .2s ease-in-out;
+  transition: height 0.2s ease-in-out;
 }
 
 .transition-container--vertical {
@@ -326,7 +327,8 @@
   color: #757575;
 }
 
-.DayPickerNavigation__prev--default:focus, .DayPickerNavigation__prev--default:hover,
+.DayPickerNavigation__prev--default:focus,
+.DayPickerNavigation__prev--default:hover,
 .DayPickerNavigation__next--default:focus,
 .DayPickerNavigation__next--default:hover {
   border: 1px solid #c4c4c4;
@@ -454,7 +456,8 @@
   border-right: 33px solid #008489;
 }
 
-.DayPickerKeyboardShortcuts__show--bottom-right .DayPickerKeyboardShortcuts__show_span {
+.DayPickerKeyboardShortcuts__show--bottom-right
+  .DayPickerKeyboardShortcuts__show_span {
   bottom: 0;
   right: -28px;
 }
@@ -470,7 +473,8 @@
   border-right: 33px solid #008489;
 }
 
-.DayPickerKeyboardShortcuts__show--top-right .DayPickerKeyboardShortcuts__show_span {
+.DayPickerKeyboardShortcuts__show--top-right
+  .DayPickerKeyboardShortcuts__show_span {
   right: -28px;
   top: 1px;
 }
@@ -486,7 +490,8 @@
   border-left: 33px solid #008489;
 }
 
-.DayPickerKeyboardShortcuts__show--top-left .DayPickerKeyboardShortcuts__show_span {
+.DayPickerKeyboardShortcuts__show--top-left
+  .DayPickerKeyboardShortcuts__show_span {
   left: -28px;
   top: 1px;
 }
@@ -535,7 +540,8 @@
   width: 15px;
 }
 
-.DayPickerKeyboardShortcuts__close svg:hover, .DayPickerKeyboardShortcuts__close svg:focus {
+.DayPickerKeyboardShortcuts__close svg:hover,
+.DayPickerKeyboardShortcuts__close svg:focus {
   fill: #82888a;
 }
 
@@ -600,7 +606,7 @@
 .DateInput--with-caret::after {
   border: 10px solid transparent;
   bottom: auto;
-  content: "";
+  content: '';
   display: inline-block;
   left: 22px;
   position: absolute;
@@ -756,7 +762,8 @@
   width: 15px;
 }
 
-.DateRangePicker__close:hover, .DateRangePicker__close:focus {
+.DateRangePicker__close:hover,
+.DateRangePicker__close:focus {
   color: #b0b3b4;
   text-decoration: none;
 }
@@ -906,7 +913,8 @@
   width: 15px;
 }
 
-.SingleDatePicker__close:hover, .SingleDatePicker__close:focus {
+.SingleDatePicker__close:hover,
+.SingleDatePicker__close:focus {
   color: #b0b3b4;
   text-decoration: none;
 }

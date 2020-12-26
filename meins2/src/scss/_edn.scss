@@ -2,19 +2,22 @@
 
 .edn-tree {
   .map {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #ee2;
     }
   }
 
   .vector {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #2e2;
     }
   }
 
   .seq {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #800080;
     }
   }
@@ -42,19 +45,22 @@
 
 .edn-tree.light {
   .map {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #550;
     }
   }
 
   .vector {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #282;
     }
   }
 
   .seq {
-    &:before, &:after {
+    &:before,
+    &:after {
       color: #800080;
     }
   }
@@ -79,7 +85,6 @@
     color: #909;
   }
 }
-
 
 /* Layout */
 .edn-tree {
@@ -124,14 +129,15 @@
     }
 
     &:before {
-      content: "{";
+      content: '{';
     }
 
     &:after {
-      content: "}";
+      content: '}';
     }
 
-    &:before, &:after {
+    &:before,
+    &:after {
       display: inline-flex;
       float: left;
     }
@@ -145,14 +151,15 @@
     }
 
     &:before {
-      content: "[";
+      content: '[';
     }
 
     &:after {
-      content: "]";
+      content: ']';
     }
 
-    &:before, &:after {
+    &:before,
+    &:after {
       display: inline-flex;
       float: left;
     }
@@ -160,14 +167,15 @@
 
   .seq {
     &:before {
-      content: "(";
+      content: '(';
     }
 
     &:after {
-      content: ")";
+      content: ')';
     }
 
-    &:before, &:after {
+    &:before,
+    &:after {
       display: inline-flex;
       float: left;
     }
@@ -175,8 +183,9 @@
 
   span {
     &.string {
-      &:before, &:after {
-        content: "\"";
+      &:before,
+      &:after {
+        content: '"';
       }
     }
   }
@@ -185,25 +194,23 @@
     cursor: pointer;
 
     & > .vector:before {
-      content: "[...";
+      content: '[...';
     }
-  ;
-
     & > .map:before {
-      content: "{...";
+      content: '{...';
     }
-  ;
-
     & > .seq:before {
-      content: "(...";
+      content: '(...';
     }
-  ;
   }
 
   .collapsed:hover {
-    & > .vector:before, & > .vector:after,
-    & > .map:before, & > .map:before,
-    & > .seq:before, & > .seq:before {
+    & > .vector:before,
+    & > .vector:after,
+    & > .map:before,
+    & > .map:before,
+    & > .seq:before,
+    & > .seq:before {
       text-decoration: underline;
     }
   }

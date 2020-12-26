@@ -1,5 +1,11 @@
-import {ApolloClient, ApolloLink, HttpLink, InMemoryCache, makeVar} from '@apollo/client'
-import { onError } from "@apollo/client/link/error";
+import {
+  ApolloClient,
+  ApolloLink,
+  HttpLink,
+  InMemoryCache,
+  makeVar,
+} from '@apollo/client'
+import { onError } from '@apollo/client/link/error'
 
 export enum Screen {
   HOME,
@@ -21,10 +27,10 @@ export function apolloClient() {
     if (graphQLErrors)
       graphQLErrors.map(({ message, locations, path }) =>
         console.log(
-          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
-        )
+          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+        ),
       )
-    if (networkError) console.log(`[Network error]: ${networkError}`);
+    if (networkError) console.log(`[Network error]: ${networkError}`)
   })
 
   const httpLink = new HttpLink({
@@ -32,7 +38,10 @@ export function apolloClient() {
     fetch: (...pl) => {
       const [_, options] = pl
       const body = JSON.parse(options.body.toString())
-      console.log(`📡${body.operationName || ''}\n${body.query}`, body.variables)
+      console.log(
+        `📡${body.operationName || ''}\n${body.query}`,
+        body.variables,
+      )
       const res = fetch(...pl)
       res.then((v) => console.log(v))
       return res

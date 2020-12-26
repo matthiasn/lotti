@@ -19,7 +19,7 @@
 .big-calendar {
   -webkit-font-smoothing: antialiased;
   background-color: $entry-bg;
-  color: rgb(51,51,51);
+  color: rgb(51, 51, 51);
   flex: 2;
   font-size: $font-size-cal;
   font-weight: 300;
@@ -299,7 +299,7 @@ button.rbc-input::-moz-focus-inner {
 .rbc-overlay {
   background-color: #fff;
   border: 1px solid #e5e5e5;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, .25);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
   padding: 10px;
   position: absolute;
   z-index: 5;

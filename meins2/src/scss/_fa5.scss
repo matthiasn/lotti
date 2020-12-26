@@ -9,11 +9,12 @@
   font-style: normal;
   font-weight: 300;
   src: url('#{$fa-font-path}/fa-light-300.eot');
-  src: url('#{$fa-font-path}/fa-light-300.eot?#iefix') format('embedded-opentype'),
-  url('#{$fa-font-path}/fa-light-300.woff2') format('woff2'),
-  url('#{$fa-font-path}/fa-light-300.woff') format('woff'),
-  url('#{$fa-font-path}/fa-light-300.ttf') format('truetype'),
-  url('#{$fa-font-path}/fa-light-300.svg#fontawesome') format('svg');
+  src: url('#{$fa-font-path}/fa-light-300.eot?#iefix')
+      format('embedded-opentype'),
+    url('#{$fa-font-path}/fa-light-300.woff2') format('woff2'),
+    url('#{$fa-font-path}/fa-light-300.woff') format('woff'),
+    url('#{$fa-font-path}/fa-light-300.ttf') format('truetype'),
+    url('#{$fa-font-path}/fa-light-300.svg#fontawesome') format('svg');
 }
 
 .fal {

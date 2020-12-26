@@ -6,7 +6,8 @@
   flex-wrap: wrap;
 }
 
-.hashtag, .mention {
+.hashtag,
+.mention {
   background-color: $hashtag-blue;
   color: #fff;
   cursor: pointer;

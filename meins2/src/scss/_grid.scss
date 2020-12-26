@@ -23,7 +23,9 @@
   }
 
   .col-3 {
-    grid-template-columns: 12px 160px $briefing-width minmax(280px, 1fr) minmax(280px, 1fr) 350px !important;
+    grid-template-columns:
+      12px 160px $briefing-width minmax(280px, 1fr) minmax(280px, 1fr)
+      350px !important;
   }
 
   .menu {
@@ -84,7 +86,10 @@
     background-color: $grid-bg;
     display: grid;
     grid-gap: 2px;
-    grid-template-columns: 12px minmax(400px, 3fr) minmax(300px, 2fr)  minmax(400px, 3fr) !important;
+    grid-template-columns: 12px minmax(400px, 3fr) minmax(300px, 2fr) minmax(
+        400px,
+        3fr
+      ) !important;
     grid-template-rows: 22px 70px minmax(0, 2fr) fit-content(95vh);
     height: calc(100vh - 16px);
 

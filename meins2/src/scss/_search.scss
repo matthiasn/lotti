@@ -5,7 +5,7 @@
   display: flex;
   flex: 0 0 auto;
   flex-flow: column;
-  padding: 0 .4em 3px 0;
+  padding: 0 0.4em 3px 0;
 
   .hashtags {
     height: 20px;
@@ -13,13 +13,14 @@
 }
 
 .infinite-cal-search {
-
   .from-to {
     padding: 1px;
     text-align: center;
   }
 
-  .from, .to, .label {
+  .from,
+  .to,
+  .label {
     color: $orange;
     font-family: $header-font-family;
     font-size: $font-size-small;
@@ -50,7 +51,6 @@
   }
 
   .Cal__Header__dateWrapper {
-
     &.Cal__Header__year {
       font-size: $font-size-small;
       height: 15px;

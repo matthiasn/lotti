@@ -44,29 +44,33 @@ h1 {
 }
 
 .spinner .rect4 {
-  -webkit-animation-delay: -.9s;
-  animation-delay: -.9s;
+  -webkit-animation-delay: -0.9s;
+  animation-delay: -0.9s;
 }
 
 .spinner .rect5 {
-  -webkit-animation-delay: -.8s;
-  animation-delay: -.8s;
+  -webkit-animation-delay: -0.8s;
+  animation-delay: -0.8s;
 }
 
 @-webkit-keyframes sk-stretchdelay {
-  0%, 40%, 100% {
-    -webkit-transform: scaleY(.4)
+  0%,
+  40%,
+  100% {
+    -webkit-transform: scaleY(0.4);
   }
 
   20% {
-    -webkit-transform: scaleY(1)
+    -webkit-transform: scaleY(1);
   }
 }
 
 @keyframes sk-stretchdelay {
-  0%, 40%, 100% {
-    -webkit-transform: scaleY(.4);
-    transform: scaleY(.4);
+  0%,
+  40%,
+  100% {
+    -webkit-transform: scaleY(0.4);
+    transform: scaleY(0.4);
   }
 
   20% {

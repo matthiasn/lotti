@@ -3,7 +3,7 @@
 .btn {
   color: #fff;
   cursor: pointer;
-  font-size: .8em;
+  font-size: 0.8em;
   padding: 1px 5px;
   white-space: nowrap;
 
@@ -12,7 +12,8 @@
   }
 }
 
-.not-saved, .cancel {
+.not-saved,
+.cancel {
   background-color: $red;
   color: #fff;
   cursor: pointer;
@@ -55,10 +56,9 @@ button {
 .show-more-btn {
   background-color: $show-more;
   color: #f5f5f5;
-  font-size: .8em;
+  font-size: 0.8em;
   padding: 1px 5px;
 }
-
 
 .delete-btn {
   color: #fff;
@@ -68,7 +68,7 @@ button {
   .warn {
     background-color: $delete-warning;
     cursor: pointer;
-    font-size: .8em;
+    font-size: 0.8em;
     font-weight: bold;
     height: 20px;
     margin-top: 21px;
@@ -95,7 +95,8 @@ button {
   padding: 20px 0;
 }
 
-a, a:visited {
+a,
+a:visited {
   color: $link-color;
   font-weight: 400;
   outline: none !important;
@@ -112,7 +113,8 @@ a, a:visited {
   }
 }
 
-.fa-thumbs-up, .fa-thumbs-down {
+.fa-thumbs-up,
+.fa-thumbs-down {
   color: #006c91;
 }
 

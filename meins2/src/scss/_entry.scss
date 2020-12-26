@@ -5,12 +5,12 @@
   border-radius: $entry-border-radius;
   flex-shrink: 0;
   height: inherit;
-  margin: 0 0 .25em 0;
+  margin: 0 0 0.25em 0;
 }
 
 .entry {
   font-size: $font-size-medium;
-  padding: 0.5em .8em .2em .8em;
+  padding: 0.5em 0.8em 0.2em 0.8em;
 
   .fa-trash-alt {
     &:hover {
@@ -148,14 +148,15 @@
     margin-right: 4px;
   }
 
-  h1, h2 {
+  h1,
+  h2 {
     font-size: $font-size-large;
-    margin-top: .2em;
+    margin-top: 0.2em;
   }
 
   h3 {
     font-size: $font-size-medium;
-    margin-top: .2em;
+    margin-top: 0.2em;
   }
 
   .edit-md pre code {
@@ -295,7 +296,6 @@
           font-size: $font-size-medium;
           padding: 3px 3px;
         }
-
       }
 
       time {
@@ -329,14 +329,14 @@
 
       .completed-cnt {
         color: $green;
-        font-size: .8em;
+        font-size: 0.8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
 
       .incomplete-cnt {
         color: #999;
-        font-size: .8em;
+        font-size: 0.8em;
         font-weight: bold;
         padding-right: 0.3em;
       }
@@ -348,14 +348,14 @@
 
       .bolt-cnt {
         color: $red;
-        font-size: .8em;
+        font-size: 0.8em;
         font-weight: bold;
       }
 
       .dur {
-        font-size: .8em;
+        font-size: 0.8em;
         font-weight: bold;
-        margin-left: .2em;
+        margin-left: 0.2em;
         margin-right: 0.3em;
       }
     }
@@ -375,12 +375,18 @@
     }
   }
 
-  p, ul {
-    margin-bottom: .4em;
-    margin-top: .2em;
+  p,
+  ul {
+    margin-bottom: 0.4em;
+    margin-top: 0.2em;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin-bottom: 0.3em;
   }
 }
@@ -403,7 +409,7 @@
     color: #fff;
     cursor: pointer;
     font-size: $font-size-small;
-    margin-left: .8em;
+    margin-left: 0.8em;
     padding: 1px 5px;
   }
 }
@@ -423,7 +429,9 @@
   }
 }
 
-.task-details, .habit-details, .custom-fields {
+.task-details,
+.habit-details,
+.custom-fields {
   fieldset {
     border: $edit-menu-bg 1px dashed;
   }
@@ -451,7 +459,8 @@
         color: $green;
       }
 
-      &.hold, &.closed {
+      &.hold,
+      &.closed {
         color: $red;
       }
     }
@@ -472,26 +481,27 @@ input {
   padding: 3px 6px;
 }
 
-input[type="number"] {
+input[type='number'] {
   margin-right: 8px;
   width: 100px !important;
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   height: 12px;
 }
 
-input[type="time"] {
+input[type='time'] {
   margin-right: 8px;
   width: 100px !important;
 }
 
-input[type="datetime-local"] {
+input[type='datetime-local'] {
   margin-right: 8px;
   width: 170px !important;
 }
 
-.task-details, .habit-details {
+.task-details,
+.habit-details {
   span {
     white-space: nowrap;
   }
@@ -519,7 +529,8 @@ u {
   margin: 2px -9px 5px -9px;
 }
 
-.habits, .tasks {
+.habits,
+.tasks {
   font-size: $font-size-small;
   width: 100%;
 
@@ -544,7 +555,8 @@ u {
     cursor: default;
   }
 
-  .award-points, .estimate {
+  .award-points,
+  .estimate {
     text-align: right;
     width: 32px;
 
@@ -571,7 +583,7 @@ u {
 }
 
 .flight {
-  input[type="text"] {
+  input[type='text'] {
     width: 120px;
 
     &.url {
@@ -624,11 +636,11 @@ u {
   padding: 0 4px;
 
   .header-2 {
-    font-size: .9em;
+    font-size: 0.9em;
   }
 
   .header-3 {
-    font-size: .8em;
+    font-size: 0.8em;
   }
 
   .header-4 {
@@ -668,7 +680,8 @@ u {
   font-size: 0.6em;
   margin-bottom: 5px;
 
-  a, .repo-name {
+  a,
+  .repo-name {
     font-weight: bold;
   }
 }

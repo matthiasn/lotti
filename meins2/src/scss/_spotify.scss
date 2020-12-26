@@ -1,6 +1,5 @@
 @import 'variables.scss';
 
-
 .spotify-list {
   align-items: center;
   border-radius: $entry-border-radius;
@@ -35,7 +34,6 @@
       }
     }
 
-
     .spotify-search {
       align-items: center;
       display: flex;
@@ -47,13 +45,11 @@
         padding: 5px;
       }
 
-
       input {
         box-shadow: none;
         width: 250px;
       }
     }
-
   }
 
   .menu-header {
@@ -90,7 +86,6 @@
     }
   }
 
-
   .tooltip {
     display: inline-block;
     position: relative;
@@ -106,5 +101,4 @@
       font-weight: bold;
     }
   }
-
 }

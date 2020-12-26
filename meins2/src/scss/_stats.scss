@@ -13,7 +13,7 @@ $done-weekend: rgb(65, 189, 70);
 $tasks: rgb(188, 30, 30);
 $tasks-weekend: lighten($tasks, 30);
 
-$closed: rgba(249, 166, 30, .8);
+$closed: rgba(249, 166, 30, 0.8);
 $closed-weekend: lighten($closed, 30);
 
 $backlog: #ff8c00;
@@ -84,8 +84,8 @@ $backlog-weekend: lighten($backlog, 30);
   overflow: auto;
 
   button {
-    font-size: .8em;
-    line-height: .8em;
+    font-size: 0.8em;
+    line-height: 0.8em;
   }
 
   .charts {
@@ -110,7 +110,7 @@ $backlog-weekend: lighten($backlog, 30);
     }
 
     .bar-bg {
-      fill: rgba(0, 0, 0, 0)
+      fill: rgba(0, 0, 0, 0);
     }
 
     .completed {
@@ -154,11 +154,11 @@ $backlog-weekend: lighten($backlog, 30);
     }
 
     .failed {
-      fill: lighten($tasks, 30)
+      fill: lighten($tasks, 30);
     }
 
     .failed-weekend {
-      fill: lighten($tasks-weekend, 10)
+      fill: lighten($tasks-weekend, 10);
     }
 
     .closed {
@@ -234,7 +234,7 @@ $backlog-weekend: lighten($backlog, 30);
   }
 
   .story-time {
-    font-size: .8em;
+    font-size: 0.8em;
 
     table {
       border-spacing: 0;
@@ -279,7 +279,7 @@ $backlog-weekend: lighten($backlog, 30);
   background-color: $stats-bg-color;
   bottom: 0;
   color: $stats-color;
-  font-size: .9em;
+  font-size: 0.9em;
   padding: 4px 20px 4px 30px;
   position: absolute;
   width: 100%;
@@ -292,7 +292,7 @@ $backlog-weekend: lighten($backlog, 30);
 }
 
 .story-time {
-  font-size: .8em;
+  font-size: 0.8em;
   //background-color: white;
   padding-top: 4px;
   .legend {
@@ -316,7 +316,7 @@ $backlog-weekend: lighten($backlog, 30);
 }
 
 .times-by-day {
-  font-size: .8em;
+  font-size: 0.8em;
   //background-color: white;
   padding-left: 2px;
   time {
@@ -325,7 +325,7 @@ $backlog-weekend: lighten($backlog, 30);
 }
 
 .expanded {
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   height: 100vh;
   left: 0;
   margin: 0;
@@ -380,7 +380,8 @@ $backlog-weekend: lighten($backlog, 30);
     vertical-align: bottom;
   }
 
-  .cnt, .rank {
+  .cnt,
+  .rank {
     padding-right: 3px;
     text-align: center;
   }
@@ -399,7 +400,7 @@ $backlog-weekend: lighten($backlog, 30);
 
   .fa-diamond {
     color: #ffd700;
-    font-size: .8em;
+    font-size: 0.8em;
     margin-right: 3px;
     position: relative;
     top: -2px;

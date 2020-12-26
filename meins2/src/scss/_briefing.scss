@@ -56,7 +56,8 @@
     }
   }
 
-  .saga-filter, .add-task {
+  .saga-filter,
+  .add-task {
     font-family: $header-font-family;
     position: relative;
     user-select: none;
@@ -94,7 +95,7 @@
         border-radius: 2px;
         color: #000;
         cursor: pointer;
-        font-size: .8em;
+        font-size: 0.8em;
         font-weight: bold;
         margin-bottom: 3px;
         padding: 2px 5px;
@@ -123,7 +124,10 @@
     }
   }
 
-  .open-tasks, .started-tasks, .linked-tasks, .problems {
+  .open-tasks,
+  .started-tasks,
+  .linked-tasks,
+  .problems {
     background-color: #fff;
     font-size: $font-size-small;
     line-height: 1.2em;
@@ -314,7 +318,6 @@
       padding: 0 4px;
     }
   }
-
 }
 
 .add-habit {

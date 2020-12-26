@@ -42,12 +42,16 @@
   width: 14.28571%;
 }
 
-.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted, .Cal__Day__root.Cal__Day__enabled:active, .Cal__Day__root.Cal__Day__enabled:hover {
+.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted,
+.Cal__Day__root.Cal__Day__enabled:active,
+.Cal__Day__root.Cal__Day__enabled:hover {
   position: relative;
   z-index: 1;
 }
 
-.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted:before, .Cal__Day__root.Cal__Day__enabled:active:before, .Cal__Day__root.Cal__Day__enabled:hover:before {
+.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted:before,
+.Cal__Day__root.Cal__Day__enabled:active:before,
+.Cal__Day__root.Cal__Day__enabled:hover:before {
   background-color: #efefef;
   border-radius: 50%;
   content: '';
@@ -65,7 +69,8 @@
   opacity: 0.5;
 }
 
-.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted:before, .Cal__Day__root.Cal__Day__enabled:active:before {
+.Cal__Day__root.Cal__Day__enabled.Cal__Day__highlighted:before,
+.Cal__Day__root.Cal__Day__enabled:active:before {
   opacity: 1;
 }
 
@@ -108,7 +113,8 @@
   position: relative;
 }
 
-.Cal__Day__root.Cal__Day__selected > .Cal__Day__month, .Cal__Day__root.Cal__Day__selected > .Cal__Day__year {
+.Cal__Day__root.Cal__Day__selected > .Cal__Day__month,
+.Cal__Day__root.Cal__Day__selected > .Cal__Day__year {
   display: none;
 }
 
@@ -146,7 +152,8 @@
   cursor: not-allowed;
 }
 
-.Cal__Day__month, .Cal__Day__year {
+.Cal__Day__month,
+.Cal__Day__year {
   font-size: 12px;
   left: 0;
   line-height: 12px;
@@ -166,7 +173,8 @@
 /*
  * Range selection styles
  */
-.Cal__Day__range.Cal__Day__selected.Cal__Day__start:after, .Cal__Day__range.Cal__Day__selected.Cal__Day__end:after {
+.Cal__Day__range.Cal__Day__selected.Cal__Day__start:after,
+.Cal__Day__range.Cal__Day__selected.Cal__Day__end:after {
   box-shadow: inset 40px 40px;
   content: '';
   height: 36px;
@@ -176,11 +184,17 @@
   width: 50%;
 }
 
-.Cal__Day__range.Cal__Day__selected.Cal__Day__disabled .Cal__Day__selection.Cal__Day__selection {
+.Cal__Day__range.Cal__Day__selected.Cal__Day__disabled
+  .Cal__Day__selection.Cal__Day__selection {
   background-color: #eee !important;
 }
 
-.Cal__Day__range.Cal__Day__selected.Cal__Day__disabled .Cal__Day__selection.Cal__Day__selection .Cal__Day__day, .Cal__Day__range.Cal__Day__selected.Cal__Day__disabled .Cal__Day__selection.Cal__Day__selection .Cal__Day__month {
+.Cal__Day__range.Cal__Day__selected.Cal__Day__disabled
+  .Cal__Day__selection.Cal__Day__selection
+  .Cal__Day__day,
+.Cal__Day__range.Cal__Day__selected.Cal__Day__disabled
+  .Cal__Day__selection.Cal__Day__selection
+  .Cal__Day__month {
   color: #aaa;
   font-weight: 300;
 }
@@ -199,7 +213,8 @@
   display: none;
 }
 
-.Cal__Day__range.Cal__Day__selected.Cal__Day__betweenRange .Cal__Day__selection {
+.Cal__Day__range.Cal__Day__selected.Cal__Day__betweenRange
+  .Cal__Day__selection {
   align-items: center;
   border-radius: 0;
   display: flex;
@@ -231,11 +246,14 @@
   color: inherit !important;
 }
 
-.Cal__Day__range.Cal__Day__selected.Cal__Day__end .Cal__Day__selection .Cal__Day__day {
+.Cal__Day__range.Cal__Day__selected.Cal__Day__end
+  .Cal__Day__selection
+  .Cal__Day__day {
   top: 4px;
 }
 
-.Cal__Slider__root, .Cal__Slider__slide {
+.Cal__Slider__root,
+.Cal__Slider__slide {
   bottom: 0;
   left: 0;
   position: absolute;
@@ -330,7 +348,8 @@
   min-width: 200px;
 }
 
-.Cal__Header__root.Cal__Header__landscape .Cal__Header__dateWrapper.Cal__Header__day {
+.Cal__Header__root.Cal__Header__landscape
+  .Cal__Header__dateWrapper.Cal__Header__day {
   flex-grow: 1;
   height: 76px;
 }
@@ -394,7 +413,8 @@
   overflow: visible;
 }
 
-.Cal__Header__range .Cal__Header__wrapper:first-child:before, .Cal__Header__range .Cal__Header__wrapper:first-child:after {
+.Cal__Header__range .Cal__Header__wrapper:first-child:before,
+.Cal__Header__range .Cal__Header__wrapper:first-child:after {
   border-bottom: 100px solid transparent;
   border-left: 60px solid;
   border-top: 100px solid transparent;
@@ -425,7 +445,7 @@
 .Cal__Animation__enter {
   opacity: 0;
   transform: translate3d(0, -100%, 0);
-  transition: .25s ease;
+  transition: 0.25s ease;
 }
 
 .Cal__Animation__enter.Cal__Animation__enterActive {
@@ -435,7 +455,7 @@
 
 .Cal__Animation__leave {
   transform: translate3d(0, 0, 0);
-  transition: .25s ease;
+  transition: 0.25s ease;
 }
 
 .Cal__Animation__leave.Cal__Animation__leaveActive {
@@ -444,7 +464,11 @@
 }
 
 .Cal__Month__rows {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.05) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
   position: relative;
 }
 
@@ -598,7 +622,8 @@
   z-index: 10;
 }
 
-.Cal__Years__root:before, .Cal__Years__root:after {
+.Cal__Years__root:before,
+.Cal__Years__root:after {
   content: '';
   height: 50px;
   left: 0;
@@ -609,12 +634,20 @@
 }
 
 .Cal__Years__root:before {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, .8) 0%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
   top: 0;
 }
 
 .Cal__Years__root:after {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .8) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
   bottom: 0;
 }
 
@@ -709,11 +742,13 @@
   background-color: #efefef;
 }
 
-.Cal__Years__year:hover label > span, .Cal__Years__year.Cal__Years__active label > span {
+.Cal__Years__year:hover label > span,
+.Cal__Years__year.Cal__Years__active label > span {
   color: inherit;
 }
 
-.Cal__Years__year:hover, .Cal__Years__year.Cal__Years__active {
+.Cal__Years__year:hover,
+.Cal__Years__year.Cal__Years__active {
   position: relative;
   z-index: 2;
 }

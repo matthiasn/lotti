@@ -1,6 +1,5 @@
 @import 'variables.scss';
 
-
 .habit-details {
   background-color: #fff;
   border-radius: $entry-border-radius;
@@ -162,7 +161,8 @@
       flex: 2;
     }
 
-    .add-criterion, .save {
+    .add-criterion,
+    .save {
       background-color: desaturate(lighten($green, 10), 5);
       border-radius: 3px;
       color: #eee;
@@ -220,11 +220,12 @@
     padding: 4px 8px;
   }
 
-  input[type="number"], input[type="time"] {
+  input[type='number'],
+  input[type='time'] {
     width: 65px;
   }
 
-  input[type="text"] {
+  input[type='text'] {
     min-width: 120px;
     &.url {
       width: 330px;
@@ -244,19 +245,18 @@
     i {
       margin-left: 6px;
     }
-
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     margin-right: 7px;
     width: 15px;
   }
 
-  input[type="date"] {
+  input[type='date'] {
     min-width: 130px;
   }
 
-  input[type="datetime-local"] {
+  input[type='datetime-local'] {
     min-width: 150px;
   }
 
@@ -270,7 +270,9 @@
     min-width: 100px;
   }
 
-  .allocated, .actual, .remaining {
+  .allocated,
+  .actual,
+  .remaining {
     display: inline-block;
     min-width: 50px;
   }
@@ -351,7 +353,7 @@
   }
 
   .start {
-    opacity: .2;
+    opacity: 0.2;
     text-align: right;
 
     &:hover {
@@ -380,5 +382,4 @@
     color: #999;
     padding-left: 6px;
   }
-
 }

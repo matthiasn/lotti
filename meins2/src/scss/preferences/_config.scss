@@ -1,4 +1,4 @@
-@import "../variables";
+@import '../variables';
 
 .config {
   background-color: $cfg-bg;
@@ -60,12 +60,12 @@
 
       &:hover {
         &:not(:first-child) {
-          background-color: rgba(74, 84, 110, .2);
+          background-color: rgba(74, 84, 110, 0.2);
         }
       }
 
       &.active {
-        background-color: rgba(74, 84, 110, .4);
+        background-color: rgba(74, 84, 110, 0.4);
         color: #fff;
       }
 
@@ -89,7 +89,6 @@
       }
 
       &:last-child {
-
         td:first-child {
           border-bottom-left-radius: 10px;
         }
@@ -104,7 +103,8 @@
       text-align: left;
     }
 
-    &.sagas-stories, &.habit_cfg {
+    &.sagas-stories,
+    &.habit_cfg {
       font-size: $font-size-medium;
 
       tr {
@@ -133,13 +133,14 @@
       }
 
       th {
-        background-color: rgba(74, 84, 110, .2);;
+        background-color: rgba(74, 84, 110, 0.2);
         color: rgba(255, 255, 255, 0.31);
         font-weight: 600;
         text-align: center;
       }
 
-      th, td {
+      th,
+      td {
         padding-left: 8px;
 
         &:first-child {
@@ -163,7 +164,6 @@
       .fa-toggle-off {
         color: #aaa;
       }
-
     }
   }
 
@@ -205,7 +205,8 @@
     }
   }
 
-  .custom-fields, .habits {
+  .custom-fields,
+  .habits {
     padding-right: 16px;
   }
 
@@ -246,19 +247,20 @@
     }
 
     .menu-item {
-      color: rgba(255, 255, 255, .68);
+      color: rgba(255, 255, 255, 0.68);
       cursor: pointer;
       font-family: Montserrat;
       font-size: $font-size-large;
       line-height: 19px;
       padding: 12px 12px 9px 26px;
 
-      &:hover, &.highlight {
-        background-color: rgba(74, 84, 110, .1);;
+      &:hover,
+      &.highlight {
+        background-color: rgba(74, 84, 110, 0.1);
       }
 
       &.active {
-        background-color: rgba(74, 84, 110, .3);;
+        background-color: rgba(74, 84, 110, 0.3);
         color: #fff;
         font-weight: 600;
       }
@@ -286,7 +288,8 @@
       text-align: right;
       width: auto;
 
-      td, th {
+      td,
+      th {
         padding: 0 7px;
       }
 
@@ -463,7 +466,8 @@
   .save {
     margin-bottom: 1em;
 
-    .not-saved, .cancel {
+    .not-saved,
+    .cancel {
       display: inline-block;
       padding: 3px 8px;
     }

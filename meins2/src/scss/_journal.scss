@@ -28,7 +28,7 @@
     cursor: pointer;
     display: flex;
     font-family: $header-font-family;
-    font-size: .8em;
+    font-size: 0.8em;
     font-weight: 300;
     height: 16px;
     margin: 0 2px 0 0;
@@ -112,7 +112,7 @@
 
 .new-entries {
   align-items: center;
-  background-color: rgba(55,55,55,0.7);
+  background-color: rgba(55, 55, 55, 0.7);
   display: flex;
   height: 100%;
   justify-content: center;
@@ -126,7 +126,7 @@
     flex-flow: column;
     flex-grow: 1;
     flex-shrink: 0;
-    margin: 6em 0.6em 5em .4em;
+    margin: 6em 0.6em 5em 0.4em;
     max-height: 80%;
     max-width: 600px;
     min-height: 70%;

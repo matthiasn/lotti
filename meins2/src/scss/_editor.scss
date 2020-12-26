@@ -18,7 +18,8 @@
   font-weight: 400;
 }
 
-.draftJsMentionPlugin__mention__29BEd, .draftJsMentionPlugin__mention__29BEd:visited {
+.draftJsMentionPlugin__mention__29BEd,
+.draftJsMentionPlugin__mention__29BEd:visited {
   background: #e6f3ff;
   border-radius: 2px;
   color: #575f67;
@@ -29,7 +30,8 @@
   text-decoration: none;
 }
 
-.draftJsMentionPlugin__mention__29BEd:hover, .draftJsMentionPlugin__mention__29BEd:focus {
+.draftJsMentionPlugin__mention__29BEd:hover,
+.draftJsMentionPlugin__mention__29BEd:focus {
   background: #edf5fd;
   color: #677584;
   outline: 0; /* reset for :focus */
@@ -41,9 +43,9 @@
 }
 
 .draftJsMentionPlugin__mentionSuggestionsEntry__3mSwm {
-  -webkit-transition: background-color .4s cubic-bezier(.27,1.27,.48,.56);
+  -webkit-transition: background-color 0.4s cubic-bezier(0.27, 1.27, 0.48, 0.56);
   padding: 7px 10px 3px 10px;
-  transition: background-color .4s cubic-bezier(.27,1.27,.48,.56);
+  transition: background-color 0.4s cubic-bezier(0.27, 1.27, 0.48, 0.56);
 }
 
 .draftJsMentionPlugin__mentionSuggestionsEntry__3mSwm:active {
@@ -56,8 +58,8 @@
 
 .draftJsMentionPlugin__mentionSuggestionsEntryText__3Jobq {
   display: inline-block;
-  font-size: .9em;
-  margin-bottom: .2em;
+  font-size: 0.9em;
+  margin-bottom: 0.2em;
   margin-left: 8px;
   max-width: 368px;
   overflow: hidden;
@@ -79,7 +81,7 @@
   background: #fff;
   border: 1px solid #eee;
   border-radius: 2px;
-  box-shadow: 0 4px 30px 0 rgba(220,220,220,1);
+  box-shadow: 0 4px 30px 0 rgba(220, 220, 220, 1);
   box-sizing: border-box;
   cursor: pointer;
   display: -webkit-box;
@@ -95,12 +97,14 @@
   z-index: 2000;
 }
 
-.draftJsLinkifyPlugin__link__2ittM, .draftJsLinkifyPlugin__link__2ittM:visited {
+.draftJsLinkifyPlugin__link__2ittM,
+.draftJsLinkifyPlugin__link__2ittM:visited {
   color: #5e93c5;
   text-decoration: none;
 }
 
-.draftJsLinkifyPlugin__link__2ittM:hover, .draftJsLinkifyPlugin__link__2ittM:focus {
+.draftJsLinkifyPlugin__link__2ittM:hover,
+.draftJsLinkifyPlugin__link__2ittM:focus {
   color: #7eadda;
   cursor: pointer;
   outline: 0; /* reset for :focus */

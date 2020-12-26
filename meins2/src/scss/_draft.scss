@@ -1,6 +1,10 @@
 .DraftEditor-root {
-
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: inherit;
     font-family: inherit;
     font-weight: bold;
@@ -8,12 +12,19 @@
     margin: 10px 0;
   }
 
-  h1 small, h2 small, h3 small, h4 small, h5 small, h6 small {
+  h1 small,
+  h2 small,
+  h3 small,
+  h4 small,
+  h5 small,
+  h6 small {
     color: #7b7b7b;
     font-weight: normal;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     /*line-height: 40px;*/
   }
 
@@ -57,12 +68,16 @@
     font-size: 14px;
   }
 
-  ul, ol {
+  ul,
+  ol {
     /*margin: 0 0 10px 25px;*/
     padding: 0;
   }
 
-  ul ul, ul ol, ol ol, ol ul {
+  ul ul,
+  ul ol,
+  ol ol,
+  ol ul {
     margin-bottom: 0;
   }
 
@@ -76,7 +91,8 @@
     text-decoration: none;
   }
 
-  a:hover, a:focus {
+  a:hover,
+  a:focus {
     color: #823030;
     text-decoration: underline;
   }
@@ -97,7 +113,8 @@
     border-top: 1px solid #ccc;
   }
 
-  table th, table td {
+  table th,
+  table td {
     border: 1px solid #ddd;
     border: 0;
     padding: 3px 6px;
@@ -152,20 +169,33 @@
     height: 0;
   }
 
-  ul, li {
+  ul,
+  li {
     margin-left: 20px;
   }
 
-  h1 .anchor, h2 .anchor, h3 .anchor, h4 .anchor, h5 .anchor, h6 .anchor {
+  h1 .anchor,
+  h2 .anchor,
+  h3 .anchor,
+  h4 .anchor,
+  h5 .anchor,
+  h6 .anchor {
     margin-top: -50px;
     position: absolute;
   }
 
-  h1:hover .hash-link, h2:hover .hash-link, h3:hover .hash-link, h4:hover .hash-link, h5:hover .hash-link, h6:hover .hash-link {
+  h1:hover .hash-link,
+  h2:hover .hash-link,
+  h3:hover .hash-link,
+  h4:hover .hash-link,
+  h5:hover .hash-link,
+  h6:hover .hash-link {
     visibility: visible;
   }
 
-  small code, li code, p code {
+  small code,
+  li code,
+  p code {
     background-color: rgba(0, 0, 0, 0.04);
     color: #555;
     font-family: 'source-code-pro', Menlo, 'Courier New', Consolas, monospace;
@@ -232,7 +262,8 @@
       text-align: center;
     }
 
-    .home-section, .marketing-row {
+    .home-section,
+    .marketing-row {
       margin: 0;
     }
 

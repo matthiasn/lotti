@@ -1,30 +1,30 @@
-import {gql} from '@apollo/client'
+import { gql } from '@apollo/client'
 
 export const STATS = gql`
-    query stats {
-        active_threads
-        completed_count
-        tag_count
-        entry_count
-        mention_count
-        word_count
+  query stats {
+    active_threads
+    completed_count
+    tag_count
+    entry_count
+    mention_count
+    word_count
 
-        hours_logged
+    hours_logged
 
-        open_tasks {
-            timestamp
-        }
+    open_tasks {
+      timestamp
     }
+  }
 `
 
 export const OPEN_TASKS = gql`
-    query openTasks {
-        open_tasks {
-            timestamp
-            md
-            task {
-                priority
-            }
-        }
+  query openTasks {
+    open_tasks {
+      timestamp
+      md
+      task {
+        priority
+      }
     }
+  }
 `
