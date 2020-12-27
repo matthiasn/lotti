@@ -1,4 +1,6 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
+import contextMenu from 'electron-context-menu'
+
 declare const MAIN_WINDOW_WEBPACK_ENTRY: any
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -7,8 +9,29 @@ if (require('electron-squirrel-startup')) {
   app.quit()
 }
 
+contextMenu({
+  prepend: (defaultActions, params, browserWindow) => [
+    {
+      label: 'Rainbow',
+      // Only show it when right-clicking images
+      visible: params.mediaType === 'image',
+    },
+    {
+      label: 'Search Google for “{selection}”',
+      // Only show it when right-clicking text
+      visible: params.selectionText.trim().length > 0,
+      click: () => {
+        shell.openExternal(
+          `https://google.com/search?q=${encodeURIComponent(
+            params.selectionText,
+          )}`,
+        )
+      },
+    },
+  ],
+})
+
 const createWindow = (): void => {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     height: 768,
     width: 1024,
@@ -46,6 +69,3 @@ app.on('activate', () => {
     createWindow()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
