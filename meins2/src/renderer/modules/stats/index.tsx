@@ -1,5 +1,5 @@
 import React from 'react'
-import { useStatsQuery } from '../../generated/graphql'
+import { useStatsQuery } from '../../../generated/graphql'
 import * as fs from 'fs'
 
 const appVersion = JSON.parse(fs.readFileSync('package.json').toString())
