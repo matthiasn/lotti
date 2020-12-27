@@ -1,5 +1,5 @@
 import React from 'react'
-import { Entry } from '../../../../generated/graphql'
+import { Artist, Entry } from '../../../../generated/graphql'
 
 export function SpotifyView({ item }: { item: Entry }) {
   const spotify = item.spotify
@@ -8,7 +8,9 @@ export function SpotifyView({ item }: { item: Entry }) {
     return null
   }
 
-  const artists = spotify?.artists?.join(', ')
+  const artists = spotify?.artists
+    ?.map((artist: Artist) => artist.name)
+    .join(', ')
 
   return (
     <div className="spotify">
