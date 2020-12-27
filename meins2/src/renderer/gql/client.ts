@@ -8,7 +8,7 @@ import {
 import { onError } from '@apollo/client/link/error'
 import moment from 'moment'
 
-const DEBUG = false
+const DEBUG = true
 
 export enum Screen {
   HOME,

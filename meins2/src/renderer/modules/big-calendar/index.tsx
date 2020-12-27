@@ -37,13 +37,15 @@ function eventPropGetter(event: any) {
 
 export function BigCalendar() {
   const day = useQuery(GET_STATE).data?.state?.day
-
-  const loggedTime = useLoggedTimeQuery({
+  const events = useLoggedTimeQuery({
     variables: {
       day,
     },
-  }).data?.logged_time
-  const events = loggedTime?.by_ts_cal?.map(eventMapper) || []
+  }).data?.logged_time?.by_ts_cal?.map(eventMapper)
+
+  if (!events) {
+    return null
+  }
 
   return (
     <div className="cal">
