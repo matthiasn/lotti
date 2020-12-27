@@ -13,6 +13,7 @@ import { Briefing } from './briefing'
 import { TopBar } from './modules/top-bar'
 import { InfiniteCalPicker } from './modules/infinite-calendar'
 import { BusyStatus } from './modules/busy-status'
+import { BigCalendar } from './modules/big-calendar'
 
 const client = apolloClient()
 
@@ -25,6 +26,7 @@ function App() {
             <TopBar />
             <BusyStatus />
             <InfiniteCalPicker />
+            <BigCalendar />
             <Briefing />
           </div>
         </div>

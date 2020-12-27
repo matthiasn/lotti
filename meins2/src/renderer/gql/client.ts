@@ -7,6 +7,8 @@ import {
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
 
+const DEBUG = false
+
 export enum Screen {
   HOME,
   SETTINGS,
@@ -37,13 +39,17 @@ export function apolloClient() {
     uri: URI,
     fetch: (...pl) => {
       const [_, options] = pl
-      const body = JSON.parse(options.body.toString())
-      console.log(
-        `📡 ${body.operationName || ''}\n${body.query}`,
-        body.variables,
-      )
+      if (DEBUG) {
+        const body = JSON.parse(options.body.toString())
+        console.log(
+          `📡 ${body.operationName || ''}\n${body.query}`,
+          body.variables,
+        )
+      }
       const res = fetch(...pl)
-      res.then((v) => console.log(v))
+      if (DEBUG) {
+        res.then((v) => console.log(v))
+      }
       return res
     },
   })

@@ -762,6 +762,131 @@ export type StartedTasksQuery = { __typename?: 'QueryRoot' } & {
   >
 }
 
+export type LoggedTimeQueryVariables = Exact<{
+  day?: Maybe<Scalars['String']>
+}>
+
+export type LoggedTimeQuery = { __typename?: 'QueryRoot' } & {
+  logged_time?: Maybe<
+    { __typename?: 'DayStats' } & Pick<
+      DayStats,
+      | 'day'
+      | 'total_time'
+      | 'entry_count'
+      | 'word_count'
+      | 'tasks_cnt'
+      | 'closed_tasks_cnt'
+      | 'done_tasks_cnt'
+    > & {
+        by_story?: Maybe<
+          Array<
+            Maybe<
+              { __typename?: 'LoggedByStory' } & Pick<
+                LoggedByStory,
+                'logged'
+              > & {
+                  story?: Maybe<
+                    { __typename?: 'Story' } & Pick<
+                      Story,
+                      'story_name' | 'timestamp'
+                    >
+                  >
+                }
+            >
+          >
+        >
+        by_ts?: Maybe<
+          Array<
+            Maybe<
+              { __typename?: 'LoggedCalItem' } & Pick<
+                LoggedCalItem,
+                | 'timestamp'
+                | 'adjusted_ts'
+                | 'md'
+                | 'text'
+                | 'completed'
+                | 'summed'
+                | 'manual'
+                | 'comment_for'
+              > & {
+                  story?: Maybe<
+                    { __typename?: 'Story' } & Pick<
+                      Story,
+                      'timestamp' | 'story_name' | 'badge_color' | 'font_color'
+                    > & {
+                        saga?: Maybe<
+                          { __typename?: 'Saga' } & Pick<
+                            Saga,
+                            'timestamp' | 'saga_name'
+                          >
+                        >
+                      }
+                  >
+                  parent?: Maybe<
+                    { __typename?: 'Entry' } & Pick<
+                      Entry,
+                      'timestamp' | 'text'
+                    > & {
+                        task?: Maybe<
+                          { __typename?: 'Task' } & Pick<
+                            Task,
+                            'done' | 'closed' | 'estimate_m' | 'priority'
+                          >
+                        >
+                      }
+                  >
+                }
+            >
+          >
+        >
+        by_ts_cal?: Maybe<
+          Array<
+            Maybe<
+              { __typename?: 'LoggedCalItem' } & Pick<
+                LoggedCalItem,
+                | 'timestamp'
+                | 'adjusted_ts'
+                | 'md'
+                | 'text'
+                | 'completed'
+                | 'summed'
+                | 'manual'
+                | 'comment_for'
+              > & {
+                  story?: Maybe<
+                    { __typename?: 'Story' } & Pick<
+                      Story,
+                      'timestamp' | 'story_name' | 'badge_color' | 'font_color'
+                    > & {
+                        saga?: Maybe<
+                          { __typename?: 'Saga' } & Pick<
+                            Saga,
+                            'timestamp' | 'saga_name'
+                          >
+                        >
+                      }
+                  >
+                  parent?: Maybe<
+                    { __typename?: 'Entry' } & Pick<
+                      Entry,
+                      'timestamp' | 'text'
+                    > & {
+                        task?: Maybe<
+                          { __typename?: 'Task' } & Pick<
+                            Task,
+                            'done' | 'closed' | 'estimate_m' | 'priority'
+                          >
+                        >
+                      }
+                  >
+                }
+            >
+          >
+        >
+      }
+  >
+}
+
 export const StatsDocument = gql`
   query stats {
     active_threads
@@ -944,4 +1069,131 @@ export type StartedTasksLazyQueryHookResult = ReturnType<
 export type StartedTasksQueryResult = Apollo.QueryResult<
   StartedTasksQuery,
   StartedTasksQueryVariables
+>
+export const LoggedTimeDocument = gql`
+  query loggedTime($day: String) {
+    logged_time(day: $day) {
+      day
+      total_time
+      entry_count
+      word_count
+      tasks_cnt
+      closed_tasks_cnt
+      done_tasks_cnt
+      by_story {
+        logged
+        story {
+          story_name
+          timestamp
+        }
+      }
+      by_ts {
+        timestamp
+        adjusted_ts
+        md
+        text
+        story {
+          timestamp
+          saga {
+            timestamp
+            saga_name
+          }
+          story_name
+          badge_color
+          font_color
+        }
+        completed
+        summed
+        manual
+        comment_for
+        parent {
+          timestamp
+          text
+          task {
+            done
+            closed
+            estimate_m
+            priority
+          }
+        }
+      }
+      by_ts_cal {
+        timestamp
+        adjusted_ts
+        md
+        text
+        story {
+          timestamp
+          saga {
+            timestamp
+            saga_name
+          }
+          story_name
+          badge_color
+          font_color
+        }
+        completed
+        summed
+        manual
+        comment_for
+        parent {
+          timestamp
+          text
+          task {
+            done
+            closed
+            estimate_m
+            priority
+          }
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useLoggedTimeQuery__
+ *
+ * To run a query within a React component, call `useLoggedTimeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLoggedTimeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLoggedTimeQuery({
+ *   variables: {
+ *      day: // value for 'day'
+ *   },
+ * });
+ */
+export function useLoggedTimeQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    LoggedTimeQuery,
+    LoggedTimeQueryVariables
+  >,
+) {
+  return Apollo.useQuery<LoggedTimeQuery, LoggedTimeQueryVariables>(
+    LoggedTimeDocument,
+    baseOptions,
+  )
+}
+export function useLoggedTimeLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    LoggedTimeQuery,
+    LoggedTimeQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<LoggedTimeQuery, LoggedTimeQueryVariables>(
+    LoggedTimeDocument,
+    baseOptions,
+  )
+}
+export type LoggedTimeQueryHookResult = ReturnType<typeof useLoggedTimeQuery>
+export type LoggedTimeLazyQueryHookResult = ReturnType<
+  typeof useLoggedTimeLazyQuery
+>
+export type LoggedTimeQueryResult = Apollo.QueryResult<
+  LoggedTimeQuery,
+  LoggedTimeQueryVariables
 >
