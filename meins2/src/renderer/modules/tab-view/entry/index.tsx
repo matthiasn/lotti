@@ -1,12 +1,13 @@
 import React from 'react'
 import { EditMenu } from './edit-menu'
 import { EntryHeader } from './header'
+import { Entry } from '../../../../generated/graphql'
 
-export function EntryView() {
+export function EntryView({ item }: { item: Entry }) {
   return (
     <div className="entry-with-comments">
       <div draggable="true" className="entry">
-        <EntryHeader />
+        <EntryHeader item={item} />
         <EditMenu />
         <div className="task-details">
           <div className="overview">

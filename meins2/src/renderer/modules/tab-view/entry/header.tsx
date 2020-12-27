@@ -1,12 +1,17 @@
 import React from 'react'
+import { Entry } from '../../../../generated/graphql'
+import moment from 'moment'
 
-export function EntryHeader() {
+export function EntryHeader({ item }: { item: Entry }) {
+  const formattedTs = moment(parseInt(item.timestamp)).format(
+    'DD.MM.YYYY, HH:mm:SS',
+  )
   return (
     <div className="header">
       <div className="action-row">
         <div className="datetime">
           <a>
-            <time className="ts">04.09.2019, 19:58:56</time>
+            <time className="ts">{formattedTs}</time>
           </a>
         </div>
         <div className="actions">
