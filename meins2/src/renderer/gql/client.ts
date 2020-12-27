@@ -6,6 +6,7 @@ import {
   makeVar,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
+import moment from 'moment'
 
 const DEBUG = false
 
@@ -16,10 +17,12 @@ export enum Screen {
 
 export interface State {
   screen: Screen
+  day: string
 }
 
 export const stateVar = makeVar<State>(<State>{
   screen: 0,
+  day: moment().subtract(1, 'day').format('YYYY-MM-DD'),
 })
 
 const URI = 'http://localhost:8766/graphql'

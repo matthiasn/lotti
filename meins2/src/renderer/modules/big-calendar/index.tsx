@@ -3,6 +3,8 @@ import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import randomColor from 'randomcolor'
 import { LoggedCalItem, useLoggedTimeQuery } from '../../../generated/graphql'
+import { useQuery } from '@apollo/client'
+import { GET_STATE } from '../../gql/local-queries'
 
 const localizer = momentLocalizer(moment)
 
@@ -34,7 +36,8 @@ function eventPropGetter(event: any) {
 }
 
 export function BigCalendar() {
-  const day = '2020-12-26'
+  const day = useQuery(GET_STATE).data?.state?.day
+
   const loggedTime = useLoggedTimeQuery({
     variables: {
       day,
