@@ -916,6 +916,20 @@ export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
                 >
               >
             >
+            spotify?: Maybe<
+              { __typename?: 'Spotify' } & Pick<
+                Spotify,
+                'id' | 'name' | 'image' | 'uri' | 'album_uri'
+              > & {
+                  artists?: Maybe<
+                    Array<
+                      Maybe<
+                        { __typename?: 'Artist' } & Pick<Artist, 'id' | 'name'>
+                      >
+                    >
+                  >
+                }
+            >
             story?: Maybe<
               { __typename?: 'Story' } & Pick<
                 Story,
@@ -1296,6 +1310,17 @@ export const TabSeachDocument = gql`
         text
         md
         img_file
+      }
+      spotify {
+        id
+        artists {
+          id
+          name
+        }
+        name
+        image
+        uri
+        album_uri
       }
       story {
         story_name

@@ -16,6 +16,17 @@ export const TAB_SEARCH = gql`
         md
         img_file
       }
+      spotify {
+        id
+        artists {
+          id
+          name
+        }
+        name
+        image
+        uri
+        album_uri
+      }
       story {
         story_name
         timestamp

@@ -29,8 +29,8 @@ function App() {
             <InfiniteCalPicker />
             <BigCalendar />
             <Briefing />
-            <TabView side={TabSides.left} query={''}/>
-            <TabView side={TabSides.right} query={'#spotify'}/>
+            <TabView side={TabSides.left} query={''} />
+            <TabView side={TabSides.right} query={'#spotify'} />
           </div>
         </div>
         <Stats />

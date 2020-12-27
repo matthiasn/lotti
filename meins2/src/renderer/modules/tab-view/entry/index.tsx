@@ -2,6 +2,7 @@ import React from 'react'
 import { EditMenu } from './edit-menu'
 import { EntryHeader } from './header'
 import { Entry } from '../../../../generated/graphql'
+import { SpotifyView } from './spotify'
 
 export function EntryView({ item }: { item: Entry }) {
   return (
@@ -34,6 +35,7 @@ export function EntryView({ item }: { item: Entry }) {
           </div>
           <div className="word-count" />
         </div>
+        <SpotifyView item={item} />
       </div>
       <div className="show-comments">
         <span>show 1 comment</span>
