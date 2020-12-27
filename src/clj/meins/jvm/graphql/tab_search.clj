@@ -68,4 +68,4 @@
             (put-fn (with-meta [:gql/res2 diff-res] msg-meta))))
         (let [res {:res res :del #{} :tab tab :query m :n n :incremental false}]
           (put-fn (with-meta [:gql/res2 res] msg-meta))))
-      [])))
+      res)))
