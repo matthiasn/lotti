@@ -905,13 +905,14 @@ export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
           | 'longitude'
           | 'latitude'
           | 'starred'
+          | 'tags'
         > & {
             comments?: Maybe<
               Array<
                 Maybe<
                   { __typename?: 'Entry' } & Pick<
                     Entry,
-                    'timestamp' | 'text' | 'md' | 'img_file'
+                    'timestamp' | 'text' | 'md' | 'img_file' | 'completed_time'
                   >
                 >
               >
@@ -1310,7 +1311,9 @@ export const TabSeachDocument = gql`
         text
         md
         img_file
+        completed_time
       }
+      tags
       spotify {
         id
         artists {

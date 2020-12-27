@@ -15,7 +15,9 @@ export const TAB_SEARCH = gql`
         text
         md
         img_file
+        completed_time
       }
+      tags
       spotify {
         id
         artists {

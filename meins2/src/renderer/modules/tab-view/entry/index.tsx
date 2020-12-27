@@ -4,6 +4,7 @@ import { EntryHeader } from './header'
 import { Entry } from '../../../../generated/graphql'
 import { SpotifyView } from './spotify'
 import { TaskView } from './task'
+import { FooterView } from './footer'
 
 export function EntryView({ item }: { item: Entry }) {
   return (
@@ -12,18 +13,7 @@ export function EntryView({ item }: { item: Entry }) {
         <EntryHeader item={item} />
         {!item.spotify && <EditMenu />}
         <TaskView item={item} />
-        <div className="entry-footer">
-          <div className="pomodoro">
-            <div className="dur">00:30:00</div>
-          </div>
-          <div className="hashtags">
-            <span className="hashtag">#task</span>
-            <span className="hashtag">#photo</span>
-            <span className="hashtag">#screenshot</span>
-            <span className="hashtag">#PR</span>
-          </div>
-          <div className="word-count" />
-        </div>
+        <FooterView item={item} />
         <SpotifyView item={item} />
       </div>
       <div className="show-comments">
