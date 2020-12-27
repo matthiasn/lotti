@@ -14,6 +14,7 @@ import { TopBar } from './modules/top-bar'
 import { InfiniteCalPicker } from './modules/infinite-calendar'
 import { BusyStatus } from './modules/busy-status'
 import { BigCalendar } from './modules/big-calendar'
+import { TabSides, TabView } from './modules/tab-view'
 
 const client = apolloClient()
 
@@ -28,6 +29,8 @@ function App() {
             <InfiniteCalPicker />
             <BigCalendar />
             <Briefing />
+            <TabView side={TabSides.left} />
+            <TabView side={TabSides.right} />
           </div>
         </div>
         <Stats />
