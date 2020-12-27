@@ -887,6 +887,90 @@ export type StatsQuery = { __typename?: 'QueryRoot' } & Pick<
     >
   }
 
+export type TabSeachQueryVariables = Exact<{
+  n?: Maybe<Scalars['Int']>
+  query?: Maybe<Scalars['String']>
+}>
+
+export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
+  tab_search?: Maybe<
+    Array<
+      Maybe<
+        { __typename?: 'Entry' } & Pick<
+          Entry,
+          | 'timestamp'
+          | 'text'
+          | 'md'
+          | 'img_file'
+          | 'longitude'
+          | 'latitude'
+          | 'starred'
+        > & {
+            comments?: Maybe<
+              Array<
+                Maybe<
+                  { __typename?: 'Entry' } & Pick<
+                    Entry,
+                    'timestamp' | 'text' | 'md' | 'img_file'
+                  >
+                >
+              >
+            >
+            story?: Maybe<
+              { __typename?: 'Story' } & Pick<
+                Story,
+                'story_name' | 'timestamp'
+              > & {
+                  saga?: Maybe<
+                    { __typename?: 'Saga' } & Pick<
+                      Saga,
+                      'saga_name' | 'timestamp'
+                    >
+                  >
+                }
+            >
+            task?: Maybe<
+              { __typename?: 'Task' } & Pick<
+                Task,
+                | 'closed'
+                | 'closed_ts'
+                | 'completion_ts'
+                | 'done'
+                | 'estimate_m'
+                | 'points'
+                | 'priority'
+              >
+            >
+            linked?: Maybe<
+              Array<
+                Maybe<
+                  { __typename?: 'Entry' } & Pick<
+                    Entry,
+                    'timestamp' | 'text' | 'md'
+                  > & {
+                      story?: Maybe<
+                        { __typename?: 'Story' } & Pick<
+                          Story,
+                          'story_name' | 'timestamp'
+                        > & {
+                            saga?: Maybe<
+                              { __typename?: 'Saga' } & Pick<
+                                Saga,
+                                'saga_name' | 'timestamp'
+                              >
+                            >
+                          }
+                      >
+                    }
+                >
+              >
+            >
+          }
+      >
+    >
+  >
+}
+
 export const LoggedTimeDocument = gql`
   query loggedTime($day: String) {
     logged_time(day: $day) {
@@ -1196,4 +1280,98 @@ export type StatsLazyQueryHookResult = ReturnType<typeof useStatsLazyQuery>
 export type StatsQueryResult = Apollo.QueryResult<
   StatsQuery,
   StatsQueryVariables
+>
+export const TabSeachDocument = gql`
+  query tabSeach($n: Int, $query: String) {
+    tab_search(n: $n, query: $query) {
+      timestamp
+      text
+      md
+      img_file
+      longitude
+      latitude
+      starred
+      comments {
+        timestamp
+        text
+        md
+        img_file
+      }
+      story {
+        story_name
+        timestamp
+        saga {
+          saga_name
+          timestamp
+        }
+      }
+      task {
+        closed
+        closed_ts
+        completion_ts
+        done
+        estimate_m
+        points
+        priority
+      }
+      linked {
+        timestamp
+        text
+        md
+        story {
+          story_name
+          timestamp
+          saga {
+            saga_name
+            timestamp
+          }
+        }
+      }
+    }
+  }
+`
+
+/**
+ * __useTabSeachQuery__
+ *
+ * To run a query within a React component, call `useTabSeachQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTabSeachQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTabSeachQuery({
+ *   variables: {
+ *      n: // value for 'n'
+ *      query: // value for 'query'
+ *   },
+ * });
+ */
+export function useTabSeachQuery(
+  baseOptions?: Apollo.QueryHookOptions<TabSeachQuery, TabSeachQueryVariables>,
+) {
+  return Apollo.useQuery<TabSeachQuery, TabSeachQueryVariables>(
+    TabSeachDocument,
+    baseOptions,
+  )
+}
+export function useTabSeachLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    TabSeachQuery,
+    TabSeachQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<TabSeachQuery, TabSeachQueryVariables>(
+    TabSeachDocument,
+    baseOptions,
+  )
+}
+export type TabSeachQueryHookResult = ReturnType<typeof useTabSeachQuery>
+export type TabSeachLazyQueryHookResult = ReturnType<
+  typeof useTabSeachLazyQuery
+>
+export type TabSeachQueryResult = Apollo.QueryResult<
+  TabSeachQuery,
+  TabSeachQueryVariables
 >

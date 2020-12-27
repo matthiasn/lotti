@@ -1,7 +1,7 @@
 import React from 'react'
 import { Entry, useStartedTasksQuery } from '../../../generated/graphql'
 import moment, { duration } from 'moment'
-import {ProgressBar} from './progress'
+import { ProgressBar } from './progress'
 
 function StartedTask({ item }: { item: Entry }) {
   const prio = `${item.task?.priority || ''}`.replace(':', '')
@@ -45,7 +45,7 @@ function StartedTask({ item }: { item: Entry }) {
           </div>
         </div>
       </td>
-      <ProgressBar item={item}/>
+      <ProgressBar item={item} />
       <td className="text">{item.text}</td>
       <td className="last" />
     </tr>
