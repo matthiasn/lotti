@@ -17,6 +17,7 @@ export const TAB_SEARCH = gql`
         tags
         img_file
         completed_time
+        starred
       }
       tags
       spotify {

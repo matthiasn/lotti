@@ -57,7 +57,9 @@ export function EntryHeader({ item }: { item: Entry }) {
               </span>
               <i className="fa fa-bug toggle" />
             </div>
-            <i className="fa toggle fa-star" />
+            <i
+              className={`fa toggle fa-star ${item.starred ? 'starred' : ''}`}
+            />
             <i className="fa toggle fa-flag" />
           </div>
         </div>

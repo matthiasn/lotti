@@ -918,6 +918,7 @@ export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
                     | 'tags'
                     | 'img_file'
                     | 'completed_time'
+                    | 'starred'
                   >
                 >
               >
@@ -1318,6 +1319,7 @@ export const TabSeachDocument = gql`
         tags
         img_file
         completed_time
+        starred
       }
       tags
       spotify {
