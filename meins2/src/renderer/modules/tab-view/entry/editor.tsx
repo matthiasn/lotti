@@ -1,4 +1,10 @@
-import React, { KeyboardEvent, useRef, useState } from 'react'
+import React, {
+  Dispatch,
+  KeyboardEvent,
+  SetStateAction,
+  useRef,
+  useState,
+} from 'react'
 import {
   convertToRaw,
   convertFromRaw,
@@ -22,18 +28,43 @@ function logMarkdown(editorState: EditorState) {
   console.log(text)
 }
 
-export function EditMenu({ editorState }: { editorState: EditorState }) {
+export function EditMenu({
+  editorState,
+  setEditorState,
+}: {
+  editorState: EditorState
+  setEditorState: Dispatch<SetStateAction<EditorState>>
+}) {
+  function toggleInlineStyle(inlineStyle: string) {
+    setEditorState(RichUtils.toggleInlineStyle(editorState, inlineStyle))
+  }
+
   return (
     <div className="RichEditor-controls edit-menu">
       <i
         className="fa far fa-save fa-wide"
         onClick={() => logMarkdown(editorState)}
       />
-      <i className="fa far fa-bold fa-wide" />
-      <i className="fa far fa-italic fa-wide" />
-      <i className="fa far fa-underline fa-wide" />
-      <i className="fa far fa-code fa-wide" />
-      <i className="fa far fa-strikethrough fa-wide" />
+      <i
+        className="fa far fa-bold fa-wide"
+        onClick={() => toggleInlineStyle('BOLD')}
+      />
+      <i
+        className="fa far fa-italic fa-wide"
+        onClick={() => toggleInlineStyle('ITALIC')}
+      />
+      <i
+        className="fa far fa-underline fa-wide"
+        onClick={() => toggleInlineStyle('UNDERLINE')}
+      />
+      <i
+        className="fa far fa-code fa-wide"
+        onClick={() => toggleInlineStyle('CODE')}
+      />
+      <i
+        className="fa far fa-strikethrough fa-wide"
+        onClick={() => toggleInlineStyle('STRIKETHROUGH')}
+      />
       <i className="fa far fa-heading" />
       <i className="fa far fa-heading header-2" />
       <i className="fa far fa-heading header-3" />
@@ -80,7 +111,7 @@ export function EditorView({ item }: { item: Entry }) {
 
   return (
     <div className="entry-text">
-      <EditMenu editorState={editorState} />
+      <EditMenu editorState={editorState} setEditorState={setEditorState} />
       <Editor
         ref={editor}
         editorState={editorState}
