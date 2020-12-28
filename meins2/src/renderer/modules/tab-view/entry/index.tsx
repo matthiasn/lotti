@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
-import { EditorView } from './editor'
+import { EditorView } from '../../editor'
 import { EntryHeader } from './header'
 import { Entry } from '../../../../generated/graphql'
 import { SpotifyView } from './spotify'
 import { TaskView } from './task'
 import { FooterView } from './footer'
-import { convertFromRaw, EditorState } from 'draft-js'
-import { mdToDraftjs } from 'draftjs-md-converter'
 
 export function EntryView({ item }: { item: Entry }) {
   return (
