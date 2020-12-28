@@ -1,21 +1,33 @@
-import React, { useRef, useState } from 'react'
-import { convertToRaw, convertFromRaw, Editor, EditorState } from 'draft-js'
+import React, { KeyboardEvent, useRef, useState } from 'react'
+import {
+  convertToRaw,
+  convertFromRaw,
+  Editor,
+  EditorState,
+  getDefaultKeyBinding,
+  KeyBindingUtil,
+  DraftHandleValue,
+} from 'draft-js'
 import { mdToDraftjs, draftjsToMd } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
 import { Entry } from '../../../../generated/graphql'
+const { hasCommandModifier } = KeyBindingUtil
+
+function logMarkdown(editorState: EditorState) {
+  const content = editorState.getCurrentContent()
+  const md = draftjsToMd(convertToRaw(content))
+  const text = content.getPlainText()
+  console.log(md)
+  console.log(text)
+}
 
 export function EditMenu({ editorState }: { editorState: EditorState }) {
-  function logMarkdown() {
-    const content = editorState.getCurrentContent()
-    const md = draftjsToMd(convertToRaw(content))
-    const text = content.getPlainText()
-    console.log(md)
-    console.log(text)
-  }
-
   return (
     <div className="RichEditor-controls edit-menu">
-      <i className="fa far fa-save fa-wide" onClick={logMarkdown} />
+      <i
+        className="fa far fa-save fa-wide"
+        onClick={() => logMarkdown(editorState)}
+      />
       <i className="fa far fa-bold fa-wide" />
       <i className="fa far fa-italic fa-wide" />
       <i className="fa far fa-underline fa-wide" />
@@ -43,6 +55,21 @@ export function EditorView({ item }: { item: Entry }) {
     editor.current.focus()
   }
 
+  function keyBindingFn(e: KeyboardEvent<{}>): string | null {
+    if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
+      return 'editor-save'
+    }
+    return getDefaultKeyBinding(e)
+  }
+
+  function handleKeyCommand(command: string): DraftHandleValue {
+    if (command === 'editor-save') {
+      logMarkdown(editorState)
+      return 'handled'
+    }
+    return 'not-handled'
+  }
+
   return (
     <div className="entry-text">
       <EditMenu editorState={editorState} />
@@ -51,6 +78,8 @@ export function EditorView({ item }: { item: Entry }) {
         editorState={editorState}
         onChange={setEditorState}
         placeholder="Write something!"
+        keyBindingFn={keyBindingFn}
+        handleKeyCommand={handleKeyCommand}
       />
     </div>
   )
