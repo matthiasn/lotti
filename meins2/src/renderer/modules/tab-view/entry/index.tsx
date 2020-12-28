@@ -1,5 +1,5 @@
 import React from 'react'
-import { EntryText } from './editor'
+import { EditorView } from './editor'
 import { EntryHeader } from './header'
 import { Entry } from '../../../../generated/graphql'
 import { SpotifyView } from './spotify'
@@ -13,7 +13,7 @@ export function EntryView({ item }: { item: Entry }) {
     <div className="entry-with-comments">
       <div draggable="true" className="entry">
         <EntryHeader item={item} />
-        {!item.spotify && <EntryText />}
+        {!item.spotify && <EditorView item={item} />}
         <TaskView item={item} />
         <FooterView item={item} />
         <SpotifyView item={item} />

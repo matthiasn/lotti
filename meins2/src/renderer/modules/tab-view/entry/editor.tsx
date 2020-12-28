@@ -1,4 +1,7 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
+import { ContentState, Editor, EditorState } from 'draft-js'
+import 'draft-js/dist/Draft.css'
+import { Entry } from '../../../../generated/graphql'
 
 export function EditMenu() {
   return (
@@ -18,10 +21,26 @@ export function EditMenu() {
   )
 }
 
-export function EntryText() {
+export function EditorView({ item }: { item: Entry }) {
+  const [editorState, setEditorState] = useState(() =>
+    EditorState.createWithContent(ContentState.createFromText(item.text || '')),
+  )
+
+  const editor = useRef(null)
+
+  function focusEditor() {
+    editor.current.focus()
+  }
+
   return (
     <div className="entry-text">
       <EditMenu />
+      <Editor
+        ref={editor}
+        editorState={editorState}
+        onChange={setEditorState}
+        placeholder="Write something!"
+      />
     </div>
   )
 }
