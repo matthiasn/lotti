@@ -39,6 +39,10 @@ export function EditMenu({
     setEditorState(RichUtils.toggleInlineStyle(editorState, inlineStyle))
   }
 
+  function toggleBlockType(blockType: string) {
+    setEditorState(RichUtils.toggleBlockType(editorState, blockType))
+  }
+
   return (
     <div className="RichEditor-controls edit-menu">
       <i
@@ -65,11 +69,26 @@ export function EditMenu({
         className="fa far fa-strikethrough fa-wide"
         onClick={() => toggleInlineStyle('STRIKETHROUGH')}
       />
-      <i className="fa far fa-heading" />
-      <i className="fa far fa-heading header-2" />
-      <i className="fa far fa-heading header-3" />
-      <i className="fa far fa-list-ul fa-wide active-button" />
-      <i className="fa far fa-list-ol fa-wide" />
+      <i
+        className="fa far fa-heading"
+        onClick={() => toggleBlockType('header-one')}
+      />
+      <i
+        className="fa far fa-heading header-2"
+        onClick={() => toggleBlockType('header-two')}
+      />
+      <i
+        className="fa far fa-heading header-3"
+        onClick={() => toggleBlockType('header-three')}
+      />
+      <i
+        className="fa far fa-list-ul fa-wide active-button"
+        onClick={() => toggleBlockType('unordered-list-item')}
+      />
+      <i
+        className="fa far fa-list-ol fa-wide"
+        onClick={() => toggleBlockType('ordered-list-item')}
+      />
     </div>
   )
 }
@@ -116,7 +135,7 @@ export function EditorView({ item }: { item: Entry }) {
         ref={editor}
         editorState={editorState}
         onChange={setEditorState}
-        placeholder="Write something!"
+        placeholder=""
         keyBindingFn={keyBindingFn}
         handleKeyCommand={handleKeyCommand}
       />
