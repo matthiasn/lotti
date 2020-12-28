@@ -15,16 +15,19 @@ export function TabView({ side, query }: { side: TabSides; query: string }) {
       query,
     },
   }).data?.tab_search
-  console.log(entries)
+  const sideName = TabSides[side]
 
   return (
-    <div className={TabSides[side]}>
+    <div className={sideName}>
       <div className="tile-tabs">
         <TabHeader />
         <div className="journal">
           <div id={side.toString()} className="journal-entries">
             {entries?.map((item: Entry) => (
-              <EntryWithCommentsView item={item} />
+              <EntryWithCommentsView
+                item={item}
+                key={`${sideName}-${item.timestamp}`}
+              />
             ))}
           </div>
         </div>

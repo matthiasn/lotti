@@ -42,7 +42,7 @@ export function OpenTasks() {
             </th>
           </tr>
           {data?.open_tasks?.map((item: Entry) => (
-            <OpenTask item={item} />
+            <OpenTask item={item} key={`open-task-${item.timestamp}`} />
           ))}
         </tbody>
       </table>

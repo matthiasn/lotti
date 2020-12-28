@@ -21,7 +21,9 @@ export function FooterView({ item }: { item: Entry }) {
       )}
       <div className="hashtags">
         {tags?.map((tag) => (
-          <span className="hashtag">{tag}</span>
+          <span className="hashtag" key={`${item.timestamp}-${tag}`}>
+            {tag}
+          </span>
         ))}
       </div>
       <div className="word-count" />

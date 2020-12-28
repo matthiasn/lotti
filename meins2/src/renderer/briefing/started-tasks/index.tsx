@@ -75,7 +75,7 @@ export function StartedTasks() {
             </th>
           </tr>
           {data?.map((item: Entry) => (
-            <StartedTask item={item} />
+            <StartedTask item={item} key={`started-task-${item.timestamp}`} />
           ))}
         </tbody>
       </table>
