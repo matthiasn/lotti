@@ -7,6 +7,7 @@ import {
   getDefaultKeyBinding,
   KeyBindingUtil,
   DraftHandleValue,
+  RichUtils,
 } from 'draft-js'
 import { mdToDraftjs, draftjsToMd } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
@@ -63,6 +64,13 @@ export function EditorView({ item }: { item: Entry }) {
   }
 
   function handleKeyCommand(command: string): DraftHandleValue {
+    const newState = RichUtils.handleKeyCommand(editorState, command)
+
+    if (newState) {
+      setEditorState(newState)
+      return 'handled'
+    }
+
     if (command === 'editor-save') {
       logMarkdown(editorState)
       return 'handled'
