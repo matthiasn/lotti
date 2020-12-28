@@ -18,11 +18,15 @@ export enum Screen {
 export interface State {
   screen: Screen
   day: string
+  left: string
+  right: string
 }
 
 export const stateVar = makeVar<State>(<State>{
   screen: 0,
   day: moment().subtract(1, 'day').format('YYYY-MM-DD'),
+  left: '',
+  right: '#spotify',
 })
 
 const URI = 'http://localhost:8766/graphql'

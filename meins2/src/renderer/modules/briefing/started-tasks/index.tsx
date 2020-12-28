@@ -2,6 +2,8 @@ import React from 'react'
 import { Entry, useStartedTasksQuery } from '../../../../generated/graphql'
 import moment, { duration } from 'moment'
 import { ProgressBar } from './progress'
+import { setTabQuery } from '../../../helpers/nav'
+import { TabSides } from '../../tab-view'
 
 function StartedTask({ item }: { item: Entry }) {
   const prio = `${item.task?.priority || ''}`.replace(':', '')
@@ -11,7 +13,10 @@ function StartedTask({ item }: { item: Entry }) {
     .format('HH:mm')
 
   return (
-    <tr className="task">
+    <tr
+      className="task"
+      onClick={() => setTabQuery(TabSides.left, `${item.timestamp}`)}
+    >
       <td className="tooltip">
         <i className="fal fa-info-circle" />
         <div className="tooltiptext">

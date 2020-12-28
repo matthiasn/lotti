@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { ApolloProvider } from '@apollo/client'
+import { ApolloProvider, useQuery } from '@apollo/client'
 import { apolloClient } from './gql/client'
 import '../scss/meins.scss'
 import '../../resources/fa5/fontawesome-all.min.css'
@@ -29,8 +29,8 @@ function App() {
             <InfiniteCalPicker />
             <BigCalendar />
             <Briefing />
-            <TabView side={TabSides.left} query={'#task'} />
-            <TabView side={TabSides.right} query={'#spotify'} />
+            <TabView side={TabSides.left} />
+            <TabView side={TabSides.right} />
           </div>
         </div>
         <Stats />

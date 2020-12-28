@@ -2,20 +2,24 @@ import React from 'react'
 import { EntryWithCommentsView } from './entry'
 import { TabHeader } from './header'
 import { Entry, useTabSeachQuery } from '../../../generated/graphql'
+import { useQuery } from '@apollo/client'
+import { GET_STATE } from '../../gql/local-queries'
 
 export enum TabSides {
   'left',
   'right',
 }
 
-export function TabView({ side, query }: { side: TabSides; query: string }) {
+export function TabView({ side }: { side: TabSides }) {
+  const sideName = TabSides[side]
+  const query = useQuery(GET_STATE).data?.state?.[sideName]
+
   const entries: Array<Entry> = useTabSeachQuery({
     variables: {
       n: 25,
       query,
     },
   }).data?.tab_search
-  const sideName = TabSides[side]
 
   return (
     <div className={sideName}>

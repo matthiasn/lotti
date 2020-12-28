@@ -1,13 +1,18 @@
 import React, { ChangeEvent, useState } from 'react'
 import { Entry, useOpenTasksQuery } from '../../../../generated/graphql'
 import moment from 'moment'
+import { setTabQuery } from '../../../helpers/nav'
+import { TabSides } from '../../tab-view'
 
 function OpenTask({ item }: { item: Entry }) {
   const prio = `${item.task?.priority || ''}`.replace(':', '')
   const age = moment(parseInt(item.timestamp)).fromNow(true)
 
   return (
-    <tr className="task">
+    <tr
+      className="task"
+      onClick={() => setTabQuery(TabSides.left, `${item.timestamp}`)}
+    >
       <td>
         <span className={`prio ${prio}`}>{prio}</span>
       </td>

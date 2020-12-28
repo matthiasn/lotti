@@ -5,10 +5,22 @@ import randomColor from 'randomcolor'
 import { LoggedCalItem, useLoggedTimeQuery } from '../../../generated/graphql'
 import { useQuery } from '@apollo/client'
 import { GET_STATE } from '../../gql/local-queries'
+import { setTabQuery } from '../../helpers/nav'
+import { TabSides } from '../tab-view'
 
 const localizer = momentLocalizer(moment)
 
-function eventMapper(item: LoggedCalItem) {
+interface CalEvent {
+  title: string
+  ts: string
+  commentFor?: string
+  bgColor: string
+  color: string
+  start: Date
+  end: Date
+}
+
+function eventMapper(item: LoggedCalItem): CalEvent {
   const storyName = item.story?.story_name
   const title = storyName ? `${storyName}: ${item.text}` : item.text
   const bgColor = randomColor({ luminosity: 'light', seed: storyName })
@@ -19,11 +31,12 @@ function eventMapper(item: LoggedCalItem) {
   return {
     title,
     ts: item.timestamp,
+    commentFor: item.comment_for,
     bgColor,
     color,
     start,
     end,
-  }
+  } as CalEvent
 }
 
 function eventPropGetter(event: any) {
@@ -58,6 +71,9 @@ export function BigCalendar() {
             defaultView="day"
             eventPropGetter={eventPropGetter}
             toolbar={false}
+            onSelectEvent={(ev: CalEvent) =>
+              setTabQuery(TabSides.left, `${ev.commentFor}`)
+            }
             showMultiDayTimes={true}
             startAccessor="start"
             endAccessor="end"

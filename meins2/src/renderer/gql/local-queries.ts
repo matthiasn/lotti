@@ -5,6 +5,8 @@ export const GET_STATE = gql`
     state @client {
       screen
       day
+      left
+      right
     }
   }
 `
