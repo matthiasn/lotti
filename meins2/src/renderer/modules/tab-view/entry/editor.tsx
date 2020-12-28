@@ -1,12 +1,21 @@
 import React, { useRef, useState } from 'react'
-import { ContentState, Editor, EditorState } from 'draft-js'
+import { convertToRaw, convertFromRaw, Editor, EditorState } from 'draft-js'
+import { mdToDraftjs, draftjsToMd } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
 import { Entry } from '../../../../generated/graphql'
 
-export function EditMenu() {
+export function EditMenu({ editorState }: { editorState: EditorState }) {
+  function logMarkdown() {
+    const content = editorState.getCurrentContent()
+    const md = draftjsToMd(convertToRaw(content))
+    const text = content.getPlainText()
+    console.log(md)
+    console.log(text)
+  }
+
   return (
     <div className="RichEditor-controls edit-menu">
-      <i className="fa far fa-save fa-wide" />
+      <i className="fa far fa-save fa-wide" onClick={logMarkdown} />
       <i className="fa far fa-bold fa-wide" />
       <i className="fa far fa-italic fa-wide" />
       <i className="fa far fa-underline fa-wide" />
@@ -23,7 +32,9 @@ export function EditMenu() {
 
 export function EditorView({ item }: { item: Entry }) {
   const [editorState, setEditorState] = useState(() =>
-    EditorState.createWithContent(ContentState.createFromText(item.text || '')),
+    EditorState.createWithContent(
+      convertFromRaw(mdToDraftjs(item.md || item.text || '')),
+    ),
   )
 
   const editor = useRef(null)
@@ -34,7 +45,7 @@ export function EditorView({ item }: { item: Entry }) {
 
   return (
     <div className="entry-text">
-      <EditMenu />
+      <EditMenu editorState={editorState} />
       <Editor
         ref={editor}
         editorState={editorState}

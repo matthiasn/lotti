@@ -71,6 +71,7 @@
     "@types/react-infinite-calendar": "^2.3.5",
     "@types/react-list": "^0.8.5",
     "draft-js": "^0.11.7",
+    "draftjs-md-converter": "^1.4.1",
     "electron-context-menu": "^2.3.1",
     "electron-squirrel-startup": "^1.0.0",
     "graphql": "^15.4.0",
