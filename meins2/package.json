@@ -2,7 +2,7 @@
   "name": "meins2",
   "productName": "meins2",
   "version": "0.7.1",
-  "description": "My Electron application description",
+  "description": "meins - a personal information manager",
   "main": ".webpack/main",
   "scripts": {
     "codegen": "graphql-codegen --config codegen.yml",
@@ -17,7 +17,7 @@
     "name": "Matthias Nehlsen",
     "email": "matthias.nehlsen@gmail.com"
   },
-  "license": "MIT",
+  "license": "AGPL-1.0",
   "config": {
     "forge": {
       "packagerConfig": {},

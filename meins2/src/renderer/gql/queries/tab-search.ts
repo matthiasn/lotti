@@ -14,6 +14,7 @@ export const TAB_SEARCH = gql`
         timestamp
         text
         md
+        tags
         img_file
         completed_time
       }

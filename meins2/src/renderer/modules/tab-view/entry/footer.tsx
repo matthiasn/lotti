@@ -20,7 +20,7 @@ export function FooterView({ item }: { item: Entry }) {
         </div>
       )}
       <div className="hashtags">
-        {tags.map((tag) => (
+        {tags?.map((tag) => (
           <span className="hashtag">{tag}</span>
         ))}
       </div>

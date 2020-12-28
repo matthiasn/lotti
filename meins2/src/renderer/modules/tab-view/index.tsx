@@ -1,5 +1,5 @@
 import React from 'react'
-import { EntryView } from './entry'
+import { EntryWithCommentsView } from './entry'
 import { TabHeader } from './header'
 import { Entry, useTabSeachQuery } from '../../../generated/graphql'
 
@@ -24,7 +24,7 @@ export function TabView({ side, query }: { side: TabSides; query: string }) {
         <div className="journal">
           <div id={side.toString()} className="journal-entries">
             {entries?.map((item: Entry) => (
-              <EntryView item={item} />
+              <EntryWithCommentsView item={item} />
             ))}
           </div>
         </div>

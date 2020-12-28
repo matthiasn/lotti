@@ -912,7 +912,12 @@ export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
                 Maybe<
                   { __typename?: 'Entry' } & Pick<
                     Entry,
-                    'timestamp' | 'text' | 'md' | 'img_file' | 'completed_time'
+                    | 'timestamp'
+                    | 'text'
+                    | 'md'
+                    | 'tags'
+                    | 'img_file'
+                    | 'completed_time'
                   >
                 >
               >
@@ -1310,6 +1315,7 @@ export const TabSeachDocument = gql`
         timestamp
         text
         md
+        tags
         img_file
         completed_time
       }
