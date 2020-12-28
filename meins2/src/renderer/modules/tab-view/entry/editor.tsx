@@ -17,3 +17,11 @@ export function EditMenu() {
     </div>
   )
 }
+
+export function EntryText() {
+  return (
+    <div className="entry-text">
+      <EditMenu />
+    </div>
+  )
+}
