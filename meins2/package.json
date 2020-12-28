@@ -65,6 +65,9 @@
   },
   "dependencies": {
     "@apollo/client": "^3.3.6",
+    "@draft-js-plugins/editor": "^4.0.0-beta4",
+    "@draft-js-plugins/linkify": "^4.0.0-beta3",
+    "@draft-js-plugins/mention": "^4.0.0-beta3",
     "@types/draft-js": "^0.10.44",
     "@types/randomcolor": "^0.5.5",
     "@types/react-big-calendar": "^0.24.8",

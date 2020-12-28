@@ -2,23 +2,45 @@ import React, {
   Dispatch,
   KeyboardEvent,
   SetStateAction,
+  useCallback,
+  useMemo,
   useRef,
   useState,
 } from 'react'
+import Editor from '@draft-js-plugins/editor'
+import createMentionPlugin, {
+  defaultSuggestionsFilter,
+  MentionData,
+} from '@draft-js-plugins/mention'
+import createLinkifyPlugin from '@draft-js-plugins/linkify'
 import {
   convertToRaw,
   convertFromRaw,
-  Editor,
   EditorState,
   getDefaultKeyBinding,
   KeyBindingUtil,
   DraftHandleValue,
   RichUtils,
+  DraftEditorCommand,
 } from 'draft-js'
 import { mdToDraftjs, draftjsToMd } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
 import { Entry } from '../../../../generated/graphql'
+import '@draft-js-plugins/mention/lib/plugin.css'
+
 const { hasCommandModifier } = KeyBindingUtil
+
+const mentions = [
+  {
+    name: '#meh',
+  },
+  {
+    name: '#awesome',
+  },
+  {
+    name: '#nice',
+  },
+] as MentionData[]
 
 function logMarkdown(editorState: EditorState) {
   const content = editorState.getCurrentContent()
@@ -99,16 +121,20 @@ export function EditorView({ item }: { item: Entry }) {
       convertFromRaw(mdToDraftjs(item.md || item.text || '')),
     ),
   )
+  const [suggestions, setSuggestions] = useState(mentions)
+  const [open, setOpen] = useState(true)
 
-  const editor = useRef(null)
+  const { HashtagSuggestions, plugins } = useMemo(() => {
+    const linkifyPlugin = createLinkifyPlugin()
+    const hashtagPlugin = createMentionPlugin({ mentionTrigger: '#' })
+    const { MentionSuggestions } = hashtagPlugin
+    const plugins = [hashtagPlugin, linkifyPlugin]
+    return { plugins, HashtagSuggestions: MentionSuggestions }
+  }, [])
 
-  function focusEditor() {
-    editor.current.focus()
-  }
-
-  function keyBindingFn(e: KeyboardEvent<{}>): string | null {
+  function keyBindingFn(e: KeyboardEvent): DraftEditorCommand {
     if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
-      return 'editor-save'
+      //return 'editor-save'
     }
     return getDefaultKeyBinding(e)
   }
@@ -128,16 +154,31 @@ export function EditorView({ item }: { item: Entry }) {
     return 'not-handled'
   }
 
+  function onSearchChange({ value }: { value: string }) {
+    console.log(value)
+    setSuggestions(defaultSuggestionsFilter(value, mentions))
+  }
+
+  const onOpenChange = useCallback((_open: boolean) => {
+    setOpen(_open)
+  }, [])
+
   return (
     <div className="entry-text">
       <EditMenu editorState={editorState} setEditorState={setEditorState} />
       <Editor
-        ref={editor}
         editorState={editorState}
         onChange={setEditorState}
         placeholder=""
         keyBindingFn={keyBindingFn}
         handleKeyCommand={handleKeyCommand}
+        plugins={plugins}
+      />
+      <HashtagSuggestions
+        onSearchChange={onSearchChange}
+        suggestions={suggestions}
+        onOpenChange={onOpenChange}
+        open={open}
       />
     </div>
   )
