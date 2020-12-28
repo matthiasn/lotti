@@ -1,5 +1,5 @@
 import React from 'react'
-import { Entry, useStartedTasksQuery } from '../../../generated/graphql'
+import { Entry, useStartedTasksQuery } from '../../../../generated/graphql'
 import moment, { duration } from 'moment'
 import { ProgressBar } from './progress'
 

@@ -9,7 +9,7 @@ export function Briefing() {
         <div className="journal">
           <div className="journal-entries">
             <div className="briefing">
-              <div className="briefing-header"></div>
+              <div className="briefing-header" />
               <div className="scroll">
                 <StartedTasks />
                 <OpenTasks />

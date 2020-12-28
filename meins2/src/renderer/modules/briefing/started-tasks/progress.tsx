@@ -1,5 +1,5 @@
 import React from 'react'
-import { Entry } from '../../../generated/graphql'
+import { Entry } from '../../../../generated/graphql'
 
 export function ProgressBar({ item }: { item: Entry }) {
   return (

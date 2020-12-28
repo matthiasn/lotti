@@ -1,5 +1,5 @@
-import React from 'react'
-import { Entry, useOpenTasksQuery } from '../../../generated/graphql'
+import React, { ChangeEvent, useState } from 'react'
+import { Entry, useOpenTasksQuery } from '../../../../generated/graphql'
 import moment from 'moment'
 
 function OpenTask({ item }: { item: Entry }) {
@@ -18,11 +18,16 @@ function OpenTask({ item }: { item: Entry }) {
 }
 
 export function OpenTasks() {
-  const data = useOpenTasksQuery({
+  const [filter, setFilter] = useState('')
+  const openTasks = useOpenTasksQuery({
     fetchPolicy: 'cache-and-network',
-  }).data
+  }).data?.open_tasks?.filter(
+    (item) =>
+      item?.text?.toLowerCase().includes(filter.toLowerCase()) ||
+      filter.length === 0,
+  )
 
-  if (!data) {
+  if (!openTasks) {
     return null
   }
 
@@ -38,10 +43,13 @@ export function OpenTasks() {
             <th>
               open tasks
               <i className="fas fa-search" />
-              <input value="" />
+              <input
+                value={filter}
+                onChange={(ev) => setFilter(ev.target.value)}
+              />
             </th>
           </tr>
-          {data?.open_tasks?.map((item: Entry) => (
+          {openTasks?.map((item: Entry) => (
             <OpenTask item={item} key={`open-task-${item.timestamp}`} />
           ))}
         </tbody>
