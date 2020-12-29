@@ -693,6 +693,13 @@ export type Vclock = {
   node?: Maybe<Scalars['ID']>
 }
 
+export type AutoCompleteQueryVariables = Exact<{ [key: string]: never }>
+
+export type AutoCompleteQuery = { __typename?: 'QueryRoot' } & Pick<
+  QueryRoot,
+  'hashtags' | 'mentions'
+>
+
 export type LoggedTimeQueryVariables = Exact<{
   day?: Maybe<Scalars['String']>
 }>
@@ -992,13 +999,60 @@ export type TabSeachQuery = { __typename?: 'QueryRoot' } & {
   >
 }
 
-export type TagsQueryVariables = Exact<{ [key: string]: never }>
+export const AutoCompleteDocument = gql`
+  query autoComplete {
+    hashtags
+    mentions
+  }
+`
 
-export type TagsQuery = { __typename?: 'QueryRoot' } & Pick<
-  QueryRoot,
-  'hashtags'
+/**
+ * __useAutoCompleteQuery__
+ *
+ * To run a query within a React component, call `useAutoCompleteQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAutoCompleteQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAutoCompleteQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useAutoCompleteQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    AutoCompleteQuery,
+    AutoCompleteQueryVariables
+  >,
+) {
+  return Apollo.useQuery<AutoCompleteQuery, AutoCompleteQueryVariables>(
+    AutoCompleteDocument,
+    baseOptions,
+  )
+}
+export function useAutoCompleteLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    AutoCompleteQuery,
+    AutoCompleteQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<AutoCompleteQuery, AutoCompleteQueryVariables>(
+    AutoCompleteDocument,
+    baseOptions,
+  )
+}
+export type AutoCompleteQueryHookResult = ReturnType<
+  typeof useAutoCompleteQuery
 >
-
+export type AutoCompleteLazyQueryHookResult = ReturnType<
+  typeof useAutoCompleteLazyQuery
+>
+export type AutoCompleteQueryResult = Apollo.QueryResult<
+  AutoCompleteQuery,
+  AutoCompleteQueryVariables
+>
 export const LoggedTimeDocument = gql`
   query loggedTime($day: String) {
     logged_time(day: $day) {
@@ -1418,43 +1472,3 @@ export type TabSeachQueryResult = Apollo.QueryResult<
   TabSeachQuery,
   TabSeachQueryVariables
 >
-export const TagsDocument = gql`
-  query tags {
-    hashtags
-  }
-`
-
-/**
- * __useTagsQuery__
- *
- * To run a query within a React component, call `useTagsQuery` and pass it any options that fit your needs.
- * When your component renders, `useTagsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTagsQuery({
- *   variables: {
- *   },
- * });
- */
-export function useTagsQuery(
-  baseOptions?: Apollo.QueryHookOptions<TagsQuery, TagsQueryVariables>,
-) {
-  return Apollo.useQuery<TagsQuery, TagsQueryVariables>(
-    TagsDocument,
-    baseOptions,
-  )
-}
-export function useTagsLazyQuery(
-  baseOptions?: Apollo.LazyQueryHookOptions<TagsQuery, TagsQueryVariables>,
-) {
-  return Apollo.useLazyQuery<TagsQuery, TagsQueryVariables>(
-    TagsDocument,
-    baseOptions,
-  )
-}
-export type TagsQueryHookResult = ReturnType<typeof useTagsQuery>
-export type TagsLazyQueryHookResult = ReturnType<typeof useTagsLazyQuery>
-export type TagsQueryResult = Apollo.QueryResult<TagsQuery, TagsQueryVariables>

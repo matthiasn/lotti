@@ -12,7 +12,7 @@ import {
 } from 'draft-js'
 import { mdToDraftjs } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
-import { Entry, useTagsQuery } from '../../../generated/graphql'
+import { Entry, useAutoCompleteQuery } from '../../../generated/graphql'
 import '@draft-js-plugins/mention/lib/plugin.css'
 import { logMarkdown } from './markdown'
 import { EditMenu } from './editor-menu'
@@ -37,9 +37,13 @@ function suggestionsFilter(searchValue: string, suggestions: MentionData[]) {
 }
 
 export function EditorView({ item }: { item: Entry }) {
-  const hashtags = useTagsQuery({
+  const data = useAutoCompleteQuery({
     fetchPolicy: 'cache-and-network',
-  }).data?.hashtags.map((tag: string) => {
+  }).data
+  const hashtags = data?.hashtags.map((tag: string) => {
+    return { name: tag } as MentionData
+  })
+  const mentions = data?.mentions.map((tag: string) => {
     return { name: tag } as MentionData
   })
 
@@ -48,16 +52,20 @@ export function EditorView({ item }: { item: Entry }) {
       convertFromRaw(mdToDraftjs(item.md || item.text || '')),
     ),
   )
-  const [suggestions, setSuggestions] = useState(hashtags)
-  const [open, setOpen] = useState(false)
+  const [hashtagSuggestions, setHashtagSuggestions] = useState(hashtags)
+  const [mentionSuggestions, setMentionSuggestions] = useState(mentions)
+  const [hashtagsOpen, setHashtagsOpen] = useState(false)
+  const [mentionsOpen, setMentionsOpen] = useState(false)
   const [stateKeyBinding, setStateKeyBinding] = useState(keyBinding)
 
-  const { HashtagSuggestions, plugins } = useMemo(() => {
+  const { HashtagSuggestions, MentionSuggestions, plugins } = useMemo(() => {
     const linkifyPlugin = createLinkifyPlugin()
     const hashtagPlugin = createMentionPlugin({ mentionTrigger: '#' })
-    const { MentionSuggestions } = hashtagPlugin
-    const plugins = [hashtagPlugin, linkifyPlugin]
-    return { plugins, HashtagSuggestions: MentionSuggestions }
+    const mentionPlugin = createMentionPlugin({ mentionTrigger: '@' })
+    const HashtagSuggestions = hashtagPlugin.MentionSuggestions
+    const { MentionSuggestions } = mentionPlugin
+    const plugins = [hashtagPlugin, linkifyPlugin, mentionPlugin]
+    return { plugins, HashtagSuggestions, MentionSuggestions }
   }, [])
 
   function handleKeyCommand(command: string): DraftHandleValue {
@@ -75,17 +83,30 @@ export function EditorView({ item }: { item: Entry }) {
     return 'not-handled'
   }
 
-  function onSearchChange({ value }: { value: string }) {
-    setSuggestions(suggestionsFilter(value, hashtags))
+  function onHashtagSearchChange({ value }: { value: string }) {
+    setHashtagSuggestions(suggestionsFilter(value, hashtags))
   }
 
-  const onOpenChange = useCallback((_open: boolean) => {
+  function onMentionSearchChange({ value }: { value: string }) {
+    setMentionSuggestions(suggestionsFilter(value, mentions))
+  }
+
+  const onHashtagsOpenChange = useCallback((_open: boolean) => {
     if (_open) {
       setStateKeyBinding(undefined)
     } else {
       setStateKeyBinding(keyBinding)
     }
-    setOpen(_open)
+    setHashtagsOpen(_open)
+  }, [])
+
+  const onMentionsOpenChange = useCallback((_open: boolean) => {
+    if (_open) {
+      setStateKeyBinding(undefined)
+    } else {
+      setStateKeyBinding(keyBinding)
+    }
+    setMentionsOpen(_open)
   }, [])
 
   return (
@@ -100,12 +121,20 @@ export function EditorView({ item }: { item: Entry }) {
         handleKeyCommand={handleKeyCommand}
         plugins={plugins}
       />
-      {suggestions && (
+      {hashtagSuggestions && (
         <HashtagSuggestions
-          onSearchChange={onSearchChange}
-          suggestions={suggestions}
-          onOpenChange={onOpenChange}
-          open={open}
+          onSearchChange={onHashtagSearchChange}
+          suggestions={hashtagSuggestions}
+          onOpenChange={onHashtagsOpenChange}
+          open={hashtagsOpen}
+        />
+      )}
+      {mentionSuggestions && (
+        <MentionSuggestions
+          onSearchChange={onMentionSearchChange}
+          suggestions={mentionSuggestions}
+          onOpenChange={onMentionsOpenChange}
+          open={mentionsOpen}
         />
       )}
     </div>
