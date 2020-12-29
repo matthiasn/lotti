@@ -37,7 +37,7 @@
     "electron-context-menu": "0.15.2",
     "electron-fetch": "1.4.0",
     "electron-log": "4.0.3",
-    "electron-updater": "4.2.0",
+    "electron-updater": "4.3.5",
     "emoji-flags": "1.2.0",
     "find-process": "1.4.3",
     "globalize": "1.4.2",
