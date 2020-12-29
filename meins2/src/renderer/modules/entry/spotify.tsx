@@ -1,5 +1,5 @@
 import React from 'react'
-import { Artist, Entry } from '../../../../generated/graphql'
+import { Artist, Entry } from '../../../generated/graphql'
 
 export function SpotifyView({ item }: { item: Entry }) {
   const spotify = item.spotify

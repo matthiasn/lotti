@@ -1,5 +1,5 @@
 import React from 'react'
-import { Entry } from '../../../../generated/graphql'
+import { Entry } from '../../../generated/graphql'
 import moment, { duration } from 'moment'
 
 export function FooterView({ item }: { item: Entry }) {

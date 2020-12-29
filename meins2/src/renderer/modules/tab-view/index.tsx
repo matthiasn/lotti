@@ -1,5 +1,5 @@
 import React from 'react'
-import { EntryWithCommentsView } from './entry'
+import { EntryWithCommentsView } from '../entry'
 import { TabHeader } from './header'
 import { Entry, useTabSeachQuery } from '../../../generated/graphql'
 import { useQuery } from '@apollo/client'

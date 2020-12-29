@@ -1,5 +1,5 @@
 import React from 'react'
-import { Entry, Task } from '../../../../generated/graphql'
+import { Entry, Task } from '../../../generated/graphql'
 
 export function TaskView({ item }: { item: Entry }) {
   const task: Task = item.task
