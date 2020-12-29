@@ -58,7 +58,7 @@
     "s": "1.0.0",
     "stream": "0.0.2",
     "timers": "0.1.1",
-    "tweetnacl": "1.0.2",
+    "tweetnacl": "1.0.3",
     "tweetnacl-util": "0.15.0"
   },
   "devDependencies": {
