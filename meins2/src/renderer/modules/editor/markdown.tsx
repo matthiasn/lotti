@@ -1,5 +1,5 @@
 import React from 'react'
-import { convertToRaw, EditorState, KeyBindingUtil } from 'draft-js'
+import { convertToRaw, EditorState } from 'draft-js'
 import { draftjsToMd } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
 import '@draft-js-plugins/mention/lib/plugin.css'

@@ -54,6 +54,7 @@ export function BigCalendar() {
     variables: {
       day,
     },
+    fetchPolicy: 'cache-and-network',
   }).data?.logged_time?.by_ts_cal?.map(eventMapper)
 
   if (!events) {

@@ -1,9 +1,6 @@
-import React, { KeyboardEvent, useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import Editor from '@draft-js-plugins/editor'
-import createMentionPlugin, {
-  defaultSuggestionsFilter,
-  MentionData,
-} from '@draft-js-plugins/mention'
+import createMentionPlugin, { MentionData } from '@draft-js-plugins/mention'
 import createLinkifyPlugin from '@draft-js-plugins/linkify'
 import {
   convertFromRaw,
@@ -12,28 +9,15 @@ import {
   KeyBindingUtil,
   DraftHandleValue,
   RichUtils,
-  DraftEditorCommand,
 } from 'draft-js'
 import { mdToDraftjs } from 'draftjs-md-converter'
 import 'draft-js/dist/Draft.css'
-import { Entry } from '../../../generated/graphql'
+import { Entry, useTagsQuery } from '../../../generated/graphql'
 import '@draft-js-plugins/mention/lib/plugin.css'
 import { logMarkdown } from './markdown'
 import { EditMenu } from './editor-menu'
 
 const { hasCommandModifier } = KeyBindingUtil
-
-const mentions = [
-  {
-    name: '#meh',
-  },
-  {
-    name: '#awesome',
-  },
-  {
-    name: '#nice',
-  },
-] as MentionData[]
 
 const keyBinding = () => (e: React.KeyboardEvent): string | null => {
   if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
@@ -42,13 +26,29 @@ const keyBinding = () => (e: React.KeyboardEvent): string | null => {
   return getDefaultKeyBinding(e)
 }
 
+function suggestionsFilter(searchValue: string, suggestions: MentionData[]) {
+  const value = searchValue.toLowerCase()
+  const filteredSuggestions = suggestions.filter(function (suggestion) {
+    return !value || suggestion.name.toLowerCase().indexOf(value) > -1
+  })
+  const length =
+    filteredSuggestions.length < 15 ? filteredSuggestions.length : 15
+  return filteredSuggestions.slice(0, length)
+}
+
 export function EditorView({ item }: { item: Entry }) {
+  const hashtags = useTagsQuery({
+    fetchPolicy: 'cache-and-network',
+  }).data?.hashtags.map((tag: string) => {
+    return { name: tag } as MentionData
+  })
+
   const [editorState, setEditorState] = useState(() =>
     EditorState.createWithContent(
       convertFromRaw(mdToDraftjs(item.md || item.text || '')),
     ),
   )
-  const [suggestions, setSuggestions] = useState(mentions)
+  const [suggestions, setSuggestions] = useState(hashtags)
   const [open, setOpen] = useState(false)
   const [stateKeyBinding, setStateKeyBinding] = useState(keyBinding)
 
@@ -76,7 +76,7 @@ export function EditorView({ item }: { item: Entry }) {
   }
 
   function onSearchChange({ value }: { value: string }) {
-    setSuggestions(defaultSuggestionsFilter(value, mentions))
+    setSuggestions(suggestionsFilter(value, hashtags))
   }
 
   const onOpenChange = useCallback((_open: boolean) => {
