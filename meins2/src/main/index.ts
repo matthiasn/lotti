@@ -1,5 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron'
 import contextMenu from 'electron-context-menu'
+import './menu'
+import { setMainWindow } from './ipc'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: any
 
@@ -40,6 +42,8 @@ const createWindow = (): void => {
       nodeIntegration: true,
     },
   })
+
+  setMainWindow(mainWindow)
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
