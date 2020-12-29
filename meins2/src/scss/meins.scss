@@ -31,6 +31,16 @@ h6 {
   display: flex;
   flex-flow: column;
   height: 100vh;
+  animation: fadein 1200ms;
+
+  @keyframes fadein {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
   .error {
     margin: 50px;

@@ -8,7 +8,6 @@ export function setMainWindow(window: BrowserWindow) {
 
 export function sendToMainWindow(channel: string, args: string) {
   if (mainWindowRef) {
-    console.log('sendToMainWindow', args)
     mainWindowRef.webContents.send(channel, args)
   }
 }

@@ -10,13 +10,13 @@ import moment from 'moment'
 
 const DEBUG = false
 
-export enum Screen {
+export enum NavScreen {
   HOME,
   SETTINGS,
 }
 
 export interface State {
-  screen: Screen
+  screen: NavScreen
   day: string
   left: string
   right: string

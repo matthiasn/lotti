@@ -1,40 +1,29 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { ApolloProvider, useQuery } from '@apollo/client'
-import { apolloClient } from './gql/client'
+import { apolloClient, NavScreen } from './gql/client'
 import '../scss/meins.scss'
 import '../../resources/fa5/fontawesome-all.min.css'
 import 'lato-font/css/lato-font.css'
 import 'normalize.css/normalize.css'
 import 'typeface-montserrat/index.css'
 import 'typeface-oswald/index.css'
-import { Stats } from './modules/stats'
-import { Briefing } from './modules/briefing'
-import { TopBar } from './modules/top-bar'
-import { InfiniteCalPicker } from './modules/infinite-calendar'
-import { BusyStatus } from './modules/busy-status'
-import { BigCalendar } from './modules/big-calendar'
-import { TabSides, TabView } from './modules/tab-view'
+import './ipc'
+import { GET_STATE } from './gql/local-queries'
+import { MainScreen } from './modules/main-screen'
+import { SettingsScreen } from './modules/settings-screen'
 
 const client = apolloClient()
+
+function Nav() {
+  const screen = useQuery(GET_STATE).data?.state?.screen
+  return screen === NavScreen.HOME ? <MainScreen /> : <SettingsScreen />
+}
 
 function App() {
   return (
     <ApolloProvider client={client}>
-      <div className={'flex-container'}>
-        <div className={'grid'}>
-          <div className={'wrapper col-3'}>
-            <TopBar />
-            <BusyStatus />
-            <InfiniteCalPicker />
-            <BigCalendar />
-            <Briefing />
-            <TabView side={TabSides.left} />
-            <TabView side={TabSides.right} />
-          </div>
-        </div>
-        <Stats />
-      </div>
+      <Nav />
     </ApolloProvider>
   )
 }

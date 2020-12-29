@@ -15,7 +15,7 @@ const template = [
             {
               label: 'Preferences',
               accelerator: 'Cmd+,',
-              click: () => sendToMainWindow('menu', 'open-preferences'),
+              click: () => sendToMainWindow('menu', 'toggle-preferences'),
             },
             { type: 'separator' },
             { label: 'Start Spotify Service' },
