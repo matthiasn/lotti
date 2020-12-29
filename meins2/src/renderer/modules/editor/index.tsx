@@ -35,6 +35,13 @@ const mentions = [
   },
 ] as MentionData[]
 
+const keyBinding = () => (e: React.KeyboardEvent): string | null => {
+  if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
+    return 'editor-save'
+  }
+  return getDefaultKeyBinding(e)
+}
+
 export function EditorView({ item }: { item: Entry }) {
   const [editorState, setEditorState] = useState(() =>
     EditorState.createWithContent(
@@ -42,7 +49,8 @@ export function EditorView({ item }: { item: Entry }) {
     ),
   )
   const [suggestions, setSuggestions] = useState(mentions)
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [stateKeyBinding, setStateKeyBinding] = useState(keyBinding)
 
   const { HashtagSuggestions, plugins } = useMemo(() => {
     const linkifyPlugin = createLinkifyPlugin()
@@ -51,13 +59,6 @@ export function EditorView({ item }: { item: Entry }) {
     const plugins = [hashtagPlugin, linkifyPlugin]
     return { plugins, HashtagSuggestions: MentionSuggestions }
   }, [])
-
-  function keyBindingFn(e: KeyboardEvent): DraftEditorCommand {
-    if (e.keyCode === 83 /* `S` key */ && hasCommandModifier(e)) {
-      //return 'editor-save'
-    }
-    return getDefaultKeyBinding(e)
-  }
 
   function handleKeyCommand(command: string): DraftHandleValue {
     const newState = RichUtils.handleKeyCommand(editorState, command)
@@ -75,11 +76,15 @@ export function EditorView({ item }: { item: Entry }) {
   }
 
   function onSearchChange({ value }: { value: string }) {
-    console.log(value)
     setSuggestions(defaultSuggestionsFilter(value, mentions))
   }
 
   const onOpenChange = useCallback((_open: boolean) => {
+    if (_open) {
+      setStateKeyBinding(undefined)
+    } else {
+      setStateKeyBinding(keyBinding)
+    }
     setOpen(_open)
   }, [])
 
@@ -90,7 +95,8 @@ export function EditorView({ item }: { item: Entry }) {
         editorState={editorState}
         onChange={setEditorState}
         placeholder=""
-        keyBindingFn={keyBindingFn}
+        // @ts-ignore
+        keyBindingFn={stateKeyBinding}
         handleKeyCommand={handleKeyCommand}
         plugins={plugins}
       />
