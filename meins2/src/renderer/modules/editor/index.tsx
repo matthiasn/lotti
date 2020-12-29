@@ -100,12 +100,14 @@ export function EditorView({ item }: { item: Entry }) {
         handleKeyCommand={handleKeyCommand}
         plugins={plugins}
       />
-      <HashtagSuggestions
-        onSearchChange={onSearchChange}
-        suggestions={suggestions}
-        onOpenChange={onOpenChange}
-        open={open}
-      />
+      {suggestions && (
+        <HashtagSuggestions
+          onSearchChange={onSearchChange}
+          suggestions={suggestions}
+          onOpenChange={onOpenChange}
+          open={open}
+        />
+      )}
     </div>
   )
 }

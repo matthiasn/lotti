@@ -18,7 +18,13 @@ export function EntryView({ item }: { item: Entry }) {
   )
 }
 
-export function EntryWithCommentsView({ item }: { item: Entry }) {
+export function EntryWithCommentsView({
+  item,
+  sideName,
+}: {
+  item: Entry
+  sideName: string
+}) {
   const [showComments, setShowComments] = useState(false)
 
   const comments = item?.comments
@@ -39,7 +45,9 @@ export function EntryWithCommentsView({ item }: { item: Entry }) {
           </div>
           {showComments &&
             !!comments &&
-            comments?.map((item: Entry) => <EntryView item={item} />)}
+            comments?.map((item: Entry) => (
+              <EntryView item={item} key={`${sideName}-${item.timestamp}`} />
+            ))}
         </div>
       )}
     </div>

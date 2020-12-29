@@ -26,10 +26,11 @@ export function TabView({ side }: { side: TabSides }) {
       <div className="tile-tabs">
         <TabHeader />
         <div className="journal">
-          <div id={side.toString()} className="journal-entries">
+          <div id={sideName} className="journal-entries">
             {entries?.map((item: Entry) => (
               <EntryWithCommentsView
                 item={item}
+                sideName={sideName}
                 key={`${sideName}-${item.timestamp}`}
               />
             ))}
