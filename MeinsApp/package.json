@@ -20,7 +20,7 @@
     "@react-native-mapbox-gl/maps": "7.0.8",
     "buffer": "5.4.3",
     "create-react-class": "15.6.3",
-    "events": "3.0.0",
+    "events": "3.2.0",
     "intl": "1.2.5",
     "moment": "2.24.0",
     "path": "0.12.7",
