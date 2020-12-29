@@ -5,11 +5,12 @@ import { Entry } from '../../../generated/graphql'
 import { SpotifyView } from './spotify'
 import { TaskView } from './task'
 import { FooterView } from './footer'
+import { TabSides } from '../tab-view'
 
-export function EntryView({ item }: { item: Entry }) {
+export function EntryView({ item, side }: { item: Entry; side: TabSides }) {
   return (
     <div draggable="true" className="entry">
-      <EntryHeader item={item} />
+      <EntryHeader item={item} side={side} />
       {!item.spotify && <EditorView item={item} />}
       <TaskView item={item} />
       <FooterView item={item} />
@@ -20,10 +21,10 @@ export function EntryView({ item }: { item: Entry }) {
 
 export function EntryWithCommentsView({
   item,
-  sideName,
+  side,
 }: {
   item: Entry
-  sideName: string
+  side: TabSides
 }) {
   const [showComments, setShowComments] = useState(false)
 
@@ -32,7 +33,7 @@ export function EntryWithCommentsView({
 
   return (
     <div className="entry-with-comments">
-      <EntryView item={item} />
+      <EntryView item={item} side={side} />
       {!!commentsCount && (
         <div className={'comments'}>
           <div
@@ -46,7 +47,11 @@ export function EntryWithCommentsView({
           {showComments &&
             !!comments &&
             comments?.map((item: Entry) => (
-              <EntryView item={item} key={`${sideName}-${item.timestamp}`} />
+              <EntryView
+                item={item}
+                side={side}
+                key={`${side}-${item.timestamp}`}
+              />
             ))}
         </div>
       )}

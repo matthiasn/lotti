@@ -2,8 +2,10 @@ import React from 'react'
 import { Entry } from '../../../generated/graphql'
 import moment from 'moment'
 import randomColor from 'randomcolor'
+import { TabSides } from '../tab-view'
+import { setTabQuery } from '../../helpers/nav'
 
-export function EntryHeader({ item }: { item: Entry }) {
+export function EntryHeader({ item, side }: { item: Entry; side: TabSides }) {
   const formattedTs = moment(parseInt(item.timestamp)).format(
     'DD.MM.YYYY, HH:mm:SS',
   )
@@ -51,7 +53,19 @@ export function EntryHeader({ item }: { item: Entry }) {
               </span>
               <i className="fa fa-stopwatch toggle" />
               <i className="fa fa-comment toggle" />
-              <i className="fa toggle far fa-arrow-alt-from-left" />
+              <i
+                className={`fa toggle far ${
+                  side === TabSides.left
+                    ? 'fa-arrow-alt-from-left'
+                    : 'fa-arrow-alt-from-right'
+                }`}
+                onClick={() =>
+                  setTabQuery(
+                    side === TabSides.left ? TabSides.right : TabSides.left,
+                    `${item.timestamp}`,
+                  )
+                }
+              />
               <span className="delete-btn">
                 <i className="fa fa-trash-alt toggle" />
               </span>

@@ -30,7 +30,7 @@ export function TabView({ side }: { side: TabSides }) {
             {entries?.map((item: Entry) => (
               <EntryWithCommentsView
                 item={item}
-                sideName={sideName}
+                side={side}
                 key={`${sideName}-${item.timestamp}`}
               />
             ))}
