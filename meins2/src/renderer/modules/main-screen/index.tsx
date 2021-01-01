@@ -6,6 +6,7 @@ import { InfiniteCalPicker } from '../infinite-calendar'
 import { BusyStatus } from '../busy-status'
 import { BigCalendar } from '../big-calendar'
 import { TabSides, TabView } from '../tab-view'
+import {Dashboard} from '../dashboard'
 
 export function MainScreen() {
   return (
@@ -19,6 +20,7 @@ export function MainScreen() {
           <Briefing />
           <TabView side={TabSides.left} />
           <TabView side={TabSides.right} />
+          <Dashboard />
         </div>
       </div>
       <Stats />
