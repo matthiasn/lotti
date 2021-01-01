@@ -47,28 +47,28 @@ export function Dashboard() {
             <text x="185" y="95.5" fontSize="22" fontFamily="Oswald" fontWeight="444" fill="#333"
                   textAnchor="end">10K steps
             </text>
-            <rect  opacity="1" fill="red" x="200" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="219.0909090909091" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="238.1818181818182" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="257.27272727272725" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="276.3636363636364" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="295.45454545454544" y="80" width="16" height="16"/>
-            <circle  opacity="1" fill="green" cx="322.5454545454545" cy="88" r="8"/>
-            <rect  opacity="1" fill="red" x="333.6363636363636" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="352.72727272727275" y="80" width="16" height="16"/>
-            <circle  opacity="1" fill="green" cx="379.8181818181818" cy="88" r="8"/>
-            <circle  opacity="1" fill="green" cx="398.9090909090909" cy="88" r="8"/>
-            <rect  opacity="1" fill="red" x="410" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="429.09090909090907" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="448.18181818181813" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="467.27272727272725" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="486.3636363636364" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="505.45454545454544" y="80" width="16" height="16"/>
-            <circle  opacity="1" fill="green" cx="532.5454545454545" cy="88" r="8"/>
-            <rect  opacity="1" fill="red" x="543.6363636363636" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="562.7272727272727" y="80" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="581.8181818181818" y="80" width="16" height="16"/>
-            <circle  opacity="0.5" fill="green" cx="608.9090909090909" cy="88" r="8"/>
+            <rect opacity="1" fill="red" x="200" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="219.0909090909091" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="238.1818181818182" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="257.27272727272725" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="276.3636363636364" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="295.45454545454544" y="80" width="16" height="16"/>
+            <circle opacity="1" fill="green" cx="322.5454545454545" cy="88" r="8"/>
+            <rect opacity="1" fill="red" x="333.6363636363636" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="352.72727272727275" y="80" width="16" height="16"/>
+            <circle opacity="1" fill="green" cx="379.8181818181818" cy="88" r="8"/>
+            <circle opacity="1" fill="green" cx="398.9090909090909" cy="88" r="8"/>
+            <rect opacity="1" fill="red" x="410" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="429.09090909090907" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="448.18181818181813" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="467.27272727272725" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="486.3636363636364" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="505.45454545454544" y="80" width="16" height="16"/>
+            <circle opacity="1" fill="green" cx="532.5454545454545" cy="88" r="8"/>
+            <rect opacity="1" fill="red" x="543.6363636363636" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="562.7272727272727" y="80" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="581.8181818181818" y="80" width="16" height="16"/>
+            <circle opacity="0.5" fill="green" cx="608.9090909090909" cy="88" r="8"/>
           </g>
           <g>
             <line x1="200" x2="620" y1="50" y2="50" strokeWidth="2" stroke="#000"/>
@@ -77,27 +77,27 @@ export function Dashboard() {
                   textAnchor="end">6K Steps
             </text>
             <circle opacity="1" fill="green" cx="208" cy="63" r="8"/>
-            <circle  opacity="1" fill="green" cx="227.0909090909091" cy="63" r="8"/>
-            <rect  opacity="1" fill="red" x="238.1818181818182" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="257.27272727272725" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="276.3636363636364" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="295.45454545454544" y="55" width="16" height="16"/>
-            <circle  opacity="1" fill="green" cx="322.5454545454545" cy="63" r="8"/>
-            <circle  opacity="1" fill="green" cx="341.6363636363636" cy="63" r="8"/>
-            <circle  opacity="1" fill="green" cx="360.72727272727275" cy="63" r="8"/>
-            <circle  opacity="1" fill="green" cx="379.8181818181818" cy="63" r="8"/>
-            <circle  opacity="1" fill="green" cx="398.9090909090909" cy="63" r="8"/>
-            <rect  opacity="1" fill="red" x="410" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="429.09090909090907" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="448.18181818181813" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="467.27272727272725" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="486.3636363636364" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="505.45454545454544" y="55" width="16" height="16"/>
-            <circle  opacity="1" fill="green" cx="532.5454545454545" cy="63" r="8"/>
-            <rect  opacity="1" fill="red" x="543.6363636363636" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="562.7272727272727" y="55" width="16" height="16"/>
-            <rect  opacity="1" fill="red" x="581.8181818181818" y="55" width="16" height="16"/>
-            <circle  opacity="0.5" fill="green" cx="608.9090909090909" cy="63" r="8"/>
+            <circle opacity="1" fill="green" cx="227.0909090909091" cy="63" r="8"/>
+            <rect opacity="1" fill="red" x="238.1818181818182" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="257.27272727272725" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="276.3636363636364" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="295.45454545454544" y="55" width="16" height="16"/>
+            <circle opacity="1" fill="green" cx="322.5454545454545" cy="63" r="8"/>
+            <circle opacity="1" fill="green" cx="341.6363636363636" cy="63" r="8"/>
+            <circle opacity="1" fill="green" cx="360.72727272727275" cy="63" r="8"/>
+            <circle opacity="1" fill="green" cx="379.8181818181818" cy="63" r="8"/>
+            <circle opacity="1" fill="green" cx="398.9090909090909" cy="63" r="8"/>
+            <rect opacity="1" fill="red" x="410" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="429.09090909090907" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="448.18181818181813" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="467.27272727272725" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="486.3636363636364" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="505.45454545454544" y="55" width="16" height="16"/>
+            <circle opacity="1" fill="green" cx="532.5454545454545" cy="63" r="8"/>
+            <rect opacity="1" fill="red" x="543.6363636363636" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="562.7272727272727" y="55" width="16" height="16"/>
+            <rect opacity="1" fill="red" x="581.8181818181818" y="55" width="16" height="16"/>
+            <circle opacity="0.5" fill="green" cx="608.9090909090909" cy="63" r="8"/>
           </g>
           <g writingMode="tb-rl">
             <text x="209.75" y="36" fontSize="12" fontWeight="light" fill="black" textAnchor="middle">11.12.</text>
