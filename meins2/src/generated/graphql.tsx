@@ -700,6 +700,33 @@ export type AutoCompleteQuery = { __typename?: 'QueryRoot' } & Pick<
   'hashtags' | 'mentions'
 >
 
+export type DashboardQueryVariables = Exact<{
+  days?: Maybe<Scalars['Int']>
+  pvt?: Maybe<Scalars['Boolean']>
+  offset?: Maybe<Scalars['Int']>
+}>
+
+export type DashboardQuery = { __typename?: 'QueryRoot' } & {
+  habits_success?: Maybe<
+    Array<
+      Maybe<
+        { __typename?: 'HabitSuccess' } & {
+          completed?: Maybe<
+            Array<
+              Maybe<
+                { __typename?: 'HabitCriteria' } & Pick<
+                  HabitCriteria,
+                  'day' | 'habit_text' | 'habit_ts' | 'success'
+                >
+              >
+            >
+          >
+        }
+      >
+    >
+  >
+}
+
 export type LoggedTimeQueryVariables = Exact<{
   day?: Maybe<Scalars['String']>
 }>
@@ -1052,6 +1079,67 @@ export type AutoCompleteLazyQueryHookResult = ReturnType<
 export type AutoCompleteQueryResult = Apollo.QueryResult<
   AutoCompleteQuery,
   AutoCompleteQueryVariables
+>
+export const DashboardDocument = gql`
+  query dashboard($days: Int, $pvt: Boolean, $offset: Int) {
+    habits_success(days: $days, pvt: $pvt, offset: $offset) {
+      completed {
+        day
+        habit_text
+        habit_ts
+        success
+      }
+    }
+  }
+`
+
+/**
+ * __useDashboardQuery__
+ *
+ * To run a query within a React component, call `useDashboardQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDashboardQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDashboardQuery({
+ *   variables: {
+ *      days: // value for 'days'
+ *      pvt: // value for 'pvt'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useDashboardQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    DashboardQuery,
+    DashboardQueryVariables
+  >,
+) {
+  return Apollo.useQuery<DashboardQuery, DashboardQueryVariables>(
+    DashboardDocument,
+    baseOptions,
+  )
+}
+export function useDashboardLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    DashboardQuery,
+    DashboardQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<DashboardQuery, DashboardQueryVariables>(
+    DashboardDocument,
+    baseOptions,
+  )
+}
+export type DashboardQueryHookResult = ReturnType<typeof useDashboardQuery>
+export type DashboardLazyQueryHookResult = ReturnType<
+  typeof useDashboardLazyQuery
+>
+export type DashboardQueryResult = Apollo.QueryResult<
+  DashboardQuery,
+  DashboardQueryVariables
 >
 export const LoggedTimeDocument = gql`
   query loggedTime($day: String) {
