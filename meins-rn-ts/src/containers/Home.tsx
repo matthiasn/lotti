@@ -5,6 +5,7 @@ import {useDispatch} from 'react-redux';
 import {fetchUserAsync} from 'src/actions/usersActions';
 import Colors from 'src/constants/colors';
 import useSelector from 'src/utils/useSelector';
+import {AudioRecorder} from 'src/components/AudioRecorder';
 
 function Home() {
   const user = useSelector((state) => state.users.user);
@@ -28,6 +29,7 @@ function Home() {
       {user && <Text>user: </Text>}
       <Text>{JSON.stringify(user)}</Text>
       <Button title={t('fetchUser')} onPress={fetchUser} />
+      <AudioRecorder />
     </View>
   );
 }
