@@ -15,6 +15,11 @@ const resources = {
       settings: 'Settings',
       home: 'Home',
       fetchUser: 'Fetch user',
+      record: 'Record',
+      play: 'Play',
+      pause: 'Pause',
+      stopPlayer: 'Stop Player',
+      stopRecorder: 'Stop Recorder',
     },
   },
   fr: {
