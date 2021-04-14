@@ -1,4 +1,4 @@
-package com.typescriptreactnativestarter;
+package com.meins2;
 
 import android.os.Bundle;
 
@@ -13,7 +13,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "TypescriptReactNativeStarter";
+    return "meins2";
   }
 
   @Override

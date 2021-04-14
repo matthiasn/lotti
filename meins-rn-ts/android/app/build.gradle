@@ -130,7 +130,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.typescriptreactnativestarter"
+        applicationId "com.meins2"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

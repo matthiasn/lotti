@@ -3,14 +3,14 @@ require_relative '../node_modules/@react-native-community/cli-platform-ios/nativ
 
 platform :ios, '10.0'
 
-target 'TypescriptReactNativeStarter' do
+target 'meins2' do
   config = use_native_modules!
 
   use_react_native!(:path => config["reactNativePath"])
 
   pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
-  target 'TypescriptReactNativeStarterTests' do
+  target 'meins2Tests' do
     inherit! :complete
     # Pods for testing
   end
@@ -25,10 +25,10 @@ target 'TypescriptReactNativeStarter' do
   end
 end
 
-target 'TypescriptReactNativeStarter-tvOS' do
-  # Pods for TypescriptReactNativeStarter-tvOS
+target 'meins2-tvOS' do
+  # Pods for meins2-tvOS
 
-  target 'TypescriptReactNativeStarter-tvOSTests' do
+  target 'meins2-tvOSTests' do
     inherit! :search_paths
     # Pods for testing
   end

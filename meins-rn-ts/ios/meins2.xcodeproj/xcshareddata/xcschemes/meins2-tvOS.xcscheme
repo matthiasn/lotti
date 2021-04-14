@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2D02E47A1E0B4A5D006451C7"
-               BuildableName = "TypescriptReactNativeStarter-tvOS.app"
-               BlueprintName = "TypescriptReactNativeStarter-tvOS"
-               ReferencedContainer = "container:TypescriptReactNativeStarter.xcodeproj">
+               BuildableName = "meins2-tvOS.app"
+               BlueprintName = "meins2-tvOS"
+               ReferencedContainer = "container:meins2.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2D02E48F1E0B4A5D006451C7"
-               BuildableName = "TypescriptReactNativeStarter-tvOSTests.xctest"
-               BlueprintName = "TypescriptReactNativeStarter-tvOSTests"
-               ReferencedContainer = "container:TypescriptReactNativeStarter.xcodeproj">
+               BuildableName = "meins2-tvOSTests.xctest"
+               BlueprintName = "meins2-tvOSTests"
+               ReferencedContainer = "container:meins2.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2D02E47A1E0B4A5D006451C7"
-            BuildableName = "TypescriptReactNativeStarter-tvOS.app"
-            BlueprintName = "TypescriptReactNativeStarter-tvOS"
-            ReferencedContainer = "container:TypescriptReactNativeStarter.xcodeproj">
+            BuildableName = "meins2-tvOS.app"
+            BlueprintName = "meins2-tvOS"
+            ReferencedContainer = "container:meins2.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2D02E47A1E0B4A5D006451C7"
-            BuildableName = "TypescriptReactNativeStarter-tvOS.app"
-            BlueprintName = "TypescriptReactNativeStarter-tvOS"
-            ReferencedContainer = "container:TypescriptReactNativeStarter.xcodeproj">
+            BuildableName = "meins2-tvOS.app"
+            BlueprintName = "meins2-tvOS"
+            ReferencedContainer = "container:meins2.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
