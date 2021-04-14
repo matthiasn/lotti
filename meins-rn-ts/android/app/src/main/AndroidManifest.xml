@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.typescriptreactnativestarter">
+  package="com.meins2">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
