@@ -31,6 +31,7 @@
     "react": "16.13.1",
     "react-i18next": "^11.7.3",
     "react-native": "0.63.4",
+    "react-native-audio-recorder-player": "^2.6.2",
     "react-native-bootsplash": "^2.2.7",
     "react-native-easy-icon": "^1.0.6",
     "react-native-gesture-handler": "^1.8.0",
