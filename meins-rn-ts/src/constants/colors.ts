@@ -5,6 +5,6 @@ const Colors = {
   blueGrey: '#668899',
   lightBleu: '#dafaff',
   white: 'white',
-};
+}
 
-export default Colors;
+export default Colors

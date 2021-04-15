@@ -1,5 +1,5 @@
-import {createAction} from 'typesafe-actions';
-import {AppReducerState} from 'src/reducers/appReducer';
+import { createAction } from 'typesafe-actions'
+import { AppReducerState } from 'src/reducers/appReducer'
 
 /**
  * Shallow merge new state with current app reducer state and initial state
@@ -10,4 +10,4 @@ import {AppReducerState} from 'src/reducers/appReducer';
 export const setStoreState = createAction(
   'APP_SET_STORE_STATE',
   (state: Partial<AppReducerState>) => state,
-)();
+)()

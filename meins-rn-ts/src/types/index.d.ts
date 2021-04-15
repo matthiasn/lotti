@@ -1,8 +1,8 @@
-declare module 'redux-persist/lib/*';
+declare module 'redux-persist/lib/*'
 
 export interface User {
-  id: string;
-  email: string;
-  phone: string;
-  name: string;
+  id: string
+  email: string
+  phone: string
+  name: string
 }
