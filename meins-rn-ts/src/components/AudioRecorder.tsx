@@ -19,9 +19,9 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: Colors.lightBleu,
-    width: 180,
-    height: 32,
-    borderRadius: 10,
+    width: 160,
+    height: 40,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
