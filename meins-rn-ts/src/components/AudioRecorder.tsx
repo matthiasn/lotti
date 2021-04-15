@@ -4,8 +4,8 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-easy-icon/src/index'
-import { audioRecorderMachine } from 'src/xstate/audioRecorder'
-import { useMachine } from '@xstate/react'
+import { audioRecorderService } from 'src/xstate/audioRecorder'
+import { useService } from '@xstate/react'
 
 const styles = StyleSheet.create({
   container: {
@@ -38,8 +38,10 @@ const styles = StyleSheet.create({
     width: 100,
   },
   infoText: {
-    fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
     color: Colors.lightBleu,
+    fontSize: 24,
+    fontWeight: '100',
   },
   icon: {
     marginRight: 12,
@@ -91,17 +93,19 @@ function RecorderButton({
 export function AudioRecorder() {
   const { t } = useTranslation()
 
-  const [current, send] = useMachine(audioRecorderMachine)
+  const [current, send] = useService(audioRecorderService)
   const [audioRecorderPlayer] = useState(new AudioRecorderPlayer())
   const [state, setState] = useState<PlayerState>({} as PlayerState)
   const [uri, setUri] = useState<string>()
 
-  const isStopped = current.matches('stopped')
-  const isRecording = current.matches('recording')
-  const isPlaying = current.matches('playing')
-  const isPaused = current.matches('paused')
+  const isEmpty = current.value === 'empty'
+  const isStopped = current.value === 'stopped'
+  const isRecording = current.value === 'recording'
+  const isPlaying = current.value === 'playing'
+  const isPaused = current.value === 'paused'
 
   async function onPressPlay() {
+    send('PLAY')
     await audioRecorderPlayer.startPlayer(uri)
     audioRecorderPlayer.addPlayBackListener((e: any) => {
       setState({
@@ -115,10 +119,12 @@ export function AudioRecorder() {
   }
 
   async function onPressPause() {
+    send('PAUSE')
     await audioRecorderPlayer.pausePlayer()
   }
 
   async function onPressRecord() {
+    send('RECORD')
     const fileName = `${new Date().getTime()}.m4a`
     const res = await audioRecorderPlayer.startRecorder(fileName)
     audioRecorderPlayer.addRecordBackListener((e: any) => {
@@ -132,6 +138,7 @@ export function AudioRecorder() {
   }
 
   async function onPressStopRecorder() {
+    send('STOP')
     await audioRecorderPlayer.stopRecorder()
     audioRecorderPlayer.removeRecordBackListener()
     setState({
@@ -140,45 +147,63 @@ export function AudioRecorder() {
   }
 
   async function onPressStopPlayer() {
+    send('STOP')
     await audioRecorderPlayer.stopPlayer()
   }
 
   return (
     <View style={styles.container}>
-      <RecorderButton
-        enabled={isStopped || isPaused}
-        iconName={'play'}
-        title={t('play')}
-        onPress={onPressPlay}
-      />
-      <RecorderButton
-        enabled={isPlaying}
-        iconName={'stop'}
-        title={t('stopPlayer')}
-        onPress={onPressStopPlayer}
-      />
-      <RecorderButton
-        enabled={isPlaying}
-        iconName={'pause'}
-        title={t('pause')}
-        onPress={onPressPause}
-      />
-      <RecorderButton
-        enabled={isStopped}
-        iconName={'record'}
-        title={t('record')}
-        onPress={onPressRecord}
-      />
-      <RecorderButton
-        enabled={isRecording}
-        iconName={'stop'}
-        title={t('stopRecorder')}
-        onPress={onPressStopRecorder}
-      />
+      {(isStopped || isPaused) && (
+        <RecorderButton
+          enabled={isStopped || isPaused}
+          iconName={'play'}
+          title={t('play')}
+          onPress={onPressPlay}
+        />
+      )}
+      {isPlaying && (
+        <RecorderButton
+          enabled={isPlaying}
+          iconName={'stop'}
+          title={t('stop')}
+          onPress={onPressStopPlayer}
+        />
+      )}
+      {isPlaying && (
+        <RecorderButton
+          enabled={isPlaying}
+          iconName={'pause'}
+          title={t('pause')}
+          onPress={onPressPause}
+        />
+      )}
+      {(isEmpty || isStopped) && (
+        <RecorderButton
+          enabled={isEmpty || isStopped}
+          iconName={'record'}
+          title={t('record')}
+          onPress={onPressRecord}
+        />
+      )}
+      {isRecording && (
+        <RecorderButton
+          enabled={isRecording}
+          iconName={'stop'}
+          title={t('stop')}
+          onPress={onPressStopRecorder}
+        />
+      )}
       <View style={styles.info}>
-        <Text style={styles.infoText}>recordTime: {state.recordTime}</Text>
-        <Text style={styles.infoText}>playTime: {state.playTime}</Text>
-        <Text style={styles.infoText}>duration: {state.duration}</Text>
+        {isRecording && (
+          <Text style={styles.infoText}>
+            {state.recordTime} / {state.recordTime}
+          </Text>
+        )}
+        {(isPlaying || isPaused) && (
+          <Text style={styles.infoText}>
+            {state.playTime} / {state.duration}
+          </Text>
+        )}
       </View>
     </View>
   )
