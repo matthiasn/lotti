@@ -3,6 +3,7 @@ import {GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View} from 'r
 import React, {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import Colors from 'src/constants/colors';
+import Icon from 'react-native-easy-icon/src/index';
 
 const styles = StyleSheet.create({
   container: {
@@ -18,20 +19,25 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: Colors.lightBleu,
-    width: 160,
+    width: 180,
     height: 32,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    flexDirection: 'row',
   },
   buttonText: {
     fontWeight: 'bold',
     color: Colors.darkBlueGrey,
+    width: 100,
   },
   infoText: {
     fontWeight: 'bold',
     color: Colors.lightBleu,
+  },
+  icon: {
+    marginRight: 12,
   },
 });
 
@@ -47,12 +53,21 @@ interface PlayerState {
 function RecorderButton({
   title,
   onPress,
+  iconName,
 }: {
   title: string;
+  iconName: string;
   onPress: (event: GestureResponderEvent) => void;
 }) {
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
+      <Icon
+        style={styles.icon}
+        name={iconName}
+        type="material-community"
+        size={32}
+        color={Colors.blueGrey}
+      />
       <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   );
@@ -109,11 +124,11 @@ export function AudioRecorder() {
 
   return (
     <View style={styles.container}>
-      <RecorderButton title={t('play')} onPress={onPressPlay} />
-      <RecorderButton title={t('stopPlayer')} onPress={onPressStopPlayer} />
-      <RecorderButton title={t('pause')} onPress={onPressPause} />
-      <RecorderButton title={t('record')} onPress={onPressRecord} />
-      <RecorderButton title={t('stopRecorder')} onPress={onPressStopRecorder} />
+      <RecorderButton iconName={'play'} title={t('play')} onPress={onPressPlay} />
+      <RecorderButton iconName={'stop'} title={t('stopPlayer')} onPress={onPressStopPlayer} />
+      <RecorderButton iconName={'pause'} title={t('pause')} onPress={onPressPause} />
+      <RecorderButton iconName={'record'} title={t('record')} onPress={onPressRecord} />
+      <RecorderButton iconName={'stop'} title={t('stopRecorder')} onPress={onPressStopRecorder} />
       <View style={styles.info}>
         <Text style={styles.infoText}>recordTime: {state.recordTime}</Text>
         <Text style={styles.infoText}>playTime: {state.playTime}</Text>
