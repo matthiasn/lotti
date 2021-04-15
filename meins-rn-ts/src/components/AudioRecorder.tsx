@@ -4,6 +4,8 @@ import React, {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import Colors from 'src/constants/colors';
 import Icon from 'react-native-easy-icon/src/index';
+import {audioRecorderMachine} from 'src/xstate/audioRecorder'
+import {useMachine} from '@xstate/react'
 
 const styles = StyleSheet.create({
   container: {
@@ -76,6 +78,7 @@ function RecorderButton({
 export function AudioRecorder() {
   const {t} = useTranslation();
 
+  const [audioRecorderContext, sendAudioRecorder] = useMachine(audioRecorderMachine);
   const [audioRecorderPlayer] = useState(new AudioRecorderPlayer());
   const [state, setState] = useState<PlayerState>({} as PlayerState);
   const [uri, setUri] = useState<string>();
