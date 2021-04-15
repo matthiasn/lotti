@@ -10,19 +10,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: Colors.lightBleu,
+    backgroundColor: Colors.darkBlueGrey,
   },
   info: {
     marginTop: 20,
+    color: Colors.lightBleu,
   },
   button: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.lightBleu,
     width: 160,
     height: 32,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    color: Colors.darkBlueGrey,
+  },
+  infoText: {
+    fontWeight: 'bold',
+    color: Colors.lightBleu,
   },
 });
 
@@ -44,7 +53,7 @@ function RecorderButton({
 }) {
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text>{title}</Text>
+      <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   );
 }
@@ -106,9 +115,9 @@ export function AudioRecorder() {
       <RecorderButton title={t('record')} onPress={onPressRecord} />
       <RecorderButton title={t('stopRecorder')} onPress={onPressStopRecorder} />
       <View style={styles.info}>
-        <Text>recordTime: ${state.recordTime}</Text>
-        <Text>playTime: ${state.playTime}</Text>
-        <Text>duration: ${state.duration}</Text>
+        <Text style={styles.infoText}>recordTime: {state.recordTime}</Text>
+        <Text style={styles.infoText}>playTime: {state.playTime}</Text>
+        <Text style={styles.infoText}>duration: {state.duration}</Text>
       </View>
     </View>
   );
