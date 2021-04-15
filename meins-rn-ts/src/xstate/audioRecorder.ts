@@ -1,11 +1,12 @@
-import { Machine } from 'xstate'
-import { ImmerUpdateEvent } from '@xstate/immer'
+import { interpret, Machine } from 'xstate'
+import { assign } from '@xstate/immer'
 import { enableAllPlugins } from 'immer'
 
 enableAllPlugins()
 
 export interface AudioRecorderStateSchema {
   states: {
+    empty: Record<string, unknown>
     recording: Record<string, unknown>
     playing: Record<string, unknown>
     paused: Record<string, unknown>
@@ -22,10 +23,10 @@ export interface AudioRecorderContext {
   recordSecs?: number
 }
 
-export type RecordEvent = ImmerUpdateEvent<'RECORD'>
-export type PlayEvent = ImmerUpdateEvent<'PLAY'>
-export type StopEvent = ImmerUpdateEvent<'STOP'>
-export type PauseEvent = ImmerUpdateEvent<'PAUSE'>
+export type RecordEvent = { type: 'RECORD' }
+export type PlayEvent = { type: 'PLAY' }
+export type StopEvent = { type: 'STOP' }
+export type PauseEvent = { type: 'PAUSE' }
 
 export type AudioRecorderEvent = RecordEvent | PlayEvent | StopEvent | PauseEvent
 
@@ -34,16 +35,28 @@ export const audioRecorderMachine = Machine<
   AudioRecorderStateSchema,
   AudioRecorderEvent
 >({
-  initial: 'stopped',
+  initial: 'empty',
   context: {},
   states: {
+    empty: {
+      on: {
+        RECORD: {
+          target: 'recording',
+          actions: assign<AudioRecorderContext, RecordEvent>((_context) => {
+            console.log('RECORD')
+          }),
+        },
+      },
+    },
     stopped: {
       on: {
         PLAY: {
           target: 'playing',
+          actions: assign<AudioRecorderContext, PlayEvent>((_context) => {}),
         },
         RECORD: {
           target: 'recording',
+          actions: assign<AudioRecorderContext, RecordEvent>((_context) => {}),
         },
       },
     },
@@ -51,6 +64,7 @@ export const audioRecorderMachine = Machine<
       on: {
         STOP: {
           target: 'stopped',
+          actions: assign<AudioRecorderContext, StopEvent>((_context) => {}),
         },
       },
     },
@@ -58,6 +72,11 @@ export const audioRecorderMachine = Machine<
       on: {
         STOP: {
           target: 'stopped',
+          actions: assign<AudioRecorderContext, StopEvent>((_context) => {}),
+        },
+        PAUSE: {
+          target: 'paused',
+          actions: assign<AudioRecorderContext, PauseEvent>((_context) => {}),
         },
       },
     },
@@ -65,8 +84,15 @@ export const audioRecorderMachine = Machine<
       on: {
         PLAY: {
           target: 'playing',
+          actions: assign<AudioRecorderContext, PlayEvent>((_context) => {}),
         },
       },
     },
   },
 })
+
+export const audioRecorderService = interpret(audioRecorderMachine, {})
+  .onTransition((state) => {
+    console.log(state.context)
+  })
+  .start()
