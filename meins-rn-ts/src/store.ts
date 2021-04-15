@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-community/async-storage';
-import appReducer, {AppReducerState} from 'src/reducers/appReducer';
-import usersReducer, {UsersState} from 'src/reducers/usersReducer';
-import sagas from 'src/sagas/';
+import AsyncStorage from '@react-native-community/async-storage'
+import appReducer, { AppReducerState } from 'src/reducers/appReducer'
+import usersReducer, { UsersState } from 'src/reducers/usersReducer'
+import sagas from 'src/sagas/'
 import {
   applyMiddleware,
   combineReducers,
@@ -9,10 +9,10 @@ import {
   createStore,
   Dispatch,
   MiddlewareAPI,
-} from 'redux';
-import {PersistConfig, persistReducer, persistStore} from 'redux-persist';
-import createSagaMiddleware from 'redux-saga';
-import {RootAction} from 'src/actions/actionTypes';
+} from 'redux'
+import { PersistConfig, persistReducer, persistStore } from 'redux-persist'
+import createSagaMiddleware from 'redux-saga'
+import { RootAction } from 'src/actions/actionTypes'
 
 /*
  *--------------------------------------------------*
@@ -24,20 +24,20 @@ import {RootAction} from 'src/actions/actionTypes';
 const appPersistConfig: PersistConfig<AppReducerState, unknown, unknown, unknown> = {
   storage: AsyncStorage,
   key: 'app',
-};
+}
 
 const usersPersistConfig: PersistConfig<UsersState, unknown, unknown, unknown> = {
   storage: AsyncStorage,
   key: 'users',
-};
+}
 
 export const reducers = {
   app: persistReducer(appPersistConfig, appReducer),
   users: persistReducer(usersPersistConfig, usersReducer),
-};
+}
 
-export const rootReducer = combineReducers(reducers);
-export type RootState = ReturnType<typeof rootReducer>;
+export const rootReducer = combineReducers(reducers)
+export type RootState = ReturnType<typeof rootReducer>
 
 const appMiddleware = (_store: MiddlewareAPI) => (next: Dispatch) => (action: RootAction) => {
   //   var state = store.getState()
@@ -46,19 +46,19 @@ const appMiddleware = (_store: MiddlewareAPI) => (next: Dispatch) => (action: Ro
   //       *do something*
   //       break;
   //   }
-  next(action);
-};
+  next(action)
+}
 
-const sagaMiddleware = createSagaMiddleware();
+const sagaMiddleware = createSagaMiddleware()
 
-const middlewares = [sagaMiddleware, appMiddleware];
-const enhancers = [applyMiddleware(...middlewares)];
+const middlewares = [sagaMiddleware, appMiddleware]
+const enhancers = [applyMiddleware(...middlewares)]
 
-export const store = createStore(rootReducer, compose(...enhancers));
+export const store = createStore(rootReducer, compose(...enhancers))
 
-sagaMiddleware.run(sagas);
+sagaMiddleware.run(sagas)
 
-export const persistor = persistStore(store);
+export const persistor = persistStore(store)
 
 /*
  *--------------------------------------------------*
