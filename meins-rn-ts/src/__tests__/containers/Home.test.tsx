@@ -12,7 +12,7 @@ describe('Home', () => {
       <Home />
     </Provider>
   );
-  it('should renders correctly', () => {
+  it.skip('should renders correctly', () => {
     const page = render(pageTree);
     expect(page.toJSON()).toMatchSnapshot();
   });
