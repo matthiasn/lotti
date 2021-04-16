@@ -1,4 +1,4 @@
-import { interpret, Machine } from 'xstate'
+import { Machine } from 'xstate'
 import { assign } from '@xstate/immer'
 import { enableAllPlugins } from 'immer'
 
@@ -24,11 +24,31 @@ export interface AudioRecorderContext {
 }
 
 export type RecordEvent = { type: 'RECORD' }
+export type RecordProgressEvent = {
+  type: 'RECORD_PROGRESS'
+  recordSecs: number
+  recordTime: string
+}
+
 export type PlayEvent = { type: 'PLAY' }
+export type PlayProgressEvent = {
+  type: 'PLAY_PROGRESS'
+  currentPositionSec: number
+  currentDurationSec: number
+  playTime: string
+  duration: string
+}
+
 export type StopEvent = { type: 'STOP' }
 export type PauseEvent = { type: 'PAUSE' }
 
-export type AudioRecorderEvent = RecordEvent | PlayEvent | StopEvent | PauseEvent
+export type AudioRecorderEvent =
+  | RecordEvent
+  | PlayEvent
+  | StopEvent
+  | PauseEvent
+  | RecordProgressEvent
+  | PlayProgressEvent
 
 export const audioRecorderMachine = Machine<
   AudioRecorderContext,
@@ -42,9 +62,6 @@ export const audioRecorderMachine = Machine<
       on: {
         RECORD: {
           target: 'recording',
-          actions: assign<AudioRecorderContext, RecordEvent>((_context) => {
-            console.log('RECORD')
-          }),
         },
       },
     },
@@ -52,11 +69,9 @@ export const audioRecorderMachine = Machine<
       on: {
         PLAY: {
           target: 'playing',
-          actions: assign<AudioRecorderContext, PlayEvent>((_context) => {}),
         },
         RECORD: {
           target: 'recording',
-          actions: assign<AudioRecorderContext, RecordEvent>((_context) => {}),
         },
       },
     },
@@ -64,7 +79,14 @@ export const audioRecorderMachine = Machine<
       on: {
         STOP: {
           target: 'stopped',
-          actions: assign<AudioRecorderContext, StopEvent>((_context) => {}),
+        },
+        RECORD_PROGRESS: {
+          actions: assign<AudioRecorderContext, RecordProgressEvent>(
+            (context, { recordSecs, recordTime }) => {
+              context.recordSecs = recordSecs
+              context.recordTime = recordTime
+            },
+          ),
         },
       },
     },
@@ -72,11 +94,19 @@ export const audioRecorderMachine = Machine<
       on: {
         STOP: {
           target: 'stopped',
-          actions: assign<AudioRecorderContext, StopEvent>((_context) => {}),
         },
         PAUSE: {
           target: 'paused',
-          actions: assign<AudioRecorderContext, PauseEvent>((_context) => {}),
+        },
+        PLAY_PROGRESS: {
+          actions: assign<AudioRecorderContext, PlayProgressEvent>(
+            (context, { currentPositionSec, currentDurationSec, playTime, duration }) => {
+              context.currentPositionSec = currentPositionSec
+              context.currentDurationSec = currentDurationSec
+              context.playTime = playTime
+              context.duration = duration
+            },
+          ),
         },
       },
     },
@@ -84,15 +114,8 @@ export const audioRecorderMachine = Machine<
       on: {
         PLAY: {
           target: 'playing',
-          actions: assign<AudioRecorderContext, PlayEvent>((_context) => {}),
         },
       },
     },
   },
 })
-
-export const audioRecorderService = interpret(audioRecorderMachine, {})
-  .onTransition((state) => {
-    console.log(state.context)
-  })
-  .start()

@@ -4,8 +4,8 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-easy-icon/src/index'
-import { audioRecorderService } from 'src/xstate/audioRecorder'
-import { useService } from '@xstate/react'
+import { audioRecorderMachine } from 'src/xstate/audioRecorder'
+import { useMachine } from '@xstate/react'
 
 const styles = StyleSheet.create({
   container: {
@@ -48,15 +48,6 @@ const styles = StyleSheet.create({
   },
 })
 
-interface PlayerState {
-  currentPositionSec?: number
-  currentDurationSec?: number
-  playTime?: string
-  duration?: string
-  recordTime?: string
-  recordSecs?: number
-}
-
 function RecorderButton({
   enabled,
   title,
@@ -93,9 +84,8 @@ function RecorderButton({
 export function AudioRecorder() {
   const { t } = useTranslation()
 
-  const [current, send] = useService(audioRecorderService)
+  const [current, send] = useMachine(audioRecorderMachine)
   const [audioRecorderPlayer] = useState(new AudioRecorderPlayer())
-  const [state, setState] = useState<PlayerState>({} as PlayerState)
   const [uri, setUri] = useState<string>()
 
   const isEmpty = current.value === 'empty'
@@ -108,7 +98,8 @@ export function AudioRecorder() {
     send('PLAY')
     await audioRecorderPlayer.startPlayer(uri)
     audioRecorderPlayer.addPlayBackListener((e: any) => {
-      setState({
+      send({
+        type: 'PLAY_PROGRESS',
         currentPositionSec: e.current_position,
         currentDurationSec: e.duration,
         playTime: audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
@@ -128,7 +119,8 @@ export function AudioRecorder() {
     const fileName = `${new Date().getTime()}.m4a`
     const res = await audioRecorderPlayer.startRecorder(fileName)
     audioRecorderPlayer.addRecordBackListener((e: any) => {
-      setState({
+      send({
+        type: 'RECORD_PROGRESS',
         recordSecs: e.current_position,
         recordTime: audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
       })
@@ -141,9 +133,7 @@ export function AudioRecorder() {
     send('STOP')
     await audioRecorderPlayer.stopRecorder()
     audioRecorderPlayer.removeRecordBackListener()
-    setState({
-      recordSecs: 0,
-    })
+    send({ type: 'RECORD_PROGRESS', recordSecs: 0, recordTime: '00:00:00' })
   }
 
   async function onPressStopPlayer() {
@@ -196,12 +186,12 @@ export function AudioRecorder() {
       <View style={styles.info}>
         {isRecording && (
           <Text style={styles.infoText}>
-            {state.recordTime} / {state.recordTime}
+            {current.context.recordTime} / {current.context.recordTime}
           </Text>
         )}
         {(isPlaying || isPaused) && (
           <Text style={styles.infoText}>
-            {state.playTime} / {state.duration}
+            {current.context.playTime} / {current.context.duration}
           </Text>
         )}
       </View>
