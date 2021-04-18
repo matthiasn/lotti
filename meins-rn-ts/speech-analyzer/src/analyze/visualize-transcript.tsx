@@ -6,17 +6,35 @@ function pad(s: string, n: number) {
 }
 
 function millisecondsToHuman(ms: number) {
-  const seconds = Math.floor((ms / 1000) % 60);
-  const minutes = Math.floor((ms / 1000 / 60) % 60);
+  const seconds = Math.floor((ms / 1000) % 60)
+  const minutes = Math.floor((ms / 1000 / 60) % 60)
   const hours = Math.floor((ms  / 1000 / 3600 ) % 24)
 
   const humanized = [
     pad(hours.toString(), 2),
     pad(minutes.toString(), 2),
     pad(seconds.toString(), 2),
-  ].join(':');
+  ].join(':')
 
-  return humanized;
+  return humanized
+}
+
+type Utterance = {
+  end: number
+  speaker: string
+  start: number
+  text: string
+}
+
+function msBySpeaker(utterances: Utterance[]) {
+  const speakerSums = new Map<string, number>()
+  utterances.forEach((utterance) => {
+    const { end, start, speaker } = utterance
+    const duration = end - start
+    const prev = speakerSums.get(speaker) || 0
+    speakerSums.set(speaker, prev + duration)
+  })
+  return speakerSums
 }
 
 export function AnalyzeTranscript() {
@@ -43,15 +61,18 @@ export function AnalyzeTranscript() {
     fetchData()
   }, [])
 
+  const speakerSums = msBySpeaker(data.utterances)
+
   return (
     <div>
       <h1>Transcript Analytics</h1>
-      {data && data.utterances.map(({end, speaker, start, text}: {
-        end: number
-        speaker: string
-        start: number
-        text: string
-      }) => {
+      <div>
+        Speaker A: {millisecondsToHuman(speakerSums.get('A') || 0)}
+      </div>
+      <div>
+        Speaker B: {millisecondsToHuman(speakerSums.get('B') || 0)}
+      </div>
+      {data && data.utterances.map(({end, speaker, start, text}: Utterance) => {
         return (
           <div className="utterance">
             {speaker}({millisecondsToHuman(start)}): {text}
