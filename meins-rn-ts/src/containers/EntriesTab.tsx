@@ -1,17 +1,17 @@
 import React, { memo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Colors from 'src/constants/colors'
-import { AudioRecorder } from 'src/components/AudioRecorder'
+import { PlaybackList } from 'src/components/PlaybackList'
 
-function Home() {
+function EntriesTab() {
   return (
     <View style={styles.container}>
-      <AudioRecorder />
+      <PlaybackList />
     </View>
   )
 }
 
-export default memo(Home)
+export default memo(EntriesTab)
 
 const styles = StyleSheet.create({
   container: {
