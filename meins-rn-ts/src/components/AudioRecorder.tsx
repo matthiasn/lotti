@@ -113,8 +113,8 @@ export function AudioRecorder() {
     const timestamp = new Date().getTime()
     const audioFile = `${timestamp}.m4a`
     const text = ''
-    send({ type: 'RECORD', audioFile, timestamp, text })
-    const res = await audioRecorderPlayer.startRecorder(audioFile)
+    const uri = await audioRecorderPlayer.startRecorder(audioFile)
+    send({ type: 'RECORD', uri, timestamp, text })
     audioRecorderPlayer.addRecordBackListener((e: any) => {
       send({
         type: 'RECORD_PROGRESS',
@@ -123,7 +123,7 @@ export function AudioRecorder() {
       })
       return
     })
-    setUri(res)
+    setUri(uri)
   }
 
   async function onPressStopRecorder() {

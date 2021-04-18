@@ -27,7 +27,7 @@ export interface AudioRecorderContext {
 export type RecordEvent = {
   type: 'RECORD'
   timestamp: number
-  audioFile: string
+  uri: string
   text: string
 }
 
@@ -57,15 +57,13 @@ export type AudioRecorderEvent =
   | RecordProgressEvent
   | PlayProgressEvent
 
-const recordAssign = assign<AudioRecorderContext, RecordEvent>(
-  (context, { audioFile, timestamp }) => {
-    addEntry({
-      audioFile,
-      timestamp,
-      text: '',
-    })
-  },
-)
+const recordAssign = assign<AudioRecorderContext, RecordEvent>((context, { uri, timestamp }) => {
+  addEntry({
+    uri,
+    timestamp,
+    text: '',
+  })
+})
 
 export const audioRecorderMachine = Machine<
   AudioRecorderContext,

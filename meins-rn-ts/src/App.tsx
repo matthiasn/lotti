@@ -3,9 +3,10 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import RNBootSplash from 'react-native-bootsplash'
 import Icon from 'react-native-vector-icons/FontAwesome'
-import Home from 'src/containers/Home'
+import RecordTab from 'src/containers/RecordTab'
 import Settings from 'src/containers/Settings'
 import { sleep } from './utils/async'
+import EntriesTab from 'src/containers/EntriesTab'
 
 export type AppTabParamList = {
   Home: undefined
@@ -30,11 +31,19 @@ const App = () => {
   return (
     <Tab.Navigator initialRouteName="home">
       <Tab.Screen
-        name="home"
-        component={Home}
+        name="record"
+        component={RecordTab}
         options={{
-          tabBarLabel: t('home'),
-          tabBarIcon: ({ color, size }) => <Icon name={'home'} size={size} color={color} />,
+          tabBarLabel: t('recordTab'),
+          tabBarIcon: ({ color, size }) => <Icon name={'microphone'} size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="entries"
+        component={EntriesTab}
+        options={{
+          tabBarLabel: t('entriesTab'),
+          tabBarIcon: ({ color, size }) => <Icon name={'list'} size={size} color={color} />,
         }}
       />
       <Tab.Screen

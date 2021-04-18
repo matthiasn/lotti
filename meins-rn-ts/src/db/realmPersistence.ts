@@ -6,7 +6,7 @@ const EntrySchema = {
     _id: 'int',
     timestamp: 'int',
     text: 'string?',
-    audioFile: 'string?',
+    uri: 'string?',
   },
   primaryKey: '_id',
 }
@@ -18,16 +18,16 @@ export const realm = new Realm({
 export type Entry = {
   timestamp: number
   text: string
-  audioFile: string
+  uri: string
 }
 
 export function addEntry(entry: Entry) {
-  const { audioFile, text, timestamp } = entry
+  const { uri, text, timestamp } = entry
   realm.write(() => {
     realm.create('Entry', {
       _id: timestamp,
       text,
-      audioFile,
+      uri,
       timestamp,
     })
 

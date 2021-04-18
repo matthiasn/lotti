@@ -21,6 +21,8 @@ const resources = {
       stop: 'Stop',
       stopPlayer: 'Stop Player',
       stopRecorder: 'Stop Recorder',
+      entriesTab: 'Entries',
+      recordTab: 'Record',
     },
   },
   fr: {
