@@ -16,7 +16,7 @@ export interface EntriesMachineStateSchema {
 
 export interface EntriesMachineContext {
   currentPositionSec?: number
-  currentDurationSec?: number
+  durationSec?: number
   playTime?: string
   duration?: string
   recordTime?: string
@@ -29,7 +29,7 @@ export type PlayEvent = { type: 'PLAY' }
 export type PlayProgressEvent = {
   type: 'PLAY_PROGRESS'
   currentPositionSec: number
-  currentDurationSec: number
+  durationSec: number
   playTime: string
   duration: string
 }
@@ -67,9 +67,9 @@ export const playbackMachine = Machine<
         },
         PLAY_PROGRESS: {
           actions: assign<EntriesMachineContext, PlayProgressEvent>(
-            (context, { currentPositionSec, currentDurationSec, playTime, duration }) => {
+            (context, { currentPositionSec, durationSec, playTime, duration }) => {
               context.currentPositionSec = currentPositionSec
-              context.currentDurationSec = currentDurationSec
+              context.durationSec = durationSec
               context.playTime = playTime
               context.duration = duration
             },
@@ -86,12 +86,3 @@ export const playbackMachine = Machine<
     },
   },
 })
-
-export const playbackService = interpret(playbackMachine, {
-  devTools: true,
-}).onTransition((state, event) => {
-  console.log('playbackService event', event)
-  console.log('playbackService value', state.value)
-})
-
-playbackService.start()
