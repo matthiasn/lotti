@@ -7624,11 +7624,6 @@ react-native-bootsplash@^2.2.7:
     jimp "0.14.0"
     prompts "2.3.2"
 
-react-native-easy-icon@^1.0.7:
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/react-native-easy-icon/-/react-native-easy-icon-1.0.7.tgz#bead8dcca30191fba752adba94f39b53ae880bb8"
-  integrity sha512-a/KW8b7c53gNiOnFKtiJkC9Uh6oA+/0/ppsZ0AQCZhXuWCHTZqcEGEwqC+tmUHrQEtEjhVWkDMPxLA+q9hFDTg==
-
 react-native-gesture-handler@^1.8.0:
   version "1.10.3"
   resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-1.10.3.tgz#942bbf2963bbf49fa79593600ee9d7b5dab3cfc0"

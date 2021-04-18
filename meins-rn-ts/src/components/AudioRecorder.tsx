@@ -3,7 +3,7 @@ import { GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
-import Icon from 'react-native-easy-icon/src/index'
+import Icon from 'react-native-vector-icons/FontAwesome'
 import { audioRecorderMachine } from 'src/xstate/audioRecorder'
 import { useMachine } from '@xstate/react'
 
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: Colors.lightBleu,
     width: 160,
-    height: 40,
+    height: 50,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -45,6 +45,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 12,
+    marginLeft: 8,
   },
 })
 
@@ -69,13 +70,7 @@ function RecorderButton({
     <TouchableOpacity
       style={enabled ? styles.button : [styles.button, styles.buttonDisabled]}
       onPress={onPressButton}>
-      <Icon
-        style={styles.icon}
-        name={iconName}
-        type="material-community"
-        size={32}
-        color={Colors.blueGrey}
-      />
+      <Icon style={styles.icon} name={iconName} size={32} color={Colors.blueGrey} />
       <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   )
@@ -172,7 +167,7 @@ export function AudioRecorder() {
       {(isEmpty || isStopped) && (
         <RecorderButton
           enabled={isStopped || isEmpty}
-          iconName={'record'}
+          iconName={'microphone'}
           title={t('record')}
           onPress={onPressRecord}
         />
