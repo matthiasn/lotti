@@ -3,7 +3,7 @@ import { GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 
 import React, { useState } from 'react'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-vector-icons/FontAwesome'
-import {useMachine} from '@xstate/react'
+import { useMachine } from '@xstate/react'
 import { realm } from 'src/db/realmPersistence'
 import { playbackMachine } from 'src/xstate/entriesMachine'
 
@@ -19,18 +19,11 @@ const styles = StyleSheet.create({
   },
   recordingRow: {
     flexDirection: 'row',
-  },
-  button: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    flexDirection: 'row',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    width: '100%',
+    paddingVertical: 12,
+    paddingLeft: 32,
   },
   infoText: {
     fontVariant: ['tabular-nums'],
@@ -39,8 +32,7 @@ const styles = StyleSheet.create({
     fontWeight: '100',
   },
   icon: {
-    marginRight: 8,
-    marginLeft: 8,
+    paddingRight: 16,
   },
 })
 
@@ -58,19 +50,21 @@ function RecorderButton({
       onPress(event)
     }
   }
+  const color = enabled ? Colors.blueGrey : Colors.darkBlueGrey
 
   return (
-    <TouchableOpacity
-      style={enabled ? styles.button : [styles.button, styles.buttonDisabled]}
-      onPress={onPressButton}>
-      <Icon style={styles.icon} name={iconName} size={32} color={Colors.blueGrey} />
+    <TouchableOpacity onPress={onPressButton}>
+      <Icon style={styles.icon} name={iconName} size={32} color={color} />
     </TouchableOpacity>
   )
 }
 
 function PlaybackRow({ value }: { value: any }) {
   const [current, send] = useMachine(playbackMachine)
-  const [audioRecorderPlayer, setAudioRecorderPlayer] = useState(new AudioRecorderPlayer())
+  const [audioRecorderPlayer] = useState(new AudioRecorderPlayer())
+  const isStopped = current.value === 'stopped'
+  const isPlaying = current.value === 'playing'
+  const isPaused = current.value === 'paused'
 
   async function onPressPause() {
     send('PAUSE')
@@ -98,6 +92,7 @@ function PlaybackRow({ value }: { value: any }) {
 
       if (playTime === duration) {
         audioRecorderPlayer.stopPlayer()
+        send('STOP')
       }
 
       return
@@ -105,22 +100,23 @@ function PlaybackRow({ value }: { value: any }) {
   }
   return (
     <View style={styles.recordingRow} key={value.timestamp}>
-      <RecorderButton enabled={true} iconName={'play'} onPress={onPressPlay} />
-      <RecorderButton enabled={true} iconName={'stop'} onPress={onPressStopPlayer} />
-      <RecorderButton enabled={true} iconName={'pause'} onPress={onPressPause} />
+      {(isStopped || isPaused) && (
+        <RecorderButton enabled={true} iconName={'play'} onPress={onPressPlay} />
+      )}
+      {isPlaying && <RecorderButton enabled={true} iconName={'pause'} onPress={onPressPause} />}
+      <RecorderButton enabled={isPlaying} iconName={'stop'} onPress={onPressStopPlayer} />
       <Text style={styles.infoText}>{new Date(value.timestamp).toLocaleString()}</Text>
     </View>
   )
 }
 
 export function PlaybackList() {
-  const [latestUpdate, setLatestUpdate] = useState(0)
-  const [entries, setEntries] = useState(realm.objects('Entry'))
+  const [, setLatestUpdate] = useState(0)
+  const [entries] = useState(realm.objects('Entry').sorted('timestamp', true))
 
-  // entries.addListener((collection) => {
-  //   console.log(collection)
-  //   setLatestUpdate(new Date().getTime())
-  // })
+  entries.addListener(() => {
+    setLatestUpdate(new Date().getTime())
+  })
 
   return (
     <View style={styles.container}>

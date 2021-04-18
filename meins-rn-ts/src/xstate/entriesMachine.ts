@@ -1,13 +1,11 @@
-import { interpret, Machine } from 'xstate'
+import { Machine } from 'xstate'
 import { assign } from '@xstate/immer'
 import { enableAllPlugins } from 'immer'
-import { Entry } from 'src/db/realmPersistence'
 
 enableAllPlugins()
 
 export interface EntriesMachineStateSchema {
   states: {
-    idle: Record<string, unknown>
     playing: Record<string, unknown>
     paused: Record<string, unknown>
     stopped: Record<string, unknown>
@@ -21,8 +19,6 @@ export interface EntriesMachineContext {
   duration?: string
   recordTime?: string
   recordSecs?: number
-  currentEntry?: Entry
-  entries: Entry[]
 }
 
 export type PlayEvent = { type: 'PLAY' }
@@ -44,12 +40,9 @@ export const playbackMachine = Machine<
   EntriesMachineStateSchema,
   EntriesMachineEvent
 >({
-  initial: 'idle',
-  context: {
-    entries: [],
-  },
+  initial: 'stopped',
+  context: {},
   states: {
-    idle: {},
     stopped: {
       on: {
         PLAY: {
