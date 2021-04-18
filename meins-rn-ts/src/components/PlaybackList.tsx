@@ -3,9 +3,9 @@ import { GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 
 import React, { useState } from 'react'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-vector-icons/FontAwesome'
-import { useService } from '@xstate/react'
+import {useMachine} from '@xstate/react'
 import { realm } from 'src/db/realmPersistence'
-import { playbackService } from 'src/xstate/entriesMachine'
+import { playbackMachine } from 'src/xstate/entriesMachine'
 
 const styles = StyleSheet.create({
   container: {
@@ -68,7 +68,8 @@ function RecorderButton({
   )
 }
 
-function PlaybackRow({ send, value }: { value: any; send: any }) {
+function PlaybackRow({ value }: { value: any }) {
+  const [current, send] = useMachine(playbackMachine)
   const [audioRecorderPlayer, setAudioRecorderPlayer] = useState(new AudioRecorderPlayer())
 
   async function onPressPause() {
@@ -85,13 +86,20 @@ function PlaybackRow({ send, value }: { value: any; send: any }) {
     send('PLAY')
     await audioRecorderPlayer.startPlayer(value.uri)
     audioRecorderPlayer.addPlayBackListener((e: any) => {
+      const playTime = audioRecorderPlayer.mmssss(Math.floor(e.current_position))
+      const duration = audioRecorderPlayer.mmssss(Math.floor(e.duration))
       send({
         type: 'PLAY_PROGRESS',
         currentPositionSec: e.current_position,
-        currentDurationSec: e.duration,
-        playTime: audioRecorderPlayer.mmssss(Math.floor(e.current_position)),
-        duration: audioRecorderPlayer.mmssss(Math.floor(e.duration)),
+        durationSec: e.duration,
+        playTime,
+        duration,
       })
+
+      if (playTime === duration) {
+        audioRecorderPlayer.stopPlayer()
+      }
+
       return
     })
   }
@@ -108,16 +116,16 @@ function PlaybackRow({ send, value }: { value: any; send: any }) {
 export function PlaybackList() {
   const [latestUpdate, setLatestUpdate] = useState(0)
   const [entries, setEntries] = useState(realm.objects('Entry'))
+
   // entries.addListener((collection) => {
   //   console.log(collection)
   //   setLatestUpdate(new Date().getTime())
   // })
-  const [, send] = useService(playbackService)
 
   return (
     <View style={styles.container}>
       {entries.map((value: any) => (
-        <PlaybackRow value={value} send={send} key={value.timestamp} />
+        <PlaybackRow value={value} key={value.timestamp} />
       ))}
     </View>
   )
