@@ -57,6 +57,16 @@ export type AudioRecorderEvent =
   | RecordProgressEvent
   | PlayProgressEvent
 
+const recordAssign = assign<AudioRecorderContext, RecordEvent>(
+  (context, { audioFile, timestamp }) => {
+    addEntry({
+      audioFile,
+      timestamp,
+      text: '',
+    })
+  },
+)
+
 export const audioRecorderMachine = Machine<
   AudioRecorderContext,
   AudioRecorderStateSchema,
@@ -69,15 +79,7 @@ export const audioRecorderMachine = Machine<
       on: {
         RECORD: {
           target: 'recording',
-          actions: assign<AudioRecorderContext, RecordEvent>(
-            (context, { audioFile, timestamp }) => {
-              addEntry({
-                audioFile,
-                timestamp,
-                text: '',
-              })
-            },
-          ),
+          actions: [recordAssign],
         },
       },
     },
@@ -88,6 +90,7 @@ export const audioRecorderMachine = Machine<
         },
         RECORD: {
           target: 'recording',
+          actions: [recordAssign],
         },
       },
     },
