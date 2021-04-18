@@ -115,9 +115,11 @@ export function AudioRecorder() {
   }
 
   async function onPressRecord() {
-    send('RECORD')
-    const fileName = `${new Date().getTime()}.m4a`
-    const res = await audioRecorderPlayer.startRecorder(fileName)
+    const timestamp = new Date().getTime()
+    const audioFile = `${timestamp}.m4a`
+    const text = ''
+    send({ type: 'RECORD', audioFile, timestamp, text })
+    const res = await audioRecorderPlayer.startRecorder(audioFile)
     audioRecorderPlayer.addRecordBackListener((e: any) => {
       send({
         type: 'RECORD_PROGRESS',

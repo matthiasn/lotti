@@ -1,6 +1,7 @@
 import { Machine } from 'xstate'
 import { assign } from '@xstate/immer'
 import { enableAllPlugins } from 'immer'
+import { addEntry } from 'src/db/realmPersistence'
 
 enableAllPlugins()
 
@@ -23,7 +24,13 @@ export interface AudioRecorderContext {
   recordSecs?: number
 }
 
-export type RecordEvent = { type: 'RECORD' }
+export type RecordEvent = {
+  type: 'RECORD'
+  timestamp: number
+  audioFile: string
+  text: string
+}
+
 export type RecordProgressEvent = {
   type: 'RECORD_PROGRESS'
   recordSecs: number
@@ -62,6 +69,15 @@ export const audioRecorderMachine = Machine<
       on: {
         RECORD: {
           target: 'recording',
+          actions: assign<AudioRecorderContext, RecordEvent>(
+            (context, { audioFile, timestamp }) => {
+              addEntry({
+                audioFile,
+                timestamp,
+                text: '',
+              })
+            },
+          ),
         },
       },
     },

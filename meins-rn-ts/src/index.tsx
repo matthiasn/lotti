@@ -8,6 +8,7 @@ import { persistor, store } from 'src/store'
 import NavigationService, { navigationRef } from './lib/NavigationService'
 import './i18n'
 import { enableScreens } from 'react-native-screens'
+import 'src/db/realmPersistence'
 
 /**
  * Optimize memory usage and performance: https://reactnavigation.org/docs/react-native-screens/
