@@ -171,7 +171,7 @@ export function AudioRecorder() {
       )}
       {(isEmpty || isStopped) && (
         <RecorderButton
-          enabled={isEmpty || isStopped}
+          enabled={isStopped || isEmpty}
           iconName={'record'}
           title={t('record')}
           onPress={onPressRecord}

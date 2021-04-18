@@ -30,5 +30,8 @@ export function addEntry(entry: Entry) {
       audioFile,
       timestamp,
     })
+
+    const entries = realm.objects('Entry')
+    console.log(`Entries: ${entries.map((entry: any) => entry.audioFile)}`)
   })
 }
