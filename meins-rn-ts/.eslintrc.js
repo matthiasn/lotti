@@ -32,7 +32,7 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-unused-vars': ['error'],
-    'no-console': ['error', { allow: ['warn'] }],
+    'no-console': ['warn'],
     'react-native/no-unused-styles': 'error',
     'react-native/split-platform-components': 'warn',
     'react-native/no-inline-styles': 'warn',
