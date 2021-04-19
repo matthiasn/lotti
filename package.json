@@ -90,6 +90,6 @@
     "electron-notarize": "1.0.0",
     "module-deps": "6.2.2",
     "resolve": "1.14.2",
-    "webpack": "4.41.2"
+    "webpack": "5.34.0"
   }
 }
