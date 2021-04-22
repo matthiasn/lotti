@@ -1,9 +1,10 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import { requestRecordAudioPermission } from 'src/audio/permissions'
+import { PorcupineManager } from '@picovoice/porcupine-react-native'
 
 const styles = StyleSheet.create({
   container: {
@@ -51,10 +52,33 @@ export function AudioAssistant() {
   const { t } = useTranslation()
   const [listenStatus, setListenStatus] = useState(false)
   const [hasPermission, setHasPermission] = useState(false)
-  //requestRecordAudioPermission().then((permission: boolean) => setHasPermission(permission))
+  const [porcupineManager, setPorcupineManager] = useState<PorcupineManager>()
+  requestRecordAudioPermission().then((permission: boolean) => setHasPermission(permission))
 
-  function toggleListener() {
-    setListenStatus(!listenStatus)
+  const keywords = ['picovoice', 'porcupine']
+  function detectionCallback(keywordIndex: number) {
+    console.log('detectionCallback', keywords[keywordIndex])
+  }
+
+  useEffect(() => {
+    PorcupineManager.fromKeywords(keywords, detectionCallback).then((pm: PorcupineManager) => {
+      setPorcupineManager(pm)
+    })
+  }, [])
+
+  async function toggleListener() {
+    if (listenStatus) {
+      const didStop = await porcupineManager?.stop()
+      if (didStop) {
+        setListenStatus(false)
+      }
+      setListenStatus(!listenStatus)
+    } else {
+      const didStart = await porcupineManager?.start()
+      if (didStart) {
+        setListenStatus(true)
+      }
+    }
   }
 
   return (
