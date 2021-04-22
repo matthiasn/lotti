@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
 import Icon from 'react-native-vector-icons/FontAwesome'
+import { requestRecordAudioPermission } from 'src/audio/permissions'
 
 const styles = StyleSheet.create({
   container: {
@@ -34,6 +35,13 @@ const styles = StyleSheet.create({
     color: Colors.darkBlueGrey,
     marginTop: 32,
   },
+  noAudioPermission: {
+    fontSize: 64,
+    fontWeight: 'bold',
+    color: Colors.red,
+    marginTop: 32,
+    textAlign: 'center',
+  },
   icon: {
     paddingTop: 16,
   },
@@ -42,6 +50,8 @@ const styles = StyleSheet.create({
 export function AudioAssistant() {
   const { t } = useTranslation()
   const [listenStatus, setListenStatus] = useState(false)
+  const [hasPermission, setHasPermission] = useState(false)
+  //requestRecordAudioPermission().then((permission: boolean) => setHasPermission(permission))
 
   function toggleListener() {
     setListenStatus(!listenStatus)
@@ -49,19 +59,23 @@ export function AudioAssistant() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={listenStatus ? styles.button : [styles.button, styles.buttonDisabled]}
-        onPress={toggleListener}>
-        <Icon
-          style={styles.icon}
-          name={'assistive-listening-systems'}
-          size={128}
-          color={listenStatus ? Colors.red : Colors.green}
-        />
-        <Text style={styles.buttonText}>
-          {listenStatus ? t('stopListening') : t('startListening')}
-        </Text>
-      </TouchableOpacity>
+      {hasPermission ? (
+        <TouchableOpacity
+          style={listenStatus ? styles.button : [styles.button, styles.buttonDisabled]}
+          onPress={toggleListener}>
+          <Icon
+            style={styles.icon}
+            name={'assistive-listening-systems'}
+            size={128}
+            color={listenStatus ? Colors.red : Colors.green}
+          />
+          <Text style={styles.buttonText}>
+            {listenStatus ? t('stopListening') : t('startListening')}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <Text style={styles.noAudioPermission}>{t('noAudioPermission')}</Text>
+      )}
     </View>
   )
 }

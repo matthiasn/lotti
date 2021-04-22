@@ -25,6 +25,7 @@ const resources = {
       listenTab: 'Audio Assistant',
       startListening: 'Listen',
       stopListening: 'Stop',
+      noAudioPermission: 'No audio recording permission granted',
       recordTab: 'Record',
     },
   },
