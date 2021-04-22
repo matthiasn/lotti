@@ -7,6 +7,7 @@ import RecordTab from 'src/containers/RecordTab'
 import Settings from 'src/containers/Settings'
 import { sleep } from './utils/async'
 import EntriesTab from 'src/containers/EntriesTab'
+import ListenTab from 'src/containers/ListenTab'
 
 export type AppTabParamList = {
   Home: undefined
@@ -44,6 +45,16 @@ const App = () => {
         options={{
           tabBarLabel: t('entriesTab'),
           tabBarIcon: ({ color, size }) => <Icon name={'list'} size={size} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="listen"
+        component={ListenTab}
+        options={{
+          tabBarLabel: t('listenTab'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon name={'assistive-listening-systems'} size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
