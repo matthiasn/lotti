@@ -5,6 +5,7 @@ import Colors from 'src/constants/colors'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import { requestRecordAudioPermission } from 'src/audio/permissions'
 import { PorcupineManager } from '@picovoice/porcupine-react-native'
+import Tts from 'react-native-tts'
 
 const styles = StyleSheet.create({
   container: {
@@ -57,7 +58,12 @@ export function AudioAssistant() {
 
   const keywords = ['picovoice', 'porcupine']
   function detectionCallback(keywordIndex: number) {
-    console.log('detectionCallback', keywords[keywordIndex])
+    const keyword = keywords[keywordIndex]
+    console.log('detectionCallback', keyword)
+
+    if (keyword === 'porcupine') {
+      Tts.speak('Hello, how do you do?')
+    }
   }
 
   useEffect(() => {
