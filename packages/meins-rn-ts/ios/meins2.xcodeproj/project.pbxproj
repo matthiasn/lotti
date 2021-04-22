@@ -18,6 +18,8 @@
 		2D02E4BF1E0B4AB3006451C7 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		2DCD954D1E0B4F2C00145EB5 /* meins2Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* meins2Tests.m */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		AD85EA5326322F5600E2A4C1 /* libswiftCoreMIDI.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD85EA5226322F3F00E2A4C1 /* libswiftCoreMIDI.tbd */; };
+		AD85EA5926322F6900E2A4C1 /* libswiftUniformTypeIdentifiers.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD85EA5826322F5D00E2A4C1 /* libswiftUniformTypeIdentifiers.tbd */; };
 		D278161C8AA2527CC7998846 /* libPods-meins2-meins2Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AC80B7B5A5F9C9CB59438FC4 /* libPods-meins2-meins2Tests.a */; };
 		E20124FF10CF8BC92DCC7905 /* libPods-meins2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF9CD9D7B78102EA24A4D6CB /* libPods-meins2.a */; };
 		E3AB0346D5DDA054A0D2F252 /* libPods-meins2-tvOSTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DDF67D445400C1D481C45053 /* libPods-meins2-tvOSTests.a */; };
@@ -72,6 +74,8 @@
 		81C5CAF37F839A04FE6AEDD3 /* Pods-meins2-tvOSTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2-tvOSTests.debug.xcconfig"; path = "Target Support Files/Pods-meins2-tvOSTests/Pods-meins2-tvOSTests.debug.xcconfig"; sourceTree = "<group>"; };
 		929CD52A691D59544236A133 /* Pods-meins2-tvOS.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2-tvOS.debug.xcconfig"; path = "Target Support Files/Pods-meins2-tvOS/Pods-meins2-tvOS.debug.xcconfig"; sourceTree = "<group>"; };
 		AC80B7B5A5F9C9CB59438FC4 /* libPods-meins2-meins2Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meins2-meins2Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD85EA5226322F3F00E2A4C1 /* libswiftCoreMIDI.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftCoreMIDI.tbd; path = usr/lib/swift/libswiftCoreMIDI.tbd; sourceTree = SDKROOT; };
+		AD85EA5826322F5D00E2A4C1 /* libswiftUniformTypeIdentifiers.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftUniformTypeIdentifiers.tbd; path = usr/lib/swift/libswiftUniformTypeIdentifiers.tbd; sourceTree = SDKROOT; };
 		B58E78395FA83290EE253A7E /* Pods-meins2.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2.debug.xcconfig"; path = "Target Support Files/Pods-meins2/Pods-meins2.debug.xcconfig"; sourceTree = "<group>"; };
 		B99255643FAD486999C4E744 /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = SimpleLineIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/SimpleLineIcons.ttf"; sourceTree = "<group>"; };
 		CCAE3AB2C253AA7904A20F24 /* Pods-meins2-tvOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2-tvOS.release.xcconfig"; path = "Target Support Files/Pods-meins2-tvOS/Pods-meins2-tvOS.release.xcconfig"; sourceTree = "<group>"; };
@@ -100,7 +104,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD85EA5326322F5600E2A4C1 /* libswiftCoreMIDI.tbd in Frameworks */,
 				E20124FF10CF8BC92DCC7905 /* libPods-meins2.a in Frameworks */,
+				AD85EA5926322F6900E2A4C1 /* libswiftUniformTypeIdentifiers.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -173,6 +179,8 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AD85EA5826322F5D00E2A4C1 /* libswiftUniformTypeIdentifiers.tbd */,
+				AD85EA5226322F3F00E2A4C1 /* libswiftCoreMIDI.tbd */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				ED2971642150620600B7C4FE /* JavaScriptCore.framework */,
 				EF9CD9D7B78102EA24A4D6CB /* libPods-meins2.a */,
@@ -870,6 +878,10 @@
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = meins2/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/usr/lib/swift",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -893,6 +905,10 @@
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
 				INFOPLIST_FILE = meins2/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/usr/lib/swift",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

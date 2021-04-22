@@ -40,7 +40,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Record audio notes</string>
+	<string>Record audio notes and Audio Assistant</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>AntDesign.ttf</string>
