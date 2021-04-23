@@ -1,4 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  NativeEventEmitter,
+  NativeModules,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Colors from 'src/constants/colors'
@@ -49,6 +56,11 @@ const styles = StyleSheet.create({
   },
 })
 
+const ee = new NativeEventEmitter(NativeModules.TextToSpeech)
+ee.addListener('tts-start', () => console.log('tts-start'))
+ee.addListener('tts-finish', () => console.log('tts-finish'))
+ee.addListener('tts-cancel', () => console.log('tts-cancel'))
+
 export function AudioAssistant() {
   const { t } = useTranslation()
   const [listenStatus, setListenStatus] = useState(false)
@@ -56,13 +68,22 @@ export function AudioAssistant() {
   const [porcupineManager, setPorcupineManager] = useState<PorcupineManager>()
   requestRecordAudioPermission().then((permission: boolean) => setHasPermission(permission))
 
-  const keywords = ['picovoice', 'porcupine']
+  const keywords = ['porcupine', 'hey siri', 'ok google', 'alexa']
   function detectionCallback(keywordIndex: number) {
     const keyword = keywords[keywordIndex]
     console.log('detectionCallback', keyword)
 
     if (keyword === 'porcupine') {
       Tts.speak('Hello, how do you do?')
+    }
+    if (keyword === 'hey siri') {
+      Tts.speak('hay is for horses')
+    }
+    if (keyword === 'ok google') {
+      Tts.speak('not ok, try something else')
+    }
+    if (keyword === 'alexa') {
+      Tts.speak('alexa who')
     }
   }
 
