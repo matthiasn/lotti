@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/FontAwesome'
 import { requestRecordAudioPermission } from 'src/audio/permissions'
 import { PorcupineManager } from '@picovoice/porcupine-react-native'
 import Tts from 'react-native-tts'
+import { MainBundlePath, readDir } from 'react-native-fs'
 
 const styles = StyleSheet.create({
   container: {
@@ -66,6 +67,7 @@ export function AudioAssistant() {
   const [listenStatus, setListenStatus] = useState(false)
   const [hasPermission, setHasPermission] = useState(false)
   const [porcupineManager, setPorcupineManager] = useState<PorcupineManager>()
+  const [porcupineManager2, setPorcupineManager2] = useState<PorcupineManager>()
   requestRecordAudioPermission().then((permission: boolean) => setHasPermission(permission))
 
   const keywords = ['porcupine', 'hey siri', 'ok google', 'alexa']
@@ -74,7 +76,7 @@ export function AudioAssistant() {
     console.log('detectionCallback', keyword)
 
     if (keyword === 'porcupine') {
-      Tts.speak('Hello, how do you do?')
+      Tts.speak("My bro, what's up?")
     }
     if (keyword === 'hey siri') {
       Tts.speak('hay is for horses')
@@ -83,14 +85,34 @@ export function AudioAssistant() {
       Tts.speak('not ok, try something else')
     }
     if (keyword === 'alexa') {
-      Tts.speak('alexa who')
+      Tts.speak('alexa who?')
     }
   }
+  function meinsDetectionCallback1(keywordIndex: number) {
+    console.log('meinsDetectionCallback1')
+    Tts.speak("Yo bro bro, what's up?")
+  }
+
+  readDir(`${MainBundlePath}`).then((x) => {
+    console.log(x)
+  })
 
   useEffect(() => {
-    PorcupineManager.fromKeywords(keywords, detectionCallback).then((pm: PorcupineManager) => {
-      setPorcupineManager(pm)
-    })
+    PorcupineManager.fromKeywords(keywords, detectionCallback)
+      .then((pm: PorcupineManager) => {
+        setPorcupineManager(pm)
+      })
+      .catch((e) => console.error(e))
+    // PorcupineManager.fromKeywordPaths(
+    //   [
+    //     `${MainBundlePath}/hey_meins_ios_2021-05-23-utc_v1_9_0.ppn`,
+    //   ],
+    //   meinsDetectionCallback1,
+    // )
+    //   .then((pm: PorcupineManager) => {
+    //     setPorcupineManager2(pm)
+    //   })
+    //   .catch((e) => console.error(e))
   }, [])
 
   async function toggleListener() {
@@ -102,6 +124,7 @@ export function AudioAssistant() {
       setListenStatus(!listenStatus)
     } else {
       const didStart = await porcupineManager?.start()
+      const didStart2 = await porcupineManager2?.start()
       if (didStart) {
         setListenStatus(true)
       }

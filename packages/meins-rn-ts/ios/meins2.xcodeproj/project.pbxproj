@@ -18,6 +18,7 @@
 		2D02E4BF1E0B4AB3006451C7 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		2DCD954D1E0B4F2C00145EB5 /* meins2Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* meins2Tests.m */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		AD7F96CF263394CD001F5AEC /* hey_meins_ios_2021-05-23-utc_v1_9_0.ppn in Resources */ = {isa = PBXBuildFile; fileRef = AD7F96CE26339435001F5AEC /* hey_meins_ios_2021-05-23-utc_v1_9_0.ppn */; };
 		AD85EA5326322F5600E2A4C1 /* libswiftCoreMIDI.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD85EA5226322F3F00E2A4C1 /* libswiftCoreMIDI.tbd */; };
 		AD85EA5926322F6900E2A4C1 /* libswiftUniformTypeIdentifiers.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AD85EA5826322F5D00E2A4C1 /* libswiftUniformTypeIdentifiers.tbd */; };
 		D278161C8AA2527CC7998846 /* libPods-meins2-meins2Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AC80B7B5A5F9C9CB59438FC4 /* libPods-meins2-meins2Tests.a */; };
@@ -74,6 +75,7 @@
 		81C5CAF37F839A04FE6AEDD3 /* Pods-meins2-tvOSTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2-tvOSTests.debug.xcconfig"; path = "Target Support Files/Pods-meins2-tvOSTests/Pods-meins2-tvOSTests.debug.xcconfig"; sourceTree = "<group>"; };
 		929CD52A691D59544236A133 /* Pods-meins2-tvOS.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2-tvOS.debug.xcconfig"; path = "Target Support Files/Pods-meins2-tvOS/Pods-meins2-tvOS.debug.xcconfig"; sourceTree = "<group>"; };
 		AC80B7B5A5F9C9CB59438FC4 /* libPods-meins2-meins2Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-meins2-meins2Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD7F96CE26339435001F5AEC /* hey_meins_ios_2021-05-23-utc_v1_9_0.ppn */ = {isa = PBXFileReference; lastKnownFileType = file; name = "hey_meins_ios_2021-05-23-utc_v1_9_0.ppn"; path = "../assets/speech/hey_meins_ios_2021-05-23-utc_v1_9_0.ppn"; sourceTree = "<group>"; };
 		AD85EA5226322F3F00E2A4C1 /* libswiftCoreMIDI.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftCoreMIDI.tbd; path = usr/lib/swift/libswiftCoreMIDI.tbd; sourceTree = SDKROOT; };
 		AD85EA5826322F5D00E2A4C1 /* libswiftUniformTypeIdentifiers.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftUniformTypeIdentifiers.tbd; path = usr/lib/swift/libswiftUniformTypeIdentifiers.tbd; sourceTree = SDKROOT; };
 		B58E78395FA83290EE253A7E /* Pods-meins2.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-meins2.debug.xcconfig"; path = "Target Support Files/Pods-meins2/Pods-meins2.debug.xcconfig"; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 		13B07FAE1A68108700A75B9A /* meins2 */ = {
 			isa = PBXGroup;
 			children = (
+				AD7F96CE26339435001F5AEC /* hey_meins_ios_2021-05-23-utc_v1_9_0.ppn */,
 				008F07F21AC5B25A0029DE68 /* main.jsbundle */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.m */,
@@ -393,6 +396,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AD7F96CF263394CD001F5AEC /* hey_meins_ios_2021-05-23-utc_v1_9_0.ppn in Resources */,
 				01D4E4DE253CF5F100AA47AD /* BootSplash.storyboard in Resources */,
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
@@ -423,13 +427,14 @@
 			files = (
 			);
 			inputPaths = (
+				"$(SRCROOT)/newInputFile",
 			);
 			name = "Bundle React Native code and images";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh";
+			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
 		2D02E4CB1E0B4B27006451C7 /* Bundle React Native Code And Images */ = {
 			isa = PBXShellScriptBuildPhase;

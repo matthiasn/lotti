@@ -38,6 +38,7 @@
     "react-native": "0.63.4",
     "react-native-audio-recorder-player": "^2.6.2",
     "react-native-bootsplash": "^2.2.7",
+    "react-native-fs": "^2.17.0",
     "react-native-gesture-handler": "^1.8.0",
     "react-native-normalize": "^1.0.1",
     "react-native-reanimated": "^1.13.1",
