@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/location.dart';
 import 'package:wisely/theme.dart';
 
@@ -9,21 +10,11 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'WISELY',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.grey,
       ),
       home: const MyHomePage(title: 'WISELY'),
@@ -50,6 +41,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  QuillController _controller = QuillController.basic();
+
   int _counter = 0;
   DeviceLocation location = DeviceLocation();
 
@@ -87,6 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         backgroundColor: AppColors.headerBgColor,
       ),
+      backgroundColor: AppColors.bodyBgColor,
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
@@ -107,6 +101,28 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Container(
+                //width: 400,
+                padding: EdgeInsets.all(8.0),
+                height: 400,
+                color: AppColors.editorBgColor,
+                child: Column(
+                  children: [
+                    QuillToolbar.basic(controller: _controller),
+                    Expanded(
+                      child: Container(
+                        child: QuillEditor.basic(
+                          controller: _controller,
+                          readOnly: false, // true for view only mode
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
             const Text(
               'You have pushed the button this many times:',
             ),
