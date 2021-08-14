@@ -75,7 +75,7 @@ npm-deps: clean
 	@echo Fetching NPM dependencies...
 	@npm install
 	@npm install -g electron-builder
-	@electron-rebuild -v 7.1.3 -w keytar
+	@electron-rebuild -v 13.1.7 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
@@ -89,7 +89,7 @@ nsorg:
 
 cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
-	@shadow-cljs compile shared-tests
+	@npx shadow-cljs compile shared-tests
 	@node out/shared-tests.js
 
 sass:
@@ -98,9 +98,9 @@ sass:
 
 cljs: deps npm-deps
 	@echo Building ClojureScript for main electron process...
-	@shadow-cljs release main
+	@npx shadow-cljs release main
 	@echo Building ClojureScript for electron renderer process...
-	@shadow-cljs release renderer
+	@npx shadow-cljs release renderer
 
 figwheel:
 	@lein cljs-figwheel
@@ -130,11 +130,11 @@ install: jlink electron symlinks
 
 package-only:
 	@echo Building executable...
-	@electron-builder $(OSFLAG)
+	@npx electron-builder $(OSFLAG)
 
 publish-github:
 	@echo Publishing to GitHub Releases - requires GH_TOKEN in ENV...
-	@electron-builder -c electron-builder.yml --publish always $(OSFLAG)
+	@npx electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
 lint-classpath:
 	clj-kondo --lint "$$(shadow-cljs classpath)" || true
