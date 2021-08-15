@@ -80,4 +80,23 @@ void main() {
     ]);
     expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
   });
+
+  test('Throws exception on invalid input', () {
+    Map<String, int> vc1 = new Map();
+    vc1.addEntries([
+      MapEntry(nodeId1, -1),
+      MapEntry(nodeId2, 2),
+      MapEntry(nodeId3, 3),
+    ]);
+
+    Map<String, int> vc2 = new Map();
+    vc2.addEntries([
+      MapEntry(nodeId1, -3),
+      MapEntry(nodeId2, 3),
+      MapEntry(nodeId3, 3),
+    ]);
+
+    expect(
+        () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
+  });
 }

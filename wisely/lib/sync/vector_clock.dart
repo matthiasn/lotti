@@ -1,5 +1,11 @@
 import 'package:collection/collection.dart';
 
+class VclockException implements Exception {
+  String errMsg() => 'Invalid vector clock inputs';
+
+  VclockException();
+}
+
 enum VclockStatus {
   equal,
   concurrent,
@@ -24,6 +30,16 @@ class VectorClock {
   static VclockStatus compare(Map<String, int> vc1, Map<String, int> vc2) {
     Set<VclockStatus> comparisons = new Set<VclockStatus>();
     Set<String> nodeIds = new Set<String>();
+    Set<int> counters = new Set<int>();
+
+    counters.addAll(vc1.values);
+    counters.addAll(vc2.values);
+
+    for (int counter in counters) {
+      if (counter < 1) {
+        throw VclockException();
+      }
+    }
 
     if (DeepCollectionEquality().equals(vc1, vc2)) {
       return VclockStatus.equal;
