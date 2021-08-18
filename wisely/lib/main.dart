@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/theme.dart';
 
@@ -48,6 +51,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter() {
     setState(() {
+      String json = jsonEncode(_controller.document.toDelta().toJson());
+      String md = quillToMarkdown(json);
+      print(md);
+
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
       // so that the display can reflect the updated values. If we changed
