@@ -37,6 +37,7 @@ dependencies:
   flutter_quill: ^1.9.1
   uuid: ^3.0.4
   quill_markdown: ^0.0.3
+  qr_flutter: ^4.0.0
 
 dev_dependencies:
   flutter_test:

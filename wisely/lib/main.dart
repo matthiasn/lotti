@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/theme.dart';
@@ -108,6 +109,21 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(8.0),
+                ),
+              ),
+              child: QrImage(
+                data:
+                    '1234567890123456789012345678901234567890123456789012345678901234567890',
+                version: QrVersions.auto,
+                size: 200.0,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Container(
