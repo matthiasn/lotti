@@ -90,70 +90,71 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(8.0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(8.0),
+                  ),
+                ),
+                child: QrImage(
+                  data:
+                      '1234567890123456789012345678901234567890123456789012345678901234567890',
+                  version: QrVersions.auto,
+                  size: 200.0,
                 ),
               ),
-              child: QrImage(
-                data:
-                    '1234567890123456789012345678901234567890123456789012345678901234567890',
-                version: QrVersions.auto,
-                size: 200.0,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                //width: 400,
-                padding: EdgeInsets.all(8.0),
-                height: 400,
-                color: AppColors.editorBgColor,
-                child: Column(
-                  children: [
-                    QuillToolbar.basic(controller: _controller),
-                    Expanded(
-                      child: Container(
-                        child: QuillEditor.basic(
-                          controller: _controller,
-                          readOnly: false, // true for view only mode
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Container(
+                  //width: 400,
+                  padding: EdgeInsets.all(8.0),
+                  height: 400,
+                  color: AppColors.editorBgColor,
+                  child: Column(
+                    children: [
+                      QuillToolbar.basic(controller: _controller),
+                      Expanded(
+                        child: Container(
+                          child: QuillEditor.basic(
+                            controller: _controller,
+                            readOnly: false, // true for view only mode
+                          ),
                         ),
-                      ),
-                    )
-                  ],
+                      )
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+              const Text(
+                'You have pushed the button this many times:',
+              ),
+              Text(
+                '$_counter',
+                style: Theme.of(context).textTheme.headline4,
+              ),
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(8.0),
+                  ),
+                ),
+                child: QrImage(
+                  data:
+                      '1234567890123456789012345678901234567890123456789012345678901234567890',
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
