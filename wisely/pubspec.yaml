@@ -39,6 +39,8 @@ dependencies:
   quill_markdown: ^0.0.3
   qr_flutter: ^4.0.0
   qr_code_scanner: ^0.5.2
+  flutter_map: ^0.13.1
+  latlong2: ^0.8.0
 
 dev_dependencies:
   flutter_test:
