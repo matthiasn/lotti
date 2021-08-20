@@ -38,6 +38,7 @@ dependencies:
   uuid: ^3.0.4
   quill_markdown: ^0.0.3
   qr_flutter: ^4.0.0
+  qr_code_scanner: ^0.5.2
 
 dev_dependencies:
   flutter_test:
