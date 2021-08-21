@@ -96,19 +96,32 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(8.0),
+              SizedBox(
+                height: 300,
+                width: 300,
+                child: FlutterMap(
+                  options: MapOptions(
+                    center: LatLng(51.5, -0.09),
+                    zoom: 13.0,
                   ),
-                ),
-                child: QrImage(
-                  data:
-                      '1234567890123456789012345678901234567890123456789012345678901234567890',
-                  version: QrVersions.auto,
-                  size: 200.0,
+                  layers: [
+                    TileLayerOptions(
+                        urlTemplate:
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        subdomains: ['a', 'b', 'c']),
+                    MarkerLayerOptions(
+                      markers: [
+                        Marker(
+                          width: 24.0,
+                          height: 24.0,
+                          point: LatLng(51.5, -0.09),
+                          builder: (ctx) => Container(
+                            child: FlutterLogo(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               Padding(
@@ -140,34 +153,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 '$_counter',
                 style: Theme.of(context).textTheme.headline4,
               ),
-              SizedBox(
-                height: 300,
-                width: 300,
-                child: FlutterMap(
-                  options: MapOptions(
-                    center: LatLng(51.5, -0.09),
-                    zoom: 13.0,
+              Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(8.0),
                   ),
-                  layers: [
-                    TileLayerOptions(
-                        urlTemplate:
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c']),
-                    MarkerLayerOptions(
-                      markers: [
-                        Marker(
-                          width: 80.0,
-                          height: 80.0,
-                          point: LatLng(51.5, -0.09),
-                          builder: (ctx) => Container(
-                            child: FlutterLogo(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
-              )
+                child: QrImage(
+                  data:
+                      '1234567890123456789012345678901234567890123456789012345678901234567890',
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
+              ),
             ],
           ),
         ),
