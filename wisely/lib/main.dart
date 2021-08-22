@@ -54,8 +54,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _counter = 0;
   DeviceLocation location = DeviceLocation();
-  LatLng? _currentLocation = null;
   static LatLng berlin = LatLng(52.5, 13.4);
+  LatLng _currentLocation = berlin;
 
   late final MapController mapController;
 
@@ -76,7 +76,8 @@ class _MyHomePageState extends State<MyHomePage> {
     var loc = await location.getCurrentLocation();
 
     if (loc.latitude != null && loc.longitude != null) {
-      mapController.move(LatLng(loc.latitude!, loc.longitude!), 17);
+      _currentLocation = LatLng(loc.latitude!, loc.longitude!);
+      mapController.move(_currentLocation, 17);
     }
   }
 
@@ -140,7 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Marker(
                             width: 64.0,
                             height: 64.0,
-                            point: berlin,
+                            point: _currentLocation,
                             builder: (ctx) => Container(
                               child: Image(
                                 image: AssetImage(
