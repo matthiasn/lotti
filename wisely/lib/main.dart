@@ -51,21 +51,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _counter = 0;
   DeviceLocation location = DeviceLocation();
+  LatLng? _currentLocation = null;
+  static LatLng berlin = LatLng(52.5, 13.4);
 
-  void _incrementCounter() {
+  late final MapController mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    mapController = MapController();
+  }
+
+  void _incrementCounter() async {
     setState(() {
       String json = jsonEncode(_controller.document.toDelta().toJson());
       String md = quillToMarkdown(json);
       print(md);
-
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
       _counter++;
-      location.getCurrentLocation();
     });
+
+    var loc = await location.getCurrentLocation();
+
+    if (loc.latitude != null && loc.longitude != null) {
+      mapController.move(LatLng(loc.latitude!, loc.longitude!), 17);
+    }
   }
 
   @override
@@ -98,10 +107,10 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               SizedBox(
                 height: 300,
-                width: 300,
                 child: FlutterMap(
+                  mapController: mapController,
                   options: MapOptions(
-                    center: LatLng(51.5, -0.09),
+                    center: berlin,
                     zoom: 13.0,
                   ),
                   layers: [
@@ -114,7 +123,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         Marker(
                           width: 24.0,
                           height: 24.0,
-                          point: LatLng(51.5, -0.09),
+                          point: berlin,
                           builder: (ctx) => Container(
                             child: FlutterLogo(),
                           ),
