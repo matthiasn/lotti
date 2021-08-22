@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
+import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
 import 'package:wisely/sync/secure_storage.dart';
@@ -53,6 +54,7 @@ class WiselyHomePage extends StatefulWidget {
 }
 
 class _WiselyHomePageState extends State<WiselyHomePage> {
+  late ImapSyncClient imapSyncClient;
   QuillController _controller = QuillController.basic();
 
   int _counter = 0;
@@ -66,6 +68,8 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   void initState() {
     super.initState();
     mapController = MapController();
+
+    imapSyncClient = ImapSyncClient();
 
     SecureStorage.writeValue('foo', 'some secret for testing');
   }

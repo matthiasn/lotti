@@ -43,6 +43,8 @@ dependencies:
   latlong2: ^0.8.0
   cached_network_image: ^3.1.0
   flutter_secure_storage: ^4.2.1
+  imap_client: ^0.2.9
+  yaml: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +73,8 @@ flutter:
     - images/map/299087_marker_map_icon.png
     # from https://www.iconfinder.com/recepkutuk
     - images/map/728975_location_map_marker_pin_place_icon.png
+
+    - config/mail.yaml
 
   fonts:
     - family: Oswald

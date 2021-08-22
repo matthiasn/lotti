@@ -48,3 +48,5 @@ app.*.map.json
 /ios/build
 
 /coverage
+
+/config/mail.yaml
