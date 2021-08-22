@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
@@ -107,30 +108,46 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               SizedBox(
                 height: 300,
-                child: FlutterMap(
-                  mapController: mapController,
-                  options: MapOptions(
-                    center: berlin,
-                    zoom: 13.0,
-                  ),
-                  layers: [
-                    TileLayerOptions(
-                        urlTemplate:
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c']),
-                    MarkerLayerOptions(
-                      markers: [
-                        Marker(
-                          width: 24.0,
-                          height: 24.0,
-                          point: berlin,
-                          builder: (ctx) => Container(
-                            child: FlutterLogo(),
-                          ),
-                        ),
-                      ],
+                child: Listener(
+                  onPointerSignal: (pointerSignal) {
+                    if (pointerSignal is PointerScrollEvent) {
+                      if (pointerSignal.scrollDelta.dy < 0) {
+                        mapController.move(
+                            mapController.center, mapController.zoom + 1);
+                      } else {
+                        mapController.move(
+                            mapController.center, mapController.zoom - 1);
+                      }
+                    }
+                  },
+                  child: FlutterMap(
+                    mapController: mapController,
+                    options: MapOptions(
+                      center: berlin,
+                      zoom: 13.0,
                     ),
-                  ],
+                    layers: [
+                      TileLayerOptions(
+                          urlTemplate:
+                              "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                          subdomains: ['a', 'b', 'c']),
+                      MarkerLayerOptions(
+                        markers: [
+                          Marker(
+                            width: 64.0,
+                            height: 64.0,
+                            point: berlin,
+                            builder: (ctx) => Container(
+                              child: Image(
+                                image: AssetImage(
+                                    'images/map/728975_location_map_marker_pin_place_icon.png'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
