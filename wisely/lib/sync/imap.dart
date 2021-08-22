@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/services.dart';
 import 'package:imap_client/imap_client.dart';
 import 'package:yaml/yaml.dart';
 
@@ -16,8 +15,7 @@ class ImapSyncClient {
   }
 
   void init() async {
-    final configFile = File('config/mail.yaml');
-    final yamlString = await configFile.readAsString();
+    String yamlString = await rootBundle.loadString('assets/config/mail.yaml');
     final dynamic yamlMap = loadYaml(yamlString);
 
     host = yamlMap['host'];
@@ -25,6 +23,16 @@ class ImapSyncClient {
     password = yamlMap['password'];
 
     await client.connect(host, 993, true);
+    await client.login(userName, password);
+    client.capability().then((value) => print(value));
     print(client);
+
+    ImapFolder inbox = await client.getFolder('Inbox');
+    print(inbox);
+
+    List<int> emails = await inbox.search('UNSEEN');
+    print(emails);
+    int emails1 = await inbox.mailCount;
+    print(emails1);
   }
 }

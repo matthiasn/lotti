@@ -69,19 +69,18 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/config/mail.yaml
     # from https://www.iconfinder.com/paomedia
-    - images/map/299087_marker_map_icon.png
+    - assets/images/map/299087_marker_map_icon.png
     # from https://www.iconfinder.com/recepkutuk
-    - images/map/728975_location_map_marker_pin_place_icon.png
-
-    - config/mail.yaml
+    - assets/images/map/728975_location_map_marker_pin_place_icon.png
 
   fonts:
     - family: Oswald
       fonts:
-        - asset: fonts/Oswald-ExtraLight.ttf
-        - asset: fonts/Oswald-Light.ttf
-        - asset: fonts/Oswald-Regular.ttf
-        - asset: fonts/Oswald-Medium.ttf
-        - asset: fonts/Oswald-SemiBold.ttf
-        - asset: fonts/Oswald-Bold.ttf
+        - asset: assets/fonts/Oswald-ExtraLight.ttf
+        - asset: assets/fonts/Oswald-Light.ttf
+        - asset: assets/fonts/Oswald-Regular.ttf
+        - asset: assets/fonts/Oswald-Medium.ttf
+        - asset: assets/fonts/Oswald-SemiBold.ttf
+        - asset: assets/fonts/Oswald-Bold.ttf

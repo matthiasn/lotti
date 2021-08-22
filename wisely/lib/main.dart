@@ -152,7 +152,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
                             builder: (ctx) => Container(
                               child: Image(
                                 image: AssetImage(
-                                    'images/map/728975_location_map_marker_pin_place_icon.png'),
+                                    'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
                               ),
                             ),
                           ),
