@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
+import 'package:wisely/sync/qr_scanner_widget.dart';
 import 'package:wisely/theme.dart';
 
 import 'map/cached_tile_provider.dart';
@@ -183,6 +185,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
                 style: Theme.of(context).textTheme.headline4,
               ),
               QrDisplayWidget(),
+              if (Platform.isIOS) QrScannerWidget(),
             ],
           ),
         ),
