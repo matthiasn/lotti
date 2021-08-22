@@ -10,6 +10,8 @@ import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/theme.dart';
 
+import 'map/cached_tile_provider.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -128,9 +130,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     layers: [
                       TileLayerOptions(
-                          urlTemplate:
-                              "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                          subdomains: ['a', 'b', 'c']),
+                        urlTemplate:
+                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        subdomains: ['a', 'b', 'c'],
+                        tileProvider: CachedTileProvider(),
+                      ),
                       MarkerLayerOptions(
                         markers: [
                           Marker(
