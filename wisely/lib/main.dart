@@ -13,11 +13,11 @@ import 'package:wisely/theme.dart';
 import 'map/cached_tile_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const WiselyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class WiselyApp extends StatelessWidget {
+  const WiselyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +26,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
-      home: const MyHomePage(title: 'WISELY'),
+      home: const WiselyHomePage(title: 'WISELY'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+class WiselyHomePage extends StatefulWidget {
+  const WiselyHomePage({Key? key, required this.title}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -46,10 +46,10 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<WiselyHomePage> createState() => _WiselyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _WiselyHomePageState extends State<WiselyHomePage> {
   QuillController _controller = QuillController.basic();
 
   int _counter = 0;
