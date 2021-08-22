@@ -10,6 +10,7 @@ import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
+import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
 import 'map/cached_tile_provider.dart';
@@ -65,6 +66,8 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   void initState() {
     super.initState();
     mapController = MapController();
+
+    SecureStorage.writeValue('foo', 'some secret for testing');
   }
 
   void _incrementCounter() async {
