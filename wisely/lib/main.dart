@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:latlong2/latlong.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/location.dart';
+import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/theme.dart';
 
 import 'map/cached_tile_provider.dart';
@@ -91,8 +91,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(
           widget.title,
           style: TextStyle(
@@ -184,21 +182,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 '$_counter',
                 style: Theme.of(context).textTheme.headline4,
               ),
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(8.0),
-                  ),
-                ),
-                child: QrImage(
-                  data:
-                      '1234567890123456789012345678901234567890123456789012345678901234567890',
-                  version: QrVersions.auto,
-                  size: 200.0,
-                ),
-              ),
+              QrDisplayWidget(),
             ],
           ),
         ),
@@ -207,7 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onPressed: _incrementCounter,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
