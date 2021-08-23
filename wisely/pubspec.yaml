@@ -47,6 +47,7 @@ dependencies:
   yaml: ^3.1.0
   sqflite: ^2.0.0+3
   path: ^1.8.0
+  health: ^3.1.1+1
 
 dev_dependencies:
   flutter_test:
