@@ -7,6 +7,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
+import 'package:wisely/data/entry.dart';
+import 'package:wisely/data/persistence.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
@@ -64,6 +66,8 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
 
   late final MapController mapController;
 
+  late Persistence db;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +76,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     imapSyncClient = ImapSyncClient();
 
     SecureStorage.writeValue('foo', 'some secret for testing');
+    db = Persistence();
   }
 
   void _incrementCounter() async {
@@ -83,11 +88,22 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     });
 
     var loc = await location.getCurrentLocation();
+    var latitude = loc.latitude;
+    var longitude = loc.longitude;
 
-    if (loc.latitude != null && loc.longitude != null) {
-      _currentLocation = LatLng(loc.latitude!, loc.longitude!);
+    if (latitude != null && longitude != null) {
+      _currentLocation = LatLng(latitude, longitude);
       mapController.move(_currentLocation, 17);
     }
+
+    db.insertEntry(Entry(
+        id: DateTime.now().millisecondsSinceEpoch,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+        plainText: 'foo',
+        latitude: latitude ?? 0,
+        longitude: longitude ?? 0));
+
+    print(await db.entries());
   }
 
   @override
