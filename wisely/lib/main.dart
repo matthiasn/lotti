@@ -16,6 +16,7 @@ import 'package:wisely/sync/qr_scanner_widget.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
+import 'data/health_service.dart';
 import 'map/cached_tile_provider.dart';
 
 void main() {
@@ -67,6 +68,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   late final MapController mapController;
 
   late Persistence db;
+  late HealthService healthService;
 
   @override
   void initState() {
@@ -77,6 +79,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
 
     SecureStorage.writeValue('foo', 'some secret for testing');
     db = Persistence();
+    healthService = HealthService();
   }
 
   void _incrementCounter() async {
