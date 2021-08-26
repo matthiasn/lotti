@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
 import 'package:wisely/data/entry.dart';
@@ -82,7 +83,16 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     healthService = HealthService();
   }
 
+  void _importPhoto() async {
+    final ImagePicker _picker = ImagePicker();
+    // final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    // final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    final List<XFile>? images = await _picker.pickMultiImage();
+    print(images);
+  }
+
   void _incrementCounter() async {
+    _importPhoto();
     setState(() {
       String json = jsonEncode(_controller.document.toDelta().toJson());
       String md = quillToMarkdown(json);
