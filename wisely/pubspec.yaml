@@ -73,6 +73,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/sqlite/create_db.sql
     - assets/config/mail.yaml
     # from https://www.iconfinder.com/paomedia
     - assets/images/map/299087_marker_map_icon.png
