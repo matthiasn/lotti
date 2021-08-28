@@ -1,30 +1,45 @@
 class Entry {
-  final int id;
-  final int timestamp;
+  final String entryId;
+  final int createdAt;
+  final int updatedAt;
   final String plainText;
+  final String markdown;
+  final String quill;
   final double latitude;
   final double longitude;
+  final String commentFor;
+  final String vectorClock;
 
   Entry({
-    required this.id,
-    required this.timestamp,
+    required this.entryId,
+    required this.createdAt,
+    required this.updatedAt,
     required this.plainText,
+    required this.markdown,
+    required this.quill,
     required this.latitude,
     required this.longitude,
+    required this.commentFor,
+    required this.vectorClock,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'timestamp': timestamp,
-      'plainText': plainText,
+      'entry_id': entryId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'plain_text': plainText,
+      'markdown': markdown,
+      'quill': quill,
       'latitude': latitude,
       'longitude': longitude,
+      'comment_for': commentFor,
+      'vector_clock': vectorClock,
     };
   }
 
   @override
   String toString() {
-    return 'Entry{id: $id, timestamp: $timestamp, plainText: $plainText}';
+    return 'Entry{id: $entryId, created: $createdAt, plainText: $plainText}';
   }
 }

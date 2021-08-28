@@ -18,14 +18,14 @@ ON "entry_story_edges" (
 );
 
 CREATE TABLE "entries" (
-  "entry_id" text NOT NULL,
-  "timestamp" INTEGER,
-  "updated_at" INTEGER,
+  "entry_id" TEXT NOT NULL,
+  "created_at" INTEGER NOT NULL,
+  "updated_at" INTEGER NOT NULL,
   "plain_text" TEXT,
   "markdown" TEXT,
   "quill" TEXT,
-  "lat" REAL,
-  "lon" REAL,
+  "latitude" REAL,
+  "longitude" REAL,
   "comment_for" TEXT,
   "vector_clock" TEXT,
   PRIMARY KEY ("entry_id"),
@@ -51,23 +51,23 @@ ON "entry_edges" (
 );
 
 CREATE TABLE "photo_entry_edges" (
-  "photo_entry_id" text NOT NULL,
-  "photo_id" text NOT NULL,
-  "entry_id" text NOT NULL,
+  "photo_entry_id" TEXT NOT NULL,
+  "photo_id" TEXT NOT NULL,
+  "entry_id" TEXT NOT NULL,
   PRIMARY KEY ("photo_entry_id"),
   CONSTRAINT "photo_entry_edges__photo_fk" FOREIGN KEY ("photo_id") REFERENCES "photos" ("photo_id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "photo_entry_edges__entry_fk" FOREIGN KEY ("entry_id") REFERENCES "entries" ("entries_id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE "photos" (
-  "photo_id" text NOT NULL,
-  "created_at" integer NOT NULL,
+  "photo_id" TEXT NOT NULL,
+  "created_at" INTEGER NOT NULL,
   "vector_clock" TEXT NOT NULL,
-  "filename" text NOT NULL,
-  "asset_id" text,
-  "lat" real,
-  "lon" real,
-  "meta_json" text,
+  "filename" TEXT NOT NULL,
+  "asset_id" TEXT,
+  "latitude" REAL,
+  "longitude" REAL,
+  "meta_json" TEXT,
   PRIMARY KEY ("photo_id")
 );
 

@@ -48,12 +48,16 @@ class Persistence {
 
     return List.generate(maps.length, (i) {
       return Entry(
-        id: maps[i]['id'],
-        timestamp: maps[i]['timestamp'],
-        plainText: maps[i]['plainText'],
-        latitude: maps[i]['latitude'],
-        longitude: maps[i]['longitude'],
-      );
+          entryId: maps[i]['entry_id'],
+          createdAt: maps[i]['created_at'],
+          updatedAt: maps[i]['updated_at'],
+          plainText: maps[i]['plain_text'],
+          markdown: maps[i]['markdown'],
+          quill: maps[i]['quill'],
+          latitude: maps[i]['latitude'],
+          longitude: maps[i]['longitude'],
+          commentFor: maps[i]['comment_for'],
+          vectorClock: maps[i]['vector_clock']);
     });
   }
 }

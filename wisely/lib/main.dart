@@ -8,6 +8,7 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
+import 'package:uuid/uuid.dart';
 import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
 import 'package:wisely/health//health_service.dart';
@@ -91,13 +92,27 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   }
 
   void _incrementCounter() async {
-    _importPhoto();
+    // _importPhoto();
     setState(() {
       String json = jsonEncode(_controller.document.toDelta().toJson());
       String md = quillToMarkdown(json);
       print(md);
       _counter++;
     });
+
+    var uuid = Uuid();
+
+    db.insertEntry(Entry(
+        entryId: uuid.v1(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        plainText: 'foo',
+        markdown: 'foo',
+        quill: '',
+        vectorClock: '',
+        commentFor: '',
+        latitude: 0,
+        longitude: 0));
 
     var loc = await location.getCurrentLocation();
     var latitude = loc.latitude;
@@ -109,9 +124,14 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     }
 
     db.insertEntry(Entry(
-        id: DateTime.now().millisecondsSinceEpoch,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
+        entryId: uuid.v1(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
         plainText: 'foo',
+        markdown: 'foo',
+        quill: '',
+        vectorClock: '',
+        commentFor: '',
         latitude: latitude ?? 0,
         longitude: longitude ?? 0));
 
