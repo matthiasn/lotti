@@ -1,4 +1,3 @@
-BEGIN;
 
 CREATE TABLE "entry_story_edges" (
   "entry_story_edge_id" TEXT NOT NULL,
@@ -7,10 +6,12 @@ CREATE TABLE "entry_story_edges" (
   PRIMARY KEY ("entry_story_edge_id"),
   CONSTRAINT "unique_entry_story_edge" UNIQUE ("story_id" COLLATE BINARY ASC, "entry_id" COLLATE BINARY DESC)
 );
+
 CREATE INDEX "entry_story_edges__story_id_asc"
 ON "entry_story_edges" (
   "story_id" COLLATE BINARY ASC
 );
+
 CREATE INDEX "entry_story_edges__entry_id_asc"
 ON "entry_story_edges" (
   "entry_id" COLLATE BINARY DESC
@@ -80,7 +81,3 @@ CREATE TABLE "stories" (
   PRIMARY KEY ("story_id"),
   FOREIGN KEY ("child_of") REFERENCES "stories" ("story_id") ON DELETE SET NULL ON UPDATE CASCADE
 );
-
-
-
-COMMIT;

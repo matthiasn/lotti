@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:wisely/db/entry.dart';
@@ -10,18 +11,22 @@ class Persistence {
   }
 
   void openDb() async {
+    String createDbStatement =
+        await rootBundle.loadString('assets/sqlite/create_db.sql');
+
+    String dbPath = join(await getDatabasesPath(), 'wisely.db');
+    print('DB Path: ${dbPath}');
+
     database = openDatabase(
-      join(await getDatabasesPath(), 'wisely.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          '''CREATE TABLE entries(
-               id INTEGER PRIMARY KEY,
-               timestamp Integer,
-               plainText TEXT,
-               latitude REAL,
-               longitude REAL
-             )''',
-        );
+      dbPath,
+      onCreate: (db, version) async {
+        List<String> scripts = createDbStatement.split(";");
+        scripts.forEach((v) {
+          if (v.isNotEmpty) {
+            print(v.trim());
+            db.execute(v.trim());
+          }
+        });
       },
       version: 1,
     );
