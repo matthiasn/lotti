@@ -8,17 +8,16 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:quill_markdown/quill_markdown.dart';
-import 'package:wisely/data/entry.dart';
-import 'package:wisely/data/persistence.dart';
+import 'package:wisely/db/entry.dart';
+import 'package:wisely/db/persistence.dart';
+import 'package:wisely/health//health_service.dart';
 import 'package:wisely/location.dart';
+import 'package:wisely/map/cached_tile_provider.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
-
-import 'data/health_service.dart';
-import 'map/cached_tile_provider.dart';
 
 void main() {
   runApp(const WiselyApp());
