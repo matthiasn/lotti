@@ -11,7 +11,7 @@ import 'package:quill_markdown/quill_markdown.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
-import 'package:wisely/health//health_service.dart';
+import 'package:wisely/health/health_service.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/map/cached_tile_provider.dart';
 import 'package:wisely/sync/imap.dart';
@@ -93,6 +93,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
 
   void _incrementCounter() async {
     // _importPhoto();
+    // healthService.fetchData();
     setState(() {
       String json = jsonEncode(_controller.document.toDelta().toJson());
       String md = quillToMarkdown(json);

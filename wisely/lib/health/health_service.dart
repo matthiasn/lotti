@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:health/health.dart';
+import 'package:path_provider/path_provider.dart';
 
 class HealthService {
   List<HealthDataPoint> _healthDataList = [];
@@ -9,14 +12,27 @@ class HealthService {
     fetchData();
   }
 
+  Future<File> get _localFile async {
+    final docDir = await getApplicationDocumentsDirectory();
+    final filePath = '$docDir/health.json';
+    print(filePath);
+
+    return File(filePath);
+  }
+
+  Future<File> writeJson() async {
+    final file = await _localFile;
+
+    String jsonString = jsonEncode(_healthDataList);
+    return file.writeAsString(jsonString);
+  }
+
   Future fetchData() async {
-    // get everything from midnight until now
     DateTime startDate = DateTime(2021, 07, 01, 0, 0, 0);
     DateTime endDate = DateTime(2025, 01, 01, 23, 59, 59);
 
     HealthFactory health = HealthFactory();
 
-    // define the types to get
     List<HealthDataType> types = [
       HealthDataType.STEPS,
       HealthDataType.WEIGHT,
@@ -47,9 +63,13 @@ class HealthService {
 
       // print the results
       _healthDataList.forEach((x) {
-        print("Data point: $x");
-        steps += x.value.round();
+        //print("Data point: $x");
+        if (x.type == HealthDataType.STEPS) {
+          steps += x.value.round();
+        }
       });
+
+      writeJson();
 
       print("Steps: $steps");
     } else {
