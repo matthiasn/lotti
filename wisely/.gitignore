@@ -50,3 +50,4 @@ app.*.map.json
 /coverage
 
 /config/mail.yaml
+local.properties
