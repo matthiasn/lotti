@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:health/health.dart';
+import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 class HealthService {
@@ -14,8 +15,9 @@ class HealthService {
 
   Future<File> get _localFile async {
     final docDir = await getApplicationDocumentsDirectory();
-    final filePath = '$docDir/health.json';
-    print(filePath);
+    String filePath = join(docDir.path, 'health.json');
+
+    print('>>> filePath: $filePath');
 
     return File(filePath);
   }
@@ -69,7 +71,7 @@ class HealthService {
         }
       });
 
-      writeJson();
+      await writeJson();
 
       print("Steps: $steps");
     } else {
