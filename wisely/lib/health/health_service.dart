@@ -37,10 +37,17 @@ class HealthService {
 
     List<HealthDataType> types = [
       HealthDataType.STEPS,
+      HealthDataType.DISTANCE_WALKING_RUNNING,
       HealthDataType.WEIGHT,
+      HealthDataType.BODY_FAT_PERCENTAGE,
+      HealthDataType.SLEEP_IN_BED,
+      HealthDataType.SLEEP_ASLEEP,
+      HealthDataType.SLEEP_AWAKE,
       HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
       HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-      HealthDataType.DISTANCE_WALKING_RUNNING,
+      HealthDataType.HEART_RATE,
+      HealthDataType.RESTING_HEART_RATE,
+      HealthDataType.HEART_RATE_VARIABILITY_SDNN,
     ];
 
     // you MUST request access to the data types before reading them
