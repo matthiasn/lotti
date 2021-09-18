@@ -1,5 +1,5 @@
 name: wisely
-description: A new Flutter project.
+description: A Smart Journal.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: ">=2.14.0 <3.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,7 +34,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   location: ^4.3.0
-  flutter_quill: ^2.0.4
+  flutter_quill: ^2.0.5
   uuid: ^3.0.4
   quill_markdown: ^0.0.3
   qr_flutter: ^4.0.0
