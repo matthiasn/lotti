@@ -43,7 +43,7 @@ dependencies:
   latlong2: ^0.8.0
   cached_network_image: ^3.1.0
   flutter_secure_storage: ^4.2.1
-  imap_client: ^0.2.9
+  # imap_client: ^1.0.0-alpha
   yaml: ^3.1.0
   sqflite: ^2.0.0+4
   path: ^1.8.0
@@ -53,6 +53,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  glados: ^1.0.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
