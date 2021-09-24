@@ -49,8 +49,8 @@ class VectorClock {
     nodeIds.addAll(vc2.vclock.keys);
 
     for (String nodeId in nodeIds) {
-      int counterA = vc1.vclock[nodeId] ?? 0;
-      int counterB = vc2.vclock[nodeId] ?? 0;
+      int counterA = vc1.get(nodeId);
+      int counterB = vc2.get(nodeId);
 
       if (counterA == counterB) {
         comparisons.add(VclockStatus.equal);
