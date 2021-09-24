@@ -15,8 +15,8 @@ void main() {
   });
 
   test('Compare two similar clocks', () {
-    VectorClock vc1 = VectorClock({nodeId1: 1, nodeId2: 1, nodeId3: 1});
-    VectorClock vc2 = VectorClock({nodeId1: 1, nodeId2: 1, nodeId3: 1});
+    VectorClock vc1 = VectorClock({nodeId1: 0, nodeId2: 1, nodeId3: 1});
+    VectorClock vc2 = VectorClock({nodeId1: 0, nodeId2: 1, nodeId3: 1});
 
     expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
   });

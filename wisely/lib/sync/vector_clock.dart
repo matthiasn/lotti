@@ -36,7 +36,7 @@ class VectorClock {
     counters.addAll(vc2.vclock.values);
 
     for (int counter in counters) {
-      if (counter < 1) {
+      if (counter < 0) {
         throw VclockException();
       }
     }
@@ -72,5 +72,14 @@ class VectorClock {
     }
 
     return VclockStatus.concurrent;
+  }
+
+  int get(String node) {
+    return vclock[node] ?? 0;
+  }
+
+  @override
+  String toString() {
+    return vclock.toString();
   }
 }
