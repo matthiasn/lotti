@@ -78,6 +78,18 @@ class VectorClock {
     return vclock[node] ?? 0;
   }
 
+  bool isValid() {
+    Set<int> counters = <int>{};
+    counters.addAll(vclock.values);
+
+    for (int counter in counters) {
+      if (counter < 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   @override
   String toString() {
     return vclock.toString();

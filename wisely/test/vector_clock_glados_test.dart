@@ -85,10 +85,7 @@ void main() {
           any.possiblyInvalidVc, any.possiblyInvalidVc)
       .test('compare two vector clocks, throw exception when invalid',
           (vc1, vc2) {
-    if (vc1.get('a') < 0 ||
-        vc2.get('a') < 0 ||
-        vc1.get('b') < 0 ||
-        vc2.get('b') < 0) {
+    if (!vc1.isValid() || !vc2.isValid()) {
       expect(
           () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
     }
