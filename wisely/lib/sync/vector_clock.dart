@@ -30,15 +30,9 @@ class VectorClock {
   static VclockStatus compare(VectorClock vc1, VectorClock vc2) {
     Set<VclockStatus> comparisons = <VclockStatus>{};
     Set<String> nodeIds = <String>{};
-    Set<int> counters = <int>{};
 
-    counters.addAll(vc1.vclock.values);
-    counters.addAll(vc2.vclock.values);
-
-    for (int counter in counters) {
-      if (counter < 0) {
-        throw VclockException();
-      }
+    if (!vc1.isValid() || !vc2.isValid()) {
+      throw VclockException();
     }
 
     if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
