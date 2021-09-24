@@ -8,6 +8,10 @@ extension AnyVectorClock on Any {
           (int v1, int v2) {
         return VectorClock({'a': v1, 'b': v2});
       });
+  Generator<VectorClock> get possiblyInvalidVc =>
+      any.combine2(any.int, any.int, (int v1, int v2) {
+        return VectorClock({'a': v1, 'b': v2});
+      });
 }
 
 void main() {
@@ -27,6 +31,19 @@ void main() {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
     } else {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
+    }
+  });
+
+  Glados2<VectorClock, VectorClock>(
+          any.possiblyInvalidVc, any.possiblyInvalidVc)
+      .test('compare two vector clocks, throw exception when invalid',
+          (vc1, vc2) {
+    if (vc1.get('a') < 0 ||
+        vc2.get('a') < 0 ||
+        vc1.get('b') < 0 ||
+        vc2.get('b') < 0) {
+      expect(
+          () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
     }
   });
 }

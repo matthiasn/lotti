@@ -14,7 +14,7 @@ enum VclockStatus {
 }
 
 class VectorClock {
-  Map<String, int> vclock = Map<String, int>();
+  Map<String, int> vclock = <String, int>{};
 
   VectorClock(this.vclock);
 
