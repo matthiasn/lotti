@@ -14,7 +14,7 @@ enum VclockStatus {
 }
 
 class VectorClock {
-  Map<String, int> vclock = new Map<String, int>();
+  Map<String, int> vclock = Map<String, int>();
 
   VectorClock(this.vclock);
 
@@ -27,13 +27,13 @@ class VectorClock {
   // VclockStatus.concurrent if no strict order could be determined.
 
   // Throws an exception when input is invalid.
-  static VclockStatus compare(Map<String, int> vc1, Map<String, int> vc2) {
-    Set<VclockStatus> comparisons = new Set<VclockStatus>();
-    Set<String> nodeIds = new Set<String>();
-    Set<int> counters = new Set<int>();
+  static VclockStatus compare(VectorClock vc1, VectorClock vc2) {
+    Set<VclockStatus> comparisons = <VclockStatus>{};
+    Set<String> nodeIds = <String>{};
+    Set<int> counters = <int>{};
 
-    counters.addAll(vc1.values);
-    counters.addAll(vc2.values);
+    counters.addAll(vc1.vclock.values);
+    counters.addAll(vc2.vclock.values);
 
     for (int counter in counters) {
       if (counter < 1) {
@@ -41,16 +41,16 @@ class VectorClock {
       }
     }
 
-    if (DeepCollectionEquality().equals(vc1, vc2)) {
+    if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
       return VclockStatus.equal;
     }
 
-    nodeIds.addAll(vc1.keys);
-    nodeIds.addAll(vc2.keys);
+    nodeIds.addAll(vc1.vclock.keys);
+    nodeIds.addAll(vc2.vclock.keys);
 
     for (String nodeId in nodeIds) {
-      int counterA = vc1[nodeId] ?? 0;
-      int counterB = vc2[nodeId] ?? 0;
+      int counterA = vc1.vclock[nodeId] ?? 0;
+      int counterB = vc2.vclock[nodeId] ?? 0;
 
       if (counterA == counterB) {
         comparisons.add(VclockStatus.equal);
