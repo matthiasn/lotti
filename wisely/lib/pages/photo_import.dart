@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:wisely/health/health_service.dart';
 
 class PhotoImportPage extends StatefulWidget {
   const PhotoImportPage({Key? key}) : super(key: key);
@@ -11,12 +10,9 @@ class PhotoImportPage extends StatefulWidget {
 }
 
 class _PhotoImportPageState extends State<PhotoImportPage> {
-  late HealthService healthService;
-
   @override
   void initState() {
     super.initState();
-    healthService = HealthService();
   }
 
   void _importPhotos() async {
