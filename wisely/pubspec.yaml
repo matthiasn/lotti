@@ -40,7 +40,7 @@ dependencies:
   qr_flutter: ^4.0.0
   qr_code_scanner: ^0.5.2
   flutter_map: ^0.14.0
-  latlong2: ^0.8.0
+  latlong2: ^0.8.1
   cached_network_image: ^3.1.0
   flutter_secure_storage: ^4.2.1
   # imap_client: ^1.0.0-alpha
