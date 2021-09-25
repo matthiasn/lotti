@@ -19,6 +19,25 @@ extension AnyVectorClock on Any {
       });
 }
 
+bool aGtB(VectorClock a, VectorClock b) {
+  Set<String> nodeIds = <String>{};
+  nodeIds.addAll(a.vclock.keys);
+  nodeIds.addAll(b.vclock.keys);
+
+  for (String nodeId in nodeIds) {
+    if (b.get(nodeId) > a.get(nodeId)) {
+      return false;
+    }
+  }
+
+  if (b.vclock.values.reduce((acc, elem) => acc + elem) >=
+      a.vclock.values.reduce((acc, elem) => acc + elem)) {
+    return false;
+  }
+
+  return true;
+}
+
 void main() {
   Any.setDefault<VectorClock>(any.vc);
 
@@ -26,13 +45,9 @@ void main() {
       (vc1, vc2) {
     if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-    } else if (vc1.get('a') >= vc2.get('a') &&
-        vc1.get('b') >= vc2.get('b') &&
-        (vc1.get('a') + vc1.get('b')) > (vc2.get('a') + vc2.get('b'))) {
+    } else if (aGtB(vc1, vc2)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-    } else if (vc1.get('a') <= vc2.get('a') &&
-        vc1.get('b') <= vc2.get('b') &&
-        (vc1.get('a') + vc1.get('b')) < (vc2.get('a') + vc2.get('b'))) {
+    } else if (aGtB(vc2, vc1)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
     } else {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
@@ -43,17 +58,9 @@ void main() {
       .test('compare two vector clocks with three nodes', (vc1, vc2) {
     if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-    } else if (vc1.get('a') >= vc2.get('a') &&
-        vc1.get('b') >= vc2.get('b') &&
-        vc1.get('c') >= vc2.get('c') &&
-        (vc1.get('a') + vc1.get('b') + vc1.get('c')) >
-            (vc2.get('a') + vc2.get('b') + vc2.get('c'))) {
+    } else if (aGtB(vc1, vc2)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-    } else if (vc1.get('a') <= vc2.get('a') &&
-        vc1.get('b') <= vc2.get('b') &&
-        vc1.get('c') <= vc2.get('c') &&
-        (vc1.get('a') + vc1.get('b') + vc1.get('c')) <
-            (vc2.get('a') + vc2.get('b') + vc2.get('c'))) {
+    } else if (aGtB(vc2, vc1)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
     } else {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
@@ -64,17 +71,9 @@ void main() {
       .test('compare two vector clocks, one with three nodes', (vc1, vc2) {
     if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-    } else if (vc1.get('a') >= vc2.get('a') &&
-        vc1.get('b') >= vc2.get('b') &&
-        vc1.get('c') >= vc2.get('c') &&
-        (vc1.get('a') + vc1.get('b') + vc1.get('c')) >
-            (vc2.get('a') + vc2.get('b') + vc2.get('c'))) {
+    } else if (aGtB(vc1, vc2)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-    } else if (vc1.get('a') <= vc2.get('a') &&
-        vc1.get('b') <= vc2.get('b') &&
-        vc1.get('c') <= vc2.get('c') &&
-        (vc1.get('a') + vc1.get('b') + vc1.get('c')) <
-            (vc2.get('a') + vc2.get('b') + vc2.get('c'))) {
+    } else if (aGtB(vc2, vc1)) {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
     } else {
       expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
