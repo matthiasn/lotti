@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
 import 'package:wisely/pages/photo_import.dart';
@@ -69,9 +70,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     ),
     EditorPage(),
     PhotoImportPage(),
-    Text(
-      'Index 3: Audio',
-    ),
+    AudioPage(),
     HealthPage(),
     SettingsPage(),
   ];
