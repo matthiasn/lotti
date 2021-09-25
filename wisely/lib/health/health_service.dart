@@ -10,7 +10,7 @@ class HealthService {
   List<HealthDataPoint> _healthDataList = [];
 
   HealthService() {
-    fetchData();
+    //fetchData();
   }
 
   Future<File> get _localFile async {

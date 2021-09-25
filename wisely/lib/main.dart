@@ -1,17 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:image_picker/image_picker.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:quill_markdown/quill_markdown.dart';
-import 'package:uuid/uuid.dart';
-import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
-import 'package:wisely/health/health_service.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/pages/editor.dart';
+import 'package:wisely/pages/health.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/secure_storage.dart';
@@ -56,7 +49,6 @@ class WiselyHomePage extends StatefulWidget {
 
 class _WiselyHomePageState extends State<WiselyHomePage> {
   late ImapSyncClient imapSyncClient;
-  QuillController _controller = QuillController.basic();
 
   int _selectedIndex = 0;
 
@@ -66,26 +58,20 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     });
   }
 
-  int _counter = 0;
   DeviceLocation location = DeviceLocation();
-  static LatLng berlin = LatLng(52.5, 13.4);
-  LatLng _currentLocation = berlin;
 
   late final MapController mapController;
 
   late Persistence db;
-  late HealthService healthService;
 
   @override
   void initState() {
     super.initState();
     mapController = MapController();
-
     imapSyncClient = ImapSyncClient();
 
     SecureStorage.writeValue('foo', 'some secret for testing');
     db = Persistence();
-    healthService = HealthService();
   }
 
   void _importPhoto() async {
@@ -96,54 +82,6 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     print(images);
   }
 
-  void _incrementCounter() async {
-    // _importPhoto();
-    // healthService.fetchData();
-    setState(() {
-      String json = jsonEncode(_controller.document.toDelta().toJson());
-      String md = quillToMarkdown(json);
-      print(md);
-      _counter++;
-    });
-
-    var uuid = Uuid();
-
-    db.insertEntry(Entry(
-        entryId: uuid.v1(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        plainText: 'foo',
-        markdown: 'foo',
-        quill: '',
-        vectorClock: '',
-        commentFor: '',
-        latitude: 0,
-        longitude: 0));
-
-    var loc = await location.getCurrentLocation();
-    var latitude = loc.latitude;
-    var longitude = loc.longitude;
-
-    if (latitude != null && longitude != null) {
-      _currentLocation = LatLng(latitude, longitude);
-      mapController.move(_currentLocation, 17);
-    }
-
-    db.insertEntry(Entry(
-        entryId: uuid.v1(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        plainText: 'foo',
-        markdown: 'foo',
-        quill: '',
-        vectorClock: '',
-        commentFor: '',
-        latitude: latitude ?? 0,
-        longitude: longitude ?? 0));
-
-    print(await db.entries());
-  }
-
   static const List<Widget> _widgetOptions = <Widget>[
     Text(
       'Index 0: Home',
@@ -152,9 +90,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     Text(
       'Index 2: Photos',
     ),
-    Text(
-      'Index 3: Health',
-    ),
+    HealthPage(),
     SettingsPage(),
   ];
 
@@ -211,11 +147,6 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
         unselectedItemColor: AppColors.headerFontColor,
         backgroundColor: AppColors.headerBgColor,
         onTap: _onItemTapped,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
