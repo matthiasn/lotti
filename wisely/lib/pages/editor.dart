@@ -1,12 +1,12 @@
 import 'dart:convert';
 
+import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:latlong2/latlong.dart';
-import 'package:quill_markdown/quill_markdown.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
@@ -40,9 +40,10 @@ class _EditorPageState extends State<EditorPage> {
 
   void _save() async {
     setState(() {
-      String json = jsonEncode(_controller.document.toDelta().toJson());
-      String md = quillToMarkdown(json);
-      print(md);
+      Delta _delta = _controller.document.toDelta();
+      String _json = jsonEncode(_delta.toJson());
+      String _md = deltaToMarkdown(_json);
+      print(_md);
     });
 
     var uuid = Uuid();

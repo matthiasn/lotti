@@ -36,7 +36,6 @@ dependencies:
   location: ^4.3.0
   flutter_quill: ^2.0.5
   uuid: ^3.0.4
-  quill_markdown: ^0.0.3
   qr_flutter: ^4.0.0
   qr_code_scanner: ^0.5.2
   flutter_map: ^0.14.0
@@ -50,6 +49,7 @@ dependencies:
   path: ^1.8.0
   health: ^3.1.1+1
   image_picker: ^0.8.4+2
+  delta_markdown: ^0.3.0
 
 dev_dependencies:
   flutter_test:
