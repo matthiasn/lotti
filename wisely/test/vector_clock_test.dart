@@ -45,7 +45,10 @@ void main() {
     VectorClock vc2 = VectorClock({nodeId1: -3, nodeId2: 3, nodeId3: 3});
 
     expect(
-        () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
+        () => VectorClock.compare(vc1, vc2),
+        throwsA(predicate((e) =>
+            e is VclockException &&
+            e.toString() == 'Invalid vector clock inputs')));
   });
 
   test('Vector clock toString as expected', () {

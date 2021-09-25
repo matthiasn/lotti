@@ -1,7 +1,8 @@
 import 'package:collection/collection.dart';
 
 class VclockException implements Exception {
-  String errMsg() => 'Invalid vector clock inputs';
+  @override
+  String toString() => 'Invalid vector clock inputs';
 
   VclockException();
 }
