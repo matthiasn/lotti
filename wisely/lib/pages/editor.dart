@@ -22,7 +22,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  QuillController _controller = QuillController.basic();
+  final QuillController _controller = QuillController.basic();
 
   DeviceLocation location = DeviceLocation();
   static LatLng berlin = LatLng(52.5, 13.4);
