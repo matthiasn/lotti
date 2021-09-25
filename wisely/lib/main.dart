@@ -61,6 +61,14 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   late ImapSyncClient imapSyncClient;
   QuillController _controller = QuillController.basic();
 
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   int _counter = 0;
   DeviceLocation location = DeviceLocation();
   static LatLng berlin = LatLng(52.5, 13.4);
@@ -245,6 +253,36 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_box),
+            label: 'Add',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_roll),
+            label: 'Photos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_run),
+            label: 'Health',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: AppColors.headerFontColor,
+        backgroundColor: AppColors.headerBgColor,
+        onTap: _onItemTapped,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
