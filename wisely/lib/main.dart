@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
@@ -13,10 +11,9 @@ import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
 import 'package:wisely/health/health_service.dart';
 import 'package:wisely/location.dart';
-import 'package:wisely/map/cached_tile_provider.dart';
+import 'package:wisely/pages/editor.dart';
+import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/imap.dart';
-import 'package:wisely/sync/qr_display_widget.dart';
-import 'package:wisely/sync/qr_scanner_widget.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
@@ -147,6 +144,20 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     print(await db.entries());
   }
 
+  static const List<Widget> _widgetOptions = <Widget>[
+    Text(
+      'Index 0: Home',
+    ),
+    EditorPage(),
+    Text(
+      'Index 2: Photos',
+    ),
+    Text(
+      'Index 3: Health',
+    ),
+    SettingsPage(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -169,90 +180,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              SizedBox(
-                height: 300,
-                child: Listener(
-                  onPointerSignal: (pointerSignal) {
-                    if (pointerSignal is PointerScrollEvent) {
-                      if (pointerSignal.scrollDelta.dy < 0) {
-                        mapController.move(
-                            mapController.center, mapController.zoom + 1);
-                      } else {
-                        mapController.move(
-                            mapController.center, mapController.zoom - 1);
-                      }
-                    }
-                  },
-                  child: FlutterMap(
-                    mapController: mapController,
-                    options: MapOptions(
-                      center: berlin,
-                      zoom: 13.0,
-                    ),
-                    layers: [
-                      TileLayerOptions(
-                        urlTemplate:
-                            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                        subdomains: ['a', 'b', 'c'],
-                        tileProvider: CachedTileProvider(),
-                      ),
-                      MarkerLayerOptions(
-                        markers: [
-                          Marker(
-                            width: 64.0,
-                            height: 64.0,
-                            point: _currentLocation,
-                            builder: (ctx) => Container(
-                              child: Image(
-                                image: AssetImage(
-                                    'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  //width: 400,
-                  padding: EdgeInsets.all(8.0),
-                  height: 400,
-                  color: AppColors.editorBgColor,
-                  child: Column(
-                    children: [
-                      QuillToolbar.basic(controller: _controller),
-                      Expanded(
-                        child: Container(
-                          child: QuillEditor.basic(
-                            controller: _controller,
-                            readOnly: false, // true for view only mode
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              const Text(
-                'You have pushed the button this many times:',
-              ),
-              Text(
-                '$_counter',
-                style: Theme.of(context).textTheme.headline4,
-              ),
-              QrDisplayWidget(),
-              if (Platform.isIOS) QrScannerWidget(),
-            ],
-          ),
-        ),
+        child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
