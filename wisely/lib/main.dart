@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:wisely/db/persistence.dart';
-import 'package:wisely/location.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
+import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/secure_storage.dart';
@@ -58,28 +55,12 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     });
   }
 
-  DeviceLocation location = DeviceLocation();
-
-  late final MapController mapController;
-
-  late Persistence db;
-
   @override
   void initState() {
     super.initState();
-    mapController = MapController();
     imapSyncClient = ImapSyncClient();
 
     SecureStorage.writeValue('foo', 'some secret for testing');
-    db = Persistence();
-  }
-
-  void _importPhoto() async {
-    final ImagePicker _picker = ImagePicker();
-    // final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    // final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-    final List<XFile>? images = await _picker.pickMultiImage();
-    print(images);
   }
 
   static const List<Widget> _widgetOptions = <Widget>[
@@ -87,9 +68,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
       'Index 0: Home',
     ),
     EditorPage(),
-    Text(
-      'Index 2: Photos',
-    ),
+    PhotoImportPage(),
     HealthPage(),
     SettingsPage(),
   ];
