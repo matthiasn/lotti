@@ -47,4 +47,9 @@ void main() {
     expect(
         () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
   });
+
+  test('Vector clock toString as expected', () {
+    VectorClock vc = VectorClock({'nodeId1': 0, 'nodeId2': 1});
+    expect(vc.toString(), '{nodeId1: 0, nodeId2: 1}');
+  });
 }
