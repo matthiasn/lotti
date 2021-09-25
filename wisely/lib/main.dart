@@ -69,6 +69,9 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     ),
     EditorPage(),
     PhotoImportPage(),
+    Text(
+      'Index 3: Audio',
+    ),
     HealthPage(),
     SettingsPage(),
   ];
@@ -110,6 +113,10 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.camera_roll),
             label: 'Photos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.mic),
+            label: 'Audio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.directions_run),
