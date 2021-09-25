@@ -86,7 +86,10 @@ void main() {
           (vc1, vc2) {
     if (!vc1.isValid() || !vc2.isValid()) {
       expect(
-          () => VectorClock.compare(vc1, vc2), throwsA(isA<VclockException>()));
+          () => VectorClock.compare(vc1, vc2),
+          throwsA(predicate((e) =>
+              e is VclockException &&
+              e.toString() == 'Invalid vector clock inputs')));
     }
   });
 }
