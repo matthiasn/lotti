@@ -1,6 +1,6 @@
 .PHONY: test
 test:
-	flutter test --no-sound-null-safety --coverage
+	flutter test --coverage
 
 .PHONY: coverage
 coverage: test
