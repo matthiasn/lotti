@@ -51,6 +51,7 @@ dependencies:
   image_picker: ^0.8.4+2
   delta_markdown: ^0.3.0
   flutter_sound: ^8.3.12
+  path_provider: ^2.0.5
 
 dev_dependencies:
   flutter_test:
