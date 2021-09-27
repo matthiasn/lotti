@@ -52,6 +52,7 @@ dependencies:
   delta_markdown: ^0.3.0
   flutter_sound: ^8.3.12
   path_provider: ^2.0.5
+  audioplayers: ^0.20.1
 
 dev_dependencies:
   flutter_test:
