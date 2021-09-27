@@ -58,7 +58,7 @@ class _AudioPageState extends State<AudioPage> {
     );
   }
 
-  Future<void> stopRecorder() async {
+  Future<void> _stopRecorder() async {
     await _myRecorder?.stopRecorder();
   }
 
@@ -86,55 +86,70 @@ class _AudioPageState extends State<AudioPage> {
     print('pause');
   }
 
-  void _stop() async {
-    stopRecorder();
-    _stopPlayer();
-    print('stop');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Row(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.mic_rounded),
-            iconSize: 40.0,
-            tooltip: 'Record',
-            color: Colors.deepOrange,
-            onPressed: _record,
-          ),
-          IconButton(
-            icon: const Icon(Icons.play_arrow),
-            iconSize: 40.0,
-            tooltip: 'Play',
-            onPressed: _play,
-          ),
-          IconButton(
-            icon: const Icon(Icons.fast_rewind),
-            iconSize: 40.0,
-            tooltip: 'Rewind 15s',
-            onPressed: _pause,
-          ),
-          IconButton(
-            icon: const Icon(Icons.pause),
-            iconSize: 40.0,
-            tooltip: 'Pause',
-            onPressed: _pause,
-          ),
-          IconButton(
-            icon: const Icon(Icons.fast_forward),
-            iconSize: 40.0,
-            tooltip: 'Fast forward 15s',
-            onPressed: _pause,
-          ),
-          IconButton(
-            icon: const Icon(Icons.stop),
-            iconSize: 40.0,
-            tooltip: 'Stop',
-            onPressed: _stop,
-          ),
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (_mRecorderIsInited) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.mic_rounded),
+                  iconSize: 40.0,
+                  tooltip: 'Record',
+                  color: Colors.deepOrange,
+                  onPressed: _record,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.stop),
+                  iconSize: 40.0,
+                  tooltip: 'Stop',
+                  onPressed: _stopRecorder,
+                ),
+              ],
+            ),
+          ],
+          if (_mPlayerIsInited) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.play_arrow),
+                  iconSize: 40.0,
+                  tooltip: 'Play',
+                  onPressed: _play,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.fast_rewind),
+                  iconSize: 40.0,
+                  tooltip: 'Rewind 15s',
+                  onPressed: _pause,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.pause),
+                  iconSize: 40.0,
+                  tooltip: 'Pause',
+                  onPressed: _pause,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.fast_forward),
+                  iconSize: 40.0,
+                  tooltip: 'Fast forward 15s',
+                  onPressed: _pause,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.stop),
+                  iconSize: 40.0,
+                  tooltip: 'Stop',
+                  onPressed: _stopPlayer,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
