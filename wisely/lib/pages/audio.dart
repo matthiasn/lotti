@@ -1,8 +1,8 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/theme.dart';
 
@@ -14,11 +14,12 @@ class AudioPage extends StatefulWidget {
 }
 
 class _AudioPageState extends State<AudioPage> {
-  AudioPlayer audioPlayer = AudioPlayer();
+  AudioPlayer _audioPlayer = AudioPlayer();
   FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   bool _mRecorderIsInited = false;
   bool _isRecording = false;
   bool _isPlaying = false;
+  double _playbackProgress = 0.0;
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _AudioPageState extends State<AudioPage> {
     // Be careful : you must `close` the audio session when you have finished with it.
     _myRecorder?.closeAudioSession();
     _myRecorder = null;
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -65,24 +67,38 @@ class _AudioPageState extends State<AudioPage> {
   _playLocal() async {
     var docDir = await getApplicationDocumentsDirectory();
     String localPath = '${docDir.path}/flutter_sound.aac';
-    int result = await audioPlayer.play(localPath, isLocal: true);
+    Duration? duration = await _audioPlayer.setFilePath(localPath);
+    print('Player PLAY duration: ${duration}');
+    await _audioPlayer.setSpeed(1.2);
+
+    _audioPlayer.positionStream.listen((event) {
+      if (duration != null) {
+        setState(() {
+          _playbackProgress = event.inMilliseconds / duration.inMilliseconds;
+        });
+      }
+    });
+    _audioPlayer.playbackEventStream.listen((event) {
+      print(event);
+    });
+
+    await _audioPlayer.play();
     setState(() {
       _isPlaying = true;
     });
-    print('Player PLAY: ${result}');
   }
 
   Future<void> _stopPlayer() async {
-    int result = await audioPlayer.stop();
+    await _audioPlayer.stop();
     setState(() {
       _isPlaying = false;
     });
-    print('Player STOP: ${result}');
+    print('Player STOP');
   }
 
   void _pause() async {
-    int result = await audioPlayer.pause();
-    print('Player PAUSE: ${result}');
+    await _audioPlayer.pause();
+    print('Player PAUSE');
   }
 
   @override
@@ -154,6 +170,20 @@ class _AudioPageState extends State<AudioPage> {
                 tooltip: 'Stop',
                 color: AppColors.inactiveAudioControl,
                 onPressed: _stopPlayer,
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 250,
+                child: LinearProgressIndicator(
+                  value: _playbackProgress,
+                  minHeight: 8,
+                  color: AppColors.activeAudioControl,
+                  semanticsLabel: 'Linear progress indicator',
+                ),
               ),
             ],
           ),
