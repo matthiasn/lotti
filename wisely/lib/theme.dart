@@ -6,6 +6,8 @@ class AppColors {
   static Color editorBgColor = Colors.white;
   static Color headerBgColor = Color.fromRGBO(68, 68, 85, 1);
   static Color headerFontColor = Colors.white;
+  static Color activeAudioControl = Colors.deepOrange;
+  static Color inactiveAudioControl = headerBgColor;
 }
 
 class AppNumbers {

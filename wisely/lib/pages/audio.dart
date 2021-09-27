@@ -1,9 +1,10 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:flutter_sound/public/flutter_sound_player.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/theme.dart';
 
 class AudioPage extends StatefulWidget {
   const AudioPage({Key? key}) : super(key: key);
@@ -13,22 +14,17 @@ class AudioPage extends StatefulWidget {
 }
 
 class _AudioPageState extends State<AudioPage> {
-  FlutterSoundPlayer? _myPlayer = FlutterSoundPlayer();
+  AudioPlayer audioPlayer = AudioPlayer();
   FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
-  bool _mPlayerIsInited = false;
   bool _mRecorderIsInited = false;
-  String _mPath = '';
+  bool _isRecording = false;
+  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
     // Be careful : openAudioSession return a Future.
     // Do not access your FlutterSoundPlayer or FlutterSoundRecorder before the completion of the Future
-    _myPlayer?.openAudioSession().then((value) {
-      setState(() {
-        _mPlayerIsInited = true;
-      });
-    });
 
     _myRecorder?.openAudioSession().then((value) {
       setState(() {
@@ -40,8 +36,6 @@ class _AudioPageState extends State<AudioPage> {
   @override
   void dispose() {
     // Be careful : you must `close` the audio session when you have finished with it.
-    _myPlayer?.closeAudioSession();
-    _myPlayer = null;
     _myRecorder?.closeAudioSession();
     _myRecorder = null;
     super.dispose();
@@ -52,38 +46,43 @@ class _AudioPageState extends State<AudioPage> {
     String _path = '${docDir.path}/flutter_sound.aac';
     print('RECORD: ${_path}');
 
-    await _myRecorder?.startRecorder(
-      toFile: _path,
-      codec: Codec.aacADTS,
-    );
+    await _myRecorder
+        ?.startRecorder(
+          toFile: _path,
+          codec: Codec.aacADTS,
+        )
+        .then((value) => setState(() {
+              _isRecording = true;
+            }));
   }
 
   Future<void> _stopRecorder() async {
-    await _myRecorder?.stopRecorder();
+    await _myRecorder?.stopRecorder().then((value) => setState(() {
+          _isRecording = false;
+        }));
   }
 
-  void _play() async {
+  _playLocal() async {
     var docDir = await getApplicationDocumentsDirectory();
-    String _path = '${docDir.path}/flutter_sound.aac';
-    print('PLAY: ${_path}');
-
-    await _myPlayer?.startPlayer(
-        fromURI: _mPath,
-        codec: Codec.mp3,
-        whenFinished: () {
-          setState(() {});
-        });
-    setState(() {});
+    String localPath = '${docDir.path}/flutter_sound.aac';
+    int result = await audioPlayer.play(localPath, isLocal: true);
+    setState(() {
+      _isPlaying = true;
+    });
+    print('Player PLAY: ${result}');
   }
 
   Future<void> _stopPlayer() async {
-    if (_myPlayer != null) {
-      await _myPlayer?.stopPlayer();
-    }
+    int result = await audioPlayer.stop();
+    setState(() {
+      _isPlaying = false;
+    });
+    print('Player STOP: ${result}');
   }
 
   void _pause() async {
-    print('pause');
+    int result = await audioPlayer.pause();
+    print('Player PAUSE: ${result}');
   }
 
   @override
@@ -101,55 +100,63 @@ class _AudioPageState extends State<AudioPage> {
                   icon: const Icon(Icons.mic_rounded),
                   iconSize: 40.0,
                   tooltip: 'Record',
-                  color: Colors.deepOrange,
+                  color: _isRecording
+                      ? AppColors.activeAudioControl
+                      : AppColors.inactiveAudioControl,
                   onPressed: _record,
                 ),
                 IconButton(
                   icon: const Icon(Icons.stop),
                   iconSize: 40.0,
                   tooltip: 'Stop',
+                  color: AppColors.inactiveAudioControl,
                   onPressed: _stopRecorder,
                 ),
               ],
             ),
           ],
-          if (_mPlayerIsInited) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.play_arrow),
-                  iconSize: 40.0,
-                  tooltip: 'Play',
-                  onPressed: _play,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.fast_rewind),
-                  iconSize: 40.0,
-                  tooltip: 'Rewind 15s',
-                  onPressed: _pause,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.pause),
-                  iconSize: 40.0,
-                  tooltip: 'Pause',
-                  onPressed: _pause,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.fast_forward),
-                  iconSize: 40.0,
-                  tooltip: 'Fast forward 15s',
-                  onPressed: _pause,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop),
-                  iconSize: 40.0,
-                  tooltip: 'Stop',
-                  onPressed: _stopPlayer,
-                ),
-              ],
-            ),
-          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.play_arrow),
+                iconSize: 40.0,
+                tooltip: 'Play',
+                color: _isPlaying
+                    ? AppColors.activeAudioControl
+                    : AppColors.inactiveAudioControl,
+                onPressed: _playLocal,
+              ),
+              IconButton(
+                icon: const Icon(Icons.fast_rewind),
+                iconSize: 40.0,
+                tooltip: 'Rewind 15s',
+                color: AppColors.inactiveAudioControl,
+                onPressed: _pause,
+              ),
+              IconButton(
+                icon: const Icon(Icons.pause),
+                iconSize: 40.0,
+                tooltip: 'Pause',
+                color: AppColors.inactiveAudioControl,
+                onPressed: _pause,
+              ),
+              IconButton(
+                icon: const Icon(Icons.fast_forward),
+                iconSize: 40.0,
+                tooltip: 'Fast forward 15s',
+                color: AppColors.inactiveAudioControl,
+                onPressed: _pause,
+              ),
+              IconButton(
+                icon: const Icon(Icons.stop),
+                iconSize: 40.0,
+                tooltip: 'Stop',
+                color: AppColors.inactiveAudioControl,
+                onPressed: _stopPlayer,
+              ),
+            ],
+          ),
         ],
       ),
     );
