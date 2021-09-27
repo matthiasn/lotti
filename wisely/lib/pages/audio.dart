@@ -48,8 +48,8 @@ class _AudioPageState extends State<AudioPage> {
   }
 
   Future<void> _record() async {
-    var tempDir = await getTemporaryDirectory();
-    String _path = '${tempDir.path}/flutter_sound.aac';
+    var docDir = await getApplicationDocumentsDirectory();
+    String _path = '${docDir.path}/flutter_sound.aac';
     print('RECORD: ${_path}');
 
     await _myRecorder?.startRecorder(
@@ -63,8 +63,8 @@ class _AudioPageState extends State<AudioPage> {
   }
 
   void _play() async {
-    var tempDir = await getTemporaryDirectory();
-    String _path = '${tempDir.path}/flutter_sound.aac';
+    var docDir = await getApplicationDocumentsDirectory();
+    String _path = '${docDir.path}/flutter_sound.aac';
     print('PLAY: ${_path}');
 
     await _myPlayer?.startPlayer(
