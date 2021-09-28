@@ -1,3 +1,4 @@
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -19,7 +20,9 @@ class _AudioPageState extends State<AudioPage> {
   bool _mRecorderIsInited = false;
   bool _isRecording = false;
   bool _isPlaying = false;
-  double _playbackProgress = 0.0;
+
+  Duration totalDuration = Duration(minutes: 0);
+  Duration progress = Duration(minutes: 0);
 
   @override
   void initState() {
@@ -68,15 +71,16 @@ class _AudioPageState extends State<AudioPage> {
     var docDir = await getApplicationDocumentsDirectory();
     String localPath = '${docDir.path}/flutter_sound.aac';
     Duration? duration = await _audioPlayer.setFilePath(localPath);
-    print('Player PLAY duration: ${duration}');
+    if (duration != null) {
+      totalDuration = duration;
+    }
+    print('Player PLAY duration: ${totalDuration}');
     await _audioPlayer.setSpeed(1.2);
 
     _audioPlayer.positionStream.listen((event) {
-      if (duration != null) {
-        setState(() {
-          _playbackProgress = event.inMilliseconds / duration.inMilliseconds;
-        });
-      }
+      setState(() {
+        progress = event;
+      });
     });
     _audioPlayer.playbackEventStream.listen((event) {
       print(event);
@@ -178,11 +182,19 @@ class _AudioPageState extends State<AudioPage> {
             children: [
               Container(
                 width: 250,
-                child: LinearProgressIndicator(
-                  value: _playbackProgress,
-                  minHeight: 8,
-                  color: AppColors.activeAudioControl,
-                  semanticsLabel: 'Linear progress indicator',
+                child: ProgressBar(
+                  progress: progress,
+                  total: totalDuration,
+                  progressBarColor: Colors.red,
+                  baseBarColor: Colors.white.withOpacity(0.24),
+                  bufferedBarColor: Colors.white.withOpacity(0.24),
+                  thumbColor: Colors.white,
+                  barHeight: 3.0,
+                  thumbRadius: 5.0,
+                  onSeek: (duration) {
+                    print(duration);
+                    //_player.seek(duration);
+                  },
                 ),
               ),
             ],
