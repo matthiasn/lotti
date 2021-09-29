@@ -15,7 +15,7 @@ class AudioPage extends StatefulWidget {
 }
 
 class _AudioPageState extends State<AudioPage> {
-  AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   bool _mRecorderIsInited = false;
   bool _isRecording = false;
@@ -23,6 +23,7 @@ class _AudioPageState extends State<AudioPage> {
 
   Duration totalDuration = Duration(minutes: 0);
   Duration progress = Duration(minutes: 0);
+  Duration pausedAt = Duration(minutes: 0);
 
   @override
   void initState() {
@@ -34,6 +35,15 @@ class _AudioPageState extends State<AudioPage> {
       setState(() {
         _mRecorderIsInited = true;
       });
+    });
+
+    _audioPlayer.positionStream.listen((event) {
+      setState(() {
+        progress = event;
+      });
+    });
+    _audioPlayer.playbackEventStream.listen((event) {
+      print(event);
     });
   }
 
@@ -67,7 +77,7 @@ class _AudioPageState extends State<AudioPage> {
         }));
   }
 
-  _playLocal() async {
+  Future<void> _playLocal() async {
     var docDir = await getApplicationDocumentsDirectory();
     String localPath = '${docDir.path}/flutter_sound.aac';
     Duration? duration = await _audioPlayer.setFilePath(localPath);
@@ -77,16 +87,10 @@ class _AudioPageState extends State<AudioPage> {
     print('Player PLAY duration: ${totalDuration}');
     await _audioPlayer.setSpeed(1.2);
 
-    _audioPlayer.positionStream.listen((event) {
-      setState(() {
-        progress = event;
-      });
-    });
-    _audioPlayer.playbackEventStream.listen((event) {
-      print(event);
-    });
+    _audioPlayer.play();
+    await _audioPlayer.seek(pausedAt);
+    print('PLAY from progress: $progress');
 
-    await _audioPlayer.play();
     setState(() {
       _isPlaying = true;
     });
@@ -96,13 +100,27 @@ class _AudioPageState extends State<AudioPage> {
     await _audioPlayer.stop();
     setState(() {
       _isPlaying = false;
+      progress = Duration(minutes: 0);
     });
     print('Player STOP');
   }
 
   void _pause() async {
     await _audioPlayer.pause();
+    pausedAt = progress;
     print('Player PAUSE');
+  }
+
+  void _forward() async {
+    await _audioPlayer
+        .seek(Duration(milliseconds: progress.inMilliseconds + 15000));
+    print('Player FORWARD 15s');
+  }
+
+  void _rewind() async {
+    await _audioPlayer
+        .seek(Duration(milliseconds: progress.inMilliseconds - 15000));
+    print('Player REWIND 15s');
   }
 
   @override
@@ -152,7 +170,7 @@ class _AudioPageState extends State<AudioPage> {
                 iconSize: 40.0,
                 tooltip: 'Rewind 15s',
                 color: AppColors.inactiveAudioControl,
-                onPressed: _pause,
+                onPressed: _rewind,
               ),
               IconButton(
                 icon: const Icon(Icons.pause),
@@ -166,7 +184,7 @@ class _AudioPageState extends State<AudioPage> {
                 iconSize: 40.0,
                 tooltip: 'Fast forward 15s',
                 color: AppColors.inactiveAudioControl,
-                onPressed: _pause,
+                onPressed: _forward,
               ),
               IconButton(
                 icon: const Icon(Icons.stop),
@@ -193,7 +211,7 @@ class _AudioPageState extends State<AudioPage> {
                   thumbRadius: 5.0,
                   onSeek: (duration) {
                     print(duration);
-                    //_player.seek(duration);
+                    _audioPlayer.seek(duration);
                   },
                 ),
               ),
