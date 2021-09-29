@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
 
@@ -12,9 +13,12 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  late ImapSyncClient imapSyncClient;
+
   @override
   void initState() {
     super.initState();
+    imapSyncClient = ImapSyncClient();
   }
 
   @override

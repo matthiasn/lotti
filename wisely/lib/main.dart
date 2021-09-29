@@ -4,7 +4,6 @@ import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
-import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
@@ -46,8 +45,6 @@ class WiselyHomePage extends StatefulWidget {
 }
 
 class _WiselyHomePageState extends State<WiselyHomePage> {
-  late ImapSyncClient imapSyncClient;
-
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -59,7 +56,6 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   @override
   void initState() {
     super.initState();
-    imapSyncClient = ImapSyncClient();
 
     SecureStorage.writeValue('foo', 'some secret for testing');
   }
