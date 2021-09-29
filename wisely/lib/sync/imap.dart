@@ -52,7 +52,6 @@ class ImapSyncClient {
     host = yamlMap['host'];
     userName = yamlMap['userName'];
     password = yamlMap['password'];
-    const imapServerPort = 993;
 
     print('host: $host, user: $userName');
 
@@ -72,9 +71,21 @@ class ImapSyncClient {
       for (final msg in messages) {
         printMessage(msg);
       }
-      mailClient.eventBus.on<MailLoadEvent>().listen((event) {
+      mailClient.eventBus.on<MailLoadEvent>().listen((event) async {
         print('New message at ${DateTime.now()}:');
         printMessage(event.message);
+
+        if (event.message.uid != null) {
+          try {
+            FetchImapResult res =
+                await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
+
+            print('Message: ${res.messages.first}');
+            printMessage(res.messages.first);
+          } on MailException catch (e) {
+            print('High level API failed with $e');
+          }
+        }
       });
       await mailClient.startPolling();
     } on MailException catch (e) {
@@ -83,7 +94,8 @@ class ImapSyncClient {
   }
 
   void printMessage(MimeMessage message) {
-    print('from: ${message.from} with subject "${message.decodeSubject()}"');
+    print(
+        'from: ${message.from} with subject "${message.decodeSubject()}" and sequenceId ${message.sequenceId} and uid ${message.uid}');
     if (!message.isTextPlainMessage()) {
       print(' content-type: ${message.mediaType}');
     } else {
