@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 abstract class CounterEvent {}
 
@@ -8,7 +9,7 @@ class Increment extends CounterEvent {}
 
 class Decrement extends CounterEvent {}
 
-class CounterBloc extends Bloc<CounterEvent, int> {
+class CounterBloc extends HydratedBloc<CounterEvent, int> {
   CounterBloc() : super(0) {
     on<Increment>((event, emit) => emit(state + 1));
     on<Decrement>((event, emit) => emit(max(state - 1, 0)));
@@ -37,4 +38,10 @@ class CounterBloc extends Bloc<CounterEvent, int> {
     print('$error, $stackTrace');
     super.onError(error, stackTrace);
   }
+
+  @override
+  int fromJson(Map<String, dynamic> json) => json['value'] as int;
+
+  @override
+  Map<String, int> toJson(int state) => {'value': state};
 }
