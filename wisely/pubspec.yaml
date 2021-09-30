@@ -53,6 +53,7 @@ dependencies:
   path_provider: ^2.0.5
   just_audio: ^0.9.12
   audio_video_progress_bar: ^0.9.0
+  bloc: ^7.2.1
 
 dev_dependencies:
   flutter_test:

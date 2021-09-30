@@ -1,33 +1,38 @@
-import 'dart:async';
+import 'package:bloc/bloc.dart';
 
-import 'counter_event.dart';
+abstract class CounterEvent {}
 
-class CounterBloc {
-  int _counter = 0;
+class Increment extends CounterEvent {}
 
-  final _counterStateController = StreamController<int>();
-  StreamSink<int> get _intCounter => _counterStateController.sink;
+class Decrement extends CounterEvent {}
 
-  Stream<int> get counter => _counterStateController.stream;
-
-  final _counterEventController = StreamController<CounterEvent>();
-  Sink<CounterEvent> get counterEventSink => _counterEventController.sink;
-
-  CounterBloc() {
-    _counterEventController.stream.listen(_mapEventToState);
+class CounterBloc extends Bloc<CounterEvent, int> {
+  CounterBloc() : super(0) {
+    on<Increment>((event, emit) => emit(state + 1));
+    on<Decrement>((event, emit) => emit(state - 1));
   }
 
-  void _mapEventToState(CounterEvent event) {
-    if (event is IncrementEvent) {
-      _counter++;
-    } else
-      _counter--;
-
-    _intCounter.add(_counter);
+  @override
+  void onEvent(CounterEvent event) {
+    super.onEvent(event);
+    print(event);
   }
 
-  void dispose() {
-    _counterStateController.close();
-    _counterEventController.close();
+  @override
+  void onChange(Change<int> change) {
+    super.onChange(change);
+    print(change);
+  }
+
+  @override
+  void onTransition(Transition<CounterEvent, int> transition) {
+    super.onTransition(transition);
+    print(transition);
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    print('$error, $stackTrace');
+    super.onError(error, stackTrace);
   }
 }

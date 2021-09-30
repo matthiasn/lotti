@@ -1,3 +1,4 @@
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
@@ -8,8 +9,11 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
+import 'blocs/my_bloc_observer.dart';
+
 void main() {
   runApp(const WiselyApp());
+  Bloc.observer = MyBlocObserver();
 }
 
 class WiselyApp extends StatelessWidget {

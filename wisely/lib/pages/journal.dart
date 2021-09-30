@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
-import 'package:wisely/blocs/counter_event.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({Key? key}) : super(key: key);
@@ -21,7 +20,6 @@ class _JournalPageState extends State<JournalPage> {
   @override
   void dispose() {
     super.dispose();
-    _bloc.dispose();
   }
 
   @override
@@ -32,21 +30,21 @@ class _JournalPageState extends State<JournalPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             OutlinedButton(
-              onPressed: () => _bloc.counterEventSink.add(IncrementEvent()),
+              onPressed: () => _bloc.add(Increment()),
               child: const Text(
                 'Increment',
                 style: TextStyle(color: CupertinoColors.systemOrange),
               ),
             ),
             OutlinedButton(
-              onPressed: () => _bloc.counterEventSink.add(DecrementEvent()),
+              onPressed: () => _bloc.add(Decrement()),
               child: const Text(
                 'Decrement',
                 style: TextStyle(color: CupertinoColors.systemOrange),
               ),
             ),
             StreamBuilder<int>(
-                stream: _bloc.counter,
+                stream: _bloc.stream,
                 initialData: 0,
                 builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
                   return Text('You hit me: ${snapshot.data} times');
