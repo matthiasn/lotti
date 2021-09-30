@@ -34,8 +34,12 @@ class WiselyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
-      home: BlocProvider(
-        create: (_) => CounterBloc(),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<CounterBloc>(
+            create: (BuildContext context) => CounterBloc(),
+          ),
+        ],
         child: WiselyHomePage(title: 'WISELY'),
       ),
     );
