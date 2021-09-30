@@ -11,37 +11,23 @@ class JournalPage extends StatefulWidget {
 }
 
 class _JournalPageState extends State<JournalPage> {
-  //
-  // Initialize a "Broadcast" Stream controller of integers
-  //
-  final StreamController<int> ctrl = StreamController<int>.broadcast();
+  int _counter = 0;
+  final StreamController<int> _streamController = StreamController<int>();
+
+  @override
+  void dispose() {
+    _streamController.close();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
-
-    //
-    // Initialize a single listener which filters out the odd numbers and
-    // only prints the even numbers
-    //
-    final StreamSubscription subscription = ctrl.stream
-        .where((value) => (value % 2 == 0))
-        .listen((value) => print('$value'));
-
-    //
-    // We here add the data that will flow inside the stream
-    //
-    for (int i = 1; i < 11; i++) {
-      ctrl.sink.add(i);
-    }
-
-    //
-    // We release the StreamController
-    //
-    ctrl.close();
   }
 
-  void _click() async {}
+  void _click() async {
+    _streamController.sink.add(++_counter);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +43,12 @@ class _JournalPageState extends State<JournalPage> {
                 style: TextStyle(color: CupertinoColors.systemOrange),
               ),
             ),
+            StreamBuilder<int>(
+                stream: _streamController.stream,
+                initialData: _counter,
+                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                  return Text('You hit me: ${snapshot.data} times');
+                }),
           ],
         ),
       ),
