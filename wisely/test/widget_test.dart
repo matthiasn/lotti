@@ -15,24 +15,24 @@ void main() {
     await tester.pumpWidget(const WiselyApp());
 
     // Verify that our counter starts at 0.
-    expect(find.text('Counter: 0'), findsOneWidget);
-    expect(find.text('Counter: 1'), findsNothing);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
 
     // Tap the '+' icon and trigger a frame.
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
     // Verify that our counter has incremented.
-    expect(find.text('Counter: 0'), findsNothing);
-    expect(find.text('Counter: 1'), findsOneWidget);
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
 
     // Tap the '-' icon and trigger a frame.
     await tester.tap(find.byIcon(Icons.remove));
     await tester.pump();
 
     // Verify that our counter is back at 0.
-    expect(find.text('Counter: 0'), findsOneWidget);
-    expect(find.text('Counter: 1'), findsNothing);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
   });
 
   testWidgets('Counter does not go negative test', (WidgetTester tester) async {
@@ -44,7 +44,7 @@ void main() {
     await tester.pump();
 
     // Verify that our counter is back at 0.
-    expect(find.text('Counter: 0'), findsOneWidget);
-    expect(find.text('Counter: 1'), findsNothing);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
   });
 }
