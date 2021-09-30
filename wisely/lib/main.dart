@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
@@ -26,7 +28,10 @@ class WiselyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
-      home: const WiselyHomePage(title: 'WISELY'),
+      home: BlocProvider(
+        create: (_) => CounterBloc(),
+        child: WiselyHomePage(title: 'WISELY'),
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
 
 class JournalPage extends StatefulWidget {
@@ -24,35 +25,33 @@ class _JournalPageState extends State<JournalPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  tooltip: 'Decrement',
-                  onPressed: () => _bloc.add(Decrement()),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Increment',
-                  onPressed: () => _bloc.add(Increment()),
-                ),
-              ],
-            ),
-            StreamBuilder<int>(
-                stream: _bloc.stream,
-                initialData: 0,
-                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-                  return Text('Counter: ${snapshot.data}');
-                }),
-          ],
+    return BlocBuilder<CounterBloc, int>(builder: (context, count) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    tooltip: 'Decrement',
+                    onPressed: () =>
+                        context.read<CounterBloc>().add(Decrement()),
+                  ),
+                  IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Increment',
+                      onPressed: () =>
+                          context.read<CounterBloc>().add(Increment())),
+                ],
+              ),
+              Text('$count', style: Theme.of(context).textTheme.headline1),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
