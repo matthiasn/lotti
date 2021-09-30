@@ -81,3 +81,16 @@ CREATE TABLE "stories" (
   PRIMARY KEY ("story_id"),
   FOREIGN KEY ("child_of") REFERENCES "stories" ("story_id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+CREATE TABLE "audio_notes" (
+  "id" TEXT NOT NULL,
+  "created_at" INTEGER NOT NULL,
+  "updated_at" INTEGER NOT NULL,
+  "transcript" TEXT,
+  "audio_file" TEXT NOT NULL,
+  "duration" INTEGER NOT NULL,
+  "latitude" REAL,
+  "longitude" REAL,
+  "vector_clock" TEXT,
+  PRIMARY KEY ("id")
+);
