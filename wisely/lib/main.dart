@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
+import 'package:wisely/pages/journal.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
@@ -61,9 +62,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
   }
 
   static const List<Widget> _widgetOptions = <Widget>[
-    Text(
-      'Index 0: Home',
-    ),
+    JournalPage(),
     EditorPage(),
     PhotoImportPage(),
     AudioPage(),
