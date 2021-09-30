@@ -29,25 +29,26 @@ class _JournalPageState extends State<JournalPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            OutlinedButton(
-              onPressed: () => _bloc.add(Increment()),
-              child: const Text(
-                'Increment',
-                style: TextStyle(color: CupertinoColors.systemOrange),
-              ),
-            ),
-            OutlinedButton(
-              onPressed: () => _bloc.add(Decrement()),
-              child: const Text(
-                'Decrement',
-                style: TextStyle(color: CupertinoColors.systemOrange),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  tooltip: 'Decrement',
+                  onPressed: () => _bloc.add(Decrement()),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Increment',
+                  onPressed: () => _bloc.add(Increment()),
+                ),
+              ],
             ),
             StreamBuilder<int>(
                 stream: _bloc.stream,
                 initialData: 0,
                 builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-                  return Text('You hit me: ${snapshot.data} times');
+                  return Text('Counter: ${snapshot.data}');
                 }),
           ],
         ),
