@@ -1,10 +1,10 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:flutter_sound/public/flutter_sound_recorder.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/blocs/audio_recorder_bloc.dart';
 import 'package:wisely/theme.dart';
 
 class AudioPage extends StatefulWidget {
@@ -16,9 +16,6 @@ class AudioPage extends StatefulWidget {
 
 class _AudioPageState extends State<AudioPage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
-  FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
-  bool _mRecorderIsInited = false;
-  bool _isRecording = false;
   bool _isPlaying = false;
 
   Duration totalDuration = Duration(minutes: 0);
@@ -28,15 +25,6 @@ class _AudioPageState extends State<AudioPage> {
   @override
   void initState() {
     super.initState();
-    // Be careful : openAudioSession return a Future.
-    // Do not access your FlutterSoundPlayer or FlutterSoundRecorder before the completion of the Future
-
-    _myRecorder?.openAudioSession().then((value) {
-      setState(() {
-        _mRecorderIsInited = true;
-      });
-    });
-
     _audioPlayer.positionStream.listen((event) {
       setState(() {
         progress = event;
@@ -49,32 +37,8 @@ class _AudioPageState extends State<AudioPage> {
 
   @override
   void dispose() {
-    // Be careful : you must `close` the audio session when you have finished with it.
-    _myRecorder?.closeAudioSession();
-    _myRecorder = null;
     _audioPlayer.dispose();
     super.dispose();
-  }
-
-  Future<void> _record() async {
-    var docDir = await getApplicationDocumentsDirectory();
-    String _path = '${docDir.path}/flutter_sound.aac';
-    print('RECORD: ${_path}');
-
-    await _myRecorder
-        ?.startRecorder(
-          toFile: _path,
-          codec: Codec.aacADTS,
-        )
-        .then((value) => setState(() {
-              _isRecording = true;
-            }));
-  }
-
-  Future<void> _stopRecorder() async {
-    await _myRecorder?.stopRecorder().then((value) => setState(() {
-          _isRecording = false;
-        }));
   }
 
   Future<void> _playLocal() async {
@@ -130,29 +94,32 @@ class _AudioPageState extends State<AudioPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (_mRecorderIsInited) ...[
-            Row(
+          BlocBuilder<AudioRecorderBloc, AudioRecorderState>(
+              builder: (context, state) {
+            return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 IconButton(
                   icon: const Icon(Icons.mic_rounded),
                   iconSize: 40.0,
                   tooltip: 'Record',
-                  color: _isRecording
+                  color: state.isRecording
                       ? AppColors.activeAudioControl
                       : AppColors.inactiveAudioControl,
-                  onPressed: _record,
+                  onPressed: () =>
+                      context.read<AudioRecorderBloc>().add(RecordEvent()),
                 ),
                 IconButton(
                   icon: const Icon(Icons.stop),
                   iconSize: 40.0,
                   tooltip: 'Stop',
                   color: AppColors.inactiveAudioControl,
-                  onPressed: _stopRecorder,
+                  onPressed: () =>
+                      context.read<AudioRecorderBloc>().add(StopRecordEvent()),
                 ),
               ],
-            ),
-          ],
+            );
+          }),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[

@@ -11,8 +11,6 @@ class JournalPage extends StatefulWidget {
 }
 
 class _JournalPageState extends State<JournalPage> {
-  final _bloc = CounterBloc();
-
   @override
   void initState() {
     super.initState();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/blocs/audio_player_bloc.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
@@ -13,6 +14,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
+import 'blocs/audio_recorder_bloc.dart';
 import 'blocs/my_bloc_observer.dart';
 
 void main() async {
@@ -38,6 +40,12 @@ class WiselyApp extends StatelessWidget {
         providers: [
           BlocProvider<CounterBloc>(
             create: (BuildContext context) => CounterBloc(),
+          ),
+          BlocProvider<AudioRecorderBloc>(
+            create: (BuildContext context) => AudioRecorderBloc(),
+          ),
+          BlocProvider<AudioPlayerBloc>(
+            create: (BuildContext context) => AudioPlayerBloc(),
           ),
         ],
         child: WiselyHomePage(title: 'WISELY'),
