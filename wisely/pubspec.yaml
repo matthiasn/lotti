@@ -57,6 +57,7 @@ dependencies:
   bloc_test: ^8.2.0
   flutter_bloc: ^7.3.0
   hydrated_bloc: ^7.1.0
+  mocktail: ^0.1.4
 
 dev_dependencies:
   flutter_test:

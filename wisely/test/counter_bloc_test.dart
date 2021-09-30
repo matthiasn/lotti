@@ -2,7 +2,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
 
+import 'helpers/hydrated_bloc.dart';
+
 void main() {
+  setUpAll(() {
+    initHydratedBloc();
+  });
+
   group('CounterBloc', () {
     blocTest(
       'emits [] when nothing is added',
