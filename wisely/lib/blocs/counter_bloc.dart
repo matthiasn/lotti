@@ -25,4 +25,9 @@ class CounterBloc {
 
     _intCounter.add(_counter);
   }
+
+  void dispose() {
+    _counterStateController.close();
+    _counterEventController.close();
+  }
 }
