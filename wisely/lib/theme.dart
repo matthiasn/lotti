@@ -9,6 +9,7 @@ class AppColors {
   static Color headerFontColor = Colors.white;
   static Color activeAudioControl = Colors.deepOrange;
   static Color audioMeterBar = Colors.blue;
+  static Color audioMeterTooHotBar = Colors.red;
   static Color audioMeterBarBackground =
       TinyColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = headerBgColor;

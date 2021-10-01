@@ -60,7 +60,9 @@ class AudioRecorderWidget extends StatelessWidget {
             child: LinearProgressIndicator(
               value: (state.decibels != null) ? state.decibels! / 160 : 0,
               minHeight: 8.0,
-              color: AppColors.audioMeterBar,
+              color: (state.decibels != null && state.decibels! > 100)
+                  ? AppColors.audioMeterTooHotBar
+                  : AppColors.audioMeterBar,
               backgroundColor: AppColors.audioMeterBarBackground,
             ),
           ),
