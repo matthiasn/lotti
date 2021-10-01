@@ -55,16 +55,8 @@ class AudioRecorderWidget extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(
-            width: 200,
-            child: LinearProgressIndicator(
-              value: (state.decibels != null) ? state.decibels! / 160 : 0,
-              minHeight: 8.0,
-              color: (state.decibels != null && state.decibels! > 100)
-                  ? AppColors.audioMeterTooHotBar
-                  : AppColors.audioMeterBar,
-              backgroundColor: AppColors.audioMeterBarBackground,
-            ),
+          VuMeterWidget(
+            decibels: state.decibels,
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -80,5 +72,25 @@ class AudioRecorderWidget extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class VuMeterWidget extends StatelessWidget {
+  double decibels = 0;
+  VuMeterWidget({required this.decibels});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 200,
+      child: LinearProgressIndicator(
+        value: decibels / 160,
+        minHeight: 8.0,
+        color: (decibels > 100)
+            ? AppColors.audioMeterTooHotBar
+            : AppColors.audioMeterBar,
+        backgroundColor: AppColors.audioMeterBarBackground,
+      ),
+    );
   }
 }
