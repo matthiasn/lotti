@@ -21,34 +21,47 @@ class AudioRecorderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
         builder: (context, state) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.mic_rounded),
-            iconSize: 40.0,
-            tooltip: 'Record',
-            color: state.isRecording
-                ? AppColors.activeAudioControl
-                : AppColors.inactiveAudioControl,
-            onPressed: () => context.read<AudioRecorderCubit>().record(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.stop),
-            iconSize: 40.0,
-            tooltip: 'Stop',
-            color: AppColors.inactiveAudioControl,
-            onPressed: () => context.read<AudioRecorderCubit>().stop(),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              formatDuration(state.progress.toString()),
-              style: TextStyle(
-                fontFamily: 'ShareTechMono',
-                fontSize: 24.0,
-                color: AppColors.headerBgColor,
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.mic_rounded),
+                iconSize: 40.0,
+                tooltip: 'Record',
+                color: state.isRecording
+                    ? AppColors.activeAudioControl
+                    : AppColors.inactiveAudioControl,
+                onPressed: () => context.read<AudioRecorderCubit>().record(),
               ),
+              IconButton(
+                icon: const Icon(Icons.stop),
+                iconSize: 40.0,
+                tooltip: 'Stop',
+                color: AppColors.inactiveAudioControl,
+                onPressed: () => context.read<AudioRecorderCubit>().stop(),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  formatDuration(state.progress.toString()),
+                  style: TextStyle(
+                    fontFamily: 'ShareTechMono',
+                    fontSize: 24.0,
+                    color: AppColors.inactiveAudioControl,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            width: 200,
+            child: LinearProgressIndicator(
+              value: (state.decibels != null) ? state.decibels! / 160 : 0,
+              minHeight: 8.0,
+              color: AppColors.audioMeterBar,
+              backgroundColor: AppColors.audioMeterBarBackground,
             ),
           ),
           Padding(
@@ -57,8 +70,8 @@ class AudioRecorderWidget extends StatelessWidget {
               formatDecibels(state.decibels),
               style: TextStyle(
                 fontFamily: 'ShareTechMono',
-                fontSize: 24.0,
-                color: AppColors.headerBgColor,
+                fontSize: 16.0,
+                color: AppColors.inactiveAudioControl,
               ),
             ),
           ),
