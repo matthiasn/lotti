@@ -142,6 +142,7 @@ class _AudioPageState extends State<AudioPage> {
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioRecorderCubit>().stop(),
                 ),
+                Text(state.progress.toString()),
               ],
             );
           }),

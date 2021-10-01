@@ -11,6 +11,7 @@ class AudioRecorderState2 extends Equatable {
   bool recorderIsInitialized = false;
   bool isRecording = false;
   RecorderStatus status = RecorderStatus.initializing;
+  Duration progress = Duration(seconds: 0);
 
   AudioRecorderState2() {}
 
@@ -26,6 +27,14 @@ class AudioRecorderState2 extends Equatable {
     isRecording = false;
   }
 
+  AudioRecorderState2.progress(AudioRecorderState2 other, newProgress) {
+    print('progress $newProgress');
+    recorderIsInitialized = other.recorderIsInitialized;
+    status = other.status;
+    isRecording = other.isRecording;
+    progress = newProgress;
+  }
+
   @override
   // TODO: implement props
   List<Object?> get props => [isRecording, status, recorderIsInitialized];
@@ -39,6 +48,16 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState2> {
       state.recorderIsInitialized = true;
       state.status = RecorderStatus.initialized;
       emit(state);
+
+      _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 100));
+
+      _myRecorder?.onProgress?.listen((event) {
+        Duration maxDuration = event.duration;
+        double? decibels = event.decibels;
+        print(maxDuration);
+        print(decibels);
+        emit(AudioRecorderState2.progress(state, event.duration));
+      });
     });
   }
 
@@ -53,6 +72,17 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState2> {
           codec: Codec.aacADTS,
         )
         .then((value) {});
+
+    _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 100));
+
+    _myRecorder?.onProgress?.listen((event) {
+      Duration maxDuration = event.duration;
+      double? decibels = event.decibels;
+      print(maxDuration);
+      print(decibels);
+
+      emit(AudioRecorderState2.progress(state, event.duration));
+    });
     emit(AudioRecorderState2.recording(state));
   }
 
