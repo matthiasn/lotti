@@ -7,9 +7,10 @@ class AppColors {
   static Color editorBgColor = Colors.white;
   static Color headerBgColor = Color.fromRGBO(68, 68, 85, 1);
   static Color headerFontColor = Colors.white;
-  static Color activeAudioControl = Colors.deepOrange;
+  static Color activeAudioControl = Colors.red;
   static Color audioMeterBar = Colors.blue;
-  static Color audioMeterTooHotBar = Colors.red;
+  static Color audioMeterTooHotBar = Colors.orange;
+  static Color audioMeterPeakedBar = Colors.red;
   static Color audioMeterBarBackground =
       TinyColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = headerBgColor;
