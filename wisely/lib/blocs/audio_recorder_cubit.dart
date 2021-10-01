@@ -27,17 +27,19 @@ class AudioRecorderState2 extends Equatable {
     isRecording = false;
   }
 
-  AudioRecorderState2.progress(AudioRecorderState2 other, newProgress) {
-    print('progress $newProgress');
+  AudioRecorderState2.progress(
+      AudioRecorderState2 other, RecordingDisposition event) {
+    print('progress event: $event');
     recorderIsInitialized = other.recorderIsInitialized;
     status = other.status;
     isRecording = other.isRecording;
-    progress = newProgress;
+    progress = event.duration;
   }
 
   @override
   // TODO: implement props
-  List<Object?> get props => [isRecording, status, recorderIsInitialized];
+  List<Object?> get props =>
+      [isRecording, status, recorderIsInitialized, progress];
 }
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState2> {
@@ -50,15 +52,16 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState2> {
       emit(state);
 
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 100));
-
       _myRecorder?.onProgress?.listen((event) {
-        Duration maxDuration = event.duration;
-        double? decibels = event.decibels;
-        print(maxDuration);
-        print(decibels);
-        emit(AudioRecorderState2.progress(state, event.duration));
+        updateProgress(event);
       });
     });
+  }
+
+  void updateProgress(RecordingDisposition event) {
+    AudioRecorderState2 newState = AudioRecorderState2.progress(state, event);
+    print('updateProgress $newState');
+    emit(AudioRecorderState2.progress(state, event));
   }
 
   void record() async {
@@ -72,18 +75,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState2> {
           codec: Codec.aacADTS,
         )
         .then((value) {});
-
-    _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 100));
-
-    _myRecorder?.onProgress?.listen((event) {
-      Duration maxDuration = event.duration;
-      double? decibels = event.decibels;
-      print(maxDuration);
-      print(decibels);
-
-      emit(AudioRecorderState2.progress(state, event.duration));
-    });
-    emit(AudioRecorderState2.recording(state));
   }
 
   void stop() async {
