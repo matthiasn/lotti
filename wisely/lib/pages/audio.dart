@@ -2,6 +2,7 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio_recorder_cubit.dart';
@@ -91,6 +92,11 @@ class _AudioPageState extends State<AudioPage> {
     return str.substring(0, str.length - 7);
   }
 
+  String formatDecibels(double? decibels) {
+    var f = NumberFormat("###.0#", "en_US");
+    return (decibels != null) ? '${f.format(decibels)} dB' : '';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -125,7 +131,18 @@ class _AudioPageState extends State<AudioPage> {
                     formatDuration(state.progress.toString()),
                     style: TextStyle(
                       fontFamily: 'ShareTechMono',
-                      fontSize: 32.0,
+                      fontSize: 24.0,
+                      color: AppColors.headerBgColor,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    formatDecibels(state.decibels),
+                    style: TextStyle(
+                      fontFamily: 'ShareTechMono',
+                      fontSize: 24.0,
                       color: AppColors.headerBgColor,
                     ),
                   ),

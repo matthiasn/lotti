@@ -12,6 +12,7 @@ class AudioRecorderState extends Equatable {
   bool isRecording = false;
   RecorderStatus status = RecorderStatus.initializing;
   Duration progress = Duration(seconds: 0);
+  double? decibels = 0.0;
 
   AudioRecorderState() {}
 
@@ -34,6 +35,7 @@ class AudioRecorderState extends Equatable {
     status = other.status;
     isRecording = other.isRecording;
     progress = event.duration;
+    decibels = event.decibels;
   }
 
   @override
