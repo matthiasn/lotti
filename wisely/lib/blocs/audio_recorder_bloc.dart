@@ -5,6 +5,8 @@ import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
+enum RecorderStatus { initializing, initialized, recording, stopped }
+
 abstract class AudioRecorderEvent {}
 
 class RecordEvent extends AudioRecorderEvent {}
@@ -15,10 +17,12 @@ class AudioRecorderState extends Equatable {
   FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   bool recorderIsInited = false;
   bool isRecording = false;
+  RecorderStatus status = RecorderStatus.initializing;
 
   AudioRecorderState() {
     _myRecorder?.openAudioSession().then((value) {
       recorderIsInited = true;
+      status = RecorderStatus.initialized;
     });
   }
 
@@ -29,14 +33,20 @@ class AudioRecorderState extends Equatable {
 
     await _myRecorder
         ?.startRecorder(
-          toFile: _path,
-          codec: Codec.aacADTS,
-        )
-        .then((value) => isRecording = true);
+      toFile: _path,
+      codec: Codec.aacADTS,
+    )
+        .then((value) {
+      isRecording = true;
+      status = RecorderStatus.recording;
+    });
   }
 
   Future<void> stopRecorder() async {
-    await _myRecorder?.stopRecorder().then((value) => isRecording = false);
+    await _myRecorder?.stopRecorder().then((value) {
+      isRecording = false;
+      status = RecorderStatus.stopped;
+    });
   }
 
   @override
@@ -46,10 +56,12 @@ class AudioRecorderState extends Equatable {
 
   @override
   // TODO: implement props
-  List<Object?> get props => [isRecording];
+  List<Object?> get props => [isRecording, status];
 }
 
 class AudioRecorderBloc extends Bloc<AudioRecorderEvent, AudioRecorderState> {
+  FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
+
   AudioRecorderBloc() : super(AudioRecorderState()) {
     on<RecordEvent>((event, emit) async {
       state.isRecording = true;

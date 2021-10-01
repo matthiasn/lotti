@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio_recorder_bloc.dart';
+import 'package:wisely/blocs/audio_recorder_cubit.dart';
 import 'package:wisely/theme.dart';
 
 class AudioPage extends StatefulWidget {
@@ -116,6 +117,30 @@ class _AudioPageState extends State<AudioPage> {
                   color: AppColors.inactiveAudioControl,
                   onPressed: () =>
                       context.read<AudioRecorderBloc>().add(StopRecordEvent()),
+                ),
+              ],
+            );
+          }),
+          BlocBuilder<AudioRecorderCubit, AudioRecorderState2>(
+              builder: (context, state) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.mic_rounded),
+                  iconSize: 40.0,
+                  tooltip: 'Record',
+                  color: state.isRecording
+                      ? AppColors.activeAudioControl
+                      : AppColors.inactiveAudioControl,
+                  onPressed: () => context.read<AudioRecorderCubit>().record(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.stop),
+                  iconSize: 40.0,
+                  tooltip: 'Stop',
+                  color: AppColors.inactiveAudioControl,
+                  onPressed: () => context.read<AudioRecorderCubit>().stop(),
                 ),
               ],
             );
