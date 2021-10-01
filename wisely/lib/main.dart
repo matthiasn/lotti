@@ -15,7 +15,6 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
-import 'blocs/audio_recorder_bloc.dart';
 import 'blocs/my_bloc_observer.dart';
 
 void main() async {
@@ -41,9 +40,6 @@ class WiselyApp extends StatelessWidget {
         providers: [
           BlocProvider<CounterBloc>(
             create: (BuildContext context) => CounterBloc(),
-          ),
-          BlocProvider<AudioRecorderBloc>(
-            create: (BuildContext context) => AudioRecorderBloc(),
           ),
           BlocProvider<AudioRecorderCubit>(
             create: (BuildContext context) => AudioRecorderCubit(),

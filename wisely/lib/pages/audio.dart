@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wisely/blocs/audio_recorder_bloc.dart';
 import 'package:wisely/blocs/audio_recorder_cubit.dart';
 import 'package:wisely/theme.dart';
 
@@ -88,6 +87,10 @@ class _AudioPageState extends State<AudioPage> {
     print('Player REWIND 15s');
   }
 
+  String formatDuration(String str) {
+    return str.substring(0, str.length - 7);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -95,33 +98,7 @@ class _AudioPageState extends State<AudioPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          BlocBuilder<AudioRecorderBloc, AudioRecorderState>(
-              builder: (context, state) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.mic_rounded),
-                  iconSize: 40.0,
-                  tooltip: 'Record',
-                  color: state.isRecording
-                      ? AppColors.activeAudioControl
-                      : AppColors.inactiveAudioControl,
-                  onPressed: () =>
-                      context.read<AudioRecorderBloc>().add(RecordEvent()),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop),
-                  iconSize: 40.0,
-                  tooltip: 'Stop',
-                  color: AppColors.inactiveAudioControl,
-                  onPressed: () =>
-                      context.read<AudioRecorderBloc>().add(StopRecordEvent()),
-                ),
-              ],
-            );
-          }),
-          BlocBuilder<AudioRecorderCubit, AudioRecorderState2>(
+          BlocBuilder<AudioRecorderCubit, AudioRecorderState>(
               builder: (context, state) {
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -142,7 +119,17 @@ class _AudioPageState extends State<AudioPage> {
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioRecorderCubit>().stop(),
                 ),
-                Text(state.progress.toString()),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    formatDuration(state.progress.toString()),
+                    style: TextStyle(
+                      fontFamily: 'ShareTechMono',
+                      fontSize: 32.0,
+                      color: AppColors.headerBgColor,
+                    ),
+                  ),
+                ),
               ],
             );
           }),

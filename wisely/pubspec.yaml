@@ -100,3 +100,6 @@ flutter:
         - asset: assets/fonts/Oswald-Medium.ttf
         - asset: assets/fonts/Oswald-SemiBold.ttf
         - asset: assets/fonts/Oswald-Bold.ttf
+    - family: ShareTechMono
+      fonts:
+        - asset: assets/fonts/ShareTechMono-Regular.ttf
