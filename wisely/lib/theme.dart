@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
-import 'package:tinycolor/tinycolor.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 class AppColors {
   static Color bodyBgColor = Color.fromRGBO(155, 200, 245, 1);
