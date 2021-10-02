@@ -23,6 +23,7 @@ class AudioPlayerState extends Equatable {
   AudioPlayerState.stopped(AudioPlayerState other) {
     status = AudioPlayerStatus.stopped;
     totalDuration = other.totalDuration;
+    progress = Duration(minutes: 0);
   }
 
   AudioPlayerState.paused(AudioPlayerState other, Duration duration) {
@@ -59,6 +60,9 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     });
     _audioPlayer.playbackEventStream.listen((event) {
       print(event);
+      if (event.processingState == ProcessingState.completed) {
+        stopPlay();
+      }
     });
   }
 
