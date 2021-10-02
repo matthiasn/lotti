@@ -94,4 +94,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     await _audioPlayer
         .seek(Duration(milliseconds: state.progress.inMilliseconds - 15000));
   }
+
+  @override
+  Future<void> close() async {
+    super.close();
+    _audioPlayer.dispose();
+  }
 }

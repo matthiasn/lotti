@@ -73,4 +73,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       emit(AudioRecorderState.stopped(state));
     });
   }
+
+  @override
+  Future<void> close() async {
+    super.close();
+    _myRecorder?.stopRecorder();
+  }
 }

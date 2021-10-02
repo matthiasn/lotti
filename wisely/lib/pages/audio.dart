@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:wisely/widgets/audio_player_stateless.dart';
+import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/audio_recorder.dart';
 
 class AudioPage extends StatefulWidget {
@@ -12,29 +11,13 @@ class AudioPage extends StatefulWidget {
 }
 
 class _AudioPageState extends State<AudioPage> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false;
-
-  Duration totalDuration = Duration(minutes: 0);
-  Duration progress = Duration(minutes: 0);
-  Duration pausedAt = Duration(minutes: 0);
-
   @override
   void initState() {
     super.initState();
-    _audioPlayer.positionStream.listen((event) {
-      setState(() {
-        progress = event;
-      });
-    });
-    _audioPlayer.playbackEventStream.listen((event) {
-      print(event);
-    });
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -46,7 +29,7 @@ class _AudioPageState extends State<AudioPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: const [
           AudioRecorderWidget(),
-          AudioPlayerWidgetStateless(),
+          AudioPlayerWidget(),
         ],
       ),
     );
