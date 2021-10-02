@@ -14,32 +14,40 @@ class AudioPlayerState extends Equatable {
 
   AudioPlayerState() {}
 
-  AudioPlayerState.playing(AudioPlayerState other, Duration totalDuration) {
+  AudioPlayerState.playing(AudioPlayerState other, Duration duration) {
     status = AudioPlayerStatus.playing;
-    totalDuration = totalDuration;
+    totalDuration = duration;
     progress = other.progress;
   }
 
   AudioPlayerState.stopped(AudioPlayerState other) {
     status = AudioPlayerStatus.stopped;
+    totalDuration = other.totalDuration;
   }
 
-  AudioPlayerState.paused(AudioPlayerState other, Duration pausedAt) {
+  AudioPlayerState.paused(AudioPlayerState other, Duration duration) {
     status = AudioPlayerStatus.paused;
     totalDuration = other.totalDuration;
     progress = other.progress;
-    pausedAt = progress;
+    pausedAt = duration;
+  }
+
+  AudioPlayerState.seek(AudioPlayerState other, Duration duration) {
+    status = other.status;
+    totalDuration = other.totalDuration;
+    progress = duration;
+    pausedAt = duration;
   }
 
   AudioPlayerState.progress(AudioPlayerState other, Duration duration) {
     status = other.status;
     progress = duration;
     totalDuration = other.totalDuration;
+    pausedAt = other.pausedAt;
   }
 
   @override
-  // TODO: implement props
-  List<Object?> get props => [status, totalDuration, progress];
+  List<Object?> get props => [status, totalDuration, progress, pausedAt];
 }
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
@@ -61,13 +69,13 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   void play() async {
     var docDir = await getApplicationDocumentsDirectory();
     String localPath = '${docDir.path}/flutter_sound.aac';
-    Duration? duration = await _audioPlayer.setFilePath(localPath);
+    Duration? totalDuration = await _audioPlayer.setFilePath(localPath);
 
-    if (duration != null) {
+    if (totalDuration != null) {
       await _audioPlayer.setSpeed(1.2);
       _audioPlayer.play();
       await _audioPlayer.seek(state.pausedAt);
-      emit(AudioPlayerState.playing(state, duration));
+      emit(AudioPlayerState.playing(state, totalDuration));
     }
   }
 
@@ -78,6 +86,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   void seek(Duration newPosition) async {
     await _audioPlayer.seek(newPosition);
+    emit(AudioPlayerState.seek(state, newPosition));
   }
 
   void pause() async {
@@ -86,13 +95,17 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   void fwd() async {
-    await _audioPlayer
-        .seek(Duration(milliseconds: state.progress.inMilliseconds + 15000));
+    Duration newPosition =
+        Duration(milliseconds: state.progress.inMilliseconds + 15000);
+    await _audioPlayer.seek(newPosition);
+    emit(AudioPlayerState.seek(state, newPosition));
   }
 
   void rew() async {
-    await _audioPlayer
-        .seek(Duration(milliseconds: state.progress.inMilliseconds - 15000));
+    Duration newPosition =
+        Duration(milliseconds: state.progress.inMilliseconds - 15000);
+    await _audioPlayer.seek(newPosition);
+    emit(AudioPlayerState.seek(state, newPosition));
   }
 
   @override
