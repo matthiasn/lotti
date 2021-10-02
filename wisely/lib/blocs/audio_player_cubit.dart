@@ -42,10 +42,10 @@ class AudioPlayerState extends Equatable {
   List<Object?> get props => [status, totalDuration, progress];
 }
 
-class AudioRecorderCubit extends Cubit<AudioPlayerState> {
+class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  AudioRecorderCubit() : super(AudioPlayerState()) {
+  AudioPlayerCubit() : super(AudioPlayerState()) {
     _audioPlayer.positionStream.listen((event) {
       updateProgress(event);
     });
@@ -74,6 +74,10 @@ class AudioRecorderCubit extends Cubit<AudioPlayerState> {
   void stopPlay() async {
     await _audioPlayer.stop();
     emit(AudioPlayerState.stopped(state));
+  }
+
+  void seek(Duration newPosition) async {
+    await _audioPlayer.seek(newPosition);
   }
 
   void pause() async {
