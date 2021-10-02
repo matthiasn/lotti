@@ -1,10 +1,9 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wisely/theme.dart';
+import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/audio_recorder.dart';
 
 class AudioPage extends StatefulWidget {
@@ -102,72 +101,9 @@ class _AudioPageState extends State<AudioPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const AudioRecorderWidget(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.play_arrow),
-                iconSize: 40.0,
-                tooltip: 'Play',
-                color: _isPlaying
-                    ? AppColors.activeAudioControl
-                    : AppColors.inactiveAudioControl,
-                onPressed: _playLocal,
-              ),
-              IconButton(
-                icon: const Icon(Icons.fast_rewind),
-                iconSize: 40.0,
-                tooltip: 'Rewind 15s',
-                color: AppColors.inactiveAudioControl,
-                onPressed: _rewind,
-              ),
-              IconButton(
-                icon: const Icon(Icons.pause),
-                iconSize: 40.0,
-                tooltip: 'Pause',
-                color: AppColors.inactiveAudioControl,
-                onPressed: _pause,
-              ),
-              IconButton(
-                icon: const Icon(Icons.fast_forward),
-                iconSize: 40.0,
-                tooltip: 'Fast forward 15s',
-                color: AppColors.inactiveAudioControl,
-                onPressed: _forward,
-              ),
-              IconButton(
-                icon: const Icon(Icons.stop),
-                iconSize: 40.0,
-                tooltip: 'Stop',
-                color: AppColors.inactiveAudioControl,
-                onPressed: _stopPlayer,
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 250,
-                child: ProgressBar(
-                  progress: progress,
-                  total: totalDuration,
-                  progressBarColor: Colors.red,
-                  baseBarColor: Colors.white.withOpacity(0.24),
-                  bufferedBarColor: Colors.white.withOpacity(0.24),
-                  thumbColor: Colors.white,
-                  barHeight: 3.0,
-                  thumbRadius: 5.0,
-                  onSeek: (duration) {
-                    print(duration);
-                    _audioPlayer.seek(duration);
-                  },
-                ),
-              ),
-            ],
-          ),
+        children: const [
+          AudioRecorderWidget(),
+          AudioPlayerWidget(),
         ],
       ),
     );
