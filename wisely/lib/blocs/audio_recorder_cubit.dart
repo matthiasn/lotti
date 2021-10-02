@@ -50,7 +50,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void updateProgress(RecordingDisposition event) {
-    AudioRecorderState newState = AudioRecorderState.progress(state, event);
     emit(AudioRecorderState.progress(state, event));
   }
 
