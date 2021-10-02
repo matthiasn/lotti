@@ -5,43 +5,33 @@ import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
-enum RecorderStatus { initializing, initialized, recording, stopped }
+enum AudioRecorderStatus { initializing, initialized, recording, stopped }
 
 class AudioRecorderState extends Equatable {
-  bool recorderIsInitialized = false;
-  bool isRecording = false;
-  RecorderStatus status = RecorderStatus.initializing;
+  AudioRecorderStatus status = AudioRecorderStatus.initializing;
   Duration progress = Duration(seconds: 0);
   double decibels = 0.0;
 
   AudioRecorderState() {}
 
   AudioRecorderState.recording(AudioRecorderState other) {
-    recorderIsInitialized = other.recorderIsInitialized;
-    status = RecorderStatus.recording;
-    isRecording = true;
+    status = AudioRecorderStatus.recording;
   }
 
   AudioRecorderState.stopped(AudioRecorderState other) {
-    recorderIsInitialized = other.recorderIsInitialized;
-    status = RecorderStatus.stopped;
-    isRecording = false;
+    status = AudioRecorderStatus.stopped;
   }
 
   AudioRecorderState.progress(
       AudioRecorderState other, RecordingDisposition event) {
-    print('progress event: $event');
-    recorderIsInitialized = other.recorderIsInitialized;
     status = other.status;
-    isRecording = other.isRecording;
     progress = event.duration;
     if (event.decibels != null) decibels = event.decibels!;
   }
 
   @override
   // TODO: implement props
-  List<Object?> get props =>
-      [isRecording, status, recorderIsInitialized, progress];
+  List<Object?> get props => [status, progress];
 }
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
@@ -49,8 +39,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   AudioRecorderCubit() : super(AudioRecorderState()) {
     _myRecorder?.openAudioSession().then((value) {
-      state.recorderIsInitialized = true;
-      state.status = RecorderStatus.initialized;
+      state.status = AudioRecorderStatus.initialized;
       emit(state);
 
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
@@ -62,7 +51,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void updateProgress(RecordingDisposition event) {
     AudioRecorderState newState = AudioRecorderState.progress(state, event);
-    print('updateProgress $newState');
     emit(AudioRecorderState.progress(state, event));
   }
 

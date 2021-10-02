@@ -30,7 +30,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 icon: const Icon(Icons.mic_rounded),
                 iconSize: 40.0,
                 tooltip: 'Record',
-                color: state.isRecording
+                color: state.status == AudioRecorderStatus.recording
                     ? AppColors.activeAudioControl
                     : AppColors.inactiveAudioControl,
                 onPressed: () => context.read<AudioRecorderCubit>().record(),
