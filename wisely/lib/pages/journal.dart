@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
+import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({Key? key}) : super(key: key);
@@ -41,8 +42,10 @@ class _JournalPageState extends State<JournalPage> {
                   IconButton(
                       icon: const Icon(Icons.add),
                       tooltip: 'Increment',
-                      onPressed: () =>
-                          context.read<CounterBloc>().add(Increment())),
+                      onPressed: () {
+                        context.read<VectorClockCubit>().increment();
+                        context.read<CounterBloc>().add(Increment());
+                      }),
                 ],
               ),
               Text('$count', style: Theme.of(context).textTheme.headline1),

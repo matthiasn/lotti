@@ -16,6 +16,7 @@ import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
 import 'blocs/my_bloc_observer.dart';
+import 'blocs/vector_clock_counter_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,9 @@ class WiselyApp extends StatelessWidget {
       ),
       home: MultiBlocProvider(
         providers: [
+          BlocProvider<VectorClockCubit>(
+            create: (BuildContext context) => VectorClockCubit(),
+          ),
           BlocProvider<CounterBloc>(
             create: (BuildContext context) => CounterBloc(),
           ),
