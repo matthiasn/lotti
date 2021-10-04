@@ -65,6 +65,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void _saveAudioNoteJson() async {
+    if (_audioNote != null) {
+      _audioNote!.updatedAt = DateTime.now();
+    }
     String json = jsonEncode(_audioNote);
     print(json);
   }
@@ -93,7 +96,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
     _audioNote = AudioNote(
         id: uuid.v1(options: {'msecs': now.millisecondsSinceEpoch}),
-        createdAt: now.millisecondsSinceEpoch,
+        createdAt: now,
         audioFile: fileName,
         audioDirectory: filePath,
         duration: Duration(seconds: 0));
