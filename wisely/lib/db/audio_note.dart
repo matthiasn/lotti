@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:wisely/sync/vector_clock.dart';
 
 part 'audio_note.g.dart';
 
@@ -13,7 +14,7 @@ class AudioNote {
   String? transcript;
   double? latitude;
   double? longitude;
-  String? vectorClock;
+  VectorClock? vectorClock;
 
   AudioNote({
     required this.id,

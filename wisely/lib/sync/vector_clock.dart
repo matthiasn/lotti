@@ -1,4 +1,7 @@
 import 'package:collection/collection.dart';
+import 'package:json_annotation/json_annotation.dart';
+
+part 'vector_clock.g.dart';
 
 class VclockException implements Exception {
   @override
@@ -14,6 +17,7 @@ enum VclockStatus {
   b_gt_a,
 }
 
+@JsonSerializable()
 class VectorClock {
   Map<String, int> vclock = <String, int>{};
 
@@ -89,4 +93,9 @@ class VectorClock {
   String toString() {
     return vclock.toString();
   }
+
+  factory VectorClock.fromJson(Map<String, dynamic> json) =>
+      _$VectorClockFromJson(json);
+
+  Map<String, dynamic> toJson() => _$VectorClockToJson(this);
 }

@@ -18,7 +18,9 @@ AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => AudioNote(
       transcript: json['transcript'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      vectorClock: json['vectorClock'] as String?,
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$AudioNoteToJson(AudioNote instance) => <String, dynamic>{
