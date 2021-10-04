@@ -10,3 +10,7 @@ coverage: test
 .PHONY: check-null-safety
 check-null-safety:
 	flutter pub outdated --mode=null-safety
+
+.PHONY: build_runner
+build_runner:
+	dart run build_runner build

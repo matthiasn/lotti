@@ -61,11 +61,14 @@ dependencies:
   equatable: ^2.0.3
   intl: ^0.17.0
   tinycolor2: ^2.0.0
+  json_annotation: ^4.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  glados: ^1.0.1
+  # glados: ^1.0.1
+  json_serializable: ^5.0.2
+  build_runner: ^2.1.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

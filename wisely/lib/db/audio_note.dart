@@ -1,39 +1,32 @@
+import 'package:json_annotation/json_annotation.dart';
+
+part 'audio_note.g.dart';
+
+@JsonSerializable()
 class AudioNote {
   final String id;
   final int createdAt;
-  final int updatedAt;
-  final String transcript;
   final String audioFile;
-  final int duration;
-  final double latitude;
-  final double longitude;
-  final String vectorClock;
+  final String audioDirectory;
+  int duration;
+  int? updatedAt;
+  String? transcript;
+  double? latitude;
+  double? longitude;
+  String? vectorClock;
 
   AudioNote({
     required this.id,
     required this.createdAt,
-    required this.updatedAt,
-    required this.transcript,
     required this.audioFile,
+    required this.audioDirectory,
     required this.duration,
-    required this.latitude,
-    required this.longitude,
-    required this.vectorClock,
+    this.updatedAt,
+    this.transcript,
+    this.latitude,
+    this.longitude,
+    this.vectorClock,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
-      'transcript': transcript,
-      'audioFile': audioFile,
-      'duration': duration,
-      'latitude': latitude,
-      'longitude': longitude,
-      'vector_clock': vectorClock,
-    };
-  }
 
   @override
   String toString() {
