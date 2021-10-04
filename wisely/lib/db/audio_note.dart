@@ -8,7 +8,7 @@ class AudioNote {
   final int createdAt;
   final String audioFile;
   final String audioDirectory;
-  int duration;
+  int durationMilliseconds;
   int? updatedAt;
   String? transcript;
   double? latitude;
@@ -20,13 +20,18 @@ class AudioNote {
     required this.createdAt,
     required this.audioFile,
     required this.audioDirectory,
-    required this.duration,
+    required this.durationMilliseconds,
     this.updatedAt,
     this.transcript,
     this.latitude,
     this.longitude,
     this.vectorClock,
   });
+
+  factory AudioNote.fromJson(Map<String, dynamic> json) =>
+      _$AudioNoteFromJson(json);
+
+  Map<String, dynamic> toJson() => _$AudioNoteToJson(this);
 
   @override
   String toString() {
