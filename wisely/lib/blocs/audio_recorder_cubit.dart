@@ -67,9 +67,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote!.updatedAt = DateTime.now();
+      String json = jsonEncode(_audioNote);
+      File file =
+          File('${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
+      await file.writeAsString(json);
+      print(json);
     }
-    String json = jsonEncode(_audioNote);
-    print(json);
   }
 
   void _addGeolocation() async {
@@ -98,7 +101,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         id: uuid.v1(options: {'msecs': now.millisecondsSinceEpoch}),
         createdAt: now,
         audioFile: fileName,
-        audioDirectory: filePath,
+        audioDirectory: directory.path,
         duration: Duration(seconds: 0));
 
     _saveAudioNoteJson();
