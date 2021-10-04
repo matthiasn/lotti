@@ -46,7 +46,9 @@ class WiselyApp extends StatelessWidget {
             create: (BuildContext context) => CounterBloc(),
           ),
           BlocProvider<AudioRecorderCubit>(
-            create: (BuildContext context) => AudioRecorderCubit(),
+            create: (BuildContext context) => AudioRecorderCubit(
+              vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+            ),
           ),
           BlocProvider<AudioPlayerCubit>(
             create: (BuildContext context) => AudioPlayerCubit(),

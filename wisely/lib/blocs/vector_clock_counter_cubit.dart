@@ -30,7 +30,7 @@ class VectorClockCubitState extends Equatable {
 
   @override
   String toString() {
-    return 'VectorClockCubitState{host: $host, next: $nextAvailableCounter';
+    return 'VectorClockCubitState host: $host, nextAvailableCounter: $nextAvailableCounter';
   }
 }
 

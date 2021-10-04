@@ -10,8 +10,10 @@ import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
+import 'package:wisely/sync/vector_clock.dart';
 
 enum AudioRecorderStatus { initializing, initialized, recording, stopped }
 
@@ -44,11 +46,14 @@ class AudioRecorderState extends Equatable {
 }
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
+  late final VectorClockCubit _vectorClockCubit;
+  final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
-  DeviceLocation _deviceLocation = DeviceLocation();
+  final DeviceLocation _deviceLocation = DeviceLocation();
 
-  AudioRecorderCubit() : super(AudioRecorderState()) {
+  AudioRecorderCubit({required VectorClockCubit vectorClockCubit})
+      : super(AudioRecorderState()) {
+    _vectorClockCubit = vectorClockCubit;
     _myRecorder?.openAudioSession().then((value) {
       state.status = AudioRecorderStatus.initialized;
       emit(state);
@@ -64,9 +69,22 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     emit(AudioRecorderState.progress(state, event));
   }
 
+  void setNextVectorClock() {
+    String host = _vectorClockCubit.state.host;
+    int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
+
+    if (_audioNote?.vectorClock == null) {
+      _audioNote!.vectorClock = VectorClock(<String, int>{});
+    }
+
+    _audioNote!.vectorClock!.vclock[host] = nextAvailableCounter;
+    _vectorClockCubit.increment();
+  }
+
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote!.updatedAt = DateTime.now();
+      setNextVectorClock();
       String json = jsonEncode(_audioNote);
       File file =
           File('${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
