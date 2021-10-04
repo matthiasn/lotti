@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 enum AudioRecorderStatus { initializing, initialized, recording, stopped }
@@ -53,13 +56,20 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void record() async {
+    DateTime now = DateTime.now();
+    String fileName = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now);
+    String day = DateFormat('yyyy-MM-dd').format(now);
+
     var docDir = await getApplicationDocumentsDirectory();
-    String _path = '${docDir.path}/flutter_sound.aac';
-    print('RECORD: ${_path}');
+    Directory directory =
+        await Directory('${docDir.path}/audio/$day').create(recursive: true);
+
+    String filePath = '${directory.path}/$fileName.aac';
+    print('RECORD: ${filePath}');
 
     _myRecorder
         ?.startRecorder(
-      toFile: _path,
+      toFile: filePath,
       codec: Codec.aacADTS,
     )
         .then((value) {
