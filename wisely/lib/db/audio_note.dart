@@ -8,7 +8,7 @@ class AudioNote {
   final int createdAt;
   final String audioFile;
   final String audioDirectory;
-  int durationMilliseconds;
+  Duration duration;
   int? updatedAt;
   String? transcript;
   double? latitude;
@@ -20,7 +20,7 @@ class AudioNote {
     required this.createdAt,
     required this.audioFile,
     required this.audioDirectory,
-    required this.durationMilliseconds,
+    required this.duration,
     this.updatedAt,
     this.transcript,
     this.latitude,

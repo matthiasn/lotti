@@ -69,6 +69,16 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     print(json);
   }
 
+  void _addGeolocation() async {
+    _deviceLocation.getCurrentLocation().then((LocationData locationData) {
+      if (_audioNote != null) {
+        _audioNote!.latitude = locationData.latitude;
+        _audioNote!.longitude = locationData.longitude;
+      }
+      _saveAudioNoteJson();
+    });
+  }
+
   void record() async {
     DateTime now = DateTime.now();
     String fileName = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now);
@@ -86,17 +96,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         createdAt: now.millisecondsSinceEpoch,
         audioFile: fileName,
         audioDirectory: filePath,
-        durationMilliseconds: 0);
+        duration: Duration(seconds: 0));
 
     _saveAudioNoteJson();
-
-    _deviceLocation.getCurrentLocation().then((LocationData locationData) {
-      if (_audioNote != null) {
-        _audioNote!.latitude = locationData.latitude;
-        _audioNote!.longitude = locationData.longitude;
-      }
-      _saveAudioNoteJson();
-    });
+    _addGeolocation();
 
     _myRecorder
         ?.startRecorder(
@@ -111,7 +114,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void stop() async {
     await _myRecorder?.stopRecorder();
     if (_audioNote != null) {
-      _audioNote!.durationMilliseconds = state.progress.inMilliseconds;
+      _audioNote!.duration = state.progress;
     }
     _saveAudioNoteJson();
     emit(AudioRecorderState.stopped(state));
