@@ -89,11 +89,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
+      var docDir = await getApplicationDocumentsDirectory();
       _audioNote!.updatedAt = DateTime.now();
       assignVectorClock();
       String json = jsonEncode(_audioNote);
-      File file =
-          File('${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
+      File file = File(
+          '${docDir.path}${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
       await file.writeAsString(json);
       print(json);
       _audioNotesCubit.save(_audioNote!);
@@ -112,21 +113,22 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void record() async {
     DateTime now = DateTime.now();
-    String fileName = DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now);
+    String fileName = '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now)}.aac';
     String day = DateFormat('yyyy-MM-dd').format(now);
 
     var docDir = await getApplicationDocumentsDirectory();
+    String relativePath = '/audio/$day/';
     Directory directory =
-        await Directory('${docDir.path}/audio/$day').create(recursive: true);
+        await Directory('${docDir.path}$relativePath').create(recursive: true);
 
-    String filePath = '${directory.path}/$fileName.aac';
+    String filePath = '${directory.path}$fileName';
     print('RECORD: ${filePath}');
 
     _audioNote = AudioNote(
         id: uuid.v1(options: {'msecs': now.millisecondsSinceEpoch}),
         createdAt: now,
         audioFile: fileName,
-        audioDirectory: directory.path,
+        audioDirectory: relativePath,
         duration: Duration(seconds: 0));
 
     _saveAudioNoteJson();

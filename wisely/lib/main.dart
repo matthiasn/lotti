@@ -1,4 +1,3 @@
-import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -16,7 +15,6 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
-import 'blocs/my_bloc_observer.dart';
 import 'blocs/vector_clock_counter_cubit.dart';
 
 void main() async {
@@ -25,7 +23,7 @@ void main() async {
     storageDirectory: await getApplicationDocumentsDirectory(),
   );
   runApp(const WiselyApp());
-  Bloc.observer = MyBlocObserver();
+  // Bloc.observer = MyBlocObserver();
 }
 
 class WiselyApp extends StatelessWidget {

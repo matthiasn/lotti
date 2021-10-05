@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/db/audio_note.dart';
 
 enum AudioPlayerStatus { initializing, initialized, playing, paused, stopped }
 
@@ -11,19 +12,31 @@ class AudioPlayerState extends Equatable {
   Duration totalDuration = Duration(minutes: 0);
   Duration progress = Duration(minutes: 0);
   Duration pausedAt = Duration(minutes: 0);
+  AudioNote? audioNote;
 
   AudioPlayerState() {}
 
-  AudioPlayerState.playing(AudioPlayerState other, Duration duration) {
+  AudioPlayerState.playing(AudioPlayerState other) {
     status = AudioPlayerStatus.playing;
-    totalDuration = duration;
+    totalDuration = other.totalDuration;
     progress = other.progress;
+    audioNote = other.audioNote;
   }
 
   AudioPlayerState.stopped(AudioPlayerState other) {
     status = AudioPlayerStatus.stopped;
     totalDuration = other.totalDuration;
     progress = Duration(minutes: 0);
+    audioNote = other.audioNote;
+  }
+
+  AudioPlayerState.setAudioNote(
+      AudioPlayerState other, AudioNote newAudioNote, Duration duration) {
+    status = AudioPlayerStatus.stopped;
+    totalDuration = duration;
+    progress = Duration(minutes: 0);
+    pausedAt = Duration(minutes: 0);
+    audioNote = newAudioNote;
   }
 
   AudioPlayerState.paused(AudioPlayerState other, Duration duration) {
@@ -31,6 +44,7 @@ class AudioPlayerState extends Equatable {
     totalDuration = other.totalDuration;
     progress = other.progress;
     pausedAt = duration;
+    audioNote = other.audioNote;
   }
 
   AudioPlayerState.seek(AudioPlayerState other, Duration duration) {
@@ -38,6 +52,7 @@ class AudioPlayerState extends Equatable {
     totalDuration = other.totalDuration;
     progress = duration;
     pausedAt = duration;
+    audioNote = other.audioNote;
   }
 
   AudioPlayerState.progress(AudioPlayerState other, Duration duration) {
@@ -45,10 +60,12 @@ class AudioPlayerState extends Equatable {
     progress = duration;
     totalDuration = other.totalDuration;
     pausedAt = other.pausedAt;
+    audioNote = other.audioNote;
   }
 
   @override
-  List<Object?> get props => [status, totalDuration, progress, pausedAt];
+  List<Object?> get props =>
+      [status, totalDuration, progress, pausedAt, audioNote];
 }
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
@@ -70,17 +87,22 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     emit(AudioPlayerState.progress(state, duration));
   }
 
-  void play() async {
+  void setAudioNote(AudioNote audioNote) async {
     var docDir = await getApplicationDocumentsDirectory();
-    String localPath = '${docDir.path}/flutter_sound.aac';
+    String localPath =
+        '${docDir.path}${audioNote.audioDirectory}${audioNote.audioFile}';
+    print('PLAY $localPath');
     Duration? totalDuration = await _audioPlayer.setFilePath(localPath);
-
     if (totalDuration != null) {
-      await _audioPlayer.setSpeed(1.2);
-      _audioPlayer.play();
-      await _audioPlayer.seek(state.pausedAt);
-      emit(AudioPlayerState.playing(state, totalDuration));
+      emit(AudioPlayerState.setAudioNote(state, audioNote, totalDuration));
     }
+  }
+
+  void play() async {
+    await _audioPlayer.setSpeed(1.2);
+    _audioPlayer.play();
+    await _audioPlayer.seek(state.pausedAt);
+    emit(AudioPlayerState.playing(state));
   }
 
   void stopPlay() async {
