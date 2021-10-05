@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/audio_player_cubit.dart';
 import 'package:wisely/blocs/audio_recorder_cubit.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
@@ -42,11 +43,15 @@ class WiselyApp extends StatelessWidget {
           BlocProvider<VectorClockCubit>(
             create: (BuildContext context) => VectorClockCubit(),
           ),
+          BlocProvider<AudioNotesCubit>(
+            create: (BuildContext context) => AudioNotesCubit(),
+          ),
           BlocProvider<CounterBloc>(
             create: (BuildContext context) => CounterBloc(),
           ),
           BlocProvider<AudioRecorderCubit>(
             create: (BuildContext context) => AudioRecorderCubit(
+              audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
               vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             ),
           ),

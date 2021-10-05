@@ -36,6 +36,7 @@ class AudioNote {
 
   @override
   String toString() {
-    return 'AudioNote{id: $id, created: $createdAt, audioFile: $audioFile}';
+    return 'AudioNote id: $id, created: $createdAt, '
+        'audioFile: $audioFile, duration: $duration';
   }
 }

@@ -15,6 +15,8 @@ import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
+import 'audio_notes_cubit.dart';
+
 enum AudioRecorderStatus { initializing, initialized, recording, stopped }
 
 var uuid = const Uuid();
@@ -47,12 +49,16 @@ class AudioRecorderState extends Equatable {
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
+  late final AudioNotesCubit _audioNotesCubit;
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
   final DeviceLocation _deviceLocation = DeviceLocation();
 
-  AudioRecorderCubit({required VectorClockCubit vectorClockCubit})
+  AudioRecorderCubit(
+      {required VectorClockCubit vectorClockCubit,
+      required AudioNotesCubit audioNotesCubit})
       : super(AudioRecorderState()) {
+    _audioNotesCubit = audioNotesCubit;
     _vectorClockCubit = vectorClockCubit;
     _myRecorder?.openAudioSession().then((value) {
       state.status = AudioRecorderStatus.initialized;
@@ -69,7 +75,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     emit(AudioRecorderState.progress(state, event));
   }
 
-  void setNextVectorClock() {
+  void assignVectorClock() {
     String host = _vectorClockCubit.state.host;
     int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
 
@@ -84,12 +90,13 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote!.updatedAt = DateTime.now();
-      setNextVectorClock();
+      assignVectorClock();
       String json = jsonEncode(_audioNote);
       File file =
           File('${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
       await file.writeAsString(json);
       print(json);
+      _audioNotesCubit.save(_audioNote!);
     }
   }
 
