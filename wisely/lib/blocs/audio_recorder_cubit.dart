@@ -138,6 +138,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         ?.startRecorder(
       toFile: filePath,
       codec: Codec.aacADTS,
+      sampleRate: 48000,
+      bitRate: 128000,
     )
         .then((value) {
       emit(AudioRecorderState.recording(state));
