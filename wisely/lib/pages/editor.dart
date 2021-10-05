@@ -10,7 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/db/entry.dart';
 import 'package:wisely/db/persistence.dart';
-import 'package:wisely/location.dart';
+import 'package:wisely/geo/location.dart';
 import 'package:wisely/map/cached_tile_provider.dart';
 import 'package:wisely/theme.dart';
 

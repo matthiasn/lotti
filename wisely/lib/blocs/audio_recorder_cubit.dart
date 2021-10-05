@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
-import 'package:wisely/location.dart';
+import 'package:wisely/geo/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 import 'audio_notes_cubit.dart';

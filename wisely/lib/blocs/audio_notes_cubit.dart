@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:geocoder_offline/geocoder_offline.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:wisely/db/audio_note.dart';
@@ -32,11 +34,28 @@ class AudioNotesCubitState {
 }
 
 class AudioNotesCubit extends HydratedCubit<AudioNotesCubitState> {
-  AudioNotesCubit() : super(AudioNotesCubitState());
+  GeocodeData? geocoder;
+
+  Future<void> loadData() async {
+    String data =
+        await rootBundle.loadString('assets/geocoder/cities15000.txt');
+    geocoder = GeocodeData(data, 'FEATURE_NAME', 'STATE_ALPHA',
+        'PRIMARY_LATITUDE', 'PRIMARY_LONGITUDE',
+        fieldDelimiter: ',', eol: '\n');
+    print('GEOCODER loaded');
+  }
+
+  AudioNotesCubit() : super(AudioNotesCubitState()) {
+    loadData();
+  }
 
   void save(AudioNote audioNote) {
     AudioNotesCubitState next = AudioNotesCubitState.save(state, audioNote);
     print(next);
+    if (audioNote.latitude != null && audioNote.longitude != null) {
+      var geoRes = geocoder?.search(audioNote.latitude!, audioNote.longitude!);
+      print('GEOCODER $geoRes');
+    }
     emit(next);
   }
 
