@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,6 +7,7 @@ import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/theme.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({Key? key}) : super(key: key);
@@ -50,9 +53,21 @@ class _JournalPageState extends State<JournalPage> {
                           context.read<VectorClockCubit>().increment();
                           context.read<CounterBloc>().add(Increment());
                         }),
+                    Text('$count', style: Theme.of(context).textTheme.headline6)
                   ],
                 ),
-                Text('$count', style: Theme.of(context).textTheme.headline1),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Text(
+                    'Audio Recordings',
+                    style: TextStyle(
+                      color: AppColors.inactiveAudioControl,
+                      fontFamily: 'Oswald',
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ),
                 ListView.builder(
                   shrinkWrap: true,
                   itemCount: audioNotesState.audioNotesMap.length,
@@ -79,19 +94,38 @@ class AudioNoteListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(2.0),
-      child: Row(
-        children: [
-          Text(
-            '${audioNote.createdAt.toString().substring(0, 19)} - ',
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      child: TextButton(
+        child: Padding(
+          padding: const EdgeInsets.only(
+              left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
+          child: Row(
+            children: [
+              Text(
+                '${audioNote.createdAt.toString().substring(0, 16)} - ',
+                style: TextStyle(
+                  fontFamily: 'ShareTechMono',
+                  fontSize: 16.0,
+                ),
+              ),
+              Text(
+                audioNote.duration.toString().split('.')[0],
+                style: TextStyle(
+                  fontFamily: 'ShareTechMono',
+                  fontSize: 16.0,
+                ),
+              ),
+            ],
           ),
-          Text(
-            '${audioNote.duration.inSeconds} - ',
-          ),
-          Text(
-            '${audioNote.updatedAt.toString().substring(0, 19)} ',
-          ),
-        ],
+        ),
+        style: TextButton.styleFrom(
+          primary: AppColors.inactiveAudioControl,
+          onSurface: Colors.yellow,
+          side: BorderSide(color: AppColors.inactiveAudioControl, width: 0.5),
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8))),
+        ),
+        onPressed: () => '',
       ),
     );
   }
