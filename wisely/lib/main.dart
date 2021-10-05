@@ -33,33 +33,33 @@ class WiselyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'WISELY',
-      theme: ThemeData(
-        primarySwatch: Colors.grey,
-      ),
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider<VectorClockCubit>(
-            create: (BuildContext context) => VectorClockCubit(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<VectorClockCubit>(
+          create: (BuildContext context) => VectorClockCubit(),
+        ),
+        BlocProvider<AudioNotesCubit>(
+          create: (BuildContext context) => AudioNotesCubit(),
+        ),
+        BlocProvider<CounterBloc>(
+          create: (BuildContext context) => CounterBloc(),
+        ),
+        BlocProvider<AudioRecorderCubit>(
+          create: (BuildContext context) => AudioRecorderCubit(
+            audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
-          BlocProvider<AudioNotesCubit>(
-            create: (BuildContext context) => AudioNotesCubit(),
-          ),
-          BlocProvider<CounterBloc>(
-            create: (BuildContext context) => CounterBloc(),
-          ),
-          BlocProvider<AudioRecorderCubit>(
-            create: (BuildContext context) => AudioRecorderCubit(
-              audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
-              vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
-            ),
-          ),
-          BlocProvider<AudioPlayerCubit>(
-            create: (BuildContext context) => AudioPlayerCubit(),
-          ),
-        ],
-        child: WiselyHomePage(title: 'WISELY'),
+        ),
+        BlocProvider<AudioPlayerCubit>(
+          create: (BuildContext context) => AudioPlayerCubit(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'WISELY',
+        theme: ThemeData(
+          primarySwatch: Colors.grey,
+        ),
+        home: WiselyHomePage(title: 'WISELY'),
       ),
     );
   }

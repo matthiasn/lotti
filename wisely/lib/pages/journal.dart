@@ -8,6 +8,7 @@ import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/theme.dart';
+import 'package:wisely/widgets/audio_player.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({Key? key}) : super(key: key);
@@ -125,7 +126,30 @@ class AudioNoteListItem extends StatelessWidget {
           shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(8))),
         ),
-        onPressed: () => '',
+        onPressed: () {
+          showModalBottomSheet<void>(
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                height: 200,
+                color: AppColors.bodyBgColor,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      AudioPlayerWidget(),
+                      ElevatedButton(
+                        child: const Text('Close BottomSheet'),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
