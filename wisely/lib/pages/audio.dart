@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/audio_recorder.dart';
 
 class AudioPage extends StatefulWidget {
@@ -29,7 +28,6 @@ class _AudioPageState extends State<AudioPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: const [
           AudioRecorderWidget(),
-          AudioPlayerWidget(),
         ],
       ),
     );
