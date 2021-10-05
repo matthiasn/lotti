@@ -20,6 +20,10 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const WiselyApp());
 
+    // Tap the settings icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pump();
+
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNothing);
@@ -44,6 +48,10 @@ void main() {
   testWidgets('Counter does not go negative test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const WiselyApp());
+
+    // Tap the settings icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pump();
 
     // Tap the '-' icon and trigger a frame.
     await tester.tap(find.byIcon(Icons.remove));

@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wisely/blocs/counter_bloc.dart';
+import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
@@ -23,22 +26,37 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            QrDisplayWidget(),
-            if (Platform.isIOS) QrScannerWidget(),
-          ],
+    return BlocBuilder<CounterBloc, int>(builder: (context, count) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    tooltip: 'Decrement',
+                    onPressed: () =>
+                        context.read<CounterBloc>().add(Decrement()),
+                  ),
+                  IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Increment',
+                      onPressed: () {
+                        context.read<VectorClockCubit>().increment();
+                        context.read<CounterBloc>().add(Increment());
+                      }),
+                  Text('$count', style: Theme.of(context).textTheme.headline6)
+                ],
+              ),
+              QrDisplayWidget(),
+              if (Platform.isIOS) QrScannerWidget(),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
