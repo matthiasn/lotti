@@ -8,6 +8,7 @@ part of 'audio_note.dart';
 
 AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => AudioNote(
       id: json['id'] as String,
+      timestamp: json['timestamp'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
       audioFile: json['audioFile'] as String,
       audioDirectory: json['audioDirectory'] as String,
@@ -25,6 +26,7 @@ AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => AudioNote(
 
 Map<String, dynamic> _$AudioNoteToJson(AudioNote instance) => <String, dynamic>{
       'id': instance.id,
+      'timestamp': instance.timestamp,
       'createdAt': instance.createdAt.toIso8601String(),
       'audioFile': instance.audioFile,
       'audioDirectory': instance.audioDirectory,

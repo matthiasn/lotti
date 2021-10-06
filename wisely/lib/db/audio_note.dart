@@ -6,6 +6,7 @@ part 'audio_note.g.dart';
 @JsonSerializable()
 class AudioNote {
   final String id;
+  final int timestamp;
   final DateTime createdAt;
   final String audioFile;
   final String audioDirectory;
@@ -18,6 +19,7 @@ class AudioNote {
 
   AudioNote({
     required this.id,
+    required this.timestamp,
     required this.createdAt,
     required this.audioFile,
     required this.audioDirectory,

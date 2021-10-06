@@ -121,6 +121,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
     _audioNote = AudioNote(
         id: uuid.v1(options: {'msecs': now.millisecondsSinceEpoch}),
+        timestamp: now.millisecondsSinceEpoch,
         createdAt: now,
         audioFile: fileName,
         audioDirectory: relativePath,
