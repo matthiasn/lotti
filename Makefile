@@ -21,9 +21,6 @@ endif
 package: install package-only
 
 deps-mac:
-	npm install -g electron-rebuild
-	npm install -g electron-builder
-	npm install -g shadow-cljs
 	mkdir ./bin
 
 deps-win:
@@ -34,11 +31,8 @@ deps-win:
 	nvm install 12.8.1
 	nvm use 12.8.1
 	npm set progress=false
-	npm install -g shadow-cljs
 	npm install -g windows-build-tools@4.0.0
 	npm install -g node-gyp
-	npm install -g electron-builder
-	npm install -g electron-rebuild
 
 deps-ubuntu:
 	sudo apt-get update
@@ -51,13 +45,10 @@ deps-ubuntu:
 	sudo apt-get install libxkbfile-dev
 	sudo apt-get install libgconf-2-4
 	npm install -g electron
-	npm install -g electron-builder
 	npm install -g electron-cli
 	npm install -g electron-build-env
-	npm install -g electron-rebuild
 	npm install -g node-gyp
 	npm install -g webpack
-	npm install -g shadow-cljs
 	mkdir ./bin
 
 clean:
@@ -75,7 +66,7 @@ npm-deps: clean
 	@echo Fetching NPM dependencies...
 	@npm install
 	@npm install -g electron-builder
-	@electron-rebuild -v 13.1.7 -w keytar
+	@npx electron-rebuild -v 13.1.7 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
