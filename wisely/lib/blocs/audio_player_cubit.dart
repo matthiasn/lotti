@@ -2,8 +2,8 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/utils/audio_utils.dart';
 
 enum AudioPlayerStatus { initializing, initialized, playing, paused, stopped }
 
@@ -88,10 +88,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   void setAudioNote(AudioNote audioNote) async {
-    var docDir = await getApplicationDocumentsDirectory();
-    String localPath =
-        '${docDir.path}${audioNote.audioDirectory}${audioNote.audioFile}';
-    print('PLAY $localPath');
+    String localPath = await AudioUtils.getFullAudioPath(audioNote);
     Duration? totalDuration = await _audioPlayer.setFilePath(localPath);
     if (totalDuration != null) {
       emit(AudioPlayerState.setAudioNote(state, audioNote, totalDuration));

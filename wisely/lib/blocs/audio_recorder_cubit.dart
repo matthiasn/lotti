@@ -8,12 +8,12 @@ import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:location/location.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
+import 'package:wisely/utils/audio_utils.dart';
 
 import 'audio_notes_cubit.dart';
 
@@ -89,12 +89,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
-      var docDir = await getApplicationDocumentsDirectory();
       _audioNote!.updatedAt = DateTime.now();
       assignVectorClock();
       String json = jsonEncode(_audioNote);
-      File file = File(
-          '${docDir.path}${_audioNote!.audioDirectory}/${_audioNote!.audioFile}.json');
+      File file =
+          File('${await AudioUtils.getFullAudioPath(_audioNote!)}.json');
       await file.writeAsString(json);
       print(json);
       _audioNotesCubit.save(_audioNote!);
@@ -115,13 +114,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     DateTime now = DateTime.now();
     String fileName = '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now)}.aac';
     String day = DateFormat('yyyy-MM-dd').format(now);
-
-    var docDir = await getApplicationDocumentsDirectory();
     String relativePath = '/audio/$day/';
-    Directory directory =
-        await Directory('${docDir.path}$relativePath').create(recursive: true);
-
-    String filePath = '${directory.path}$fileName';
+    String directory = await AudioUtils.createAudioDirectory(relativePath);
+    String filePath = '${directory}$fileName';
     print('RECORD: ${filePath}');
 
     _audioNote = AudioNote(
