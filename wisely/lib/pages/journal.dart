@@ -52,9 +52,17 @@ class _JournalPageState extends State<JournalPage> {
                 shrinkWrap: true,
                 itemCount: audioNotesState.audioNotesMap.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return AudioNoteListItem(
-                    audioNote:
-                        audioNotesState.audioNotesMap.values.elementAt(index),
+                  AudioNote item =
+                      audioNotesState.audioNotesMap.values.elementAt(index);
+                  return Dismissible(
+                    key: Key(index.toString()),
+                    background: Container(color: Colors.red),
+                    child: AudioNoteListItem(
+                      audioNote: item,
+                    ),
+                    onDismissed: (DismissDirection direction) {
+                      context.read<AudioNotesCubit>().delete(item);
+                    },
                   );
                 },
               )
@@ -119,7 +127,7 @@ class AudioNoteListItem extends StatelessWidget {
                     children: <Widget>[
                       AudioPlayerWidget(),
                       ElevatedButton(
-                        child: const Text('Close BottomSheet'),
+                        child: const Text('Close'),
                         onPressed: () => Navigator.pop(context),
                       )
                     ],

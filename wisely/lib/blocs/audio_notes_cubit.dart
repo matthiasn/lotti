@@ -17,6 +17,12 @@ class AudioNotesCubitState {
     audioNotesMap = newAudioNotesMap;
   }
 
+  AudioNotesCubitState.delete(AudioNotesCubitState state, AudioNote audioNote) {
+    Map<String, AudioNote> newAudioNotesMap = Map.from(state.audioNotesMap);
+    newAudioNotesMap.remove(audioNote.id);
+    audioNotesMap = newAudioNotesMap;
+  }
+
   factory AudioNotesCubitState.fromJson(Map<String, dynamic> json) =>
       _$AudioNotesCubitStateFromJson(json);
 
@@ -36,7 +42,11 @@ class AudioNotesCubit extends HydratedCubit<AudioNotesCubitState> {
 
   void save(AudioNote audioNote) {
     AudioNotesCubitState next = AudioNotesCubitState.save(state, audioNote);
-    print(next);
+    emit(next);
+  }
+
+  void delete(AudioNote audioNote) {
+    AudioNotesCubitState next = AudioNotesCubitState.delete(state, audioNote);
     emit(next);
   }
 
