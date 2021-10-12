@@ -40,6 +40,7 @@
     "electron-updater": "4.2.0",
     "emoji-flags": "1.2.0",
     "find-process": "1.4.3",
+    "glob": "^7.2.0",
     "globalize": "1.4.2",
     "iana-tz-data": "2019.1.0",
     "imap": "0.8.19",
@@ -85,7 +86,7 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "13.1.7",
+    "electron": "7.3.3",
     "electron-builder": "22.10.5",
     "electron-notarize": "1.0.1",
     "electron-rebuild": "^3.2.3",
