@@ -19,10 +19,10 @@ void main() {
 
     // test that buttons exist
     expect(find.text('0:00:00'), findsOneWidget);
-    expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-    expect(find.byIcon(Icons.fast_rewind), findsOneWidget);
-    expect(find.byIcon(Icons.pause), findsOneWidget);
-    expect(find.byIcon(Icons.fast_forward), findsOneWidget);
-    expect(find.byIcon(Icons.stop), findsNWidgets(2));
+    expect(find.byIcon(Icons.mic), findsOneWidget);
+    //expect(find.byIcon(Icons.fast_rewind), findsOneWidget);
+    //expect(find.byIcon(Icons.pause), findsOneWidget);
+    //expect(find.byIcon(Icons.fast_forward), findsOneWidget);
+    expect(find.byIcon(Icons.stop), findsNWidgets(1));
   });
 }
