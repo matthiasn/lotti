@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Update Health data</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -28,6 +26,8 @@
 	<string>This app needs camera access to scan QR codes</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Read Health data</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Update Health data</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Obtain location for journal entries</string>
 	<key>NSMicrophoneUsageDescription</key>
