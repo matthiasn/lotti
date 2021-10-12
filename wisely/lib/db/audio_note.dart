@@ -8,6 +8,8 @@ class AudioNote {
   final String id;
   final int timestamp;
   final DateTime createdAt;
+  final int utcOffset;
+  final String timezone;
   final String audioFile;
   final String audioDirectory;
   Duration duration;
@@ -21,6 +23,8 @@ class AudioNote {
     required this.id,
     required this.timestamp,
     required this.createdAt,
+    required this.utcOffset,
+    required this.timezone,
     required this.audioFile,
     required this.audioDirectory,
     required this.duration,

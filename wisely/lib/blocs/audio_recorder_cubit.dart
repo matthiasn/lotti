@@ -111,18 +111,21 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void record() async {
-    DateTime now = DateTime.now();
-    String fileName = '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(now)}.aac';
-    String day = DateFormat('yyyy-MM-dd').format(now);
+    DateTime created = DateTime.now();
+    String fileName =
+        '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
+    String day = DateFormat('yyyy-MM-dd').format(created);
     String relativePath = '/audio/$day/';
     String directory = await AudioUtils.createAudioDirectory(relativePath);
     String filePath = '${directory}$fileName';
     print('RECORD: ${filePath}');
 
     _audioNote = AudioNote(
-        id: uuid.v1(options: {'msecs': now.millisecondsSinceEpoch}),
-        timestamp: now.millisecondsSinceEpoch,
-        createdAt: now,
+        id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
+        timestamp: created.millisecondsSinceEpoch,
+        createdAt: created,
+        utcOffset: created.timeZoneOffset.inMinutes,
+        timezone: created.timeZoneName,
         audioFile: fileName,
         audioDirectory: relativePath,
         duration: Duration(seconds: 0));
