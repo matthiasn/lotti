@@ -59,7 +59,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  # glados: ^1.0.1
+  glados: ^1.0.2
   json_serializable: ^5.0.2
   build_runner: ^2.1.4
 
