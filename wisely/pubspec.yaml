@@ -62,6 +62,7 @@ dependencies:
   intl: ^0.17.0
   tinycolor2: ^2.0.0
   json_annotation: ^4.1.0
+  flutter_native_timezone: ^2.0.0
 
 dev_dependencies:
   flutter_test:

@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
@@ -48,13 +49,14 @@ class _EditorPageState extends State<EditorPage> {
 
     var uuid = Uuid();
     DateTime created = DateTime.now();
+    String timezone = await FlutterNativeTimezone.getLocalTimezone();
 
     db.insertEntry(Entry(
         entryId: uuid.v1(),
         createdAt: created.millisecondsSinceEpoch,
         updatedAt: created.millisecondsSinceEpoch,
         utcOffset: created.timeZoneOffset.inMinutes,
-        timezone: created.timeZoneName,
+        timezone: timezone,
         plainText: 'foo',
         markdown: 'foo',
         quill: '',
