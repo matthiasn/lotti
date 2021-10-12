@@ -51,6 +51,8 @@ class Persistence {
           entryId: maps[i]['entry_id'],
           createdAt: maps[i]['created_at'],
           updatedAt: maps[i]['updated_at'],
+          utcOffset: maps[i]['utcOffset'],
+          timezone: maps[i]['timezone'],
           plainText: maps[i]['plain_text'],
           markdown: maps[i]['markdown'],
           quill: maps[i]['quill'],

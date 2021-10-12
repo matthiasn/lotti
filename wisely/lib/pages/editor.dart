@@ -47,11 +47,14 @@ class _EditorPageState extends State<EditorPage> {
     });
 
     var uuid = Uuid();
+    DateTime created = DateTime.now();
 
     db.insertEntry(Entry(
         entryId: uuid.v1(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: created.millisecondsSinceEpoch,
+        updatedAt: created.millisecondsSinceEpoch,
+        utcOffset: created.timeZoneOffset.inMinutes,
+        timezone: created.timeZoneName,
         plainText: 'foo',
         markdown: 'foo',
         quill: '',
@@ -69,10 +72,14 @@ class _EditorPageState extends State<EditorPage> {
       mapController.move(_currentLocation, 17);
     }
 
+    DateTime updated = DateTime.now();
+
     db.insertEntry(Entry(
         entryId: uuid.v1(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: created.millisecondsSinceEpoch,
+        updatedAt: updated.millisecondsSinceEpoch,
+        utcOffset: created.timeZoneOffset.inMinutes,
+        timezone: created.timeZoneName,
         plainText: 'foo',
         markdown: 'foo',
         quill: '',

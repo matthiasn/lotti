@@ -2,6 +2,8 @@ class Entry {
   final String entryId;
   final int createdAt;
   final int updatedAt;
+  final int utcOffset;
+  final String timezone;
   final String plainText;
   final String markdown;
   final String quill;
@@ -14,6 +16,8 @@ class Entry {
     required this.entryId,
     required this.createdAt,
     required this.updatedAt,
+    required this.utcOffset,
+    required this.timezone,
     required this.plainText,
     required this.markdown,
     required this.quill,
