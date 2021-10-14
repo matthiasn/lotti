@@ -56,7 +56,7 @@
                                          :extensions ["jpg" "png"]}]})
         callback (fn [res]
                    (let [files (js->clj res)]
-                     (debug files)
+                     (info files)
                      (put-fn [:import/photos files])))]
     (.showOpenDialog dialog options callback)))
 
@@ -109,6 +109,8 @@
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
+                          {:label "Audio from Flutter app"
+                           :click #(put-fn [:import/audio])}
                           (when (contains? capabilities :git-import)
                             {:label "Git repos"
                              :click #(put-fn [:import/git])})

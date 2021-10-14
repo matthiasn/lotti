@@ -9,6 +9,7 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.electron.main.crypto :as kc]
+            [meins.electron.main.import :as ai]
             [meins.electron.main.imap :as imap]
             [meins.electron.main.log]
             [meins.electron.main.menu :as menu]
@@ -71,6 +72,7 @@
                      (screen/cmp-map :main/screenshot)
                      (imap/cmp-map :main/sync)
                      (kc/cmp-map :main/crypto)
+                     (ai/cmp-map :main/audio-import)
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
                      (menu/cmp-map :main/menu-cmp)}
@@ -82,6 +84,7 @@
        [:cmd/route {:from :main/menu-cmp
                     :to   #{:main/window-manager
                             :main/startup
+                            :main/audio-import
                             :main/scheduler
                             :main/screenshot
                             :main/updater}}]
