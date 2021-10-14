@@ -60,6 +60,14 @@
                      (put-fn [:import/photos files])))]
     (.showOpenDialog dialog options callback)))
 
+(defn import-audio-dialog [put-fn]
+  (let [options (clj->js {:properties  ["openDirectory"]
+                          :buttonLabel "Import"
+                          :filters     [{:name       "Images"
+                                         :extensions ["jpg" "png"]}]})
+        selected-dir (first (js->clj (.showOpenDialogSync dialog options)))]
+    (put-fn [:import/audio {:directory selected-dir}])))
+
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:entry/create {}])
         new-task #(put-fn (with-meta
@@ -110,7 +118,7 @@
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
                           {:label "Audio from Flutter app"
-                           :click #(put-fn [:import/audio])}
+                           :click #(import-audio-dialog put-fn)}
                           (when (contains? capabilities :git-import)
                             {:label "Git repos"
                              :click #(put-fn [:import/git])})

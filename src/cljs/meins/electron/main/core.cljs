@@ -115,6 +115,9 @@
        [:cmd/route {:from :main/screenshot
                     :to   :main/window-manager}]
 
+       [:cmd/route {:from :main/audio-import
+                    :to   :main/window-manager}]
+
        [:cmd/route {:from :main/sync
                     :to   #{:main/window-manager
                             :main/scheduler}}]
