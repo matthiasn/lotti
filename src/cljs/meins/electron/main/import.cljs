@@ -11,6 +11,7 @@
                :text       ""
                :mentions   #{}
                :utc-offset (get data "utcOffset")
+               :audio_file (get data "audioFile")
                :timezone   (get data "timezone")
                :tags       #{"#audio" "#import"}
                :perm_tags  #{"#audio"}

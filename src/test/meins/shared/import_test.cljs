@@ -9,6 +9,7 @@
    :timezone   "Europe/Berlin"
    :utc-offset 120
    :timestamp  1634044303702
+   :audio_file "2021-10-12_15-11-43-702.aac"
    :md         ""
    :text       ""
    :tags       #{"#import" "#audio"}
