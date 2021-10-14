@@ -10,22 +10,19 @@
    :utc-offset 120
    :timestamp  1634044303702
    :audio_file "2021-10-12_15-11-43-702.aac"
-   :md         ""
-   :text       ""
+   :md         "import audio"
+   :text       "import audio"
    :tags       #{"#import" "#audio"}
-   :perm_tags  #{"#audio"}
-   :lng        13
-   :lat        52
+   :perm_tags  #{"#audio" "#task"}
+   :longitude  13
+   :latitude   52
    :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 28}})
 
 (deftest read-entry-test
-  (let [parsed (emi/read-entry "./src/test/meins/shared/audio/2021-10-12/2021-10-12_15-11-43-702.aac.json")]
+  (let [json-file "./src/test/meins/shared/audio/2021-10-12/2021-10-12_15-11-43-702.aac.json"
+        data (emi/parse-json json-file)
+        entry (emi/convert-entry data)]
     (testing "JSON is parsed correctly"
-      (is (= parsed test-entry)))
+      (is (= entry test-entry)))
     (testing "Parsed entry is valid"
-      (s/valid? :meins.entry/spec parsed))))
-
-(deftest list-dir-test
-  (let []
-    (testing "output is of expected type"
-      (emi/list-dir "./src/test"))))
+      (s/valid? :meins.entry/spec entry))))

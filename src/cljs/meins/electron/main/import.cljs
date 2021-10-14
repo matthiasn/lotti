@@ -1,14 +1,12 @@
 (ns meins.electron.main.import
   (:require ["glob" :as glob :refer [sync]]
             ["fs" :refer [copyFileSync existsSync readFileSync]]
-            [meins.electron.main.runtime :as rt]
             [taoensso.timbre :refer [error info]]
             [clojure.string :as str]
             [cljs.spec.alpha :as s]
             [clojure.pprint :as pp]))
 
-(def data-path (:data-path rt/runtime-info))
-(def audio-path (:audio-path rt/runtime-info))
+(def audio-path-atom (atom ""))
 
 (defn parse-json [file]
   (let [json (.parse js/JSON (readFileSync file))
@@ -55,7 +53,7 @@
             comment (time-recording-entry data)
             file (str/replace json-file ".json" "")
             audio-file (:audio_file entry)
-            audio-file-path (str audio-path "/" audio-file)]
+            audio-file-path (str @audio-path-atom "/" audio-file)]
         (when-not (existsSync audio-file-path)
           (when (existsSync file)
             (copyFileSync file audio-file-path)))
@@ -71,6 +69,7 @@
     (info "import-audio:" path)
     (list-dir path put-fn)))
 
-(defn cmp-map [cmp-id]
+(defn cmp-map [cmp-id audio-path]
+  (reset! audio-path-atom audio-path)
   {:cmp-id      cmp-id
    :handler-map {:import/audio import-audio}})

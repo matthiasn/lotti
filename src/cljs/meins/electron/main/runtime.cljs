@@ -11,7 +11,7 @@
 (def runtime-info
   (let [cwd (.cwd process)
         rp (.-resourcesPath process)
-        repo-dir (s/includes? (s/lower-case rp) "electron")
+        repo-dir (when rp (s/includes? (s/lower-case rp) "electron"))
         user-data (if repo-dir "/tmp/meins" (.getPath app "userData"))
         _ (when-not (existsSync user-data)
             (mkdirSync user-data))
