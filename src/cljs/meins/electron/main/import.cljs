@@ -21,7 +21,7 @@
                :audio_file (get data "audioFile")
                :timezone   (get data "timezone")
                :tags       #{"#audio" "#import"}
-               :perm_tags  #{"#audio"}
+               :perm_tags  #{"#audio" "#task"}
                :longitude  (get data "longitude")
                :latitude   (get data "latitude")
                :vclock     (get data "vectorClock")}]
