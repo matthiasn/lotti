@@ -56,7 +56,6 @@ clean:
 	@rm -rf ./bin
 	@rm -rf ./dist
 	@lein clean
-	@rm -f ./package-lock.json
 
 deps:
 	@echo Fetching Leiningen dependencies...
