@@ -11,7 +11,7 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
-(defn a-z [x] (s/lower-case (second x)))
+(defn a-z [x] (s/lower-case (or (second x) "")))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]
