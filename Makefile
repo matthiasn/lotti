@@ -58,11 +58,11 @@ clean:
 	@lein clean
 	@rm -f ./package-lock.json
 
-deps: clean
+deps:
 	@echo Fetching Leiningen dependencies...
 	@lein deps
 
-npm-deps: clean
+npm-deps:
 	@echo Fetching NPM dependencies...
 	@npm install
 	@npm install -g electron-builder
@@ -96,7 +96,7 @@ cljs: deps npm-deps
 figwheel:
 	@lein cljs-figwheel
 
-electron: clean deps test cljs-shared-tests sass cljs
+electron: deps test cljs-shared-tests sass cljs
 
 directories:
 	@echo Preparing target directories...
@@ -104,7 +104,7 @@ directories:
 	@chmod -R +w bin/
 	@rm -rf ./dist
 
-jlink: clean test directories
+jlink: test directories
 	@echo Assembling UberJAR...
 	@lein jlink assemble
 
@@ -133,4 +133,4 @@ lint-classpath:
 lint:
 	clj-kondo --lint src
 
-release: install publish-github
+release: clean install publish-github
