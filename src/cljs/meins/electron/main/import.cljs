@@ -61,13 +61,13 @@
               audio-file-path (str @audio-path-atom "/" audio-file)]
           (when-not (existsSync audio-file-path)
             (when (existsSync file)
-              (copyFileSync file audio-file-path)))
-          (when (spec/valid? :meins.entry/spec entry)
-            (pp/pprint entry)
-            (put-fn [:entry/update entry]))
-          (when (spec/valid? :meins.entry/spec comment)
-            (pp/pprint comment)
-            (put-fn [:entry/update comment])))))))
+              (copyFileSync file audio-file-path)
+              (when (spec/valid? :meins.entry/spec entry)
+                (pp/pprint entry)
+                (put-fn [:entry/update entry]))
+              (when (spec/valid? :meins.entry/spec comment)
+                (pp/pprint comment)
+                (put-fn [:entry/update comment])))))))))
 
 (defn import-audio [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]
