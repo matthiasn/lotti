@@ -116,7 +116,7 @@ symlinks:
 	mv bin/target/jlink/ bin/
 	chmod -R ugo+w bin/jlink/legal/
 
-install: jlink electron symlinks
+install: jlink symlinks electron
 
 package-only:
 	@echo Building executable...

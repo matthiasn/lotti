@@ -4,8 +4,9 @@
             [taoensso.timbre :refer [error info]]
             [clojure.string :as str]
             [meins.electron.main.helpers :as h]
-            [cljs.spec.alpha :as s]
-            [clojure.pprint :as pp]))
+            [cljs.spec.alpha :as spec]
+            [clojure.pprint :as pp]
+            [clojure.string :as s]))
 
 (def audio-path-atom (atom ""))
 
@@ -51,21 +52,22 @@
 (defn list-dir [path put-fn]
   (let [files (sync (str path "/**/*.json"))]
     (doseq [json-file files]
-      (let [data (parse-json json-file)
-            entry (convert-entry data)
-            comment (time-recording-entry data)
-            file (str/replace json-file ".json" "")
-            audio-file (:audio_file entry)
-            audio-file-path (str @audio-path-atom "/" audio-file)]
-        (when-not (existsSync audio-file-path)
-          (when (existsSync file)
-            (copyFileSync file audio-file-path)))
-        (when (s/valid? :meins.entry/spec entry)
-          (pp/pprint entry)
-          (put-fn [:entry/update entry]))
-        (when (s/valid? :meins.entry/spec comment)
-          (pp/pprint comment)
-          (put-fn [:entry/update comment]))))))
+      (when-not (s/includes? json-file "trash")
+        (let [data (parse-json json-file)
+              entry (convert-entry data)
+              comment (time-recording-entry data)
+              file (str/replace json-file ".json" "")
+              audio-file (:audio_file entry)
+              audio-file-path (str @audio-path-atom "/" audio-file)]
+          (when-not (existsSync audio-file-path)
+            (when (existsSync file)
+              (copyFileSync file audio-file-path)))
+          (when (spec/valid? :meins.entry/spec entry)
+            (pp/pprint entry)
+            (put-fn [:entry/update entry]))
+          (when (spec/valid? :meins.entry/spec comment)
+            (pp/pprint comment)
+            (put-fn [:entry/update comment])))))))
 
 (defn import-audio [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]
