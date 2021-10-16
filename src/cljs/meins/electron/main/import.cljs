@@ -3,6 +3,7 @@
             ["fs" :refer [copyFileSync existsSync readFileSync]]
             [taoensso.timbre :refer [error info]]
             [clojure.string :as str]
+            [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as s]
             [clojure.pprint :as pp]))
 
@@ -14,9 +15,11 @@
     data))
 
 (defn convert-entry [data]
-  (let [entry {:timestamp  (get data "timestamp")
-               :md         "import audio"
-               :text       "import audio"
+  (let [ts (get data "timestamp")
+        text (str (h/format-time ts) " Audio")
+        entry {:timestamp  ts
+               :md         text
+               :text       text
                :mentions   #{}
                :utc-offset (get data "utcOffset")
                :audio_file (get data "audioFile")

@@ -10,8 +10,8 @@
    :utc-offset 120
    :timestamp  1634044303702
    :audio_file "2021-10-12_15-11-43-702.aac"
-   :md         "import audio"
-   :text       "import audio"
+   :md         "2021-10-12 15:11 Audio"
+   :text       "2021-10-12 15:11 Audio"
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
    :longitude  13
