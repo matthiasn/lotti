@@ -32,7 +32,7 @@
                      :geohash   (geohash/encode lat lng 9)
                      :latitude  lat
                      :longitude lng}]
-        (js/window.setTimeout #(emit [:entry/update-local updated]) 100)))
+        (emit [:entry/set-geo updated])))
     (fn [err]
       (error "while getting geolocation:" err)
       (.log js/console err))

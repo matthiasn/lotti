@@ -196,9 +196,15 @@
         new-state (assoc-in current-state [:new-entries ts :geoname] geoname)]
     {:new-state new-state}))
 
+(defn set-geolocation [{:keys [current-state msg-payload]}]
+  (let [ts (:timestamp msg-payload)
+        new-state (update-in current-state [:new-entries ts] merge msg-payload)]
+    {:new-state new-state}))
+
 (def entry-handler-map
   {:entry/new           new-entry-fn
    :entry/update-local  update-local
+   :entry/set-geo       set-geolocation
    :entry/update-merged update-merged
    :entry/remove-local  remove-local
    :entry/saved         entry-saved-fn
