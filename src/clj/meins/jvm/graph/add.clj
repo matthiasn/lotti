@@ -4,7 +4,6 @@
             [clj-time.core :as ct]
             [clj-time.format :as ctf]
             [clojure.set :as set]
-            [clojure.string :as s]
             [meins.common.utils.misc :as u]
             [meins.jvm.datetime :as dt]
             [meins.jvm.graph.query :as gq]
@@ -37,7 +36,7 @@
         comment-for (:comment_for entry)
         tag-add-fn
         (fn [g tag]
-          (let [ltag (s/lower-case tag)
+          (let [ltag (u/lower-case tag)
                 public-tag? (uc/has-node? graph {:tag ltag})
                 pvt-tag? (and pvt-entry?
                               (not public-tag?))
@@ -61,7 +60,7 @@
   (let [mentions (:mentions entry)]
     (reduce
       (fn [acc mention]
-        (let [lmention (s/lower-case mention)]
+        (let [lmention (u/lower-case mention)]
           (-> acc
               (uc/add-nodes :mentions)
               (uc/add-nodes-with-attrs [{:mention lmention} {:val mention}])
@@ -190,7 +189,7 @@
   [graph tags k]
   (reduce
     (fn [g tag]
-      (let [ltag (s/lower-case tag)]
+      (let [ltag (u/lower-case tag)]
         (if (and (empty? (uc/find-edges g {:src {k ltag} :relationship :CONTAINS}))
                  (not (contains? #{"#new" "#import"} tag)))
           (uc/remove-nodes g {k ltag})
@@ -314,7 +313,7 @@
         remove-tag-edges (fn [g tags k]
                            (let [reducing-fn
                                  (fn [g ltag] (uc/remove-edges g [ts {k ltag}]))]
-                             (reduce reducing-fn g (map s/lower-case tags))))
+                             (reduce reducing-fn g (map u/lower-case tags))))
         media-tags (set (filter identity [(when (:img_file entry) "#photo")
                                           (when (:audio-file entry) "#audio")
                                           (when (:video entry) "#video")]))

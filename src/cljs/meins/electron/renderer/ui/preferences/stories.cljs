@@ -7,12 +7,10 @@
             [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
+            [meins.common.utils.misc :as m]
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
-
-(defn lower-case [str]
-  (if str (s/lower-case str) ""))
 
 (defn gql-query [pvt search-text]
   (let [queries [[:stories_cfg
@@ -50,7 +48,7 @@
   (let [pvt (subscribe [:show-pvt])
         stories (subscribe [:stories])
         input-fn (fn [ev]
-                   (let [text (lower-case (h/target-val ev))]
+                   (let [text (m/lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]

@@ -1,7 +1,6 @@
 (ns meins.electron.renderer.ui.entry.actions
   (:require [cljs.pprint :as pp]
             [clojure.set :as set]
-            [clojure.string :as s]
             [meins.common.utils.misc :as u]
             [meins.common.utils.parse :as up]
             [meins.electron.renderer.helpers :as h]
@@ -110,7 +109,7 @@
         backend-cfg (subscribe [:backend-cfg])
         cfg (reaction (:custom-fields @backend-cfg))
         indexed (reaction
-                  (->> (sort-by #(s/lower-case (first %)) @cfg)
+                  (->> (sort-by #(u/lower-case (first %)) @cfg)
                        (filter (fn [[_tag x]]
                                  (if @show-pvt true (not (:pvt x)))))
                        (filter active-filter)

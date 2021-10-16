@@ -9,6 +9,7 @@
             [cljs.nodejs :refer [process]]
             [clojure.string :as s]
             [goog.dom.Range]
+            [meins.common.utils.misc :as m]
             [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.parse :as p]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -178,11 +179,11 @@
    Returns nil when not both of the arguments are strings."
   [s substring]
   (when (and (string? s) (string? substring))
-    (s/includes? (s/lower-case s) (s/lower-case substring))))
+    (s/includes? (m/lower-case s) (m/lower-case substring))))
 
 (def user-data (.getPath (aget remote "app") "userData"))
 (def rp (.-resourcesPath process))
-(def repo-dir (s/includes? (s/lower-case rp) "electron"))
+(def repo-dir (s/includes? (m/lower-case rp) "electron"))
 (def photos (str (if repo-dir ".." user-data) "/data/images/"))
 
 (defn media-path [path file]

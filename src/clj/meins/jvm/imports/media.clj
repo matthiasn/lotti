@@ -9,6 +9,7 @@
             [clojure.string :as s]
             [me.raynes.fs :as fs]
             [meins.common.specs]
+            [meins.common.utils.misc :as m]
             [meins.jvm.file-utils :as fu]
             [meins.jvm.utils.images :as img]
             [taoensso.timbre :refer [error info warn]]))
@@ -185,7 +186,7 @@
   [{:keys [msg-payload]}]
   (info "importing movie" msg-payload)
   (let [imdb-id (:imdb-id msg-payload)
-        parser (fn [res] (cc/parse-string (:body res) #(keyword (s/lower-case %))))
+        parser (fn [res] (cc/parse-string (:body res) #(keyword (m/lower-case %))))
         res (hc/get (str "http://www.omdbapi.com/?i=" imdb-id))
         imdb (parser res)
         series (when-let [sid (:seriesid imdb)]

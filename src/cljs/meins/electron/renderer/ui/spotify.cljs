@@ -2,6 +2,7 @@
   (:require [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
+            [meins.common.utils.misc :as m]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.core :as r]
@@ -56,9 +57,9 @@
                        (fn [[_ entry]]
                          (let [spt (:spotify entry)]
                            (s/includes?
-                             (s/lower-case (str (map :name (:artists spt))
+                             (m/lower-case (str (map :name (:artists spt))
                                                 (:name spt)))
-                             (s/lower-case (str (:search @local))))))]
+                             (m/lower-case (str (:search @local))))))]
                    [:div.spotify-list
                     [:div.controls
                      [:div.size
