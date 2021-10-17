@@ -13,42 +13,58 @@ class HealthService {
     //fetchData();
   }
 
-  Future<File> get _localFile async {
+  Future<File> _localFile(String fileName) async {
     final docDir = await getApplicationDocumentsDirectory();
-    String filePath = join(docDir.path, 'health.json');
-
+    String filePath = join(docDir.path, fileName);
     print('>>> filePath: $filePath');
-
     return File(filePath);
   }
 
-  Future<File> writeJson() async {
-    final file = await _localFile;
-
+  Future<File> writeJson(String fileName) async {
+    final file = await _localFile(fileName);
     String jsonString = jsonEncode(_healthDataList);
     return file.writeAsString(jsonString);
   }
 
-  Future fetchData() async {
-    DateTime startDate = DateTime(2021, 07, 01, 0, 0, 0);
-    DateTime endDate = DateTime(2025, 01, 01, 23, 59, 59);
+  List<HealthDataType> movementTypes = [
+    HealthDataType.STEPS,
+    HealthDataType.DISTANCE_WALKING_RUNNING,
+    HealthDataType.FLIGHTS_CLIMBED,
+  ];
 
+  List<HealthDataType> workoutTypes = [
+    HealthDataType.EXERCISE_TIME,
+    HealthDataType.WORKOUT,
+  ];
+
+  List<HealthDataType> sleepTypes = [
+    HealthDataType.SLEEP_IN_BED,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_AWAKE,
+  ];
+
+  List<HealthDataType> heartTypes = [
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+    HealthDataType.HEART_RATE,
+    HealthDataType.RESTING_HEART_RATE,
+    HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+  ];
+
+  List<HealthDataType> bodyMeasurementTypes = [
+    HealthDataType.WEIGHT,
+    HealthDataType.BODY_FAT_PERCENTAGE,
+    HealthDataType.ACTIVE_ENERGY_BURNED,
+    HealthDataType.BASAL_ENERGY_BURNED,
+  ];
+
+  Future fetchData({
+    required List<HealthDataType> types,
+    required String filename,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
     HealthFactory health = HealthFactory();
-
-    List<HealthDataType> types = [
-      HealthDataType.STEPS,
-      HealthDataType.DISTANCE_WALKING_RUNNING,
-      HealthDataType.WEIGHT,
-      HealthDataType.BODY_FAT_PERCENTAGE,
-      HealthDataType.SLEEP_IN_BED,
-      HealthDataType.SLEEP_ASLEEP,
-      HealthDataType.SLEEP_AWAKE,
-      HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-      HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-      HealthDataType.HEART_RATE,
-      HealthDataType.RESTING_HEART_RATE,
-      HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-    ];
 
     // you MUST request access to the data types before reading them
     bool accessWasGranted = await health.requestAuthorization(types);
@@ -78,7 +94,7 @@ class HealthService {
         }
       });
 
-      await writeJson();
+      await writeJson(filename);
 
       print("Steps: $steps");
     } else {
