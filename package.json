@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.337",
+  "version": "0.6.338",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -82,7 +82,7 @@
     "tweetnacl-util": "0.15.1",
     "typeface-montserrat": "0.0.75",
     "utf-8-validate": "5.0.2",
-    "wavesurfer.js": "3.3.1"
+    "wavesurfer.js": "5.2.0"
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
