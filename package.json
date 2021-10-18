@@ -86,7 +86,7 @@
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "7.3.3",
+    "electron": "11.5.0",
     "electron-builder": "22.10.5",
     "electron-notarize": "1.1.1",
     "electron-rebuild": "^3.2.3",
