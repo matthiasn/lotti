@@ -32,7 +32,7 @@
                      :geohash   (geohash/encode lat lng 9)
                      :latitude  lat
                      :longitude lng}]
-        (emit [:entry/set-geo updated])))
+        (emit [:entry/update updated])))
     (fn [err]
       (error "while getting geolocation:" err)
       (.log js/console err))
