@@ -168,6 +168,14 @@
       {:new-state new-state
        :emit-msg  [[:ft/add entry]]})))
 
+(defn initial-save-entry
+  "Handler function for creating journal entry, saving once and
+  not overwriting."
+  [{:keys [current-state msg-payload] :as context}]
+  (let [ts (:timestamp msg-payload)
+        prev (gq/get-entry current-state ts)]
+    (when-not prev (geo-entry-persist-fn context))))
+
 (defn sync-fn
   "Handler function for syncing journal entry."
   [{:keys [current-state msg-payload put-fn]}]

@@ -6,6 +6,7 @@
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
             [clojure.pprint :as pp]
+            [expound.alpha :as exp]
             [clojure.string :as s]))
 
 (def audio-path-atom (atom ""))
@@ -49,7 +50,7 @@
                                            1000000)})]
     comment))
 
-(defn list-dir [path put-fn]
+(defn import-audio-files [path put-fn]
   (let [files (sync (str path "/**/*.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
@@ -64,17 +65,50 @@
               (copyFileSync file audio-file-path)
               (when (spec/valid? :meins.entry/spec entry)
                 (pp/pprint entry)
-                (put-fn [:entry/update entry]))
+                (put-fn [:entry/save-initial entry]))
               (when (spec/valid? :meins.entry/spec comment)
                 (pp/pprint comment)
-                (put-fn [:entry/update comment])))))))))
+                (put-fn [:entry/save-initial comment])))))))))
 
 (defn import-audio [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]
     (info "import-audio:" path)
-    (list-dir path put-fn)))
+    (import-audio-files path put-fn)))
+
+(defn convert-sleep-entry [data]
+  (let [date-to (get data "date_to")
+        ts (h/health-date-to-ts date-to)
+        value (get data "value")
+        text (str "Sleep: " value " min")
+        data-type (get data "data_type")]
+    (when (= data-type "sleep_asleep")
+      {:timestamp     ts
+       :md            text
+       :text          text
+       :mentions      #{}
+       :utc-offset    120
+       :timezone      "Europe/Berlin"
+       :perm_tags     #{"#sleep"}
+       :tags          #{"#sleep"}
+       :primary_story 1479889430353
+       :custom_fields {"#sleep" {:duration value}}})))
+
+(defn import-health [{:keys [msg-payload put-fn]}]
+  (let [files (:files msg-payload)]
+    (info "import-health:" files)
+    (doseq [json-file files]
+      (let [items (parse-json json-file)]
+        (doseq [item items]
+          (info item)
+          (let [entry (convert-sleep-entry item)]
+            (info entry)
+            (info (exp/expound-str :meins.entry/spec entry))
+            (put-fn [:entry/save-initial entry])
+            (when (and entry (spec/valid? :meins.entry/spec entry))
+              (put-fn [:entry/save-initial entry]))))))))
 
 (defn cmp-map [cmp-id audio-path]
   (reset! audio-path-atom audio-path)
   {:cmp-id      cmp-id
-   :handler-map {:import/audio import-audio}})
+   :handler-map {:import/audio  import-audio
+                 :import/health import-health}})

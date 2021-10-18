@@ -41,6 +41,7 @@
    :handler-map {:entry/import       f/entry-import-fn
                  :entry/unlink       ga/unlink
                  :entry/update       f/geo-entry-persist-fn
+                 :entry/save-initial f/initial-save-entry
                  :entry/sync         f/sync-fn
                  :options/gen        opts/gen-options
                  :startup/read       startup/read-entries

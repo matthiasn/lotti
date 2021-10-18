@@ -68,6 +68,14 @@
         selected-dir (first (js->clj (.showOpenDialogSync dialog options)))]
     (put-fn [:import/audio {:directory selected-dir}])))
 
+(defn import-health-dialog [put-fn]
+  (let [options (clj->js {:properties  ["openFile" "multiSelections"]
+                          :buttonLabel "Import"
+                          :filters     [{:name       "JSON"
+                                         :extensions ["json"]}]})
+        files (js->clj (.showOpenDialogSync dialog options))]
+    (put-fn [:import/health {:files files}])))
+
 (defn file-menu [put-fn]
   (let [new-entry #(put-fn [:entry/create {}])
         new-task #(put-fn (with-meta
@@ -119,6 +127,8 @@
                            :click       #(import-dialog put-fn)}
                           {:label "Audio from Flutter app"
                            :click #(import-audio-dialog put-fn)}
+                          {:label "Health Data from Flutter app"
+                           :click #(import-health-dialog put-fn)}
                           (when (contains? capabilities :git-import)
                             {:label "Git repos"
                              :click #(put-fn [:import/git])})

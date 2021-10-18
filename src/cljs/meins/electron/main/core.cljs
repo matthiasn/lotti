@@ -40,6 +40,7 @@
                 :entry/update
                 :entry/sync
                 :entry/create
+                :entry/save-initial
                 :geonames/res
                 :crypto/cfg
                 :export/geojson
