@@ -50,6 +50,7 @@ class _JournalPageState extends State<JournalPage> {
               ),
               ListView.builder(
                 shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
                 itemCount: audioNotesState.audioNotesMap.length,
                 itemBuilder: (BuildContext context, int index) {
                   AudioNote item =
