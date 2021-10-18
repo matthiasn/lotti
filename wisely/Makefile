@@ -14,3 +14,11 @@ check-null-safety:
 .PHONY: build_runner
 build_runner:
 	dart run build_runner build
+
+.PHONY: ipa
+ipa:
+	flutter build ipa
+
+.PHONY: macos
+macos:
+	flutter build macos
