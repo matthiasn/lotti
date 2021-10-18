@@ -83,16 +83,16 @@
         data-type (get data "data_type")]
     (when (= data-type "sleep_asleep")
       (let [entry {:timestamp     ts
-             :md            text
-             :text          text
-             :mentions      #{}
-             :utc-offset    120
-             :timezone      "Europe/Berlin"
-             :perm_tags     #{"#sleep"}
-             :tags          #{"#sleep"}
-             :primary_story 1479889430353
-             :health_data   data
-             :custom_fields {"#sleep" {:duration value}}}]
+                   :md            text
+                   :text          text
+                   :mentions      #{}
+                   :utc-offset    120
+                   :timezone      "Europe/Berlin"
+                   :perm_tags     #{"#sleep"}
+                   :tags          #{"#sleep"}
+                   :primary_story 1479889430353
+                   :health_data   data
+                   :custom_fields {"#sleep" {:duration value}}}]
         (when (and entry (spec/valid? :meins.entry/spec entry))
           (put-fn [:entry/save-initial entry]))))))
 
@@ -105,14 +105,48 @@
         data-type (get data "data_type")]
     (when (= data-type "weight")
       (let [entry {:timestamp     ts
-             :md            text
-             :text          text
-             :mentions      #{}
-             :utc-offset    120
-             :timezone      "Europe/Berlin"
-             :perm_tags     #{"#weight"}
-             :health_data   data
-             :custom_fields {"#weight" {:weight value}}}]
+                   :md            text
+                   :text          text
+                   :mentions      #{}
+                   :utc-offset    120
+                   :timezone      "Europe/Berlin"
+                   :perm_tags     #{"#weight"}
+                   :health_data   data
+                   :custom_fields {"#weight" {:weight value}}}]
+        (when (and entry (spec/valid? :meins.entry/spec entry))
+          (put-fn [:entry/save-initial entry]))))))
+
+(defn import-bp-entry [data put-fn]
+  (let [date-to (get data "date_to")
+        ts (h/health-date-to-ts date-to)
+        value (get data "value")
+        data-type (get data "data_type")]
+    (when (= data-type "blood_pressure_systolic")
+      (let [text (str "BP: " value " systolic")
+            entry {:timestamp     (+ ts 1)
+                   :md            text
+                   :text          text
+                   :mentions      #{}
+                   :utc-offset    120
+                   :timezone      "Europe/Berlin"
+                   :perm_tags     #{"#BP"}
+                   :tags     #{"#BP"}
+                   :health_data   data
+                   :custom_fields {"#BP" {:bp_systolic value}}}]
+        (when (and entry (spec/valid? :meins.entry/spec entry))
+          (put-fn [:entry/save-initial entry]))))
+    (when (= data-type "blood_pressure_diastolic")
+      (let [text (str "BP: " value " mmHg diastolic")
+            entry {:timestamp     (+ ts 2)
+                   :md            text
+                   :text          text
+                   :mentions      #{}
+                   :utc-offset    120
+                   :timezone      "Europe/Berlin"
+                   :perm_tags     #{"#BP"}
+                   :tags     #{"#BP"}
+                   :health_data   data
+                   :custom_fields {"#BP" {:bp_diastolic value}}}]
         (when (and entry (spec/valid? :meins.entry/spec entry))
           (put-fn [:entry/save-initial entry]))))))
 
@@ -123,7 +157,8 @@
       (let [items (parse-json json-file)]
         (doseq [item items]
           (import-sleep-entry item put-fn)
-          (import-weight-entry item put-fn))))))
+          (import-weight-entry item put-fn)
+          (import-bp-entry item put-fn))))))
 
 (defn cmp-map [cmp-id audio-path]
   (reset! audio-path-atom audio-path)

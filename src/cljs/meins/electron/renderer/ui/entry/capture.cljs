@@ -48,7 +48,8 @@
                      :class     (when (= input-type :time) "time")
                      :type      input-type})]
     (fn [entry field tag _k]
-      (parse-and-set entry path tag input-type)
+      (when-not (contains? (:custom_fields entry) "#BP")
+        (parse-and-set entry path tag input-type))
       (let [value (get-in entry path)
             value (if (and value (= :time input-type))
                     (h/m-to-hh-mm value)
