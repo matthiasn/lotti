@@ -75,23 +75,46 @@
     (info "import-audio:" path)
     (import-audio-files path put-fn)))
 
-(defn convert-sleep-entry [data]
+(defn import-sleep-entry [data put-fn]
   (let [date-to (get data "date_to")
         ts (h/health-date-to-ts date-to)
         value (get data "value")
         text (str "Sleep: " value " min")
         data-type (get data "data_type")]
     (when (= data-type "sleep_asleep")
-      {:timestamp     ts
-       :md            text
-       :text          text
-       :mentions      #{}
-       :utc-offset    120
-       :timezone      "Europe/Berlin"
-       :perm_tags     #{"#sleep"}
-       :tags          #{"#sleep"}
-       :primary_story 1479889430353
-       :custom_fields {"#sleep" {:duration value}}})))
+      (let [entry {:timestamp     ts
+             :md            text
+             :text          text
+             :mentions      #{}
+             :utc-offset    120
+             :timezone      "Europe/Berlin"
+             :perm_tags     #{"#sleep"}
+             :tags          #{"#sleep"}
+             :primary_story 1479889430353
+             :health_data   data
+             :custom_fields {"#sleep" {:duration value}}}]
+        (when (and entry (spec/valid? :meins.entry/spec entry))
+          (put-fn [:entry/save-initial entry]))))))
+
+(defn import-weight-entry [data put-fn]
+  (let [date-to (get data "date_to")
+        ts (h/health-date-to-ts date-to)
+        value (get data "value")
+        rounded-value (/ (Math/round (* value 10)) 10)
+        text (str "Weight: " rounded-value " kg")
+        data-type (get data "data_type")]
+    (when (= data-type "weight")
+      (let [entry {:timestamp     ts
+             :md            text
+             :text          text
+             :mentions      #{}
+             :utc-offset    120
+             :timezone      "Europe/Berlin"
+             :perm_tags     #{"#weight"}
+             :health_data   data
+             :custom_fields {"#weight" {:weight value}}}]
+        (when (and entry (spec/valid? :meins.entry/spec entry))
+          (put-fn [:entry/save-initial entry]))))))
 
 (defn import-health [{:keys [msg-payload put-fn]}]
   (let [files (:files msg-payload)]
@@ -99,13 +122,8 @@
     (doseq [json-file files]
       (let [items (parse-json json-file)]
         (doseq [item items]
-          (info item)
-          (let [entry (convert-sleep-entry item)]
-            (info entry)
-            (info (exp/expound-str :meins.entry/spec entry))
-            (put-fn [:entry/save-initial entry])
-            (when (and entry (spec/valid? :meins.entry/spec entry))
-              (put-fn [:entry/save-initial entry]))))))))
+          (import-sleep-entry item put-fn)
+          (import-weight-entry item put-fn))))))
 
 (defn cmp-map [cmp-id audio-path]
   (reset! audio-path-atom audio-path)
