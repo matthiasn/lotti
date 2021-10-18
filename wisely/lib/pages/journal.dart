@@ -8,6 +8,7 @@ import 'package:wisely/blocs/audio_player_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/widgets/audio_player.dart';
+import 'package:wisely/widgets/map_widget.dart';
 
 class JournalPage extends StatefulWidget {
   const JournalPage({Key? key}) : super(key: key);
@@ -77,7 +78,7 @@ class _JournalPageState extends State<JournalPage> {
 
 class AudioNoteListItem extends StatelessWidget {
   AudioNote audioNote;
-  AudioNoteListItem({required this.audioNote});
+  AudioNoteListItem({Key? key, required this.audioNote}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -91,14 +92,14 @@ class AudioNoteListItem extends StatelessWidget {
             children: [
               Text(
                 '${audioNote.createdAt.toString().substring(0, 16)} - ',
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'ShareTechMono',
                   fontSize: 16.0,
                 ),
               ),
               Text(
                 audioNote.duration.toString().split('.')[0],
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'ShareTechMono',
                   fontSize: 16.0,
                 ),
@@ -117,16 +118,23 @@ class AudioNoteListItem extends StatelessWidget {
           context.read<AudioPlayerCubit>().setAudioNote(audioNote);
           showModalBottomSheet<void>(
             context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            clipBehavior: Clip.antiAliasWithSaveLayer,
             builder: (BuildContext context) {
               return Container(
-                height: 200,
+                height: 312,
                 color: AppColors.bodyBgColor,
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      AudioPlayerWidget(),
+                      const MapWidget(),
+                      const AudioPlayerWidget(),
                       ElevatedButton(
                         child: const Text('Close'),
                         onPressed: () => Navigator.pop(context),

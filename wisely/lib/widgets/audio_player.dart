@@ -11,7 +11,7 @@ class AudioPlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
-        builder: (context, state) {
+        builder: (BuildContext context, AudioPlayerState state) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -62,7 +62,7 @@ class AudioPlayerWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
+                SizedBox(
                   width: 250,
                   child: ProgressBar(
                     progress: state.progress,
