@@ -26,8 +26,11 @@ class HealthService {
     return file.writeAsString(jsonString);
   }
 
-  List<HealthDataType> movementTypes = [
+  List<HealthDataType> stepsTypes = [
     HealthDataType.STEPS,
+  ];
+
+  List<HealthDataType> movementTypes = [
     HealthDataType.DISTANCE_WALKING_RUNNING,
     HealthDataType.FLIGHTS_CLIMBED,
   ];
@@ -43,9 +46,12 @@ class HealthService {
     HealthDataType.SLEEP_AWAKE,
   ];
 
-  List<HealthDataType> heartTypes = [
+  List<HealthDataType> bpTypes = [
     HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
     HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+  ];
+
+  List<HealthDataType> heartRateTypes = [
     HealthDataType.HEART_RATE,
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.HEART_RATE_VARIABILITY_SDNN,
@@ -54,6 +60,9 @@ class HealthService {
   List<HealthDataType> bodyMeasurementTypes = [
     HealthDataType.WEIGHT,
     HealthDataType.BODY_FAT_PERCENTAGE,
+  ];
+
+  List<HealthDataType> energyTypes = [
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.BASAL_ENERGY_BURNED,
   ];

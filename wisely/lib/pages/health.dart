@@ -26,7 +26,7 @@ class _HealthPageState extends State<HealthPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             OutlinedButton(
-              onPressed: () => healthService.fetchData(
+              onPressed: () => HealthService().fetchData(
                 types: healthService.sleepTypes,
                 filename: 'sleep.json',
                 startDate: DateTime(2021, 07, 01, 0, 0, 0),
@@ -41,14 +41,14 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
             OutlinedButton(
-              onPressed: () => healthService.fetchData(
-                types: healthService.heartTypes,
+              onPressed: () => HealthService().fetchData(
+                types: healthService.heartRateTypes,
                 filename: 'heart.json',
                 startDate: DateTime(2021, 07, 01, 0, 0, 0),
                 endDate: DateTime(2025, 01, 01, 23, 59, 59),
               ),
               child: const Text(
-                'Import Heart Data',
+                'Import Heart Rate Data',
                 style: TextStyle(
                   color: CupertinoColors.white,
                   fontWeight: FontWeight.bold,
@@ -56,7 +56,22 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
             OutlinedButton(
-              onPressed: () => healthService.fetchData(
+              onPressed: () => HealthService().fetchData(
+                types: healthService.bpTypes,
+                filename: 'bp.json',
+                startDate: DateTime(2021, 01, 01, 0, 0, 0),
+                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+              ),
+              child: const Text(
+                'Import Blood Pressure Data',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            OutlinedButton(
+              onPressed: () => HealthService().fetchData(
                 types: healthService.bodyMeasurementTypes,
                 filename: 'body.json',
                 startDate: DateTime(2021, 07, 01, 0, 0, 0),
@@ -71,14 +86,14 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
             OutlinedButton(
-              onPressed: () => healthService.fetchData(
-                types: healthService.movementTypes,
-                filename: 'movement.json',
+              onPressed: () => HealthService().fetchData(
+                types: healthService.energyTypes,
+                filename: 'energy.json',
                 startDate: DateTime(2021, 07, 01, 0, 0, 0),
                 endDate: DateTime(2025, 01, 01, 23, 59, 59),
               ),
               child: const Text(
-                'Import Steps, Stairs, Distance',
+                'Import Energy Burned Data',
                 style: TextStyle(
                   color: CupertinoColors.white,
                   fontWeight: FontWeight.bold,
@@ -86,7 +101,37 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
             OutlinedButton(
-              onPressed: () => healthService.fetchData(
+              onPressed: () => HealthService().fetchData(
+                types: healthService.stepsTypes,
+                filename: 'steps.json',
+                startDate: DateTime(2021, 07, 01, 0, 0, 0),
+                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+              ),
+              child: const Text(
+                'Import Steps',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            OutlinedButton(
+              onPressed: () => HealthService().fetchData(
+                types: healthService.movementTypes,
+                filename: 'movement.json',
+                startDate: DateTime(2021, 07, 01, 0, 0, 0),
+                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+              ),
+              child: const Text(
+                'Import Stairs, Distance',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            OutlinedButton(
+              onPressed: () => HealthService().fetchData(
                 types: healthService.workoutTypes,
                 filename: 'workouts.json',
                 startDate: DateTime(2021, 07, 01, 0, 0, 0),
