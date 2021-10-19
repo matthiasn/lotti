@@ -1,14 +1,15 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-class QrScannerWidget extends StatefulWidget {
+class EncryptionQrReaderWidget extends StatefulWidget {
   @override
-  State<StatefulWidget> createState() => _QrScannerWidgetState();
+  State<StatefulWidget> createState() => _EncryptionQrReaderWidgetState();
 }
 
-class _QrScannerWidgetState extends State<QrScannerWidget> {
+class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   Barcode? result;
   late QRViewController controller;
@@ -27,6 +28,15 @@ class _QrScannerWidgetState extends State<QrScannerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    void _onQRViewCreated(QRViewController controller) {
+      this.controller = controller;
+      controller.scannedDataStream.listen((scanData) {
+        setState(() {
+          result = scanData;
+        });
+      });
+    }
+
     return SizedBox(
       height: 300.0,
       child: Column(
@@ -49,15 +59,6 @@ class _QrScannerWidgetState extends State<QrScannerWidget> {
         ],
       ),
     );
-  }
-
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
-      });
-    });
   }
 
   @override
