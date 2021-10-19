@@ -53,6 +53,7 @@ dependencies:
   json_annotation: ^4.1.0
   flutter_native_timezone: ^2.0.0
   cryptography: ^2.0.2
+  encrypt: ^5.0.1
 
 dev_dependencies:
   flutter_test:

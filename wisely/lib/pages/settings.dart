@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/sync/encryption.dart';
+import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/qr_display_widget.dart';
 import 'package:wisely/sync/qr_scanner_widget.dart';
@@ -47,6 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       tooltip: 'Increment',
                       onPressed: () {
                         encryptDecrypt("fooo bar");
+                        encryptDecryptSalsa("fooo bar");
                         context.read<VectorClockCubit>().increment();
                         context.read<CounterBloc>().add(Increment());
                       }),

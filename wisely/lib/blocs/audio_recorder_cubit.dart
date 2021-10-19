@@ -14,6 +14,7 @@ import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/encryption.dart';
+import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
@@ -96,6 +97,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       await file.writeAsString(json);
       print(json);
       encryptDecrypt(json);
+      encryptDecryptSalsa(json);
       _audioNotesCubit.save(_audioNote!);
     }
   }
