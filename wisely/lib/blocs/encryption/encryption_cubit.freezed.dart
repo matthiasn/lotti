@@ -27,6 +27,10 @@ class _$EncryptionStateTearOff {
     return Loading();
   }
 
+  Generating generating() {
+    return Generating();
+  }
+
   Empty empty() {
     return Empty();
   }
@@ -41,6 +45,7 @@ mixin _$EncryptionState {
   TResult when<TResult extends Object?>(
     TResult Function(String? sharedKey) $default, {
     required TResult Function() loading,
+    required TResult Function() generating,
     required TResult Function() empty,
   }) =>
       throw _privateConstructorUsedError;
@@ -48,6 +53,7 @@ mixin _$EncryptionState {
   TResult? whenOrNull<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
   }) =>
       throw _privateConstructorUsedError;
@@ -55,6 +61,7 @@ mixin _$EncryptionState {
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
     required TResult orElse(),
   }) =>
@@ -63,6 +70,7 @@ mixin _$EncryptionState {
   TResult map<TResult extends Object?>(
     TResult Function(_EncryptionState value) $default, {
     required TResult Function(Loading value) loading,
+    required TResult Function(Generating value) generating,
     required TResult Function(Empty value) empty,
   }) =>
       throw _privateConstructorUsedError;
@@ -70,6 +78,7 @@ mixin _$EncryptionState {
   TResult? mapOrNull<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
   }) =>
       throw _privateConstructorUsedError;
@@ -77,6 +86,7 @@ mixin _$EncryptionState {
   TResult maybeMap<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
     required TResult orElse(),
   }) =>
@@ -167,6 +177,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult when<TResult extends Object?>(
     TResult Function(String? sharedKey) $default, {
     required TResult Function() loading,
+    required TResult Function() generating,
     required TResult Function() empty,
   }) {
     return $default(sharedKey);
@@ -177,6 +188,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult? whenOrNull<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
   }) {
     return $default?.call(sharedKey);
@@ -187,6 +199,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
     required TResult orElse(),
   }) {
@@ -201,6 +214,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult map<TResult extends Object?>(
     TResult Function(_EncryptionState value) $default, {
     required TResult Function(Loading value) loading,
+    required TResult Function(Generating value) generating,
     required TResult Function(Empty value) empty,
   }) {
     return $default(this);
@@ -211,6 +225,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult? mapOrNull<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
   }) {
     return $default?.call(this);
@@ -221,6 +236,7 @@ class _$_EncryptionState implements _EncryptionState {
   TResult maybeMap<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
     required TResult orElse(),
   }) {
@@ -280,6 +296,7 @@ class _$Loading implements Loading {
   TResult when<TResult extends Object?>(
     TResult Function(String? sharedKey) $default, {
     required TResult Function() loading,
+    required TResult Function() generating,
     required TResult Function() empty,
   }) {
     return loading();
@@ -290,6 +307,7 @@ class _$Loading implements Loading {
   TResult? whenOrNull<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
   }) {
     return loading?.call();
@@ -300,6 +318,7 @@ class _$Loading implements Loading {
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
     required TResult orElse(),
   }) {
@@ -314,6 +333,7 @@ class _$Loading implements Loading {
   TResult map<TResult extends Object?>(
     TResult Function(_EncryptionState value) $default, {
     required TResult Function(Loading value) loading,
+    required TResult Function(Generating value) generating,
     required TResult Function(Empty value) empty,
   }) {
     return loading(this);
@@ -324,6 +344,7 @@ class _$Loading implements Loading {
   TResult? mapOrNull<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
   }) {
     return loading?.call(this);
@@ -334,6 +355,7 @@ class _$Loading implements Loading {
   TResult maybeMap<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
     required TResult orElse(),
   }) {
@@ -346,6 +368,121 @@ class _$Loading implements Loading {
 
 abstract class Loading implements EncryptionState {
   factory Loading() = _$Loading;
+}
+
+/// @nodoc
+abstract class $GeneratingCopyWith<$Res> {
+  factory $GeneratingCopyWith(
+          Generating value, $Res Function(Generating) then) =
+      _$GeneratingCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class _$GeneratingCopyWithImpl<$Res> extends _$EncryptionStateCopyWithImpl<$Res>
+    implements $GeneratingCopyWith<$Res> {
+  _$GeneratingCopyWithImpl(Generating _value, $Res Function(Generating) _then)
+      : super(_value, (v) => _then(v as Generating));
+
+  @override
+  Generating get _value => super._value as Generating;
+}
+
+/// @nodoc
+
+class _$Generating implements Generating {
+  _$Generating();
+
+  @override
+  String toString() {
+    return 'EncryptionState.generating()';
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is Generating);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(String? sharedKey) $default, {
+    required TResult Function() loading,
+    required TResult Function() generating,
+    required TResult Function() empty,
+  }) {
+    return generating();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult Function(String? sharedKey)? $default, {
+    TResult Function()? loading,
+    TResult Function()? generating,
+    TResult Function()? empty,
+  }) {
+    return generating?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(String? sharedKey)? $default, {
+    TResult Function()? loading,
+    TResult Function()? generating,
+    TResult Function()? empty,
+    required TResult orElse(),
+  }) {
+    if (generating != null) {
+      return generating();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_EncryptionState value) $default, {
+    required TResult Function(Loading value) loading,
+    required TResult Function(Generating value) generating,
+    required TResult Function(Empty value) empty,
+  }) {
+    return generating(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult Function(_EncryptionState value)? $default, {
+    TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
+    TResult Function(Empty value)? empty,
+  }) {
+    return generating?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_EncryptionState value)? $default, {
+    TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
+    TResult Function(Empty value)? empty,
+    required TResult orElse(),
+  }) {
+    if (generating != null) {
+      return generating(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class Generating implements EncryptionState {
+  factory Generating() = _$Generating;
 }
 
 /// @nodoc
@@ -388,6 +525,7 @@ class _$Empty implements Empty {
   TResult when<TResult extends Object?>(
     TResult Function(String? sharedKey) $default, {
     required TResult Function() loading,
+    required TResult Function() generating,
     required TResult Function() empty,
   }) {
     return empty();
@@ -398,6 +536,7 @@ class _$Empty implements Empty {
   TResult? whenOrNull<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
   }) {
     return empty?.call();
@@ -408,6 +547,7 @@ class _$Empty implements Empty {
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(String? sharedKey)? $default, {
     TResult Function()? loading,
+    TResult Function()? generating,
     TResult Function()? empty,
     required TResult orElse(),
   }) {
@@ -422,6 +562,7 @@ class _$Empty implements Empty {
   TResult map<TResult extends Object?>(
     TResult Function(_EncryptionState value) $default, {
     required TResult Function(Loading value) loading,
+    required TResult Function(Generating value) generating,
     required TResult Function(Empty value) empty,
   }) {
     return empty(this);
@@ -432,6 +573,7 @@ class _$Empty implements Empty {
   TResult? mapOrNull<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
   }) {
     return empty?.call(this);
@@ -442,6 +584,7 @@ class _$Empty implements Empty {
   TResult maybeMap<TResult extends Object?>(
     TResult Function(_EncryptionState value)? $default, {
     TResult Function(Loading value)? loading,
+    TResult Function(Generating value)? generating,
     TResult Function(Empty value)? empty,
     required TResult orElse(),
   }) {
