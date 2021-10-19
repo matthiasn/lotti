@@ -83,13 +83,31 @@ class EncryptionQrWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              loading: () => const Text('loading key'),
-              generating: () => const Text('generating key'),
-              empty: () => const Text('not initialized'),
+              loading: () => const StatusTextWidget('loading key'),
+              generating: () => const StatusTextWidget('generating key'),
+              empty: () => const StatusTextWidget('not initialized'),
             ),
           ],
         ),
       );
     });
+  }
+}
+
+class StatusTextWidget extends StatelessWidget {
+  final String label;
+  const StatusTextWidget(
+    this.label, {
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontFamily: 'ShareTechMono',
+      ),
+    );
   }
 }
