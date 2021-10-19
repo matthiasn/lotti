@@ -31,4 +31,4 @@ jobs:
       - name: Setup build dependencies
         run: make deps-ubuntu
       - name: Test & Build
-        run: make
+        run: make install
