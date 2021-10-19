@@ -2,7 +2,10 @@
   (:require [cljs.test :refer [deftest testing is]]
             [meins.electron.main.import :as emi]
             [meins.common.specs]
+            [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as s]))
+
+(def expected-text (str (h/format-time 1634044303702) " Audio"))
 
 (def test-entry
   {:mentions   #{}
@@ -10,8 +13,8 @@
    :utc-offset 120
    :timestamp  1634044303702
    :audio_file "2021-10-12_15-11-43-702.aac"
-   :md         "2021-10-12 15:11 Audio"
-   :text       "2021-10-12 15:11 Audio"
+   :md         expected-text
+   :text       expected-text
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
    :longitude  13
