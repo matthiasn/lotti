@@ -21,23 +21,6 @@ class EncryptionQrWidget extends StatelessWidget {
                     vertical: 16.0,
                     horizontal: 32.0,
                   ),
-                  backgroundColor: Colors.white),
-              onPressed: () => context.read<EncryptionCubit>().loadSharedKey(),
-              child: const Text(
-                'Load Shared Key',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Padding(padding: EdgeInsets.all(8.0)),
-            TextButton(
-              style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16.0,
-                    horizontal: 32.0,
-                  ),
                   backgroundColor: Colors.red),
               onPressed: () =>
                   context.read<EncryptionCubit>().generateSharedKey(),

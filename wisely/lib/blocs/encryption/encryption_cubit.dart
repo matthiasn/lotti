@@ -10,7 +10,9 @@ class EncryptionCubit extends Cubit<EncryptionState> {
   final _storage = const FlutterSecureStorage();
   final String sharedSecretKey = 'sharedSecret';
 
-  EncryptionCubit() : super(EncryptionState.empty());
+  EncryptionCubit() : super(Empty()) {
+    loadSharedKey();
+  }
 
   Future<void> loadSharedKey() async {
     emit(Loading());
