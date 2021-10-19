@@ -56,14 +56,7 @@ class EncryptionQrWidget extends StatelessWidget {
                       size: 200.0,
                     ),
                   ),
-                  const Padding(padding: EdgeInsets.all(8.0)),
-                  Text(
-                    sharedKey,
-                    style: const TextStyle(
-                      fontFamily: 'ShareTechMono',
-                    ),
-                  ),
-                  const Padding(padding: EdgeInsets.all(8.0)),
+                  StatusTextWidget(sharedKey),
                   TextButton(
                     style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
@@ -103,10 +96,13 @@ class StatusTextWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontFamily: 'ShareTechMono',
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: 'ShareTechMono',
+        ),
       ),
     );
   }

@@ -2,16 +2,20 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:wisely/blocs/encryption/encryption_cubit.dart';
+import 'package:wisely/widgets/encryption/qr_widget.dart';
 
 class EncryptionQrReaderWidget extends StatefulWidget {
+  const EncryptionQrReaderWidget({Key? key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _EncryptionQrReaderWidgetState();
 }
 
 class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  Barcode? result;
   late QRViewController controller;
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -28,37 +32,56 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    void _onQRViewCreated(QRViewController controller) {
-      this.controller = controller;
-      controller.scannedDataStream.listen((scanData) {
-        setState(() {
-          result = scanData;
+    return BlocBuilder<EncryptionCubit, EncryptionState>(
+        builder: (context, EncryptionState state) {
+      void _onQRViewCreated(QRViewController controller) {
+        this.controller = controller;
+        controller.scannedDataStream.listen((scanData) {
+          context.read<EncryptionCubit>().setSharedKey(scanData.code);
         });
-      });
-    }
+      }
 
-    return SizedBox(
-      height: 300.0,
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            flex: 5,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-            ),
+      return Center(
+        child: state.when(
+          (String? sharedKey) => Column(
+            children: [
+              StatusTextWidget(sharedKey!),
+              TextButton(
+                style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 32.0,
+                    ),
+                    backgroundColor: Colors.red),
+                onPressed: () =>
+                    context.read<EncryptionCubit>().deleteSharedKey(),
+                child: const Text(
+                  'Delete Shared Key',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: (result != null)
-                  ? Text('Data: ${result?.code}')
-                  : Text('Scan a code'),
-            ),
-          )
-        ],
-      ),
-    );
+          loading: () => const StatusTextWidget('loading key'),
+          generating: () => const StatusTextWidget('generating key'),
+          empty: () => Column(
+            children: [
+              SizedBox(
+                height: 300.0,
+                child: QRView(
+                  key: qrKey,
+                  onQRViewCreated: _onQRViewCreated,
+                ),
+              ),
+              const StatusTextWidget('Scanning Shared Secret'),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   @override
