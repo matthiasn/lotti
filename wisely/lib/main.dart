@@ -6,6 +6,7 @@ import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/audio_player_cubit.dart';
 import 'package:wisely/blocs/audio_recorder_cubit.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
+import 'package:wisely/blocs/encryption/encryption_cubit.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health.dart';
@@ -33,6 +34,9 @@ class WiselyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        BlocProvider<EncryptionCubit>(
+          create: (BuildContext context) => EncryptionCubit(),
+        ),
         BlocProvider<VectorClockCubit>(
           create: (BuildContext context) => VectorClockCubit(),
         ),

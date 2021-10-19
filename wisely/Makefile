@@ -13,7 +13,7 @@ check-null-safety:
 
 .PHONY: build_runner
 build_runner:
-	dart run build_runner build
+	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: ipa
 ipa:
