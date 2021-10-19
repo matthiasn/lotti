@@ -17,5 +17,9 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-      - run: flutter pub get
-      - run: flutter test
+      - name: Get Flutter dependencies
+        working-directory: ./wisely
+        run: flutter pub get
+      - name: Run Flutter tests
+        working-directory: ./wisely
+        run: flutter test
