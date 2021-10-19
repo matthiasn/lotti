@@ -33,6 +33,13 @@ class EncryptionCubit extends Cubit<EncryptionState> {
     loadSharedKey();
   }
 
+  Future<void> setSharedKey(String newKey) async {
+    emit(Generating());
+    await Future.delayed(const Duration(seconds: 1));
+    await _storage.write(key: sharedSecretKey, value: newKey);
+    loadSharedKey();
+  }
+
   Future<void> deleteSharedKey() async {
     await _storage.delete(key: sharedSecretKey);
     emit(Empty());
