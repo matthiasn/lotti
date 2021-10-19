@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/counter_bloc.dart';
@@ -7,8 +5,7 @@ import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/sync/imap.dart';
-import 'package:wisely/sync/qr_display_widget.dart';
-import 'package:wisely/sync/qr_scanner_widget.dart';
+import 'package:wisely/widgets/encryption/qr_widget.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -28,7 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CounterBloc, int>(builder: (context, count) {
+    return BlocBuilder<CounterBloc, int>(builder: (context, int count) {
       return Center(
         child: SingleChildScrollView(
           child: Column(
@@ -55,8 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Text('$count', style: Theme.of(context).textTheme.headline6)
                 ],
               ),
-              QrDisplayWidget(),
-              if (Platform.isIOS) QrScannerWidget(),
+              const EncryptionQrWidget(),
             ],
           ),
         ),
