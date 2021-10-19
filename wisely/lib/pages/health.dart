@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:wisely/health/health_service.dart';
 
 class HealthPage extends StatefulWidget {
@@ -11,11 +12,23 @@ class HealthPage extends StatefulWidget {
 
 class _HealthPageState extends State<HealthPage> {
   late HealthService healthService;
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
+  DateTime _endDate = DateTime.now().add(const Duration(days: 1));
 
   @override
   void initState() {
     super.initState();
     healthService = HealthService();
+  }
+
+  void _onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
+    setState(() {
+      if (args.value is PickerDateRange) {
+        _startDate = args.value.startDate;
+        _endDate = (args.value.endDate ?? args.value.startDate)
+            .add(const Duration(days: 1));
+      }
+    });
   }
 
   @override
@@ -25,12 +38,22 @@ class _HealthPageState extends State<HealthPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            SfDateRangePicker(
+              backgroundColor: Colors.white,
+              onSelectionChanged: _onSelectionChanged,
+              enableMultiView: true,
+              selectionMode: DateRangePickerSelectionMode.range,
+              initialSelectedRange: PickerDateRange(
+                _startDate,
+                _endDate,
+              ),
+            ),
             OutlinedButton(
               onPressed: () => HealthService().fetchData(
                 types: healthService.sleepTypes,
                 filename: 'sleep.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Sleep Data',
@@ -44,8 +67,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.heartRateTypes,
                 filename: 'heart.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Heart Rate Data',
@@ -59,8 +82,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.bpTypes,
                 filename: 'bp.json',
-                startDate: DateTime(2021, 01, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Blood Pressure Data',
@@ -74,8 +97,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.bodyMeasurementTypes,
                 filename: 'body.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Body Measurement Data',
@@ -89,8 +112,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.energyTypes,
                 filename: 'energy.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Energy Burned Data',
@@ -104,8 +127,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.stepsTypes,
                 filename: 'steps.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Steps',
@@ -119,8 +142,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.movementTypes,
                 filename: 'movement.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Stairs, Distance',
@@ -134,8 +157,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.workoutTypes,
                 filename: 'workouts.json',
-                startDate: DateTime(2021, 07, 01, 0, 0, 0),
-                endDate: DateTime(2025, 01, 01, 23, 59, 59),
+                startDate: _startDate,
+                endDate: _endDate,
               ),
               child: const Text(
                 'Import Workout Data',
