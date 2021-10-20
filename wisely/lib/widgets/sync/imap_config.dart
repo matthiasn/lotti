@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -20,6 +22,18 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS || Platform.isAndroid) {
+      return BlocBuilder<EncryptionCubit, EncryptionState>(
+          builder: (context, EncryptionState state) {
+        return Center(
+          child: state.maybeWhen(
+              (sharedKey, imapConfig) =>
+                  StatusTextWidget(imapConfig.toString()),
+              orElse: () {}),
+        );
+      });
+    }
+
     return BlocBuilder<EncryptionCubit, EncryptionState>(
         builder: (context, EncryptionState state) {
       return SizedBox(

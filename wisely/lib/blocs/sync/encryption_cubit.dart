@@ -47,9 +47,17 @@ class EncryptionCubit extends Cubit<EncryptionState> {
     loadSyncConfig();
   }
 
-  Future<void> setSharedKey(String newKey) async {
+  Future<void> setSyncConfig(String configJson) async {
     emit(Generating());
-    await _storage.write(key: sharedSecretKey, value: newKey);
+    SyncConfig syncConfig = SyncConfig.fromJson(json.decode(configJson));
+    await _storage.write(
+      key: sharedSecretKey,
+      value: syncConfig.sharedSecret,
+    );
+    await _storage.write(
+      key: imapConfigKey,
+      value: json.encode(syncConfig.imapConfig.toJson()),
+    );
     loadSyncConfig();
   }
 

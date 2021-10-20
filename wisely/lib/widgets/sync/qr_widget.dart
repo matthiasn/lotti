@@ -15,7 +15,7 @@ class EncryptionQrWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS || Platform.isAndroid) {
-      return EncryptionQrReaderWidget();
+      return const EncryptionQrReaderWidget();
     }
     return BlocBuilder<EncryptionCubit, EncryptionState>(
         builder: (context, EncryptionState state) {
