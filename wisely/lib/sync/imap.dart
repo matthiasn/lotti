@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/mail/mail_client.dart';
 import 'package:enough_mail/mime_message.dart';
+import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/sync/secure_storage.dart';
 
 import 'encryption_salsa.dart';
@@ -10,10 +15,15 @@ import 'encryption_salsa.dart';
 class ImapSyncClient {
   late ImapConfig _imapConfig;
   late ImapClient client;
+  late AudioNotesCubit _audioNotesCubit;
 
-  ImapSyncClient(ImapConfig imapConfig) {
+  ImapSyncClient(
+    ImapConfig imapConfig,
+    AudioNotesCubit audioNotesCubit,
+  ) {
     client = ImapClient(isLogEnabled: true);
     _imapConfig = imapConfig;
+    _audioNotesCubit = audioNotesCubit;
     init();
     listen();
   }
@@ -92,8 +102,12 @@ class ImapSyncClient {
     print('printDecryptedMessage: $encryptedMessage');
     String? b64Secret = await SecureStorage.readValue('sharedSecret');
     if (b64Secret != null) {
-      String json = decryptSalsa(encryptedMessage, b64Secret);
-      print('Decrypted from IMAP: $json');
+      String decryptedJson = decryptSalsa(encryptedMessage, b64Secret);
+      print('Decrypted from IMAP: $decryptedJson');
+      AudioNote audioNote = AudioNote.fromJson(json.decode(decryptedJson));
+      if (Platform.isMacOS) {
+        _audioNotesCubit.save(audioNote);
+      }
     }
   }
 

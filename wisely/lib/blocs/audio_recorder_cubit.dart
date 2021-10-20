@@ -92,7 +92,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       return imapConfig!;
     }, orElse: () {});
     if (imapConfig != null) {
-      imapSyncClient = ImapSyncClient(imapConfig);
+      imapSyncClient = ImapSyncClient(imapConfig, _audioNotesCubit);
     }
   }
 
