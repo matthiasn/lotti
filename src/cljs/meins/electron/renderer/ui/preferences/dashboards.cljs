@@ -5,14 +5,12 @@
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.utils :as eu]
             [meins.electron.renderer.ui.journal :as j]
+            [meins.common.utils.misc :as m]
             [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
             [re-frame.core :refer [subscribe]]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
-
-(defn lower-case [str]
-  (if str (s/lower-case str) ""))
 
 (defn gql-query [pvt search-text]
   (let [queries [[:dashboards_cfg
@@ -52,7 +50,7 @@
 (defn dashboards [local]
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
-                   (let [text (lower-case (h/target-val ev))]
+                   (let [text (m/lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]

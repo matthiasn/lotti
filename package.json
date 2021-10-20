@@ -1,6 +1,6 @@
 {
   "name": "meins",
-  "version": "0.6.323",
+  "version": "0.6.340",
   "description": "meins - a personal information manager",
   "main": "prod/main-shadow/main.js",
   "scripts": {
@@ -40,12 +40,13 @@
     "electron-updater": "4.2.0",
     "emoji-flags": "1.2.0",
     "find-process": "1.4.3",
+    "glob": "^7.2.0",
     "globalize": "1.4.2",
     "iana-tz-data": "2019.1.0",
     "imap": "0.8.19",
     "immutable": "3.8.2",
     "install": "0.13.0",
-    "keytar": "5.0.0",
+    "keytar": "7.7.0",
     "lato-font": "3.0.0",
     "leaflet": "1.6.0",
     "lodash": "4.17.15",
@@ -77,19 +78,21 @@
     "tcp-port-used": "1.0.1",
     "tinycolor": "0.0.1",
     "turndown": "5.0.3",
-    "tweetnacl": "1.0.2",
-    "tweetnacl-util": "0.15.0",
+    "tweetnacl": "1.0.3",
+    "tweetnacl-util": "0.15.1",
     "typeface-montserrat": "0.0.75",
     "utf-8-validate": "5.0.2",
-    "wavesurfer.js": "3.3.1"
+    "wavesurfer.js": "5.2.0"
   },
   "devDependencies": {
     "browser-resolve": "1.11.3",
-    "electron": "7.1.10",
-    "electron-builder": "22.3.2",
-    "electron-notarize": "0.2.1",
+    "electron": "7.3.3",
+    "electron-builder": "22.10.5",
+    "electron-notarize": "1.1.1",
+    "electron-rebuild": "^3.2.3",
     "module-deps": "6.2.2",
     "resolve": "1.14.2",
+    "shadow-cljs": "2.10.13",
     "webpack": "4.41.2"
   }
 }

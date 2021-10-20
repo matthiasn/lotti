@@ -7,7 +7,6 @@
             [clj-uuid :as uuid]
             [clojure.pprint :as pp]
             [clojure.set :as set]
-            [clojure.string :as s]
             [matthiasn.systems-toolbox.component :as st]
             [meins.common.utils.misc :as um]
             [meins.jvm.fulltext-search :as ft]
@@ -77,20 +76,20 @@
           q-country (:country q)
           q-cc-match? (= q-country (-> entry :geoname :country-code))
 
-          q-tags (set (mapv s/lower-case (:tags q)))
-          q-not-tags (set (mapv s/lower-case (:not-tags q)))
-          q-mentions (set (mapv s/lower-case (:mentions q)))
+          q-tags (set (mapv um/lower-case (:tags q)))
+          q-not-tags (set (mapv um/lower-case (:not-tags q)))
+          q-mentions (set (mapv um/lower-case (:mentions q)))
 
-          tags (set/union (set (mapv s/lower-case (:tags entry)))
-                          (set (mapv s/lower-case (:perm_tags entry))))
+          tags (set/union (set (mapv um/lower-case (:tags entry)))
+                          (set (mapv um/lower-case (:perm_tags entry))))
 
           entry-comments (mapv #(get-entry state %) (:comments entry))
           entry-comments-tags (apply set/union (mapv :tags entry-comments))
-          tags (set (mapv s/lower-case (set/union tags entry-comments-tags)))
+          tags (set (mapv um/lower-case (set/union tags entry-comments-tags)))
 
-          mentions (set (mapv s/lower-case (:mentions entry)))
+          mentions (set (mapv um/lower-case (:mentions entry)))
           entry-comments-mentions (apply set/union (mapv :mentions entry-comments))
-          mentions (set (mapv s/lower-case (set/union mentions entry-comments-mentions)))
+          mentions (set (mapv um/lower-case (set/union mentions entry-comments-mentions)))
 
           story-match? (if-let [story (:story q)]
                          (or (= story (:primary_story entry))
@@ -188,11 +187,11 @@
                    (let [q {:src {tag-type tag} :relationship :CONTAINS}
                          edges (uc/find-edges g q)]
                      (set (mapv :dest edges)))))
-        t-matched (mapv (mapper :tag) (mapv s/lower-case (:tags query)))
-        nt-matched (mapv (mapper :tag) (mapv s/lower-case (:not-tags query)))
-        ntp-matched (mapv (mapper :ptag) (mapv s/lower-case (:not-tags query)))
-        pt-matched (mapv (mapper :ptag) (mapv s/lower-case (:tags query)))
-        m-matched (mapv (mapper :mention) (mapv s/lower-case (:mentions query)))
+        t-matched (mapv (mapper :tag) (mapv um/lower-case (:tags query)))
+        nt-matched (mapv (mapper :tag) (mapv um/lower-case (:not-tags query)))
+        ntp-matched (mapv (mapper :ptag) (mapv um/lower-case (:not-tags query)))
+        pt-matched (mapv (mapper :ptag) (mapv um/lower-case (:tags query)))
+        m-matched (mapv (mapper :mention) (mapv um/lower-case (:mentions query)))
         match-sets (filter seq (concat t-matched pt-matched m-matched))
         matched (if (seq match-sets) (apply set/intersection match-sets) #{})
         not-matched (apply set/union (filter seq (concat nt-matched ntp-matched)))]

@@ -13,9 +13,6 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
 
-(defn lower-case [str]
-  (if str (s/lower-case str) ""))
-
 (defn gql-query [pvt search-text]
   (let [queries [[:habits_cfg
                   {:search-text search-text
@@ -56,7 +53,7 @@
 (defn habits [local]
   (let [pvt (subscribe [:show-pvt])
         input-fn (fn [ev]
-                   (let [text (lower-case (h/target-val ev))]
+                   (let [text (m/lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]

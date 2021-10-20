@@ -14,7 +14,7 @@
                  [clucy "0.4.0"]
                  [com.climate/claypoole "1.1.4"]
                  [com.drewnoakes/metadata-extractor "2.12.0"]
-                 [com.taoensso/nippy "2.14.0" :exclusions [com.taoensso/encore]]
+                 [com.taoensso/nippy "2.14.0"]
                  [com.taoensso/timbre "4.10.0" :exclusions [io.aviso/pretty]]
                  [com.walmartlabs/lacinia "0.32.0"]         ; update to 0.35.0 breaks queries
                  [com.walmartlabs/lacinia-pedestal "0.12.0"]

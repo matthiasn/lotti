@@ -9,6 +9,7 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.electron.main.crypto :as kc]
+            [meins.electron.main.import :as ai]
             [meins.electron.main.imap :as imap]
             [meins.electron.main.log]
             [meins.electron.main.menu :as menu]
@@ -39,6 +40,7 @@
                 :entry/update
                 :entry/sync
                 :entry/create
+                :entry/save-initial
                 :geonames/res
                 :crypto/cfg
                 :export/geojson
@@ -69,8 +71,9 @@
                      (st/cmp-map :main/startup)
                      (ipc/cmp-map :main/ipc-cmp)
                      (screen/cmp-map :main/screenshot)
-                     (imap/cmp-map :main/sync)
+                     ;(imap/cmp-map :main/sync)
                      (kc/cmp-map :main/crypto)
+                     (ai/cmp-map :main/audio-import (:audio-path rt/runtime-info))
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
                      (menu/cmp-map :main/menu-cmp)}
@@ -82,6 +85,7 @@
        [:cmd/route {:from :main/menu-cmp
                     :to   #{:main/window-manager
                             :main/startup
+                            :main/audio-import
                             :main/scheduler
                             :main/screenshot
                             :main/updater}}]
@@ -90,7 +94,7 @@
                     :to   #{:main/updater
                             :main/window-manager
                             :main/menu-cmp
-                            :main/sync
+                            ;:main/sync
                             :main/startup}}]
 
        [:cmd/route {:from :main/ipc-cmp
@@ -98,7 +102,7 @@
                             :main/updater
                             :main/crypto
                             :main/screenshot
-                            :main/sync
+                            ;:main/sync
                             :main/scheduler
                             :main/window-manager}}]
 
@@ -107,12 +111,16 @@
 
        [:cmd/route {:from :main/crypto
                     :to   #{:main/window-manager
-                            :main/sync}}]
+                            ;:main/sync
+                            }}]
 
        [:cmd/route {:from :main/screenshot
                     :to   :main/window-manager}]
 
-       [:cmd/route {:from :main/sync
+       [:cmd/route {:from :main/audio-import
+                    :to   :main/window-manager}]
+
+       #_[:cmd/route {:from :main/sync
                     :to   #{:main/window-manager
                             :main/scheduler}}]
 

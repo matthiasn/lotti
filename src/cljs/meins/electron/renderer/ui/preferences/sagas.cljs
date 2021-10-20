@@ -3,6 +3,7 @@
             [clojure.string :as s]
             [meins.electron.renderer.graphql :as gql]
             [meins.electron.renderer.helpers :as h]
+            [meins.common.utils.misc :as m]
             [meins.electron.renderer.ui.journal :as j]
             [meins.electron.renderer.ui.preferences.header :refer [header]]
             [meins.electron.renderer.ui.re-frame.db :refer [emit]]
@@ -10,9 +11,6 @@
             [reagent.core :as r]
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [error info]]))
-
-(defn lower-case [str]
-  (if str (s/lower-case str) ""))
 
 (defn gql-query [pvt search-text]
   (let [queries [[:sagas_cfg
@@ -49,7 +47,7 @@
   (let [pvt (subscribe [:show-pvt])
         sagas (subscribe [:sagas])
         input-fn (fn [ev]
-                   (let [text (lower-case (h/target-val ev))]
+                   (let [text (m/lower-case (h/target-val ev))]
                      (swap! local assoc-in [:search] text)))
         open-new (fn [x]
                    (let [ts (:timestamp x)]

@@ -2,17 +2,20 @@
   (:require [cljs.nodejs :refer [process]]
             [clojure.set :as set]
             [clojure.string :as s]
+            [meins.common.utils.misc :as m]
             [clojure.tools.reader.edn :as edn]
             [electron :refer [app systemPreferences]]
-            [fs :refer [existsSync readFileSync]]
+            [fs :refer [existsSync mkdirSync readFileSync]]
             [path :refer [normalize]]
             [taoensso.timbre :refer [debug error info]]))
 
 (def runtime-info
   (let [cwd (.cwd process)
         rp (.-resourcesPath process)
-        repo-dir (s/includes? (s/lower-case rp) "electron")
+        repo-dir (when rp (s/includes? (m/lower-case rp) "electron"))
         user-data (if repo-dir "/tmp/meins" (.getPath app "userData"))
+        _ (when-not (existsSync user-data)
+            (mkdirSync user-data))
         app-path (if repo-dir cwd (str rp "/app"))
         platform (.-platform process)                       ; e.g. darwin, win32
         download-path (.getPath app "downloads")

@@ -1,6 +1,5 @@
 (ns meins.electron.renderer.ui.entry.cfg.habit
-  (:require [clojure.string :as s]
-            [matthiasn.systems-toolbox.component :as stc]
+  (:require [matthiasn.systems-toolbox.component :as stc]
             [meins.common.utils.misc :as m]
             [meins.electron.renderer.helpers :as h]
             [meins.electron.renderer.ui.entry.cfg.shared :as cs]
@@ -11,7 +10,7 @@
             [reagent.ratom :refer [reaction]]
             [taoensso.timbre :refer [debug error info]]))
 
-(defn a-z [x] (s/lower-case (second x)))
+(defn a-z [x] (m/lower-case (second x)))
 
 (defn quest-details [_]
   (let [backend-cfg (subscribe [:backend-cfg])]

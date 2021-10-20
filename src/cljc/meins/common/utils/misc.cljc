@@ -16,11 +16,14 @@
            (when (pos? min) (str min "m "))
            (when (pos? sec) (str sec "s"))))))
 
+(defn lower-case [str]
+  (if str (s/lower-case str) ""))
+
 (defn pvt-filter
   "Filter for entries considered private."
   [options]
   (fn [entry]
-    (let [tags (set (map s/lower-case (:tags entry)))
+    (let [tags (set (map lower-case (:tags entry)))
           private-tags (:pvt-hashtags options)
           hashtags (:hashtags options)
           only-pvt-tags (set/difference private-tags hashtags)

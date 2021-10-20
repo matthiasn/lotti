@@ -85,7 +85,7 @@
         none #(swap! local assoc-in [:selected-set] #{})]
     (fn sagas-filter-render [local]
       (let [local-deref @local
-            sorted (sort-by #(s/lower-case (or (:saga_name (second %)) "")) @sagas)]
+            sorted (sort-by #(u/lower-case (or (:saga_name (second %)) "")) @sagas)]
         [:div.saga-filter
          [:div.toggle-visible
           {:on-click #(swap! local update-in [:show-filter] not)}

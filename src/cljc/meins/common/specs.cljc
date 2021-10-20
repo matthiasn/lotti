@@ -106,6 +106,7 @@
 ;; the following message types expect a properly formed entry
 (s/def :entry/update-local entry-spec)
 (s/def :entry/update entry-spec)
+(s/def :entry/save-initial entry-spec)
 (s/def :entry/briefing entry-spec)
 (s/def :entry/saved entry-spec)
 (s/def :entry/import entry-spec)

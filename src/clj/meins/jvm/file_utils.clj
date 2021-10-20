@@ -3,13 +3,14 @@
             [clojure.java.io :as io]
             [clojure.pprint :as pp]
             [clojure.string :as s]
+            [meins.common.utils.misc :as m]
             [matthiasn.systems-toolbox.component :as st]
             [me.raynes.fs :as fs]
             [taoensso.timbre :refer [info warn]]))
 
 (def app-path (or (System/getenv "APP_PATH") "."))
 
-(def platform (s/lower-case (System/getProperty "os.name")))
+(def platform (m/lower-case (System/getProperty "os.name")))
 (def tmp-dir (System/getProperty "java.io.tmpdir"))
 (def data-path (or (System/getenv "DATA_PATH")
                    (if (s/includes? platform "windows")

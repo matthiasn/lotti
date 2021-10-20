@@ -1,0 +1,6 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+#include "Base.xcconfig"
+
+APP_NAME=$(inherited)Dev
+PRODUCT_BUNDLE_IDENTIFIER=$(inherited)Dev

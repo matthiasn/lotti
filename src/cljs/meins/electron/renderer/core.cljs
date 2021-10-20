@@ -21,7 +21,7 @@
 
 (def sente-cfg
   (merge sente-base-cfg
-         {:relay-types #{:entry/update :entry/trash :entry/sync
+         {:relay-types #{:entry/update :entry/save-initial :entry/trash :entry/sync
                          :import/photos :import/spotify :import/flight
                          :backend-cfg/save :import/git :metrics/get
                          :photos/gen-cache :export/geojson

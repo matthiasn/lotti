@@ -21,9 +21,6 @@ endif
 package: install package-only
 
 deps-mac:
-	npm install -g electron-rebuild
-	npm install -g electron-builder
-	npm install -g shadow-cljs
 	mkdir ./bin
 
 deps-win:
@@ -34,11 +31,8 @@ deps-win:
 	nvm install 12.8.1
 	nvm use 12.8.1
 	npm set progress=false
-	npm install -g shadow-cljs
 	npm install -g windows-build-tools@4.0.0
 	npm install -g node-gyp
-	npm install -g electron-builder
-	npm install -g electron-rebuild
 
 deps-ubuntu:
 	sudo apt-get update
@@ -51,13 +45,10 @@ deps-ubuntu:
 	sudo apt-get install libxkbfile-dev
 	sudo apt-get install libgconf-2-4
 	npm install -g electron
-	npm install -g electron-builder
 	npm install -g electron-cli
 	npm install -g electron-build-env
-	npm install -g electron-rebuild
 	npm install -g node-gyp
 	npm install -g webpack
-	npm install -g shadow-cljs
 	mkdir ./bin
 
 clean:
@@ -65,17 +56,16 @@ clean:
 	@rm -rf ./bin
 	@rm -rf ./dist
 	@lein clean
-	@rm -f ./package-lock.json
 
-deps: clean
+deps:
 	@echo Fetching Leiningen dependencies...
 	@lein deps
 
-npm-deps: clean
+npm-deps:
 	@echo Fetching NPM dependencies...
 	@npm install
 	@npm install -g electron-builder
-	@electron-rebuild -v 7.1.3 -w keytar
+	@npx electron-rebuild -v 13.1.7 -w keytar
 
 test: deps
 	@echo Running Clojure tests...
@@ -89,7 +79,7 @@ nsorg:
 
 cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
-	@shadow-cljs compile shared-tests
+	@npx shadow-cljs compile shared-tests
 	@node out/shared-tests.js
 
 sass:
@@ -98,14 +88,14 @@ sass:
 
 cljs: deps npm-deps
 	@echo Building ClojureScript for main electron process...
-	@shadow-cljs release main
+	@npx shadow-cljs release main
 	@echo Building ClojureScript for electron renderer process...
-	@shadow-cljs release renderer
+	@npx shadow-cljs release renderer
 
 figwheel:
 	@lein cljs-figwheel
 
-electron: clean deps test cljs-shared-tests sass cljs
+electron: deps test cljs-shared-tests sass cljs
 
 directories:
 	@echo Preparing target directories...
@@ -113,7 +103,7 @@ directories:
 	@chmod -R +w bin/
 	@rm -rf ./dist
 
-jlink: clean test directories
+jlink: test directories
 	@echo Assembling UberJAR...
 	@lein jlink assemble
 
@@ -126,15 +116,15 @@ symlinks:
 	mv bin/target/jlink/ bin/
 	chmod -R ugo+w bin/jlink/legal/
 
-install: jlink electron symlinks
+install: jlink symlinks electron
 
 package-only:
 	@echo Building executable...
-	@electron-builder $(OSFLAG)
+	@npx electron-builder $(OSFLAG)
 
 publish-github:
 	@echo Publishing to GitHub Releases - requires GH_TOKEN in ENV...
-	@electron-builder -c electron-builder.yml --publish always $(OSFLAG)
+	@npx electron-builder -c electron-builder.yml --publish always $(OSFLAG)
 
 lint-classpath:
 	clj-kondo --lint "$$(shadow-cljs classpath)" || true
@@ -142,4 +132,4 @@ lint-classpath:
 lint:
 	clj-kondo --lint src
 
-release: install publish-github
+release: clean install publish-github
