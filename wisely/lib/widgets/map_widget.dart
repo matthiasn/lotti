@@ -60,7 +60,7 @@ class _MapWidgetState extends State<MapWidget> {
                   urlTemplate:
                       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: ['a', 'b', 'c'],
-                  tileProvider: CachedTileProvider(),
+                  tileProvider: const CachedTileProvider(),
                 ),
                 MarkerLayerOptions(
                   markers: [
@@ -68,8 +68,9 @@ class _MapWidgetState extends State<MapWidget> {
                       width: 64.0,
                       height: 64.0,
                       point: loc,
-                      builder: (ctx) => Container(
-                        child: const Image(
+                      builder: (ctx) => const Opacity(
+                        opacity: 0.8,
+                        child: Image(
                           image: AssetImage(
                               'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
                         ),

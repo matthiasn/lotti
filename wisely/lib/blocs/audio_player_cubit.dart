@@ -89,6 +89,10 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   void setAudioNote(AudioNote audioNote) async {
     String localPath = await AudioUtils.getFullAudioPath(audioNote);
+    print(localPath);
+
+    emit(AudioPlayerState.setAudioNote(state, audioNote, Duration(minutes: 0)));
+
     Duration? totalDuration = await _audioPlayer.setFilePath(localPath);
     if (totalDuration != null) {
       emit(AudioPlayerState.setAudioNote(state, audioNote, totalDuration));

@@ -17,9 +17,10 @@ final _privateConstructorUsedError = UnsupportedError(
 class _$EncryptionStateTearOff {
   const _$EncryptionStateTearOff();
 
-  _EncryptionState call({String? sharedKey}) {
+  _EncryptionState call({String? sharedKey, ImapConfig? imapConfig}) {
     return _EncryptionState(
       sharedKey: sharedKey,
+      imapConfig: imapConfig,
     );
   }
 
@@ -43,7 +44,7 @@ const $EncryptionState = _$EncryptionStateTearOff();
 mixin _$EncryptionState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String? sharedKey) $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig) $default, {
     required TResult Function() loading,
     required TResult Function() generating,
     required TResult Function() empty,
@@ -51,7 +52,7 @@ mixin _$EncryptionState {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -59,7 +60,7 @@ mixin _$EncryptionState {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -115,7 +116,9 @@ abstract class _$EncryptionStateCopyWith<$Res> {
   factory _$EncryptionStateCopyWith(
           _EncryptionState value, $Res Function(_EncryptionState) then) =
       __$EncryptionStateCopyWithImpl<$Res>;
-  $Res call({String? sharedKey});
+  $Res call({String? sharedKey, ImapConfig? imapConfig});
+
+  $ImapConfigCopyWith<$Res>? get imapConfig;
 }
 
 /// @nodoc
@@ -132,27 +135,45 @@ class __$EncryptionStateCopyWithImpl<$Res>
   @override
   $Res call({
     Object? sharedKey = freezed,
+    Object? imapConfig = freezed,
   }) {
     return _then(_EncryptionState(
       sharedKey: sharedKey == freezed
           ? _value.sharedKey
           : sharedKey // ignore: cast_nullable_to_non_nullable
               as String?,
+      imapConfig: imapConfig == freezed
+          ? _value.imapConfig
+          : imapConfig // ignore: cast_nullable_to_non_nullable
+              as ImapConfig?,
     ));
+  }
+
+  @override
+  $ImapConfigCopyWith<$Res>? get imapConfig {
+    if (_value.imapConfig == null) {
+      return null;
+    }
+
+    return $ImapConfigCopyWith<$Res>(_value.imapConfig!, (value) {
+      return _then(_value.copyWith(imapConfig: value));
+    });
   }
 }
 
 /// @nodoc
 
 class _$_EncryptionState implements _EncryptionState {
-  _$_EncryptionState({this.sharedKey});
+  _$_EncryptionState({this.sharedKey, this.imapConfig});
 
   @override
   final String? sharedKey;
+  @override
+  final ImapConfig? imapConfig;
 
   @override
   String toString() {
-    return 'EncryptionState(sharedKey: $sharedKey)';
+    return 'EncryptionState(sharedKey: $sharedKey, imapConfig: $imapConfig)';
   }
 
   @override
@@ -161,11 +182,13 @@ class _$_EncryptionState implements _EncryptionState {
         (other.runtimeType == runtimeType &&
             other is _EncryptionState &&
             (identical(other.sharedKey, sharedKey) ||
-                other.sharedKey == sharedKey));
+                other.sharedKey == sharedKey) &&
+            (identical(other.imapConfig, imapConfig) ||
+                other.imapConfig == imapConfig));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, sharedKey);
+  int get hashCode => Object.hash(runtimeType, sharedKey, imapConfig);
 
   @JsonKey(ignore: true)
   @override
@@ -175,36 +198,36 @@ class _$_EncryptionState implements _EncryptionState {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String? sharedKey) $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig) $default, {
     required TResult Function() loading,
     required TResult Function() generating,
     required TResult Function() empty,
   }) {
-    return $default(sharedKey);
+    return $default(sharedKey, imapConfig);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
   }) {
-    return $default?.call(sharedKey);
+    return $default?.call(sharedKey, imapConfig);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
     required TResult orElse(),
   }) {
     if ($default != null) {
-      return $default(sharedKey);
+      return $default(sharedKey, imapConfig);
     }
     return orElse();
   }
@@ -248,9 +271,11 @@ class _$_EncryptionState implements _EncryptionState {
 }
 
 abstract class _EncryptionState implements EncryptionState {
-  factory _EncryptionState({String? sharedKey}) = _$_EncryptionState;
+  factory _EncryptionState({String? sharedKey, ImapConfig? imapConfig}) =
+      _$_EncryptionState;
 
   String? get sharedKey;
+  ImapConfig? get imapConfig;
   @JsonKey(ignore: true)
   _$EncryptionStateCopyWith<_EncryptionState> get copyWith =>
       throw _privateConstructorUsedError;
@@ -294,7 +319,7 @@ class _$Loading implements Loading {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String? sharedKey) $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig) $default, {
     required TResult Function() loading,
     required TResult Function() generating,
     required TResult Function() empty,
@@ -305,7 +330,7 @@ class _$Loading implements Loading {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -316,7 +341,7 @@ class _$Loading implements Loading {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -409,7 +434,7 @@ class _$Generating implements Generating {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String? sharedKey) $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig) $default, {
     required TResult Function() loading,
     required TResult Function() generating,
     required TResult Function() empty,
@@ -420,7 +445,7 @@ class _$Generating implements Generating {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -431,7 +456,7 @@ class _$Generating implements Generating {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -523,7 +548,7 @@ class _$Empty implements Empty {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String? sharedKey) $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig) $default, {
     required TResult Function() loading,
     required TResult Function() generating,
     required TResult Function() empty,
@@ -534,7 +559,7 @@ class _$Empty implements Empty {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,
@@ -545,7 +570,7 @@ class _$Empty implements Empty {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String? sharedKey)? $default, {
+    TResult Function(String? sharedKey, ImapConfig? imapConfig)? $default, {
     TResult Function()? loading,
     TResult Function()? generating,
     TResult Function()? empty,

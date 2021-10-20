@@ -4,8 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:wisely/blocs/encryption/encryption_cubit.dart';
-import 'package:wisely/widgets/encryption/qr_widget.dart';
+import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/widgets/sync/qr_widget.dart';
 
 class EncryptionQrReaderWidget extends StatefulWidget {
   const EncryptionQrReaderWidget({Key? key}) : super(key: key);
@@ -18,8 +19,6 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   late QRViewController controller;
 
-  // In order to get hot reload to work we need to pause the camera if the platform
-  // is android, or resume the camera if the platform is iOS.
   @override
   void reassemble() {
     super.reassemble();
@@ -37,13 +36,13 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
       void _onQRViewCreated(QRViewController controller) {
         this.controller = controller;
         controller.scannedDataStream.listen((scanData) {
-          context.read<EncryptionCubit>().setSharedKey(scanData.code);
+          context.read<EncryptionCubit>().setSyncConfig(scanData.code);
         });
       }
 
       return Center(
         child: state.when(
-          (String? sharedKey) => Column(
+          (String? sharedKey, ImapConfig? imapConfig) => Column(
             children: [
               StatusTextWidget(sharedKey!),
               TextButton(

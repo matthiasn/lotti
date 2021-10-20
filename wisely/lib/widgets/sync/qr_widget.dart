@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:wisely/blocs/encryption/encryption_cubit.dart';
-import 'package:wisely/widgets/encryption/qr_reader_widget.dart';
+import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/widgets/sync/qr_reader_widget.dart';
 
 class EncryptionQrWidget extends StatelessWidget {
   const EncryptionQrWidget({Key? key}) : super(key: key);
@@ -13,7 +15,7 @@ class EncryptionQrWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS || Platform.isAndroid) {
-      return EncryptionQrReaderWidget();
+      return const EncryptionQrReaderWidget();
     }
     return BlocBuilder<EncryptionCubit, EncryptionState>(
         builder: (context, EncryptionState state) {
@@ -40,42 +42,50 @@ class EncryptionQrWidget extends StatelessWidget {
             ),
             const Padding(padding: EdgeInsets.all(8.0)),
             state.when(
-              (String? sharedKey) => Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8.0),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(8.0),
-                      ),
-                    ),
-                    child: QrImage(
-                      data: sharedKey!,
-                      version: QrVersions.auto,
-                      size: 200.0,
-                    ),
-                  ),
-                  StatusTextWidget(sharedKey),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16.0,
-                          horizontal: 32.0,
+              (String? sharedKey, ImapConfig? imapConfig) {
+                if (sharedKey != null && imapConfig != null) {
+                  SyncConfig syncConfig = SyncConfig(
+                      imapConfig: imapConfig, sharedSecret: sharedKey);
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8.0),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(8.0),
+                          ),
                         ),
-                        backgroundColor: Colors.red),
-                    onPressed: () =>
-                        context.read<EncryptionCubit>().deleteSharedKey(),
-                    child: const Text(
-                      'Delete Shared Key',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        child: QrImage(
+                          data: json.encode(syncConfig),
+                          version: QrVersions.auto,
+                          size: 280.0,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                      StatusTextWidget(sharedKey),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16.0,
+                              horizontal: 32.0,
+                            ),
+                            backgroundColor: Colors.red),
+                        onPressed: () =>
+                            context.read<EncryptionCubit>().deleteSharedKey(),
+                        child: const Text(
+                          'Delete Shared Key',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const StatusTextWidget('incomplete config');
+                }
+              },
               loading: () => const StatusTextWidget('loading key'),
               generating: () => const StatusTextWidget('generating key'),
               empty: () => const StatusTextWidget('not initialized'),
