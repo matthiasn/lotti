@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/widgets/sync/imap_config.dart';
 import 'package:wisely/widgets/sync/qr_widget.dart';
 
@@ -19,17 +17,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CounterBloc, int>(builder: (context, int count) {
-      return SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: const <Widget>[
-            EmailConfigForm(),
-            EncryptionQrWidget(),
-          ],
-        ),
-      );
-    });
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const <Widget>[
+          EmailConfigForm(),
+          EncryptionQrWidget(),
+        ],
+      ),
+    );
   }
 }
