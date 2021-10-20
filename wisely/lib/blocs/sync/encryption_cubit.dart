@@ -16,16 +16,26 @@ class EncryptionCubit extends Cubit<EncryptionState> {
   final String imapConfigKey = 'imapConfig';
 
   EncryptionCubit() : super(Empty()) {
-    loadSharedKey();
+    loadSyncConfig();
   }
 
-  Future<void> loadSharedKey() async {
+  Future<void> loadSyncConfig() async {
     emit(Loading());
     String? sharedKey = await _storage.read(key: sharedSecretKey);
+    String? imapConfigJson = await _storage.read(key: imapConfigKey);
+    ImapConfig? imapConfig;
+
+    if (imapConfigJson != null) {
+      imapConfig = ImapConfig.fromJson(json.decode(imapConfigJson));
+    }
+
     if (sharedKey == null) {
       emit(Empty());
     } else {
-      emit(EncryptionState(sharedKey: sharedKey));
+      emit(EncryptionState(
+        sharedKey: sharedKey,
+        imapConfig: imapConfig,
+      ));
     }
   }
 
@@ -33,30 +43,27 @@ class EncryptionCubit extends Cubit<EncryptionState> {
     emit(Generating());
     final Key key = Key.fromSecureRandom(32);
     String sharedKey = key.base64;
-    await Future.delayed(const Duration(seconds: 1));
     await _storage.write(key: sharedSecretKey, value: sharedKey);
-    loadSharedKey();
+    loadSyncConfig();
   }
 
   Future<void> setSharedKey(String newKey) async {
     emit(Generating());
-    await Future.delayed(const Duration(seconds: 1));
     await _storage.write(key: sharedSecretKey, value: newKey);
-    loadSharedKey();
+    loadSyncConfig();
   }
 
   Future<void> deleteSharedKey() async {
     await _storage.delete(key: sharedSecretKey);
     print('deleted key');
-    loadSharedKey();
+    loadSyncConfig();
   }
 
   Future<void> setImapConfig(ImapConfig imapConfig) async {
-    print('EncryptionCubit setImapConfig $imapConfig');
     String json = jsonEncode(imapConfig);
-    print('EncryptionCubit setImapConfig JSON $json');
     await _storage.write(key: imapConfigKey, value: json);
     String? fromStore = await _storage.read(key: imapConfigKey);
     print('EncryptionCubit setImapConfig JSON from store $fromStore');
+    loadSyncConfig();
   }
 }

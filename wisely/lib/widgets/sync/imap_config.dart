@@ -4,6 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/theme.dart';
+import 'package:wisely/widgets/sync/qr_widget.dart';
 
 class EmailConfigForm extends StatefulWidget {
   const EmailConfigForm({Key? key}) : super(key: key);
@@ -89,6 +90,12 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         ),
                       ),
                     ),
+                  ),
+                  Center(
+                    child: state.maybeWhen(
+                        (sharedKey, imapConfig) =>
+                            StatusTextWidget(imapConfig.toString()),
+                        orElse: () {}),
                   ),
                 ],
               ),
