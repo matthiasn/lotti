@@ -76,6 +76,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                           port: int.parse(formData['imap_port']),
                         );
                         print(cfg);
+                        print(cfg.toJson());
                       }
                     },
                     child: Text(

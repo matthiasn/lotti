@@ -13,6 +13,10 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more informations: https://github.com/rrousselGit/freezed#custom-getters-and-methods');
 
+ImapConfig _$ImapConfigFromJson(Map<String, dynamic> json) {
+  return _ImapConfig.fromJson(json);
+}
+
 /// @nodoc
 class _$ImapConfigTearOff {
   const _$ImapConfigTearOff();
@@ -29,6 +33,10 @@ class _$ImapConfigTearOff {
       port: port,
     );
   }
+
+  ImapConfig fromJson(Map<String, Object?> json) {
+    return ImapConfig.fromJson(json);
+  }
 }
 
 /// @nodoc
@@ -41,6 +49,7 @@ mixin _$ImapConfig {
   String get password => throw _privateConstructorUsedError;
   int get port => throw _privateConstructorUsedError;
 
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $ImapConfigCopyWith<ImapConfig> get copyWith =>
       throw _privateConstructorUsedError;
@@ -138,13 +147,16 @@ class __$ImapConfigCopyWithImpl<$Res> extends _$ImapConfigCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
+@JsonSerializable()
 class _$_ImapConfig implements _ImapConfig {
   _$_ImapConfig(
       {required this.host,
       required this.userName,
       required this.password,
       required this.port});
+
+  factory _$_ImapConfig.fromJson(Map<String, dynamic> json) =>
+      _$$_ImapConfigFromJson(json);
 
   @override
   final String host;
@@ -180,6 +192,11 @@ class _$_ImapConfig implements _ImapConfig {
   @override
   _$ImapConfigCopyWith<_ImapConfig> get copyWith =>
       __$ImapConfigCopyWithImpl<_ImapConfig>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$_ImapConfigToJson(this);
+  }
 }
 
 abstract class _ImapConfig implements ImapConfig {
@@ -188,6 +205,9 @@ abstract class _ImapConfig implements ImapConfig {
       required String userName,
       required String password,
       required int port}) = _$_ImapConfig;
+
+  factory _ImapConfig.fromJson(Map<String, dynamic> json) =
+      _$_ImapConfig.fromJson;
 
   @override
   String get host;
