@@ -13,8 +13,9 @@ import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
-import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
+import 'package:wisely/sync/imap.dart';
+import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
@@ -53,6 +54,8 @@ class AudioRecorderState extends Equatable {
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
   late final AudioNotesCubit _audioNotesCubit;
+  ImapSyncClient imapSyncClient = ImapSyncClient();
+
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
   final DeviceLocation _deviceLocation = DeviceLocation();
@@ -61,8 +64,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       {required VectorClockCubit vectorClockCubit,
       required AudioNotesCubit audioNotesCubit})
       : super(AudioRecorderState()) {
+    imapSyncClient = ImapSyncClient();
+
     _audioNotesCubit = audioNotesCubit;
     _vectorClockCubit = vectorClockCubit;
+
     _myRecorder?.openAudioSession().then((value) {
       state.status = AudioRecorderStatus.initialized;
       emit(state);
@@ -87,6 +93,15 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _vectorClockCubit.increment();
   }
 
+  // TODO: refactor/implement properly
+  void saveEncryptedImapPoC(String subject, String json) async {
+    String? b64Secret = await SecureStorage.readValue('sharedSecret');
+    if (b64Secret != null) {
+      String encryptedMessage = encryptSalsa(json, b64Secret);
+      imapSyncClient.saveImapMessage(subject, encryptedMessage);
+    }
+  }
+
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote!.updatedAt = DateTime.now();
@@ -96,7 +111,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           File('${await AudioUtils.getFullAudioPath(_audioNote!)}.json');
       await file.writeAsString(json);
       print(json);
-      encryptDecrypt(json);
+
+      saveEncryptedImapPoC('subject', json);
+
       encryptDecryptSalsa(json);
       _audioNotesCubit.save(_audioNote!);
     }

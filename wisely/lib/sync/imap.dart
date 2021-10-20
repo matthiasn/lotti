@@ -3,7 +3,10 @@ import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/mail/mail_client.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/services.dart';
+import 'package:wisely/sync/secure_storage.dart';
 import 'package:yaml/yaml.dart';
+
+import 'encryption_salsa.dart';
 
 class ImapSyncClient {
   late String host;
@@ -93,6 +96,15 @@ class ImapSyncClient {
     }
   }
 
+  void printDecryptedMessage(String encryptedMessage) async {
+    print('printDecryptedMessage: $encryptedMessage');
+    String? b64Secret = await SecureStorage.readValue('sharedSecret');
+    if (b64Secret != null) {
+      String json = decryptSalsa(encryptedMessage, b64Secret);
+      print('Decrypted from IMAP: $json');
+    }
+  }
+
   void printMessage(MimeMessage message) {
     print(
         'from: ${message.from} with subject "${message.decodeSubject()}" and sequenceId ${message.sequenceId} and uid ${message.uid}');
@@ -100,15 +112,30 @@ class ImapSyncClient {
       print(' content-type: ${message.mediaType}');
     } else {
       final plainText = message.decodeTextPlainPart();
+      String concatenated = '';
       if (plainText != null) {
         final lines = plainText.split('\r\n');
         for (final line in lines) {
           if (line.startsWith('>')) {
             break;
           }
+          concatenated = concatenated + line;
           print(line);
         }
+        String encrypted = concatenated.trim();
+        printDecryptedMessage(encrypted);
       }
     }
+  }
+
+  void saveImapMessage(String subject, String encryptedMessage) async {
+    Mailbox inbox = await client.selectInbox();
+    final builder = MessageBuilder.prepareMultipartAlternativeMessage();
+    builder.from = [MailAddress('Sync', 'sender@domain.com')];
+    builder.to = [MailAddress('Sync', 'recipient@domain.com')];
+    builder.subject = subject;
+    builder.addTextPlain(encryptedMessage);
+    final MimeMessage message = builder.buildMimeMessage();
+    client.appendMessage(message, targetMailbox: inbox);
   }
 }

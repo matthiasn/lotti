@@ -4,7 +4,6 @@ import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
-import 'package:wisely/sync/imap.dart';
 import 'package:wisely/widgets/encryption/qr_widget.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -15,12 +14,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  late ImapSyncClient imapSyncClient;
-
   @override
   void initState() {
     super.initState();
-    imapSyncClient = ImapSyncClient();
   }
 
   @override
