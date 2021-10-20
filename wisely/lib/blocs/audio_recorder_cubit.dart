@@ -158,7 +158,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         timezone: timezone,
         audioFile: fileName,
         audioDirectory: relativePath,
-        duration: Duration(seconds: 0));
+        duration: const Duration(seconds: 0));
 
     _saveAudioNoteJson();
     _addGeolocation();

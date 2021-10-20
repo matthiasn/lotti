@@ -62,11 +62,16 @@ class ImapSyncClient {
       for (final msg in messages) {
         printMessage(msg);
       }
-      mailClient.eventBus.on<MailLoadEvent>().listen((event) async {
-        print('New message at ${DateTime.now()}:');
+      mailClient.eventBus
+          .on<MailLoadEvent>()
+          .listen((MailLoadEvent event) async {
+        print('XXX New message at ${DateTime.now()}: ${event.message}');
 
         if (event.message.uid != null) {
           try {
+            // odd workaround, prevents intermittent failures on Mac when
+            // awaiting this twice
+            await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
             FetchImapResult res =
                 await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
             for (final msg in res.messages) {
