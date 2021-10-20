@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:wisely/blocs/encryption/imap_config.dart';
 import 'package:wisely/theme.dart';
 
 class EmailConfigForm extends StatefulWidget {
@@ -33,7 +34,7 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                   ),
                 ),
                 FormBuilderTextField(
-                  name: 'imap_user',
+                  name: 'imap_userName',
                   validator: FormBuilderValidators.required(context),
                   decoration: const InputDecoration(
                     labelText: 'Username',
@@ -65,7 +66,17 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                         backgroundColor: Colors.white),
                     onPressed: () {
                       _formKey.currentState!.save();
-                      print(_formKey.currentState?.fields);
+                      if (_formKey.currentState!.validate()) {
+                        final formData = _formKey.currentState?.value;
+                        print(formData);
+                        ImapConfig cfg = ImapConfig(
+                          host: formData!['imap_host'],
+                          userName: formData['imap_userName'],
+                          password: formData['imap_password'],
+                          port: int.parse(formData['imap_port']),
+                        );
+                        print(cfg);
+                      }
                     },
                     child: Text(
                       'Save IMAP Config',

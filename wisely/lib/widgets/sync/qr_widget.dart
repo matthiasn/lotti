@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wisely/blocs/encryption/encryption_cubit.dart';
-import 'package:wisely/widgets/encryption/qr_reader_widget.dart';
+import 'package:wisely/widgets/sync/qr_reader_widget.dart';
 
 class EncryptionQrWidget extends StatelessWidget {
   const EncryptionQrWidget({Key? key}) : super(key: key);
