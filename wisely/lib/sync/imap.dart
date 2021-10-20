@@ -2,38 +2,28 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/mail/mail_client.dart';
 import 'package:enough_mail/mime_message.dart';
-import 'package:flutter/services.dart';
+import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/sync/secure_storage.dart';
-import 'package:yaml/yaml.dart';
 
 import 'encryption_salsa.dart';
 
 class ImapSyncClient {
-  late String host;
-  late String userName;
-  late String password;
-
+  late ImapConfig _imapConfig;
   late ImapClient client;
 
-  ImapSyncClient() {
+  ImapSyncClient(ImapConfig imapConfig) {
     client = ImapClient(isLogEnabled: true);
+    _imapConfig = imapConfig;
     init();
     listen();
   }
 
   void init() async {
-    String yamlString = await rootBundle.loadString('assets/config/mail.yaml');
-    final dynamic yamlMap = loadYaml(yamlString);
+    print('host: ${_imapConfig.host}.host, user: ${_imapConfig.userName}');
 
-    host = yamlMap['host'];
-    userName = yamlMap['userName'];
-    password = yamlMap['password'];
-    const imapServerPort = 993;
-
-    print('host: $host, user: $userName');
-
-    await client.connectToServer(host, imapServerPort, isSecure: true);
-    await client.login(userName, password);
+    await client.connectToServer(_imapConfig.host, _imapConfig.port,
+        isSecure: true);
+    await client.login(_imapConfig.userName, _imapConfig.password);
 
     final mailboxes = await client.listMailboxes();
     print('mailboxes: $mailboxes');
@@ -49,17 +39,15 @@ class ImapSyncClient {
   }
 
   void listen() async {
-    String yamlString = await rootBundle.loadString('assets/config/mail.yaml');
-    final dynamic yamlMap = loadYaml(yamlString);
+    print('host: ${_imapConfig.host}.host, user: ${_imapConfig.userName}');
 
-    host = yamlMap['host'];
-    userName = yamlMap['userName'];
-    password = yamlMap['password'];
-
-    print('host: $host, user: $userName');
-
-    final account =
-        MailAccount.fromManualSettings('sync', userName, host, host, password);
+    final account = MailAccount.fromManualSettings(
+      'sync',
+      _imapConfig.userName,
+      _imapConfig.host,
+      _imapConfig.host,
+      _imapConfig.password,
+    );
 
     final mailClient = MailClient(account, isLogEnabled: true);
 
@@ -76,15 +64,14 @@ class ImapSyncClient {
       }
       mailClient.eventBus.on<MailLoadEvent>().listen((event) async {
         print('New message at ${DateTime.now()}:');
-        printMessage(event.message);
 
         if (event.message.uid != null) {
           try {
             FetchImapResult res =
                 await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
-
-            print('Message: ${res.messages.first}');
-            printMessage(res.messages.first);
+            for (final msg in res.messages) {
+              printMessage(msg);
+            }
           } on MailException catch (e) {
             print('High level API failed with $e');
           }
@@ -120,7 +107,6 @@ class ImapSyncClient {
             break;
           }
           concatenated = concatenated + line;
-          print(line);
         }
         String encrypted = concatenated.trim();
         printDecryptedMessage(encrypted);
