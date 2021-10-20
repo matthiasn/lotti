@@ -112,9 +112,13 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   // TODO: refactor/implement properly
   void saveEncryptedImapPoC(String subject, String json) async {
     String? b64Secret = await SecureStorage.readValue('sharedSecret');
-    if (b64Secret != null) {
-      String encryptedMessage = encryptSalsa(json, b64Secret);
-      imapSyncClient.saveImapMessage(subject, encryptedMessage);
+
+    if (_audioNote != null) {
+      File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
+      if (b64Secret != null) {
+        String encryptedMessage = encryptSalsa(json, b64Secret);
+        imapSyncClient.saveImapMessage(subject, encryptedMessage, audioFile);
+      }
     }
   }
 

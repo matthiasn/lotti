@@ -133,13 +133,22 @@ class ImapSyncClient {
     }
   }
 
-  void saveImapMessage(String subject, String encryptedMessage) async {
+  void saveImapMessage(
+      String subject, String encryptedMessage, File? file) async {
     Mailbox inbox = await client.selectInbox();
     final builder = MessageBuilder.prepareMultipartAlternativeMessage();
     builder.from = [MailAddress('Sync', 'sender@domain.com')];
     builder.to = [MailAddress('Sync', 'recipient@domain.com')];
     builder.subject = subject;
     builder.addTextPlain(encryptedMessage);
+
+    if (file != null) {
+      int fileLength = file.lengthSync();
+      if (fileLength > 0) {
+        await builder.addFile(file, MediaType.fromText('audio/aac'));
+      }
+    }
+
     final MimeMessage message = builder.buildMimeMessage();
     client.appendMessage(message, targetMailbox: inbox);
   }

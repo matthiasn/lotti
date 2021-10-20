@@ -9,6 +9,14 @@ class AudioUtils {
     return '${docDir.path}${audioNote.audioDirectory}${audioNote.audioFile}';
   }
 
+  static Future<File?> getAudioFile(AudioNote audioNote) async {
+    String fullAudioPath = await AudioUtils.getFullAudioPath(audioNote);
+    File file = File(fullAudioPath);
+    if (file.existsSync()) {
+      return file;
+    }
+  }
+
   static Future<String> createAudioDirectory(String relativePath) async {
     var docDir = await getApplicationDocumentsDirectory();
     Directory directory =
