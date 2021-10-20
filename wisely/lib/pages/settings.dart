@@ -4,7 +4,8 @@ import 'package:wisely/blocs/counter_bloc.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
-import 'package:wisely/widgets/encryption/qr_widget.dart';
+import 'package:wisely/widgets/sync/imap_config.dart';
+import 'package:wisely/widgets/sync/qr_widget.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -26,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -49,6 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
               const EncryptionQrWidget(),
+              const EmailConfigForm(),
             ],
           ),
         ),
