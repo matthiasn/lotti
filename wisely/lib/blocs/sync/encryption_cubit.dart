@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:bloc/bloc.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+
+import 'classes.dart';
 
 part 'encryption_cubit.freezed.dart';
 part 'encryption_state.dart';
@@ -9,6 +13,7 @@ part 'encryption_state.dart';
 class EncryptionCubit extends Cubit<EncryptionState> {
   final _storage = const FlutterSecureStorage();
   final String sharedSecretKey = 'sharedSecret';
+  final String imapConfigKey = 'imapConfig';
 
   EncryptionCubit() : super(Empty()) {
     loadSharedKey();
@@ -44,5 +49,14 @@ class EncryptionCubit extends Cubit<EncryptionState> {
     await _storage.delete(key: sharedSecretKey);
     print('deleted key');
     loadSharedKey();
+  }
+
+  Future<void> setImapConfig(ImapConfig imapConfig) async {
+    print('EncryptionCubit setImapConfig $imapConfig');
+    String json = jsonEncode(imapConfig);
+    print('EncryptionCubit setImapConfig JSON $json');
+    await _storage.write(key: imapConfigKey, value: json);
+    String? fromStore = await _storage.read(key: imapConfigKey);
+    print('EncryptionCubit setImapConfig JSON from store $fromStore');
   }
 }
