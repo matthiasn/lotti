@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'imap_config.dart';
+part of 'classes.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
@@ -20,4 +20,17 @@ Map<String, dynamic> _$$_ImapConfigToJson(_$_ImapConfig instance) =>
       'userName': instance.userName,
       'password': instance.password,
       'port': instance.port,
+    };
+
+_$_SyncConfig _$$_SyncConfigFromJson(Map<String, dynamic> json) =>
+    _$_SyncConfig(
+      imapConfig:
+          ImapConfig.fromJson(json['imapConfig'] as Map<String, dynamic>),
+      sharedSecret: json['sharedSecret'] as String,
+    );
+
+Map<String, dynamic> _$$_SyncConfigToJson(_$_SyncConfig instance) =>
+    <String, dynamic>{
+      'imapConfig': instance.imapConfig,
+      'sharedSecret': instance.sharedSecret,
     };

@@ -2,7 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target
 
-part of 'imap_config.dart';
+part of 'classes.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -220,5 +220,184 @@ abstract class _ImapConfig implements ImapConfig {
   @override
   @JsonKey(ignore: true)
   _$ImapConfigCopyWith<_ImapConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+SyncConfig _$SyncConfigFromJson(Map<String, dynamic> json) {
+  return _SyncConfig.fromJson(json);
+}
+
+/// @nodoc
+class _$SyncConfigTearOff {
+  const _$SyncConfigTearOff();
+
+  _SyncConfig call(
+      {required ImapConfig imapConfig, required String sharedSecret}) {
+    return _SyncConfig(
+      imapConfig: imapConfig,
+      sharedSecret: sharedSecret,
+    );
+  }
+
+  SyncConfig fromJson(Map<String, Object?> json) {
+    return SyncConfig.fromJson(json);
+  }
+}
+
+/// @nodoc
+const $SyncConfig = _$SyncConfigTearOff();
+
+/// @nodoc
+mixin _$SyncConfig {
+  ImapConfig get imapConfig => throw _privateConstructorUsedError;
+  String get sharedSecret => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $SyncConfigCopyWith<SyncConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SyncConfigCopyWith<$Res> {
+  factory $SyncConfigCopyWith(
+          SyncConfig value, $Res Function(SyncConfig) then) =
+      _$SyncConfigCopyWithImpl<$Res>;
+  $Res call({ImapConfig imapConfig, String sharedSecret});
+
+  $ImapConfigCopyWith<$Res> get imapConfig;
+}
+
+/// @nodoc
+class _$SyncConfigCopyWithImpl<$Res> implements $SyncConfigCopyWith<$Res> {
+  _$SyncConfigCopyWithImpl(this._value, this._then);
+
+  final SyncConfig _value;
+  // ignore: unused_field
+  final $Res Function(SyncConfig) _then;
+
+  @override
+  $Res call({
+    Object? imapConfig = freezed,
+    Object? sharedSecret = freezed,
+  }) {
+    return _then(_value.copyWith(
+      imapConfig: imapConfig == freezed
+          ? _value.imapConfig
+          : imapConfig // ignore: cast_nullable_to_non_nullable
+              as ImapConfig,
+      sharedSecret: sharedSecret == freezed
+          ? _value.sharedSecret
+          : sharedSecret // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+
+  @override
+  $ImapConfigCopyWith<$Res> get imapConfig {
+    return $ImapConfigCopyWith<$Res>(_value.imapConfig, (value) {
+      return _then(_value.copyWith(imapConfig: value));
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$SyncConfigCopyWith<$Res> implements $SyncConfigCopyWith<$Res> {
+  factory _$SyncConfigCopyWith(
+          _SyncConfig value, $Res Function(_SyncConfig) then) =
+      __$SyncConfigCopyWithImpl<$Res>;
+  @override
+  $Res call({ImapConfig imapConfig, String sharedSecret});
+
+  @override
+  $ImapConfigCopyWith<$Res> get imapConfig;
+}
+
+/// @nodoc
+class __$SyncConfigCopyWithImpl<$Res> extends _$SyncConfigCopyWithImpl<$Res>
+    implements _$SyncConfigCopyWith<$Res> {
+  __$SyncConfigCopyWithImpl(
+      _SyncConfig _value, $Res Function(_SyncConfig) _then)
+      : super(_value, (v) => _then(v as _SyncConfig));
+
+  @override
+  _SyncConfig get _value => super._value as _SyncConfig;
+
+  @override
+  $Res call({
+    Object? imapConfig = freezed,
+    Object? sharedSecret = freezed,
+  }) {
+    return _then(_SyncConfig(
+      imapConfig: imapConfig == freezed
+          ? _value.imapConfig
+          : imapConfig // ignore: cast_nullable_to_non_nullable
+              as ImapConfig,
+      sharedSecret: sharedSecret == freezed
+          ? _value.sharedSecret
+          : sharedSecret // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$_SyncConfig implements _SyncConfig {
+  _$_SyncConfig({required this.imapConfig, required this.sharedSecret});
+
+  factory _$_SyncConfig.fromJson(Map<String, dynamic> json) =>
+      _$$_SyncConfigFromJson(json);
+
+  @override
+  final ImapConfig imapConfig;
+  @override
+  final String sharedSecret;
+
+  @override
+  String toString() {
+    return 'SyncConfig(imapConfig: $imapConfig, sharedSecret: $sharedSecret)';
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _SyncConfig &&
+            (identical(other.imapConfig, imapConfig) ||
+                other.imapConfig == imapConfig) &&
+            (identical(other.sharedSecret, sharedSecret) ||
+                other.sharedSecret == sharedSecret));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, imapConfig, sharedSecret);
+
+  @JsonKey(ignore: true)
+  @override
+  _$SyncConfigCopyWith<_SyncConfig> get copyWith =>
+      __$SyncConfigCopyWithImpl<_SyncConfig>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$_SyncConfigToJson(this);
+  }
+}
+
+abstract class _SyncConfig implements SyncConfig {
+  factory _SyncConfig(
+      {required ImapConfig imapConfig,
+      required String sharedSecret}) = _$_SyncConfig;
+
+  factory _SyncConfig.fromJson(Map<String, dynamic> json) =
+      _$_SyncConfig.fromJson;
+
+  @override
+  ImapConfig get imapConfig;
+  @override
+  String get sharedSecret;
+  @override
+  @JsonKey(ignore: true)
+  _$SyncConfigCopyWith<_SyncConfig> get copyWith =>
       throw _privateConstructorUsedError;
 }

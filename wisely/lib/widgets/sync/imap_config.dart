@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:wisely/blocs/encryption/imap_config.dart';
+import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/theme.dart';
 
 class EmailConfigForm extends StatefulWidget {
