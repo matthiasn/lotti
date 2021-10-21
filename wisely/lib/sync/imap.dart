@@ -12,6 +12,7 @@ import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
+import 'encryption.dart';
 import 'encryption_salsa.dart';
 
 class ImapSyncClient {
@@ -77,7 +78,7 @@ class ImapSyncClient {
       mailClient.eventBus
           .on<MailLoadEvent>()
           .listen((MailLoadEvent event) async {
-        print('XXX New message at ${DateTime.now()}: ${event.message}');
+        print('New message at ${DateTime.now()}: ${event.message}');
 
         if (event.message.uid != null) {
           try {
@@ -101,7 +102,8 @@ class ImapSyncClient {
     }
   }
 
-  void saveAttachment(MimeMessage message, AudioNote audioNote) async {
+  Future<void> saveAttachment(
+      MimeMessage message, AudioNote audioNote, String b64Secret) async {
     final attachments =
         message.findContentInfo(disposition: ContentDisposition.attachment);
 
@@ -111,10 +113,13 @@ class ImapSyncClient {
       print('attachmentMimePart $attachmentMimePart');
 
       if (attachmentMimePart != null) {
-        Uint8List? foo = attachmentMimePart.decodeContentBinary();
+        Uint8List? bytes = attachmentMimePart.decodeContentBinary();
         String filePath = await AudioUtils.getFullAudioPath(audioNote);
+        await File(filePath).parent.create(recursive: true);
+        File encrypted = File('$filePath.aes');
         print('saveAttachment $filePath');
-        writeToFile(foo, filePath);
+        writeToFile(bytes, encrypted.path);
+        decryptFile(encrypted, File(filePath), b64Secret);
       }
     }
   }
@@ -129,7 +134,7 @@ class ImapSyncClient {
       AudioNote audioNote = AudioNote.fromJson(json.decode(decryptedJson));
       if (Platform.isMacOS) {
         _audioNotesCubit.save(audioNote);
-        saveAttachment(message, audioNote);
+        await saveAttachment(message, audioNote, b64Secret);
       }
     }
   }
@@ -153,22 +158,6 @@ class ImapSyncClient {
         }
         String encrypted = concatenated.trim();
         printDecryptedMessage(encrypted, message);
-
-        final attachments =
-            message.findContentInfo(disposition: ContentDisposition.attachment);
-
-        for (final attachment in attachments) {
-          final MimePart? attachmentMimePart =
-              message.getPart(attachment.fetchId);
-          // do something with the attachment
-          print('attachmentMimePart $attachmentMimePart');
-
-          if (attachmentMimePart != null) {
-            Uint8List? foo = attachmentMimePart.decodeContentBinary();
-            print('attachmentMimePart $foo');
-            writeToFile(foo, '/tmp/test.aac');
-          }
-        }
       }
     }
   }

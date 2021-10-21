@@ -15,6 +15,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
+import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/sync/imap.dart';
 import 'package:wisely/sync/secure_storage.dart';
@@ -117,7 +118,17 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
       if (b64Secret != null) {
         String encryptedMessage = encryptSalsa(json, b64Secret);
-        imapSyncClient.saveImapMessage(subject, encryptedMessage, audioFile);
+        imapSyncClient.saveImapMessage(subject, encryptedMessage, null);
+
+        if (audioFile != null) {
+          int fileLength = audioFile.lengthSync();
+          if (fileLength > 0) {
+            File encryptedFile = File('${audioFile.path}.aes');
+            encryptFile(audioFile, encryptedFile, b64Secret);
+            imapSyncClient.saveImapMessage(
+                subject, encryptedMessage, encryptedFile);
+          }
+        }
       }
     }
   }
