@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -137,10 +136,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     if (_audioNote != null) {
       _audioNote!.updatedAt = DateTime.now();
       assignVectorClock();
-      String json = jsonEncode(_audioNote);
-      File file =
-          File('${await AudioUtils.getFullAudioPath(_audioNote!)}.json');
-      await file.writeAsString(json);
+      String json = await AudioUtils.saveAudioNoteJson(_audioNote!);
       saveEncryptedImapPoC('subject', json);
       _audioNotesCubit.save(_audioNote!);
     }

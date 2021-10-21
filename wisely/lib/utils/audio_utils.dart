@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,13 @@ class AudioUtils {
     if (file.existsSync()) {
       return file;
     }
+  }
+
+  static Future<String> saveAudioNoteJson(AudioNote audioNote) async {
+    String json = jsonEncode(audioNote);
+    File file = File('${await AudioUtils.getFullAudioPath(audioNote)}.json');
+    await file.writeAsString(json);
+    return json;
   }
 
   static Future<String> createAudioDirectory(String relativePath) async {

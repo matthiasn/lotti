@@ -120,6 +120,7 @@ class ImapSyncClient {
         print('saveAttachment $filePath');
         writeToFile(bytes, encrypted.path);
         decryptFile(encrypted, File(filePath), b64Secret);
+        await AudioUtils.saveAudioNoteJson(audioNote);
       }
     }
   }
