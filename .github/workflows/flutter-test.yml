@@ -20,6 +20,9 @@ jobs:
       - name: Get Flutter dependencies
         working-directory: ./wisely
         run: flutter pub get
+      - name: Code gen
+        working-directory: ./wisely
+        run: make build_runner
       - name: Run Flutter tests
         working-directory: ./wisely
         run: flutter test
