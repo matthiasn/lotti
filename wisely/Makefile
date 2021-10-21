@@ -2,6 +2,14 @@
 test:
 	flutter test --coverage
 
+.PHONY: clean
+clean:
+	flutter clean
+
+.PHONY: deps
+deps:
+	flutter pub get
+
 .PHONY: coverage
 coverage: test
 	genhtml coverage/lcov.info -o coverage
@@ -22,3 +30,7 @@ ipa:
 .PHONY: macos
 macos:
 	flutter build macos
+
+
+.PHONY: clean_test
+clean_test: clean deps test
