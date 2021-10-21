@@ -71,7 +71,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void updateProgress(RecordingDisposition event) {
-    emit(state.copyWith(progress: event.duration));
+    emit(state.copyWith(
+      progress: event.duration,
+      decibels: event.decibels ?? 0.0,
+    ));
   }
 
   void assignVectorClock() {
