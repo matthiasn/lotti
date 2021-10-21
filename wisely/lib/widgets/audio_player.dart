@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
+import 'package:wisely/blocs/audio/player_state.dart';
 import 'package:wisely/theme.dart';
 
 class AudioPlayerWidget extends StatelessWidget {
