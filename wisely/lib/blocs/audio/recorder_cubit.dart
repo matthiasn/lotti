@@ -8,6 +8,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
@@ -20,8 +21,7 @@ import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
-import 'audio_notes_cubit.dart';
-import 'audio_recorder_state.dart';
+import '../audio_notes_cubit.dart';
 
 var uuid = const Uuid();
 

@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:wisely/blocs/audio_recorder_cubit.dart';
-import 'package:wisely/blocs/audio_recorder_state.dart';
+import 'package:wisely/blocs/audio/recorder_cubit.dart';
+import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/theme.dart';
 
 class AudioRecorderWidget extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'audio_recorder_state.freezed.dart';
+part 'recorder_state.freezed.dart';
 
 enum AudioRecorderStatus { initializing, initialized, recording, stopped }
 
