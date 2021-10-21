@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -9,7 +10,9 @@ import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/sync/secure_storage.dart';
+import 'package:wisely/utils/audio_utils.dart';
 
+import 'encryption.dart';
 import 'encryption_salsa.dart';
 
 class ImapSyncClient {
@@ -75,7 +78,7 @@ class ImapSyncClient {
       mailClient.eventBus
           .on<MailLoadEvent>()
           .listen((MailLoadEvent event) async {
-        print('XXX New message at ${DateTime.now()}: ${event.message}');
+        print('New message at ${DateTime.now()}: ${event.message}');
 
         if (event.message.uid != null) {
           try {
@@ -84,6 +87,7 @@ class ImapSyncClient {
             await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
             FetchImapResult res =
                 await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
+
             for (final msg in res.messages) {
               printMessage(msg);
             }
@@ -98,7 +102,30 @@ class ImapSyncClient {
     }
   }
 
-  void printDecryptedMessage(String encryptedMessage) async {
+  Future<void> saveAttachment(
+      MimeMessage message, AudioNote audioNote, String b64Secret) async {
+    final attachments =
+        message.findContentInfo(disposition: ContentDisposition.attachment);
+
+    for (final attachment in attachments) {
+      final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+      // do something with the attachment
+      print('attachmentMimePart $attachmentMimePart');
+
+      if (attachmentMimePart != null) {
+        Uint8List? bytes = attachmentMimePart.decodeContentBinary();
+        String filePath = await AudioUtils.getFullAudioPath(audioNote);
+        await File(filePath).parent.create(recursive: true);
+        File encrypted = File('$filePath.aes');
+        print('saveAttachment $filePath');
+        writeToFile(bytes, encrypted.path);
+        decryptFile(encrypted, File(filePath), b64Secret);
+      }
+    }
+  }
+
+  void printDecryptedMessage(
+      String encryptedMessage, MimeMessage message) async {
     print('printDecryptedMessage: $encryptedMessage');
     String? b64Secret = await SecureStorage.readValue('sharedSecret');
     if (b64Secret != null) {
@@ -107,6 +134,7 @@ class ImapSyncClient {
       AudioNote audioNote = AudioNote.fromJson(json.decode(decryptedJson));
       if (Platform.isMacOS) {
         _audioNotesCubit.save(audioNote);
+        await saveAttachment(message, audioNote, b64Secret);
       }
     }
   }
@@ -117,6 +145,7 @@ class ImapSyncClient {
     if (!message.isTextPlainMessage()) {
       print(' content-type: ${message.mediaType}');
     } else {
+      message.parse();
       final plainText = message.decodeTextPlainPart();
       String concatenated = '';
       if (plainText != null) {
@@ -128,18 +157,33 @@ class ImapSyncClient {
           concatenated = concatenated + line;
         }
         String encrypted = concatenated.trim();
-        printDecryptedMessage(encrypted);
+        printDecryptedMessage(encrypted, message);
       }
     }
   }
 
-  void saveImapMessage(String subject, String encryptedMessage) async {
+  Future<void> writeToFile(Uint8List? data, String filePath) async {
+    if (data != null) {
+      File(filePath).writeAsBytes(data);
+    }
+  }
+
+  void saveImapMessage(
+      String subject, String encryptedMessage, File? file) async {
     Mailbox inbox = await client.selectInbox();
     final builder = MessageBuilder.prepareMultipartAlternativeMessage();
     builder.from = [MailAddress('Sync', 'sender@domain.com')];
     builder.to = [MailAddress('Sync', 'recipient@domain.com')];
     builder.subject = subject;
     builder.addTextPlain(encryptedMessage);
+
+    if (file != null) {
+      int fileLength = file.lengthSync();
+      if (fileLength > 0) {
+        await builder.addFile(file, MediaType.fromText('audio/aac'));
+      }
+    }
+
     final MimeMessage message = builder.buildMimeMessage();
     client.appendMessage(message, targetMailbox: inbox);
   }
