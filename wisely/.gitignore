@@ -51,3 +51,6 @@ app.*.map.json
 
 /config/mail.yaml
 local.properties
+
+*.freezed.dart
+*.g.dart

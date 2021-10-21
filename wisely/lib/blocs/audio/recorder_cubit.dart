@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
@@ -9,6 +8,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
@@ -21,37 +21,9 @@ import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
-import 'audio_notes_cubit.dart';
-
-enum AudioRecorderStatus { initializing, initialized, recording, stopped }
+import '../audio_notes_cubit.dart';
 
 var uuid = const Uuid();
-
-class AudioRecorderState extends Equatable {
-  AudioRecorderStatus status = AudioRecorderStatus.initializing;
-  Duration progress = Duration(seconds: 0);
-  double decibels = 0.0;
-
-  AudioRecorderState() {}
-
-  AudioRecorderState.recording(AudioRecorderState other) {
-    status = AudioRecorderStatus.recording;
-  }
-
-  AudioRecorderState.stopped(AudioRecorderState other) {
-    status = AudioRecorderStatus.stopped;
-  }
-
-  AudioRecorderState.progress(
-      AudioRecorderState other, RecordingDisposition event) {
-    status = other.status;
-    progress = event.duration;
-    if (event.decibels != null) decibels = event.decibels!;
-  }
-
-  @override
-  List<Object?> get props => [status, progress];
-}
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final EncryptionCubit _encryptionCubit;
@@ -67,7 +39,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     required EncryptionCubit encryptionCubit,
     required VectorClockCubit vectorClockCubit,
     required AudioNotesCubit audioNotesCubit,
-  }) : super(AudioRecorderState()) {
+  }) : super(AudioRecorderState(
+          status: AudioRecorderStatus.initializing,
+          decibels: 0.0,
+          progress: const Duration(minutes: 0),
+        )) {
     _encryptionCubit = encryptionCubit;
     _audioNotesCubit = audioNotesCubit;
     _vectorClockCubit = vectorClockCubit;
@@ -75,9 +51,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     imapClientInit();
 
     _myRecorder?.openAudioSession().then((value) {
-      state.status = AudioRecorderStatus.initialized;
-      emit(state);
-
+      emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
       _myRecorder?.onProgress?.listen((event) {
         updateProgress(event);
@@ -97,7 +71,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void updateProgress(RecordingDisposition event) {
-    emit(AudioRecorderState.progress(state, event));
+    emit(state.copyWith(
+      progress: event.duration,
+      decibels: event.decibels ?? 0.0,
+    ));
   }
 
   void assignVectorClock() {
@@ -183,7 +160,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       bitRate: 128000,
     )
         .then((value) {
-      emit(AudioRecorderState.recording(state));
+      emit(state.copyWith(status: AudioRecorderStatus.recording));
     });
   }
 
@@ -191,7 +168,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     await _myRecorder?.stopRecorder();
     _audioNote = _audioNote?.copyWith(duration: state.progress);
     _saveAudioNoteJson();
-    emit(AudioRecorderState.stopped(state));
+    emit(state.copyWith(status: AudioRecorderStatus.stopped));
   }
 
   @override
