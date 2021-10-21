@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -9,6 +10,7 @@ import 'package:wisely/blocs/audio_notes_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/sync/secure_storage.dart';
+import 'package:wisely/utils/audio_utils.dart';
 
 import 'encryption_salsa.dart';
 
@@ -84,6 +86,7 @@ class ImapSyncClient {
             await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
             FetchImapResult res =
                 await client.uidFetchMessage(event.message.uid!, 'BODY.PEEK[]');
+
             for (final msg in res.messages) {
               printMessage(msg);
             }
@@ -98,7 +101,26 @@ class ImapSyncClient {
     }
   }
 
-  void printDecryptedMessage(String encryptedMessage) async {
+  void saveAttachment(MimeMessage message, AudioNote audioNote) async {
+    final attachments =
+        message.findContentInfo(disposition: ContentDisposition.attachment);
+
+    for (final attachment in attachments) {
+      final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+      // do something with the attachment
+      print('attachmentMimePart $attachmentMimePart');
+
+      if (attachmentMimePart != null) {
+        Uint8List? foo = attachmentMimePart.decodeContentBinary();
+        String filePath = await AudioUtils.getFullAudioPath(audioNote);
+        print('saveAttachment $filePath');
+        writeToFile(foo, filePath);
+      }
+    }
+  }
+
+  void printDecryptedMessage(
+      String encryptedMessage, MimeMessage message) async {
     print('printDecryptedMessage: $encryptedMessage');
     String? b64Secret = await SecureStorage.readValue('sharedSecret');
     if (b64Secret != null) {
@@ -107,6 +129,7 @@ class ImapSyncClient {
       AudioNote audioNote = AudioNote.fromJson(json.decode(decryptedJson));
       if (Platform.isMacOS) {
         _audioNotesCubit.save(audioNote);
+        saveAttachment(message, audioNote);
       }
     }
   }
@@ -117,6 +140,7 @@ class ImapSyncClient {
     if (!message.isTextPlainMessage()) {
       print(' content-type: ${message.mediaType}');
     } else {
+      message.parse();
       final plainText = message.decodeTextPlainPart();
       String concatenated = '';
       if (plainText != null) {
@@ -128,8 +152,30 @@ class ImapSyncClient {
           concatenated = concatenated + line;
         }
         String encrypted = concatenated.trim();
-        printDecryptedMessage(encrypted);
+        printDecryptedMessage(encrypted, message);
+
+        final attachments =
+            message.findContentInfo(disposition: ContentDisposition.attachment);
+
+        for (final attachment in attachments) {
+          final MimePart? attachmentMimePart =
+              message.getPart(attachment.fetchId);
+          // do something with the attachment
+          print('attachmentMimePart $attachmentMimePart');
+
+          if (attachmentMimePart != null) {
+            Uint8List? foo = attachmentMimePart.decodeContentBinary();
+            print('attachmentMimePart $foo');
+            writeToFile(foo, '/tmp/test.aac');
+          }
+        }
       }
+    }
+  }
+
+  Future<void> writeToFile(Uint8List? data, String filePath) async {
+    if (data != null) {
+      File(filePath).writeAsBytes(data);
     }
   }
 
