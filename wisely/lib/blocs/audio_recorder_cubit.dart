@@ -103,9 +103,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void assignVectorClock() {
     String host = _vectorClockCubit.state.host;
     int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
-    _audioNote?.vectorClock = VectorClock(<String, int>{});
-
-    _audioNote!.vectorClock!.vclock[host] = nextAvailableCounter;
+    _audioNote = _audioNote?.copyWith(
+        vectorClock: VectorClock(<String, int>{host: nextAvailableCounter}));
     _vectorClockCubit.increment();
   }
 
@@ -134,7 +133,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
-      _audioNote!.updatedAt = DateTime.now();
+      _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
       assignVectorClock();
       String json = await AudioUtils.saveAudioNoteJson(_audioNote!);
       saveEncryptedImapPoC('subject', json);
@@ -144,8 +143,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void _addGeolocation() async {
     _deviceLocation.getCurrentLocation().then((LocationData locationData) {
-      _audioNote?.latitude = locationData.latitude;
-      _audioNote?.longitude = locationData.longitude;
+      _audioNote = _audioNote?.copyWith(
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+      );
       _saveAudioNoteJson();
     });
   }
@@ -188,7 +189,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void stop() async {
     await _myRecorder?.stopRecorder();
-    _audioNote?.duration = state.progress;
+    _audioNote = _audioNote?.copyWith(duration: state.progress);
     _saveAudioNoteJson();
     emit(AudioRecorderState.stopped(state));
   }
