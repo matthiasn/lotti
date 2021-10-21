@@ -6,7 +6,7 @@ part of 'audio_note.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => AudioNote(
+_$_AudioNote _$$_AudioNoteFromJson(Map<String, dynamic> json) => _$_AudioNote(
       id: json['id'] as String,
       timestamp: json['timestamp'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -26,7 +26,8 @@ AudioNote _$AudioNoteFromJson(Map<String, dynamic> json) => AudioNote(
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$AudioNoteToJson(AudioNote instance) => <String, dynamic>{
+Map<String, dynamic> _$$_AudioNoteToJson(_$_AudioNote instance) =>
+    <String, dynamic>{
       'id': instance.id,
       'timestamp': instance.timestamp,
       'createdAt': instance.createdAt.toIso8601String(),
