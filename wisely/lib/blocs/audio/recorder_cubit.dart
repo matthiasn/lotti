@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:bloc/bloc.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -9,15 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
-import 'package:wisely/blocs/sync/classes.dart';
-import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
-import 'package:wisely/sync/encryption.dart';
-import 'package:wisely/sync/encryption_salsa.dart';
-import 'package:wisely/sync/imap.dart';
-import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
@@ -31,25 +24,22 @@ AudioRecorderState initialState = AudioRecorderState(
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  late final EncryptionCubit _encryptionCubit;
   late final VectorClockCubit _vectorClockCubit;
   late final AudioNotesCubit _audioNotesCubit;
-  late ImapSyncClient imapSyncClient;
+  late final ImapCubit _imapCubit;
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
   final DeviceLocation _deviceLocation = DeviceLocation();
 
   AudioRecorderCubit({
-    required EncryptionCubit encryptionCubit,
     required VectorClockCubit vectorClockCubit,
+    required ImapCubit imapCubit,
     required AudioNotesCubit audioNotesCubit,
   }) : super(initialState) {
-    _encryptionCubit = encryptionCubit;
     _audioNotesCubit = audioNotesCubit;
+    _imapCubit = imapCubit;
     _vectorClockCubit = vectorClockCubit;
-
-    imapClientInit();
 
     _myRecorder?.openAudioSession().then((value) {
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
@@ -58,17 +48,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         updateProgress(event);
       });
     });
-  }
-
-  Future<void> imapClientInit() async {
-    await _encryptionCubit.loadSyncConfig();
-    ImapConfig? imapConfig =
-        _encryptionCubit.state.maybeWhen((sharedKey, imapConfig) {
-      return imapConfig!;
-    }, orElse: () {});
-    if (imapConfig != null) {
-      imapSyncClient = ImapSyncClient(imapConfig, _audioNotesCubit);
-    }
   }
 
   void updateProgress(RecordingDisposition event) {
@@ -86,35 +65,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _vectorClockCubit.increment();
   }
 
-  // TODO: refactor/implement properly
-  void saveEncryptedImapPoC(String subject, String json) async {
-    String? b64Secret = await SecureStorage.readValue('sharedSecret');
-
-    if (_audioNote != null) {
-      File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
-      if (b64Secret != null) {
-        String encryptedMessage = encryptSalsa(json, b64Secret);
-        imapSyncClient.saveImapMessage(subject, encryptedMessage, null);
-
-        if (audioFile != null) {
-          int fileLength = audioFile.lengthSync();
-          if (fileLength > 0) {
-            File encryptedFile = File('${audioFile.path}.aes');
-            encryptFile(audioFile, encryptedFile, b64Secret);
-            imapSyncClient.saveImapMessage(
-                subject, encryptedMessage, encryptedFile);
-          }
-        }
-      }
-    }
-  }
-
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
       assignVectorClock();
       String json = await AudioUtils.saveAudioNoteJson(_audioNote!);
-      saveEncryptedImapPoC('subject', json);
+      _imapCubit.saveEncryptedImap(_audioNote!);
       _audioNotesCubit.save(_audioNote!);
     }
   }
