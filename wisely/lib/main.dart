@@ -15,7 +15,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
-import 'blocs/vector_clock_counter_cubit.dart';
+import 'blocs/sync/vector_clock_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
