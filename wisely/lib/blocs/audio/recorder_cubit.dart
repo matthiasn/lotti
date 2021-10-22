@@ -11,7 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
-import 'package:wisely/blocs/vector_clock_counter_cubit.dart';
+import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/db/audio_note.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -24,6 +24,11 @@ import 'package:wisely/utils/audio_utils.dart';
 import '../audio_notes_cubit.dart';
 
 var uuid = const Uuid();
+AudioRecorderState initialState = AudioRecorderState(
+  status: AudioRecorderStatus.initializing,
+  decibels: 0.0,
+  progress: const Duration(minutes: 0),
+);
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final EncryptionCubit _encryptionCubit;
@@ -39,11 +44,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     required EncryptionCubit encryptionCubit,
     required VectorClockCubit vectorClockCubit,
     required AudioNotesCubit audioNotesCubit,
-  }) : super(AudioRecorderState(
-          status: AudioRecorderStatus.initializing,
-          decibels: 0.0,
-          progress: const Duration(minutes: 0),
-        )) {
+  }) : super(initialState) {
     _encryptionCubit = encryptionCubit;
     _audioNotesCubit = audioNotesCubit;
     _vectorClockCubit = vectorClockCubit;
@@ -168,7 +169,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     await _myRecorder?.stopRecorder();
     _audioNote = _audioNote?.copyWith(duration: state.progress);
     _saveAudioNoteJson();
-    emit(state.copyWith(status: AudioRecorderStatus.stopped));
+    emit(initialState);
   }
 
   @override
