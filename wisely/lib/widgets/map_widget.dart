@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:wisely/blocs/audio_player_cubit.dart';
+import 'package:wisely/blocs/audio/player_cubit.dart';
+import 'package:wisely/blocs/audio/player_state.dart';
 import 'package:wisely/map/cached_tile_provider.dart';
 
 class MapWidget extends StatefulWidget {
