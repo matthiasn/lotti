@@ -46,6 +46,7 @@ dependencies:
   syncfusion_flutter_datepicker: ^19.3.46
   freezed_annotation: ^0.15.0
   flutter_form_builder: ^6.1.0+1
+  permission_handler: ^8.1.6
 
 dev_dependencies:
   flutter_test:

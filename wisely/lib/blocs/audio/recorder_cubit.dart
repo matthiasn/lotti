@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:location/location.dart';
+import 'package:location/location.dart' hide PermissionStatus;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
@@ -40,8 +43,19 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _audioNotesCubit = audioNotesCubit;
     _imapCubit = imapCubit;
     _vectorClockCubit = vectorClockCubit;
+    _openAudioSession();
+  }
+
+  Future<void> _openAudioSession() async {
+    if (Platform.isAndroid) {
+      var status = await Permission.microphone.request();
+      if (status != PermissionStatus.granted) {
+        throw RecordingPermissionException('Microphone permission not granted');
+      }
+    }
 
     _myRecorder?.openAudioSession().then((value) {
+      print('openAudioSession $value');
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
       _myRecorder?.onProgress?.listen((event) {
