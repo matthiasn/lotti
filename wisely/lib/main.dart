@@ -35,15 +35,19 @@ class WiselyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<EncryptionCubit>(
+          lazy: false,
           create: (BuildContext context) => EncryptionCubit(),
         ),
         BlocProvider<VectorClockCubit>(
+          lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
         BlocProvider<AudioNotesCubit>(
+          lazy: false,
           create: (BuildContext context) => AudioNotesCubit(),
         ),
         BlocProvider<ImapCubit>(
+          lazy: false,
           create: (BuildContext context) => ImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
