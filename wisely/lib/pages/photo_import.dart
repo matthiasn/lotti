@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wisely/widgets/buttons.dart';
 
 class PhotoImportPage extends StatefulWidget {
   const PhotoImportPage({Key? key}) : super(key: key);
@@ -30,12 +31,10 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            OutlinedButton(
+            Button(
               onPressed: _importPhotos,
-              child: const Text(
-                'Import Photos',
-                style: TextStyle(color: CupertinoColors.systemOrange),
-              ),
+              label: 'Import Photos',
+              primaryColor: CupertinoColors.systemOrange,
             ),
           ],
         ),
