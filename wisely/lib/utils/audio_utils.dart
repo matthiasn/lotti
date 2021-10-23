@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/audio_note.dart';
 
 class AudioUtils {
   static Future<String> getFullAudioPath(AudioNote audioNote) async {

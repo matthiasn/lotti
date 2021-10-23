@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';

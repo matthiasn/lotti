@@ -1,6 +1,6 @@
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
 part 'audio_notes_cubit.g.dart';
