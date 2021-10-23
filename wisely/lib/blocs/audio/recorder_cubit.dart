@@ -69,8 +69,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
       assignVectorClock();
-      String json = await AudioUtils.saveAudioNoteJson(_audioNote!);
-      _imapCubit.saveEncryptedImap(_audioNote!);
+      await AudioUtils.saveAudioNoteJson(_audioNote!);
+      await _imapCubit.saveEncryptedImap(_audioNote!);
       _audioNotesCubit.save(_audioNote!);
     }
   }
