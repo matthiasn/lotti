@@ -19,7 +19,7 @@ class EncryptionCubit extends Cubit<EncryptionState> {
     loadSyncConfig();
   }
 
-  Future<void> loadSyncConfig() async {
+  Future<SyncConfig?> loadSyncConfig() async {
     emit(Loading());
     String? sharedKey = await _storage.read(key: sharedSecretKey);
     String? imapConfigJson = await _storage.read(key: imapConfigKey);
@@ -36,6 +36,12 @@ class EncryptionCubit extends Cubit<EncryptionState> {
         sharedKey: sharedKey,
         imapConfig: imapConfig,
       ));
+      if (imapConfig != null) {
+        return SyncConfig(
+          imapConfig: imapConfig,
+          sharedSecret: sharedKey,
+        );
+      }
     }
   }
 
@@ -63,15 +69,12 @@ class EncryptionCubit extends Cubit<EncryptionState> {
 
   Future<void> deleteSharedKey() async {
     await _storage.delete(key: sharedSecretKey);
-    print('deleted key');
     loadSyncConfig();
   }
 
   Future<void> setImapConfig(ImapConfig imapConfig) async {
     String json = jsonEncode(imapConfig);
     await _storage.write(key: imapConfigKey, value: json);
-    String? fromStore = await _storage.read(key: imapConfigKey);
-    print('EncryptionCubit setImapConfig JSON from store $fromStore');
     loadSyncConfig();
   }
 }
