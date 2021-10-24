@@ -24,7 +24,7 @@ build_runner:
 	flutter pub run build_runner build --delete-conflicting-outputs
 
 .PHONY: ipa
-ipa:
+ipa: clean_test
 	flutter build ipa
 
 .PHONY: macos
@@ -33,4 +33,4 @@ macos:
 
 
 .PHONY: clean_test
-clean_test: clean deps test
+clean_test: clean deps build_runner test
