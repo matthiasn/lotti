@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import 'journal_state.dart';
 
@@ -36,6 +37,8 @@ class JournalCubit extends Cubit<JournalState> {
       final String filePath = '${docDir.path}/$directory/${image.name}';
       await File(filePath).parent.create(recursive: true);
       await image.saveTo(filePath);
+      await printExif(await image.readAsBytes());
+      await printGeolocation(await image.readAsBytes());
     }
   }
 }
