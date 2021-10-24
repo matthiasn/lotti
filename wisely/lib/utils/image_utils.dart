@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
@@ -63,4 +65,16 @@ printExif(Uint8List bytes) async {
   final created = data['EXIF DateTimeOriginal']?.toString();
   final offsetTime = data['EXIF OffsetTimeOriginal']?.toString();
   print('Image created: $created $offsetTime');
+}
+
+Future<File?> compressAndGetFile(File file) async {
+  String sourcePath = file.absolute.path;
+  File? result = await FlutterImageCompress.compressAndGetFile(
+    sourcePath,
+    '$sourcePath.heic',
+    quality: 95,
+    format: CompressFormat.heic,
+  );
+  print('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
+  return result;
 }

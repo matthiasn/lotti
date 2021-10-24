@@ -21,9 +21,7 @@ class JournalCubit extends Cubit<JournalState> {
     // final List<XFile>? images = await _picker.pickMultiImage(
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxHeight: 2048,
-      maxWidth: 2048,
-      imageQuality: 80,
+      imageQuality: 88,
     );
     if (image != null) {
       print('JournalCubit importPhoto $image');
@@ -34,11 +32,14 @@ class JournalCubit extends Cubit<JournalState> {
 
       final docDir = await getApplicationDocumentsDirectory();
       const String directory = 'images';
-      final String filePath = '${docDir.path}/$directory/${image.name}';
-      await File(filePath).parent.create(recursive: true);
-      await image.saveTo(filePath);
+      final File imageFile = File('${docDir.path}/$directory/${image.name}');
+      await imageFile.parent.create(recursive: true);
+      await image.saveTo(imageFile.path);
       await printExif(await image.readAsBytes());
       await printGeolocation(await image.readAsBytes());
+      if (imageFile.path.contains('.png')) {
+        await compressAndGetFile(imageFile);
+      }
     }
   }
 }

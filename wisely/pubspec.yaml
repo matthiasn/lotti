@@ -48,6 +48,7 @@ dependencies:
   flutter_form_builder: ^6.1.0+1
   permission_handler: ^8.1.6
   exif: ^3.0.1
+  flutter_image_compress: ^1.1.0
 
 dev_dependencies:
   flutter_test:
