@@ -23,6 +23,10 @@ check-null-safety:
 build_runner:
 	flutter pub run build_runner build --delete-conflicting-outputs
 
+.PHONY: build_runner_watch
+build_runner_watch:
+	flutter pub run build_runner watch --delete-conflicting-outputs
+
 .PHONY: ipa
 ipa: clean_test
 	flutter build ipa
