@@ -16,6 +16,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
+import 'blocs/journal/journal_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
 void main() async {
@@ -45,6 +46,10 @@ class WiselyApp extends StatelessWidget {
         BlocProvider<AudioNotesCubit>(
           lazy: false,
           create: (BuildContext context) => AudioNotesCubit(),
+        ),
+        BlocProvider<JournalCubit>(
+          lazy: false,
+          create: (BuildContext context) => JournalCubit(),
         ),
         BlocProvider<ImapCubit>(
           lazy: false,
