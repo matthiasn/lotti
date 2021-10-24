@@ -5,6 +5,17 @@ part 'journal_entry.freezed.dart';
 part 'journal_entry.g.dart';
 
 @freezed
+class Image with _$Image {
+  factory Image({
+    required String imageId,
+    required String imageFile,
+    required String imageDirectory,
+  }) = _Image;
+
+  factory Image.fromJson(Map<String, dynamic> json) => _$ImageFromJson(json);
+}
+
+@freezed
 class JournalEntry with _$JournalEntry {
   factory JournalEntry({
     required String id,
@@ -13,15 +24,13 @@ class JournalEntry with _$JournalEntry {
     required int utcOffset,
     required String timezone,
     DateTime? updatedAt,
-    String? transcript,
     double? latitude,
     double? longitude,
     VectorClock? vectorClock,
-    String? imageFile,
-    String? imageDirectory,
     String? plainText,
     String? markdown,
     String? quill,
+    Image? image,
   }) = _JournalEntry;
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) =>
