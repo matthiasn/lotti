@@ -1,12 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
-part 'image_entry.freezed.dart';
-part 'image_entry.g.dart';
+part 'journal_entry.freezed.dart';
+part 'journal_entry.g.dart';
 
 @freezed
-class ImageEntry with _$ImageEntry {
-  factory ImageEntry({
+class JournalEntry with _$JournalEntry {
+  factory JournalEntry({
     required String id,
     required int timestamp,
     required DateTime createdAt,
@@ -22,8 +22,8 @@ class ImageEntry with _$ImageEntry {
     String? plainText,
     String? markdown,
     String? quill,
-  }) = _ImageEntry;
+  }) = _JournalEntry;
 
-  factory ImageEntry.fromJson(Map<String, dynamic> json) =>
-      _$ImageEntryFromJson(json);
+  factory JournalEntry.fromJson(Map<String, dynamic> json) =>
+      _$JournalEntryFromJson(json);
 }
