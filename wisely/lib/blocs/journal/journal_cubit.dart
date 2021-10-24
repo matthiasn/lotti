@@ -16,13 +16,26 @@ class JournalCubit extends Cubit<JournalState> {
 
   Future<void> importPhoto() async {
     final ImagePicker _picker = ImagePicker();
-    // final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    // final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-    // final List<XFile>? images = await _picker.pickMultiImage(
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 88,
     );
+    _processImage(image);
+  }
+
+  Future<void> importPhotos() async {
+    final ImagePicker _picker = ImagePicker();
+    final List<XFile>? images = await _picker.pickMultiImage(
+      imageQuality: 88,
+    );
+    if (images != null) {
+      for (final image in images) {
+        _processImage(image);
+      }
+    }
+  }
+
+  Future<void> _processImage(XFile? image) async {
     if (image != null) {
       print('JournalCubit importPhoto $image');
       print('JournalCubit importPhoto path ${image.path}');
