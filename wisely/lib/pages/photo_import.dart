@@ -29,6 +29,13 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
             children: <Widget>[
               Button(
                 onPressed: () async {
+                  context.read<JournalCubit>().pickImageAssets(context);
+                },
+                label: 'Pick Assets',
+                primaryColor: CupertinoColors.systemOrange,
+              ),
+              Button(
+                onPressed: () async {
                   context.read<JournalCubit>().importPhoto();
                 },
                 label: 'Import Photo',

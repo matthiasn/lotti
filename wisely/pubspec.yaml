@@ -49,6 +49,7 @@ dependencies:
   permission_handler: ^8.1.6
   exif: ^3.0.1
   flutter_image_compress: ^1.1.0
+  wechat_assets_picker: ^6.2.2
 
 dev_dependencies:
   flutter_test:

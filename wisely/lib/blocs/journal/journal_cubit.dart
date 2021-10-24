@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/utils/image_utils.dart';
 
 import 'journal_state.dart';
@@ -31,6 +33,27 @@ class JournalCubit extends Cubit<JournalState> {
     if (images != null) {
       for (final image in images) {
         _processImage(image);
+      }
+    }
+  }
+
+  Future<void> pickImageAssets(BuildContext context) async {
+    final List<AssetEntity>? assets = await AssetPicker.pickAssets(
+      context,
+      textDelegate: EnglishTextDelegate(),
+    );
+    if (assets != null) {
+      for (final AssetEntity asset in assets) {
+        print('pickAssets $asset');
+        print('pickAssets createDateTime ${asset.createDateTime}');
+        print('pickAssets modifiedDateTime ${asset.modifiedDateTime}');
+        print('pickAssets id ${asset.id}');
+        print('pickAssets width ${asset.width}');
+        print('pickAssets height ${asset.height}');
+        print('pickAssets latitude ${asset.latitude}');
+        print('pickAssets longitude ${asset.longitude}');
+        print('pickAssets size ${asset.size}');
+        print('pickAssets size ${asset.type}');
       }
     }
   }
