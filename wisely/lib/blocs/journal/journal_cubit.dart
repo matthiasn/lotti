@@ -40,6 +40,8 @@ class JournalCubit extends Cubit<JournalState> {
       print('JournalCubit importPhoto $image');
       print('JournalCubit importPhoto path ${image.path}');
       print('JournalCubit importPhoto name ${image.name}');
+      print(
+          'JournalCubit importPhoto lastModified ${await image.lastModified()}');
       print('JournalCubit importPhoto mimeType ${image.mimeType}');
       print('JournalCubit importPhoto length ${await image.length()}');
 
