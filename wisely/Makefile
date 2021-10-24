@@ -35,6 +35,12 @@ ipa: clean_test
 macos:
 	flutter build macos
 
+.PHONY: viz
+viz:
+	dart pub global run dcdg -o classes.viz.puml -s lib/classes/
+	PLANTUML_LIMIT_SIZE=12000 plantuml classes.viz.puml
+	open classes.viz.png
+
 
 .PHONY: clean_test
 clean_test: clean deps build_runner test
