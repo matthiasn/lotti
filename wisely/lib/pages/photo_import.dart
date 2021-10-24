@@ -20,10 +20,6 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
 
   @override
   Widget build(BuildContext context) {
-    void _importPhotos() async {
-      context.read<JournalCubit>().importPhotos();
-    }
-
     return BlocBuilder<JournalCubit, JournalState>(
         builder: (BuildContext context, JournalState state) {
       return Center(
@@ -32,8 +28,10 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Button(
-                onPressed: _importPhotos,
-                label: 'Import Photos',
+                onPressed: () async {
+                  context.read<JournalCubit>().importPhoto();
+                },
+                label: 'Import Photo',
                 primaryColor: CupertinoColors.systemOrange,
               ),
             ],
