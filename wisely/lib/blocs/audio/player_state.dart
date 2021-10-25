@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 part 'player_state.freezed.dart';
 

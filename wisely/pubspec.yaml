@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.17+18
+version: 0.1.19+20
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -25,7 +25,6 @@ dependencies:
   sqflite: ^2.0.0+4
   path: ^1.8.0
   health: ^3.1.1+1
-  image_picker: ^0.8.4+2
   delta_markdown: ^0.3.0
   flutter_sound: ^8.3.12
   path_provider: ^2.0.5
@@ -47,6 +46,10 @@ dependencies:
   freezed_annotation: ^0.15.0
   flutter_form_builder: ^6.1.0+1
   permission_handler: ^8.1.6
+  exif: ^3.0.1
+  flutter_image_compress: ^1.1.0
+  wechat_assets_picker: ^6.2.2
+  dart_geohash: ^2.0.1
 
 dev_dependencies:
   flutter_test:

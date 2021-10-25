@@ -13,17 +13,17 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/journal_entities.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
-import 'package:wisely/utils/audio_utils.dart';
 
-import '../audio_notes_cubit.dart';
+import '../journal_entities_cubit.dart';
 import 'imap_tools.dart';
 
 class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
-  late final AudioNotesCubit _audioNotesCubit;
+  late final JournalEntitiesCubit _journalEntitiesCubit;
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
@@ -31,10 +31,10 @@ class ImapCubit extends Cubit<ImapState> {
 
   ImapCubit({
     required EncryptionCubit encryptionCubit,
-    required AudioNotesCubit audioNotesCubit,
+    required JournalEntitiesCubit journalEntitiesCubit,
   }) : super(ImapState.initial()) {
     _encryptionCubit = encryptionCubit;
-    _audioNotesCubit = audioNotesCubit;
+    _journalEntitiesCubit = journalEntitiesCubit;
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
   }
@@ -42,10 +42,23 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> processMessage(MimeMessage message) async {
     if (Platform.isMacOS) {
       String? encryptedMessage = readMessage(message);
-      AudioNote? audioNote =
+      SyncMessage? syncMessage =
           await decryptMessage(encryptedMessage, message, _b64Secret);
-      await saveAttachment(message, audioNote, _b64Secret);
-      if (audioNote != null) _audioNotesCubit.save(audioNote);
+      syncMessage?.when(
+        journalEntity: (JournalEntity entity, _) async {
+          entity.map(
+              audioNote: (AudioNote audioNote) async {
+                await saveAudioAttachment(message, audioNote, _b64Secret);
+                _journalEntitiesCubit.save(audioNote);
+              },
+              journalImage: (JournalImage journalImage) async {
+                print('processMessage journalImage $journalImage');
+                await saveImageAttachment(message, journalImage, _b64Secret);
+                _journalEntitiesCubit.save(journalImage);
+              },
+              journalEntry: (JournalEntry journalEntry) async {});
+        },
+      );
     } else {
       print('Ignoring message');
     }
@@ -129,24 +142,25 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<void> saveEncryptedImap(AudioNote audioNote) async {
-    String jsonString = json.encode(audioNote.toJson());
-    String subject = audioNote.vectorClock.toString();
-
-    File? audioFile = await AudioUtils.getAudioFile(audioNote);
+  Future<void> saveEncryptedImap(
+    SyncMessage syncMessage, {
+    File? attachment,
+  }) async {
+    String jsonString = json.encode(syncMessage);
+    String subject = syncMessage.vectorClock.toString();
 
     if (_b64Secret != null) {
       String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      saveImapMessage(_imapClient, subject, encryptedMessage, null);
-
-      if (audioFile != null) {
-        int fileLength = audioFile.lengthSync();
+      if (attachment != null) {
+        int fileLength = attachment.lengthSync();
         if (fileLength > 0) {
-          File encryptedFile = File('${audioFile.path}.aes');
-          await encryptFile(audioFile, encryptedFile, _b64Secret);
+          File encryptedFile = File('${attachment.path}.aes');
+          await encryptFile(attachment, encryptedFile, _b64Secret);
           saveImapMessage(
               _imapClient, subject, encryptedMessage, encryptedFile);
         }
+      } else {
+        saveImapMessage(_imapClient, subject, encryptedMessage, null);
       }
     }
   }

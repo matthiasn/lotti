@@ -6,18 +6,19 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:location/location.dart' hide PermissionStatus;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
-import 'package:wisely/db/audio_note.dart';
+import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_entities.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
-import '../audio_notes_cubit.dart';
+import '../journal_entities_cubit.dart';
 
 var uuid = const Uuid();
 AudioRecorderState initialState = AudioRecorderState(
@@ -28,7 +29,7 @@ AudioRecorderState initialState = AudioRecorderState(
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
-  late final AudioNotesCubit _audioNotesCubit;
+  late final JournalEntitiesCubit _journalEntitiesCubit;
   late final ImapCubit _imapCubit;
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
@@ -38,9 +39,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   AudioRecorderCubit({
     required VectorClockCubit vectorClockCubit,
     required ImapCubit imapCubit,
-    required AudioNotesCubit audioNotesCubit,
+    required JournalEntitiesCubit journalEntitiesCubit,
   }) : super(initialState) {
-    _audioNotesCubit = audioNotesCubit;
+    _journalEntitiesCubit = journalEntitiesCubit;
     _imapCubit = imapCubit;
     _vectorClockCubit = vectorClockCubit;
     _openAudioSession();
@@ -71,31 +72,38 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     ));
   }
 
-  void assignVectorClock() {
+  VectorClock assignVectorClock() {
     String host = _vectorClockCubit.state.host;
     int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
-    _audioNote = _audioNote?.copyWith(
-        vectorClock: VectorClock(<String, int>{host: nextAvailableCounter}));
+    VectorClock next = VectorClock(<String, int>{host: nextAvailableCounter});
+    _audioNote = _audioNote?.copyWith(vectorClock: next);
     _vectorClockCubit.increment();
+    return next;
   }
 
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
-      assignVectorClock();
+      VectorClock next = assignVectorClock();
       await AudioUtils.saveAudioNoteJson(_audioNote!);
-      await _imapCubit.saveEncryptedImap(_audioNote!);
-      _audioNotesCubit.save(_audioNote!);
+      File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
+
+      await _imapCubit.saveEncryptedImap(
+        SyncMessage.journalEntity(
+            journalEntity: _audioNote!, vectorClock: next),
+        attachment: audioFile,
+      );
+
+      _journalEntitiesCubit.save(_audioNote!);
     }
   }
 
   void _addGeolocation() async {
-    _deviceLocation.getCurrentLocation().then((LocationData locationData) {
-      _audioNote = _audioNote?.copyWith(
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-      );
-      _saveAudioNoteJson();
+    _deviceLocation.getCurrentGeoLocation().then((Geolocation? geolocation) {
+      if (geolocation != null) {
+        _audioNote = _audioNote?.copyWith(geolocation: geolocation);
+        _saveAudioNoteJson();
+      }
     });
   }
 
@@ -105,7 +113,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
     String day = DateFormat('yyyy-MM-dd').format(created);
     String relativePath = '/audio/$day/';
-    String directory = await AudioUtils.createAudioDirectory(relativePath);
+    String directory = await AudioUtils.createAssetDirectory(relativePath);
     String filePath = '${directory}$fileName';
     print('RECORD: ${filePath}');
     String timezone = await FlutterNativeTimezone.getLocalTimezone();

@@ -54,3 +54,6 @@ local.properties
 
 *.freezed.dart
 *.g.dart
+
+classes.viz.png
+classes.viz.puml

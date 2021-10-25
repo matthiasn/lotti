@@ -4,7 +4,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_cubit.dart';
-import 'package:wisely/blocs/audio_notes_cubit.dart';
+import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/pages/audio.dart';
@@ -16,6 +16,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
+import 'blocs/journal/journal_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
 void main() async {
@@ -42,21 +43,32 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
-        BlocProvider<AudioNotesCubit>(
+        BlocProvider<JournalEntitiesCubit>(
           lazy: false,
-          create: (BuildContext context) => AudioNotesCubit(),
+          create: (BuildContext context) => JournalEntitiesCubit(),
         ),
         BlocProvider<ImapCubit>(
           lazy: false,
           create: (BuildContext context) => ImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
+            journalEntitiesCubit:
+                BlocProvider.of<JournalEntitiesCubit>(context),
+          ),
+        ),
+        BlocProvider<JournalCubit>(
+          lazy: false,
+          create: (BuildContext context) => JournalCubit(
+            imapCubit: BlocProvider.of<ImapCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+            journalEntitiesCubit:
+                BlocProvider.of<JournalEntitiesCubit>(context),
           ),
         ),
         BlocProvider<AudioRecorderCubit>(
           create: (BuildContext context) => AudioRecorderCubit(
             imapCubit: BlocProvider.of<ImapCubit>(context),
-            audioNotesCubit: BlocProvider.of<AudioNotesCubit>(context),
+            journalEntitiesCubit:
+                BlocProvider.of<JournalEntitiesCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),

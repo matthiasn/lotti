@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:wisely/health/health_service.dart';
+import 'package:wisely/widgets/buttons.dart';
 
 class HealthPage extends StatefulWidget {
   const HealthPage({Key? key}) : super(key: key);
@@ -48,125 +49,77 @@ class _HealthPageState extends State<HealthPage> {
                 _endDate,
               ),
             ),
-            OutlinedButton(
+            Button(
+              label: 'Import Sleep Data',
               onPressed: () => HealthService().fetchData(
                 types: healthService.sleepTypes,
                 filename: 'sleep.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Sleep Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.heartRateTypes,
                 filename: 'heart.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Heart Rate Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Heart Rate Data',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.bpTypes,
                 filename: 'bp.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Blood Pressure Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Blood Pressure Data',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.bodyMeasurementTypes,
                 filename: 'body.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Body Measurement Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Body Measurement Data',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.energyTypes,
                 filename: 'energy.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Energy Burned Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Energy Burned Data',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.stepsTypes,
                 filename: 'steps.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Steps',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Steps',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.movementTypes,
                 filename: 'movement.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Stairs, Distance',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Stairs, Distance',
             ),
-            OutlinedButton(
+            Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.workoutTypes,
                 filename: 'workouts.json',
                 startDate: _startDate,
                 endDate: _endDate,
               ),
-              child: const Text(
-                'Import Workout Data',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              label: 'Import Workout Data',
             ),
           ],
         ),
