@@ -6,13 +6,13 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:location/location.dart' hide PermissionStatus;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
@@ -101,12 +101,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void _addGeolocation() async {
-    _deviceLocation.getCurrentLocation().then((LocationData locationData) {
-      _audioNote = _audioNote?.copyWith(
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-      );
-      _saveAudioNoteJson();
+    _deviceLocation.getCurrentGeoLocation().then((Geolocation? geolocation) {
+      if (geolocation != null) {
+        _audioNote = _audioNote?.copyWith(geolocation: geolocation);
+        _saveAudioNoteJson();
+      }
     });
   }
 

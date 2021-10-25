@@ -1,4 +1,6 @@
+import 'package:dart_geohash/dart_geohash.dart';
 import 'package:location/location.dart';
+import 'package:wisely/classes/geolocation.dart';
 
 class DeviceLocation {
   late Location location;
@@ -33,5 +35,32 @@ class DeviceLocation {
     LocationData _locationData = await location.getLocation();
     print(_locationData);
     return _locationData;
+  }
+
+  static String getGeoHash({
+    required double latitude,
+    required double longitude,
+  }) {
+    return GeoHasher().encode(longitude, latitude);
+  }
+
+  Future<Geolocation?> getCurrentGeoLocation() async {
+    LocationData locationData = await location.getLocation();
+    DateTime now = DateTime.now();
+    double? longitude = locationData.longitude;
+    double? latitude = locationData.latitude;
+    if (longitude != null && latitude != null) {
+      return Geolocation(
+        createdAt: now,
+        timezone: now.timeZoneName,
+        utcOffset: now.timeZoneOffset.inMinutes,
+        latitude: latitude,
+        longitude: longitude,
+        geohash: getGeoHash(
+          latitude: latitude,
+          longitude: longitude,
+        ),
+      );
+    }
   }
 }

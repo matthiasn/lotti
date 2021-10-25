@@ -28,12 +28,12 @@ class _MapWidgetState extends State<MapWidget> {
   Widget build(BuildContext context) {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
         builder: (BuildContext context, AudioPlayerState state) {
-      if (state.audioNote?.latitude == null ||
-          state.audioNote?.latitude == null) {
+      double? longitude = state.audioNote?.geolocation?.longitude;
+      double? latitude = state.audioNote?.geolocation?.latitude;
+      if (longitude == null || latitude == null) {
         return const Center();
       }
-      LatLng loc =
-          LatLng(state.audioNote!.latitude!, state.audioNote!.longitude!);
+      LatLng loc = LatLng(latitude, longitude);
 
       return Center(
         child: SizedBox(

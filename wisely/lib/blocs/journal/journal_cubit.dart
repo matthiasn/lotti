@@ -11,6 +11,7 @@ import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_image.dart';
 import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
@@ -49,6 +50,10 @@ class JournalCubit extends Cubit<JournalState> {
             createdAt: asset.createDateTime,
             latitude: asset.latitude,
             longitude: asset.longitude,
+            geohash: DeviceLocation.getGeoHash(
+              latitude: asset.latitude,
+              longitude: asset.longitude,
+            ),
           );
         }
 

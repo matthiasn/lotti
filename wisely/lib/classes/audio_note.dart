@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 part 'audio_note.freezed.dart';
@@ -17,8 +18,7 @@ class AudioNote with _$AudioNote {
     required Duration duration,
     DateTime? updatedAt,
     String? transcript,
-    double? latitude,
-    double? longitude,
+    Geolocation? geolocation,
     VectorClock? vectorClock,
   }) = _AudioNote;
 

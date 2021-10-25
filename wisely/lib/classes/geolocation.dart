@@ -11,6 +11,7 @@ class Geolocation with _$Geolocation {
     String? timezone,
     required double latitude,
     required double longitude,
+    required String geohash,
     double? altitude,
   }) = _Geolocation;
 

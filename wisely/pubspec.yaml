@@ -49,6 +49,7 @@ dependencies:
   exif: ^3.0.1
   flutter_image_compress: ^1.1.0
   wechat_assets_picker: ^6.2.2
+  dart_geohash: ^2.0.1
 
 dev_dependencies:
   flutter_test:
