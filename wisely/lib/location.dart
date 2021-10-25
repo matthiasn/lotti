@@ -6,7 +6,7 @@ class DeviceLocation {
   late Location location;
 
   DeviceLocation() {
-    location = new Location();
+    location = Location();
     init();
   }
 
@@ -56,6 +56,12 @@ class DeviceLocation {
         utcOffset: now.timeZoneOffset.inMinutes,
         latitude: latitude,
         longitude: longitude,
+        altitude: locationData.altitude,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+        heading: locationData.heading,
+        headingAccuracy: locationData.headingAccuracy,
+        speedAccuracy: locationData.speedAccuracy,
         geohash: getGeoHash(
           latitude: latitude,
           longitude: longitude,

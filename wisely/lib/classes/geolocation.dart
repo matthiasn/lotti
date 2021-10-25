@@ -12,6 +12,11 @@ class Geolocation with _$Geolocation {
     required double latitude,
     required double longitude,
     required String geohash,
+    double? accuracy,
+    double? speed,
+    double? speedAccuracy,
+    double? heading,
+    double? headingAccuracy,
     double? altitude,
   }) = _Geolocation;
 
