@@ -58,6 +58,7 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => JournalCubit(
             imapCubit: BlocProvider.of<ImapCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<AudioRecorderCubit>(

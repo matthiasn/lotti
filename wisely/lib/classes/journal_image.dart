@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/sync/vector_clock.dart';
 
 import 'entry_text.dart';
 
@@ -17,6 +18,7 @@ class JournalImage with _$JournalImage {
     String? timezone,
     EntryText? entryText,
     Geolocation? geolocation,
+    VectorClock? vectorClock,
   }) = _JournalImage;
 
   factory JournalImage.fromJson(Map<String, dynamic> json) =>

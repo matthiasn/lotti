@@ -15,6 +15,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -171,6 +172,29 @@ class ImapCubit extends Cubit<ImapState> {
           saveImapMessage(
               _imapClient, subject, encryptedMessage, encryptedFile);
         }
+      }
+    }
+  }
+
+  Future<void> saveEncryptedImap(
+    SyncMessage syncMessage,
+    File? attachment,
+  ) async {
+    String jsonString = json.encode(syncMessage);
+    String subject = syncMessage.vectorClock.toString();
+
+    if (_b64Secret != null) {
+      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+      if (attachment != null) {
+        int fileLength = attachment.lengthSync();
+        if (fileLength > 0) {
+          File encryptedFile = File('${attachment.path}.aes');
+          await encryptFile(attachment, encryptedFile, _b64Secret);
+          saveImapMessage(
+              _imapClient, subject, encryptedMessage, encryptedFile);
+        }
+      } else {
+        saveImapMessage(_imapClient, subject, encryptedMessage, null);
       }
     }
   }

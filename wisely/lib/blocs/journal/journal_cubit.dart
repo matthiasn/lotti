@@ -7,8 +7,11 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
+import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
@@ -16,12 +19,15 @@ import 'journal_state.dart';
 
 class JournalCubit extends Cubit<JournalState> {
   late final ImapCubit _imapCubit;
+  late final VectorClockCubit _vectorClockCubit;
 
   JournalCubit({
     required ImapCubit imapCubit,
+    required VectorClockCubit vectorClockCubit,
   }) : super(JournalState()) {
     print('Hello from JournalCubit');
     _imapCubit = imapCubit;
+    _vectorClockCubit = vectorClockCubit;
   }
 
   Future<void> pickImageAssets(BuildContext context) async {
@@ -61,25 +67,45 @@ class JournalCubit extends Cubit<JournalState> {
           String directory =
               await AudioUtils.createAssetDirectory(relativePath);
           String targetFilePath = '$directory$imageFileName';
+          File? targetFile;
           if (originalName.contains('.PNG')) {
-            await compressAndSave(
+            targetFile = await compressAndSave(
               originFile,
               '${targetFilePath}',
             );
           } else {
-            await File(targetFilePath)
+            targetFile = await File(targetFilePath)
                 .writeAsBytes(await originFile.readAsBytes());
           }
+
+          VectorClock getNextVectorClock() {
+            String host = _vectorClockCubit.state.host;
+            int nextAvailableCounter =
+                _vectorClockCubit.state.nextAvailableCounter;
+            _vectorClockCubit.increment();
+            return VectorClock(<String, int>{host: nextAvailableCounter});
+          }
+
+          VectorClock vectorClock = getNextVectorClock();
+
           JournalImage journalImage = JournalImage(
             imageId: asset.id,
             geolocation: geolocation,
             imageFile: imageFileName,
             imageDirectory: relativePath,
             createdAt: asset.createDateTime,
+            vectorClock: vectorClock,
           );
           print(journalImage);
           await saveJournalImageJson(journalImage);
-          await _imapCubit.saveImageEncryptedImap(journalImage);
+
+          await _imapCubit.saveEncryptedImap(
+            SyncMessage.image(
+              journalImage: journalImage,
+              vectorClock: vectorClock,
+            ),
+            targetFile,
+          );
         }
       }
     }
