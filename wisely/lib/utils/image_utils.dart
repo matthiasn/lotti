@@ -122,6 +122,10 @@ Future<String> getFullImagePath(JournalImage img) async {
   return '${docDir.path}${img.imageDirectory}${img.imageFile}';
 }
 
+String getFullImagePathWithDocDir(JournalImage img, docDir) {
+  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+}
+
 Future<File?> getJournalImageFile(JournalImage journalImage) async {
   String fullPath = await getFullImagePath(journalImage);
   File file = File(fullPath);

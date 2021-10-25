@@ -18,12 +18,12 @@ import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 
-import '../audio_notes_cubit.dart';
+import '../journal_entities_cubit.dart';
 import 'imap_tools.dart';
 
 class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
-  late final AudioNotesCubit _audioNotesCubit;
+  late final JournalEntitiesCubit _journalEntitiesCubit;
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
@@ -31,10 +31,10 @@ class ImapCubit extends Cubit<ImapState> {
 
   ImapCubit({
     required EncryptionCubit encryptionCubit,
-    required AudioNotesCubit audioNotesCubit,
+    required JournalEntitiesCubit journalEntitiesCubit,
   }) : super(ImapState.initial()) {
     _encryptionCubit = encryptionCubit;
-    _audioNotesCubit = audioNotesCubit;
+    _journalEntitiesCubit = journalEntitiesCubit;
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
   }
@@ -49,11 +49,12 @@ class ImapCubit extends Cubit<ImapState> {
           entity.map(
               audioNote: (AudioNote audioNote) async {
                 await saveAudioAttachment(message, audioNote, _b64Secret);
-                _audioNotesCubit.save(audioNote);
+                _journalEntitiesCubit.save(audioNote);
               },
               journalImage: (JournalImage journalImage) async {
                 print('processMessage journalImage $journalImage');
                 await saveImageAttachment(message, journalImage, _b64Secret);
+                _journalEntitiesCubit.save(journalImage);
               },
               journalEntry: (JournalEntry journalEntry) async {});
         },

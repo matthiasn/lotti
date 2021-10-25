@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
-import 'package:wisely/blocs/audio_notes_cubit.dart';
+import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
+import 'package:wisely/utils/image_utils.dart';
 import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/map_widget.dart';
 
@@ -18,9 +21,20 @@ class JournalPage extends StatefulWidget {
 }
 
 class _JournalPageState extends State<JournalPage> {
+  Directory? _docDir;
+
   @override
   void initState() {
     super.initState();
+    setDocDir();
+  }
+
+  void setDocDir() async {
+    Directory docDir = await getApplicationDocumentsDirectory();
+
+    setState(() {
+      _docDir = docDir;
+    });
   }
 
   @override
@@ -30,8 +44,8 @@ class _JournalPageState extends State<JournalPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AudioNotesCubit, AudioNotesCubitState>(
-        builder: (context, audioNotesState) {
+    return BlocBuilder<JournalEntitiesCubit, JournalEntitiesState>(
+        builder: (context, journalEntitiesState) {
       return Center(
         child: SingleChildScrollView(
           child: Column(
@@ -52,18 +66,35 @@ class _JournalPageState extends State<JournalPage> {
               ListView.builder(
                 shrinkWrap: true,
                 physics: const ClampingScrollPhysics(),
-                itemCount: audioNotesState.audioNotesMap.length,
+                itemCount: journalEntitiesState.journalEntitiesMap.length,
                 itemBuilder: (BuildContext context, int index) {
-                  AudioNote item =
-                      audioNotesState.audioNotesMap.values.elementAt(index);
+                  JournalEntity item = journalEntitiesState
+                      .journalEntitiesMap.values
+                      .elementAt(index);
                   return Dismissible(
                     key: Key(index.toString()),
                     background: Container(color: Colors.red),
-                    child: AudioNoteListItem(
-                      audioNote: item,
+                    child: item.map(
+                      journalEntry: (JournalEntry journalEntry) =>
+                          const Text('implement JournalEntry view'),
+                      journalImage: (JournalImage journalImage) => Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: (_docDir != null)
+                            ? Image.file(
+                                File(getFullImagePathWithDocDir(
+                                    journalImage, _docDir)),
+                                width: 300,
+                                height: 300,
+                                fit: BoxFit.contain,
+                              )
+                            : null,
+                      ),
+                      audioNote: (audioNote) => AudioNoteListItem(
+                        audioNote: audioNote,
+                      ),
                     ),
                     onDismissed: (DismissDirection direction) {
-                      context.read<AudioNotesCubit>().delete(item);
+                      context.read<JournalEntitiesCubit>().delete(item);
                     },
                   );
                 },
