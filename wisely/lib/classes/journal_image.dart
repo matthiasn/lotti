@@ -3,21 +3,22 @@ import 'package:wisely/classes/geolocation.dart';
 
 import 'entry_text.dart';
 
-part 'image.freezed.dart';
-part 'image.g.dart';
+part 'journal_image.freezed.dart';
+part 'journal_image.g.dart';
 
 @freezed
-class Image with _$Image {
-  factory Image({
+class JournalImage with _$JournalImage {
+  factory JournalImage({
     required String imageId,
     required String imageFile,
     required String imageDirectory,
     required DateTime createdAt,
-    required int utcOffset,
+    int? utcOffset,
     String? timezone,
     EntryText? entryText,
     Geolocation? geolocation,
-  }) = _Image;
+  }) = _JournalImage;
 
-  factory Image.fromJson(Map<String, dynamic> json) => _$ImageFromJson(json);
+  factory JournalImage.fromJson(Map<String, dynamic> json) =>
+      _$JournalImageFromJson(json);
 }

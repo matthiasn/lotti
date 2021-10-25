@@ -105,7 +105,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
     String day = DateFormat('yyyy-MM-dd').format(created);
     String relativePath = '/audio/$day/';
-    String directory = await AudioUtils.createAudioDirectory(relativePath);
+    String directory = await AudioUtils.createAssetDirectory(relativePath);
     String filePath = '${directory}$fileName';
     print('RECORD: ${filePath}');
     String timezone = await FlutterNativeTimezone.getLocalTimezone();

@@ -5,8 +5,12 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
+import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
 import 'journal_state.dart';
@@ -41,19 +45,57 @@ class JournalCubit extends Cubit<JournalState> {
     final List<AssetEntity>? assets = await AssetPicker.pickAssets(
       context,
       textDelegate: EnglishTextDelegate(),
+      routeDuration: const Duration(seconds: 0),
     );
     if (assets != null) {
       for (final AssetEntity asset in assets) {
         print('pickAssets $asset');
         print('pickAssets createDateTime ${asset.createDateTime}');
-        print('pickAssets modifiedDateTime ${asset.modifiedDateTime}');
         print('pickAssets id ${asset.id}');
-        print('pickAssets width ${asset.width}');
-        print('pickAssets height ${asset.height}');
-        print('pickAssets latitude ${asset.latitude}');
-        print('pickAssets longitude ${asset.longitude}');
-        print('pickAssets size ${asset.size}');
-        print('pickAssets size ${asset.type}');
+        print('pickAssets file ${await asset.file}');
+
+        Geolocation? geolocation;
+        if (asset.latitude != null && asset.longitude != null) {
+          geolocation = Geolocation(
+            createdAt: asset.createDateTime,
+            latitude: asset.latitude,
+            longitude: asset.longitude,
+          );
+        }
+
+        DateTime createdAt = asset.createDateTime;
+        File? originFile = await asset.originFile;
+
+        if (originFile != null) {
+          String idNamePart = asset.id.split('/').first;
+          String originalName = originFile.path.split('/').last;
+          String imageFileName = '$idNamePart.$originalName'.replaceAll(
+            'PNG',
+            'HEIC',
+          );
+          String day = DateFormat('yyyy-MM-dd').format(createdAt);
+          String relativePath = '/images/$day/';
+          String directory =
+              await AudioUtils.createAssetDirectory(relativePath);
+          String targetFilePath = '$directory$imageFileName';
+          if (originalName.contains('.PNG')) {
+            await compressAndSave(
+              originFile,
+              '${targetFilePath}',
+            );
+          } else {
+            await File(targetFilePath)
+                .writeAsBytes(await originFile.readAsBytes());
+          }
+          JournalImage journalImage = JournalImage(
+            imageId: asset.id,
+            geolocation: geolocation,
+            imageFile: imageFileName,
+            imageDirectory: relativePath,
+            createdAt: asset.createDateTime,
+          );
+          print(journalImage);
+        }
       }
     }
   }
