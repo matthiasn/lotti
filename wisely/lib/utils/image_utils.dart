@@ -122,6 +122,14 @@ Future<String> getFullImagePath(JournalImage img) async {
   return '${docDir.path}${img.imageDirectory}${img.imageFile}';
 }
 
+Future<File?> getJournalImageFile(JournalImage journalImage) async {
+  String fullPath = await getFullImagePath(journalImage);
+  File file = File(fullPath);
+  if (file.existsSync()) {
+    return file;
+  }
+}
+
 Future<String> saveJournalImageJson(JournalImage journalImage) async {
   String json = jsonEncode(journalImage);
   File file = File('${await getFullImagePath(journalImage)}.json');

@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
+import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_image.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -14,8 +15,13 @@ import 'package:wisely/utils/image_utils.dart';
 import 'journal_state.dart';
 
 class JournalCubit extends Cubit<JournalState> {
-  JournalCubit() : super(JournalState()) {
+  late final ImapCubit _imapCubit;
+
+  JournalCubit({
+    required ImapCubit imapCubit,
+  }) : super(JournalState()) {
     print('Hello from JournalCubit');
+    _imapCubit = imapCubit;
   }
 
   Future<void> pickImageAssets(BuildContext context) async {
@@ -72,7 +78,8 @@ class JournalCubit extends Cubit<JournalState> {
             createdAt: asset.createDateTime,
           );
           print(journalImage);
-          saveJournalImageJson(journalImage);
+          await saveJournalImageJson(journalImage);
+          await _imapCubit.saveImageEncryptedImap(journalImage);
         }
       }
     }

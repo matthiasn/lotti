@@ -14,9 +14,11 @@ import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/journal_image.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import '../audio_notes_cubit.dart';
 import 'imap_tools.dart';
@@ -129,8 +131,8 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<void> saveEncryptedImap(AudioNote audioNote) async {
-    String jsonString = json.encode(audioNote.toJson());
+  Future<void> saveAudioEncryptedImap(AudioNote audioNote) async {
+    String jsonString = json.encode(audioNote);
     String subject = audioNote.vectorClock.toString();
 
     File? audioFile = await AudioUtils.getAudioFile(audioNote);
@@ -144,6 +146,28 @@ class ImapCubit extends Cubit<ImapState> {
         if (fileLength > 0) {
           File encryptedFile = File('${audioFile.path}.aes');
           await encryptFile(audioFile, encryptedFile, _b64Secret);
+          saveImapMessage(
+              _imapClient, subject, encryptedMessage, encryptedFile);
+        }
+      }
+    }
+  }
+
+  Future<void> saveImageEncryptedImap(JournalImage journalImage) async {
+    String jsonString = json.encode(journalImage);
+    String subject = 'image';
+
+    File? imageFile = await getJournalImageFile(journalImage);
+
+    if (_b64Secret != null) {
+      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+      saveImapMessage(_imapClient, subject, encryptedMessage, null);
+
+      if (imageFile != null) {
+        int fileLength = imageFile.lengthSync();
+        if (fileLength > 0) {
+          File encryptedFile = File('${imageFile.path}.aes');
+          await encryptFile(imageFile, encryptedFile, _b64Secret);
           saveImapMessage(
               _imapClient, subject, encryptedMessage, encryptedFile);
         }

@@ -83,7 +83,8 @@ void saveImapMessage(
   if (file != null) {
     int fileLength = file.lengthSync();
     if (fileLength > 0) {
-      await builder.addFile(file, MediaType.fromText('audio/aac'));
+      await builder.addFile(
+          file, MediaType.fromText('application/octet-stream'));
     }
   }
 
