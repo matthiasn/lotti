@@ -34,20 +34,6 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
                 label: 'Pick Assets',
                 primaryColor: CupertinoColors.systemOrange,
               ),
-              Button(
-                onPressed: () async {
-                  context.read<JournalCubit>().importPhoto();
-                },
-                label: 'Import Photo',
-                primaryColor: CupertinoColors.systemOrange,
-              ),
-              Button(
-                onPressed: () async {
-                  context.read<JournalCubit>().importPhotos();
-                },
-                label: 'Import Photos',
-                primaryColor: CupertinoColors.systemOrange,
-              ),
             ],
           ),
         ),
