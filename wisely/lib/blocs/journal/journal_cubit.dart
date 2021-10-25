@@ -72,6 +72,7 @@ class JournalCubit extends Cubit<JournalState> {
             createdAt: asset.createDateTime,
           );
           print(journalImage);
+          saveJournalImageJson(journalImage);
         }
       }
     }

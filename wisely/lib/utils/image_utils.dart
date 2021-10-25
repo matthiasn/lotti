@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/classes/journal_image.dart';
 
 Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
@@ -113,4 +115,16 @@ Future<File?> compressAndSave(File file, String targetPath) async {
 Future<String> getImagePath(String relativePath) async {
   var docDir = await getApplicationDocumentsDirectory();
   return '${docDir.path}$relativePath';
+}
+
+Future<String> getFullImagePath(JournalImage img) async {
+  var docDir = await getApplicationDocumentsDirectory();
+  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+}
+
+Future<String> saveJournalImageJson(JournalImage journalImage) async {
+  String json = jsonEncode(journalImage);
+  File file = File('${await getFullImagePath(journalImage)}.json');
+  await file.writeAsString(json);
+  return json;
 }
