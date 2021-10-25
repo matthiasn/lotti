@@ -13,6 +13,7 @@ import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -71,20 +72,30 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     ));
   }
 
-  void assignVectorClock() {
+  VectorClock assignVectorClock() {
     String host = _vectorClockCubit.state.host;
     int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
-    _audioNote = _audioNote?.copyWith(
-        vectorClock: VectorClock(<String, int>{host: nextAvailableCounter}));
+    VectorClock next = VectorClock(<String, int>{host: nextAvailableCounter});
+    _audioNote = _audioNote?.copyWith(vectorClock: next);
     _vectorClockCubit.increment();
+    return next;
   }
 
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
-      assignVectorClock();
+      VectorClock next = assignVectorClock();
       await AudioUtils.saveAudioNoteJson(_audioNote!);
-      await _imapCubit.saveAudioEncryptedImap(_audioNote!);
+      File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
+
+      await _imapCubit.saveEncryptedImap(
+        SyncMessage.audioNote(
+          audioNote: _audioNote!,
+          vectorClock: next,
+        ),
+        attachment: audioFile,
+      );
+
       _audioNotesCubit.save(_audioNote!);
     }
   }

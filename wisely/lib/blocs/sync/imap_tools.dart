@@ -6,11 +6,14 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';
+import 'package:wisely/utils/image_utils.dart';
 
-Future<void> saveAttachment(
+Future<void> saveAudioAttachment(
   MimeMessage message,
   AudioNote? audioNote,
   String? b64Secret,
@@ -33,12 +36,37 @@ Future<void> saveAttachment(
   }
 }
 
-Future<AudioNote?> decryptMessage(
+Future<void> saveImageAttachment(
+  MimeMessage message,
+  JournalImage journalImage,
+  String? b64Secret,
+) async {
+  final attachments =
+      message.findContentInfo(disposition: ContentDisposition.attachment);
+
+  for (final attachment in attachments) {
+    final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+    if (attachmentMimePart != null &&
+        journalImage != null &&
+        b64Secret != null) {
+      Uint8List? bytes = attachmentMimePart.decodeContentBinary();
+      String filePath = await getFullImagePath(journalImage);
+      await File(filePath).parent.create(recursive: true);
+      File encrypted = File('$filePath.aes');
+      print('saveAttachment $filePath');
+      await writeToFile(bytes, encrypted.path);
+      await decryptFile(encrypted, File(filePath), b64Secret);
+      await saveJournalImageJson(journalImage);
+    }
+  }
+}
+
+Future<SyncMessage?> decryptMessage(
     String? encryptedMessage, MimeMessage message, String? b64Secret) async {
   if (encryptedMessage != null) {
     if (b64Secret != null) {
       String decryptedJson = decryptSalsa(encryptedMessage, b64Secret);
-      return AudioNote.fromJson(json.decode(decryptedJson));
+      return SyncMessage.fromJson(json.decode(decryptedJson));
     }
   }
 }

@@ -14,12 +14,11 @@ import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/journal_entry.dart';
 import 'package:wisely/classes/journal_image.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
-import 'package:wisely/utils/audio_utils.dart';
-import 'package:wisely/utils/image_utils.dart';
 
 import '../audio_notes_cubit.dart';
 import 'imap_tools.dart';
@@ -45,10 +44,19 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> processMessage(MimeMessage message) async {
     if (Platform.isMacOS) {
       String? encryptedMessage = readMessage(message);
-      AudioNote? audioNote =
+      SyncMessage? syncMessage =
           await decryptMessage(encryptedMessage, message, _b64Secret);
-      await saveAttachment(message, audioNote, _b64Secret);
-      if (audioNote != null) _audioNotesCubit.save(audioNote);
+      syncMessage?.when(
+        audioNote: (AudioNote audioNote, _) async {
+          await saveAudioAttachment(message, audioNote, _b64Secret);
+          _audioNotesCubit.save(audioNote);
+        },
+        image: (JournalImage journalImage, _) async {
+          print('processMessage journalImage $journalImage');
+          await saveImageAttachment(message, journalImage, _b64Secret);
+        },
+        journalEntry: (JournalEntry journalEntry, _) async {},
+      );
     } else {
       print('Ignoring message');
     }
@@ -132,54 +140,10 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<void> saveAudioEncryptedImap(AudioNote audioNote) async {
-    String jsonString = json.encode(audioNote);
-    String subject = audioNote.vectorClock.toString();
-
-    File? audioFile = await AudioUtils.getAudioFile(audioNote);
-
-    if (_b64Secret != null) {
-      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      saveImapMessage(_imapClient, subject, encryptedMessage, null);
-
-      if (audioFile != null) {
-        int fileLength = audioFile.lengthSync();
-        if (fileLength > 0) {
-          File encryptedFile = File('${audioFile.path}.aes');
-          await encryptFile(audioFile, encryptedFile, _b64Secret);
-          saveImapMessage(
-              _imapClient, subject, encryptedMessage, encryptedFile);
-        }
-      }
-    }
-  }
-
-  Future<void> saveImageEncryptedImap(JournalImage journalImage) async {
-    String jsonString = json.encode(journalImage);
-    String subject = 'image';
-
-    File? imageFile = await getJournalImageFile(journalImage);
-
-    if (_b64Secret != null) {
-      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      saveImapMessage(_imapClient, subject, encryptedMessage, null);
-
-      if (imageFile != null) {
-        int fileLength = imageFile.lengthSync();
-        if (fileLength > 0) {
-          File encryptedFile = File('${imageFile.path}.aes');
-          await encryptFile(imageFile, encryptedFile, _b64Secret);
-          saveImapMessage(
-              _imapClient, subject, encryptedMessage, encryptedFile);
-        }
-      }
-    }
-  }
-
   Future<void> saveEncryptedImap(
-    SyncMessage syncMessage,
+    SyncMessage syncMessage, {
     File? attachment,
-  ) async {
+  }) async {
     String jsonString = json.encode(syncMessage);
     String subject = syncMessage.vectorClock.toString();
 

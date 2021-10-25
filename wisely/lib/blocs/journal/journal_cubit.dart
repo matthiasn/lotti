@@ -104,7 +104,7 @@ class JournalCubit extends Cubit<JournalState> {
               journalImage: journalImage,
               vectorClock: vectorClock,
             ),
-            targetFile,
+            attachment: targetFile,
           );
         }
       }
