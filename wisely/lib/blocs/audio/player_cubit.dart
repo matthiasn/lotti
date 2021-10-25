@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wisely/blocs/audio/player_state.dart';
-import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {

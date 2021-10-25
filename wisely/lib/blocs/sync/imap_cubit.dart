@@ -13,9 +13,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
-import 'package:wisely/classes/audio_note.dart';
-import 'package:wisely/classes/journal_entry.dart';
-import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
@@ -47,15 +45,18 @@ class ImapCubit extends Cubit<ImapState> {
       SyncMessage? syncMessage =
           await decryptMessage(encryptedMessage, message, _b64Secret);
       syncMessage?.when(
-        audioNote: (AudioNote audioNote, _) async {
-          await saveAudioAttachment(message, audioNote, _b64Secret);
-          _audioNotesCubit.save(audioNote);
+        journalEntity: (JournalEntity entity, _) async {
+          entity.map(
+              audioNote: (AudioNote audioNote) async {
+                await saveAudioAttachment(message, audioNote, _b64Secret);
+                _audioNotesCubit.save(audioNote);
+              },
+              journalImage: (JournalImage journalImage) async {
+                print('processMessage journalImage $journalImage');
+                await saveImageAttachment(message, journalImage, _b64Secret);
+              },
+              journalEntry: (JournalEntry journalEntry) async {});
         },
-        image: (JournalImage journalImage, _) async {
-          print('processMessage journalImage $journalImage');
-          await saveImageAttachment(message, journalImage, _b64Secret);
-        },
-        journalEntry: (JournalEntry journalEntry, _) async {},
       );
     } else {
       print('Ignoring message');

@@ -11,8 +11,8 @@ import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
-import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
@@ -89,10 +89,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
 
       await _imapCubit.saveEncryptedImap(
-        SyncMessage.audioNote(
-          audioNote: _audioNote!,
-          vectorClock: next,
-        ),
+        SyncMessage.journalEntity(
+            journalEntity: _audioNote!, vectorClock: next),
         attachment: audioFile,
       );
 

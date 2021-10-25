@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio_notes_cubit.dart';
-import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/map_widget.dart';

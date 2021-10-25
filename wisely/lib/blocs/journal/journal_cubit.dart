@@ -9,7 +9,7 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
-import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
@@ -94,6 +94,7 @@ class JournalCubit extends Cubit<JournalState> {
           VectorClock vectorClock = getNextVectorClock();
 
           JournalImage journalImage = JournalImage(
+            id: idNamePart,
             imageId: asset.id,
             geolocation: geolocation,
             imageFile: imageFileName,
@@ -105,8 +106,8 @@ class JournalCubit extends Cubit<JournalState> {
           await saveJournalImageJson(journalImage);
 
           await _imapCubit.saveEncryptedImap(
-            SyncMessage.image(
-              journalImage: journalImage,
+            SyncMessage.journalEntity(
+              journalEntity: journalImage,
               vectorClock: vectorClock,
             ),
             attachment: targetFile,

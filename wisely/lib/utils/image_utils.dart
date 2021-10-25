@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:exif/exif.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wisely/classes/journal_image.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
