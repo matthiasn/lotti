@@ -27,6 +27,7 @@ class JournalEntity with _$JournalEntity {
 
   factory JournalEntity.journalImage({
     required String id,
+    required int timestamp,
     required String imageId,
     required String imageFile,
     required String imageDirectory,

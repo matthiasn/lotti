@@ -96,14 +96,16 @@ class JournalCubit extends Cubit<JournalState> {
           }
 
           VectorClock vectorClock = getNextVectorClock();
+          DateTime created = asset.createDateTime;
 
           JournalImage journalImage = JournalImage(
             id: idNamePart,
+            timestamp: created.millisecondsSinceEpoch,
             imageId: asset.id,
             geolocation: geolocation,
             imageFile: imageFileName,
             imageDirectory: relativePath,
-            createdAt: asset.createDateTime,
+            createdAt: created,
             vectorClock: vectorClock,
           );
           print(journalImage);

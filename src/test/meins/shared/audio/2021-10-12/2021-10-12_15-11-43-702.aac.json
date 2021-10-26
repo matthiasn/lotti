@@ -9,8 +9,10 @@
   "duration": 3525000,
   "updatedAt": "2021-10-12T15:11:47.368720",
   "transcript": null,
-  "latitude": 52.0,
-  "longitude": 13.0,
+  "geolocation": {
+    "latitude": 52.0,
+    "longitude": 13.0
+  },
   "vectorClock": {
     "1231bb84-da9b-4abe-b0ab-b300349818af": 28
   }

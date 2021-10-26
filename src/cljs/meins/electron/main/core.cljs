@@ -73,7 +73,7 @@
                      (screen/cmp-map :main/screenshot)
                      ;(imap/cmp-map :main/sync)
                      (kc/cmp-map :main/crypto)
-                     (ai/cmp-map :main/audio-import (:audio-path rt/runtime-info))
+                     (ai/cmp-map :main/audio-import (:audio-path rt/runtime-info) (:img-path rt/runtime-info))
                      (upd/cmp-map :main/updater)
                      (sched/cmp-map :main/scheduler)
                      (menu/cmp-map :main/menu-cmp)}

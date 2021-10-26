@@ -82,6 +82,12 @@ cljs-shared-tests: npm-deps
 	@npx shadow-cljs compile shared-tests
 	@node out/shared-tests.js
 
+watch-renderer:
+	shadow-cljs watch renderer
+
+watch-main:
+	shadow-cljs watch main
+
 sass:
 	@echo Building CSS...
 	@lein sass4clj once
