@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_health_fit:
+    git: https://github.com/metaflowltd/flutter_health_fit.git
+
   cupertino_icons: ^1.0.2
   location: ^4.3.0
   flutter_quill: ^2.0.9
