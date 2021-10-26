@@ -13,8 +13,8 @@ class HealthPage extends StatefulWidget {
 
 class _HealthPageState extends State<HealthPage> {
   late HealthService healthService;
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _endDate = DateTime.now().add(const Duration(days: 1));
+  DateTime _dateFrom = DateTime.now().subtract(const Duration(days: 7));
+  DateTime _dateTo = DateTime.now().add(const Duration(days: 1));
 
   @override
   void initState() {
@@ -25,8 +25,8 @@ class _HealthPageState extends State<HealthPage> {
   void _onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
     setState(() {
       if (args.value is PickerDateRange) {
-        _startDate = args.value.startDate;
-        _endDate = (args.value.endDate ?? args.value.startDate)
+        _dateFrom = args.value.startDate;
+        _dateTo = (args.value.endDate ?? args.value.startDate)
             .add(const Duration(days: 1));
       }
     });
@@ -45,16 +45,16 @@ class _HealthPageState extends State<HealthPage> {
               enableMultiView: true,
               selectionMode: DateRangePickerSelectionMode.range,
               initialSelectedRange: PickerDateRange(
-                _startDate,
-                _endDate,
+                _dateFrom,
+                _dateTo,
               ),
             ),
             Button(
               label: 'Import Activity Data',
               onPressed: () => HealthService().getActivityHealthData(
                 filename: 'activity.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
             ),
             Button(
@@ -62,16 +62,16 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.sleepTypes,
                 filename: 'sleep.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
             ),
             Button(
               onPressed: () => HealthService().fetchData(
                 types: healthService.heartRateTypes,
                 filename: 'heart.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Heart Rate Data',
             ),
@@ -79,8 +79,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.bpTypes,
                 filename: 'bp.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Blood Pressure Data',
             ),
@@ -88,8 +88,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.bodyMeasurementTypes,
                 filename: 'body.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Body Measurement Data',
             ),
@@ -97,8 +97,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.energyTypes,
                 filename: 'energy.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Energy Burned Data',
             ),
@@ -106,8 +106,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.movementTypes,
                 filename: 'movement.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Stairs, Distance',
             ),
@@ -115,8 +115,8 @@ class _HealthPageState extends State<HealthPage> {
               onPressed: () => HealthService().fetchData(
                 types: healthService.workoutTypes,
                 filename: 'workouts.json',
-                startDate: _startDate,
-                endDate: _endDate,
+                dateFrom: _dateFrom,
+                dateTo: _dateTo,
               ),
               label: 'Import Workout Data',
             ),

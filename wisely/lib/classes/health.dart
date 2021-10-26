@@ -6,8 +6,8 @@ part 'health.g.dart';
 @freezed
 class HealthData with _$HealthData {
   factory HealthData.cumulativeQuantity({
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime dateFrom,
+    required DateTime dateTo,
     required num value,
     required String dataType,
     required String unit,
@@ -16,8 +16,8 @@ class HealthData with _$HealthData {
   }) = CumulativeQuantity;
 
   factory HealthData.discreteQuantity({
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime dateFrom,
+    required DateTime dateTo,
     required num value,
     required String dataType,
     required String unit,

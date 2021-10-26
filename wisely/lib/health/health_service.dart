@@ -73,8 +73,8 @@ class HealthService {
   Future fetchData({
     required List<HealthDataType> types,
     required String filename,
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime dateFrom,
+    required DateTime dateTo,
   }) async {
     HealthFactory health = HealthFactory();
 
@@ -87,7 +87,7 @@ class HealthService {
       try {
         // fetch new data
         List<HealthDataPoint> healthData =
-            await health.getHealthDataFromTypes(startDate, endDate, types);
+            await health.getHealthDataFromTypes(dateFrom, dateTo, types);
 
         // save all the new data points
         _healthDataList.addAll(healthData);
@@ -98,17 +98,7 @@ class HealthService {
       // filter out duplicates
       _healthDataList = HealthFactory.removeDuplicates(_healthDataList);
 
-      // print the results
-      _healthDataList.forEach((x) {
-        //print("Data point: $x");
-        if (x.type == HealthDataType.STEPS) {
-          steps += x.value.round();
-        }
-      });
-
       await writeJson(filename);
-
-      print("Steps: $steps");
     } else {
       print("Authorization not granted");
     }
@@ -116,8 +106,8 @@ class HealthService {
 
   Future getActivityHealthData({
     required String filename,
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime dateFrom,
+    required DateTime dateTo,
   }) async {
     final flutterHealthFit = FlutterHealthFit();
     bool isAuthorized = await FlutterHealthFit().authorize(true);
@@ -143,16 +133,17 @@ class HealthService {
     final today = DateTime(now.year, now.month, now.day);
 
     List<HealthData> cumulativeQuantities = [];
+
     void addEntries(Map<DateTime, int> data, String type) {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
-        DateTime startDate = dailyStepsEntry.key;
-        DateTime endDate = startDate.add(const Duration(days: 1));
+        DateTime dateFrom = dailyStepsEntry.key;
+        DateTime dateTo = dateFrom.add(const Duration(days: 1));
         CumulativeQuantity stepsForDay = CumulativeQuantity(
-          startDate: startDate,
-          endDate: endDate,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
           value: dailyStepsEntry.value,
           dataType: type,
-          unit: 'COUNT',
+          unit: 'count',
           deviceType: deviceType,
           platformType: platform,
         );
@@ -161,14 +152,14 @@ class HealthService {
     }
 
     final Map<DateTime, int> stepCounts = await FlutterHealthFit()
-        .getStepsBySegment(startDate.millisecondsSinceEpoch,
+        .getStepsBySegment(dateFrom.millisecondsSinceEpoch,
             today.millisecondsSinceEpoch, 1, TimeUnit.days);
-    addEntries(stepCounts, 'StepCount');
+    addEntries(stepCounts, 'cumulative_step_count');
 
     final Map<DateTime, int> flights = await FlutterHealthFit()
-        .getFlightsBySegment(startDate.millisecondsSinceEpoch,
+        .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
             today.millisecondsSinceEpoch, 1, TimeUnit.days);
-    addEntries(flights, 'FlightsClimbed');
+    addEntries(flights, 'cumulative_flights_climbed');
 
     final file = await _localFile(filename);
     String jsonString = jsonEncode(cumulativeQuantities);
