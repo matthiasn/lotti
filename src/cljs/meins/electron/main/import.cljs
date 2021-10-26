@@ -5,6 +5,7 @@
             [clojure.string :as str]
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
+            [meins.electron.main.startup :as startup]
             [clojure.pprint :as pp]
             [expound.alpha :as exp]
             [clojure.string :as s]))
@@ -86,7 +87,7 @@
                :text       text
                :mentions   #{}
                :utc-offset 0
-               :img_file   (get data "imageFile")
+               :img_file   (s/replace (get data "imageFile") "HEIC" "JPG")
                :timezone   (get data "timezone")
                :tags       #{"#photo" "#import"}
                :perm_tags  #{"#photo"}
@@ -102,16 +103,24 @@
         (let [data (parse-json json-file)
               entry (convert-image-entry data)
               file (str/replace json-file ".json" "")
+              jpg (s/replace file "HEIC" "JPG")
               img-file (:img_file entry)
               img-file-path (str @image-path-atom "/" img-file)]
           (info (exp/expound-str :meins.entry/spec entry))
           (pp/pprint entry)
           (when-not (existsSync img-file-path)
             (when (existsSync file)
-              (when (spec/valid? :meins.entry/spec entry)
-                (info "spec/valid")
-                (copyFileSync file img-file-path)
-                (put-fn [:entry/save-initial entry])))))))))
+              (startup/spawn-process "magick" ["convert" file jpg] {})
+              (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
+                                (info "spec/valid")
+                                (copyFileSync jpg img-file-path)
+                                (put-fn [:import/gen-thumbs
+                                         {:filename  img-file
+                                          :full-path jpg}]))
+                             2000)
+              (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
+                                (put-fn [:entry/save-initial entry]))
+                             5000))))))))
 
 (defn import-images [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]
