@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/classes/health.dart';
 
 class HealthService {
   List<HealthDataPoint> _healthDataList = [];
@@ -109,5 +112,66 @@ class HealthService {
     } else {
       print("Authorization not granted");
     }
+  }
+
+  Future getActivityHealthData({
+    required String filename,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final flutterHealthFit = FlutterHealthFit();
+    bool isAuthorized = await FlutterHealthFit().authorize(true);
+    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+
+    String? deviceType;
+    String platform = Platform.isIOS
+        ? 'IOS'
+        : Platform.isAndroid
+            ? 'ANDROID'
+            : '';
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      deviceType = iosInfo.utsname.machine;
+    }
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      deviceType = androidInfo.model;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    List<HealthData> cumulativeQuantities = [];
+    void addEntries(Map<DateTime, int> data, String type) {
+      for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
+        DateTime startDate = dailyStepsEntry.key;
+        DateTime endDate = startDate.add(const Duration(days: 1));
+        CumulativeQuantity stepsForDay = CumulativeQuantity(
+          startDate: startDate,
+          endDate: endDate,
+          value: dailyStepsEntry.value,
+          dataType: type,
+          unit: 'COUNT',
+          deviceType: deviceType,
+          platformType: platform,
+        );
+        cumulativeQuantities.add(stepsForDay);
+      }
+    }
+
+    final Map<DateTime, int> stepCounts = await FlutterHealthFit()
+        .getStepsBySegment(startDate.millisecondsSinceEpoch,
+            today.millisecondsSinceEpoch, 1, TimeUnit.days);
+    addEntries(stepCounts, 'StepCount');
+
+    final Map<DateTime, int> flights = await FlutterHealthFit()
+        .getFlightsBySegment(startDate.millisecondsSinceEpoch,
+            today.millisecondsSinceEpoch, 1, TimeUnit.days);
+    addEntries(flights, 'FlightsClimbed');
+
+    final file = await _localFile(filename);
+    String jsonString = jsonEncode(cumulativeQuantities);
+    return file.writeAsString(jsonString);
   }
 }

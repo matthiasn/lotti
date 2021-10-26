@@ -50,6 +50,14 @@ class _HealthPageState extends State<HealthPage> {
               ),
             ),
             Button(
+              label: 'Import Activity Data',
+              onPressed: () => HealthService().getActivityHealthData(
+                filename: 'activity.json',
+                startDate: _startDate,
+                endDate: _endDate,
+              ),
+            ),
+            Button(
               label: 'Import Sleep Data',
               onPressed: () => HealthService().fetchData(
                 types: healthService.sleepTypes,
@@ -93,15 +101,6 @@ class _HealthPageState extends State<HealthPage> {
                 endDate: _endDate,
               ),
               label: 'Import Energy Burned Data',
-            ),
-            Button(
-              onPressed: () => HealthService().fetchData(
-                types: healthService.stepsTypes,
-                filename: 'steps.json',
-                startDate: _startDate,
-                endDate: _endDate,
-              ),
-              label: 'Import Steps',
             ),
             Button(
               onPressed: () => HealthService().fetchData(
