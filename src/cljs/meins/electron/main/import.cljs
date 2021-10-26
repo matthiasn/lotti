@@ -114,7 +114,7 @@
           (pp/pprint entry)
           (when-not (existsSync img-file-path)
             (when (existsSync file)
-              (spawn-process "magick" ["convert" file jpg] {})
+              (spawn-process "/usr/local/bin/magick" ["convert" file jpg] {})
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (info "spec/valid")
                                 (copyFileSync jpg img-file-path)

@@ -51,18 +51,6 @@ class _JournalPageState extends State<JournalPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text(
-                  'Audio Recordings',
-                  style: TextStyle(
-                    color: AppColors.inactiveAudioControl,
-                    fontFamily: 'Oswald',
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
               ListView.builder(
                 shrinkWrap: true,
                 physics: const ClampingScrollPhysics(),
