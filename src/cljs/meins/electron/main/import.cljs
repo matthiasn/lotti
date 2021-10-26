@@ -5,7 +5,7 @@
             [clojure.string :as str]
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
-            [meins.electron.main.startup :as startup]
+            ["child_process" :refer [spawn]]
             [clojure.pprint :as pp]
             [expound.alpha :as exp]
             [clojure.string :as s]))
@@ -96,6 +96,10 @@
                :vclock     (get data "vectorClock")}]
     entry))
 
+(defn spawn-process [cmd args opts]
+  (info "STARTUP: spawning" cmd args opts)
+  (spawn cmd (clj->js args) (clj->js opts)))
+
 (defn import-image-files [path put-fn]
   (let [files (sync (str path "/**/*.json"))]
     (doseq [json-file files]
@@ -110,7 +114,7 @@
           (pp/pprint entry)
           (when-not (existsSync img-file-path)
             (when (existsSync file)
-              (startup/spawn-process "magick" ["convert" file jpg] {})
+              (spawn-process "magick" ["convert" file jpg] {})
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (info "spec/valid")
                                 (copyFileSync jpg img-file-path)
@@ -120,7 +124,7 @@
                              2000)
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (put-fn [:entry/save-initial entry]))
-                             5000))))))))
+                             4000))))))))
 
 (defn import-images [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]

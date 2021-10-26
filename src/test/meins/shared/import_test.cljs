@@ -24,7 +24,7 @@
 (deftest read-entry-test
   (let [json-file "./src/test/meins/shared/audio/2021-10-12/2021-10-12_15-11-43-702.aac.json"
         data (emi/parse-json json-file)
-        entry (emi/convert-entry data)]
+        entry (emi/convert-audio-entry data)]
     (testing "JSON is parsed correctly"
       (is (= entry test-entry)))
     (testing "Parsed entry is valid"
