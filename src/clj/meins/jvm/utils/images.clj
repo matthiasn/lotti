@@ -48,7 +48,7 @@
   (let [new-filename (str fu/thumbs-path max-w-h "/" filename)]
     (if (fs/exists? new-filename)
       (warn "File exists:" new-filename)
-      (let [resize (resize-fn max-w-h max-w-h quality)]
+      (let [resize (resize-fn max-w-h (* max-w-h 4) quality)]
         (as-file (resize img) new-filename :verbatim)))))
 
 (defn gen-thumbs [file filename]
