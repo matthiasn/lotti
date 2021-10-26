@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.21+22
+version: 0.1.23+24
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  flutter_health_fit:
+    git: https://github.com/metaflowltd/flutter_health_fit.git
 
   cupertino_icons: ^1.0.2
   location: ^4.3.0
@@ -50,6 +53,7 @@ dependencies:
   flutter_image_compress: ^1.1.0
   wechat_assets_picker: ^6.2.2
   dart_geohash: ^2.0.1
+  device_info_plus: ^3.1.0
 
 dev_dependencies:
   flutter_test:

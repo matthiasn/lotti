@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/classes/health.dart';
 
 class HealthService {
   List<HealthDataPoint> _healthDataList = [];
@@ -70,8 +73,8 @@ class HealthService {
   Future fetchData({
     required List<HealthDataType> types,
     required String filename,
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime dateFrom,
+    required DateTime dateTo,
   }) async {
     HealthFactory health = HealthFactory();
 
@@ -84,7 +87,7 @@ class HealthService {
       try {
         // fetch new data
         List<HealthDataPoint> healthData =
-            await health.getHealthDataFromTypes(startDate, endDate, types);
+            await health.getHealthDataFromTypes(dateFrom, dateTo, types);
 
         // save all the new data points
         _healthDataList.addAll(healthData);
@@ -95,19 +98,71 @@ class HealthService {
       // filter out duplicates
       _healthDataList = HealthFactory.removeDuplicates(_healthDataList);
 
-      // print the results
-      _healthDataList.forEach((x) {
-        //print("Data point: $x");
-        if (x.type == HealthDataType.STEPS) {
-          steps += x.value.round();
-        }
-      });
-
       await writeJson(filename);
-
-      print("Steps: $steps");
     } else {
       print("Authorization not granted");
     }
+  }
+
+  Future getActivityHealthData({
+    required String filename,
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    final flutterHealthFit = FlutterHealthFit();
+    bool isAuthorized = await FlutterHealthFit().authorize(true);
+    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+
+    String? deviceType;
+    String platform = Platform.isIOS
+        ? 'IOS'
+        : Platform.isAndroid
+            ? 'ANDROID'
+            : '';
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      deviceType = iosInfo.utsname.machine;
+    }
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      deviceType = androidInfo.model;
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    List<HealthData> cumulativeQuantities = [];
+
+    void addEntries(Map<DateTime, int> data, String type) {
+      for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
+        DateTime dateFrom = dailyStepsEntry.key;
+        DateTime dateTo = dateFrom.add(const Duration(days: 1));
+        CumulativeQuantity stepsForDay = CumulativeQuantity(
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          value: dailyStepsEntry.value,
+          dataType: type,
+          unit: 'count',
+          deviceType: deviceType,
+          platformType: platform,
+        );
+        cumulativeQuantities.add(stepsForDay);
+      }
+    }
+
+    final Map<DateTime, int> stepCounts = await FlutterHealthFit()
+        .getStepsBySegment(dateFrom.millisecondsSinceEpoch,
+            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
+    addEntries(stepCounts, 'cumulative_step_count');
+
+    final Map<DateTime, int> flights = await FlutterHealthFit()
+        .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
+            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
+    addEntries(flights, 'cumulative_flights_climbed');
+
+    final file = await _localFile(filename);
+    String jsonString = jsonEncode(cumulativeQuantities);
+    return file.writeAsString(jsonString);
   }
 }
