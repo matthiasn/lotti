@@ -15,7 +15,8 @@
                                                  :height        80
                                                  :normalize     true
                                                  :cursorWidth   2
-                                                 :backend       "MediaElement"
+                                                 :mediaControls true
+                                                 ;                                                 :backend       "MediaElement"
                                                  :progressColor "#FF5F1A"}))
           url (h/audio-path audio-file)
           progress (fn [p]
@@ -104,9 +105,10 @@
                       (when (= key-code 39) (skip-fwd))
                       (.stopPropagation ev)
                       (.preventDefault ev)))
-          start-watch #(.addEventListener js/document "keydown" keydown)
-          stop-watch #(.removeEventListener js/document "keydown" keydown)]
-      [:div {:on-mouse-enter start-watch
+          ;start-watch #(.addEventListener js/document "keydown" keydown)
+          ;stop-watch #(.removeEventListener js/document "keydown" keydown)
+          ]
+      [:div #_{:on-mouse-enter start-watch
              :on-mouse-over  start-watch
              :on-mouse-leave stop-watch}
        [wavesurfer-cmp {:id         id
