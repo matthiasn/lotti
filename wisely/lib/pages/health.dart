@@ -26,8 +26,7 @@ class _HealthPageState extends State<HealthPage> {
     setState(() {
       if (args.value is PickerDateRange) {
         _dateFrom = args.value.startDate;
-        _dateTo = (args.value.endDate ?? args.value.startDate)
-            .add(const Duration(days: 1));
+        _dateTo = (args.value.endDate ?? args.value.startDate);
       }
     });
   }

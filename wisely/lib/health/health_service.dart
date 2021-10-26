@@ -153,12 +153,12 @@ class HealthService {
 
     final Map<DateTime, int> stepCounts = await FlutterHealthFit()
         .getStepsBySegment(dateFrom.millisecondsSinceEpoch,
-            today.millisecondsSinceEpoch, 1, TimeUnit.days);
+            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
     addEntries(stepCounts, 'cumulative_step_count');
 
     final Map<DateTime, int> flights = await FlutterHealthFit()
         .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
-            today.millisecondsSinceEpoch, 1, TimeUnit.days);
+            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
     addEntries(flights, 'cumulative_flights_climbed');
 
     final file = await _localFile(filename);

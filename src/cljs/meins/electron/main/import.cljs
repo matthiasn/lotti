@@ -152,6 +152,25 @@
         (when (and entry (spec/valid? :meins.entry/spec entry))
           (put-fn [:entry/save-initial entry]))))))
 
+(defn import-steps-entry [data put-fn]
+  (let [date-to (get data "dateTo")
+        ts (- (h/health-date-to-ts2 date-to) 123)
+        value (get data "value")
+        text (str "Steps: " value " total")
+        data-type (get data "dataType")]
+    (when (= data-type "cumulative_step_count")
+      (let [entry {:timestamp     ts
+                   :md            text
+                   :text          text
+                   :mentions      #{}
+                   :utc-offset    120
+                   :timezone      "Europe/Berlin"
+                   :perm_tags     #{"#steps"}
+                   :health_data   data
+                   :custom_fields {"#steps" {:cnt value}}}]
+        (when (and entry (spec/valid? :meins.entry/spec entry))
+          (put-fn [:entry/save-initial entry]))))))
+
 (defn import-weight-entry [data put-fn]
   (let [date-to (get data "date_to")
         ts (h/health-date-to-ts date-to)
@@ -214,7 +233,8 @@
         (doseq [item items]
           (import-sleep-entry item put-fn)
           (import-weight-entry item put-fn)
-          (import-bp-entry item put-fn))))))
+          (import-bp-entry item put-fn)
+          (import-steps-entry item put-fn))))))
 
 (defn cmp-map [cmp-id audio-path img-path]
   (reset! audio-path-atom audio-path)
