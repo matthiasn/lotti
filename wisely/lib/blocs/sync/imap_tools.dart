@@ -116,5 +116,8 @@ void saveImapMessage(
   }
 
   final MimeMessage message = builder.buildMimeMessage();
-  imapClient.appendMessage(message, targetMailbox: inbox);
+  GenericImapResult res =
+      await imapClient.appendMessage(message, targetMailbox: inbox);
+  print(
+      'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
 }

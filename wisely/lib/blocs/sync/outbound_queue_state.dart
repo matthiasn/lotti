@@ -35,6 +35,7 @@ class OutboundQueueRecord {
       OutboundQueueRecord(
           id: data['id'],
           encryptedMessage: data['message'],
+          encryptedFilePath: data['encrypted_file_path'],
           status: data['status'],
           subject: data['subject'],
           createdAt: data['created_at'],
@@ -47,6 +48,7 @@ class OutboundQueueRecord {
       'updated_at': updatedAt?.millisecondsSinceEpoch,
       'status': OutboundMessageStatus.sent.index,
       'message': encryptedMessage,
+      'encrypted_file_path': encryptedFilePath,
       'subject': subject,
     };
   }

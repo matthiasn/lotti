@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -59,13 +60,19 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       _b64Secret = syncConfig.sharedSecret;
     }
     emit(OutboundQueueState.online());
+    _startPolling();
   }
 
-  Future<void> insert(String encryptedMessage, String subject) async {
+  Future<void> insert(
+    String encryptedMessage,
+    String subject, {
+    String? encryptedFilePath,
+  }) async {
     final db = await _database;
 
     OutboundQueueRecord dbRecord = OutboundQueueRecord(
       encryptedMessage: encryptedMessage,
+      encryptedFilePath: encryptedFilePath,
       subject: subject,
       status: OutboundMessageStatus.pending,
       createdAt: DateTime.now(),
@@ -100,6 +107,12 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     );
   }
 
+  void _startPolling() {
+    Timer.periodic(const Duration(seconds: 10), (timer) {
+      print(timer.tick.toString());
+    });
+  }
+
   Future<List<OutboundQueueRecord>> entries() async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query('outbound');
@@ -123,9 +136,15 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         if (fileLength > 0) {
           File encryptedFile = File('${attachment.path}.aes');
           await encryptFile(attachment, encryptedFile, _b64Secret!);
+          await insert(
+            encryptedMessage,
+            subject,
+            encryptedFilePath: encryptedFile.path,
+          );
         }
-      } else {}
-      await insert(encryptedMessage, subject);
+      } else {
+        await insert(encryptedMessage, subject);
+      }
 
       await _imapCubit.saveEncryptedImap(
         syncMessage,
