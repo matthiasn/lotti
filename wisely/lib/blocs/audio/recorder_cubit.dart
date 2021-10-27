@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
-import 'package:wisely/blocs/sync/imap_cubit.dart';
+import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_entities.dart';
@@ -30,7 +30,7 @@ AudioRecorderState initialState = AudioRecorderState(
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
-  late final ImapCubit _imapCubit;
+  late final OutboundQueueCubit _outboundQueueCubit;
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
@@ -38,11 +38,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   AudioRecorderCubit({
     required VectorClockCubit vectorClockCubit,
-    required ImapCubit imapCubit,
+    required OutboundQueueCubit outboundQueueCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
   }) : super(initialState) {
     _journalEntitiesCubit = journalEntitiesCubit;
-    _imapCubit = imapCubit;
+    _outboundQueueCubit = outboundQueueCubit;
     _vectorClockCubit = vectorClockCubit;
     _openAudioSession();
   }
@@ -88,9 +88,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       await AudioUtils.saveAudioNoteJson(_audioNote!);
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
 
-      await _imapCubit.saveEncryptedImap(
+      await _outboundQueueCubit.enqueueSyncMessage(
         SyncMessage.journalEntity(
-            journalEntity: _audioNote!, vectorClock: next),
+          journalEntity: _audioNote!,
+          vectorClock: next,
+        ),
         attachment: audioFile,
       );
 
