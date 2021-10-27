@@ -15,5 +15,3 @@ class SyncMessage with _$SyncMessage {
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
 }
-
-enum OutboundMessageStatus { pending, sent, error }

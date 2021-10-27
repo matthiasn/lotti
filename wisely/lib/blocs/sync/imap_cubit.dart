@@ -27,7 +27,7 @@ class ImapCubit extends Cubit<ImapState> {
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
-  late String _b64Secret;
+  late String? _b64Secret;
 
   ImapCubit({
     required EncryptionCubit encryptionCubit,
@@ -155,7 +155,7 @@ class ImapCubit extends Cubit<ImapState> {
         int fileLength = attachment.lengthSync();
         if (fileLength > 0) {
           File encryptedFile = File('${attachment.path}.aes');
-          await encryptFile(attachment, encryptedFile, _b64Secret);
+          await encryptFile(attachment, encryptedFile, _b64Secret!);
           saveImapMessage(
               _imapClient, subject, encryptedMessage, encryptedFile);
         }

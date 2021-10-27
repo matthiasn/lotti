@@ -20,7 +20,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final ImapCubit _imapCubit;
   late final Future<Database> _database;
   late SyncConfig? _syncConfig;
-  late String _b64Secret;
+  late String? _b64Secret;
 
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
@@ -79,6 +79,27 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     );
   }
 
+  Future<void> update(
+    OutboundQueueRecord prev,
+    OutboundMessageStatus status,
+  ) async {
+    final db = await _database;
+
+    OutboundQueueRecord dbRecord = OutboundQueueRecord(
+      encryptedMessage: prev.encryptedMessage,
+      subject: prev.subject,
+      status: status,
+      createdAt: prev.createdAt,
+      updatedAt: DateTime.now(),
+    );
+
+    await db.update(
+      'outbound',
+      dbRecord.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   Future<List<OutboundQueueRecord>> entries() async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query('outbound');
@@ -101,7 +122,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         int fileLength = attachment.lengthSync();
         if (fileLength > 0) {
           File encryptedFile = File('${attachment.path}.aes');
-          await encryptFile(attachment, encryptedFile, _b64Secret);
+          await encryptFile(attachment, encryptedFile, _b64Secret!);
         }
       } else {}
       await insert(encryptedMessage, subject);

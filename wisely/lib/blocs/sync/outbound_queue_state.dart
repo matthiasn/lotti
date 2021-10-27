@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:wisely/classes/sync_message.dart';
 
 part 'outbound_queue_state.freezed.dart';
 
@@ -11,11 +10,14 @@ class OutboundQueueState with _$OutboundQueueState {
   factory OutboundQueueState.failed() = _Failed;
 }
 
+enum OutboundMessageStatus { pending, sent, error }
+
 class OutboundQueueRecord {
   final int? id;
   final String encryptedMessage;
   final OutboundMessageStatus status;
   final String subject;
+  final String? encryptedFilePath;
   final DateTime createdAt;
   DateTime? updatedAt;
 
@@ -25,7 +27,8 @@ class OutboundQueueRecord {
     required this.subject,
     required this.status,
     required this.createdAt,
-    required this.updatedAt,
+    this.encryptedFilePath,
+    this.updatedAt,
   });
 
   factory OutboundQueueRecord.fromMap(Map<String, dynamic> data) =>
