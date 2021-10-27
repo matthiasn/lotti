@@ -64,32 +64,27 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   Future<void> insert(String encryptedMessage, String subject) async {
     final db = await _database;
 
-    Map<String, Object?> record = {
-      'created_at': DateTime.now().millisecondsSinceEpoch,
-      'status': OutboundMessageStatus.sent.index,
-      'message': encryptedMessage,
-      'subject': subject,
-    };
+    OutboundQueueRecord dbRecord = OutboundQueueRecord(
+      encryptedMessage: encryptedMessage,
+      subject: subject,
+      status: OutboundMessageStatus.pending,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
     await db.insert(
       'outbound',
-      record,
+      dbRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<Map<String, dynamic>>> entries() async {
+  Future<List<OutboundQueueRecord>> entries() async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query('outbound');
 
     return List.generate(maps.length, (i) {
-      return {
-        'id': maps[i]['_id'],
-        'created_at':
-            DateTime.fromMillisecondsSinceEpoch(maps[i]['created_at']),
-        'status': maps[i]['status'],
-        'message': json.decode(maps[i]['message']),
-      };
+      return OutboundQueueRecord.fromMap(maps[i]);
     });
   }
 
