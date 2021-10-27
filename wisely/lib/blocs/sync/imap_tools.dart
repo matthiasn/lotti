@@ -97,9 +97,9 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
 void saveImapMessage(
   ImapClient imapClient,
   String subject,
-  String encryptedMessage,
+  String encryptedMessage, {
   File? file,
-) async {
+}) async {
   Mailbox inbox = await imapClient.selectInbox();
   final builder = MessageBuilder.prepareMultipartAlternativeMessage();
   builder.from = [MailAddress('Sync', 'sender@domain.com')];

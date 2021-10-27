@@ -156,11 +156,11 @@ class ImapCubit extends Cubit<ImapState> {
         if (fileLength > 0) {
           File encryptedFile = File('${attachment.path}.aes');
           await encryptFile(attachment, encryptedFile, _b64Secret!);
-          saveImapMessage(
-              _imapClient, subject, encryptedMessage, encryptedFile);
+          saveImapMessage(_imapClient, subject, encryptedMessage,
+              file: encryptedFile);
         }
       } else {
-        saveImapMessage(_imapClient, subject, encryptedMessage, null);
+        saveImapMessage(_imapClient, subject, encryptedMessage);
       }
     }
   }
