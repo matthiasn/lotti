@@ -31,15 +31,21 @@ class OutboundQueueRecord {
     this.updatedAt,
   });
 
+  @override
+  String toString() {
+    return '$id $status $subject $createdAt $updatedAt';
+  }
+
   factory OutboundQueueRecord.fromMap(Map<String, dynamic> data) =>
       OutboundQueueRecord(
-          id: data['id'],
-          encryptedMessage: data['message'],
-          encryptedFilePath: data['encrypted_file_path'],
-          status: data['status'],
-          subject: data['subject'],
-          createdAt: data['created_at'],
-          updatedAt: data['updated_at']);
+        id: data['id'],
+        encryptedMessage: data['message'],
+        encryptedFilePath: data['encrypted_file_path'],
+        status: OutboundMessageStatus.values[data['status']],
+        subject: data['subject'],
+        createdAt: DateTime.fromMillisecondsSinceEpoch(data['created_at']),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(data['updated_at']),
+      );
 
   Map<String, Object?> toMap() {
     return {

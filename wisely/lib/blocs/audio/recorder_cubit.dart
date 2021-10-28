@@ -88,7 +88,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       await AudioUtils.saveAudioNoteJson(_audioNote!);
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
 
-      await _outboundQueueCubit.enqueueSyncMessage(
+      await _outboundQueueCubit.enqueueMessage(
         SyncMessage.journalEntity(
           journalEntity: _audioNote!,
           vectorClock: next,

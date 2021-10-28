@@ -107,9 +107,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     );
   }
 
-  void _startPolling() {
-    Timer.periodic(const Duration(seconds: 10), (timer) {
+  void _startPolling() async {
+    Timer.periodic(const Duration(seconds: 10), (timer) async {
       print(timer.tick.toString());
+      print(await entries());
     });
   }
 
@@ -122,7 +123,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     });
   }
 
-  Future<void> enqueueSyncMessage(
+  Future<void> enqueueMessage(
     SyncMessage syncMessage, {
     File? attachment,
   }) async {
@@ -136,20 +137,16 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         if (fileLength > 0) {
           File encryptedFile = File('${attachment.path}.aes');
           await encryptFile(attachment, encryptedFile, _b64Secret!);
-          await insert(
-            encryptedMessage,
-            subject,
-            encryptedFilePath: encryptedFile.path,
-          );
+          await insert(encryptedMessage, subject,
+              encryptedFilePath: encryptedFile.path);
+
+          await _imapCubit.saveImap(encryptedMessage, subject,
+              encryptedFilePath: encryptedFile.path);
         }
       } else {
         await insert(encryptedMessage, subject);
+        await _imapCubit.saveImap(encryptedMessage, subject);
       }
-
-      await _imapCubit.saveEncryptedImap(
-        syncMessage,
-        attachment: attachment,
-      );
     }
   }
 }

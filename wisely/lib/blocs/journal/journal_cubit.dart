@@ -112,7 +112,7 @@ class JournalCubit extends Cubit<JournalState> {
           await saveJournalImageJson(journalImage);
           _journalEntitiesCubit.save(journalImage);
 
-          await _outboundQueueCubit.enqueueSyncMessage(
+          await _outboundQueueCubit.enqueueMessage(
             SyncMessage.journalEntity(
               journalEntity: journalImage,
               vectorClock: vectorClock,
