@@ -136,7 +136,9 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         } else {
           update(
             nextPending,
-            OutboundMessageStatus.pending,
+            nextPending.retries < 10
+                ? OutboundMessageStatus.pending
+                : OutboundMessageStatus.error,
             nextPending.retries + 1,
           );
         }
