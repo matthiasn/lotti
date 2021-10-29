@@ -112,9 +112,13 @@ Future<File?> compressAndSave(File file, String targetPath) async {
   return result;
 }
 
-Future<String> getImagePath(String relativePath) async {
+Future<String> getFullAssetPath(String relativePath) async {
   var docDir = await getApplicationDocumentsDirectory();
   return '${docDir.path}$relativePath';
+}
+
+String? getRelativeAssetPath(String? absolutePath) {
+  return absolutePath?.split('Documents').last;
 }
 
 Future<String> getFullImagePath(JournalImage img) async {

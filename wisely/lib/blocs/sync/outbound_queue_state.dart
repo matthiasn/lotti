@@ -16,6 +16,7 @@ class OutboundQueueRecord {
   final int? id;
   final String encryptedMessage;
   final OutboundMessageStatus status;
+  final int retries;
   final String subject;
   final String? encryptedFilePath;
   final DateTime createdAt;
@@ -26,6 +27,7 @@ class OutboundQueueRecord {
     required this.encryptedMessage,
     required this.subject,
     required this.status,
+    required this.retries,
     required this.createdAt,
     this.encryptedFilePath,
     this.updatedAt,
@@ -42,6 +44,7 @@ class OutboundQueueRecord {
         encryptedMessage: data['message'],
         encryptedFilePath: data['encrypted_file_path'],
         status: OutboundMessageStatus.values[data['status']],
+        retries: data['retries'],
         subject: data['subject'],
         createdAt: DateTime.fromMillisecondsSinceEpoch(data['created_at']),
         updatedAt: DateTime.fromMillisecondsSinceEpoch(data['updated_at']),
@@ -52,7 +55,8 @@ class OutboundQueueRecord {
       'id': id,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt?.millisecondsSinceEpoch,
-      'status': OutboundMessageStatus.sent.index,
+      'status': status.index,
+      'retries': retries,
       'message': encryptedMessage,
       'encrypted_file_path': encryptedFilePath,
       'subject': subject,

@@ -14,6 +14,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import '../journal_entities_cubit.dart';
 import 'imap_tools.dart';
@@ -139,22 +140,28 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<void> saveImap(
+  Future<bool> saveImap(
     String encryptedMessage,
     String subject, {
     String? encryptedFilePath,
   }) async {
+    GenericImapResult? res;
     if (_b64Secret != null) {
-      if (encryptedFilePath != null) {
-        File encryptedFile = File(encryptedFilePath);
+      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
+        File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
         int fileLength = encryptedFile.lengthSync();
         if (fileLength > 0) {
-          saveImapMessage(_imapClient, subject, encryptedMessage,
+          res = await saveImapMessage(_imapClient, subject, encryptedMessage,
               file: encryptedFile);
         }
       } else {
-        saveImapMessage(_imapClient, subject, encryptedMessage);
+        res = await saveImapMessage(_imapClient, subject, encryptedMessage);
       }
+    }
+    if (res?.details != null && res!.details!.contains('completed')) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

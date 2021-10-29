@@ -94,7 +94,7 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
   }
 }
 
-void saveImapMessage(
+Future<GenericImapResult> saveImapMessage(
   ImapClient imapClient,
   String subject,
   String encryptedMessage, {
@@ -120,4 +120,5 @@ void saveImapMessage(
       await imapClient.appendMessage(message, targetMailbox: inbox);
   print(
       'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
+  return res;
 }

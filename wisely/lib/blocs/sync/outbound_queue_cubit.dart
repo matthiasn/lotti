@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:mutex/mutex.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:wisely/blocs/sync/classes.dart';
@@ -13,14 +15,16 @@ import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import 'outbound_queue_state.dart';
 
 class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
   late final ImapCubit _imapCubit;
+  final sendMutex = Mutex();
+
   late final Future<Database> _database;
-  late SyncConfig? _syncConfig;
   late String? _b64Secret;
 
   OutboundQueueCubit({
@@ -56,7 +60,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
     if (syncConfig != null) {
-      _syncConfig = syncConfig;
       _b64Secret = syncConfig.sharedSecret;
     }
     emit(OutboundQueueState.online());
@@ -72,9 +75,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
     OutboundQueueRecord dbRecord = OutboundQueueRecord(
       encryptedMessage: encryptedMessage,
-      encryptedFilePath: encryptedFilePath,
+      encryptedFilePath: getRelativeAssetPath(encryptedFilePath),
       subject: subject,
       status: OutboundMessageStatus.pending,
+      retries: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -89,34 +93,83 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   Future<void> update(
     OutboundQueueRecord prev,
     OutboundMessageStatus status,
+    int retries,
   ) async {
     final db = await _database;
 
     OutboundQueueRecord dbRecord = OutboundQueueRecord(
+      id: prev.id,
       encryptedMessage: prev.encryptedMessage,
       subject: prev.subject,
       status: status,
+      retries: retries,
       createdAt: prev.createdAt,
       updatedAt: DateTime.now(),
     );
+    print('update $dbRecord');
 
-    await db.update(
+    await db.insert(
       'outbound',
       dbRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
+  void sendNext() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult != ConnectivityResult.none && !sendMutex.isLocked) {
+      List<OutboundQueueRecord> unprocessed = await oldestEntries();
+      if (unprocessed.isNotEmpty) {
+        sendMutex.acquire();
+        OutboundQueueRecord nextPending = unprocessed.first;
+        bool saveSuccess = await _imapCubit.saveImap(
+          nextPending.encryptedMessage,
+          nextPending.subject,
+          encryptedFilePath: nextPending.encryptedFilePath,
+        );
+        if (saveSuccess) {
+          update(
+            nextPending,
+            OutboundMessageStatus.sent,
+            nextPending.retries,
+          );
+        } else {
+          update(
+            nextPending,
+            OutboundMessageStatus.pending,
+            nextPending.retries + 1,
+          );
+        }
+        sendMutex.release();
+        sendNext();
+      }
+    }
+  }
+
   void _startPolling() async {
     Timer.periodic(const Duration(seconds: 10), (timer) async {
-      print(timer.tick.toString());
-      print(await entries());
+      sendNext();
     });
   }
 
   Future<List<OutboundQueueRecord>> entries() async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query('outbound');
+
+    return List.generate(maps.length, (i) {
+      return OutboundQueueRecord.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<OutboundQueueRecord>> oldestEntries() async {
+    final db = await _database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'outbound',
+      orderBy: 'created_at',
+      limit: 1,
+      where: 'status = ?',
+      whereArgs: [OutboundMessageStatus.pending.index],
+    );
 
     return List.generate(maps.length, (i) {
       return OutboundQueueRecord.fromMap(maps[i]);
@@ -139,14 +192,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           await encryptFile(attachment, encryptedFile, _b64Secret!);
           await insert(encryptedMessage, subject,
               encryptedFilePath: encryptedFile.path);
-
-          await _imapCubit.saveImap(encryptedMessage, subject,
-              encryptedFilePath: encryptedFile.path);
         }
       } else {
         await insert(encryptedMessage, subject);
-        await _imapCubit.saveImap(encryptedMessage, subject);
       }
     }
+    sendNext();
   }
 }
