@@ -202,7 +202,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0920;
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 1310;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					33CC10EC2044A3C60003C045 = {
@@ -422,6 +422,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -551,6 +552,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -574,6 +576,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = 7DN35ABWYL;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
