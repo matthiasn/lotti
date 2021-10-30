@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
+import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:enough_mail/mail/mail_account.dart';
 import 'package:enough_mail/mail/mail_client.dart';
@@ -78,20 +80,35 @@ class ImapCubit extends Cubit<ImapState> {
         isSecure: true,
       );
       await _imapClient.login(imapConfig.userName, imapConfig.password);
-      await _imapClient.selectInbox();
+      Mailbox mb = await _imapClient.selectInbox();
+      debugPrint(mb.toString());
+      await _pollInbox();
+      _startPolling();
+      emit(ImapState.online());
+      _observeInbox();
+    }
+  }
 
+  void _startPolling() async {
+    debugPrint('_startPolling');
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      _pollInbox();
+    });
+  }
+
+  Future<void> _pollInbox() async {
+    debugPrint('_pollInbox');
+    if (_syncConfig != null) {
       final fetchResult = await _imapClient.fetchRecentMessages(
-          messageCount: 10, criteria: 'BODY.PEEK[]');
-
+          messageCount: 100, criteria: 'BODY.PEEK[]');
       for (final message in fetchResult.messages) {
         await processMessage(message);
       }
       emit(ImapState.online());
-      pollInbox();
     }
   }
 
-  Future<void> pollInbox() async {
+  Future<void> _observeInbox() async {
     if (_syncConfig != null) {
       ImapConfig imapConfig = _syncConfig!.imapConfig;
       final account = MailAccount.fromManualSettings(
