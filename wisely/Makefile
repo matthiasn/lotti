@@ -36,7 +36,7 @@ ipa: clean_test
 	flutter build ipa
 
 .PHONY: macos
-macos:
+macos: clean_test
 	flutter build macos
 
 .PHONY: viz
