@@ -1,5 +1,5 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
 
-APP_NAME=wisely
+PRODUCT_NAME=wisely
 PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyDesktop
