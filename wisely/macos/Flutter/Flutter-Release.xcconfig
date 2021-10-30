@@ -1,2 +1,5 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "ephemeral/Flutter-Generated.xcconfig"
+
+APP_NAME=wisely
+PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyDesktop
