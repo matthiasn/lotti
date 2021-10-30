@@ -94,12 +94,12 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
   }
 }
 
-void saveImapMessage(
+Future<GenericImapResult> saveImapMessage(
   ImapClient imapClient,
   String subject,
-  String encryptedMessage,
+  String encryptedMessage, {
   File? file,
-) async {
+}) async {
   Mailbox inbox = await imapClient.selectInbox();
   final builder = MessageBuilder.prepareMultipartAlternativeMessage();
   builder.from = [MailAddress('Sync', 'sender@domain.com')];
@@ -116,5 +116,9 @@ void saveImapMessage(
   }
 
   final MimeMessage message = builder.buildMimeMessage();
-  imapClient.appendMessage(message, targetMailbox: inbox);
+  GenericImapResult res =
+      await imapClient.appendMessage(message, targetMailbox: inbox);
+  print(
+      'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
+  return res;
 }

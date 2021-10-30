@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -15,8 +14,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
-import 'package:wisely/sync/encryption.dart';
-import 'package:wisely/sync/encryption_salsa.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import '../journal_entities_cubit.dart';
 import 'imap_tools.dart';
@@ -27,7 +25,7 @@ class ImapCubit extends Cubit<ImapState> {
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
-  late String _b64Secret;
+  late String? _b64Secret;
 
   ImapCubit({
     required EncryptionCubit encryptionCubit,
@@ -142,26 +140,28 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<void> saveEncryptedImap(
-    SyncMessage syncMessage, {
-    File? attachment,
+  Future<bool> saveImap(
+    String encryptedMessage,
+    String subject, {
+    String? encryptedFilePath,
   }) async {
-    String jsonString = json.encode(syncMessage);
-    String subject = syncMessage.vectorClock.toString();
-
+    GenericImapResult? res;
     if (_b64Secret != null) {
-      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      if (attachment != null) {
-        int fileLength = attachment.lengthSync();
+      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
+        File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
+        int fileLength = encryptedFile.lengthSync();
         if (fileLength > 0) {
-          File encryptedFile = File('${attachment.path}.aes');
-          await encryptFile(attachment, encryptedFile, _b64Secret);
-          saveImapMessage(
-              _imapClient, subject, encryptedMessage, encryptedFile);
+          res = await saveImapMessage(_imapClient, subject, encryptedMessage,
+              file: encryptedFile);
         }
       } else {
-        saveImapMessage(_imapClient, subject, encryptedMessage, null);
+        res = await saveImapMessage(_imapClient, subject, encryptedMessage);
       }
+    }
+    if (res?.details != null && res!.details!.contains('completed')) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

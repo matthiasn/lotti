@@ -7,7 +7,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/journal_entities_cubit.dart';
-import 'package:wisely/blocs/sync/imap_cubit.dart';
+import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_entities.dart';
@@ -20,19 +20,19 @@ import 'package:wisely/utils/image_utils.dart';
 import 'journal_state.dart';
 
 class JournalCubit extends Cubit<JournalState> {
-  late final ImapCubit _imapCubit;
   late final VectorClockCubit _vectorClockCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
+  late final OutboundQueueCubit _outboundQueueCubit;
 
   JournalCubit({
-    required ImapCubit imapCubit,
     required VectorClockCubit vectorClockCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
+    required OutboundQueueCubit outboundQueueCubit,
   }) : super(JournalState()) {
     print('Hello from JournalCubit');
-    _imapCubit = imapCubit;
     _vectorClockCubit = vectorClockCubit;
     _journalEntitiesCubit = journalEntitiesCubit;
+    _outboundQueueCubit = outboundQueueCubit;
   }
 
   Future<void> pickImageAssets(BuildContext context) async {
@@ -112,7 +112,7 @@ class JournalCubit extends Cubit<JournalState> {
           await saveJournalImageJson(journalImage);
           _journalEntitiesCubit.save(journalImage);
 
-          await _imapCubit.saveEncryptedImap(
+          await _outboundQueueCubit.enqueueMessage(
             SyncMessage.journalEntity(
               journalEntity: journalImage,
               vectorClock: vectorClock,

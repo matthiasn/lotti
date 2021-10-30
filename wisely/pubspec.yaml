@@ -54,6 +54,8 @@ dependencies:
   wechat_assets_picker: ^6.2.2
   dart_geohash: ^2.0.1
   device_info_plus: ^3.1.0
+  mutex: ^3.0.0
+  connectivity_plus: ^2.0.2
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +70,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/sqlite/create_db.sql
+    - assets/sqlite/
     # from https://www.iconfinder.com/paomedia
     - assets/images/map/299087_marker_map_icon.png
     # from https://www.iconfinder.com/recepkutuk
