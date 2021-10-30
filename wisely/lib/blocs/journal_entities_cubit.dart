@@ -35,9 +35,6 @@ class JournalEntitiesState {
   Map<String, dynamic> toJson() => _$JournalEntitiesStateToJson(this);
 
   @override
-  List<Object?> get props => [journalEntitiesMap];
-
-  @override
   String toString() {
     return 'AudioNotesCubitState ${journalEntitiesMap.values} entries';
   }
