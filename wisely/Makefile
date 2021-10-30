@@ -25,6 +25,10 @@ build_runner:
 
 .PHONY: build_runner_watch
 build_runner_watch:
+	flutter pub run build_runner watch --delete-conflicting-outputs
+
+.PHONY: build_runner_watch2
+build_runner_watch2:
 	flutter pub run build_runner watch --delete-conflicting-outputs --use-polling-watcher
 
 .PHONY: ipa
