@@ -38,7 +38,7 @@ Future<void> saveAudioAttachment(
 
 Future<void> saveImageAttachment(
   MimeMessage message,
-  JournalImage journalImage,
+  JournalImage? journalImage,
   String? b64Secret,
 ) async {
   final attachments =

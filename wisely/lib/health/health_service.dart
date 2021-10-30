@@ -82,8 +82,6 @@ class HealthService {
     // you MUST request access to the data types before reading them
     bool accessWasGranted = await health.requestAuthorization(types);
 
-    int steps = 0;
-
     if (accessWasGranted) {
       try {
         // fetch new data
@@ -111,8 +109,10 @@ class HealthService {
     required DateTime dateTo,
   }) async {
     final flutterHealthFit = FlutterHealthFit();
-    bool isAuthorized = await FlutterHealthFit().authorize(true);
-    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    final bool isAuthorized = await FlutterHealthFit().authorize(true);
+    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    debugPrint(
+        'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
     String? deviceType;
     String platform = Platform.isIOS
@@ -129,9 +129,6 @@ class HealthService {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       deviceType = androidInfo.model;
     }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
 
     List<HealthData> cumulativeQuantities = [];
 
