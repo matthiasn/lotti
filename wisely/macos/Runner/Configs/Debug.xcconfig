@@ -1,6 +1,5 @@
 #include "../../Flutter/Flutter-Debug.xcconfig"
 #include "Warnings.xcconfig"
 
-APP_NAME=wiselyDev
-PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyDesktopDev
-
+PRODUCT_NAME=wiselyDev
+PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyDesktopDebug
