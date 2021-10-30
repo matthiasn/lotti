@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:wisely/db/entry.dart';
 
 class Persistence {
-  late final database;
+  late final Future<Database> _database;
 
   Persistence() {
     openDb();
@@ -15,25 +16,25 @@ class Persistence {
         await rootBundle.loadString('assets/sqlite/create_db.sql');
 
     String dbPath = join(await getDatabasesPath(), 'wisely.db');
-    print('DB Path: ${dbPath}');
+    debugPrint('DB Path: $dbPath');
 
-    database = openDatabase(
+    _database = openDatabase(
       dbPath,
       onCreate: (db, version) async {
         List<String> scripts = createDbStatement.split(";");
-        scripts.forEach((v) {
-          if (v.isNotEmpty) {
-            print(v.trim());
-            db.execute(v.trim());
+        for (String line in scripts) {
+          if (line.isNotEmpty) {
+            debugPrint(line.trim());
+            db.execute(line.trim());
           }
-        });
+        }
       },
       version: 1,
     );
   }
 
   Future<void> insertEntry(Entry entry) async {
-    final db = await database;
+    final db = await _database;
 
     await db.insert(
       'entries',
@@ -43,7 +44,7 @@ class Persistence {
   }
 
   Future<List<Entry>> entries() async {
-    final db = await database;
+    final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query('entries');
 
     return List.generate(maps.length, (i) {

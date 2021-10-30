@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -10,25 +11,25 @@ import 'outbound_queue_state.dart';
 class OutboundQueueDb {
   late final Future<Database> _database;
 
-  OutboundQueueDb() {}
+  OutboundQueueDb();
 
   Future<void> openDb() async {
     String createDbStatement =
         await rootBundle.loadString('assets/sqlite/create_outbound_db.sql');
 
     String dbPath = join(await getDatabasesPath(), 'outbound.db');
-    print('OutboundQueueCubit DB Path: ${dbPath}');
+    debugPrint('OutboundQueueCubit DB Path: $dbPath');
 
     _database = openDatabase(
       dbPath,
       onCreate: (db, version) async {
         List<String> scripts = createDbStatement.split(";");
-        scripts.forEach((v) {
-          if (v.isNotEmpty) {
-            print(v.trim());
-            db.execute(v.trim());
+        for (String line in scripts) {
+          if (line.isNotEmpty) {
+            debugPrint(line.trim());
+            db.execute(line.trim());
           }
-        });
+        }
       },
       version: 1,
     );

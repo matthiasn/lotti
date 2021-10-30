@@ -44,10 +44,10 @@ class _EditorPageState extends State<EditorPage> {
       Delta _delta = _controller.document.toDelta();
       String _json = jsonEncode(_delta.toJson());
       String _md = deltaToMarkdown(_json);
-      print(_md);
+      debugPrint(_md);
     });
 
-    var uuid = Uuid();
+    const uuid = Uuid();
     DateTime created = DateTime.now();
     String timezone = await FlutterNativeTimezone.getLocalTimezone();
 
@@ -90,7 +90,7 @@ class _EditorPageState extends State<EditorPage> {
         latitude: latitude ?? 0,
         longitude: longitude ?? 0));
 
-    print(await db.entries());
+    debugPrint('${await db.entries()}');
   }
 
   @override
@@ -132,7 +132,7 @@ class _EditorPageState extends State<EditorPage> {
                       urlTemplate:
                           "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                       subdomains: ['a', 'b', 'c'],
-                      tileProvider: CachedTileProvider(),
+                      tileProvider: const CachedTileProvider(),
                     ),
                     MarkerLayerOptions(
                       markers: [
@@ -140,11 +140,9 @@ class _EditorPageState extends State<EditorPage> {
                           width: 64.0,
                           height: 64.0,
                           point: _currentLocation,
-                          builder: (ctx) => Container(
-                            child: Image(
-                              image: AssetImage(
-                                  'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
-                            ),
+                          builder: (ctx) => const Image(
+                            image: AssetImage(
+                                'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
                           ),
                         ),
                       ],
@@ -157,18 +155,16 @@ class _EditorPageState extends State<EditorPage> {
               padding: const EdgeInsets.all(12.0),
               child: Container(
                 //width: 400,
-                padding: EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8.0),
                 height: 400,
                 color: AppColors.editorBgColor,
                 child: Column(
                   children: [
                     QuillToolbar.basic(controller: _controller),
                     Expanded(
-                      child: Container(
-                        child: QuillEditor.basic(
-                          controller: _controller,
-                          readOnly: false, // true for view only mode
-                        ),
+                      child: QuillEditor.basic(
+                        controller: _controller,
+                        readOnly: false, // true for view only mode
                       ),
                     )
                   ],

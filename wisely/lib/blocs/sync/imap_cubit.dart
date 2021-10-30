@@ -8,6 +8,7 @@ import 'package:enough_mail/mail/mail_client.dart';
 import 'package:enough_mail/mail/mail_events.dart';
 import 'package:enough_mail/mail/mail_exception.dart';
 import 'package:enough_mail/mime_message.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
@@ -50,7 +51,7 @@ class ImapCubit extends Cubit<ImapState> {
                 _journalEntitiesCubit.save(audioNote);
               },
               journalImage: (JournalImage journalImage) async {
-                print('processMessage journalImage $journalImage');
+                debugPrint('processMessage journalImage $journalImage');
                 await saveImageAttachment(message, journalImage, _b64Secret);
                 _journalEntitiesCubit.save(journalImage);
               },
@@ -58,7 +59,7 @@ class ImapCubit extends Cubit<ImapState> {
         },
       );
     } else {
-      print('Ignoring message');
+      debugPrint('Ignoring message');
     }
   }
 
@@ -107,7 +108,7 @@ class ImapCubit extends Cubit<ImapState> {
         await _mailClient.connect();
         final mailboxes =
             await _mailClient.listMailboxesAsTree(createIntermediate: false);
-        print(mailboxes);
+        debugPrint('mailboxes: $mailboxes');
         await _mailClient.selectInbox();
         final messages = await _mailClient.fetchMessages(count: 20);
         for (final message in messages) {
@@ -129,13 +130,13 @@ class ImapCubit extends Cubit<ImapState> {
                 processMessage(message);
               }
             } on MailException catch (e) {
-              print('High level API failed with $e');
+              debugPrint('High level API failed with $e');
             }
           }
         });
         await _mailClient.startPolling();
       } on MailException catch (e) {
-        print('High level API failed with $e');
+        debugPrint('High level API failed with $e');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wisely/blocs/audio/player_state.dart';
@@ -19,7 +20,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       updateProgress(event);
     });
     _audioPlayer.playbackEventStream.listen((event) {
-      print(event);
+      debugPrint(event.toString());
       if (event.processingState == ProcessingState.completed) {
         stopPlay();
       }
@@ -32,7 +33,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   void setAudioNote(AudioNote audioNote) async {
     String localPath = await AudioUtils.getFullAudioPath(audioNote);
-    print(localPath);
+    debugPrint(localPath);
 
     AudioPlayerState newState = AudioPlayerState(
       status: AudioPlayerStatus.stopped,

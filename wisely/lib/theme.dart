@@ -3,9 +3,9 @@ import 'package:flutter/painting.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 class AppColors {
-  static Color bodyBgColor = Color.fromRGBO(155, 200, 245, 1);
+  static Color bodyBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color editorBgColor = Colors.white;
-  static Color headerBgColor = Color.fromRGBO(68, 68, 85, 1);
+  static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
   static Color headerFontColor = Colors.white;
   static Color activeAudioControl = Colors.red;
   static Color audioMeterBar = Colors.blue;

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:path/path.dart';
@@ -19,7 +20,7 @@ class HealthService {
   Future<File> _localFile(String fileName) async {
     final docDir = await getApplicationDocumentsDirectory();
     String filePath = join(docDir.path, fileName);
-    print('>>> filePath: $filePath');
+    debugPrint('>>> filePath: $filePath');
     return File(filePath);
   }
 
@@ -92,7 +93,7 @@ class HealthService {
         // save all the new data points
         _healthDataList.addAll(healthData);
       } catch (e) {
-        print("Caught exception in getHealthDataFromTypes: $e");
+        debugPrint('Caught exception in getHealthDataFromTypes: $e');
       }
 
       // filter out duplicates
@@ -100,7 +101,7 @@ class HealthService {
 
       await writeJson(filename);
     } else {
-      print("Authorization not granted");
+      debugPrint('Authorization not granted');
     }
   }
 
