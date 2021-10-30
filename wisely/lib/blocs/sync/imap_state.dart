@@ -6,6 +6,6 @@ part 'imap_state.freezed.dart';
 class ImapState with _$ImapState {
   factory ImapState.initial() = Initial;
   factory ImapState.loading() = Loading;
-  factory ImapState.online() = Online;
+  factory ImapState.online({required DateTime lastUpdate}) = Online;
   factory ImapState.failed() = Failed;
 }

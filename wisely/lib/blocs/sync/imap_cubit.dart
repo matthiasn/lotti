@@ -83,8 +83,8 @@ class ImapCubit extends Cubit<ImapState> {
       Mailbox mb = await _imapClient.selectInbox();
       debugPrint(mb.toString());
       await _pollInbox();
+      emit(ImapState.online(lastUpdate: DateTime.now()));
       _startPolling();
-      emit(ImapState.online());
       _observeInbox();
     }
   }
@@ -104,7 +104,7 @@ class ImapCubit extends Cubit<ImapState> {
       for (final message in fetchResult.messages) {
         await processMessage(message);
       }
-      emit(ImapState.online());
+      emit(ImapState.online(lastUpdate: DateTime.now()));
     }
   }
 
@@ -146,6 +146,7 @@ class ImapCubit extends Cubit<ImapState> {
               for (final message in res.messages) {
                 processMessage(message);
               }
+              emit(ImapState.online(lastUpdate: DateTime.now()));
             } on MailException catch (e) {
               debugPrint('High level API failed with $e');
             }
