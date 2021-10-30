@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
@@ -56,7 +57,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
 
     _myRecorder?.openAudioSession().then((value) {
-      print('openAudioSession $value');
+      debugPrint('openAudioSession $value');
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
       _myRecorder?.onProgress?.listen((event) {
@@ -116,8 +117,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     String day = DateFormat('yyyy-MM-dd').format(created);
     String relativePath = '/audio/$day/';
     String directory = await AudioUtils.createAssetDirectory(relativePath);
-    String filePath = '${directory}$fileName';
-    print('RECORD: ${filePath}');
+    String filePath = '$directory$fileName';
+    debugPrint('RECORD: $filePath');
     String timezone = await FlutterNativeTimezone.getLocalTimezone();
 
     _audioNote = AudioNote(

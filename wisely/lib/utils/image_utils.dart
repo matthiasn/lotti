@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/classes/journal_entities.dart';
@@ -11,7 +12,7 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
 
   if (data.isEmpty) {
-    print("No EXIF information found");
+    debugPrint("No EXIF information found");
     return;
   }
 
@@ -21,7 +22,7 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
   var lngVal = gpsValuesToFloat(data['GPS GPSLongitude']?.values);
 
   if (latRef == null || latVal == null || lngRef == null || lngVal == null) {
-    print("GPS information not found");
+    debugPrint("GPS information not found");
     return;
   }
 
@@ -33,8 +34,8 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
     lngVal *= -1;
   }
 
-  print("lat = $latVal");
-  print("lng = $lngVal");
+  debugPrint("lat = $latVal");
+  debugPrint("lng = $lngVal");
 }
 
 double? gpsValuesToFloat(IfdValues? values) {
@@ -57,34 +58,34 @@ printExif(Uint8List bytes) async {
   final data = await readExifFromBytes(bytes);
 
   if (data.isEmpty) {
-    print("No EXIF information found");
+    debugPrint("No EXIF information found");
     return;
   }
 
   for (final entry in data.entries) {
-    print("${entry.key}: ${entry.value}");
+    debugPrint("${entry.key}: ${entry.value}");
   }
 
   final created = data['EXIF DateTimeOriginal']?.toString();
   final offsetTime = data['EXIF OffsetTimeOriginal']?.toString();
-  print('Image created: $created $offsetTime');
+  debugPrint('Image created: $created $offsetTime');
 }
 
 printExifFromFile(File file) async {
   final data = await readExifFromFile(file);
 
   if (data.isEmpty) {
-    print("No EXIF information found");
+    debugPrint("No EXIF information found");
     return;
   }
 
   for (final entry in data.entries) {
-    print("${entry.key}: ${entry.value}");
+    debugPrint("${entry.key}: ${entry.value}");
   }
 
   final created = data['EXIF DateTimeOriginal']?.toString();
   final offsetTime = data['EXIF OffsetTimeOriginal']?.toString();
-  print('Image created: $created $offsetTime');
+  debugPrint('Image created: $created $offsetTime');
 }
 
 Future<File?> compressAndGetFile(File file) async {
@@ -95,12 +96,12 @@ Future<File?> compressAndGetFile(File file) async {
     quality: 95,
     format: CompressFormat.heic,
   );
-  print('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
+  debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
   return result;
 }
 
 Future<File?> compressAndSave(File file, String targetPath) async {
-  print('compressAndSave ${file.path} -> $targetPath');
+  debugPrint('compressAndSave ${file.path} -> $targetPath');
   String sourcePath = file.absolute.path;
   File? result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
@@ -108,7 +109,7 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     quality: 90,
     format: CompressFormat.heic,
   );
-  print('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
+  debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
   return result;
 }
 

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
+import 'package:flutter/foundation.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -27,7 +28,7 @@ Future<void> saveAudioAttachment(
       String filePath = await AudioUtils.getFullAudioPath(audioNote);
       await File(filePath).parent.create(recursive: true);
       File encrypted = File('$filePath.aes');
-      print('saveAttachment $filePath');
+      debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
       await AudioUtils.saveAudioNoteJson(audioNote);
@@ -37,7 +38,7 @@ Future<void> saveAudioAttachment(
 
 Future<void> saveImageAttachment(
   MimeMessage message,
-  JournalImage journalImage,
+  JournalImage? journalImage,
   String? b64Secret,
 ) async {
   final attachments =
@@ -52,7 +53,7 @@ Future<void> saveImageAttachment(
       String filePath = await getFullImagePath(journalImage);
       await File(filePath).parent.create(recursive: true);
       File encrypted = File('$filePath.aes');
-      print('saveAttachment $filePath');
+      debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
       await saveJournalImageJson(journalImage);
@@ -90,7 +91,7 @@ Future<void> writeToFile(Uint8List? data, String filePath) async {
   if (data != null) {
     await File(filePath).writeAsBytes(data);
   } else {
-    print('No bytes for $filePath');
+    debugPrint('No bytes for $filePath');
   }
 }
 
@@ -118,7 +119,7 @@ Future<GenericImapResult> saveImapMessage(
   final MimeMessage message = builder.buildMimeMessage();
   GenericImapResult res =
       await imapClient.appendMessage(message, targetMailbox: inbox);
-  print(
+  debugPrint(
       'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
   return res;
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:path/path.dart';
@@ -19,7 +20,7 @@ class HealthService {
   Future<File> _localFile(String fileName) async {
     final docDir = await getApplicationDocumentsDirectory();
     String filePath = join(docDir.path, fileName);
-    print('>>> filePath: $filePath');
+    debugPrint('>>> filePath: $filePath');
     return File(filePath);
   }
 
@@ -81,8 +82,6 @@ class HealthService {
     // you MUST request access to the data types before reading them
     bool accessWasGranted = await health.requestAuthorization(types);
 
-    int steps = 0;
-
     if (accessWasGranted) {
       try {
         // fetch new data
@@ -92,7 +91,7 @@ class HealthService {
         // save all the new data points
         _healthDataList.addAll(healthData);
       } catch (e) {
-        print("Caught exception in getHealthDataFromTypes: $e");
+        debugPrint('Caught exception in getHealthDataFromTypes: $e');
       }
 
       // filter out duplicates
@@ -100,7 +99,7 @@ class HealthService {
 
       await writeJson(filename);
     } else {
-      print("Authorization not granted");
+      debugPrint('Authorization not granted');
     }
   }
 
@@ -110,8 +109,10 @@ class HealthService {
     required DateTime dateTo,
   }) async {
     final flutterHealthFit = FlutterHealthFit();
-    bool isAuthorized = await FlutterHealthFit().authorize(true);
-    final isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    final bool isAuthorized = await FlutterHealthFit().authorize(true);
+    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    debugPrint(
+        'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
     String? deviceType;
     String platform = Platform.isIOS
@@ -128,9 +129,6 @@ class HealthService {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       deviceType = androidInfo.model;
     }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
 
     List<HealthData> cumulativeQuantities = [];
 

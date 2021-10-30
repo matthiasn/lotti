@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 
 Future<void> encryptDecrypt(String messageString) async {
   final List<int> message = utf8.encode(messageString);
@@ -21,11 +22,11 @@ Future<void> encryptDecrypt(String messageString) async {
   final Uint8List bytes = secretBox.concatenation();
   final String b64String = base64.encode(bytes);
 
-  print('Nonce: ${secretBox.nonce}');
-  print('Nonce length: ${secretBox.nonce.length}');
-  print('Ciphertext: ${secretBox.cipherText}');
-  print('Base64 encoded: ${b64String}');
-  print('MAC: ${secretBox.mac.bytes}');
+  debugPrint('Nonce: ${secretBox.nonce}');
+  debugPrint('Nonce length: ${secretBox.nonce.length}');
+  debugPrint('Ciphertext: ${secretBox.cipherText}');
+  debugPrint('Base64 encoded: $b64String');
+  debugPrint('MAC: ${secretBox.mac.bytes}');
 
   final deserializedSecretBox =
       SecretBox.fromConcatenation(bytes, nonceLength: 12, macLength: 16);
@@ -36,13 +37,13 @@ Future<void> encryptDecrypt(String messageString) async {
     secretKey: secretKey,
   );
   final String clearText = utf8.decode(clearMessage);
-  print('Cleartext: $clearText');
+  debugPrint('Cleartext: $clearText');
 }
 
 Future<void> encryptFile(
     File inputFile, File encryptedFile, String b64Secret) async {
   if (!inputFile.existsSync()) {
-    print('File does not exist, aborting');
+    debugPrint('File does not exist, aborting');
     throw Exception("File not found");
   }
 
@@ -65,7 +66,7 @@ Future<void> encryptFile(
 Future<void> decryptFile(
     File inputFile, File outputFile, String b64Secret) async {
   if (!inputFile.existsSync()) {
-    print('File does not exist, aborting');
+    debugPrint('File does not exist, aborting');
     throw Exception("File not found");
   }
 

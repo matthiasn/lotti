@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:collection/collection.dart';
 
 class VclockException implements Exception {

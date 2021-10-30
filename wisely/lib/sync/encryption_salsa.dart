@@ -1,4 +1,5 @@
 import 'package:encrypt/encrypt.dart';
+import 'package:flutter/foundation.dart' hide Key;
 
 String encryptSalsa(String plainText, b64Secret) {
   final Key key = Key.fromBase64(b64Secret);
@@ -24,6 +25,6 @@ void encryptDecryptSalsa(String plainText) {
   final String b64Secret = Key.fromSecureRandom(32).base64;
   final String encryptedMessage = encryptSalsa(plainText, b64Secret);
   final String decrypted = decryptSalsa(encryptedMessage, b64Secret);
-  print('Salsa encrypt decrypt: $now ${DateTime.now()}');
-  print('Salsa decrypted: $decrypted');
+  debugPrint('Salsa encrypt decrypt: $now ${DateTime.now()}');
+  debugPrint('Salsa decrypted: $decrypted');
 }

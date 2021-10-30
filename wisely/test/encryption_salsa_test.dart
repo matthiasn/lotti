@@ -1,4 +1,5 @@
 import 'package:encrypt/encrypt.dart';
+import 'package:flutter/foundation.dart' hide Key;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 
@@ -8,7 +9,7 @@ void main() {
     final String b64Secret = Key.fromSecureRandom(32).base64;
     final String encryptedMessage = encryptSalsa(testString, b64Secret);
     final String decrypted = decryptSalsa(encryptedMessage, b64Secret);
-    print('Salsa decrypted: $decrypted');
+    debugPrint('Salsa decrypted: $decrypted');
     expect(decrypted, testString);
   });
 }

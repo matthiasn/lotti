@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'dart:async';
 import 'dart:io';
 
@@ -29,7 +31,7 @@ class JournalCubit extends Cubit<JournalState> {
     required JournalEntitiesCubit journalEntitiesCubit,
     required OutboundQueueCubit outboundQueueCubit,
   }) : super(JournalState()) {
-    print('Hello from JournalCubit');
+    debugPrint('Hello from JournalCubit');
     _vectorClockCubit = vectorClockCubit;
     _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
@@ -43,10 +45,10 @@ class JournalCubit extends Cubit<JournalState> {
     );
     if (assets != null) {
       for (final AssetEntity asset in assets) {
-        print('pickAssets $asset');
-        print('pickAssets createDateTime ${asset.createDateTime}');
-        print('pickAssets id ${asset.id}');
-        print('pickAssets file ${await asset.file}');
+        debugPrint('pickAssets $asset');
+        debugPrint('pickAssets createDateTime ${asset.createDateTime}');
+        debugPrint('pickAssets id ${asset.id}');
+        debugPrint('pickAssets file ${await asset.file}');
 
         Geolocation? geolocation;
         if (asset.latitude != null && asset.longitude != null) {
@@ -78,10 +80,7 @@ class JournalCubit extends Cubit<JournalState> {
           String targetFilePath = '$directory$imageFileName';
           File? targetFile;
           if (originalName.contains('.PNG')) {
-            targetFile = await compressAndSave(
-              originFile,
-              '${targetFilePath}',
-            );
+            targetFile = await compressAndSave(originFile, targetFilePath);
           } else {
             targetFile = await File(targetFilePath)
                 .writeAsBytes(await originFile.readAsBytes());
@@ -108,7 +107,7 @@ class JournalCubit extends Cubit<JournalState> {
             createdAt: created,
             vectorClock: vectorClock,
           );
-          print(journalImage);
+          debugPrint(journalImage.toString());
           await saveJournalImageJson(journalImage);
           _journalEntitiesCubit.save(journalImage);
 

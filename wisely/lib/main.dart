@@ -89,7 +89,7 @@ class WiselyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.grey,
         ),
-        home: WiselyHomePage(title: 'WISELY'),
+        home: const WiselyHomePage(title: 'WISELY'),
       ),
     );
   }

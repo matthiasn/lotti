@@ -78,7 +78,7 @@ class AudioRecorderWidget extends StatelessWidget {
 
 class VuMeterWidget extends StatelessWidget {
   double decibels = 0;
-  VuMeterWidget({required this.decibels});
+  VuMeterWidget({Key? key, required this.decibels}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
