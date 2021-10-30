@@ -68,24 +68,30 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> imapClientInit() async {
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
-    if (syncConfig != null) {
-      _syncConfig = syncConfig;
-      _b64Secret = syncConfig.sharedSecret;
-      emit(ImapState.loading());
-      ImapConfig imapConfig = syncConfig.imapConfig;
+    try {
+      if (syncConfig != null) {
+        _syncConfig = syncConfig;
+        _b64Secret = syncConfig.sharedSecret;
+        emit(ImapState.loading());
+        ImapConfig imapConfig = syncConfig.imapConfig;
 
-      await _imapClient.connectToServer(
-        imapConfig.host,
-        imapConfig.port,
-        isSecure: true,
-      );
-      await _imapClient.login(imapConfig.userName, imapConfig.password);
-      Mailbox mb = await _imapClient.selectInbox();
-      debugPrint(mb.toString());
-      await _pollInbox();
-      emit(ImapState.online(lastUpdate: DateTime.now()));
-      _startPolling();
-      _observeInbox();
+        await _imapClient.connectToServer(
+          imapConfig.host,
+          imapConfig.port,
+          isSecure: true,
+        );
+        emit(ImapState.connected());
+        await _imapClient.login(imapConfig.userName, imapConfig.password);
+        emit(ImapState.loggedIn());
+        Mailbox mb = await _imapClient.selectInbox();
+        debugPrint(mb.toString());
+        await _pollInbox();
+        emit(ImapState.online(lastUpdate: DateTime.now()));
+        _startPolling();
+        _observeInbox();
+      }
+    } catch (e) {
+      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }
 
@@ -97,31 +103,37 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> _pollInbox() async {
-    debugPrint('_pollInbox');
-    if (_syncConfig != null) {
-      final fetchResult = await _imapClient.fetchRecentMessages(
-          messageCount: 100, criteria: 'BODY.PEEK[]');
-      for (final message in fetchResult.messages) {
-        await processMessage(message);
+    try {
+      debugPrint('_pollInbox');
+      if (_syncConfig != null) {
+        final fetchResult = await _imapClient.fetchRecentMessages(
+            messageCount: 100, criteria: 'BODY.PEEK[]');
+        for (final message in fetchResult.messages) {
+          await processMessage(message);
+        }
+        emit(ImapState.online(lastUpdate: DateTime.now()));
       }
-      emit(ImapState.online(lastUpdate: DateTime.now()));
+    } on MailException catch (e) {
+      debugPrint('High level API failed with $e');
+      emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
+    } catch (e) {
+      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }
 
   Future<void> _observeInbox() async {
-    if (_syncConfig != null) {
-      ImapConfig imapConfig = _syncConfig!.imapConfig;
-      final account = MailAccount.fromManualSettings(
-        'sync',
-        imapConfig.userName,
-        imapConfig.host,
-        imapConfig.host,
-        imapConfig.password,
-      );
+    try {
+      if (_syncConfig != null) {
+        ImapConfig imapConfig = _syncConfig!.imapConfig;
+        final account = MailAccount.fromManualSettings(
+          'sync',
+          imapConfig.userName,
+          imapConfig.host,
+          imapConfig.host,
+          imapConfig.password,
+        );
 
-      _mailClient = MailClient(account, isLogEnabled: false);
-
-      try {
+        _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
         final mailboxes =
             await _mailClient.listMailboxesAsTree(createIntermediate: false);
@@ -149,13 +161,17 @@ class ImapCubit extends Cubit<ImapState> {
               emit(ImapState.online(lastUpdate: DateTime.now()));
             } on MailException catch (e) {
               debugPrint('High level API failed with $e');
+              emit(ImapState.failed(error: 'failed: $e ${e.details}'));
             }
           }
         });
         await _mailClient.startPolling();
-      } on MailException catch (e) {
-        debugPrint('High level API failed with $e');
       }
+    } on MailException catch (e) {
+      debugPrint('High level API failed with $e');
+      emit(ImapState.failed(error: 'failed: $e ${e.details}'));
+    } catch (e) {
+      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }
 

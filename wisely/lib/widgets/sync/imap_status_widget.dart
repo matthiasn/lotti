@@ -15,8 +15,11 @@ class ImapStatusWidget extends StatelessWidget {
         children: [
           state.when(
             loading: () => const StatusTextWidget('loading'),
+            connected: () => const StatusTextWidget('connected'),
             initial: () => const StatusTextWidget('initial'),
-            failed: () => const StatusTextWidget('failed'),
+            loggedIn: () => const StatusTextWidget('logged in'),
+            failed: (String error) =>
+                StatusTextWidget('failed. reason: $error'),
             online: (DateTime lastUpdate) =>
                 StatusTextWidget('online, last update: $lastUpdate'),
           ),
