@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wisely/widgets/sync/imap_config.dart';
+import 'package:wisely/widgets/sync/imap_status_widget.dart';
 import 'package:wisely/widgets/sync/qr_widget.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: const <Widget>[
           EmailConfigForm(),
+          ImapStatusWidget(),
           EncryptionQrWidget(),
         ],
       ),
