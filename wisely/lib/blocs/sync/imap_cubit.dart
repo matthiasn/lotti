@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
-import 'package:enough_mail/imap/mailbox.dart';
+import 'package:enough_mail/imap/message_sequence.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:enough_mail/mail/mail_account.dart';
 import 'package:enough_mail/mail/mail_client.dart';
@@ -11,6 +11,7 @@ import 'package:enough_mail/mail/mail_events.dart';
 import 'package:enough_mail/mail/mail_exception.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
@@ -29,6 +30,11 @@ class ImapCubit extends Cubit<ImapState> {
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
   late String? _b64Secret;
+
+  final _storage = const FlutterSecureStorage();
+  final String sharedSecretKey = 'sharedSecret';
+  final String imapConfigKey = 'imapConfig';
+  final String lastReadUidKey = 'lastReadUid';
 
   ImapCubit({
     required EncryptionCubit encryptionCubit,
@@ -83,8 +89,7 @@ class ImapCubit extends Cubit<ImapState> {
         emit(ImapState.connected());
         await _imapClient.login(imapConfig.userName, imapConfig.password);
         emit(ImapState.loggedIn());
-        Mailbox mb = await _imapClient.selectInbox();
-        debugPrint(mb.toString());
+        await _imapClient.selectInbox();
         await _pollInbox();
         emit(ImapState.online(lastUpdate: DateTime.now()));
         _startPolling();
@@ -97,7 +102,7 @@ class ImapCubit extends Cubit<ImapState> {
 
   void _startPolling() async {
     debugPrint('_startPolling');
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
+    Timer.periodic(const Duration(minutes: 1), (timer) async {
       _pollInbox();
     });
   }
@@ -106,10 +111,25 @@ class ImapCubit extends Cubit<ImapState> {
     try {
       debugPrint('_pollInbox');
       if (_syncConfig != null) {
-        final fetchResult = await _imapClient.fetchRecentMessages(
-            messageCount: 100, criteria: 'BODY.PEEK[]');
-        for (final message in fetchResult.messages) {
-          await processMessage(message);
+        String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
+        int lastReadUid =
+            lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
+
+        var sequence = MessageSequence(isUidSequence: true);
+        sequence.addRangeToLast(lastReadUid + 1);
+        debugPrint('sequence: $sequence');
+
+        final fetchResult =
+            await _imapClient.uidFetchMessages(sequence, 'ENVELOPE');
+
+        List<MimeMessage> messages = fetchResult.messages;
+
+        if (messages.isNotEmpty) {
+          MimeMessage oldest = fetchResult.messages.first;
+          await _fetchByUid(oldest.uid);
+          if (messages.length > 1) {
+            await _pollInbox();
+          }
         }
         emit(ImapState.online(lastUpdate: DateTime.now()));
       }
@@ -117,7 +137,28 @@ class ImapCubit extends Cubit<ImapState> {
       debugPrint('High level API failed with $e');
       emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
     } catch (e) {
+      debugPrint('Exception $e');
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+    }
+  }
+
+  Future<void> _fetchByUid(int? uid) async {
+    if (uid != null) {
+      try {
+        // odd workaround, prevents intermittent failures on macOS
+        await _imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+        FetchImapResult res =
+            await _imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+
+        for (final message in res.messages) {
+          await processMessage(message);
+        }
+        await _storage.write(key: lastReadUidKey, value: '$uid');
+        emit(ImapState.online(lastUpdate: DateTime.now()));
+      } on MailException catch (e) {
+        debugPrint('High level API failed with $e');
+        emit(ImapState.failed(error: 'failed: $e ${e.details}'));
+      }
     }
   }
 
@@ -139,33 +180,11 @@ class ImapCubit extends Cubit<ImapState> {
             await _mailClient.listMailboxesAsTree(createIntermediate: false);
         debugPrint('mailboxes: $mailboxes');
         await _mailClient.selectInbox();
-        final messages = await _mailClient.fetchMessages(count: 20);
-        for (final message in messages) {
-          processMessage(message);
-        }
         _mailClient.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
-          if (event.message.uid != null) {
-            try {
-              // odd workaround, prevents intermittent failures on Mac when
-              // awaiting this twice
-              await _imapClient.uidFetchMessage(
-                  event.message.uid!, 'BODY.PEEK[]');
-              FetchImapResult res = await _imapClient.uidFetchMessage(
-                  event.message.uid!, 'BODY.PEEK[]');
-
-              for (final message in res.messages) {
-                processMessage(message);
-              }
-              emit(ImapState.online(lastUpdate: DateTime.now()));
-            } on MailException catch (e) {
-              debugPrint('High level API failed with $e');
-              emit(ImapState.failed(error: 'failed: $e ${e.details}'));
-            }
-          }
+          _pollInbox();
         });
-        await _mailClient.startPolling();
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
