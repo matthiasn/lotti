@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wisely/classes/journal_entities.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 
 var uuid = const Uuid();
 
@@ -38,7 +38,7 @@ class PersistenceDb {
   }
 
   Future<void> insert(
-    JournalEntity journalEntity,
+    JournalDbEntity journalDbEntity,
   ) async {
     final db = await _database;
     final String id = uuid.v1();
@@ -48,15 +48,15 @@ class PersistenceDb {
       id: id,
       createdAt: now,
       updatedAt: now,
-      startTime: now,
-      endTime: now,
-      type: journalEntity.runtimeType.toString(),
-      serialized: journalEntity.toString(),
+      dateFrom: now,
+      dateTo: now,
+      type: journalDbEntity.data.runtimeType.toString(),
+      serialized: journalDbEntity.toString(),
       schemaVersion: 0,
     );
 
     await db.insert(
-      'outbound',
+      'journal',
       dbRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -65,7 +65,7 @@ class PersistenceDb {
   Future<List<JournalRecord>> journalEntries(int n) async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(
-      'outbound',
+      'journal',
       orderBy: 'created_at',
       limit: n,
     );
@@ -80,8 +80,8 @@ class JournalRecord {
   final String id;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime startTime;
-  final DateTime endTime;
+  final DateTime dateFrom;
+  final DateTime dateTo;
   final String type;
   final String? subtype;
   final String serialized;
@@ -96,8 +96,8 @@ class JournalRecord {
     required this.id,
     required this.createdAt,
     required this.updatedAt,
-    required this.startTime,
-    required this.endTime,
+    required this.dateFrom,
+    required this.dateTo,
     required this.type,
     this.subtype,
     required this.serialized,
@@ -118,8 +118,8 @@ class JournalRecord {
         id: data['id'],
         createdAt: DateTime.fromMillisecondsSinceEpoch(data['created_at']),
         updatedAt: DateTime.fromMillisecondsSinceEpoch(data['updated_at']),
-        startTime: DateTime.fromMillisecondsSinceEpoch(data['start_time']),
-        endTime: DateTime.fromMillisecondsSinceEpoch(data['end_time']),
+        dateFrom: DateTime.fromMillisecondsSinceEpoch(data['date_from']),
+        dateTo: DateTime.fromMillisecondsSinceEpoch(data['date_to']),
         type: data['type'],
         subtype: data['subtype'],
         serialized: data['serialized'],
@@ -136,8 +136,8 @@ class JournalRecord {
       'id': id,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
-      'start_time': startTime.millisecondsSinceEpoch,
-      'end_time': endTime.millisecondsSinceEpoch,
+      'date_from': dateFrom.millisecondsSinceEpoch,
+      'date_to': dateTo.millisecondsSinceEpoch,
       'type': type,
       'subtype': subtype,
       'serialized': serialized,

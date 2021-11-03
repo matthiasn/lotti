@@ -15,6 +15,7 @@ class TaskStatus with _$TaskStatus {
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskOpen;
+
   factory TaskStatus.started({
     required String id,
     required DateTime createdAt,
@@ -22,6 +23,7 @@ class TaskStatus with _$TaskStatus {
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskStarted;
+
   factory TaskStatus.blocked({
     required String id,
     required DateTime createdAt,
@@ -29,6 +31,7 @@ class TaskStatus with _$TaskStatus {
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskBlocked;
+
   factory TaskStatus.done({
     required String id,
     required DateTime createdAt,
@@ -36,6 +39,7 @@ class TaskStatus with _$TaskStatus {
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskDone;
+
   factory TaskStatus.rejected({
     required String id,
     required DateTime createdAt,
