@@ -78,19 +78,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     ));
   }
 
-  VectorClock assignVectorClock() {
-    String host = _vectorClockCubit.state.host;
-    int nextAvailableCounter = _vectorClockCubit.state.nextAvailableCounter;
-    VectorClock next = VectorClock(<String, int>{host: nextAvailableCounter});
-    _audioNote = _audioNote?.copyWith(vectorClock: next);
-    _vectorClockCubit.increment();
-    return next;
-  }
-
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
-      VectorClock next = assignVectorClock();
+      VectorClock next = _vectorClockCubit.getNextVectorClock();
       await AudioUtils.saveAudioNoteJson(_audioNote!);
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
 
@@ -169,8 +160,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       );
 
       debugPrint(journalDbAudio.toString());
-      _persistenceCubit.create(journalDbAudio,
-          geolocation: audioNote.geolocation);
+      _persistenceCubit.create(
+        journalDbAudio,
+        geolocation: audioNote.geolocation,
+        vectorClock: audioNote.vectorClock,
+      );
     }
   }
 

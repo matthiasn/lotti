@@ -80,7 +80,7 @@ class JournalDbEntity with _$JournalDbEntity {
     required DateTime dateFrom,
     required DateTime dateTo,
     Geolocation? geolocation,
-    VectorClock? vectorClock,
+    required VectorClock vectorClock,
     EntryText? entryText,
     List<String>? linked,
   }) = JournalDbEntry;

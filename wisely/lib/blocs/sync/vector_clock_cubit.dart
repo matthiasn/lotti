@@ -1,6 +1,7 @@
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/sync/vector_clock_state.dart';
+import 'package:wisely/sync/vector_clock.dart';
 
 const uuid = Uuid();
 
@@ -11,6 +12,13 @@ class VectorClockCubit extends HydratedCubit<VectorClockCounterState> {
 
   void increment() {
     emit(VectorClockCounterState.next(state));
+  }
+
+  VectorClock getNextVectorClock() {
+    String host = state.host;
+    int nextAvailableCounter = state.nextAvailableCounter;
+    increment();
+    return VectorClock(<String, int>{host: nextAvailableCounter});
   }
 
   @override

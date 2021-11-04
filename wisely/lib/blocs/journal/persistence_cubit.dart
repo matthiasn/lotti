@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/journal/persistence_db.dart';
@@ -9,6 +10,7 @@ import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/sync/vector_clock.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
@@ -31,8 +33,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<bool> create(
     JournalDbEntityData data, {
     Geolocation? geolocation,
+    VectorClock? vectorClock,
   }) async {
     DateTime now = DateTime.now();
+    VectorClock vc = vectorClock ?? _vectorClockCubit.getNextVectorClock();
 
     // avoid inserting the same external entity multiple times
     String id = data.maybeMap(
@@ -69,7 +73,9 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       dateTo: dateTo,
       id: id,
       geolocation: geolocation,
+      vectorClock: vc,
     );
+    debugPrint(json.encode(journalDbEntity));
     await _db.insert(journalDbEntity);
     return true;
   }

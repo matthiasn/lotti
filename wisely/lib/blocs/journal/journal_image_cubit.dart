@@ -91,15 +91,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
                 .writeAsBytes(await originFile.readAsBytes());
           }
 
-          VectorClock getNextVectorClock() {
-            String host = _vectorClockCubit.state.host;
-            int nextAvailableCounter =
-                _vectorClockCubit.state.nextAvailableCounter;
-            _vectorClockCubit.increment();
-            return VectorClock(<String, int>{host: nextAvailableCounter});
-          }
-
-          VectorClock vectorClock = getNextVectorClock();
+          VectorClock vectorClock = _vectorClockCubit.getNextVectorClock();
           DateTime created = asset.createDateTime;
 
           JournalImage journalImage = JournalImage(
@@ -123,7 +115,11 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             capturedAt: created,
           );
 
-          _persistenceCubit.create(journalDbImage, geolocation: geolocation);
+          _persistenceCubit.create(
+            journalDbImage,
+            geolocation: geolocation,
+            vectorClock: vectorClock,
+          );
 
           await _outboundQueueCubit.enqueueMessage(
             SyncMessage.journalEntity(
