@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wisely/blocs/journal/journal_cubit.dart';
-import 'package:wisely/blocs/journal/journal_state.dart';
+import 'package:wisely/blocs/journal/journal_image_cubit.dart';
+import 'package:wisely/blocs/journal/journal_image_state.dart';
 import 'package:wisely/widgets/buttons.dart';
 
 class PhotoImportPage extends StatefulWidget {
@@ -20,8 +20,8 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<JournalCubit, JournalState>(
-        builder: (BuildContext context, JournalState state) {
+    return BlocBuilder<JournalImageCubit, JournalImageState>(
+        builder: (BuildContext context, JournalImageState state) {
       return Center(
         child: SingleChildScrollView(
           child: Column(
@@ -29,7 +29,7 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
             children: <Widget>[
               Button(
                 onPressed: () async {
-                  context.read<JournalCubit>().pickImageAssets(context);
+                  context.read<JournalImageCubit>().pickImageAssets(context);
                 },
                 label: 'Pick Assets',
                 primaryColor: CupertinoColors.systemOrange,

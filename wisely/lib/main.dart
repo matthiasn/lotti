@@ -17,7 +17,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
-import 'blocs/journal/journal_cubit.dart';
+import 'blocs/journal/journal_image_cubit.dart';
 import 'blocs/journal/persistence_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
@@ -77,9 +77,9 @@ class WiselyApp extends StatelessWidget {
             imapCubit: BlocProvider.of<ImapCubit>(context),
           ),
         ),
-        BlocProvider<JournalCubit>(
+        BlocProvider<JournalImageCubit>(
           lazy: false,
-          create: (BuildContext context) => JournalCubit(
+          create: (BuildContext context) => JournalImageCubit(
             outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             journalEntitiesCubit:

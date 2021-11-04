@@ -21,21 +21,21 @@ import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
-import 'journal_state.dart';
+import 'journal_image_state.dart';
 
-class JournalCubit extends Cubit<JournalState> {
+class JournalImageCubit extends Cubit<JournalImageState> {
   late final VectorClockCubit _vectorClockCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceCubit _persistenceCubit;
 
-  JournalCubit({
+  JournalImageCubit({
     required VectorClockCubit vectorClockCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
     required OutboundQueueCubit outboundQueueCubit,
     required PersistenceCubit persistenceCubit,
-  }) : super(JournalState()) {
-    debugPrint('Hello from JournalCubit');
+  }) : super(JournalImageState()) {
+    debugPrint('Hello from JournalImageCubit');
     _vectorClockCubit = vectorClockCubit;
     _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
