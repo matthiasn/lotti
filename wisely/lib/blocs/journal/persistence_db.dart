@@ -43,6 +43,14 @@ class PersistenceDb {
   ) async {
     final db = await _database;
     final DateTime createdAt = journalDbEntity.createdAt;
+    final JournalDbEntityData data = journalDbEntity.data;
+    final type = data.runtimeType.toString();
+    final subtype = data.maybeMap(
+      cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
+      discreteQuantity: (DiscreteQuantity v) => v.dataType,
+      orElse: () => '',
+    );
+
     journalDbEntity.map(journalDbEntry: (journalDbEntry) async {
       String id = journalDbEntity.id;
       JournalRecord dbRecord = JournalRecord(
@@ -51,7 +59,8 @@ class PersistenceDb {
         updatedAt: createdAt,
         dateFrom: journalDbEntity.dateFrom,
         dateTo: journalDbEntity.dateTo,
-        type: journalDbEntity.data.runtimeType.toString(),
+        type: type,
+        subtype: subtype,
         serialized: journalDbEntity.toString(),
         schemaVersion: 0,
         longitude: journalDbEntity.geolocation?.longitude,
