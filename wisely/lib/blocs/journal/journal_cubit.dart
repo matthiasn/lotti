@@ -8,10 +8,12 @@ import 'package:flutter/widgets.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
@@ -25,16 +27,19 @@ class JournalCubit extends Cubit<JournalState> {
   late final VectorClockCubit _vectorClockCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
+  late final PersistenceCubit _persistenceCubit;
 
   JournalCubit({
     required VectorClockCubit vectorClockCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
     required OutboundQueueCubit outboundQueueCubit,
+    required PersistenceCubit persistenceCubit,
   }) : super(JournalState()) {
     debugPrint('Hello from JournalCubit');
     _vectorClockCubit = vectorClockCubit;
     _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
+    _persistenceCubit = persistenceCubit;
   }
 
   Future<void> pickImageAssets(BuildContext context) async {
@@ -56,7 +61,7 @@ class JournalCubit extends Cubit<JournalState> {
             createdAt: asset.createDateTime,
             latitude: asset.latitude,
             longitude: asset.longitude,
-            geohash: DeviceLocation.getGeoHash(
+            geohashString: DeviceLocation.getGeoHash(
               latitude: asset.latitude,
               longitude: asset.longitude,
             ),
@@ -110,6 +115,19 @@ class JournalCubit extends Cubit<JournalState> {
           debugPrint(journalImage.toString());
           await saveJournalImageJson(journalImage);
           _journalEntitiesCubit.save(journalImage);
+
+          JournalDbImage journalDbImage = JournalDbImage(
+            imageId: asset.id,
+            imageFile: imageFileName,
+            imageDirectory: relativePath,
+            capturedAt: created,
+          );
+
+          Future<Geolocation?> geoFuture() async {
+            return geolocation;
+          }
+
+          _persistenceCubit.create(journalDbImage, geoFuture: geoFuture());
 
           await _outboundQueueCubit.enqueueMessage(
             SyncMessage.journalEntity(

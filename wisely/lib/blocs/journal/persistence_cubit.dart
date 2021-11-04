@@ -30,41 +30,36 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> create(
     JournalDbEntityData data, {
-    Future<Geolocation>? geolocation,
+    Future<Geolocation?>? geoFuture,
   }) async {
     DateTime now = DateTime.now();
+    Geolocation? geolocation = await geoFuture;
 
     // avoid inserting the same external entity multiple times
     String id = data.maybeMap(
       // create reproducible ID for imported health data
-      cumulativeQuantity: (CumulativeQuantity cumulativeQuantity) => uuid.v5(
-        Uuid.NAMESPACE_NIL,
-        json.encode(cumulativeQuantity),
-        options: {'randomNamespace': false},
-      ),
-      discreteQuantity: (DiscreteQuantity discreteQuantity) => uuid.v5(
-        Uuid.NAMESPACE_NIL,
-        json.encode(discreteQuantity),
-        options: {'randomNamespace': false},
-      ),
+      cumulativeQuantity: (CumulativeQuantity cumulativeQuantity) =>
+          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(cumulativeQuantity)),
+      discreteQuantity: (DiscreteQuantity discreteQuantity) =>
+          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(discreteQuantity)),
       // create reproducible ID for imported image
-      journalImage: (JournalImage journalImage) =>
-          uuid.v5('cumulativeQuantity', json.encode(journalImage)),
+      journalDbImage: (JournalDbImage journalImage) =>
+          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
       // create random ID for user-created entries
       orElse: () => uuid.v1(),
     );
     DateTime dateFrom = data.maybeMap(
       cumulativeQuantity: (CumulativeQuantity v) => v.dateFrom,
       discreteQuantity: (DiscreteQuantity v) => v.dateFrom,
-      journalImage: (JournalImage v) => v.capturedAt,
-      audioNote: (AudioNote v) => v.dateFrom,
+      journalDbImage: (JournalDbImage v) => v.capturedAt,
+      journalDbAudio: (JournalDbAudio v) => v.dateFrom,
       orElse: () => now,
     );
     DateTime dateTo = data.maybeMap(
       cumulativeQuantity: (CumulativeQuantity v) => v.dateTo,
       discreteQuantity: (DiscreteQuantity v) => v.dateTo,
-      journalImage: (JournalImage v) => v.capturedAt,
-      audioNote: (AudioNote v) => v.dateTo,
+      journalDbImage: (JournalDbImage v) => v.capturedAt,
+      journalDbAudio: (JournalDbAudio v) => v.dateTo,
       orElse: () => now,
     );
     JournalDbEntity journalDbEntity = JournalDbEntity.journalDbEntry(
@@ -74,6 +69,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       dateFrom: dateFrom,
       dateTo: dateTo,
       id: id,
+      geolocation: geolocation,
     );
     await _db.insert(journalDbEntity);
     return true;

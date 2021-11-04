@@ -11,7 +11,7 @@ class Geolocation with _$Geolocation {
     String? timezone,
     required double latitude,
     required double longitude,
-    required String geohash,
+    required String geohashString,
     double? accuracy,
     double? speed,
     double? speedAccuracy,

@@ -54,6 +54,9 @@ class PersistenceDb {
         type: journalDbEntity.data.runtimeType.toString(),
         serialized: journalDbEntity.toString(),
         schemaVersion: 0,
+        longitude: journalDbEntity.geolocation?.longitude,
+        latitude: journalDbEntity.geolocation?.latitude,
+        geohashString: journalDbEntity.geolocation?.geohashString,
       );
 
       List<Map> maps = await db.query(journalTable,

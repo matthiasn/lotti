@@ -13,21 +13,21 @@ part 'journal_db_entities.g.dart';
 class JournalDbEntityData with _$JournalDbEntityData {
   factory JournalDbEntityData.journalEntry() = JournalEntry;
 
-  factory JournalDbEntityData.journalImage({
+  factory JournalDbEntityData.journalDbImage({
     required DateTime capturedAt,
     required String imageId,
     required String imageFile,
     required String imageDirectory,
-  }) = JournalImage;
+  }) = JournalDbImage;
 
-  factory JournalDbEntityData.audioNote({
+  factory JournalDbEntityData.journalDbAudio({
     required DateTime dateFrom,
     required DateTime dateTo,
     required String audioFile,
     required String audioDirectory,
     required Duration duration,
     String? transcript,
-  }) = AudioNote;
+  }) = JournalDbAudio;
 
   factory JournalDbEntityData.loggedTime({
     required DateTime dateFrom,
