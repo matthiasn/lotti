@@ -10,7 +10,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
-import 'package:wisely/pages/health.dart';
+import 'package:wisely/pages/health_page.dart';
 import 'package:wisely/pages/journal.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';

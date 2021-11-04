@@ -30,47 +30,6 @@ class HealthService {
     return file.writeAsString(jsonString);
   }
 
-  List<HealthDataType> stepsTypes = [
-    HealthDataType.STEPS,
-  ];
-
-  List<HealthDataType> movementTypes = [
-    HealthDataType.DISTANCE_WALKING_RUNNING,
-    HealthDataType.FLIGHTS_CLIMBED,
-  ];
-
-  List<HealthDataType> workoutTypes = [
-    HealthDataType.EXERCISE_TIME,
-    HealthDataType.WORKOUT,
-  ];
-
-  List<HealthDataType> sleepTypes = [
-    HealthDataType.SLEEP_IN_BED,
-    HealthDataType.SLEEP_ASLEEP,
-    HealthDataType.SLEEP_AWAKE,
-  ];
-
-  List<HealthDataType> bpTypes = [
-    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-  ];
-
-  List<HealthDataType> heartRateTypes = [
-    HealthDataType.HEART_RATE,
-    HealthDataType.RESTING_HEART_RATE,
-    HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-  ];
-
-  List<HealthDataType> bodyMeasurementTypes = [
-    HealthDataType.WEIGHT,
-    HealthDataType.BODY_FAT_PERCENTAGE,
-  ];
-
-  List<HealthDataType> energyTypes = [
-    HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.BASAL_ENERGY_BURNED,
-  ];
-
   Future fetchData({
     required List<HealthDataType> types,
     required String filename,

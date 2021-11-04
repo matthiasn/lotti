@@ -66,66 +66,82 @@ class _HealthPageState extends State<HealthPage> {
                 },
               ),
               Button(
-                label: 'Import Sleep Data',
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.sleepTypes,
-                  filename: 'sleep.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
-              ),
+                  label: 'Import Sleep Data',
+                  onPressed: () {
+                    HealthService().fetchData(
+                      types: sleepTypes,
+                      filename: 'sleep.json',
+                      dateFrom: _dateFrom,
+                      dateTo: _dateTo,
+                    );
+                    context.read<HealthCubit>().fetchHealthData(
+                          dateFrom: _dateFrom,
+                          dateTo: _dateTo,
+                          types: sleepTypes,
+                        );
+                  }),
               Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.heartRateTypes,
-                  filename: 'heart.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
+                onPressed: () {
+                  HealthService().fetchData(
+                    types: heartRateTypes,
+                    filename: 'heart.json',
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                  context.read<HealthCubit>().fetchHealthData(
+                        dateFrom: _dateFrom,
+                        dateTo: _dateTo,
+                        types: heartRateTypes,
+                      );
+                },
                 label: 'Import Heart Rate Data',
               ),
               Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.bpTypes,
-                  filename: 'bp.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
+                onPressed: () {
+                  HealthService().fetchData(
+                    types: bpTypes,
+                    filename: 'bp.json',
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                  context.read<HealthCubit>().fetchHealthData(
+                        dateFrom: _dateFrom,
+                        dateTo: _dateTo,
+                        types: bpTypes,
+                      );
+                },
                 label: 'Import Blood Pressure Data',
               ),
               Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.bodyMeasurementTypes,
-                  filename: 'body.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
+                onPressed: () {
+                  HealthService().fetchData(
+                    types: bodyMeasurementTypes,
+                    filename: 'body.json',
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                  context.read<HealthCubit>().fetchHealthData(
+                        dateFrom: _dateFrom,
+                        dateTo: _dateTo,
+                        types: bodyMeasurementTypes,
+                      );
+                },
                 label: 'Import Body Measurement Data',
               ),
               Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.energyTypes,
-                  filename: 'energy.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
-                label: 'Import Energy Burned Data',
-              ),
-              Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.movementTypes,
-                  filename: 'movement.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
-                label: 'Import Stairs, Distance',
-              ),
-              Button(
-                onPressed: () => HealthService().fetchData(
-                  types: healthService.workoutTypes,
-                  filename: 'workouts.json',
-                  dateFrom: _dateFrom,
-                  dateTo: _dateTo,
-                ),
+                onPressed: () {
+                  HealthService().fetchData(
+                    types: workoutTypes,
+                    filename: 'workouts.json',
+                    dateFrom: _dateFrom,
+                    dateTo: _dateTo,
+                  );
+                  context.read<HealthCubit>().fetchHealthData(
+                        dateFrom: _dateFrom,
+                        dateTo: _dateTo,
+                        types: workoutTypes,
+                      );
+                },
                 label: 'Import Workout Data',
               ),
             ],
