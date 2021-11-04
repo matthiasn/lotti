@@ -23,8 +23,11 @@ ON journal (created_at);
 CREATE INDEX idx_journal_updated_at
 ON journal (updated_at);
 
-CREATE INDEX idx_journal_start_time
-ON journal (start_time);
+CREATE INDEX idx_journal_date_from
+ON journal (date_from);
+
+CREATE INDEX idx_journal_date_to
+ON journal (date_to);
 
 CREATE INDEX idx_journal_type
 ON journal (type);

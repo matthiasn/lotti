@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 
 var uuid = const Uuid();
+const journalTable = 'journal';
 
 class PersistenceDb {
   late final Future<Database> _database;
@@ -41,31 +42,35 @@ class PersistenceDb {
     JournalDbEntity journalDbEntity,
   ) async {
     final db = await _database;
-    final String id = uuid.v1();
-    final DateTime now = DateTime.now();
+    final DateTime createdAt = journalDbEntity.createdAt;
+    journalDbEntity.map(journalDbEntry: (journalDbEntry) async {
+      String id = journalDbEntity.id;
+      JournalRecord dbRecord = JournalRecord(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        dateFrom: journalDbEntity.dateFrom,
+        dateTo: journalDbEntity.dateTo,
+        type: journalDbEntity.data.runtimeType.toString(),
+        serialized: journalDbEntity.toString(),
+        schemaVersion: 0,
+      );
 
-    JournalRecord dbRecord = JournalRecord(
-      id: id,
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: now,
-      dateTo: now,
-      type: journalDbEntity.data.runtimeType.toString(),
-      serialized: journalDbEntity.toString(),
-      schemaVersion: 0,
-    );
-
-    await db.insert(
-      'journal',
-      dbRecord.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+      List<Map> maps = await db.query(journalTable,
+          columns: ['id'], where: 'id = ?', whereArgs: [id]);
+      if (maps.isEmpty) {
+        var res = await db.insert(journalTable, dbRecord.toMap());
+        debugPrint('PersistenceDb inserted: $id $res');
+      } else {
+        debugPrint('PersistenceDb already exists: $id');
+      }
+    });
   }
 
   Future<List<JournalRecord>> journalEntries(int n) async {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(
-      'journal',
+      journalTable,
       orderBy: 'created_at',
       limit: n,
     );

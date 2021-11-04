@@ -4,6 +4,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_cubit.dart';
+import 'package:wisely/blocs/journal/health_cubit.dart';
 import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
@@ -49,6 +50,12 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => PersistenceCubit(
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+          ),
+        ),
+        BlocProvider<HealthCubit>(
+          lazy: true,
+          create: (BuildContext context) => HealthCubit(
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<JournalEntitiesCubit>(
