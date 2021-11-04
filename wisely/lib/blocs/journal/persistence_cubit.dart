@@ -30,10 +30,9 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> create(
     JournalDbEntityData data, {
-    Future<Geolocation?>? geoFuture,
+    Geolocation? geolocation,
   }) async {
     DateTime now = DateTime.now();
-    Geolocation? geolocation = await geoFuture;
 
     // avoid inserting the same external entity multiple times
     String id = data.maybeMap(

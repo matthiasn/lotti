@@ -10,9 +10,11 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
@@ -32,6 +34,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
+  late final PersistenceCubit _persistenceCubit;
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
@@ -41,10 +44,12 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     required VectorClockCubit vectorClockCubit,
     required OutboundQueueCubit outboundQueueCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
+    required PersistenceCubit persistenceCubit,
   }) : super(initialState) {
     _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
     _vectorClockCubit = vectorClockCubit;
+    _persistenceCubit = persistenceCubit;
     _openAudioSession();
   }
 
@@ -151,6 +156,22 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     _audioNote = _audioNote?.copyWith(duration: state.progress);
     _saveAudioNoteJson();
     emit(initialState);
+
+    if (_audioNote != null) {
+      AudioNote audioNote = _audioNote!;
+
+      JournalDbAudio journalDbAudio = JournalDbAudio(
+        audioDirectory: audioNote.audioDirectory,
+        duration: audioNote.duration,
+        audioFile: audioNote.audioFile,
+        dateTo: audioNote.createdAt.add(audioNote.duration),
+        dateFrom: audioNote.createdAt,
+      );
+
+      debugPrint(journalDbAudio.toString());
+      _persistenceCubit.create(journalDbAudio,
+          geolocation: audioNote.geolocation);
+    }
   }
 
   @override

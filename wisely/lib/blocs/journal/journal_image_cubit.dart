@@ -123,11 +123,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             capturedAt: created,
           );
 
-          Future<Geolocation?> geoFuture() async {
-            return geolocation;
-          }
-
-          _persistenceCubit.create(journalDbImage, geoFuture: geoFuture());
+          _persistenceCubit.create(journalDbImage, geolocation: geolocation);
 
           await _outboundQueueCubit.enqueueMessage(
             SyncMessage.journalEntity(
