@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -61,7 +62,7 @@ class PersistenceDb {
         dateTo: journalDbEntity.dateTo,
         type: type,
         subtype: subtype,
-        serialized: journalDbEntity.toString(),
+        serialized: json.encode(journalDbEntity),
         schemaVersion: 0,
         longitude: journalDbEntity.geolocation?.longitude,
         latitude: journalDbEntity.geolocation?.latitude,
@@ -83,7 +84,7 @@ class PersistenceDb {
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(
       journalTable,
-      orderBy: 'created_at',
+      orderBy: 'date_from DESC',
       limit: n,
     );
 

@@ -27,7 +27,18 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<void> init() async {
     await _db.openDb();
-    emit(PersistenceState.online());
+    emit(PersistenceState.online(entries: []));
+    query();
+  }
+
+  Future<void> query() async {
+    List<JournalRecord> records = await _db.journalEntries(25);
+
+    List<JournalDbEntity> entries = records
+        .map((JournalRecord r) =>
+            JournalDbEntry.fromJson(json.decode(r.serialized)))
+        .toList();
+    emit(PersistenceState.online(entries: entries));
   }
 
   Future<bool> create(
@@ -77,6 +88,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     );
     debugPrint(json.encode(journalDbEntity));
     await _db.insert(journalDbEntity);
+    query();
     return true;
   }
 }
