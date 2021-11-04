@@ -88,6 +88,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     );
     debugPrint(json.encode(journalDbEntity));
     await _db.insert(journalDbEntity);
+    await Future.delayed(const Duration(seconds: 1));
     query();
     return true;
   }
