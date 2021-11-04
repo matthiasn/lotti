@@ -11,7 +11,7 @@ import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health_page.dart';
-import 'package:wisely/pages/journal.dart';
+import 'package:wisely/pages/journal_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';

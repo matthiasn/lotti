@@ -32,13 +32,13 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<void> query() async {
-    List<JournalRecord> records = await _db.journalEntries(25);
-
+    List<JournalRecord> records = await _db.journalEntries(100);
     List<JournalDbEntity> entries = records
         .map((JournalRecord r) =>
             JournalDbEntry.fromJson(json.decode(r.serialized)))
         .toList();
     emit(PersistenceState.online(entries: entries));
+    debugPrint('Query done ${entries.first}');
   }
 
   Future<bool> create(
