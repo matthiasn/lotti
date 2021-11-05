@@ -21,8 +21,6 @@ import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
-import '../journal_entities_cubit.dart';
-
 var uuid = const Uuid();
 AudioRecorderState initialState = AudioRecorderState(
   status: AudioRecorderStatus.initializing,
@@ -32,7 +30,6 @@ AudioRecorderState initialState = AudioRecorderState(
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final VectorClockCubit _vectorClockCubit;
-  late final JournalEntitiesCubit _journalEntitiesCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceCubit _persistenceCubit;
 
@@ -43,10 +40,8 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   AudioRecorderCubit({
     required VectorClockCubit vectorClockCubit,
     required OutboundQueueCubit outboundQueueCubit,
-    required JournalEntitiesCubit journalEntitiesCubit,
     required PersistenceCubit persistenceCubit,
   }) : super(initialState) {
-    _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
     _vectorClockCubit = vectorClockCubit;
     _persistenceCubit = persistenceCubit;
@@ -92,8 +87,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         ),
         attachment: audioFile,
       );
-
-      _journalEntitiesCubit.save(_audioNote!);
     }
   }
 

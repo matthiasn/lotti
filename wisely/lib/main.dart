@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_cubit.dart';
 import 'package:wisely/blocs/journal/health_cubit.dart';
-import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/pages/audio.dart';
@@ -47,10 +46,6 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
-        BlocProvider<JournalEntitiesCubit>(
-          lazy: false,
-          create: (BuildContext context) => JournalEntitiesCubit(),
-        ),
         BlocProvider<ImapOutCubit>(
           lazy: false,
           create: (BuildContext context) => ImapOutCubit(
@@ -76,8 +71,6 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => ImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            journalEntitiesCubit:
-                BlocProvider.of<JournalEntitiesCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
@@ -92,16 +85,12 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => JournalImageCubit(
             outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
-            journalEntitiesCubit:
-                BlocProvider.of<JournalEntitiesCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<AudioRecorderCubit>(
           create: (BuildContext context) => AudioRecorderCubit(
             outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
-            journalEntitiesCubit:
-                BlocProvider.of<JournalEntitiesCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),

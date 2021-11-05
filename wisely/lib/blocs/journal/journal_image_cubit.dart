@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_null_comparison
-
 import 'dart:async';
 import 'dart:io';
 
@@ -9,7 +7,6 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
@@ -25,19 +22,16 @@ import 'journal_image_state.dart';
 
 class JournalImageCubit extends Cubit<JournalImageState> {
   late final VectorClockCubit _vectorClockCubit;
-  late final JournalEntitiesCubit _journalEntitiesCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceCubit _persistenceCubit;
 
   JournalImageCubit({
     required VectorClockCubit vectorClockCubit,
-    required JournalEntitiesCubit journalEntitiesCubit,
     required OutboundQueueCubit outboundQueueCubit,
     required PersistenceCubit persistenceCubit,
   }) : super(JournalImageState()) {
     debugPrint('Hello from JournalImageCubit');
     _vectorClockCubit = vectorClockCubit;
-    _journalEntitiesCubit = journalEntitiesCubit;
     _outboundQueueCubit = outboundQueueCubit;
     _persistenceCubit = persistenceCubit;
   }
@@ -106,7 +100,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
           );
           debugPrint(journalImage.toString());
           await saveJournalImageJson(journalImage);
-          _journalEntitiesCubit.save(journalImage);
 
           JournalDbImage journalDbImage = JournalDbImage(
             imageId: asset.id,
