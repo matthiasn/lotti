@@ -11,9 +11,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
+import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
-import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
@@ -65,7 +65,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
-      await AudioUtils.saveAudioNoteJson(_audioNote!);
     }
   }
 

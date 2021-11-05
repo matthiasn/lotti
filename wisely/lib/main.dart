@@ -83,7 +83,6 @@ class WiselyApp extends StatelessWidget {
         BlocProvider<JournalImageCubit>(
           lazy: false,
           create: (BuildContext context) => JournalImageCubit(
-            outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),

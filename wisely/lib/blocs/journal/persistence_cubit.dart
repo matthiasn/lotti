@@ -102,7 +102,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     debugPrint('createDbEntity: $saved}');
 
     if (saved && enqueueSync) {
-      _outboundQueueCubit.enqueueMessage2(
+      _outboundQueueCubit.enqueueMessage(
           SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
     }
     await Future.delayed(const Duration(seconds: 1));

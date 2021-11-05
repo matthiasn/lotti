@@ -94,53 +94,24 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     });
   }
 
-  // TODO: remove
-  Future<void> enqueueMessage(
-    SyncMessage syncMessage, {
-    File? attachment,
-  }) async {
-    debugPrint('enqueueMessage: ${syncMessage.runtimeType}');
-    String jsonString = json.encode(syncMessage);
-    String subject = syncMessage.map(
-      journalEntity: (SyncJournalEntity message) =>
-          message.vectorClock.toString(),
-      journalDbEntity: (SyncJournalDbEntity message) =>
-          message.journalEntity.vectorClock.toString(),
-    );
-
-    if (_b64Secret != null) {
-      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      if (attachment != null) {
-        int fileLength = attachment.lengthSync();
-        if (fileLength > 0) {
-          File encryptedFile = File('${attachment.path}.aes');
-          await encryptFile(attachment, encryptedFile, _b64Secret!);
-          await _db.insert(encryptedMessage, subject,
-              encryptedFilePath: encryptedFile.path);
-        }
-      } else {
-        await _db.insert(encryptedMessage, subject);
-      }
-    }
-    sendNext();
-  }
-
-  Future<void> enqueueMessage2(SyncMessage syncMessage) async {
+  Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalDbEntity) {
+      JournalDbEntity journalDbEntity = syncMessage.journalEntity;
       debugPrint('enqueueMessage2: ${syncMessage.runtimeType}');
       String jsonString = json.encode(syncMessage);
       var docDir = await getApplicationDocumentsDirectory();
 
       File? attachment;
-      String subject =
-          'enqueueMessage2 ${syncMessage.journalEntity.vectorClock}';
+      String subject = 'enqueueMessage2 ${journalDbEntity.vectorClock}';
 
-      syncMessage.journalEntity.data.maybeMap(
-        journalDbAudio: (JournalDbAudio audio) {
-          attachment = File(AudioUtils.getAudioPath(audio, docDir));
+      journalDbEntity.data.maybeMap(
+        journalDbAudio: (JournalDbAudio journalDbAudio) {
+          attachment = File(AudioUtils.getAudioPath(journalDbAudio, docDir));
+          AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
         },
         journalDbImage: (JournalDbImage image) {
-          attachment = File(getFullImagePathWithDocDir2(image, docDir));
+          attachment = File(getFullImagePathWithDocDir(image, docDir));
+          saveJournalImageJson(image, journalDbEntity);
         },
         orElse: () {},
       );

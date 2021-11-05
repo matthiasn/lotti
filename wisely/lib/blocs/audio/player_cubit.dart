@@ -32,7 +32,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   }
 
   void setAudioNote(JournalDbAudio audioNote) async {
-    String localPath = await AudioUtils.getFullAudioPath2(audioNote);
+    String localPath = await AudioUtils.getFullAudioPath(audioNote);
     debugPrint(localPath);
 
     AudioPlayerState newState = AudioPlayerState(
