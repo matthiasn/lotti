@@ -99,11 +99,18 @@ class JournalListItem extends StatelessWidget {
                           return const AudioPlayerWidget();
                         },
                         journalDbImage: (JournalDbImage image) {
-                          return Image.file(
-                            File(getFullImagePathWithDocDir2(image, docDir)),
-                            width: double.infinity,
-                            height: 400,
-                            fit: BoxFit.cover,
+                          File file =
+                              File(getFullImagePathWithDocDir2(image, docDir));
+                          debugPrint('Image $image ${file.path}');
+                          return Container(
+                            color: Colors.black,
+                            child: Image.file(
+                              file,
+                              cacheHeight: 1200,
+                              width: double.infinity,
+                              height: 400,
+                              fit: BoxFit.scaleDown,
+                            ),
                           );
                         },
                         cumulativeQuantity: (q) => Padding(

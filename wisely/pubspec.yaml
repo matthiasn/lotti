@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.33+34
+version: 0.1.35+36
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
