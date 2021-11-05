@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:wisely/classes/geolocation.dart';
-import 'package:wisely/classes/task.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 import 'entry_text.dart';

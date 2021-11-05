@@ -16,6 +16,10 @@ class AudioUtils {
     return '${docDir.path}${data.audioDirectory}${data.audioFile}';
   }
 
+  static String getAudioPath(JournalDbAudio data, Directory docDir) {
+    return '${docDir.path}${data.audioDirectory}${data.audioFile}';
+  }
+
   static Future<File?> getAudioFile(AudioNote audioNote) async {
     String fullAudioPath = await AudioUtils.getFullAudioPath(audioNote);
     File file = File(fullAudioPath);

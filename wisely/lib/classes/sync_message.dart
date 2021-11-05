@@ -15,7 +15,7 @@ class SyncMessage with _$SyncMessage {
 
   factory SyncMessage.journalDbEntity({
     required JournalDbEntity journalEntity,
-  }) = SyncJournalDbEntities;
+  }) = SyncJournalDbEntity;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
