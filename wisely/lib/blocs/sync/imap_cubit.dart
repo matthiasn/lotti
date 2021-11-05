@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
+import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/imap/message_sequence.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:enough_mail/mail/mail_account.dart';
@@ -104,14 +105,13 @@ class ImapCubit extends Cubit<ImapState> {
 
   void _startPolling() async {
     debugPrint('_startPolling');
-    Timer.periodic(const Duration(minutes: 1), (timer) async {
+    Timer.periodic(const Duration(seconds: 60), (timer) async {
       _pollInbox();
     });
   }
 
   Future<void> _pollInbox() async {
     try {
-      debugPrint('_pollInbox');
       if (_syncConfig != null) {
         String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
         int lastReadUid =
@@ -119,7 +119,7 @@ class ImapCubit extends Cubit<ImapState> {
 
         var sequence = MessageSequence(isUidSequence: true);
         sequence.addRangeToLast(lastReadUid + 1);
-        debugPrint('sequence: $sequence');
+        debugPrint('_pollInbox sequence: $sequence');
 
         final fetchResult =
             await _imapClient.uidFetchMessages(sequence, 'ENVELOPE');
@@ -127,10 +127,13 @@ class ImapCubit extends Cubit<ImapState> {
         List<MimeMessage> messages = fetchResult.messages;
 
         if (messages.isNotEmpty) {
-          MimeMessage oldest = fetchResult.messages.first;
-          await _fetchByUid(oldest.uid);
-          if (messages.length > 1) {
-            await _pollInbox();
+          int? oldest = fetchResult.messages.first.uid;
+          if (lastReadUid != oldest) {
+            debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
+            await _fetchByUid(oldest);
+            if (messages.length > 1) {
+              await _pollInbox();
+            }
           }
         }
         emit(ImapState.online(lastUpdate: DateTime.now()));
@@ -178,15 +181,16 @@ class ImapCubit extends Cubit<ImapState> {
 
         _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
-        final mailboxes =
-            await _mailClient.listMailboxesAsTree(createIntermediate: false);
-        debugPrint('mailboxes: $mailboxes');
-        await _mailClient.selectInbox();
+        Mailbox inbox = await _mailClient.selectInbox();
+        debugPrint('_observeInbox inbox selected: ${inbox.toString()}');
+
         _mailClient.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
           _pollInbox();
         });
+
+        _mailClient.startPolling();
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
