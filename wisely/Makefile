@@ -39,6 +39,9 @@ ipa: clean_test
 macos: clean_test
 	flutter build macos
 
+.PHONY: all
+all: ipa macos
+
 .PHONY: find_unused
 find_unused:
 	flutter pub run dart_code_metrics:metrics check-unused-files lib
