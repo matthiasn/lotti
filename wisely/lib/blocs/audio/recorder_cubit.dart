@@ -11,13 +11,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
-import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/location.dart';
-import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
 var uuid = const Uuid();
@@ -28,21 +25,14 @@ AudioRecorderState initialState = AudioRecorderState(
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  late final VectorClockCubit _vectorClockCubit;
-  late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceCubit _persistenceCubit;
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
   final DeviceLocation _deviceLocation = DeviceLocation();
 
-  AudioRecorderCubit({
-    required VectorClockCubit vectorClockCubit,
-    required OutboundQueueCubit outboundQueueCubit,
-    required PersistenceCubit persistenceCubit,
-  }) : super(initialState) {
-    _outboundQueueCubit = outboundQueueCubit;
-    _vectorClockCubit = vectorClockCubit;
+  AudioRecorderCubit({required PersistenceCubit persistenceCubit})
+      : super(initialState) {
     _persistenceCubit = persistenceCubit;
     _openAudioSession();
   }
@@ -75,17 +65,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   void _saveAudioNoteJson() async {
     if (_audioNote != null) {
       _audioNote = _audioNote?.copyWith(updatedAt: DateTime.now());
-      VectorClock next = _vectorClockCubit.getNextVectorClock();
       await AudioUtils.saveAudioNoteJson(_audioNote!);
-      File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
-      //
-      // await _outboundQueueCubit.enqueueMessage(
-      //   SyncMessage.journalEntity(
-      //     journalEntity: _audioNote!,
-      //     vectorClock: next,
-      //   ),
-      //   attachment: audioFile,
-      // );
     }
   }
 
