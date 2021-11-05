@@ -19,6 +19,7 @@ import 'package:wisely/theme.dart';
 
 import 'blocs/journal/journal_image_cubit.dart';
 import 'blocs/journal/persistence_cubit.dart';
+import 'blocs/sync/imap_out_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
@@ -50,12 +51,10 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => JournalEntitiesCubit(),
         ),
-        BlocProvider<ImapCubit>(
+        BlocProvider<ImapOutCubit>(
           lazy: false,
-          create: (BuildContext context) => ImapCubit(
+          create: (BuildContext context) => ImapOutCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            journalEntitiesCubit:
-                BlocProvider.of<JournalEntitiesCubit>(context),
           ),
         ),
         BlocProvider<OutboundQueueCubit>(
@@ -63,7 +62,7 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => OutboundQueueCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
-            imapCubit: BlocProvider.of<ImapCubit>(context),
+            imapOutCubit: BlocProvider.of<ImapOutCubit>(context),
           ),
         ),
         BlocProvider<PersistenceCubit>(
@@ -71,6 +70,15 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => PersistenceCubit(
             outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+          ),
+        ),
+        BlocProvider<ImapCubit>(
+          lazy: false,
+          create: (BuildContext context) => ImapCubit(
+            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
+            journalEntitiesCubit:
+                BlocProvider.of<JournalEntitiesCubit>(context),
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<HealthCubit>(

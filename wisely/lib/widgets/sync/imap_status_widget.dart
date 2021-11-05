@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 
+import '../buttons.dart';
+
 class ImapStatusWidget extends StatelessWidget {
   const ImapStatusWidget({Key? key}) : super(key: key);
 
@@ -20,8 +22,14 @@ class ImapStatusWidget extends StatelessWidget {
             loggedIn: () => const StatusTextWidget('logged in'),
             failed: (String error) =>
                 StatusTextWidget('failed. reason: $error'),
-            online: (DateTime lastUpdate) =>
+            online: (DateTime lastUpdate) => Column(
+              children: [
                 StatusTextWidget('online, last update: $lastUpdate'),
+                Button('reset offset',
+                    onPressed: () => context.read<ImapCubit>().resetOffset(),
+                    primaryColor: Colors.red),
+              ],
+            ),
           ),
         ],
       );

@@ -43,7 +43,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
             JournalDbEntry.fromJson(json.decode(r.serialized)))
         .toList();
     emit(PersistenceState.online(entries: entries));
-    debugPrint('Query done ${entries.first}');
   }
 
   Future<bool> create(
@@ -92,15 +91,22 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       vectorClock: vc,
     );
     debugPrint(json.encode(journalDbEntity));
-    bool saved = await _db.insert(journalDbEntity);
+    await createDbEntity(journalDbEntity, enqueueSync: true);
+    return true;
+  }
 
-    if (saved) {
+  Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
+      {bool enqueueSync = false}) async {
+    debugPrint('createDbEntity: ${json.encode(journalDbEntity)}');
+    bool saved = await _db.insert(journalDbEntity);
+    debugPrint('createDbEntity: $saved}');
+
+    if (saved && enqueueSync) {
       _outboundQueueCubit.enqueueMessage(
           SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
     }
-
     await Future.delayed(const Duration(seconds: 1));
     query();
-    return true;
+    return saved;
   }
 }

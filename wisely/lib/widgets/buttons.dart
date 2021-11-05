@@ -6,31 +6,40 @@ class Button extends StatelessWidget {
   final Color primaryColor;
   final Color textColor;
   final Function() onPressed;
+  final EdgeInsets padding;
 
-  const Button({
-    required this.label,
+  const Button(
+    this.label, {
     this.primaryColor = CupertinoColors.activeBlue,
     this.textColor = CupertinoColors.white,
+    this.padding = const EdgeInsets.all(4.0),
     required this.onPressed,
     Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      //onPressed: _importPhotos,
-      style: ElevatedButton.styleFrom(
-        primary: primaryColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
+    return Padding(
+      padding: padding,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            vertical: 16.0,
+            horizontal: 32.0,
+          ),
+          primary: primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4.0),
+          ),
         ),
-      ),
-      onPressed: onPressed,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
+        onPressed: onPressed,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
         ),
       ),
     );

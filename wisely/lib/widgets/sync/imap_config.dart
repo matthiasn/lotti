@@ -6,6 +6,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/theme.dart';
+import 'package:wisely/widgets/buttons.dart';
 import 'package:wisely/widgets/sync/qr_widget.dart';
 
 class EmailConfigForm extends StatefulWidget {
@@ -74,36 +75,23 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       labelText: 'Port',
                     ),
                   ),
-                  Padding(
+                  Button('Save IMAP Config',
                     padding: const EdgeInsets.all(24.0),
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16.0,
-                            horizontal: 32.0,
-                          ),
-                          backgroundColor: Colors.white),
-                      onPressed: () {
-                        _formKey.currentState!.save();
-                        if (_formKey.currentState!.validate()) {
-                          final formData = _formKey.currentState?.value;
-                          ImapConfig cfg = ImapConfig(
-                            host: formData!['imap_host'],
-                            userName: formData['imap_userName'],
-                            password: formData['imap_password'],
-                            port: int.parse(formData['imap_port']),
-                          );
-                          context.read<EncryptionCubit>().setImapConfig(cfg);
-                        }
-                      },
-                      child: Text(
-                        'Save IMAP Config',
-                        style: TextStyle(
-                          color: AppColors.headerBgColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    primaryColor: Colors.white,
+                    textColor: AppColors.headerBgColor,
+                    onPressed: () {
+                      _formKey.currentState!.save();
+                      if (_formKey.currentState!.validate()) {
+                        final formData = _formKey.currentState?.value;
+                        ImapConfig cfg = ImapConfig(
+                          host: formData!['imap_host'],
+                          userName: formData['imap_userName'],
+                          password: formData['imap_password'],
+                          port: int.parse(formData['imap_port']),
+                        );
+                        context.read<EncryptionCubit>().setImapConfig(cfg);
+                      }
+                    }
                   ),
                   Center(
                     child: state.maybeWhen(

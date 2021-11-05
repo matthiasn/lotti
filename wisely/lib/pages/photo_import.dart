@@ -27,13 +27,9 @@ class _PhotoImportPageState extends State<PhotoImportPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Button(
-                onPressed: () async {
-                  context.read<JournalImageCubit>().pickImageAssets(context);
-                },
-                label: 'Pick Assets',
-                primaryColor: CupertinoColors.systemOrange,
-              ),
+              Button('Pick Assets', onPressed: () async {
+                context.read<JournalImageCubit>().pickImageAssets(context);
+              }, primaryColor: CupertinoColors.systemOrange),
             ],
           ),
         ),
