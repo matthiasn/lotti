@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
@@ -17,20 +14,9 @@ class JournalPage extends StatefulWidget {
 }
 
 class _JournalPageState extends State<JournalPage> {
-  Directory? _docDir;
-
   @override
   void initState() {
     super.initState();
-    setDocDir();
-  }
-
-  void setDocDir() async {
-    Directory docDir = await getApplicationDocumentsDirectory();
-
-    setState(() {
-      _docDir = docDir;
-    });
   }
 
   @override
