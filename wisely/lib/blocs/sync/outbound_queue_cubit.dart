@@ -94,6 +94,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     });
   }
 
+  // TODO: remove
   Future<void> enqueueMessage(
     SyncMessage syncMessage, {
     File? attachment,

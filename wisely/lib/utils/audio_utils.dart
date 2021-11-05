@@ -28,9 +28,21 @@ class AudioUtils {
     }
   }
 
+  // TODO: remove
   static Future<String> saveAudioNoteJson(AudioNote audioNote) async {
     String json = jsonEncode(audioNote);
     File file = File('${await AudioUtils.getFullAudioPath(audioNote)}.json');
+    await file.writeAsString(json);
+    return json;
+  }
+
+  static Future<String> saveAudioNoteJson2(
+    JournalDbAudio journalDbAudio,
+    JournalDbEntity journalDbEntity,
+  ) async {
+    String json = jsonEncode(journalDbEntity);
+    File file =
+        File('${await AudioUtils.getFullAudioPath2(journalDbAudio)}.json');
     await file.writeAsString(json);
     return json;
   }

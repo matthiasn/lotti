@@ -66,6 +66,19 @@ class ImapCubit extends Cubit<ImapState> {
         },
         journalDbEntity: (JournalDbEntity journalDbEntity) async {
           debugPrint('processMessage inserting ${journalDbEntity.runtimeType}');
+          journalDbEntity.data.maybeMap(
+            journalDbAudio: (JournalDbAudio journalDbAudio) async {
+              debugPrint('processMessage journalDbAudioImage $journalDbAudio');
+              await saveAudioAttachment2(
+                  message, journalDbAudio, journalDbEntity, _b64Secret);
+            },
+            journalDbImage: (JournalDbImage journalDbImage) async {
+              debugPrint('processMessage journalDbImage $journalDbImage');
+              await saveImageAttachment2(message, journalDbImage, _b64Secret);
+            },
+            orElse: () {},
+          );
+
           _persistenceCubit.createDbEntity(journalDbEntity, enqueueSync: false);
         },
       );

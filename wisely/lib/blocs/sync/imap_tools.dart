@@ -6,6 +6,7 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -13,6 +14,7 @@ import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
+// TODO: remove
 Future<void> saveAudioAttachment(
   MimeMessage message,
   AudioNote? audioNote,
@@ -36,6 +38,33 @@ Future<void> saveAudioAttachment(
   }
 }
 
+Future<void> saveAudioAttachment2(
+  MimeMessage message,
+  JournalDbAudio? journalDbAudio,
+  JournalDbEntity journalDbEntity,
+  String? b64Secret,
+) async {
+  final attachments =
+      message.findContentInfo(disposition: ContentDisposition.attachment);
+
+  for (final attachment in attachments) {
+    final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+    if (attachmentMimePart != null &&
+        journalDbAudio != null &&
+        b64Secret != null) {
+      Uint8List? bytes = attachmentMimePart.decodeContentBinary();
+      String filePath = await AudioUtils.getFullAudioPath2(journalDbAudio);
+      await File(filePath).parent.create(recursive: true);
+      File encrypted = File('$filePath.aes');
+      debugPrint('saveAttachment $filePath');
+      await writeToFile(bytes, encrypted.path);
+      await decryptFile(encrypted, File(filePath), b64Secret);
+      await AudioUtils.saveAudioNoteJson2(journalDbAudio, journalDbEntity);
+    }
+  }
+}
+
+// TODO: remove
 Future<void> saveImageAttachment(
   MimeMessage message,
   JournalImage? journalImage,
@@ -57,6 +86,31 @@ Future<void> saveImageAttachment(
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
       await saveJournalImageJson(journalImage);
+    }
+  }
+}
+
+Future<void> saveImageAttachment2(
+  MimeMessage message,
+  JournalDbImage? journalDbImage,
+  String? b64Secret,
+) async {
+  final attachments =
+      message.findContentInfo(disposition: ContentDisposition.attachment);
+
+  for (final attachment in attachments) {
+    final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
+    if (attachmentMimePart != null &&
+        journalDbImage != null &&
+        b64Secret != null) {
+      Uint8List? bytes = attachmentMimePart.decodeContentBinary();
+      String filePath = await getFullImagePath2(journalDbImage);
+      await File(filePath).parent.create(recursive: true);
+      File encrypted = File('$filePath.aes');
+      debugPrint('saveAttachment $filePath');
+      await writeToFile(bytes, encrypted.path);
+      await decryptFile(encrypted, File(filePath), b64Secret);
+      await saveJournalImageJson2(journalDbImage);
     }
   }
 }

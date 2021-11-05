@@ -123,15 +123,23 @@ String? getRelativeAssetPath(String? absolutePath) {
   return absolutePath?.split('Documents').last;
 }
 
+// TODO: remove
 Future<String> getFullImagePath(JournalImage img) async {
   var docDir = await getApplicationDocumentsDirectory();
   return '${docDir.path}${img.imageDirectory}${img.imageFile}';
 }
 
+Future<String> getFullImagePath2(JournalDbImage img) async {
+  var docDir = await getApplicationDocumentsDirectory();
+  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+}
+
+// TODO: remove
 String getFullImagePathWithDocDir(JournalImage img, docDir) {
   return '${docDir.path}${img.imageDirectory}${img.imageFile}';
 }
 
+// TODO: rename
 String getFullImagePathWithDocDir2(JournalDbImage img, Directory docDir) {
   String path = '${docDir.path}${img.imageDirectory}${img.imageFile}';
   debugPrint('path: $path');
@@ -146,9 +154,17 @@ Future<File?> getJournalImageFile(JournalImage journalImage) async {
   }
 }
 
+// TODO: remove
 Future<String> saveJournalImageJson(JournalImage journalImage) async {
   String json = jsonEncode(journalImage);
   File file = File('${await getFullImagePath(journalImage)}.json');
+  await file.writeAsString(json);
+  return json;
+}
+
+Future<String> saveJournalImageJson2(JournalDbImage journalDbImage) async {
+  String json = jsonEncode(journalDbImage);
+  File file = File('${await getFullImagePath2(journalDbImage)}.json');
   await file.writeAsString(json);
   return json;
 }

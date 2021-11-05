@@ -16,7 +16,6 @@ import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
-import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -79,14 +78,14 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       VectorClock next = _vectorClockCubit.getNextVectorClock();
       await AudioUtils.saveAudioNoteJson(_audioNote!);
       File? audioFile = await AudioUtils.getAudioFile(_audioNote!);
-
-      await _outboundQueueCubit.enqueueMessage(
-        SyncMessage.journalEntity(
-          journalEntity: _audioNote!,
-          vectorClock: next,
-        ),
-        attachment: audioFile,
-      );
+      //
+      // await _outboundQueueCubit.enqueueMessage(
+      //   SyncMessage.journalEntity(
+      //     journalEntity: _audioNote!,
+      //     vectorClock: next,
+      //   ),
+      //   attachment: audioFile,
+      // );
     }
   }
 
