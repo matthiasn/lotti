@@ -99,8 +99,12 @@ class JournalListItem extends StatelessWidget {
                           return const AudioPlayerWidget();
                         },
                         journalDbImage: (JournalDbImage image) {
+                          File file =
+                              File(getFullImagePathWithDocDir2(image, docDir));
+                          debugPrint('Image $image ${file.path}');
                           return Image.file(
-                            File(getFullImagePathWithDocDir2(image, docDir)),
+                            file,
+                            cacheHeight: 1200,
                             width: double.infinity,
                             height: 400,
                             fit: BoxFit.cover,
