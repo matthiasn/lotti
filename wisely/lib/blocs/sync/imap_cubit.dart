@@ -13,18 +13,20 @@ import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
-import 'package:wisely/utils/image_utils.dart';
 
 import '../journal_entities_cubit.dart';
 import 'imap_tools.dart';
 
 class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
+  late final PersistenceCubit _persistenceCubit;
   late final JournalEntitiesCubit _journalEntitiesCubit;
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
@@ -39,8 +41,10 @@ class ImapCubit extends Cubit<ImapState> {
   ImapCubit({
     required EncryptionCubit encryptionCubit,
     required JournalEntitiesCubit journalEntitiesCubit,
+    required PersistenceCubit persistenceCubit,
   }) : super(ImapState.initial()) {
     _encryptionCubit = encryptionCubit;
+    _persistenceCubit = persistenceCubit;
     _journalEntitiesCubit = journalEntitiesCubit;
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
@@ -54,16 +58,20 @@ class ImapCubit extends Cubit<ImapState> {
       syncMessage?.when(
         journalEntity: (JournalEntity entity, _) async {
           entity.map(
-              audioNote: (AudioNote audioNote) async {
-                await saveAudioAttachment(message, audioNote, _b64Secret);
-                _journalEntitiesCubit.save(audioNote);
-              },
-              journalImage: (JournalImage journalImage) async {
-                debugPrint('processMessage journalImage $journalImage');
-                await saveImageAttachment(message, journalImage, _b64Secret);
-                _journalEntitiesCubit.save(journalImage);
-              },
-              journalEntry: (JournalEntry journalEntry) async {});
+            audioNote: (AudioNote audioNote) async {
+              await saveAudioAttachment(message, audioNote, _b64Secret);
+              _journalEntitiesCubit.save(audioNote);
+            },
+            journalImage: (JournalImage journalImage) async {
+              debugPrint('processMessage journalImage $journalImage');
+              await saveImageAttachment(message, journalImage, _b64Secret);
+              _journalEntitiesCubit.save(journalImage);
+            },
+          );
+        },
+        journalDbEntity: (JournalDbEntity journalDbEntity) async {
+          debugPrint('processMessage inserting ${journalDbEntity.runtimeType}');
+          _persistenceCubit.createDbEntity(journalDbEntity, enqueueSync: false);
         },
       );
     } else {
@@ -194,28 +202,7 @@ class ImapCubit extends Cubit<ImapState> {
     }
   }
 
-  Future<bool> saveImap(
-    String encryptedMessage,
-    String subject, {
-    String? encryptedFilePath,
-  }) async {
-    GenericImapResult? res;
-    if (_b64Secret != null) {
-      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
-        File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
-        int fileLength = encryptedFile.lengthSync();
-        if (fileLength > 0) {
-          res = await saveImapMessage(_imapClient, subject, encryptedMessage,
-              file: encryptedFile);
-        }
-      } else {
-        res = await saveImapMessage(_imapClient, subject, encryptedMessage);
-      }
-    }
-    if (res?.details != null && res!.details!.contains('completed')) {
-      return true;
-    } else {
-      return false;
-    }
+  Future<void> resetOffset() async {
+    await _storage.delete(key: lastReadUidKey);
   }
 }

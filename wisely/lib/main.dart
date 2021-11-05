@@ -19,6 +19,7 @@ import 'package:wisely/theme.dart';
 
 import 'blocs/journal/journal_image_cubit.dart';
 import 'blocs/journal/persistence_cubit.dart';
+import 'blocs/sync/imap_out_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
@@ -46,21 +47,30 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
-        BlocProvider<PersistenceCubit>(
-          lazy: false,
-          create: (BuildContext context) => PersistenceCubit(
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
-          ),
-        ),
-        BlocProvider<HealthCubit>(
-          lazy: true,
-          create: (BuildContext context) => HealthCubit(
-            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-          ),
-        ),
         BlocProvider<JournalEntitiesCubit>(
           lazy: false,
           create: (BuildContext context) => JournalEntitiesCubit(),
+        ),
+        BlocProvider<ImapOutCubit>(
+          lazy: false,
+          create: (BuildContext context) => ImapOutCubit(
+            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
+          ),
+        ),
+        BlocProvider<OutboundQueueCubit>(
+          lazy: false,
+          create: (BuildContext context) => OutboundQueueCubit(
+            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+            imapOutCubit: BlocProvider.of<ImapOutCubit>(context),
+          ),
+        ),
+        BlocProvider<PersistenceCubit>(
+          lazy: false,
+          create: (BuildContext context) => PersistenceCubit(
+            outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+          ),
         ),
         BlocProvider<ImapCubit>(
           lazy: false,
@@ -68,13 +78,13 @@ class WiselyApp extends StatelessWidget {
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             journalEntitiesCubit:
                 BlocProvider.of<JournalEntitiesCubit>(context),
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
-        BlocProvider<OutboundQueueCubit>(
-          lazy: false,
-          create: (BuildContext context) => OutboundQueueCubit(
-            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            imapCubit: BlocProvider.of<ImapCubit>(context),
+        BlocProvider<HealthCubit>(
+          lazy: true,
+          create: (BuildContext context) => HealthCubit(
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<JournalImageCubit>(

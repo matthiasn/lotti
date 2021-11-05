@@ -39,9 +39,7 @@ class PersistenceDb {
     debugPrint('PersistenceCubit opened: $_database');
   }
 
-  Future<void> insert(
-    JournalDbEntity journalDbEntity,
-  ) async {
+  Future<bool> insert(JournalDbEntity journalDbEntity) async {
     final db = await _database;
     final DateTime createdAt = journalDbEntity.createdAt;
     final JournalDbEntityData data = journalDbEntity.data;
@@ -52,7 +50,7 @@ class PersistenceDb {
       orElse: () => '',
     );
 
-    journalDbEntity.map(journalDbEntry: (journalDbEntry) async {
+    if (journalDbEntity is JournalDbEntry) {
       String id = journalDbEntity.id;
       JournalRecord dbRecord = JournalRecord(
         id: id,
@@ -74,10 +72,12 @@ class PersistenceDb {
       if (maps.isEmpty) {
         var res = await db.insert(journalTable, dbRecord.toMap());
         debugPrint('PersistenceDb inserted: $id $res');
+        return true;
       } else {
         debugPrint('PersistenceDb already exists: $id');
       }
-    });
+    }
+    return false;
   }
 
   Future<List<JournalRecord>> journalEntries(int n) async {

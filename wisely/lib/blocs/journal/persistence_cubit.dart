@@ -7,20 +7,25 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/journal/persistence_db.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
+import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
+  late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceDb _db;
   final uuid = Uuid();
 
   PersistenceCubit({
     required VectorClockCubit vectorClockCubit,
+    required OutboundQueueCubit outboundQueueCubit,
   }) : super(PersistenceState.initial()) {
     _vectorClockCubit = vectorClockCubit;
+    _outboundQueueCubit = outboundQueueCubit;
     _db = PersistenceDb();
     init();
   }
@@ -38,7 +43,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
             JournalDbEntry.fromJson(json.decode(r.serialized)))
         .toList();
     emit(PersistenceState.online(entries: entries));
-    debugPrint('Query done ${entries.first}');
   }
 
   Future<bool> create(
@@ -87,9 +91,22 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       vectorClock: vc,
     );
     debugPrint(json.encode(journalDbEntity));
-    await _db.insert(journalDbEntity);
+    await createDbEntity(journalDbEntity, enqueueSync: true);
+    return true;
+  }
+
+  Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
+      {bool enqueueSync = false}) async {
+    debugPrint('createDbEntity: ${json.encode(journalDbEntity)}');
+    bool saved = await _db.insert(journalDbEntity);
+    debugPrint('createDbEntity: $saved}');
+
+    if (saved && enqueueSync) {
+      _outboundQueueCubit.enqueueMessage(
+          SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
+    }
     await Future.delayed(const Duration(seconds: 1));
     query();
-    return true;
+    return saved;
   }
 }

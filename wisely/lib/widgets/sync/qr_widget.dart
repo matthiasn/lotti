@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/widgets/buttons.dart';
 import 'package:wisely/widgets/sync/qr_reader_widget.dart';
 
 class EncryptionQrWidget extends StatelessWidget {
@@ -23,23 +24,10 @@ class EncryptionQrWidget extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            TextButton(
-              style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16.0,
-                    horizontal: 32.0,
-                  ),
-                  backgroundColor: Colors.red),
-              onPressed: () =>
-                  context.read<EncryptionCubit>().generateSharedKey(),
-              child: const Text(
-                'Generate Shared Key',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            Button('Generate Shared Key',
+                onPressed: () =>
+                    context.read<EncryptionCubit>().generateSharedKey(),
+                primaryColor: Colors.red),
             const Padding(padding: EdgeInsets.all(8.0)),
             state.when(
               (String? sharedKey, ImapConfig? imapConfig) {
@@ -63,23 +51,10 @@ class EncryptionQrWidget extends StatelessWidget {
                         ),
                       ),
                       StatusTextWidget(sharedKey),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16.0,
-                              horizontal: 32.0,
-                            ),
-                            backgroundColor: Colors.red),
-                        onPressed: () =>
-                            context.read<EncryptionCubit>().deleteSharedKey(),
-                        child: const Text(
-                          'Delete Shared Key',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      Button('Delete Shared Key',
+                          onPressed: () =>
+                              context.read<EncryptionCubit>().deleteSharedKey(),
+                          primaryColor: Colors.red),
                     ],
                   );
                 } else {

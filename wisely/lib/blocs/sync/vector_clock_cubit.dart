@@ -14,6 +14,10 @@ class VectorClockCubit extends HydratedCubit<VectorClockCounterState> {
     emit(VectorClockCounterState.next(state));
   }
 
+  String getHost() {
+    return state.host;
+  }
+
   VectorClock getNextVectorClock() {
     String host = state.host;
     int nextAvailableCounter = state.nextAvailableCounter;

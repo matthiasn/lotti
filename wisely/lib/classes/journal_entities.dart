@@ -10,21 +10,6 @@ part 'journal_entities.g.dart';
 
 @freezed
 class JournalEntity with _$JournalEntity {
-  factory JournalEntity.journalEntry({
-    required String id,
-    required int timestamp,
-    required DateTime createdAt,
-    int? utcOffset,
-    String? timezone,
-    DateTime? updatedAt,
-    Geolocation? geolocation,
-    VectorClock? vectorClock,
-    EntryText? entryText,
-    List<String>? linkedImageIds,
-    List<String>? linkedAudioNoteIds,
-    Task? task,
-  }) = JournalEntry;
-
   factory JournalEntity.journalImage({
     required String id,
     required int timestamp,
