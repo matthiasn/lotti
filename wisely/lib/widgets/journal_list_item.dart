@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/src/provider.dart';
+import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/utils/image_utils.dart';
 
@@ -69,7 +71,9 @@ class JournalListItem extends StatelessWidget {
                 borderRadius: BorderRadius.all(Radius.circular(8))),
           ),
           onPressed: () async {
-            //context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+            item.data.mapOrNull(journalDbAudio: (JournalDbAudio audioNote) {
+              context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+            });
             Directory docDir = await getApplicationDocumentsDirectory();
 
             showModalBottomSheet<void>(

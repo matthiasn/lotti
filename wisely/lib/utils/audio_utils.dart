@@ -2,12 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 
 class AudioUtils {
   static Future<String> getFullAudioPath(AudioNote audioNote) async {
     var docDir = await getApplicationDocumentsDirectory();
     return '${docDir.path}${audioNote.audioDirectory}${audioNote.audioFile}';
+  }
+
+  static Future<String> getFullAudioPath2(JournalDbAudio data) async {
+    var docDir = await getApplicationDocumentsDirectory();
+    return '${docDir.path}${data.audioDirectory}${data.audioFile}';
   }
 
   static Future<File?> getAudioFile(AudioNote audioNote) async {

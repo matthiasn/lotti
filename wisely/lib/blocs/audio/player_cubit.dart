@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wisely/blocs/audio/player_state.dart';
-import 'package:wisely/classes/journal_entities.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
 class AudioPlayerCubit extends Cubit<AudioPlayerState> {
@@ -31,8 +31,8 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
     emit(state.copyWith(progress: duration));
   }
 
-  void setAudioNote(AudioNote audioNote) async {
-    String localPath = await AudioUtils.getFullAudioPath(audioNote);
+  void setAudioNote(JournalDbAudio audioNote) async {
+    String localPath = await AudioUtils.getFullAudioPath2(audioNote);
     debugPrint(localPath);
 
     AudioPlayerState newState = AudioPlayerState(
