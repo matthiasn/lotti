@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
@@ -11,6 +12,10 @@ class SyncMessage with _$SyncMessage {
     required JournalEntity journalEntity,
     required VectorClock vectorClock,
   }) = SyncJournalEntity;
+
+  factory SyncMessage.journalDbEntity({
+    required JournalDbEntity journalEntity,
+  }) = SyncJournalDbEntities;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);

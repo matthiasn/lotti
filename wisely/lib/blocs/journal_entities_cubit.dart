@@ -56,7 +56,6 @@ class JournalEntitiesCubit extends HydratedCubit<JournalEntitiesState> {
         AudioUtils.moveToTrash(audioNote);
       },
       journalImage: (JournalImage value) {},
-      journalEntry: (JournalEntry value) {},
     );
     emit(next);
   }
