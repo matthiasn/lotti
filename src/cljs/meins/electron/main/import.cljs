@@ -54,7 +54,7 @@
     comment))
 
 (defn import-audio-files [path put-fn]
-  (let [files (sync (str path "/**/*.json"))]
+  (let [files (sync (str path "/audio/**/*.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (parse-json json-file)
@@ -72,11 +72,6 @@
               (when (spec/valid? :meins.entry/spec comment)
                 (pp/pprint comment)
                 (put-fn [:entry/save-initial comment])))))))))
-
-(defn import-audio [{:keys [msg-payload put-fn]}]
-  (let [path (:directory msg-payload)]
-    (info "import-audio:" path)
-    (import-audio-files path put-fn)))
 
 (defn convert-image-entry [data]
   (let [ts (get data "timestamp")
@@ -101,7 +96,7 @@
   (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn import-image-files [path put-fn]
-  (let [files (sync (str path "/**/*.json"))]
+  (let [files (sync (str path "/images/**/*.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (parse-json json-file)
@@ -117,6 +112,7 @@
               (spawn-process "/usr/local/bin/magick" ["convert" file jpg] {})
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (info "spec/valid")
+                                (info jpg img-file-path)
                                 (copyFileSync jpg img-file-path)
                                 (put-fn [:import/gen-thumbs
                                          {:filename  img-file
@@ -126,10 +122,11 @@
                                 (put-fn [:entry/save-initial entry]))
                              4000))))))))
 
-(defn import-images [{:keys [msg-payload put-fn]}]
+(defn import-media [{:keys [msg-payload put-fn]}]
   (let [path (:directory msg-payload)]
     (info "import-images:" path)
-    (import-image-files path put-fn)))
+    (import-image-files path put-fn)
+    (import-audio-files path put-fn)))
 
 (defn import-sleep-entry [data put-fn]
   (let [date-to (get data "date_to")
@@ -240,6 +237,5 @@
   (reset! audio-path-atom audio-path)
   (reset! image-path-atom img-path)
   {:cmp-id      cmp-id
-   :handler-map {:import/audio  import-audio
-                 :import/health import-health
-                 :import/images import-images}})
+   :handler-map {:import/health import-health
+                 :import/media import-media}})

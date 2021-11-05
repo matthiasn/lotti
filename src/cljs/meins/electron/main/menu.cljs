@@ -60,17 +60,11 @@
                      (put-fn [:import/photos files])))]
     (.showOpenDialog dialog options callback)))
 
-(defn import-audio-dialog [put-fn]
+(defn import-media-dialog [put-fn]
   (let [options (clj->js {:properties  ["openDirectory"]
-                          :buttonLabel "Import"})
+                          :buttonLabel "Import Documents"})
         selected-dir (first (js->clj (.showOpenDialogSync dialog options)))]
-    (put-fn [:import/audio {:directory selected-dir}])))
-
-(defn import-images-dialog [put-fn]
-  (let [options (clj->js {:properties  ["openDirectory"]
-                          :buttonLabel "Import"})
-        selected-dir (first (js->clj (.showOpenDialogSync dialog options)))]
-    (put-fn [:import/images {:directory selected-dir}])))
+    (put-fn [:import/media {:directory selected-dir}])))
 
 (defn import-health-dialog [put-fn]
   (let [options (clj->js {:properties  ["openFile" "multiSelections"]
@@ -129,10 +123,8 @@
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
-                          {:label "Audio from Flutter app"
-                           :click #(import-audio-dialog put-fn)}
-                          {:label "Images from Flutter app"
-                           :click #(import-images-dialog put-fn)}
+                          {:label "Media from Flutter app"
+                           :click #(import-media-dialog put-fn)}
                           {:label "Health Data from Flutter app"
                            :click #(import-health-dialog put-fn)}
                           (when (contains? capabilities :git-import)
