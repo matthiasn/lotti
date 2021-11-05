@@ -39,12 +39,15 @@ ipa: clean_test
 macos: clean_test
 	flutter build macos
 
+.PHONY: find_unused
+find_unused:
+	flutter pub run dart_code_metrics:metrics check-unused-files lib
+
 .PHONY: viz
 viz:
 	dart pub global run dcdg -o classes.viz.puml -s lib/classes/
 	PLANTUML_LIMIT_SIZE=12000 plantuml classes.viz.puml
 	open classes.viz.png
-
 
 .PHONY: clean_test
 clean_test: clean deps build_runner test

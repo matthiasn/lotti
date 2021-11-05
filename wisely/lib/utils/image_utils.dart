@@ -6,6 +6,7 @@ import 'package:exif/exif.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/journal_entities.dart';
 
 Future<void> printGeolocation(Uint8List fileBytes) async {
@@ -129,6 +130,12 @@ Future<String> getFullImagePath(JournalImage img) async {
 
 String getFullImagePathWithDocDir(JournalImage img, docDir) {
   return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+}
+
+String getFullImagePathWithDocDir2(JournalDbImage img, Directory docDir) {
+  String path = '${docDir.path}${img.imageDirectory}${img.imageFile}';
+  debugPrint('path: $path');
+  return path;
 }
 
 Future<File?> getJournalImageFile(JournalImage journalImage) async {

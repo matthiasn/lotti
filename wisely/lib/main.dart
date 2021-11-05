@@ -4,19 +4,21 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_cubit.dart';
+import 'package:wisely/blocs/journal/health_cubit.dart';
 import 'package:wisely/blocs/journal_entities_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
-import 'package:wisely/pages/health.dart';
-import 'package:wisely/pages/journal.dart';
+import 'package:wisely/pages/health_page.dart';
+import 'package:wisely/pages/journal_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
-import 'blocs/journal/journal_cubit.dart';
+import 'blocs/journal/journal_image_cubit.dart';
+import 'blocs/journal/persistence_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
@@ -44,6 +46,18 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
+        BlocProvider<PersistenceCubit>(
+          lazy: false,
+          create: (BuildContext context) => PersistenceCubit(
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+          ),
+        ),
+        BlocProvider<HealthCubit>(
+          lazy: true,
+          create: (BuildContext context) => HealthCubit(
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
+          ),
+        ),
         BlocProvider<JournalEntitiesCubit>(
           lazy: false,
           create: (BuildContext context) => JournalEntitiesCubit(),
@@ -63,13 +77,14 @@ class WiselyApp extends StatelessWidget {
             imapCubit: BlocProvider.of<ImapCubit>(context),
           ),
         ),
-        BlocProvider<JournalCubit>(
+        BlocProvider<JournalImageCubit>(
           lazy: false,
-          create: (BuildContext context) => JournalCubit(
+          create: (BuildContext context) => JournalImageCubit(
             outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             journalEntitiesCubit:
                 BlocProvider.of<JournalEntitiesCubit>(context),
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<AudioRecorderCubit>(
@@ -78,6 +93,7 @@ class WiselyApp extends StatelessWidget {
             journalEntitiesCubit:
                 BlocProvider.of<JournalEntitiesCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
+            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),
         BlocProvider<AudioPlayerCubit>(
