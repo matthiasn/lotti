@@ -25,7 +25,7 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.geolocation == null) {
+    if (widget.geolocation == null || widget.geolocation!.latitude == 0.0) {
       return const Center();
     }
 
