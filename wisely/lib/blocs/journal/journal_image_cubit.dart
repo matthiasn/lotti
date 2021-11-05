@@ -7,12 +7,9 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
-import 'package:wisely/classes/journal_entities.dart';
-import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -22,17 +19,14 @@ import 'journal_image_state.dart';
 
 class JournalImageCubit extends Cubit<JournalImageState> {
   late final VectorClockCubit _vectorClockCubit;
-  late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceCubit _persistenceCubit;
 
   JournalImageCubit({
     required VectorClockCubit vectorClockCubit,
-    required OutboundQueueCubit outboundQueueCubit,
     required PersistenceCubit persistenceCubit,
   }) : super(JournalImageState()) {
     debugPrint('Hello from JournalImageCubit');
     _vectorClockCubit = vectorClockCubit;
-    _outboundQueueCubit = outboundQueueCubit;
     _persistenceCubit = persistenceCubit;
   }
 
@@ -88,19 +82,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
           VectorClock vectorClock = _vectorClockCubit.getNextVectorClock();
           DateTime created = asset.createDateTime;
 
-          JournalImage journalImage = JournalImage(
-            id: idNamePart,
-            timestamp: created.millisecondsSinceEpoch,
-            imageId: asset.id,
-            geolocation: geolocation,
-            imageFile: imageFileName,
-            imageDirectory: relativePath,
-            createdAt: created,
-            vectorClock: vectorClock,
-          );
-          debugPrint(journalImage.toString());
-          await saveJournalImageJson(journalImage);
-
           JournalDbImage journalDbImage = JournalDbImage(
             imageId: asset.id,
             imageFile: imageFileName,
@@ -112,14 +93,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             journalDbImage,
             geolocation: geolocation,
             vectorClock: vectorClock,
-          );
-
-          await _outboundQueueCubit.enqueueMessage(
-            SyncMessage.journalEntity(
-              journalEntity: journalImage,
-              vectorClock: vectorClock,
-            ),
-            attachment: targetFile,
           );
         }
       }

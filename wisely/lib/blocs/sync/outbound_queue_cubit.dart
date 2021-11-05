@@ -7,12 +7,16 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mutex/mutex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
+import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
+import 'package:wisely/utils/audio_utils.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 import 'imap_out_cubit.dart';
 import 'outbound_queue_db.dart';
@@ -90,33 +94,43 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     });
   }
 
-  Future<void> enqueueMessage(
-    SyncMessage syncMessage, {
-    File? attachment,
-  }) async {
-    debugPrint('enqueueMessage: ${syncMessage.runtimeType}');
-    String jsonString = json.encode(syncMessage);
-    String subject = syncMessage.map(
-      journalEntity: (SyncJournalEntity message) =>
-          message.vectorClock.toString(),
-      journalDbEntity: (SyncJournalDbEntities message) =>
-          message.journalEntity.vectorClock.toString(),
-    );
+  Future<void> enqueueMessage(SyncMessage syncMessage) async {
+    if (syncMessage is SyncJournalDbEntity) {
+      JournalDbEntity journalDbEntity = syncMessage.journalEntity;
+      debugPrint('enqueueMessage2: ${syncMessage.runtimeType}');
+      String jsonString = json.encode(syncMessage);
+      var docDir = await getApplicationDocumentsDirectory();
 
-    if (_b64Secret != null) {
-      String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-      if (attachment != null) {
-        int fileLength = attachment.lengthSync();
-        if (fileLength > 0) {
-          File encryptedFile = File('${attachment.path}.aes');
-          await encryptFile(attachment, encryptedFile, _b64Secret!);
-          await _db.insert(encryptedMessage, subject,
-              encryptedFilePath: encryptedFile.path);
+      File? attachment;
+      String subject = 'enqueueMessage2 ${journalDbEntity.vectorClock}';
+
+      journalDbEntity.data.maybeMap(
+        journalDbAudio: (JournalDbAudio journalDbAudio) {
+          attachment = File(AudioUtils.getAudioPath(journalDbAudio, docDir));
+          AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
+        },
+        journalDbImage: (JournalDbImage image) {
+          attachment = File(getFullImagePathWithDocDir(image, docDir));
+          saveJournalImageJson(image, journalDbEntity);
+        },
+        orElse: () {},
+      );
+
+      if (_b64Secret != null) {
+        String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+        if (attachment != null) {
+          int fileLength = attachment!.lengthSync();
+          if (fileLength > 0) {
+            File encryptedFile = File('${attachment!.path}.aes');
+            await encryptFile(attachment!, encryptedFile, _b64Secret!);
+            await _db.insert(encryptedMessage, subject,
+                encryptedFilePath: encryptedFile.path);
+          }
+        } else {
+          await _db.insert(encryptedMessage, subject);
         }
-      } else {
-        await _db.insert(encryptedMessage, subject);
       }
+      sendNext();
     }
-    sendNext();
   }
 }
