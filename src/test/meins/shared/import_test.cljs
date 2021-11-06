@@ -53,6 +53,27 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
+(def time-recording-test-entry
+  {:timezone       "Europe/Berlin"
+   :utc-offset     60
+   :longitude      13
+   :entry_type     :pomodoro
+   :comment_for    1636205321728
+   :latitude       52
+   :completed_time 4.027
+   :timestamp      1636205322728
+   :text           "recording"
+   :md             "- recording"})
+
+(deftest time-recording-entry-test
+  (let [json-file "./src/test/meins/shared/test-json/2021-11-06_14-28-41-728.aac.json"
+        data (h/parse-json json-file)
+        entry (ai/time-recording-entry data)]
+    (testing "JSON is parsed correctly"
+      (is (= entry time-recording-test-entry)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
 (def new-image-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"

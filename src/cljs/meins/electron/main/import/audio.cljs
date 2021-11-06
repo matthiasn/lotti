@@ -51,8 +51,9 @@
                :vclock     (get json "vectorClock")}]
     entry))
 
-(defn time-recording-entry [data]
-  (let [entry (convert-audio-entry data)
+(defn time-recording-entry [json]
+  (let [data (get json "data")
+        entry (convert-new-audio-entry json)
         entry-ts (:timestamp entry)
         subentry (select-keys entry [:utc-offset
                                      :timezone
@@ -73,7 +74,7 @@
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)
-              entry (convert-audio-entry data)
+              entry (convert-new-audio-entry data)
               comment (time-recording-entry data)
               file (str/replace json-file ".json" "")
               audio-file (:audio_file entry)

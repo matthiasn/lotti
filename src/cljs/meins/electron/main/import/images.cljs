@@ -60,7 +60,7 @@
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)
-              entry (convert-image-entry data)
+              entry (convert-new-image-entry data)
               file (str/replace json-file ".json" "")
               jpg (s/replace file "HEIC" "JPG")
               img-file (:img_file entry)
