@@ -130,7 +130,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         dateFrom: audioNote.createdAt,
       );
 
-      debugPrint(journalDbAudio.toString());
       _persistenceCubit.create(
         journalDbAudio,
         geolocation: audioNote.geolocation,

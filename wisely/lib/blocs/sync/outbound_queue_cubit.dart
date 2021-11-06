@@ -57,7 +57,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   void sendNext() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult != ConnectivityResult.none && !sendMutex.isLocked) {
+    debugPrint('sendNext connectivityResult $connectivityResult');
+    // TODO: check why no working on macOS
+    //bool isConnected = connectivityResult != ConnectivityResult.none;
+    bool isConnected = true;
+    if (isConnected && !sendMutex.isLocked) {
       List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
       if (unprocessed.isNotEmpty) {
         sendMutex.acquire();
@@ -97,12 +101,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalDbEntity) {
       JournalDbEntity journalDbEntity = syncMessage.journalEntity;
-      debugPrint('enqueueMessage2: ${syncMessage.runtimeType}');
       String jsonString = json.encode(syncMessage);
       var docDir = await getApplicationDocumentsDirectory();
 
       File? attachment;
-      String subject = 'enqueueMessage2 ${journalDbEntity.vectorClock}';
+      String subject = 'enqueueMessage ${journalDbEntity.vectorClock}';
 
       journalDbEntity.data.maybeMap(
         journalDbAudio: (JournalDbAudio journalDbAudio) {

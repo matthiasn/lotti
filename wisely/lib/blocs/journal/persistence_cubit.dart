@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/journal/persistence_db.dart';
@@ -90,16 +89,13 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       geolocation: geolocation,
       vectorClock: vc,
     );
-    debugPrint(json.encode(journalDbEntity));
     await createDbEntity(journalDbEntity, enqueueSync: true);
     return true;
   }
 
   Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
       {bool enqueueSync = false}) async {
-    debugPrint('createDbEntity: ${json.encode(journalDbEntity)}');
     bool saved = await _db.insert(journalDbEntity);
-    debugPrint('createDbEntity: $saved}');
 
     if (saved && enqueueSync) {
       _outboundQueueCubit.enqueueMessage(

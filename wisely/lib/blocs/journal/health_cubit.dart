@@ -19,7 +19,6 @@ class HealthCubit extends Cubit<HealthState> {
   HealthCubit({
     required PersistenceCubit persistenceCubit,
   }) : super(HealthState()) {
-    debugPrint('Hello from JournalCubit');
     _persistenceCubit = persistenceCubit;
     getPlatform();
   }

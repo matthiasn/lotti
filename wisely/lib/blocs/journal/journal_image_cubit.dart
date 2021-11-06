@@ -38,7 +38,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
     );
     if (assets != null) {
       for (final AssetEntity asset in assets) {
-        debugPrint('pickAssets $asset');
         debugPrint('pickAssets createDateTime ${asset.createDateTime}');
         debugPrint('pickAssets id ${asset.id}');
         debugPrint('pickAssets file ${await asset.file}');

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -47,7 +46,8 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> processMessage(MimeMessage message) async {
-    if (Platform.isMacOS) {
+    // TODO: check that message is from different host
+    if (true) {
       String? encryptedMessage = readMessage(message);
       SyncMessage? syncMessage =
           await decryptMessage(encryptedMessage, message, _b64Secret);
@@ -57,12 +57,10 @@ class ImapCubit extends Cubit<ImapState> {
           debugPrint('processMessage inserting ${journalDbEntity.runtimeType}');
           journalDbEntity.data.maybeMap(
             journalDbAudio: (JournalDbAudio journalDbAudio) async {
-              debugPrint('processMessage journalDbAudioImage $journalDbAudio');
               await saveAudioAttachment(
                   message, journalDbAudio, journalDbEntity, _b64Secret);
             },
             journalDbImage: (JournalDbImage journalDbImage) async {
-              debugPrint('processMessage journalDbImage $journalDbImage');
               await saveImageAttachment(
                   message, journalDbImage, journalDbEntity, _b64Secret);
             },
@@ -185,7 +183,7 @@ class ImapCubit extends Cubit<ImapState> {
         _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
         Mailbox inbox = await _mailClient.selectInbox();
-        debugPrint('_observeInbox inbox selected: ${inbox.toString()}');
+        debugPrint('_observeInbox inbox selected}');
 
         _mailClient.eventBus
             .on<MailLoadEvent>()
