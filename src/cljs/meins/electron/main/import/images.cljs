@@ -56,7 +56,7 @@
   (spawn cmd (clj->js args) (clj->js opts)))
 
 (defn import-image-files [path put-fn]
-  (let [files (sync (str path "/images/**/*.json"))]
+  (let [files (sync (str path "/**/*.HEIC.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)

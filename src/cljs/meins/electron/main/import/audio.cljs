@@ -70,7 +70,7 @@
     comment))
 
 (defn import-audio-files [path put-fn]
-  (let [files (sync (str path "/audio/**/*.json"))]
+  (let [files (sync (str path "/**/*.aac.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)
