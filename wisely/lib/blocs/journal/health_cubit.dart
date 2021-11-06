@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/health_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
@@ -42,6 +43,8 @@ class HealthCubit extends Cubit<HealthState> {
 
   Future getActivityHealthData(
       {required DateTime dateFrom, required DateTime dateTo}) async {
+    final transaction =
+        Sentry.startTransaction('getActivityHealthData()', 'task');
     final flutterHealthFit = FlutterHealthFit();
     final bool isAuthorized = await FlutterHealthFit().authorize(true);
     final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
@@ -61,7 +64,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        _persistenceCubit.create(activityForDay);
+        _persistenceCubit.createJournalEntry(activityForDay);
       }
     }
 
@@ -74,6 +77,7 @@ class HealthCubit extends Cubit<HealthState> {
         .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
             dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
     addEntries(flights, 'cumulative_flights_climbed');
+    await transaction.finish();
   }
 
   Future fetchHealthData({
@@ -81,6 +85,7 @@ class HealthCubit extends Cubit<HealthState> {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
+    final transaction = Sentry.startTransaction('fetchHealthData()', 'task');
     HealthFactory health = HealthFactory();
     bool accessWasGranted = await health.requestAuthorization(types);
 
@@ -102,7 +107,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          _persistenceCubit.create(discreteQuantity);
+          _persistenceCubit.createJournalEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');
@@ -110,5 +115,6 @@ class HealthCubit extends Cubit<HealthState> {
     } else {
       debugPrint('Authorization not granted');
     }
+    await transaction.finish();
   }
 }

@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/journal/persistence_db.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
@@ -34,23 +34,26 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> init() async {
     await _db.openDb();
     emit(PersistenceState.online(entries: []));
-    query();
+    queryJournal();
   }
 
-  Future<void> query() async {
+  Future<void> queryJournal() async {
+    final transaction = Sentry.startTransaction('queryJournal()', 'task');
     List<JournalRecord> records = await _db.journalEntries(100);
     List<JournalDbEntity> entries = records
         .map((JournalRecord r) =>
             JournalDbEntry.fromJson(json.decode(r.serialized)))
         .toList();
     emit(PersistenceState.online(entries: entries));
+    await transaction.finish();
   }
 
-  Future<bool> create(
+  Future<bool> createJournalEntry(
     JournalDbEntityData data, {
     Geolocation? geolocation,
     VectorClock? vectorClock,
   }) async {
+    final transaction = Sentry.startTransaction('createJournalEntry()', 'task');
     DateTime now = DateTime.now();
     VectorClock vc = vectorClock ?? _vectorClockCubit.getNextVectorClock();
 
@@ -94,21 +97,23 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       utcOffset: now.timeZoneOffset.inMinutes,
     );
     await createDbEntity(journalDbEntity, enqueueSync: true);
+    await transaction.finish();
     return true;
   }
 
   Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
       {bool enqueueSync = false}) async {
-    debugPrint('createDbEntity');
+    final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     bool saved = await _db.insert(journalDbEntity);
-    debugPrint('created DbEntity: $saved');
 
     if (saved && enqueueSync) {
       _outboundQueueCubit.enqueueMessage(
           SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
     }
+    await transaction.finish();
+
     await Future.delayed(const Duration(seconds: 1));
-    query();
+    queryJournal();
     return saved;
   }
 }

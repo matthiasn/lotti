@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:wisely/utils/image_utils.dart';
 
@@ -42,11 +43,12 @@ class OutboundQueueDb {
     await _database;
   }
 
-  Future<void> insert(
+  Future<void> queueInsert(
     String encryptedMessage,
     String subject, {
     String? encryptedFilePath,
   }) async {
+    final transaction = Sentry.startTransaction('insert()', 'task');
     final db = await _database;
 
     OutboundQueueRecord dbRecord = OutboundQueueRecord(
@@ -64,6 +66,7 @@ class OutboundQueueDb {
       dbRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    await transaction.finish();
   }
 
   Future<void> update(
@@ -71,6 +74,7 @@ class OutboundQueueDb {
     OutboundMessageStatus status,
     int retries,
   ) async {
+    final transaction = Sentry.startTransaction('update()', 'task');
     final db = await _database;
 
     OutboundQueueRecord dbRecord = OutboundQueueRecord(
@@ -88,9 +92,11 @@ class OutboundQueueDb {
       dbRecord.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    await transaction.finish();
   }
 
   Future<List<OutboundQueueRecord>> oldestEntries() async {
+    final transaction = Sentry.startTransaction('oldestEntries()', 'task');
     final db = await _database;
     final List<Map<String, dynamic>> maps = await db.query(
       'outbound',
@@ -99,6 +105,7 @@ class OutboundQueueDb {
       where: 'status = ?',
       whereArgs: [OutboundMessageStatus.pending.index],
     );
+    await transaction.finish();
 
     return List.generate(maps.length, (i) {
       return OutboundQueueRecord.fromMap(maps[i]);

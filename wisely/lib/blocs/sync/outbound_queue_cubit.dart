@@ -69,6 +69,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void sendNext() async {
+    final transaction = Sentry.startTransaction('sendNext()', 'task');
     _connectivityResult = await Connectivity().checkConnectivity();
     debugPrint('sendNext Connectivity $_connectivityResult');
     reportConnectivity();
@@ -106,6 +107,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         sendNext();
       }
     }
+    await transaction.finish();
   }
 
   void _startPolling() async {
@@ -116,6 +118,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalDbEntity) {
+      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
       JournalDbEntity journalDbEntity = syncMessage.journalEntity;
       String jsonString = json.encode(syncMessage);
       var docDir = await getApplicationDocumentsDirectory();
@@ -142,13 +145,14 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           if (fileLength > 0) {
             File encryptedFile = File('${attachment!.path}.aes');
             await encryptFile(attachment!, encryptedFile, _b64Secret!);
-            await _db.insert(encryptedMessage, subject,
+            await _db.queueInsert(encryptedMessage, subject,
                 encryptedFilePath: encryptedFile.path);
           }
         } else {
-          await _db.insert(encryptedMessage, subject);
+          await _db.queueInsert(encryptedMessage, subject);
         }
       }
+      await transaction.finish();
       sendNext();
     }
   }

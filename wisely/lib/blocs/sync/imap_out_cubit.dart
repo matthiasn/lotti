@@ -6,6 +6,7 @@ import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
@@ -31,6 +32,7 @@ class ImapOutCubit extends Cubit<ImapState> {
   }
 
   Future<void> imapClientInit() async {
+    final transaction = Sentry.startTransaction('imapClientInit()', 'task');
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
     try {
@@ -54,6 +56,7 @@ class ImapOutCubit extends Cubit<ImapState> {
     } catch (e) {
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
+    await transaction.finish();
   }
 
   Future<bool> saveImap(
@@ -61,6 +64,7 @@ class ImapOutCubit extends Cubit<ImapState> {
     String subject, {
     String? encryptedFilePath,
   }) async {
+    final transaction = Sentry.startTransaction('saveImap()', 'task');
     GenericImapResult? res;
     if (_b64Secret != null) {
       if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
@@ -74,6 +78,8 @@ class ImapOutCubit extends Cubit<ImapState> {
         res = await saveImapMessage(_imapClient, subject, encryptedMessage);
       }
     }
+    await transaction.finish();
+
     if (res?.details != null && res!.details!.contains('completed')) {
       return true;
     } else {
