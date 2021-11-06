@@ -1,47 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
-
-Future<void> encryptDecrypt(String messageString) async {
-  final List<int> message = utf8.encode(messageString);
-
-  final algorithm = AesGcm.with256bits();
-  final secretKey = await algorithm.newSecretKey();
-  final nonce = algorithm.newNonce();
-
-  // Encrypt
-  final SecretBox secretBox = await algorithm.encrypt(
-    message,
-    secretKey: secretKey,
-    nonce: nonce,
-  );
-
-  final Uint8List bytes = secretBox.concatenation();
-  final String b64String = base64.encode(bytes);
-
-  debugPrint('Nonce: ${secretBox.nonce}');
-  debugPrint('Nonce length: ${secretBox.nonce.length}');
-  debugPrint('Ciphertext: ${secretBox.cipherText}');
-  debugPrint('Base64 encoded: $b64String');
-  debugPrint('MAC: ${secretBox.mac.bytes}');
-
-  final deserializedSecretBox =
-      SecretBox.fromConcatenation(bytes, nonceLength: 12, macLength: 16);
-
-  // Decrypt
-  final List<int> clearMessage = await algorithm.decrypt(
-    deserializedSecretBox,
-    secretKey: secretKey,
-  );
-  final String clearText = utf8.decode(clearMessage);
-  debugPrint('Cleartext: $clearText');
-}
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> encryptFile(
     File inputFile, File encryptedFile, String b64Secret) async {
+  final transaction = Sentry.startTransaction('encryptFile()', 'task');
+
   if (!inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
     throw Exception("File not found");
@@ -59,12 +26,14 @@ Future<void> encryptFile(
     nonce: nonce,
   );
 
-  final Uint8List bytes = secretBox.concatenation();
-  await encryptedFile.writeAsBytes(bytes);
+  await encryptedFile.writeAsBytes(secretBox.concatenation());
+  await transaction.finish();
 }
 
 Future<void> decryptFile(
     File inputFile, File outputFile, String b64Secret) async {
+  final transaction = Sentry.startTransaction('decryptFile()', 'task');
+
   if (!inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
     throw Exception("File not found");
@@ -83,4 +52,5 @@ Future<void> decryptFile(
   );
 
   await outputFile.writeAsBytes(decryptedBytes);
+  await transaction.finish();
 }
