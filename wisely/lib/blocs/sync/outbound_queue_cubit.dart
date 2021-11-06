@@ -9,6 +9,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry/sentry.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
@@ -63,9 +64,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void reportConnectivity() async {
-    await Sentry.captureEvent(SentryEvent(
-      message: SentryMessage(_connectivityResult.toString()),
-    ));
+    await Sentry.captureEvent(
+        SentryEvent(
+          message: SentryMessage(_connectivityResult.toString()),
+        ),
+        withScope: (Scope scope) => scope.level = SentryLevel.info);
   }
 
   void sendNext() async {
