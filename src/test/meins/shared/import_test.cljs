@@ -7,14 +7,15 @@
             [cljs.pprint :as pp]
             [meins.electron.main.import.images :as ii]))
 
+(def expected-text (str (h/format-time 1634044303702) " Audio"))
 (def test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 120
    :timestamp  1634044303702
    :audio_file "2021-10-12_15-11-43-702.aac"
-   :md         "2021-10-12 15:11 Audio"
-   :text       "2021-10-12 15:11 Audio"
+   :md         expected-text
+   :text       expected-text
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
    :longitude  13
@@ -30,14 +31,15 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
+(def expected-text2 (str (h/format-time 1636208921728) " Audio"))
 (def new-audio-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 60
-   :timestamp  1636205321728
+   :timestamp  1636208921728
    :audio_file "2021-11-06_14-28-41-728.aac"
-   :md         "2021-11-06 14:28 Audio"
-   :text       "2021-11-06 14:28 Audio"
+   :md         expected-text2
+   :text       expected-text2
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
    :longitude  13
@@ -58,10 +60,10 @@
    :utc-offset     60
    :longitude      13
    :entry_type     :pomodoro
-   :comment_for    1636205321728
+   :comment_for    1636208921728
    :latitude       52
    :completed_time 4.027
-   :timestamp      1636205322728
+   :timestamp      1636208922728
    :text           "recording"
    :md             "- recording"})
 
@@ -74,14 +76,15 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
+(def expected-text3 (str (h/format-time 1636165154000) " Image"))
 (def new-image-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 0
-   :timestamp  1636161554000
+   :timestamp  1636165154000
    :img_file   "A5E070A4-40A8-4BF0-A0B2-B368BA8A4232.IMG_7493.JPG"
-   :md         "2021-11-06 02:19 Image"
-   :text       "2021-11-06 02:19 Image"
+   :md         expected-text3
+   :text       expected-text3
    :tags       #{"#import" "#photo"}
    :perm_tags  #{"#photo"}
    :longitude  10

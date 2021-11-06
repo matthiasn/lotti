@@ -80,10 +80,10 @@ nsorg:
 cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
 	@npx shadow-cljs compile shared-tests
-	@node out/shared-tests.js
+	@TZ=UTC node out/shared-tests.js
 
 run-cljs-shared-tests:
-	@node out/shared-tests.js
+	@TZ=UTC node out/shared-tests.js
 
 watch-cljs-shared-tests: npm-deps
 	@echo Running ClojureScript tests...
