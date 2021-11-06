@@ -3,6 +3,7 @@
             ["fs" :refer [copyFileSync existsSync readFileSync]]
             [taoensso.timbre :refer [error info]]
             [clojure.string :as str]
+            ["moment" :as moment]
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
             ["child_process" :refer [spawn]]
@@ -28,6 +29,26 @@
                :longitude  (get geolocation "longitude")
                :latitude   (get geolocation "latitude")
                :vclock     (get data "vectorClock")}]
+    entry))
+
+(defn convert-new-audio-entry [json]
+  (let [data (get json "data")
+        created-at (get json "createdAt")
+        ts (.valueOf (moment created-at))
+        text (str (h/format-time ts) " Audio")
+        geolocation (get json "geolocation")
+        entry {:timestamp  ts
+               :md         text
+               :text       text
+               :mentions   #{}
+               :utc-offset (get json "utcOffset")
+               :audio_file (get data "audioFile")
+               :timezone   (get json "timezone")
+               :tags       #{"#audio" "#import"}
+               :perm_tags  #{"#audio" "#task"}
+               :longitude  (get geolocation "longitude")
+               :latitude   (get geolocation "latitude")
+               :vclock     (get json "vectorClock")}]
     entry))
 
 (defn time-recording-entry [data]
