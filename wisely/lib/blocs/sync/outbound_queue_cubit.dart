@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sentry/sentry.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
@@ -61,9 +62,16 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     _startPolling();
   }
 
+  void reportConnectivity() async {
+    await Sentry.captureEvent(SentryEvent(
+      message: SentryMessage(_connectivityResult.toString()),
+    ));
+  }
+
   void sendNext() async {
     _connectivityResult = await Connectivity().checkConnectivity();
     debugPrint('sendNext Connectivity $_connectivityResult');
+    reportConnectivity();
 
     // TODO: check why not working reliably on macOS - workaround
     bool isConnected =
