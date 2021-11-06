@@ -11,28 +11,35 @@ import 'outbound_queue_state.dart';
 class OutboundQueueDb {
   late final Future<Database> _database;
 
-  OutboundQueueDb();
+  OutboundQueueDb() {
+    _database = Future<Database>(() async {
+      String createDbStatement =
+          await rootBundle.loadString('assets/sqlite/create_outbound_db.sql');
+
+      String dbPath = join(await getDatabasesPath(), 'outbound.db');
+      debugPrint('OutboundQueueCubit DB Path: $dbPath');
+
+      Database database = await openDatabase(
+        dbPath,
+        onCreate: (db, version) async {
+          List<String> scripts = createDbStatement.split(";");
+          for (String line in scripts) {
+            if (line.isNotEmpty) {
+              debugPrint(line.trim());
+              db.execute(line.trim());
+            }
+          }
+        },
+        version: 1,
+      );
+
+      debugPrint('OutboundQueueCubit opened: $_database');
+      return database;
+    });
+  }
 
   Future<void> openDb() async {
-    String createDbStatement =
-        await rootBundle.loadString('assets/sqlite/create_outbound_db.sql');
-
-    String dbPath = join(await getDatabasesPath(), 'outbound.db');
-    debugPrint('OutboundQueueCubit DB Path: $dbPath');
-
-    _database = openDatabase(
-      dbPath,
-      onCreate: (db, version) async {
-        List<String> scripts = createDbStatement.split(";");
-        for (String line in scripts) {
-          if (line.isNotEmpty) {
-            debugPrint(line.trim());
-            db.execute(line.trim());
-          }
-        }
-      },
-      version: 1,
-    );
+    await _database;
   }
 
   Future<void> insert(

@@ -13,29 +13,35 @@ const journalTable = 'journal';
 
 class PersistenceDb {
   late final Future<Database> _database;
-  PersistenceDb();
+
+  PersistenceDb() {
+    _database = Future<Database>(() async {
+      String createDbStatement =
+          await rootBundle.loadString('assets/sqlite/create_journal_db.sql');
+
+      String dbPath = join(await getDatabasesPath(), 'journal.db');
+      debugPrint('PersistenceCubit DB Path: $dbPath');
+
+      Database database = await openDatabase(
+        dbPath,
+        onCreate: (db, version) async {
+          List<String> scripts = createDbStatement.split(";");
+          for (String line in scripts) {
+            if (line.isNotEmpty) {
+              db.execute(line.trim());
+            }
+          }
+          debugPrint('PersistenceCubit database created.');
+        },
+        version: 1,
+      );
+      debugPrint('PersistenceCubit opened: $_database');
+      return database;
+    });
+  }
 
   Future<void> openDb() async {
-    String createDbStatement =
-        await rootBundle.loadString('assets/sqlite/create_journal_db.sql');
-
-    String dbPath = join(await getDatabasesPath(), 'journal.db');
-    debugPrint('PersistenceCubit DB Path: $dbPath');
-
-    _database = openDatabase(
-      dbPath,
-      onCreate: (db, version) async {
-        List<String> scripts = createDbStatement.split(";");
-        for (String line in scripts) {
-          if (line.isNotEmpty) {
-            db.execute(line.trim());
-          }
-        }
-        debugPrint('PersistenceCubit database created.');
-      },
-      version: 1,
-    );
-    debugPrint('PersistenceCubit opened: $_database');
+    await _database;
   }
 
   Future<bool> insert(JournalDbEntity journalDbEntity) async {
