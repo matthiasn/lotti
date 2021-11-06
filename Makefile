@@ -82,6 +82,13 @@ cljs-shared-tests: npm-deps
 	@npx shadow-cljs compile shared-tests
 	@node out/shared-tests.js
 
+run-cljs-shared-tests:
+	@node out/shared-tests.js
+
+watch-cljs-shared-tests: npm-deps
+	@echo Running ClojureScript tests...
+	@npx shadow-cljs watch shared-tests
+
 watch-renderer:
 	shadow-cljs watch renderer
 
