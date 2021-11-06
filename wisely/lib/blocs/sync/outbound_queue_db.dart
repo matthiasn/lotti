@@ -49,23 +49,27 @@ class OutboundQueueDb {
     String? encryptedFilePath,
   }) async {
     final transaction = Sentry.startTransaction('insert()', 'task');
-    final db = await _database;
+    try {
+      final db = await _database;
 
-    OutboundQueueRecord dbRecord = OutboundQueueRecord(
-      encryptedMessage: encryptedMessage,
-      encryptedFilePath: getRelativeAssetPath(encryptedFilePath),
-      subject: subject,
-      status: OutboundMessageStatus.pending,
-      retries: 0,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+      OutboundQueueRecord dbRecord = OutboundQueueRecord(
+        encryptedMessage: encryptedMessage,
+        encryptedFilePath: getRelativeAssetPath(encryptedFilePath),
+        subject: subject,
+        status: OutboundMessageStatus.pending,
+        retries: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-    await db.insert(
-      'outbound',
-      dbRecord.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+      await db.insert(
+        'outbound',
+        dbRecord.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
     await transaction.finish();
   }
 
@@ -75,36 +79,45 @@ class OutboundQueueDb {
     int retries,
   ) async {
     final transaction = Sentry.startTransaction('update()', 'task');
-    final db = await _database;
+    try {
+      final db = await _database;
 
-    OutboundQueueRecord dbRecord = OutboundQueueRecord(
-      id: prev.id,
-      encryptedMessage: prev.encryptedMessage,
-      subject: prev.subject,
-      status: status,
-      retries: retries,
-      createdAt: prev.createdAt,
-      updatedAt: DateTime.now(),
-    );
+      OutboundQueueRecord dbRecord = OutboundQueueRecord(
+        id: prev.id,
+        encryptedMessage: prev.encryptedMessage,
+        subject: prev.subject,
+        status: status,
+        retries: retries,
+        createdAt: prev.createdAt,
+        updatedAt: DateTime.now(),
+      );
 
-    await db.insert(
-      'outbound',
-      dbRecord.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+      await db.insert(
+        'outbound',
+        dbRecord.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
     await transaction.finish();
   }
 
   Future<List<OutboundQueueRecord>> oldestEntries() async {
     final transaction = Sentry.startTransaction('oldestEntries()', 'task');
-    final db = await _database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'outbound',
-      orderBy: 'created_at',
-      limit: 1,
-      where: 'status = ?',
-      whereArgs: [OutboundMessageStatus.pending.index],
-    );
+    List<Map<String, dynamic>> maps = [];
+    try {
+      final db = await _database;
+      maps = await db.query(
+        'outbound',
+        orderBy: 'created_at',
+        limit: 1,
+        where: 'status = ?',
+        whereArgs: [OutboundMessageStatus.pending.index],
+      );
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
     await transaction.finish();
 
     return List.generate(maps.length, (i) {

@@ -39,12 +39,17 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<void> queryJournal() async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
-    List<JournalRecord> records = await _db.journalEntries(100);
-    List<JournalDbEntity> entries = records
-        .map((JournalRecord r) =>
-            JournalDbEntry.fromJson(json.decode(r.serialized)))
-        .toList();
-    emit(PersistenceState.online(entries: entries));
+    try {
+      List<JournalRecord> records = await _db.journalEntries(100);
+      List<JournalDbEntity> entries = records
+          .map((JournalRecord r) =>
+              JournalDbEntry.fromJson(json.decode(r.serialized)))
+          .toList();
+      emit(PersistenceState.online(entries: entries));
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
     await transaction.finish();
   }
 
@@ -54,66 +59,75 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     VectorClock? vectorClock,
   }) async {
     final transaction = Sentry.startTransaction('createJournalEntry()', 'task');
-    DateTime now = DateTime.now();
-    VectorClock vc = vectorClock ?? _vectorClockCubit.getNextVectorClock();
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = vectorClock ?? _vectorClockCubit.getNextVectorClock();
 
-    // avoid inserting the same external entity multiple times
-    String id = data.maybeMap(
-      // create reproducible ID for imported health data
-      cumulativeQuantity: (CumulativeQuantity cumulativeQuantity) =>
-          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(cumulativeQuantity)),
-      discreteQuantity: (DiscreteQuantity discreteQuantity) =>
-          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(discreteQuantity)),
-      // create reproducible ID for imported image
-      journalDbImage: (JournalDbImage journalImage) =>
-          uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
-      // create random ID for user-created entries
-      orElse: () => uuid.v1(),
-    );
-    DateTime dateFrom = data.maybeMap(
-      cumulativeQuantity: (CumulativeQuantity v) => v.dateFrom,
-      discreteQuantity: (DiscreteQuantity v) => v.dateFrom,
-      journalDbImage: (JournalDbImage v) => v.capturedAt,
-      journalDbAudio: (JournalDbAudio v) => v.dateFrom,
-      orElse: () => now,
-    );
-    DateTime dateTo = data.maybeMap(
-      cumulativeQuantity: (CumulativeQuantity v) => v.dateTo,
-      discreteQuantity: (DiscreteQuantity v) => v.dateTo,
-      journalDbImage: (JournalDbImage v) => v.capturedAt,
-      journalDbAudio: (JournalDbAudio v) => v.dateTo,
-      orElse: () => now,
-    );
-    JournalDbEntity journalDbEntity = JournalDbEntity.journalDbEntry(
-      data: data,
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: dateFrom,
-      dateTo: dateTo,
-      id: id,
-      geolocation: geolocation,
-      vectorClock: vc,
-      timezone: await FlutterNativeTimezone.getLocalTimezone(),
-      utcOffset: now.timeZoneOffset.inMinutes,
-    );
-    await createDbEntity(journalDbEntity, enqueueSync: true);
+      // avoid inserting the same external entity multiple times
+      String id = data.maybeMap(
+        // create reproducible ID for imported health data
+        cumulativeQuantity: (CumulativeQuantity cumulativeQuantity) =>
+            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(cumulativeQuantity)),
+        discreteQuantity: (DiscreteQuantity discreteQuantity) =>
+            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(discreteQuantity)),
+        // create reproducible ID for imported image
+        journalDbImage: (JournalDbImage journalImage) =>
+            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
+        // create random ID for user-created entries
+        orElse: () => uuid.v1(),
+      );
+      DateTime dateFrom = data.maybeMap(
+        cumulativeQuantity: (CumulativeQuantity v) => v.dateFrom,
+        discreteQuantity: (DiscreteQuantity v) => v.dateFrom,
+        journalDbImage: (JournalDbImage v) => v.capturedAt,
+        journalDbAudio: (JournalDbAudio v) => v.dateFrom,
+        orElse: () => now,
+      );
+      DateTime dateTo = data.maybeMap(
+        cumulativeQuantity: (CumulativeQuantity v) => v.dateTo,
+        discreteQuantity: (DiscreteQuantity v) => v.dateTo,
+        journalDbImage: (JournalDbImage v) => v.capturedAt,
+        journalDbAudio: (JournalDbAudio v) => v.dateTo,
+        orElse: () => now,
+      );
+      JournalDbEntity journalDbEntity = JournalDbEntity.journalDbEntry(
+        data: data,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        id: id,
+        geolocation: geolocation,
+        vectorClock: vc,
+        timezone: await FlutterNativeTimezone.getLocalTimezone(),
+        utcOffset: now.timeZoneOffset.inMinutes,
+      );
+      await createDbEntity(journalDbEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
     await transaction.finish();
     return true;
   }
 
-  Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
+  Future<bool?> createDbEntity(JournalDbEntity journalDbEntity,
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
-    bool saved = await _db.insert(journalDbEntity);
+    try {
+      bool saved = await _db.insert(journalDbEntity);
 
-    if (saved && enqueueSync) {
-      _outboundQueueCubit.enqueueMessage(
-          SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
+      if (saved && enqueueSync) {
+        _outboundQueueCubit.enqueueMessage(
+            SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
+      }
+      await transaction.finish();
+
+      await Future.delayed(const Duration(seconds: 1));
+      queryJournal();
+      return saved;
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
     }
-    await transaction.finish();
-
-    await Future.delayed(const Duration(seconds: 1));
-    queryJournal();
-    return saved;
   }
 }
