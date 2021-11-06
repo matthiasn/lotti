@@ -13,6 +13,7 @@ import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
@@ -46,6 +47,8 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> processMessage(MimeMessage message) async {
+    final transaction = Sentry.startTransaction('processMessage()', 'task');
+
     // TODO: check that message is from different host
     if (true) {
       String? encryptedMessage = readMessage(message);
@@ -73,10 +76,12 @@ class ImapCubit extends Cubit<ImapState> {
     } else {
       debugPrint('Ignoring message');
     }
+    await transaction.finish();
   }
 
   Future<void> imapClientInit() async {
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
+    final transaction = Sentry.startTransaction('imapClientInit()', 'task');
 
     try {
       if (syncConfig != null) {
@@ -102,6 +107,7 @@ class ImapCubit extends Cubit<ImapState> {
     } catch (e) {
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
+    await transaction.finish();
   }
 
   void _startPolling() async {
@@ -112,6 +118,7 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> _pollInbox() async {
+    final transaction = Sentry.startTransaction('_pollInbox()', 'task');
     try {
       if (_syncConfig != null) {
         String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
@@ -146,9 +153,11 @@ class ImapCubit extends Cubit<ImapState> {
       debugPrint('Exception $e');
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
+    await transaction.finish();
   }
 
   Future<void> _fetchByUid(int? uid) async {
+    final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
       try {
         // odd workaround, prevents intermittent failures on macOS
@@ -166,6 +175,7 @@ class ImapCubit extends Cubit<ImapState> {
         emit(ImapState.failed(error: 'failed: $e ${e.details}'));
       }
     }
+    await transaction.finish();
   }
 
   Future<void> _observeInbox() async {

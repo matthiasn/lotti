@@ -6,6 +6,7 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -19,6 +20,7 @@ Future<void> saveAudioAttachment(
   JournalDbEntity journalDbEntity,
   String? b64Secret,
 ) async {
+  final transaction = Sentry.startTransaction('saveAudioAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 
@@ -37,6 +39,7 @@ Future<void> saveAudioAttachment(
       await AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
     }
   }
+  await transaction.finish();
 }
 
 Future<void> saveImageAttachment(
@@ -45,6 +48,7 @@ Future<void> saveImageAttachment(
   JournalDbEntity journalDbEntity,
   String? b64Secret,
 ) async {
+  final transaction = Sentry.startTransaction('saveImageAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 
@@ -63,6 +67,7 @@ Future<void> saveImageAttachment(
       await saveJournalImageJson(journalDbImage, journalDbEntity);
     }
   }
+  await transaction.finish();
 }
 
 Future<SyncMessage?> decryptMessage(
@@ -105,6 +110,7 @@ Future<GenericImapResult> saveImapMessage(
   String encryptedMessage, {
   File? file,
 }) async {
+  final transaction = Sentry.startTransaction('saveImapMessage()', 'task');
   Mailbox inbox = await imapClient.selectInbox();
   final builder = MessageBuilder.prepareMultipartAlternativeMessage();
   builder.from = [MailAddress('Sync', 'sender@domain.com')];
@@ -125,5 +131,6 @@ Future<GenericImapResult> saveImapMessage(
       await imapClient.appendMessage(message, targetMailbox: inbox);
   debugPrint(
       'saveImapMessage responseCode ${res.responseCode} details ${res.details}');
+  await transaction.finish();
   return res;
 }

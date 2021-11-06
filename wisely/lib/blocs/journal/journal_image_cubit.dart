@@ -88,7 +88,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             capturedAt: created,
           );
 
-          _persistenceCubit.create(
+          _persistenceCubit.createJournalEntry(
             journalDbImage,
             geolocation: geolocation,
             vectorClock: vectorClock,
