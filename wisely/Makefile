@@ -37,11 +37,11 @@ bundle:
 
 .PHONY: ipa
 ipa: clean_test
-	flutter build ipa
+	flutter build ipa --dart-define='SENTRY_DSN=$SENTRY_DSN'
 
 .PHONY: macos
 macos: clean_test
-	flutter build macos
+	flutter build macos --dart-define='SENTRY_DSN=$SENTRY_DSN'
 
 .PHONY: all
 all: ipa macos
