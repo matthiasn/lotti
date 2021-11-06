@@ -31,6 +31,10 @@ build_runner_watch:
 build_runner_watch2:
 	flutter pub run build_runner watch --delete-conflicting-outputs --use-polling-watcher
 
+.PHONY: bundle
+bundle:
+	flutter build bundle
+
 .PHONY: ipa
 ipa: clean_test
 	flutter build ipa
@@ -57,4 +61,4 @@ viz:
 	open classes.viz.png
 
 .PHONY: clean_test
-clean_test: clean deps build_runner test
+clean_test: clean deps build_runner bundle test
