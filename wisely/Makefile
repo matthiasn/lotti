@@ -46,6 +46,10 @@ all: ipa macos
 find_unused:
 	flutter pub run dart_code_metrics:metrics check-unused-files lib
 
+.PHONY: sentry_symbols
+sentry_symbols:
+	flutter packages pub run sentry_dart_plugin
+
 .PHONY: viz
 viz:
 	dart pub global run dcdg -o classes.viz.puml -s lib/classes/
