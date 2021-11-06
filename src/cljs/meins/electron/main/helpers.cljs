@@ -1,5 +1,6 @@
 (ns meins.electron.main.helpers
-  (:require ["moment" :as moment]))
+  (:require ["moment" :as moment]
+            ["fs" :refer [readFileSync]]))
 
 (defn format-time [m] (.format (moment m) "YYYY-MM-DD HH:mm"))
 
@@ -8,3 +9,8 @@
 
 (def health-date-format2 "YYYY-MM-DDTHH:mm:ss:SSS")
 (defn health-date-to-ts2 [s] (.valueOf (moment s health-date-format2)))
+
+(defn parse-json [file]
+  (let [json (.parse js/JSON (readFileSync file))
+        data (js->clj json)]
+    data))

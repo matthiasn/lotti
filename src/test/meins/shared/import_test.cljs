@@ -1,9 +1,10 @@
 (ns meins.shared.import-test
   (:require [cljs.test :refer [deftest testing is]]
-            [meins.electron.main.import :as emi]
+            [meins.electron.main.import.audio :as ai]
             [meins.common.specs]
             [meins.electron.main.helpers :as h]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [cljs.pprint :as pp]))
 
 (def expected-text (str (h/format-time 1634044303702) " Audio"))
 
@@ -23,8 +24,9 @@
 
 (deftest read-entry-test
   (let [json-file "./src/test/meins/shared/audio/2021-10-12/2021-10-12_15-11-43-702.aac.json"
-        data (emi/parse-json json-file)
-        entry (emi/convert-audio-entry data)]
+        data (h/parse-json json-file)
+        entry (ai/convert-audio-entry data)]
+    (pp/pprint entry)
     (testing "JSON is parsed correctly"
       (is (= entry test-entry)))
     (testing "Parsed entry is valid"
