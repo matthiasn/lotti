@@ -26,6 +26,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
   late final ImapOutCubit _imapOutCubit;
   late final VectorClockCubit _vectorClockCubit;
+  late final ConnectivityResult _connectivityResult;
 
   final sendMutex = Mutex();
 
@@ -42,6 +43,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     _vectorClockCubit = vectorClockCubit;
     _db = OutboundQueueDb();
     init();
+
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      _connectivityResult = result;
+      debugPrint('Connectivity onConnectivityChanged $result');
+    });
   }
 
   Future<void> init() async {
@@ -56,11 +62,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void sendNext() async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    debugPrint('sendNext connectivityResult $connectivityResult');
-    // TODO: check why no working on macOS
-    //bool isConnected = connectivityResult != ConnectivityResult.none;
-    bool isConnected = true;
+    debugPrint('sendNext Connectivity $_connectivityResult');
+    // TODO: check why no working on macOS - workaround
+    bool isConnected =
+        Platform.isIOS ? _connectivityResult != ConnectivityResult.none : true;
     if (isConnected && !sendMutex.isLocked) {
       List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
       if (unprocessed.isNotEmpty) {
