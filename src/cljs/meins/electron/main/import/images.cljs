@@ -6,6 +6,7 @@
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
             ["child_process" :refer [spawn]]
+            ["moment" :as moment]
             [clojure.pprint :as pp]
             [expound.alpha :as exp]
             [clojure.string :as s]))
@@ -28,6 +29,26 @@
                :longitude  (get geolocation "longitude")
                :latitude   (get geolocation "latitude")
                :vclock     (get data "vectorClock")}]
+    entry))
+
+(defn convert-new-image-entry [json]
+  (let [date-from (get json "dateFrom")
+        ts (.valueOf (moment date-from))
+        data (get json "data")
+        text (str (h/format-time ts) " Image")
+        geolocation (get json "geolocation")
+        entry {:timestamp  ts
+               :md         text
+               :text       text
+               :mentions   #{}
+               :utc-offset 0
+               :img_file   (s/replace (get data "imageFile") "HEIC" "JPG")
+               :timezone   (get json "timezone")
+               :tags       #{"#photo" "#import"}
+               :perm_tags  #{"#photo"}
+               :longitude  (get geolocation "longitude")
+               :latitude   (get geolocation "latitude")
+               :vclock     (get json "vectorClock")}]
     entry))
 
 (defn spawn-process [cmd args opts]

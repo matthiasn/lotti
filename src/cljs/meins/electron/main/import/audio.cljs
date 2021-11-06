@@ -33,8 +33,8 @@
 
 (defn convert-new-audio-entry [json]
   (let [data (get json "data")
-        created-at (get json "createdAt")
-        ts (.valueOf (moment created-at))
+        date-from (get json "dateFrom")
+        ts (.valueOf (moment date-from))
         text (str (h/format-time ts) " Audio")
         geolocation (get json "geolocation")
         entry {:timestamp  ts
