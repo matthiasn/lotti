@@ -20,6 +20,9 @@ jobs:
       - name: Get Flutter dependencies
         working-directory: ./wisely
         run: flutter pub get
+      - name: Create missing .env file
+        working-directory: ./wisely
+        run: touch .env
       - name: Code gen
         working-directory: ./wisely
         run: make build_runner
