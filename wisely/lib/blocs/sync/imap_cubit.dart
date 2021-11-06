@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -47,7 +46,8 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> processMessage(MimeMessage message) async {
-    if (Platform.isMacOS) {
+    // TODO: check that message is from different host
+    if (true) {
       String? encryptedMessage = readMessage(message);
       SyncMessage? syncMessage =
           await decryptMessage(encryptedMessage, message, _b64Secret);
