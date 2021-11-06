@@ -1,0 +1,35 @@
+{
+  "id": "140ece25-6a45-585e-9b95-9330b93136bd",
+  "createdAt": "2021-11-06T15:13:01.042576",
+  "data": {
+    "capturedAt": "2021-11-06T02:19:14.000",
+    "imageId": "A5E070A4-40A8-4BF0-A0B2-B368BA8A4232/L0/001",
+    "imageFile": "A5E070A4-40A8-4BF0-A0B2-B368BA8A4232.IMG_7493.HEIC",
+    "imageDirectory": "/images/2021-11-06/",
+    "runtimeType": "journalDbImage"
+  },
+  "utcOffset": 60,
+  "timezone": "Europe/Berlin",
+  "updatedAt": "2021-11-06T15:13:01.042576",
+  "dateFrom": "2021-11-06T02:19:14.000",
+  "dateTo": "2021-11-06T02:19:14.000",
+  "geolocation": {
+    "createdAt": "2021-11-06T02:19:14.000",
+    "utcOffset": null,
+    "timezone": null,
+    "latitude": 53.0,
+    "longitude": 10.0,
+    "geohashString": "",
+    "accuracy": null,
+    "speed": null,
+    "speedAccuracy": null,
+    "heading": null,
+    "headingAccuracy": null,
+    "altitude": null
+  },
+  "vectorClock": {
+    "e961a1b8-c86d-402f-a282-f2752a3b6f09": 16
+  },
+  "entryText": null,
+  "linked": null
+}

@@ -183,7 +183,7 @@ class ImapCubit extends Cubit<ImapState> {
         _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
         Mailbox inbox = await _mailClient.selectInbox();
-        debugPrint('_observeInbox inbox selected}');
+        debugPrint('_observeInbox inbox selected');
 
         _mailClient.eventBus
             .on<MailLoadEvent>()

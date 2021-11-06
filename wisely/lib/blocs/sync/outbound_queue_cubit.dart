@@ -26,7 +26,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
   late final ImapOutCubit _imapOutCubit;
   late final VectorClockCubit _vectorClockCubit;
-  late final ConnectivityResult _connectivityResult;
+  ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
 
@@ -62,8 +62,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void sendNext() async {
+    _connectivityResult = await Connectivity().checkConnectivity();
     debugPrint('sendNext Connectivity $_connectivityResult');
-    // TODO: check why no working on macOS - workaround
+
+    // TODO: check why not working reliably on macOS - workaround
     bool isConnected =
         Platform.isIOS ? _connectivityResult != ConnectivityResult.none : true;
     if (isConnected && !sendMutex.isLocked) {
@@ -76,6 +78,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           nextPending.subject,
           encryptedFilePath: nextPending.encryptedFilePath,
         );
+        debugPrint('sendNext saveImap success: $saveSuccess');
         if (saveSuccess) {
           _db.update(
             nextPending,

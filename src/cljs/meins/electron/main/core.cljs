@@ -9,7 +9,7 @@
             [matthiasn.systems-toolbox.switchboard :as sb]
             [meins.common.specs]
             [meins.electron.main.crypto :as kc]
-            [meins.electron.main.import :as ai]
+            [meins.electron.main.import.core :as ai]
             [meins.electron.main.imap :as imap]
             [meins.electron.main.log]
             [meins.electron.main.menu :as menu]

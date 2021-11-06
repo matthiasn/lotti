@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/journal/persistence_db.dart';
@@ -88,6 +90,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       id: id,
       geolocation: geolocation,
       vectorClock: vc,
+      timezone: await FlutterNativeTimezone.getLocalTimezone(),
+      utcOffset: now.timeZoneOffset.inMinutes,
     );
     await createDbEntity(journalDbEntity, enqueueSync: true);
     return true;
@@ -95,7 +99,9 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> createDbEntity(JournalDbEntity journalDbEntity,
       {bool enqueueSync = false}) async {
+    debugPrint('createDbEntity');
     bool saved = await _db.insert(journalDbEntity);
+    debugPrint('created DbEntity: $saved');
 
     if (saved && enqueueSync) {
       _outboundQueueCubit.enqueueMessage(
