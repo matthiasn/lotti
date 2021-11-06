@@ -20,7 +20,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
       updateProgress(event);
     });
     _audioPlayer.playbackEventStream.listen((event) {
-      debugPrint(event.toString());
       if (event.processingState == ProcessingState.completed) {
         stopPlay();
       }

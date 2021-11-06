@@ -28,7 +28,6 @@ class PersistenceDb {
         List<String> scripts = createDbStatement.split(";");
         for (String line in scripts) {
           if (line.isNotEmpty) {
-            debugPrint(line.trim());
             db.execute(line.trim());
           }
         }

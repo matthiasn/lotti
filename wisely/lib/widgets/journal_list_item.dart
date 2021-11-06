@@ -101,7 +101,6 @@ class JournalListItem extends StatelessWidget {
                         journalDbImage: (JournalDbImage image) {
                           File file =
                               File(getFullImagePathWithDocDir(image, docDir));
-                          debugPrint('Image $image ${file.path}');
                           return Container(
                             color: Colors.black,
                             child: Image.file(

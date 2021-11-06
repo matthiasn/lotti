@@ -33,9 +33,6 @@ Future<void> printGeolocation(Uint8List fileBytes) async {
   if (lngRef == 'W') {
     lngVal *= -1;
   }
-
-  debugPrint("lat = $latVal");
-  debugPrint("lng = $lngVal");
 }
 
 double? gpsValuesToFloat(IfdValues? values) {

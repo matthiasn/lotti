@@ -49,7 +49,7 @@ class _JournalPageState extends State<JournalPage> {
                         background: Container(color: Colors.red),
                         child: JournalListItem(item: item),
                         onDismissed: (DismissDirection direction) {
-                          debugPrint('Dismiss: $item');
+                          debugPrint('Dismiss: ${item.id}');
                         },
                       );
                     },

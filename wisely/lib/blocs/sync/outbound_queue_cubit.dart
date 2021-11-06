@@ -101,12 +101,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalDbEntity) {
       JournalDbEntity journalDbEntity = syncMessage.journalEntity;
-      debugPrint('enqueueMessage2: ${syncMessage.runtimeType}');
       String jsonString = json.encode(syncMessage);
       var docDir = await getApplicationDocumentsDirectory();
 
       File? attachment;
-      String subject = 'enqueueMessage2 ${journalDbEntity.vectorClock}';
+      String subject = 'enqueueMessage ${journalDbEntity.vectorClock}';
 
       journalDbEntity.data.maybeMap(
         journalDbAudio: (JournalDbAudio journalDbAudio) {

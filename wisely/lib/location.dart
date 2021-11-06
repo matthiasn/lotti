@@ -1,5 +1,4 @@
 import 'package:dart_geohash/dart_geohash.dart';
-import 'package:flutter/foundation.dart';
 import 'package:location/location.dart';
 import 'package:wisely/classes/geolocation.dart';
 
@@ -34,7 +33,6 @@ class DeviceLocation {
 
   Future<LocationData> getCurrentLocation() async {
     LocationData _locationData = await location.getLocation();
-    debugPrint('$_locationData');
     return _locationData;
   }
 

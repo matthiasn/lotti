@@ -1,13 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
 
   static Future<String?>? readValue(String key) async {
-    String? value = await _storage.read(key: key);
-    debugPrint(value);
-    return value;
+    return await _storage.read(key: key);
   }
 
   static writeValue(String key, String value) async {

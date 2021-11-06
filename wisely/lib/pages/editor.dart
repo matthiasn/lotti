@@ -44,7 +44,6 @@ class _EditorPageState extends State<EditorPage> {
       Delta _delta = _controller.document.toDelta();
       String _json = jsonEncode(_delta.toJson());
       String _md = deltaToMarkdown(_json);
-      debugPrint(_md);
     });
 
     const uuid = Uuid();
@@ -89,8 +88,6 @@ class _EditorPageState extends State<EditorPage> {
         commentFor: '',
         latitude: latitude ?? 0,
         longitude: longitude ?? 0));
-
-    debugPrint('${await db.entries()}');
   }
 
   @override
