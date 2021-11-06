@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
-import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/imap/message_sequence.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:enough_mail/mail/mail_account.dart';
@@ -120,8 +119,9 @@ class ImapCubit extends Cubit<ImapState> {
 
   void _startPolling() async {
     debugPrint('_startPolling');
-    Timer.periodic(const Duration(seconds: 60), (timer) async {
+    Timer.periodic(const Duration(seconds: 20), (timer) async {
       _pollInbox();
+      _observeInbox();
     });
   }
 
@@ -194,7 +194,7 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> _observeInbox() async {
     try {
       if (_syncConfig != null) {
-        _mailClient.stopPolling();
+        _mailClient.stopPollingIfNeeded();
         ImapConfig imapConfig = _syncConfig!.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',
@@ -206,7 +206,7 @@ class ImapCubit extends Cubit<ImapState> {
 
         _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
-        Mailbox inbox = await _mailClient.selectInbox();
+        await _mailClient.selectInbox();
         debugPrint('_observeInbox inbox selected');
 
         _mailClient.eventBus
@@ -223,7 +223,6 @@ class ImapCubit extends Cubit<ImapState> {
                 message: SentryMessage(event.toString()),
               ),
               withScope: (Scope scope) => scope.level = SentryLevel.warning);
-          _mailClient.stopPollingIfNeeded();
           _observeInbox();
         });
 
