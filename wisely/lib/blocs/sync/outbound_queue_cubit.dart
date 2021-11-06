@@ -73,42 +73,47 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   void sendNext() async {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
-    _connectivityResult = await Connectivity().checkConnectivity();
-    debugPrint('sendNext Connectivity $_connectivityResult');
-    reportConnectivity();
+    try {
+      _connectivityResult = await Connectivity().checkConnectivity();
+      debugPrint('sendNext Connectivity $_connectivityResult');
+      reportConnectivity();
 
-    // TODO: check why not working reliably on macOS - workaround
-    bool isConnected =
-        Platform.isIOS ? _connectivityResult != ConnectivityResult.none : true;
-    if (isConnected && !sendMutex.isLocked) {
-      List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
-      if (unprocessed.isNotEmpty) {
-        sendMutex.acquire();
-        OutboundQueueRecord nextPending = unprocessed.first;
-        bool saveSuccess = await _imapOutCubit.saveImap(
-          nextPending.encryptedMessage,
-          nextPending.subject,
-          encryptedFilePath: nextPending.encryptedFilePath,
-        );
-        debugPrint('sendNext saveImap success: $saveSuccess');
-        if (saveSuccess) {
-          _db.update(
-            nextPending,
-            OutboundMessageStatus.sent,
-            nextPending.retries,
+      // TODO: check why not working reliably on macOS - workaround
+      bool isConnected = Platform.isIOS
+          ? _connectivityResult != ConnectivityResult.none
+          : true;
+      if (isConnected && !sendMutex.isLocked) {
+        List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
+        if (unprocessed.isNotEmpty) {
+          sendMutex.acquire();
+          OutboundQueueRecord nextPending = unprocessed.first;
+          bool saveSuccess = await _imapOutCubit.saveImap(
+            nextPending.encryptedMessage,
+            nextPending.subject,
+            encryptedFilePath: nextPending.encryptedFilePath,
           );
-        } else {
-          _db.update(
-            nextPending,
-            nextPending.retries < 10
-                ? OutboundMessageStatus.pending
-                : OutboundMessageStatus.error,
-            nextPending.retries + 1,
-          );
+          debugPrint('sendNext saveImap success: $saveSuccess');
+          if (saveSuccess) {
+            _db.update(
+              nextPending,
+              OutboundMessageStatus.sent,
+              nextPending.retries,
+            );
+          } else {
+            _db.update(
+              nextPending,
+              nextPending.retries < 10
+                  ? OutboundMessageStatus.pending
+                  : OutboundMessageStatus.error,
+              nextPending.retries + 1,
+            );
+          }
+          sendMutex.release();
+          sendNext();
         }
-        sendMutex.release();
-        sendNext();
       }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
     }
     await transaction.finish();
   }
@@ -122,41 +127,45 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalDbEntity) {
       final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
-      JournalDbEntity journalDbEntity = syncMessage.journalEntity;
-      String jsonString = json.encode(syncMessage);
-      var docDir = await getApplicationDocumentsDirectory();
+      try {
+        JournalDbEntity journalDbEntity = syncMessage.journalEntity;
+        String jsonString = json.encode(syncMessage);
+        var docDir = await getApplicationDocumentsDirectory();
 
-      File? attachment;
-      String subject = 'enqueueMessage ${journalDbEntity.vectorClock}';
+        File? attachment;
+        String subject = 'enqueueMessage ${journalDbEntity.vectorClock}';
 
-      journalDbEntity.data.maybeMap(
-        journalDbAudio: (JournalDbAudio journalDbAudio) {
-          attachment = File(AudioUtils.getAudioPath(journalDbAudio, docDir));
-          AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
-        },
-        journalDbImage: (JournalDbImage image) {
-          attachment = File(getFullImagePathWithDocDir(image, docDir));
-          saveJournalImageJson(image, journalDbEntity);
-        },
-        orElse: () {},
-      );
+        journalDbEntity.data.maybeMap(
+          journalDbAudio: (JournalDbAudio journalDbAudio) {
+            attachment = File(AudioUtils.getAudioPath(journalDbAudio, docDir));
+            AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
+          },
+          journalDbImage: (JournalDbImage image) {
+            attachment = File(getFullImagePathWithDocDir(image, docDir));
+            saveJournalImageJson(image, journalDbEntity);
+          },
+          orElse: () {},
+        );
 
-      if (_b64Secret != null) {
-        String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-        if (attachment != null) {
-          int fileLength = attachment!.lengthSync();
-          if (fileLength > 0) {
-            File encryptedFile = File('${attachment!.path}.aes');
-            await encryptFile(attachment!, encryptedFile, _b64Secret!);
-            await _db.queueInsert(encryptedMessage, subject,
-                encryptedFilePath: encryptedFile.path);
+        if (_b64Secret != null) {
+          String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+          if (attachment != null) {
+            int fileLength = attachment!.lengthSync();
+            if (fileLength > 0) {
+              File encryptedFile = File('${attachment!.path}.aes');
+              await encryptFile(attachment!, encryptedFile, _b64Secret!);
+              await _db.queueInsert(encryptedMessage, subject,
+                  encryptedFilePath: encryptedFile.path);
+            }
+          } else {
+            await _db.queueInsert(encryptedMessage, subject);
           }
-        } else {
-          await _db.queueInsert(encryptedMessage, subject);
         }
+        await transaction.finish();
+        sendNext();
+      } catch (exception, stackTrace) {
+        await Sentry.captureException(exception, stackTrace: stackTrace);
       }
-      await transaction.finish();
-      sendNext();
     }
   }
 }

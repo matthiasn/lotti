@@ -53,8 +53,13 @@ class ImapOutCubit extends Cubit<ImapState> {
         emit(ImapState.online(lastUpdate: DateTime.now()));
         debugPrint('ImapOutCubit initialized');
       }
-    } catch (e) {
-      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+    } catch (exception, stackTrace) {
+      emit(ImapState.failed(
+          error: 'failed: $exception ${exception.toString()}'));
+      await Sentry.captureException(
+        exception,
+        stackTrace: stackTrace,
+      );
     }
     await transaction.finish();
   }
@@ -64,25 +69,33 @@ class ImapOutCubit extends Cubit<ImapState> {
     String subject, {
     String? encryptedFilePath,
   }) async {
-    final transaction = Sentry.startTransaction('saveImap()', 'task');
-    GenericImapResult? res;
-    if (_b64Secret != null) {
-      if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
-        File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
-        int fileLength = encryptedFile.lengthSync();
-        if (fileLength > 0) {
-          res = await saveImapMessage(_imapClient, subject, encryptedMessage,
-              file: encryptedFile);
+    try {
+      final transaction = Sentry.startTransaction('saveImap()', 'task');
+      GenericImapResult? res;
+      if (_b64Secret != null) {
+        if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
+          File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
+          int fileLength = encryptedFile.lengthSync();
+          if (fileLength > 0) {
+            res = await saveImapMessage(_imapClient, subject, encryptedMessage,
+                file: encryptedFile);
+          }
+        } else {
+          res = await saveImapMessage(_imapClient, subject, encryptedMessage);
         }
-      } else {
-        res = await saveImapMessage(_imapClient, subject, encryptedMessage);
       }
-    }
-    await transaction.finish();
+      await transaction.finish();
 
-    if (res?.details != null && res!.details!.contains('completed')) {
-      return true;
-    } else {
+      if (res?.details != null && res!.details!.contains('completed')) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(
+        exception,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

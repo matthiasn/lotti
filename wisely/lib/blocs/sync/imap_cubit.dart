@@ -48,34 +48,41 @@ class ImapCubit extends Cubit<ImapState> {
 
   Future<void> processMessage(MimeMessage message) async {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
+    try {
+      // TODO: check that message is from different host
+      if (true) {
+        String? encryptedMessage = readMessage(message);
+        SyncMessage? syncMessage =
+            await decryptMessage(encryptedMessage, message, _b64Secret);
 
-    // TODO: check that message is from different host
-    if (true) {
-      String? encryptedMessage = readMessage(message);
-      SyncMessage? syncMessage =
-          await decryptMessage(encryptedMessage, message, _b64Secret);
+        syncMessage?.when(
+          journalDbEntity: (JournalDbEntity journalDbEntity) async {
+            debugPrint(
+                'processMessage inserting ${journalDbEntity.runtimeType}');
+            journalDbEntity.data.maybeMap(
+              journalDbAudio: (JournalDbAudio journalDbAudio) async {
+                await saveAudioAttachment(
+                    message, journalDbAudio, journalDbEntity, _b64Secret);
+              },
+              journalDbImage: (JournalDbImage journalDbImage) async {
+                await saveImageAttachment(
+                    message, journalDbImage, journalDbEntity, _b64Secret);
+              },
+              orElse: () {},
+            );
 
-      syncMessage?.when(
-        journalDbEntity: (JournalDbEntity journalDbEntity) async {
-          debugPrint('processMessage inserting ${journalDbEntity.runtimeType}');
-          journalDbEntity.data.maybeMap(
-            journalDbAudio: (JournalDbAudio journalDbAudio) async {
-              await saveAudioAttachment(
-                  message, journalDbAudio, journalDbEntity, _b64Secret);
-            },
-            journalDbImage: (JournalDbImage journalDbImage) async {
-              await saveImageAttachment(
-                  message, journalDbImage, journalDbEntity, _b64Secret);
-            },
-            orElse: () {},
-          );
-
-          _persistenceCubit.createDbEntity(journalDbEntity, enqueueSync: false);
-        },
-      );
-    } else {
-      debugPrint('Ignoring message');
+            _persistenceCubit.createDbEntity(journalDbEntity,
+                enqueueSync: false);
+          },
+        );
+      } else {
+        debugPrint('Ignoring message');
+      }
+    } catch (e, stackTrace) {
+      await Sentry.captureException(e, stackTrace: stackTrace);
+      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
+
     await transaction.finish();
   }
 
@@ -104,7 +111,8 @@ class ImapCubit extends Cubit<ImapState> {
         _startPolling();
         _observeInbox();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await Sentry.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
     await transaction.finish();
@@ -149,6 +157,7 @@ class ImapCubit extends Cubit<ImapState> {
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
       emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
+      await Sentry.captureException(e);
     } catch (e) {
       debugPrint('Exception $e');
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
@@ -172,7 +181,11 @@ class ImapCubit extends Cubit<ImapState> {
         emit(ImapState.online(lastUpdate: DateTime.now()));
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
+        await Sentry.captureException(e);
         emit(ImapState.failed(error: 'failed: $e ${e.details}'));
+      } catch (e, stackTrace) {
+        await Sentry.captureException(e, stackTrace: stackTrace);
+        emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
       }
     }
     await transaction.finish();
@@ -218,8 +231,10 @@ class ImapCubit extends Cubit<ImapState> {
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
+      await Sentry.captureException(e);
       emit(ImapState.failed(error: 'failed: $e ${e.details}'));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await Sentry.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }
