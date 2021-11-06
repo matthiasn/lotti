@@ -1,0 +1,37 @@
+{
+  "id": "783701e0-3f05-11ec-bd49-633643b737b6",
+  "createdAt": "2021-11-06T14:28:46.587934",
+  "data": {
+    "dateFrom": "2021-11-06T14:28:41.728633",
+    "dateTo": "2021-11-06T14:28:45.755633",
+    "audioFile": "2021-11-06_14-28-41-728.aac",
+    "audioDirectory": "/audio/2021-11-06/",
+    "duration": 4027000,
+    "transcript": null,
+    "runtimeType": "journalDbAudio"
+  },
+  "utcOffset": 60,
+  "timezone": "Europe/Berlin",
+  "updatedAt": "2021-11-06T14:28:46.587934",
+  "dateFrom": "2021-11-06T14:28:41.728633",
+  "dateTo": "2021-11-06T14:28:45.755633",
+  "geolocation": {
+    "createdAt": "2021-11-06T14:28:42.246054",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 52.0,
+    "longitude": 13.0,
+    "geohashString": "",
+    "accuracy": 13.082468491426209,
+    "speed": -1.0,
+    "speedAccuracy": -1.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 10.0
+  },
+  "vectorClock": {
+    "1231bb84-da9b-4abe-b0ab-b300349818af": 37
+  },
+  "entryText": null,
+  "linked": null
+}

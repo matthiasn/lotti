@@ -29,14 +29,14 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(def new-test-entry
+(def new-audio-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
-   :utc-offset 120
-   :timestamp  1634044303702
-   :audio_file "2021-10-12_15-11-43-702.aac"
-   :md         "2021-11-06 13:47 Audio"
-   :text       "2021-11-06 13:47 Audio"
+   :utc-offset 60
+   :timestamp  1636205326587
+   :audio_file "2021-11-06_14-28-41-728.aac"
+   :md         "2021-11-06 14:28 Audio"
+   :text       "2021-11-06 14:28 Audio"
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
    :longitude  13
@@ -44,7 +44,7 @@
    :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 37}})
 
 (deftest read-new-audio-entry-test
-  (let [json-file "./src/test/meins/shared/audio/2021-11-06/2021-11-06_13-47-23-409.aac.json"
+  (let [json-file "./src/test/meins/shared/audio/2021-11-06/2021-11-06_14-28-41-728.aac.json"
         data (h/parse-json json-file)
         entry (ai/convert-new-audio-entry data)]
     (prn "data")
@@ -52,6 +52,6 @@
     (prn "entry")
     (pp/pprint entry)
     (testing "JSON is parsed correctly"
-      (is (= entry new-test-entry)))
+      (is (= entry new-audio-test-entry)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
