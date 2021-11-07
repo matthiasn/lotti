@@ -38,10 +38,12 @@ bundle:
 .PHONY: ipa
 ipa: clean_test
 	flutter build ipa
+	open ./build/ios/archive/Runner.xcarchive
 
 .PHONY: macos
 macos: clean_test
 	flutter build macos
+	open ./build/macos/Build/Products/Release/
 
 .PHONY: all
 all: ipa macos
