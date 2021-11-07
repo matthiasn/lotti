@@ -64,7 +64,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        _persistenceCubit.createJournalEntry(activityForDay);
+        _persistenceCubit.createQuantitativeEntry(activityForDay);
       }
     }
 
@@ -107,7 +107,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          _persistenceCubit.createJournalEntry(discreteQuantity);
+          _persistenceCubit.createQuantitativeEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');

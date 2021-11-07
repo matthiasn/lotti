@@ -10,7 +10,8 @@ import 'package:wisely/blocs/journal/persistence_db.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
-import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/health.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/vector_clock.dart';
@@ -53,35 +54,20 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     await transaction.finish();
   }
 
-  Future<bool> createJournalEntry(JournalEntity data) async {
-    final transaction = Sentry.startTransaction('createJournalEntry()', 'task');
+  Future<bool> createQuantitativeEntry(QuantitativeData data) async {
+    final transaction =
+        Sentry.startTransaction('createQuantitativeEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc =
-          data.meta.vectorClock ?? _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
-      String id = data.maybeMap(
-        quantitative: (qe) => uuid.v5(Uuid.NAMESPACE_NIL, json.encode(qe.data)),
-        // create reproducible ID for imported image
-        journalImage: (JournalImage journalImage) =>
-            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
-        // create random ID for user-created entries
-        orElse: () => uuid.v1(),
-      );
-      DateTime dateFrom = data.maybeMap(
-        quantitative: (qe) => qe.meta.dateFrom,
-        journalImage: (JournalImage v) => v.data.capturedAt,
-        journalAudio: (JournalAudio v) => v.meta.dateFrom,
-        orElse: () => now,
-      );
-      DateTime dateTo = data.maybeMap(
-        quantitative: (qe) => qe.meta.dateTo,
-        journalImage: (JournalImage v) => v.data.capturedAt,
-        journalAudio: (JournalAudio v) => v.meta.dateTo,
-        orElse: () => now,
-      );
-      JournalEntity journalEntity = JournalEntity.journalEntry(
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      DateTime dateFrom = data.dateFrom;
+      DateTime dateTo = data.dateTo;
+
+      JournalEntity journalEntity = JournalEntity.quantitative(
         data: data,
         meta: Metadata(
           createdAt: now,
@@ -93,7 +79,84 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           timezone: await FlutterNativeTimezone.getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
-        geolocation: geolocation,
+      );
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> createImageEntry(ImageData imageData) async {
+    final transaction = Sentry.startTransaction('createImageEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock();
+
+      // avoid inserting the same external entity multiple times
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(imageData));
+
+      DateTime dateFrom = imageData.capturedAt;
+      DateTime dateTo = imageData.capturedAt;
+      JournalEntity journalEntity = JournalEntity.journalImage(
+        data: imageData,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        // TODO: should this be geolocation at capture or insertion?
+        geolocation: imageData.geolocation,
+      );
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> createAudioEntry(AudioNote audioNote) async {
+    final transaction = Sentry.startTransaction('createImageEntry()', 'task');
+    try {
+      AudioData audioData = AudioData(
+        audioDirectory: audioNote.audioDirectory,
+        duration: audioNote.duration,
+        audioFile: audioNote.audioFile,
+        dateTo: audioNote.createdAt.add(audioNote.duration),
+        dateFrom: audioNote.createdAt,
+      );
+
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock();
+
+      // avoid inserting the same external entity multiple times
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(audioData));
+
+      DateTime dateFrom = audioData.dateFrom;
+      DateTime dateTo = audioData.dateTo;
+      JournalEntity journalEntity = JournalEntity.journalAudio(
+        data: audioData,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        // TODO: should this be geolocation at capture or insertion?
+        geolocation: audioNote.geolocation,
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {

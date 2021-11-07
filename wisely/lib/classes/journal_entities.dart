@@ -34,6 +34,7 @@ class ImageData with _$ImageData {
     required String imageId,
     required String imageFile,
     required String imageDirectory,
+    Geolocation? geolocation,
   }) = _ImageData;
 
   factory ImageData.fromJson(Map<String, dynamic> json) =>
