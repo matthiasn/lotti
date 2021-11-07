@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/src/provider.dart';
+import 'package:provider/provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/utils/image_utils.dart';
