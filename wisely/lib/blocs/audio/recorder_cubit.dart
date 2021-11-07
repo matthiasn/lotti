@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
@@ -38,21 +38,25 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   Future<void> _openAudioSession() async {
-    if (Platform.isAndroid) {
-      var status = await Permission.microphone.request();
-      if (status != PermissionStatus.granted) {
-        throw RecordingPermissionException('Microphone permission not granted');
+    try {
+      if (Platform.isAndroid) {
+        var status = await Permission.microphone.request();
+        if (status != PermissionStatus.granted) {
+          throw RecordingPermissionException(
+              'Microphone permission not granted');
+        }
       }
-    }
 
-    _myRecorder?.openAudioSession().then((value) {
-      debugPrint('openAudioSession $value');
-      emit(state.copyWith(status: AudioRecorderStatus.initialized));
-      _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
-      _myRecorder?.onProgress?.listen((event) {
-        updateProgress(event);
+      _myRecorder?.openAudioSession().then((value) {
+        emit(state.copyWith(status: AudioRecorderStatus.initialized));
+        _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
+        _myRecorder?.onProgress?.listen((event) {
+          updateProgress(event);
+        });
       });
-    });
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
   }
 
   void updateProgress(RecordingDisposition event) {
@@ -69,72 +73,83 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   }
 
   void _addGeolocation() async {
-    _deviceLocation.getCurrentGeoLocation().then((Geolocation? geolocation) {
-      if (geolocation != null) {
-        _audioNote = _audioNote?.copyWith(geolocation: geolocation);
-        _saveAudioNoteJson();
-      }
-    });
+    try {
+      _deviceLocation.getCurrentGeoLocation().then((Geolocation? geolocation) {
+        if (geolocation != null) {
+          _audioNote = _audioNote?.copyWith(geolocation: geolocation);
+          _saveAudioNoteJson();
+        }
+      });
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
   }
 
   void record() async {
-    DateTime created = DateTime.now();
-    String fileName =
-        '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
-    String day = DateFormat('yyyy-MM-dd').format(created);
-    String relativePath = '/audio/$day/';
-    String directory = await AudioUtils.createAssetDirectory(relativePath);
-    String filePath = '$directory$fileName';
-    debugPrint('RECORD: $filePath');
-    String timezone = await FlutterNativeTimezone.getLocalTimezone();
+    try {
+      DateTime created = DateTime.now();
+      String fileName =
+          '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
+      String day = DateFormat('yyyy-MM-dd').format(created);
+      String relativePath = '/audio/$day/';
+      String directory = await AudioUtils.createAssetDirectory(relativePath);
+      String filePath = '$directory$fileName';
+      String timezone = await FlutterNativeTimezone.getLocalTimezone();
 
-    _audioNote = AudioNote(
-        id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
-        timestamp: created.millisecondsSinceEpoch,
-        createdAt: created,
-        utcOffset: created.timeZoneOffset.inMinutes,
-        timezone: timezone,
-        audioFile: fileName,
-        audioDirectory: relativePath,
-        duration: const Duration(seconds: 0));
+      _audioNote = AudioNote(
+          id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
+          timestamp: created.millisecondsSinceEpoch,
+          createdAt: created,
+          utcOffset: created.timeZoneOffset.inMinutes,
+          timezone: timezone,
+          audioFile: fileName,
+          audioDirectory: relativePath,
+          duration: const Duration(seconds: 0));
 
-    _saveAudioNoteJson();
-    _addGeolocation();
+      _saveAudioNoteJson();
+      _addGeolocation();
 
-    _myRecorder
-        ?.startRecorder(
-      toFile: filePath,
-      codec: Codec.aacADTS,
-      sampleRate: 48000,
-      bitRate: 128000,
-    )
-        .then((value) {
-      emit(state.copyWith(status: AudioRecorderStatus.recording));
-    });
+      _myRecorder
+          ?.startRecorder(
+        toFile: filePath,
+        codec: Codec.aacADTS,
+        sampleRate: 48000,
+        bitRate: 128000,
+      )
+          .then((value) {
+        emit(state.copyWith(status: AudioRecorderStatus.recording));
+      });
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
   }
 
   void stop() async {
-    await _myRecorder?.stopRecorder();
-    _audioNote = _audioNote?.copyWith(duration: state.progress);
-    _saveAudioNoteJson();
-    emit(initialState);
+    try {
+      await _myRecorder?.stopRecorder();
+      _audioNote = _audioNote?.copyWith(duration: state.progress);
+      _saveAudioNoteJson();
+      emit(initialState);
 
-    if (_audioNote != null) {
-      AudioNote audioNote = _audioNote!;
+      if (_audioNote != null) {
+        AudioNote audioNote = _audioNote!;
 
-      JournalDbAudio journalDbAudio = JournalDbAudio(
-        audioDirectory: audioNote.audioDirectory,
-        duration: audioNote.duration,
-        audioFile: audioNote.audioFile,
-        dateTo: audioNote.createdAt.add(audioNote.duration),
-        dateFrom: audioNote.createdAt,
-      );
+        JournalDbAudio journalDbAudio = JournalDbAudio(
+          audioDirectory: audioNote.audioDirectory,
+          duration: audioNote.duration,
+          audioFile: audioNote.audioFile,
+          dateTo: audioNote.createdAt.add(audioNote.duration),
+          dateFrom: audioNote.createdAt,
+        );
 
-      _persistenceCubit.createJournalEntry(
-        journalDbAudio,
-        geolocation: audioNote.geolocation,
-        vectorClock: audioNote.vectorClock,
-      );
+        _persistenceCubit.createJournalEntry(
+          journalDbAudio,
+          geolocation: audioNote.geolocation,
+          vectorClock: audioNote.vectorClock,
+        );
+      }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
     }
   }
 

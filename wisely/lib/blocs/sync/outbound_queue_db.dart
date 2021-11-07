@@ -14,28 +14,35 @@ class OutboundQueueDb {
 
   OutboundQueueDb() {
     _database = Future<Database>(() async {
-      String createDbStatement =
-          await rootBundle.loadString('assets/sqlite/create_outbound_db.sql');
+      final transaction = Sentry.startTransaction('OutboundQueueDb()', 'task');
+      try {
+        String createDbStatement =
+            await rootBundle.loadString('assets/sqlite/create_outbound_db.sql');
+        String dbPath = join(await getDatabasesPath(), 'outbound.db');
+        debugPrint('OutboundQueueCubit DB Path: $dbPath');
 
-      String dbPath = join(await getDatabasesPath(), 'outbound.db');
-      debugPrint('OutboundQueueCubit DB Path: $dbPath');
-
-      Database database = await openDatabase(
-        dbPath,
-        onCreate: (db, version) async {
-          List<String> scripts = createDbStatement.split(";");
-          for (String line in scripts) {
-            if (line.isNotEmpty) {
-              debugPrint(line.trim());
-              db.execute(line.trim());
+        Database database = await openDatabase(
+          dbPath,
+          onCreate: (db, version) async {
+            List<String> scripts = createDbStatement.split(";");
+            for (String line in scripts) {
+              if (line.isNotEmpty) {
+                debugPrint(line.trim());
+                db.execute(line.trim());
+              }
             }
-          }
-        },
-        version: 1,
-      );
+          },
+          version: 1,
+        );
+        debugPrint('OutboundQueueCubit opened: $_database');
+        await transaction.finish();
 
-      debugPrint('OutboundQueueCubit opened: $_database');
-      return database;
+        return database;
+      } catch (exception, stackTrace) {
+        await Sentry.captureException(exception, stackTrace: stackTrace);
+        await transaction.finish();
+        return Future.error(exception);
+      }
     });
   }
 

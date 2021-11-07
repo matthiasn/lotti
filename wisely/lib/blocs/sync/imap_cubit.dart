@@ -118,7 +118,6 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   void _startPolling() async {
-    debugPrint('_startPolling');
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       _pollInbox();
       _observeInbox();
@@ -207,7 +206,6 @@ class ImapCubit extends Cubit<ImapState> {
         _mailClient = MailClient(account, isLogEnabled: false);
         await _mailClient.connect();
         await _mailClient.selectInbox();
-        debugPrint('_observeInbox inbox selected');
 
         _mailClient.eventBus
             .on<MailLoadEvent>()

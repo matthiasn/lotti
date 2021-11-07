@@ -125,9 +125,7 @@ Future<String> getFullImagePath(JournalDbImage img) async {
 }
 
 String getFullImagePathWithDocDir(JournalDbImage img, Directory docDir) {
-  String path = '${docDir.path}${img.imageDirectory}${img.imageFile}';
-  debugPrint('path: $path');
-  return path;
+  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
 }
 
 Future<String> saveJournalImageJson(
