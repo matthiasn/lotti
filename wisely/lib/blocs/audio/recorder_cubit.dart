@@ -135,16 +135,23 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         AudioNote audioNote = _audioNote!;
         DateTime now = DateTime.now();
 
-        JournalAudio journalAudio = JournalAudio(
-          createdAt: now,
-          updatedAt: now,
+        AudioData audioData = AudioData(
           audioDirectory: audioNote.audioDirectory,
           duration: audioNote.duration,
           audioFile: audioNote.audioFile,
           dateTo: audioNote.createdAt.add(audioNote.duration),
           dateFrom: audioNote.createdAt,
+        );
+        JournalAudio journalAudio = JournalAudio(
+          data: audioData,
           geolocation: audioNote.geolocation,
-          vectorClock: audioNote.vectorClock,
+          meta: Metadata(
+            createdAt: now,
+            updatedAt: now,
+            dateTo: audioNote.createdAt.add(audioNote.duration),
+            dateFrom: audioNote.createdAt,
+            vectorClock: audioNote.vectorClock,
+          ),
         );
 
         _persistenceCubit.createJournalEntry(journalAudio);

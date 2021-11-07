@@ -53,22 +53,21 @@ class PersistenceDb {
   Future<bool> insert(JournalEntity journalEntity) async {
     try {
       final db = await _database;
-      final DateTime createdAt = journalEntity.createdAt;
+      final DateTime createdAt = journalEntity.meta.createdAt;
       final type = journalEntity.runtimeType.toString();
       final subtype = journalEntity.maybeMap(
-        cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
-        discreteQuantity: (DiscreteQuantity v) => v.dataType,
+        quantitative: (qd) => qd.data.dataType,
         orElse: () => '',
       );
 
       if (journalEntity is JournalEntry) {
-        String id = journalEntity.id;
+        String id = journalEntity.meta.id;
         JournalRecord dbRecord = JournalRecord(
           id: id,
           createdAt: createdAt,
           updatedAt: createdAt,
-          dateFrom: journalEntity.dateFrom,
-          dateTo: journalEntity.dateTo,
+          dateFrom: journalEntity.meta.dateFrom,
+          dateTo: journalEntity.meta.dateTo,
           type: type,
           subtype: subtype,
           serialized: json.encode(journalEntity),

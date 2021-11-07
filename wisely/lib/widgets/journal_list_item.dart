@@ -18,8 +18,8 @@ DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
-String formatAudio(JournalAudio audioNote) =>
-    'Audio Note: ${audioNote.duration.toString().split('.')[0]}';
+String formatAudio(JournalAudio journalAudio) =>
+    'Audio Note: ${journalAudio.data.duration.toString().split('.')[0]}';
 
 class JournalListItem extends StatelessWidget {
   final JournalEntity item;
@@ -39,22 +39,25 @@ class JournalListItem extends StatelessWidget {
             child: Center(
               child: Column(
                 children: [
-                  InfoText(text: df.format(item.dateFrom)),
+                  InfoText(text: df.format(item.meta.dateFrom)),
                   item.maybeMap(
-                    cumulativeQuantity: (q) => InfoText(
-                      text: 'End: ${df.format(q.dateTo)}'
-                          '\n${formatType(q.dataType)}: '
-                          '${nf.format(q.value)} ${formatUnit(q.unit)}',
-                    ),
-                    discreteQuantity: (q) => InfoText(
-                      text: 'End: ${df.format(q.dateTo)}'
-                          '\n${formatType(q.dataType)}: '
-                          '${nf.format(q.value)} ${formatUnit(q.unit)}',
+                    quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
+                      cumulativeQuantityData: (qd) => InfoText(
+                        text: 'End: ${df.format(qd.dateTo)}'
+                            '\n${formatType(qd.dataType)}: '
+                            '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                      ),
+                      discreteQuantityData: (qd) => InfoText(
+                        text: 'End: ${df.format(item.meta.dateTo)}'
+                            '\n${formatType(qd.dataType)}: '
+                            '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                      ),
+                      orElse: () => Container(),
                     ),
                     journalAudio: (JournalAudio audioNote) =>
                         InfoText(text: formatAudio(audioNote)),
-                    journalImage: (JournalImage journalDbImage) =>
-                        InfoText(text: journalDbImage.imageFile),
+                    journalImage: (JournalImage journalImage) =>
+                        InfoText(text: journalImage.data.imageFile),
                     orElse: () => Row(
                       children: const [],
                     ),
@@ -118,20 +121,22 @@ class JournalListItem extends StatelessWidget {
                             ),
                           );
                         },
-                        cumulativeQuantity: (q) => Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: InfoText(
-                            text: 'End: ${df.format(q.dateTo)}'
-                                '\n${formatType(q.dataType)}: '
-                                '${nf.format(q.value)} ${formatUnit(q.unit)}',
+                        quantitative: (qe) => qe.data.map(
+                          cumulativeQuantityData: (qd) => Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: InfoText(
+                              text: 'End: ${df.format(qe.meta.dateTo)}'
+                                  '\n${formatType(qd.dataType)}: '
+                                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                            ),
                           ),
-                        ),
-                        discreteQuantity: (q) => Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: InfoText(
-                            text: 'End: ${df.format(q.dateTo)}'
-                                '\n${formatType(q.dataType)}: '
-                                '${nf.format(q.value)} ${formatUnit(q.unit)}',
+                          discreteQuantityData: (qd) => Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: InfoText(
+                              text: 'End: ${df.format(qe.meta.dateTo)}'
+                                  '\n${formatType(qd.dataType)}: '
+                                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                            ),
                           ),
                         ),
                         orElse: () => Container(),
@@ -139,7 +144,7 @@ class JournalListItem extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 4.0, horizontal: 16.0),
-                        child: InfoText(text: df.format(item.dateFrom)),
+                        child: InfoText(text: df.format(item.meta.dateFrom)),
                       ),
                       ElevatedButton(
                         child: const Text('Close'),

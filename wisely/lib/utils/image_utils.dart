@@ -121,11 +121,11 @@ String? getRelativeAssetPath(String? absolutePath) {
 
 Future<String> getFullImagePath(JournalImage img) async {
   var docDir = await getApplicationDocumentsDirectory();
-  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
 
 String getFullImagePathWithDocDir(JournalImage img, Directory docDir) {
-  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
 
 Future<void> saveJournalImageJson(JournalImage journalImage) async {

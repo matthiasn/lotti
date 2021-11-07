@@ -5,13 +5,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:wisely/classes/journal_entities.dart';
 
 class AudioUtils {
-  static Future<String> getFullAudioPath(JournalAudio data) async {
+  static Future<String> getFullAudioPath(JournalAudio j) async {
     var docDir = await getApplicationDocumentsDirectory();
-    return '${docDir.path}${data.audioDirectory}${data.audioFile}';
+    return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
-  static String getAudioPath(JournalAudio data, Directory docDir) {
-    return '${docDir.path}${data.audioDirectory}${data.audioFile}';
+  static String getAudioPath(JournalAudio j, Directory docDir) {
+    return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
   static Future<String> saveAudioNoteJson(JournalAudio journalAudio) async {
@@ -35,8 +35,8 @@ class AudioUtils {
     String fullAudioPath = await AudioUtils.getFullAudioPath(journalDbAudio);
 
     await File(fullAudioPath)
-        .rename('${trashDirectory.path}/${journalDbAudio.audioFile}');
+        .rename('${trashDirectory.path}/${journalDbAudio.data.audioFile}');
     await File('$fullAudioPath.json')
-        .rename('${trashDirectory.path}/${journalDbAudio.audioFile}.json');
+        .rename('${trashDirectory.path}/${journalDbAudio.data.audioFile}.json');
   }
 }

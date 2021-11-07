@@ -134,7 +134,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         var docDir = await getApplicationDocumentsDirectory();
 
         File? attachment;
-        String subject = 'enqueueMessage ${journalEntity.vectorClock}';
+        String subject = 'enqueueMessage ${journalEntity.meta.vectorClock}';
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {

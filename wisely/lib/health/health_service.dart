@@ -89,13 +89,13 @@ class HealthService {
       deviceType = androidInfo.model;
     }
 
-    List<HealthData> cumulativeQuantities = [];
+    List<QuantitativeData> cumulativeQuantities = [];
 
     void addEntries(Map<DateTime, int> data, String type) {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom.add(const Duration(days: 1));
-        CumulativeQuantity stepsForDay = CumulativeQuantity(
+        CumulativeQuantityData stepsForDay = CumulativeQuantityData(
           dateFrom: dateFrom,
           dateTo: dateTo,
           value: dailyStepsEntry.value,

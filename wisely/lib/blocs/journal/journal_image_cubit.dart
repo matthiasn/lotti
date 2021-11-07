@@ -80,7 +80,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
           VectorClock vectorClock = _vectorClockCubit.getNextVectorClock();
           DateTime created = asset.createDateTime;
 
-          JournalImage journalDbImage = JournalImage(
+          ImageData journalDbImage = ImageData(
             imageId: asset.id,
             imageFile: imageFileName,
             imageDirectory: relativePath,

@@ -58,15 +58,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     try {
       DateTime now = DateTime.now();
       VectorClock vc =
-          data.vectorClock ?? _vectorClockCubit.getNextVectorClock();
+          data.meta.vectorClock ?? _vectorClockCubit.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
       String id = data.maybeMap(
-        // create reproducible ID for imported health data
-        cumulativeQuantity: (CumulativeQuantity cumulativeQuantity) =>
-            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(cumulativeQuantity)),
-        discreteQuantity: (DiscreteQuantity discreteQuantity) =>
-            uuid.v5(Uuid.NAMESPACE_NIL, json.encode(discreteQuantity)),
+        quantitative: (qe) => uuid.v5(Uuid.NAMESPACE_NIL, json.encode(qe.data)),
         // create reproducible ID for imported image
         journalImage: (JournalImage journalImage) =>
             uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
@@ -74,32 +70,32 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         orElse: () => uuid.v1(),
       );
       DateTime dateFrom = data.maybeMap(
-        cumulativeQuantity: (CumulativeQuantity v) => v.dateFrom,
-        discreteQuantity: (DiscreteQuantity v) => v.dateFrom,
-        journalImage: (JournalImage v) => v.capturedAt,
-        journalAudio: (JournalAudio v) => v.dateFrom,
+        quantitative: (qe) => qe.meta.dateFrom,
+        journalImage: (JournalImage v) => v.data.capturedAt,
+        journalAudio: (JournalAudio v) => v.meta.dateFrom,
         orElse: () => now,
       );
       DateTime dateTo = data.maybeMap(
-        cumulativeQuantity: (CumulativeQuantity v) => v.dateTo,
-        discreteQuantity: (DiscreteQuantity v) => v.dateTo,
-        journalImage: (JournalImage v) => v.capturedAt,
-        journalAudio: (JournalAudio v) => v.dateTo,
+        quantitative: (qe) => qe.meta.dateTo,
+        journalImage: (JournalImage v) => v.data.capturedAt,
+        journalAudio: (JournalAudio v) => v.meta.dateTo,
         orElse: () => now,
       );
-      JournalEntity journalDbEntity = JournalEntity.journalEntry(
+      JournalEntity journalEntity = JournalEntity.journalEntry(
         data: data,
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        id: id,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
         geolocation: geolocation,
-        vectorClock: vc,
-        timezone: await FlutterNativeTimezone.getLocalTimezone(),
-        utcOffset: now.timeZoneOffset.inMinutes,
       );
-      await createDbEntity(journalDbEntity, enqueueSync: true);
+      await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
