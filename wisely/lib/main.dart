@@ -26,6 +26,8 @@ import 'blocs/sync/imap_out_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
+const enableSentry = true;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
@@ -34,15 +36,19 @@ Future<void> main() async {
     storageDirectory: await getApplicationDocumentsDirectory(),
   );
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = dotenv.env['SENTRY_DSN'];
-      // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-      // We recommend adjusting this value in production.
-      options.tracesSampleRate = 1.0;
-    },
-    appRunner: () => runApp(const WiselyApp()),
-  );
+  if (enableSentry) {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = dotenv.env['SENTRY_DSN'];
+        // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+        // We recommend adjusting this value in production.
+        options.tracesSampleRate = 1.0;
+      },
+      appRunner: () => runApp(const WiselyApp()),
+    );
+  } else {
+    runApp(const WiselyApp());
+  }
 }
 
 class WiselyApp extends StatelessWidget {
