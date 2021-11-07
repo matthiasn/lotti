@@ -77,7 +77,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       _connectivityResult = await Connectivity().checkConnectivity();
       debugPrint('sendNext Connectivity $_connectivityResult');
 
-      if (_connectivityResult != ConnectivityResult.none) {
+      if (_connectivityResult == ConnectivityResult.none) {
         reportConnectivity();
       }
 
