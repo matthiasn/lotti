@@ -98,7 +98,6 @@ Future<File?> compressAndGetFile(File file) async {
 }
 
 Future<File?> compressAndSave(File file, String targetPath) async {
-  debugPrint('compressAndSave ${file.path} -> $targetPath');
   String sourcePath = file.absolute.path;
   File? result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
@@ -106,7 +105,6 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     quality: 90,
     format: CompressFormat.heic,
   );
-  debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
   return result;
 }
 

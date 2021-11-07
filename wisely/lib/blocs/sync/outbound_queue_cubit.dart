@@ -93,7 +93,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
             nextPending.subject,
             encryptedFilePath: nextPending.encryptedFilePath,
           );
-          debugPrint('sendNext saveImap success: $saveSuccess');
           if (saveSuccess) {
             _db.update(
               nextPending,

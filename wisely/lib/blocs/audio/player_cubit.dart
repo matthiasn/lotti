@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -34,8 +33,6 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
   void setAudioNote(JournalAudio audioNote) async {
     try {
       String localPath = await AudioUtils.getFullAudioPath(audioNote);
-      debugPrint(localPath);
-
       AudioPlayerState newState = AudioPlayerState(
         status: AudioPlayerStatus.stopped,
         progress: const Duration(minutes: 0),

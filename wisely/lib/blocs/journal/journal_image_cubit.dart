@@ -37,10 +37,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
     );
     if (assets != null) {
       for (final AssetEntity asset in assets) {
-        debugPrint('pickAssets createDateTime ${asset.createDateTime}');
-        debugPrint('pickAssets id ${asset.id}');
-        debugPrint('pickAssets file ${await asset.file}');
-
         Geolocation? geolocation;
         if (asset.latitude != null && asset.longitude != null) {
           geolocation = Geolocation(
@@ -85,6 +81,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             imageFile: imageFileName,
             imageDirectory: relativePath,
             capturedAt: created,
+            geolocation: geolocation,
           );
 
           _persistenceCubit.createImageEntry(imageData);
