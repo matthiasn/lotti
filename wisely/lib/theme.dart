@@ -7,6 +7,7 @@ class AppColors {
   static Color editorBgColor = Colors.white;
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
   static Color headerFontColor = Colors.white;
+  static Color headerFontColor2 = bodyBgColor;
   static Color activeAudioControl = Colors.red;
   static Color audioMeterBar = Colors.blue;
   static Color audioMeterTooHotBar = Colors.orange;
