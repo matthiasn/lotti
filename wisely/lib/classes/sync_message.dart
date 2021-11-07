@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+
+import 'journal_entities.dart';
 
 part 'sync_message.freezed.dart';
 part 'sync_message.g.dart';
@@ -7,7 +8,7 @@ part 'sync_message.g.dart';
 @freezed
 class SyncMessage with _$SyncMessage {
   factory SyncMessage.journalDbEntity({
-    required JournalDbEntity journalEntity,
+    required JournalEntity journalEntity,
   }) = SyncJournalDbEntity;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

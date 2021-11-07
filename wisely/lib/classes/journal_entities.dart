@@ -56,7 +56,7 @@ class JournalEntity with _$JournalEntity {
   @Implements<CommonJournalFields>()
   @Implements<TextJournalFields>()
   @Implements<GeoJournalFields>()
-  const factory JournalEntity.journalDbImage({
+  const factory JournalEntity.journalImage({
     // common fields:
     required String id,
     required DateTime createdAt,
@@ -75,12 +75,12 @@ class JournalEntity with _$JournalEntity {
     required String imageId,
     required String imageFile,
     required String imageDirectory,
-  }) = JournalDbImage;
+  }) = JournalImage;
 
   @Implements<CommonJournalFields>()
   @Implements<TextJournalFields>()
   @Implements<GeoJournalFields>()
-  const factory JournalEntity.journalDbAudio({
+  const factory JournalEntity.journalAudio({
     // common fields:
     required String id,
     required DateTime createdAt,
@@ -99,7 +99,7 @@ class JournalEntity with _$JournalEntity {
     required String audioDirectory,
     required Duration duration,
     String? transcript,
-  }) = JournalDbAudio;
+  }) = JournalAudio;
 
   @Implements<CommonJournalFields>()
   @Implements<TextJournalFields>()

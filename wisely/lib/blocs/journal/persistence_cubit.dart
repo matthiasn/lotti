@@ -11,7 +11,7 @@ import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
@@ -41,9 +41,9 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
       List<JournalRecord> records = await _db.journalEntries(100);
-      List<JournalDbEntity> entries = records
+      List<JournalEntity> entries = records
           .map((JournalRecord r) =>
-              JournalDbEntry.fromJson(json.decode(r.serialized)))
+              JournalEntry.fromJson(json.decode(r.serialized)))
           .toList();
       emit(PersistenceState.online(entries: entries));
     } catch (exception, stackTrace) {
@@ -53,15 +53,12 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     await transaction.finish();
   }
 
-  Future<bool> createJournalEntry(
-    JournalDbEntityData data, {
-    Geolocation? geolocation,
-    VectorClock? vectorClock,
-  }) async {
+  Future<bool> createJournalEntry(JournalEntity data) async {
     final transaction = Sentry.startTransaction('createJournalEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = vectorClock ?? _vectorClockCubit.getNextVectorClock();
+      VectorClock vc =
+          data.vectorClock ?? _vectorClockCubit.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
       String id = data.maybeMap(
@@ -71,7 +68,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         discreteQuantity: (DiscreteQuantity discreteQuantity) =>
             uuid.v5(Uuid.NAMESPACE_NIL, json.encode(discreteQuantity)),
         // create reproducible ID for imported image
-        journalDbImage: (JournalDbImage journalImage) =>
+        journalImage: (JournalImage journalImage) =>
             uuid.v5(Uuid.NAMESPACE_NIL, json.encode(journalImage)),
         // create random ID for user-created entries
         orElse: () => uuid.v1(),
@@ -79,18 +76,18 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       DateTime dateFrom = data.maybeMap(
         cumulativeQuantity: (CumulativeQuantity v) => v.dateFrom,
         discreteQuantity: (DiscreteQuantity v) => v.dateFrom,
-        journalDbImage: (JournalDbImage v) => v.capturedAt,
-        journalDbAudio: (JournalDbAudio v) => v.dateFrom,
+        journalImage: (JournalImage v) => v.capturedAt,
+        journalAudio: (JournalAudio v) => v.dateFrom,
         orElse: () => now,
       );
       DateTime dateTo = data.maybeMap(
         cumulativeQuantity: (CumulativeQuantity v) => v.dateTo,
         discreteQuantity: (DiscreteQuantity v) => v.dateTo,
-        journalDbImage: (JournalDbImage v) => v.capturedAt,
-        journalDbAudio: (JournalDbAudio v) => v.dateTo,
+        journalImage: (JournalImage v) => v.capturedAt,
+        journalAudio: (JournalAudio v) => v.dateTo,
         orElse: () => now,
       );
-      JournalDbEntity journalDbEntity = JournalDbEntity.journalDbEntry(
+      JournalEntity journalDbEntity = JournalEntity.journalEntry(
         data: data,
         createdAt: now,
         updatedAt: now,
@@ -111,15 +108,15 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool?> createDbEntity(JournalDbEntity journalDbEntity,
+  Future<bool?> createDbEntity(JournalEntity journalEntity,
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
-      bool saved = await _db.insert(journalDbEntity);
+      bool saved = await _db.insert(journalEntity);
 
       if (saved && enqueueSync) {
         _outboundQueueCubit.enqueueMessage(
-            SyncMessage.journalDbEntity(journalEntity: journalDbEntity));
+            SyncMessage.journalDbEntity(journalEntity: journalEntity));
       }
       await transaction.finish();
 

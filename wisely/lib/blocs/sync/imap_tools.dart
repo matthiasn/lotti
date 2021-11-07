@@ -7,7 +7,7 @@ import 'package:enough_mail/imap/mailbox.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
@@ -16,8 +16,7 @@ import 'package:wisely/utils/image_utils.dart';
 
 Future<void> saveAudioAttachment(
   MimeMessage message,
-  JournalDbAudio? journalDbAudio,
-  JournalDbEntity journalDbEntity,
+  JournalAudio? journalAudio,
   String? b64Secret,
 ) async {
   final transaction = Sentry.startTransaction('saveAudioAttachment()', 'task');
@@ -27,16 +26,16 @@ Future<void> saveAudioAttachment(
   for (final attachment in attachments) {
     final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
     if (attachmentMimePart != null &&
-        journalDbAudio != null &&
+        journalAudio != null &&
         b64Secret != null) {
       Uint8List? bytes = attachmentMimePart.decodeContentBinary();
-      String filePath = await AudioUtils.getFullAudioPath(journalDbAudio);
+      String filePath = await AudioUtils.getFullAudioPath(journalAudio);
       await File(filePath).parent.create(recursive: true);
       File encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
-      await AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
+      await AudioUtils.saveAudioNoteJson(journalAudio);
     }
   }
   await transaction.finish();
@@ -44,8 +43,7 @@ Future<void> saveAudioAttachment(
 
 Future<void> saveImageAttachment(
   MimeMessage message,
-  JournalDbImage? journalDbImage,
-  JournalDbEntity journalDbEntity,
+  JournalImage? journalImage,
   String? b64Secret,
 ) async {
   final transaction = Sentry.startTransaction('saveImageAttachment()', 'task');
@@ -55,16 +53,16 @@ Future<void> saveImageAttachment(
   for (final attachment in attachments) {
     final MimePart? attachmentMimePart = message.getPart(attachment.fetchId);
     if (attachmentMimePart != null &&
-        journalDbImage != null &&
+        journalImage != null &&
         b64Secret != null) {
       Uint8List? bytes = attachmentMimePart.decodeContentBinary();
-      String filePath = await getFullImagePath(journalDbImage);
+      String filePath = await getFullImagePath(journalImage);
       await File(filePath).parent.create(recursive: true);
       File encrypted = File('$filePath.aes');
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
-      await saveJournalImageJson(journalDbImage, journalDbEntity);
+      await saveJournalImageJson(journalImage);
     }
   }
   await transaction.finish();

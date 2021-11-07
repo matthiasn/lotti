@@ -7,7 +7,7 @@ import 'package:path/path.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 var uuid = const Uuid();
 const journalTable = 'journal';
@@ -50,33 +50,32 @@ class PersistenceDb {
     await _database;
   }
 
-  Future<bool> insert(JournalDbEntity journalDbEntity) async {
+  Future<bool> insert(JournalEntity journalEntity) async {
     try {
       final db = await _database;
-      final DateTime createdAt = journalDbEntity.createdAt;
-      final JournalDbEntityData data = journalDbEntity.data;
-      final type = data.runtimeType.toString();
-      final subtype = data.maybeMap(
+      final DateTime createdAt = journalEntity.createdAt;
+      final type = journalEntity.runtimeType.toString();
+      final subtype = journalEntity.maybeMap(
         cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
         discreteQuantity: (DiscreteQuantity v) => v.dataType,
         orElse: () => '',
       );
 
-      if (journalDbEntity is JournalDbEntry) {
-        String id = journalDbEntity.id;
+      if (journalEntity is JournalEntry) {
+        String id = journalEntity.id;
         JournalRecord dbRecord = JournalRecord(
           id: id,
           createdAt: createdAt,
           updatedAt: createdAt,
-          dateFrom: journalDbEntity.dateFrom,
-          dateTo: journalDbEntity.dateTo,
+          dateFrom: journalEntity.dateFrom,
+          dateTo: journalEntity.dateTo,
           type: type,
           subtype: subtype,
-          serialized: json.encode(journalDbEntity),
+          serialized: json.encode(journalEntity),
           schemaVersion: 0,
-          longitude: journalDbEntity.geolocation?.longitude,
-          latitude: journalDbEntity.geolocation?.latitude,
-          geohashString: journalDbEntity.geolocation?.geohashString,
+          longitude: journalEntity.geolocation?.longitude,
+          latitude: journalEntity.geolocation?.latitude,
+          geohashString: journalEntity.geolocation?.geohashString,
         );
 
         List<Map> maps = await db.query(journalTable,

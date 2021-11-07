@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/utils/image_utils.dart';
 
 import '../theme.dart';
@@ -18,11 +18,11 @@ DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
-String formatAudio(JournalDbAudio audioNote) =>
+String formatAudio(JournalAudio audioNote) =>
     'Audio Note: ${audioNote.duration.toString().split('.')[0]}';
 
 class JournalListItem extends StatelessWidget {
-  final JournalDbEntity item;
+  final JournalEntity item;
 
   const JournalListItem({Key? key, required this.item}) : super(key: key);
 
@@ -40,7 +40,7 @@ class JournalListItem extends StatelessWidget {
               child: Column(
                 children: [
                   InfoText(text: df.format(item.dateFrom)),
-                  item.data.maybeMap(
+                  item.maybeMap(
                     cumulativeQuantity: (q) => InfoText(
                       text: 'End: ${df.format(q.dateTo)}'
                           '\n${formatType(q.dataType)}: '
@@ -51,9 +51,9 @@ class JournalListItem extends StatelessWidget {
                           '\n${formatType(q.dataType)}: '
                           '${nf.format(q.value)} ${formatUnit(q.unit)}',
                     ),
-                    journalDbAudio: (JournalDbAudio audioNote) =>
+                    journalAudio: (JournalAudio audioNote) =>
                         InfoText(text: formatAudio(audioNote)),
-                    journalDbImage: (JournalDbImage journalDbImage) =>
+                    journalImage: (JournalImage journalDbImage) =>
                         InfoText(text: journalDbImage.imageFile),
                     orElse: () => Row(
                       children: const [],
@@ -71,7 +71,7 @@ class JournalListItem extends StatelessWidget {
                 borderRadius: BorderRadius.all(Radius.circular(8))),
           ),
           onPressed: () async {
-            item.data.mapOrNull(journalDbAudio: (JournalDbAudio audioNote) {
+            item.mapOrNull(journalAudio: (JournalAudio audioNote) {
               context.read<AudioPlayerCubit>().setAudioNote(audioNote);
             });
             Directory docDir = await getApplicationDocumentsDirectory();
@@ -91,14 +91,20 @@ class JournalListItem extends StatelessWidget {
                   child: ListView(
                     shrinkWrap: true,
                     children: <Widget>[
-                      MapWidget(
-                        geolocation: item.geolocation,
+                      item.maybeMap(
+                        journalAudio: (audio) => MapWidget(
+                          geolocation: audio.geolocation,
+                        ),
+                        journalImage: (image) => MapWidget(
+                          geolocation: image.geolocation,
+                        ),
+                        orElse: () => Container(),
                       ),
-                      item.data.maybeMap(
-                        journalDbAudio: (JournalDbAudio audio) {
+                      item.maybeMap(
+                        journalAudio: (JournalAudio audio) {
                           return const AudioPlayerWidget();
                         },
-                        journalDbImage: (JournalDbImage image) {
+                        journalImage: (JournalImage image) {
                           File file =
                               File(getFullImagePathWithDocDir(image, docDir));
                           return Container(

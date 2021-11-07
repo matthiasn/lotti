@@ -17,7 +17,7 @@ import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 
 import 'imap_tools.dart';
@@ -55,23 +55,19 @@ class ImapCubit extends Cubit<ImapState> {
             await decryptMessage(encryptedMessage, message, _b64Secret);
 
         syncMessage?.when(
-          journalDbEntity: (JournalDbEntity journalDbEntity) async {
-            debugPrint(
-                'processMessage inserting ${journalDbEntity.runtimeType}');
-            journalDbEntity.data.maybeMap(
-              journalDbAudio: (JournalDbAudio journalDbAudio) async {
-                await saveAudioAttachment(
-                    message, journalDbAudio, journalDbEntity, _b64Secret);
+          journalDbEntity: (JournalEntity journalEntity) async {
+            debugPrint('processMessage inserting ${journalEntity.runtimeType}');
+            journalEntity.maybeMap(
+              journalAudio: (JournalAudio journalAudio) async {
+                await saveAudioAttachment(message, journalAudio, _b64Secret);
               },
-              journalDbImage: (JournalDbImage journalDbImage) async {
-                await saveImageAttachment(
-                    message, journalDbImage, journalDbEntity, _b64Secret);
+              journalImage: (JournalImage journalImage) async {
+                await saveImageAttachment(message, journalImage, _b64Secret);
               },
               orElse: () {},
             );
 
-            _persistenceCubit.createDbEntity(journalDbEntity,
-                enqueueSync: false);
+            _persistenceCubit.createDbEntity(journalEntity, enqueueSync: false);
           },
         );
       } else {

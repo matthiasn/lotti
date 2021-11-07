@@ -10,7 +10,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/health_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 class HealthCubit extends Cubit<HealthState> {
   late final PersistenceCubit _persistenceCubit;

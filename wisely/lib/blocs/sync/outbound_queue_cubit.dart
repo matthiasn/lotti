@@ -13,7 +13,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
@@ -129,21 +129,21 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     if (syncMessage is SyncJournalDbEntity) {
       final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
       try {
-        JournalDbEntity journalDbEntity = syncMessage.journalEntity;
+        JournalEntity journalEntity = syncMessage.journalEntity;
         String jsonString = json.encode(syncMessage);
         var docDir = await getApplicationDocumentsDirectory();
 
         File? attachment;
-        String subject = 'enqueueMessage ${journalDbEntity.vectorClock}';
+        String subject = 'enqueueMessage ${journalEntity.vectorClock}';
 
-        journalDbEntity.data.maybeMap(
-          journalDbAudio: (JournalDbAudio journalDbAudio) {
-            attachment = File(AudioUtils.getAudioPath(journalDbAudio, docDir));
-            AudioUtils.saveAudioNoteJson(journalDbAudio, journalDbEntity);
+        journalEntity.maybeMap(
+          journalAudio: (JournalAudio journalAudio) {
+            attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
+            AudioUtils.saveAudioNoteJson(journalAudio);
           },
-          journalDbImage: (JournalDbImage image) {
-            attachment = File(getFullImagePathWithDocDir(image, docDir));
-            saveJournalImageJson(image, journalDbEntity);
+          journalImage: (JournalImage journalImage) {
+            attachment = File(getFullImagePathWithDocDir(journalImage, docDir));
+            saveJournalImageJson(journalImage);
           },
           orElse: () {},
         );
