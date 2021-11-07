@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
@@ -17,7 +18,6 @@ import 'package:wisely/pages/health_page.dart';
 import 'package:wisely/pages/journal_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
-import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/theme.dart';
 
 import 'blocs/journal/journal_image_cubit.dart';
@@ -141,6 +141,8 @@ class WiselyHomePage extends StatefulWidget {
 
 class _WiselyHomePageState extends State<WiselyHomePage> {
   int _selectedIndex = 0;
+  String version = '';
+  String buildNumber = '';
 
   void _onItemTapped(int index) {
     setState(() {
@@ -148,11 +150,18 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     });
   }
 
+  Future<void> getVersions() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      version = packageInfo.version;
+      buildNumber = packageInfo.buildNumber;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-
-    SecureStorage.writeValue('foo', 'some secret for testing');
+    getVersions();
   }
 
   static const List<Widget> _widgetOptions = <Widget>[
@@ -174,13 +183,26 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: TextStyle(
-            color: AppColors.headerFontColor,
-            fontFamily: 'Oswald',
-            fontWeight: FontWeight.w500,
-          ),
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              widget.title,
+              style: TextStyle(
+                color: AppColors.headerFontColor,
+                fontFamily: 'Oswald',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              ' v$version Build $buildNumber',
+              style: TextStyle(
+                  color: AppColors.headerFontColor2,
+                  fontFamily: 'Oswald',
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w400),
+            ),
+          ],
         ),
         backgroundColor: AppColors.headerBgColor,
       ),
