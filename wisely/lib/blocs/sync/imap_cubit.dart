@@ -119,7 +119,7 @@ class ImapCubit extends Cubit<ImapState> {
 
   void _startPolling() async {
     debugPrint('_startPolling');
-    Timer.periodic(const Duration(seconds: 20), (timer) async {
+    Timer.periodic(const Duration(seconds: 10), (timer) async {
       _pollInbox();
       _observeInbox();
     });
