@@ -44,7 +44,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       List<JournalRecord> records = await _db.journalEntries(100);
       List<JournalEntity> entries = records
           .map((JournalRecord r) =>
-              JournalEntry.fromJson(json.decode(r.serialized)))
+              JournalEntity.fromJson(json.decode(r.serialized)))
           .toList();
       emit(PersistenceState.online(entries: entries));
     } catch (exception, stackTrace) {
@@ -184,6 +184,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
+      print('Exception $exception');
     }
   }
 }
