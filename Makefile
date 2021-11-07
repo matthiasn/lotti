@@ -82,10 +82,10 @@ cljs-shared-tests: npm-deps
 	@npx shadow-cljs compile shared-tests
 	@TZ=UTC node out/shared-tests.js
 
-run-cljs-shared-tests:
+run-cljs-tests:
 	@TZ=UTC node out/shared-tests.js
 
-watch-cljs-shared-tests: npm-deps
+watch-tests: npm-deps
 	@echo Running ClojureScript tests...
 	@npx shadow-cljs watch shared-tests
 
