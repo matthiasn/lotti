@@ -25,7 +25,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
     required VectorClockCubit vectorClockCubit,
     required PersistenceCubit persistenceCubit,
   }) : super(JournalImageState()) {
-    debugPrint('Hello from JournalImageCubit');
     _vectorClockCubit = vectorClockCubit;
     _persistenceCubit = persistenceCubit;
   }

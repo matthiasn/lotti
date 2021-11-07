@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wisely/classes/journal_db_entities.dart';
@@ -16,27 +17,32 @@ class PersistenceDb {
 
   PersistenceDb() {
     _database = Future<Database>(() async {
-      String createDbStatement =
-          await rootBundle.loadString('assets/sqlite/create_journal_db.sql');
+      try {
+        String createDbStatement =
+            await rootBundle.loadString('assets/sqlite/create_journal_db.sql');
 
-      String dbPath = join(await getDatabasesPath(), 'journal.db');
-      debugPrint('PersistenceCubit DB Path: $dbPath');
+        String dbPath = join(await getDatabasesPath(), 'journal.db');
+        debugPrint('PersistenceCubit DB Path: $dbPath');
 
-      Database database = await openDatabase(
-        dbPath,
-        onCreate: (db, version) async {
-          List<String> scripts = createDbStatement.split(";");
-          for (String line in scripts) {
-            if (line.isNotEmpty) {
-              db.execute(line.trim());
+        Database database = await openDatabase(
+          dbPath,
+          onCreate: (db, version) async {
+            List<String> scripts = createDbStatement.split(";");
+            for (String line in scripts) {
+              if (line.isNotEmpty) {
+                db.execute(line.trim());
+              }
             }
-          }
-          debugPrint('PersistenceCubit database created.');
-        },
-        version: 1,
-      );
-      debugPrint('PersistenceCubit opened: $_database');
-      return database;
+            debugPrint('PersistenceCubit database created.');
+          },
+          version: 1,
+        );
+        debugPrint('PersistenceCubit opened: $_database');
+        return database;
+      } catch (exception, stackTrace) {
+        await Sentry.captureException(exception, stackTrace: stackTrace);
+        return Future.error(exception);
+      }
     });
   }
 
@@ -45,53 +51,62 @@ class PersistenceDb {
   }
 
   Future<bool> insert(JournalDbEntity journalDbEntity) async {
-    final db = await _database;
-    final DateTime createdAt = journalDbEntity.createdAt;
-    final JournalDbEntityData data = journalDbEntity.data;
-    final type = data.runtimeType.toString();
-    final subtype = data.maybeMap(
-      cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
-      discreteQuantity: (DiscreteQuantity v) => v.dataType,
-      orElse: () => '',
-    );
-
-    if (journalDbEntity is JournalDbEntry) {
-      String id = journalDbEntity.id;
-      JournalRecord dbRecord = JournalRecord(
-        id: id,
-        createdAt: createdAt,
-        updatedAt: createdAt,
-        dateFrom: journalDbEntity.dateFrom,
-        dateTo: journalDbEntity.dateTo,
-        type: type,
-        subtype: subtype,
-        serialized: json.encode(journalDbEntity),
-        schemaVersion: 0,
-        longitude: journalDbEntity.geolocation?.longitude,
-        latitude: journalDbEntity.geolocation?.latitude,
-        geohashString: journalDbEntity.geolocation?.geohashString,
+    try {
+      final db = await _database;
+      final DateTime createdAt = journalDbEntity.createdAt;
+      final JournalDbEntityData data = journalDbEntity.data;
+      final type = data.runtimeType.toString();
+      final subtype = data.maybeMap(
+        cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
+        discreteQuantity: (DiscreteQuantity v) => v.dataType,
+        orElse: () => '',
       );
 
-      List<Map> maps = await db.query(journalTable,
-          columns: ['id'], where: 'id = ?', whereArgs: [id]);
-      if (maps.isEmpty) {
-        var res = await db.insert(journalTable, dbRecord.toMap());
-        debugPrint('PersistenceDb inserted: $id $res');
-        return true;
-      } else {
-        debugPrint('PersistenceDb already exists: $id');
+      if (journalDbEntity is JournalDbEntry) {
+        String id = journalDbEntity.id;
+        JournalRecord dbRecord = JournalRecord(
+          id: id,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+          dateFrom: journalDbEntity.dateFrom,
+          dateTo: journalDbEntity.dateTo,
+          type: type,
+          subtype: subtype,
+          serialized: json.encode(journalDbEntity),
+          schemaVersion: 0,
+          longitude: journalDbEntity.geolocation?.longitude,
+          latitude: journalDbEntity.geolocation?.latitude,
+          geohashString: journalDbEntity.geolocation?.geohashString,
+        );
+
+        List<Map> maps = await db.query(journalTable,
+            columns: ['id'], where: 'id = ?', whereArgs: [id]);
+        if (maps.isEmpty) {
+          var res = await db.insert(journalTable, dbRecord.toMap());
+          debugPrint('PersistenceDb inserted: $id $res');
+          return true;
+        } else {
+          debugPrint('PersistenceDb already exists: $id');
+        }
       }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
     }
-    return false;
+    return true;
   }
 
   Future<List<JournalRecord>> journalEntries(int n) async {
-    final db = await _database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      journalTable,
-      orderBy: 'date_from DESC',
-      limit: n,
-    );
+    List<Map<String, dynamic>> maps = [];
+    try {
+      final db = await _database;
+      maps = await db.query(
+        journalTable,
+        orderBy: 'date_from DESC',
+        limit: n,
+      );
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
 
     return List.generate(maps.length, (i) {
       return JournalRecord.fromMap(maps[i]);
