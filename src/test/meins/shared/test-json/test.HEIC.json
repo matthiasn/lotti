@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "id": "67dddc55-900c-59cc-8a9b-411d4f53810b",
+    "createdAt": "2021-11-07T22:24:39.452340",
+    "updatedAt": "2021-11-07T22:24:39.452340",
+    "dateFrom": "2021-11-07T21:16:21.000",
+    "dateTo": "2021-11-07T21:16:21.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "bae5c26c-1580-4df1-a1e7-cb40a81444f7": 4
+    }
+  },
+  "data": {
+    "capturedAt": "2021-11-07T21:16:21.000",
+    "imageId": "E5CC2467-56F0-4CA4-A168-EA6719091D76/L0/001",
+    "imageFile": "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.HEIC",
+    "imageDirectory": "/images/2021-11-07/",
+    "geolocation": null
+  },
+  "entryText": null,
+  "geolocation": {
+    "createdAt": "2021-11-07T23:06:56.193502",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 53.0,
+    "longitude": 9.0,
+    "geohashString": "",
+    "accuracy": 1414.0,
+    "speed": -1.0,
+    "speedAccuracy": -1.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 8.400130271911621
+  },
+  "runtimeType": "journalImage"
+}

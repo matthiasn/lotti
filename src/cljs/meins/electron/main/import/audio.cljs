@@ -33,7 +33,8 @@
 
 (defn convert-new-audio-entry [json]
   (let [data (get json "data")
-        date-from (get json "dateFrom")
+        meta-data (get json "meta")
+        date-from (get meta-data "dateFrom")
         ts (.valueOf (moment date-from))
         text (str (h/format-time ts) " Audio")
         geolocation (get json "geolocation")
@@ -41,14 +42,14 @@
                :md         text
                :text       text
                :mentions   #{}
-               :utc-offset (get json "utcOffset")
+               :utc-offset (get meta-data "utcOffset")
                :audio_file (get data "audioFile")
-               :timezone   (get json "timezone")
+               :timezone   (get meta-data "timezone")
                :tags       #{"#audio" "#import"}
                :perm_tags  #{"#audio" "#task"}
                :longitude  (get geolocation "longitude")
                :latitude   (get geolocation "latitude")
-               :vclock     (get json "vectorClock")}]
+               :vclock     (get meta-data "vectorClock")}]
     entry))
 
 (defn time-recording-entry [json]
