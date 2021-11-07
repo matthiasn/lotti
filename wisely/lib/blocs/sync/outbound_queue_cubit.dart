@@ -68,7 +68,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         SentryEvent(
           message: SentryMessage(_connectivityResult.toString()),
         ),
-        withScope: (Scope scope) => scope.level = SentryLevel.info);
+        withScope: (Scope scope) => scope.level = SentryLevel.warning);
   }
 
   void sendNext() async {
@@ -76,12 +76,13 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       debugPrint('sendNext Connectivity $_connectivityResult');
-      reportConnectivity();
+
+      if (_connectivityResult != ConnectivityResult.none) {
+        reportConnectivity();
+      }
 
       // TODO: check why not working reliably on macOS - workaround
-      bool isConnected = Platform.isIOS
-          ? _connectivityResult != ConnectivityResult.none
-          : true;
+      bool isConnected = _connectivityResult != ConnectivityResult.none;
       if (isConnected && !sendMutex.isLocked) {
         List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
         if (unprocessed.isNotEmpty) {
