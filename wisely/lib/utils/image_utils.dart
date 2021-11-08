@@ -104,6 +104,7 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     targetPath,
     quality: 90,
     format: CompressFormat.jpeg,
+    keepExif: true,
   );
   return result;
 }
