@@ -5,7 +5,6 @@
             [clojure.string :as str]
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as spec]
-            ["child_process" :refer [spawn]]
             ["moment" :as moment]
             [clojure.pprint :as pp]
             [expound.alpha :as exp]
@@ -52,10 +51,6 @@
                :vclock     (get meta-data "vectorClock")}]
     entry))
 
-(defn spawn-process [cmd args opts]
-  (info "STARTUP: spawning" cmd args opts)
-  (spawn cmd (clj->js args) (clj->js opts)))
-
 (defn import-image-files [path put-fn]
   (let [files (sync (str path "/**/*.HEIC.json"))]
     (doseq [json-file files]
@@ -70,7 +65,6 @@
           (pp/pprint entry)
           (when-not (existsSync img-file-path)
             (when (existsSync file)
-              (spawn-process "/usr/local/bin/magick" ["convert" file jpg] {})
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (info "spec/valid")
                                 (info jpg img-file-path)
