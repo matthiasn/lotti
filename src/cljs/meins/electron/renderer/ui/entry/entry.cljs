@@ -151,6 +151,7 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged])
+         #_
          (when (or (contains? (set (:perm_tags entry)) "#album")
                    (contains? (set (:tags entry)) "#album"))
            [ca/album-config merged])
@@ -222,7 +223,8 @@
             comments-linked (sort-by :timestamp (concat comments linked))
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))
                              (:thumbnails @cfg)
-                             (not (:gallery-view local-cfg)))]
+                             (not (:gallery-view local-cfg))
+                             (:img_file entry))]
         [:div.entry-with-comments
          [journal-entry entry local-cfg]
          (when thumbnails?
