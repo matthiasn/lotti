@@ -11,7 +11,6 @@ import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/location.dart';
-import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
@@ -56,24 +55,21 @@ class JournalImageCubit extends Cubit<JournalImageState> {
         if (originFile != null) {
           String idNamePart = asset.id.split('/').first;
           String originalName = originFile.path.split('/').last;
-          String imageFileName = '$idNamePart.$originalName'.replaceAll(
-            'PNG',
-            'HEIC',
-          );
+          String imageFileName = '$idNamePart.$originalName'
+              .replaceAll(
+                'HEIC',
+                'JPG',
+              )
+              .replaceAll(
+                'PNG',
+                'JPG',
+              );
           String day = DateFormat('yyyy-MM-dd').format(createdAt);
           String relativePath = '/images/$day/';
           String directory =
               await AudioUtils.createAssetDirectory(relativePath);
           String targetFilePath = '$directory$imageFileName';
-          File? targetFile;
-          if (originalName.contains('.PNG')) {
-            targetFile = await compressAndSave(originFile, targetFilePath);
-          } else {
-            targetFile = await File(targetFilePath)
-                .writeAsBytes(await originFile.readAsBytes());
-          }
-
-          VectorClock vectorClock = _vectorClockCubit.getNextVectorClock();
+          await compressAndSave(originFile, targetFilePath);
           DateTime created = asset.createDateTime;
 
           ImageData imageData = ImageData(

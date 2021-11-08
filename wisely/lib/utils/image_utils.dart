@@ -103,7 +103,7 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     sourcePath,
     targetPath,
     quality: 90,
-    format: CompressFormat.heic,
+    format: CompressFormat.jpeg,
   );
   return result;
 }
