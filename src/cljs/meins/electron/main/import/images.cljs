@@ -52,26 +52,25 @@
     entry))
 
 (defn import-image-files [path put-fn]
-  (let [files (sync (str path "/**/*.HEIC.json"))]
+  (let [files (sync (str path "/**/*.+(JPG|JPEG|jpg|jpeg).json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)
               entry (convert-new-image-entry data)
               file (str/replace json-file ".json" "")
-              jpg (s/replace file "HEIC" "JPG")
               img-file (:img_file entry)
               img-file-path (str @image-path-atom "/" img-file)]
           (info (exp/expound-str :meins.entry/spec entry))
-          (pp/pprint entry)
           (when-not (existsSync img-file-path)
             (when (existsSync file)
+              (info "importing" file)
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (info "spec/valid")
-                                (info jpg img-file-path)
-                                (copyFileSync jpg img-file-path)
+                                (info file img-file-path)
+                                (copyFileSync file img-file-path)
                                 (put-fn [:import/gen-thumbs
                                          {:filename  img-file
-                                          :full-path jpg}]))
+                                          :full-path file}]))
                              2000)
               (js/setTimeout #(when (spec/valid? :meins.entry/spec entry)
                                 (put-fn [:entry/save-initial entry]))
