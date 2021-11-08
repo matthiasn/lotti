@@ -131,7 +131,7 @@
                      :class         (when is-linked "linked-inline")}
          [:div.drag
           [:div.header-1
-           [:div [es/story-select merged tab-group]]
+           [:div (when-not is-linked [es/story-select merged tab-group])]
            [linked-btn merged local-cfg active]
            (when is-linked [linked-btn2 merged local-cfg])]
           [:div.header
