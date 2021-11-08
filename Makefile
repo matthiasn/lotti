@@ -67,7 +67,7 @@ npm-deps:
 	@npm install -g electron-builder
 	@npx electron-rebuild -v 13.1.7 -w keytar
 
-test: deps
+test: deps cljs-shared-tests
 	@echo Running Clojure tests...
 	@lein test
 
