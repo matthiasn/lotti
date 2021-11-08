@@ -52,6 +52,10 @@ find_unused:
 sentry_symbols:
 	flutter packages pub run sentry_dart_plugin
 
+.PHONY: splash
+splash:
+	flutter pub run flutter_native_splash:create
+
 .PHONY: viz
 viz:
 	dart pub global run dcdg -o classes.viz.puml -s lib/classes/
