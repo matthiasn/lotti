@@ -151,10 +151,9 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged])
-         #_
-         (when (or (contains? (set (:perm_tags entry)) "#album")
-                   (contains? (set (:tags entry)) "#album"))
-           [ca/album-config merged])
+         #_(when (or (contains? (set (:perm_tags entry)) "#album")
+                     (contains? (set (:tags entry)) "#album"))
+             [ca/album-config merged])
          (when (or (contains? (set (:perm_tags entry)) "#post-mortem")
                    (contains? (set (:tags entry)) "#post-mortem"))
            [pm/post-mortem merged])
@@ -221,7 +220,9 @@
     (fn entry-with-comments-render [entry local-cfg]
       (let [comments (:comments entry)
             linked (map #(with-meta % {:linked-inline true}) (:linked entry))
-            comments-linked (sort-by :timestamp (concat comments linked))
+            comments-linked (filter
+                              (fn [entry] (not (:briefing entry)))
+                              (sort-by :timestamp (concat comments linked)))
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))
                              (:thumbnails @cfg)
                              (not (:gallery-view local-cfg))
