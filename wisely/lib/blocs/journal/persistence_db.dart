@@ -7,7 +7,8 @@ import 'package:path/path.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/geolocation.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 var uuid = const Uuid();
 const journalTable = 'journal';
@@ -50,44 +51,46 @@ class PersistenceDb {
     await _database;
   }
 
-  Future<bool> insert(JournalDbEntity journalDbEntity) async {
+  Future<bool> insert(JournalEntity journalEntity) async {
     try {
       final db = await _database;
-      final DateTime createdAt = journalDbEntity.createdAt;
-      final JournalDbEntityData data = journalDbEntity.data;
-      final type = data.runtimeType.toString();
-      final subtype = data.maybeMap(
-        cumulativeQuantity: (CumulativeQuantity v) => v.dataType,
-        discreteQuantity: (DiscreteQuantity v) => v.dataType,
+      final DateTime createdAt = journalEntity.meta.createdAt;
+      final subtype = journalEntity.maybeMap(
+        quantitative: (qd) => qd.data.dataType,
         orElse: () => '',
       );
 
-      if (journalDbEntity is JournalDbEntry) {
-        String id = journalDbEntity.id;
-        JournalRecord dbRecord = JournalRecord(
-          id: id,
-          createdAt: createdAt,
-          updatedAt: createdAt,
-          dateFrom: journalDbEntity.dateFrom,
-          dateTo: journalDbEntity.dateTo,
-          type: type,
-          subtype: subtype,
-          serialized: json.encode(journalDbEntity),
-          schemaVersion: 0,
-          longitude: journalDbEntity.geolocation?.longitude,
-          latitude: journalDbEntity.geolocation?.latitude,
-          geohashString: journalDbEntity.geolocation?.geohashString,
-        );
+      Geolocation? geolocation;
+      journalEntity.mapOrNull(
+        journalAudio: (item) => geolocation = item.geolocation,
+        journalImage: (item) => geolocation = item.geolocation,
+        journalEntry: (item) => geolocation = item.geolocation,
+      );
 
-        List<Map> maps = await db.query(journalTable,
-            columns: ['id'], where: 'id = ?', whereArgs: [id]);
-        if (maps.isEmpty) {
-          var res = await db.insert(journalTable, dbRecord.toMap());
-          debugPrint('PersistenceDb inserted: $id $res');
-          return true;
-        } else {
-          debugPrint('PersistenceDb already exists: $id');
-        }
+      String id = journalEntity.meta.id;
+      JournalRecord dbRecord = JournalRecord(
+        id: id,
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        dateFrom: journalEntity.meta.dateFrom,
+        dateTo: journalEntity.meta.dateTo,
+        type: journalEntity.runtimeType.toString(),
+        subtype: subtype,
+        serialized: json.encode(journalEntity),
+        schemaVersion: 0,
+        longitude: geolocation?.longitude,
+        latitude: geolocation?.latitude,
+        geohashString: geolocation?.geohashString,
+      );
+
+      List<Map> maps = await db.query(journalTable,
+          columns: ['id'], where: 'id = ?', whereArgs: [id]);
+      if (maps.isEmpty) {
+        var res = await db.insert(journalTable, dbRecord.toMap());
+        debugPrint('PersistenceDb inserted: $id $res');
+        return true;
+      } else {
+        debugPrint('PersistenceDb already exists: $id');
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);

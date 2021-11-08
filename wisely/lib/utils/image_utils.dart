@@ -6,7 +6,7 @@ import 'package:exif/exif.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 Future<void> printGeolocation(Uint8List fileBytes) async {
   final data = await readExifFromBytes(fileBytes);
@@ -98,7 +98,6 @@ Future<File?> compressAndGetFile(File file) async {
 }
 
 Future<File?> compressAndSave(File file, String targetPath) async {
-  debugPrint('compressAndSave ${file.path} -> $targetPath');
   String sourcePath = file.absolute.path;
   File? result = await FlutterImageCompress.compressAndGetFile(
     sourcePath,
@@ -106,7 +105,6 @@ Future<File?> compressAndSave(File file, String targetPath) async {
     quality: 90,
     format: CompressFormat.heic,
   );
-  debugPrint('In: ${file.lengthSync()} out: ${result?.lengthSync()}');
   return result;
 }
 
@@ -119,21 +117,17 @@ String? getRelativeAssetPath(String? absolutePath) {
   return absolutePath?.split('Documents').last;
 }
 
-Future<String> getFullImagePath(JournalDbImage img) async {
+Future<String> getFullImagePath(JournalImage img) async {
   var docDir = await getApplicationDocumentsDirectory();
-  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
 
-String getFullImagePathWithDocDir(JournalDbImage img, Directory docDir) {
-  return '${docDir.path}${img.imageDirectory}${img.imageFile}';
+String getFullImagePathWithDocDir(JournalImage img, Directory docDir) {
+  return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
 }
 
-Future<String> saveJournalImageJson(
-  JournalDbImage journalDbImage,
-  JournalDbEntity journalDbEntity,
-) async {
-  String json = jsonEncode(journalDbEntity);
-  File file = File('${await getFullImagePath(journalDbImage)}.json');
+Future<void> saveJournalImageJson(JournalImage journalImage) async {
+  String json = jsonEncode(journalImage);
+  File file = File('${await getFullImagePath(journalImage)}.json');
   await file.writeAsString(json);
-  return json;
 }

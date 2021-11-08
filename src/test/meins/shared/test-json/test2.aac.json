@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "id": "fad0b3e8-6e2b-5057-b6d1-f869831af58e",
+    "createdAt": "2021-11-07T23:06:57.706613",
+    "updatedAt": "2021-11-07T23:06:57.706613",
+    "dateFrom": "2021-11-07T23:06:56.054124",
+    "dateTo": "2021-11-07T23:06:57.080124",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "bae5c26c-1580-4df1-a1e7-cb40a81444f7": 13
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-07T23:06:56.054124",
+    "dateTo": "2021-11-07T23:06:57.080124",
+    "audioFile": "2021-11-07_23-06-56-054.aac",
+    "audioDirectory": "/audio/2021-11-07/",
+    "duration": 1026000,
+    "transcript": null
+  },
+  "entryText": null,
+  "geolocation": {
+    "createdAt": "2021-11-07T23:06:56.193502",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 53.0,
+    "longitude": 9.0,
+    "geohashString": "",
+    "accuracy": 1414.0,
+    "speed": -1.0,
+    "speedAccuracy": -1.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 8.400130271911621
+  },
+  "runtimeType": "journalAudio"
+}

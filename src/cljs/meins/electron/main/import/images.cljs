@@ -32,7 +32,8 @@
     entry))
 
 (defn convert-new-image-entry [json]
-  (let [date-from (get json "dateFrom")
+  (let [meta-data (get json "meta")
+        date-from (get meta-data "dateFrom")
         ts (.valueOf (moment date-from))
         data (get json "data")
         text (str (h/format-time ts) " Image")
@@ -43,12 +44,12 @@
                :mentions   #{}
                :utc-offset 0
                :img_file   (s/replace (get data "imageFile") "HEIC" "JPG")
-               :timezone   (get json "timezone")
+               :timezone   (get meta-data "timezone")
                :tags       #{"#photo" "#import"}
                :perm_tags  #{"#photo"}
                :longitude  (get geolocation "longitude")
                :latitude   (get geolocation "latitude")
-               :vclock     (get json "vectorClock")}]
+               :vclock     (get meta-data "vectorClock")}]
     entry))
 
 (defn spawn-process [cmd args opts]

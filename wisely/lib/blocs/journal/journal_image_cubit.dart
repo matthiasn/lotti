@@ -9,7 +9,7 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 import 'package:wisely/utils/audio_utils.dart';
@@ -37,10 +37,6 @@ class JournalImageCubit extends Cubit<JournalImageState> {
     );
     if (assets != null) {
       for (final AssetEntity asset in assets) {
-        debugPrint('pickAssets createDateTime ${asset.createDateTime}');
-        debugPrint('pickAssets id ${asset.id}');
-        debugPrint('pickAssets file ${await asset.file}');
-
         Geolocation? geolocation;
         if (asset.latitude != null && asset.longitude != null) {
           geolocation = Geolocation(
@@ -80,18 +76,15 @@ class JournalImageCubit extends Cubit<JournalImageState> {
           VectorClock vectorClock = _vectorClockCubit.getNextVectorClock();
           DateTime created = asset.createDateTime;
 
-          JournalDbImage journalDbImage = JournalDbImage(
+          ImageData imageData = ImageData(
             imageId: asset.id,
             imageFile: imageFileName,
             imageDirectory: relativePath,
             capturedAt: created,
+            geolocation: geolocation,
           );
 
-          _persistenceCubit.createJournalEntry(
-            journalDbImage,
-            geolocation: geolocation,
-            vectorClock: vectorClock,
-          );
+          _persistenceCubit.createImageEntry(imageData);
         }
       }
     }

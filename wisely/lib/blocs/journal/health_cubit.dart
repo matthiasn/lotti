@@ -10,7 +10,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/health_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/health.dart';
 
 class HealthCubit extends Cubit<HealthState> {
   late final PersistenceCubit _persistenceCubit;
@@ -55,7 +55,7 @@ class HealthCubit extends Cubit<HealthState> {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom.add(const Duration(days: 1));
-        CumulativeQuantity activityForDay = CumulativeQuantity(
+        CumulativeQuantityData activityForDay = CumulativeQuantityData(
           dateFrom: dateFrom,
           dateTo: dateTo,
           value: dailyStepsEntry.value,
@@ -64,7 +64,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        _persistenceCubit.createJournalEntry(activityForDay);
+        _persistenceCubit.createQuantitativeEntry(activityForDay);
       }
     }
 
@@ -95,7 +95,7 @@ class HealthCubit extends Cubit<HealthState> {
             await health.getHealthDataFromTypes(dateFrom, dateTo, types);
 
         for (HealthDataPoint dataPoint in dataPoints) {
-          DiscreteQuantity discreteQuantity = DiscreteQuantity(
+          DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
             dateFrom: dataPoint.dateFrom,
             dateTo: dataPoint.dateTo,
             value: dataPoint.value,
@@ -107,7 +107,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          _persistenceCubit.createJournalEntry(discreteQuantity);
+          _persistenceCubit.createQuantitativeEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');

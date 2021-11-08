@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 part 'player_state.freezed.dart';
 
@@ -12,6 +12,6 @@ class AudioPlayerState with _$AudioPlayerState {
     required Duration totalDuration,
     required Duration progress,
     required Duration pausedAt,
-    JournalDbAudio? audioNote,
+    JournalAudio? audioNote,
   }) = _AudioPlayerState;
 }

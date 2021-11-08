@@ -23,7 +23,7 @@
    :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 28}})
 
 (deftest read-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/2021-10-12_15-11-43-702.aac.json"
+  (let [json-file "./src/test/meins/shared/test-json/test1.aac.json"
         data (h/parse-json json-file)
         entry (ai/convert-audio-entry data)]
     (testing "JSON is parsed correctly"
@@ -31,23 +31,23 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(def expected-text2 (str (h/format-time 1636208921728) " Audio"))
+(def expected-text2 (str (h/format-time 1636326416054) " Audio"))
 (def new-audio-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 60
-   :timestamp  1636208921728
-   :audio_file "2021-11-06_14-28-41-728.aac"
+   :timestamp  1636326416054
+   :audio_file "2021-11-07_23-06-56-054.aac"
    :md         expected-text2
    :text       expected-text2
    :tags       #{"#import" "#audio"}
    :perm_tags  #{"#audio" "#task"}
-   :longitude  13
-   :latitude   52
-   :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 37}})
+   :longitude  9
+   :latitude   53
+   :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
 
 (deftest read-new-audio-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/2021-11-06_14-28-41-728.aac.json"
+  (let [json-file "./src/test/meins/shared/test-json/test2.aac.json"
         data (h/parse-json json-file)
         entry (ai/convert-new-audio-entry data)]
     (testing "JSON is parsed correctly"
@@ -58,17 +58,17 @@
 (def time-recording-test-entry
   {:timezone       "Europe/Berlin"
    :utc-offset     60
-   :longitude      13
+   :longitude      9
    :entry_type     :pomodoro
-   :comment_for    1636208921728
-   :latitude       52
-   :completed_time 4.027
-   :timestamp      1636208922728
+   :comment_for    1636326416054
+   :latitude       53
+   :completed_time 1.026
+   :timestamp      1636326417054
    :text           "recording"
    :md             "- recording"})
 
 (deftest time-recording-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/2021-11-06_14-28-41-728.aac.json"
+  (let [json-file "./src/test/meins/shared/test-json/test2.aac.json"
         data (h/parse-json json-file)
         entry (ai/time-recording-entry data)]
     (testing "JSON is parsed correctly"
@@ -76,23 +76,23 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(def expected-text3 (str (h/format-time 1636165154000) " Image"))
+(def expected-text3 (str (h/format-time 1636319781000) " Image"))
 (def new-image-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 0
-   :timestamp  1636165154000
-   :img_file   "A5E070A4-40A8-4BF0-A0B2-B368BA8A4232.IMG_7493.JPG"
+   :timestamp  1636319781000
+   :img_file   "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.JPG",
    :md         expected-text3
    :text       expected-text3
    :tags       #{"#import" "#photo"}
    :perm_tags  #{"#photo"}
-   :longitude  10
+   :longitude  9
    :latitude   53
-   :vclock     {"e961a1b8-c86d-402f-a282-f2752a3b6f09" 16}})
+   :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 4}})
 
 (deftest read-new-image-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/A5E070A4-40A8-4BF0-A0B2-B368BA8A4232.IMG_7493.HEIC.json"
+  (let [json-file "./src/test/meins/shared/test-json/test.HEIC.json"
         data (h/parse-json json-file)
         entry (ii/convert-new-image-entry data)]
     (testing "JSON is parsed correctly"

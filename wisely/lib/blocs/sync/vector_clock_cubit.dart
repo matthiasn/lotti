@@ -18,6 +18,7 @@ class VectorClockCubit extends HydratedCubit<VectorClockCounterState> {
     return state.host;
   }
 
+  // TODO: only increment after successful insertion
   VectorClock getNextVectorClock() {
     String host = state.host;
     int nextAvailableCounter = state.nextAvailableCounter;

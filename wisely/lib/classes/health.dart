@@ -4,8 +4,8 @@ part 'health.freezed.dart';
 part 'health.g.dart';
 
 @freezed
-class HealthData with _$HealthData {
-  factory HealthData.cumulativeQuantity({
+class QuantitativeData with _$QuantitativeData {
+  factory QuantitativeData.cumulativeQuantityData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
@@ -13,9 +13,9 @@ class HealthData with _$HealthData {
     required String unit,
     String? deviceType,
     String? platformType,
-  }) = CumulativeQuantity;
+  }) = CumulativeQuantityData;
 
-  factory HealthData.discreteQuantity({
+  factory QuantitativeData.discreteQuantityData({
     required DateTime dateFrom,
     required DateTime dateTo,
     required num value,
@@ -26,8 +26,8 @@ class HealthData with _$HealthData {
     String? sourceName,
     String? sourceId,
     String? deviceId,
-  }) = DiscreteQuantity;
+  }) = DiscreteQuantityData;
 
-  factory HealthData.fromJson(Map<String, dynamic> json) =>
-      _$HealthDataFromJson(json);
+  factory QuantitativeData.fromJson(Map<String, dynamic> json) =>
+      _$QuantitativeDataFromJson(json);
 }

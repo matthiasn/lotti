@@ -13,7 +13,6 @@ import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/classes/audio_note.dart';
 import 'package:wisely/classes/geolocation.dart';
-import 'package:wisely/classes/journal_db_entities.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/utils/audio_utils.dart';
 
@@ -133,20 +132,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
       if (_audioNote != null) {
         AudioNote audioNote = _audioNote!;
-
-        JournalDbAudio journalDbAudio = JournalDbAudio(
-          audioDirectory: audioNote.audioDirectory,
-          duration: audioNote.duration,
-          audioFile: audioNote.audioFile,
-          dateTo: audioNote.createdAt.add(audioNote.duration),
-          dateFrom: audioNote.createdAt,
-        );
-
-        _persistenceCubit.createJournalEntry(
-          journalDbAudio,
-          geolocation: audioNote.geolocation,
-          vectorClock: audioNote.vectorClock,
-        );
+        _persistenceCubit.createAudioEntry(audioNote);
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
