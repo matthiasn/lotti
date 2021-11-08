@@ -198,7 +198,8 @@
          [m/imdb-view merged]
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]
-         (when is-linked  [:img {:src (h/thumbs-512 (:img_file entry))}])
+         (when is-linked
+           [icl/gallery entry [entry] local-cfg emit])
          (dbg/debug-view entry new-entry local)]))))
 
 (defn entry-with-comments
