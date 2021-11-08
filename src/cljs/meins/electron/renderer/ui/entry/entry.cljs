@@ -68,6 +68,16 @@
                         :class    (when entry-active? "active")}
         (str "linked: " (:linked_cnt entry))]])))
 
+(defn linked-btn2 [entry local-cfg]
+  (let [ts (:timestamp entry)
+        tab-group (:tab-group local-cfg)
+        open-linked (up/add-search {:tab-group    tab-group
+                                    :query-string (str ts)}
+                                   emit)]
+    [:div
+     [:span.link-btn {:on-click open-linked}
+      (str "open linked")]]))
+
 (defn git-commit [_entry]
   (let [repos (subscribe [:repos])]
     (fn [entry]
@@ -100,7 +110,8 @@
         local (r/atom {:scroll-disabled true
                        :show-adjust-ts  false})]
     (fn journal-entry-render [entry local-cfg]
-      (let [merged (merge entry @new-entry)
+      (let [is-linked (:linked-inline (meta entry))
+            merged (merge entry @new-entry)
             {:keys [latitude longitude]} merged
             edit-mode? @edit-mode
             toggle-edit #(if @edit-mode (emit [:entry/remove-local entry])
@@ -116,11 +127,13 @@
                      :on-drag-over  h/prevent-default
                      :on-drag-enter h/prevent-default
                      :draggable     true
-                     :on-drag-start on-drag-start}
+                     :on-drag-start on-drag-start
+                     :class         (when is-linked "linked-inline")}
          [:div.drag
           [:div.header-1
            [:div [es/story-select merged tab-group]]
-           [linked-btn merged local-cfg active]]
+           [linked-btn merged local-cfg active]
+           (when is-linked [linked-btn2 merged local-cfg])]
           [:div.header
            [:div.action-row
             (if (:show-adjust-ts @local)
@@ -138,6 +151,7 @@
          (when (or (contains? (set (:perm_tags entry)) "#task")
                    (contains? (set (:tags entry)) "#task"))
            [task/task-details merged])
+         #_
          (when (or (contains? (set (:perm_tags entry)) "#album")
                    (contains? (set (:tags entry)) "#album"))
            [ca/album-config merged])
@@ -184,6 +198,8 @@
          [m/imdb-view merged]
          [m/spotify-view merged]
          [c/questionnaire-div merged edit-mode?]
+         (when is-linked
+           [icl/gallery entry [entry] local-cfg emit])
          (dbg/debug-view entry new-entry local)]))))
 
 (defn entry-with-comments
@@ -204,25 +220,28 @@
                                           query-id)}])]
     (fn entry-with-comments-render [entry local-cfg]
       (let [comments (:comments entry)
+            linked (map #(with-meta % {:linked-inline true}) (:linked entry))
+            comments-linked (sort-by :timestamp (concat comments linked))
             thumbnails? (and (not (contains? (:tags entry) "#briefing"))
                              (:thumbnails @cfg)
-                             (not (:gallery-view local-cfg)))]
+                             (not (:gallery-view local-cfg))
+                             (:img_file entry))]
         [:div.entry-with-comments
          [journal-entry entry local-cfg]
          (when thumbnails?
            [icl/gallery entry (icl/gallery-entries entry) local-cfg emit])
-         (when (seq comments)
+         (when (seq comments-linked)
            (if (= query-id @show-comments-for?)
              [:div.comments
-              (let [n (count comments)]
+              (let [n (count comments-linked)]
                 [:div.show-comments
                  (when (pos? n)
                    [:span {:on-click toggle-comments}
                     (str "hide " n " comment" (when (> n 1) "s"))])])
-              (for [comment comments]
+              (for [comment comments-linked]
                 ^{:key (str "c" comment)}
                 [journal-entry comment local-cfg])]
              [:div.show-comments
-              (let [n (count comments)]
+              (let [n (count comments-linked)]
                 [:span {:on-click toggle-comments}
                  (str "show " n " comment" (when (> n 1) "s"))])]))]))))
