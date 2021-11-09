@@ -125,47 +125,53 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
-    if (syncMessage is SyncJournalDbEntity) {
-      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
-      try {
-        JournalEntity journalEntity = syncMessage.journalEntity;
-        String jsonString = json.encode(syncMessage);
-        var docDir = await getApplicationDocumentsDirectory();
+    syncMessage.map(
+      journalEntity: (SyncJournalEntity syncJournalEntity) async {
+        final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+        try {
+          JournalEntity journalEntity = syncJournalEntity.journalEntity;
+          String jsonString = json.encode(syncMessage);
+          var docDir = await getApplicationDocumentsDirectory();
 
-        File? attachment;
-        String subject = 'enqueueMessage ${journalEntity.meta.vectorClock}';
+          File? attachment;
+          String subject = 'enqueueMessage ${journalEntity.meta.vectorClock}';
 
-        journalEntity.maybeMap(
-          journalAudio: (JournalAudio journalAudio) {
-            attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
-            AudioUtils.saveAudioNoteJson(journalAudio);
-          },
-          journalImage: (JournalImage journalImage) {
-            attachment = File(getFullImagePathWithDocDir(journalImage, docDir));
-            saveJournalImageJson(journalImage);
-          },
-          orElse: () {},
-        );
+          journalEntity.maybeMap(
+            journalAudio: (JournalAudio journalAudio) {
+              attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
+              AudioUtils.saveAudioNoteJson(journalAudio);
+            },
+            journalImage: (JournalImage journalImage) {
+              attachment =
+                  File(getFullImagePathWithDocDir(journalImage, docDir));
+              saveJournalImageJson(journalImage);
+            },
+            orElse: () {},
+          );
 
-        if (_b64Secret != null) {
-          String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
-          if (attachment != null) {
-            int fileLength = attachment!.lengthSync();
-            if (fileLength > 0) {
-              File encryptedFile = File('${attachment!.path}.aes');
-              await encryptFile(attachment!, encryptedFile, _b64Secret!);
-              await _db.queueInsert(encryptedMessage, subject,
-                  encryptedFilePath: encryptedFile.path);
+          if (_b64Secret != null) {
+            String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+            if (attachment != null) {
+              int fileLength = attachment!.lengthSync();
+              if (fileLength > 0) {
+                File encryptedFile = File('${attachment!.path}.aes');
+                await encryptFile(attachment!, encryptedFile, _b64Secret!);
+                await _db.queueInsert(encryptedMessage, subject,
+                    encryptedFilePath: encryptedFile.path);
+              }
+            } else {
+              await _db.queueInsert(encryptedMessage, subject);
             }
-          } else {
-            await _db.queueInsert(encryptedMessage, subject);
           }
+          await transaction.finish();
+          sendNext();
+        } catch (exception, stackTrace) {
+          await Sentry.captureException(exception, stackTrace: stackTrace);
         }
-        await transaction.finish();
-        sendNext();
-      } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
-      }
-    }
+      },
+      quantEntries: (SyncQuantEntries quantEntries) {
+        debugPrint('quantEntries need sending');
+      },
+    );
   }
 }

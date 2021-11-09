@@ -52,6 +52,8 @@ class HealthCubit extends Cubit<HealthState> {
         'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
     void addEntries(Map<DateTime, int> data, String type) {
+      List<CumulativeQuantityData> cumulativeQuantities = [];
+
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom.add(const Duration(days: 1));
@@ -64,8 +66,9 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        _persistenceCubit.createQuantitativeEntry(activityForDay);
+        cumulativeQuantities.add(activityForDay);
       }
+      _persistenceCubit.createQuantitativeEntries(cumulativeQuantities);
     }
 
     final Map<DateTime, int> stepCounts = await FlutterHealthFit()
@@ -93,6 +96,7 @@ class HealthCubit extends Cubit<HealthState> {
       try {
         List<HealthDataPoint> dataPoints =
             await health.getHealthDataFromTypes(dateFrom, dateTo, types);
+        List<DiscreteQuantityData> discreteQuantities = [];
 
         for (HealthDataPoint dataPoint in dataPoints) {
           DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
@@ -107,8 +111,9 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          _persistenceCubit.createQuantitativeEntry(discreteQuantity);
+          discreteQuantities.add(discreteQuantity);
         }
+        _persistenceCubit.createQuantitativeEntries(discreteQuantities);
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');
       }
