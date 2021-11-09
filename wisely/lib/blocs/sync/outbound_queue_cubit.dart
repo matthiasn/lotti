@@ -169,8 +169,22 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           await Sentry.captureException(exception, stackTrace: stackTrace);
         }
       },
-      quantEntries: (SyncQuantEntries quantEntries) {
-        debugPrint('quantEntries need sending');
+      quantitativeEntries: (SyncQuantitativeEntries entries) async {
+        final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+        try {
+          String jsonString = json.encode(syncMessage);
+          String subject = 'enqueueMessage quantitativeEntries';
+
+          if (_b64Secret != null) {
+            String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+            await _db.queueInsert(encryptedMessage, subject);
+          }
+
+          await transaction.finish();
+          sendNext();
+        } catch (exception, stackTrace) {
+          await Sentry.captureException(exception, stackTrace: stackTrace);
+        }
       },
     );
   }

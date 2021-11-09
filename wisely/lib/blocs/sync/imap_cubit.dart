@@ -69,8 +69,9 @@ class ImapCubit extends Cubit<ImapState> {
 
             _persistenceCubit.createDbEntity(journalEntity, enqueueSync: false);
           },
-          quantEntries: (List<QuantitativeEntry> quantEntries) {
+          quantitativeEntries: (List<QuantitativeEntry> quantEntries) {
             debugPrint('processMessage received ${quantEntries.runtimeType}');
+            _persistenceCubit.addQuantitativeEntries(quantEntries);
           },
         );
       } else {

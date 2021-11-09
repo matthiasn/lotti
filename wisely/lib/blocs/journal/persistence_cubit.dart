@@ -84,7 +84,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
             utcOffset: now.timeZoneOffset.inMinutes,
           ),
         );
-        await createDbEntity(journalEntity, enqueueSync: false);
         if (journalEntity is QuantitativeEntry) {
           quantEntries.add(journalEntity);
         }
@@ -93,9 +92,27 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       }
     }
 
+    addQuantitativeEntries(quantEntries);
+
     if (quantEntries.isNotEmpty) {
-      _outboundQueueCubit
-          .enqueueMessage(SyncMessage.quantEntries(quantEntries: quantEntries));
+      _outboundQueueCubit.enqueueMessage(
+          SyncMessage.syncQuantitativeEntries(entries: quantEntries));
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> addQuantitativeEntries(List<QuantitativeEntry> entries) async {
+    final transaction =
+        Sentry.startTransaction('addQuantitativeEntries()', 'task');
+
+    for (QuantitativeEntry entry in entries) {
+      try {
+        await createDbEntity(entry, enqueueSync: false);
+      } catch (exception, stackTrace) {
+        await Sentry.captureException(exception, stackTrace: stackTrace);
+      }
     }
 
     await transaction.finish();
@@ -188,7 +205,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       if (saved && enqueueSync) {
         _outboundQueueCubit.enqueueMessage(
-            SyncMessage.journalEntity(journalEntity: journalEntity));
+            SyncMessage.syncJournalEntity(journalEntity: journalEntity));
       }
       await transaction.finish();
 
