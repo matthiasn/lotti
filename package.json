@@ -28,7 +28,7 @@
     "bufferutil": "4.0.1",
     "buildmail": "4.0.1",
     "cldr-data": "36.0.0",
-    "cookie-parser": "1.4.4",
+    "cookie-parser": "1.4.5",
     "create-react-class": "15.6.3",
     "draft-js": "0.11.4",
     "draft-js-linkify-plugin": "2.0.2",
