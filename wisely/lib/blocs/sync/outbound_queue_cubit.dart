@@ -126,7 +126,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     syncMessage.map(
-      journalEntity: (SyncJournalEntity syncJournalEntity) async {
+      syncJournalEntity: (SyncJournalEntity syncJournalEntity) async {
         final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
         try {
           JournalEntity journalEntity = syncJournalEntity.journalEntity;
@@ -169,7 +169,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           await Sentry.captureException(exception, stackTrace: stackTrace);
         }
       },
-      quantitativeEntries: (SyncQuantitativeEntries entries) async {
+      syncQuantitativeEntries: (SyncQuantitativeEntries entries) async {
         final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
         try {
           String jsonString = json.encode(syncMessage);

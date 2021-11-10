@@ -114,6 +114,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         await Sentry.captureException(exception, stackTrace: stackTrace);
       }
     }
+    queryJournal();
 
     await transaction.finish();
     return true;
@@ -146,6 +147,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         geolocation: imageData.geolocation,
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+      queryJournal();
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
@@ -189,6 +191,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         geolocation: audioNote.geolocation,
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+      queryJournal();
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
@@ -208,9 +211,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
             SyncMessage.syncJournalEntity(journalEntity: journalEntity));
       }
       await transaction.finish();
-
-      await Future.delayed(const Duration(seconds: 1));
-      queryJournal();
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
