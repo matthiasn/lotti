@@ -16,7 +16,6 @@ import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
-import 'package:wisely/sync/encryption_salsa.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
@@ -150,7 +149,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           );
 
           if (_b64Secret != null) {
-            String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+            String encryptedMessage =
+                await encryptString(jsonString, _b64Secret);
             if (attachment != null) {
               int fileLength = attachment!.lengthSync();
               if (fileLength > 0) {
@@ -176,7 +176,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           String subject = 'enqueueMessage quantitativeEntries';
 
           if (_b64Secret != null) {
-            String encryptedMessage = encryptSalsa(jsonString, _b64Secret);
+            String encryptedMessage =
+                await encryptString(jsonString, _b64Secret);
             await _db.queueInsert(encryptedMessage, subject);
           }
 
