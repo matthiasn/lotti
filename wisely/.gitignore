@@ -10,6 +10,8 @@
 .svn/
 *.env
 
+!Podfile.lock
+
 # IntelliJ related
 *.iml
 *.ipr
