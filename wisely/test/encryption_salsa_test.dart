@@ -1,11 +1,14 @@
+import 'dart:io';
+
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/foundation.dart' hide Key;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wisely/sync/encryption_salsa.dart';
 
 void main() {
-  test('Check Salsa encryption/decryption roundtrip', () {
-    const testString = 'Ḽơᶉëᶆ ȋṕšᶙṁ ḍỡḽǭᵳ ʂǐť ӓṁệẗ, ĉṓɲṩḙċťᶒțûɾ ấɖḯƥĭṩčįɳġ';
+  test('Check Salsa encryption/decryption roundtrip', () async {
+    final originalFile = File('test_resources/test.txt');
+    String testString = await originalFile.readAsString();
     final String b64Secret = Key.fromSecureRandom(32).base64;
     final String encryptedMessage = encryptSalsa(testString, b64Secret);
     final String decrypted = decryptSalsa(encryptedMessage, b64Secret);
