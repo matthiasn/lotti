@@ -96,7 +96,7 @@ class ImapOutCubit extends Cubit<ImapState> {
         exception,
         stackTrace: stackTrace,
       );
-      return false;
+      rethrow;
     }
   }
 }
