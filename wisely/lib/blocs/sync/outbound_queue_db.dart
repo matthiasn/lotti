@@ -97,6 +97,7 @@ class OutboundQueueDb {
         retries: retries,
         createdAt: prev.createdAt,
         updatedAt: DateTime.now(),
+        encryptedFilePath: prev.encryptedFilePath,
       );
 
       await db.insert(
