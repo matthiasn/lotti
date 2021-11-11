@@ -4,8 +4,6 @@ PODS:
   - connectivity_plus_macos (0.0.1):
     - FlutterMacOS
     - ReachabilitySwift
-  - cryptography_flutter (0.1.0):
-    - FlutterMacOS
   - device_info_plus_macos (0.0.1):
     - FlutterMacOS
   - flutter_native_timezone (0.0.1):
@@ -44,7 +42,6 @@ PODS:
 DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
   - connectivity_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus_macos/macos`)
-  - cryptography_flutter (from `Flutter/ephemeral/.symlinks/plugins/cryptography_flutter/macos`)
   - device_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus_macos/macos`)
   - flutter_native_timezone (from `Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
@@ -69,8 +66,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
   connectivity_plus_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus_macos/macos
-  cryptography_flutter:
-    :path: Flutter/ephemeral/.symlinks/plugins/cryptography_flutter/macos
   device_info_plus_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus_macos/macos
   flutter_native_timezone:
@@ -99,7 +94,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
   connectivity_plus_macos: f6e86fd000e971d361e54b5afcadc8c8fa773308
-  cryptography_flutter: d9ae6f7e4c477449ee409c08f9ce45760ab179be
   device_info_plus_macos: 1ad388a1ef433505c4038e7dd9605aadd1e2e9c7
   flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
   flutter_secure_storage_macos: 6ceee8fbc7f484553ad17f79361b556259df89aa

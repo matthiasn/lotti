@@ -4,8 +4,6 @@ PODS:
   - connectivity_plus (0.0.1):
     - Flutter
     - Reachability
-  - cryptography_flutter (0.1.0):
-    - Flutter
   - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -97,7 +95,6 @@ PODS:
 DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
-  - cryptography_flutter (from `.symlinks/plugins/cryptography_flutter/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_health_fit (from `.symlinks/plugins/flutter_health_fit/ios`)
@@ -140,8 +137,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audio_session/ios"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
-  cryptography_flutter:
-    :path: ".symlinks/plugins/cryptography_flutter/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
@@ -190,7 +185,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   audio_session: 4f3e461722055d21515cf3261b64c973c062f345
   connectivity_plus: 5f0eb61093bec56935f21a1699dd2758bc895587
-  cryptography_flutter: a2c541ba25ff28549f989f856dde126c961defcd
   device_info_plus: e5c5da33f982a436e103237c0c85f9031142abed
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   flutter_health_fit: a96be00d6d54c5853fc0d5e08204d0d6821517ed
