@@ -43,6 +43,9 @@ class HealthCubit extends Cubit<HealthState> {
 
   Future getActivityHealthData(
       {required DateTime dateFrom, required DateTime dateTo}) async {
+    DateTime now = DateTime.now();
+    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
     final transaction =
         Sentry.startTransaction('getActivityHealthData()', 'task');
     final flutterHealthFit = FlutterHealthFit();
@@ -54,10 +57,13 @@ class HealthCubit extends Cubit<HealthState> {
     void addEntries(Map<DateTime, int> data, String type) {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
-        DateTime dateTo = dateFrom.add(const Duration(days: 1));
+        DateTime dateTo = dateFrom
+            .add(const Duration(days: 1))
+            .subtract(const Duration(milliseconds: 1));
+        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         CumulativeQuantityData activityForDay = CumulativeQuantityData(
           dateFrom: dateFrom,
-          dateTo: dateTo,
+          dateTo: dateToOrNow,
           value: dailyStepsEntry.value,
           dataType: type,
           unit: 'count',
@@ -70,12 +76,12 @@ class HealthCubit extends Cubit<HealthState> {
 
     final Map<DateTime, int> stepCounts = await FlutterHealthFit()
         .getStepsBySegment(dateFrom.millisecondsSinceEpoch,
-            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
+            dateToOrNow.millisecondsSinceEpoch, 1, TimeUnit.days);
     addEntries(stepCounts, 'cumulative_step_count');
 
     final Map<DateTime, int> flights = await FlutterHealthFit()
         .getFlightsBySegment(dateFrom.millisecondsSinceEpoch,
-            dateTo.millisecondsSinceEpoch, 1, TimeUnit.days);
+            dateToOrNow.millisecondsSinceEpoch, 1, TimeUnit.days);
     addEntries(flights, 'cumulative_flights_climbed');
     await transaction.finish();
   }
@@ -91,8 +97,10 @@ class HealthCubit extends Cubit<HealthState> {
 
     if (accessWasGranted) {
       try {
+        DateTime now = DateTime.now();
+        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         List<HealthDataPoint> dataPoints =
-            await health.getHealthDataFromTypes(dateFrom, dateTo, types);
+            await health.getHealthDataFromTypes(dateFrom, dateToOrNow, types);
 
         for (HealthDataPoint dataPoint in dataPoints) {
           DiscreteQuantityData discreteQuantity = DiscreteQuantityData(
