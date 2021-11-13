@@ -114,9 +114,8 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   void _startPolling() async {
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
       _pollInbox();
-      _observeInbox();
     });
   }
 
@@ -189,7 +188,6 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> _observeInbox() async {
     try {
       if (_syncConfig != null) {
-        _mailClient.stopPollingIfNeeded();
         ImapConfig imapConfig = _syncConfig!.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',
@@ -217,7 +215,6 @@ class ImapCubit extends Cubit<ImapState> {
                 message: SentryMessage(event.toString()),
               ),
               withScope: (Scope scope) => scope.level = SentryLevel.warning);
-          _observeInbox();
         });
 
         _mailClient.startPolling();
