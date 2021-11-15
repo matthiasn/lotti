@@ -26,7 +26,7 @@ import 'blocs/sync/imap_out_cubit.dart';
 import 'blocs/sync/outbound_queue_cubit.dart';
 import 'blocs/sync/vector_clock_cubit.dart';
 
-const enableSentry = true;
+const enableSentry = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

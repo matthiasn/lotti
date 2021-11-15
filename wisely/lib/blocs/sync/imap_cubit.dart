@@ -19,6 +19,7 @@ import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/utils/file_utils.dart';
 
 import 'imap_tools.dart';
 
@@ -63,6 +64,9 @@ class ImapCubit extends Cubit<ImapState> {
               },
               journalImage: (JournalImage journalImage) async {
                 await saveImageAttachment(message, journalImage, _b64Secret);
+              },
+              journalEntry: (JournalEntry journalEntry) async {
+                await saveJournalEntryJson(journalEntry);
               },
               orElse: () {},
             );

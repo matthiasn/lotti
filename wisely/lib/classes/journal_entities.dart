@@ -60,7 +60,7 @@ class AudioData with _$AudioData {
 class JournalEntity with _$JournalEntity {
   factory JournalEntity.journalEntry({
     required Metadata meta,
-    EntryText? entryText,
+    required EntryText entryText,
     Geolocation? geolocation,
   }) = JournalEntry;
 

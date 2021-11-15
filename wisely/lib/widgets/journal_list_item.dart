@@ -39,25 +39,27 @@ class JournalListItem extends StatelessWidget {
             child: Center(
               child: Column(
                 children: [
-                  InfoText(text: df.format(item.meta.dateFrom)),
+                  InfoText(df.format(item.meta.dateFrom)),
                   item.maybeMap(
                     quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
                       cumulativeQuantityData: (qd) => InfoText(
-                        text: 'End: ${df.format(qd.dateTo)}'
-                            '\n${formatType(qd.dataType)}: '
-                            '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                        'End: ${df.format(qd.dateTo)}'
+                        '\n${formatType(qd.dataType)}: '
+                        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
                       ),
                       discreteQuantityData: (qd) => InfoText(
-                        text: 'End: ${df.format(item.meta.dateTo)}'
-                            '\n${formatType(qd.dataType)}: '
-                            '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                        'End: ${df.format(item.meta.dateTo)}'
+                        '\n${formatType(qd.dataType)}: '
+                        '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
                       ),
                       orElse: () => Container(),
                     ),
                     journalAudio: (JournalAudio audioNote) =>
-                        InfoText(text: formatAudio(audioNote)),
+                        InfoText(formatAudio(audioNote)),
+                    journalEntry: (JournalEntry journalEntry) =>
+                        InfoText(journalEntry.entryText.plainText),
                     journalImage: (JournalImage journalImage) =>
-                        InfoText(text: journalImage.data.imageFile),
+                        InfoText(journalImage.data.imageFile),
                     orElse: () => Row(
                       children: const [],
                     ),
@@ -101,6 +103,9 @@ class JournalListItem extends StatelessWidget {
                         journalImage: (image) => MapWidget(
                           geolocation: image.geolocation,
                         ),
+                        journalEntry: (entry) => MapWidget(
+                          geolocation: entry.geolocation,
+                        ),
                         orElse: () => Container(),
                       ),
                       item.maybeMap(
@@ -121,21 +126,31 @@ class JournalListItem extends StatelessWidget {
                             ),
                           );
                         },
+                        journalEntry: (JournalEntry journalEntry) => Container(
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: InfoText(
+                              journalEntry.entryText.plainText,
+                              maxLines: 500,
+                            ),
+                          ),
+                        ),
                         quantitative: (qe) => qe.data.map(
                           cumulativeQuantityData: (qd) => Padding(
                             padding: const EdgeInsets.all(24.0),
                             child: InfoText(
-                              text: 'End: ${df.format(qe.meta.dateTo)}'
-                                  '\n${formatType(qd.dataType)}: '
-                                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                              'End: ${df.format(qe.meta.dateTo)}'
+                              '\n${formatType(qd.dataType)}: '
+                              '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
                             ),
                           ),
                           discreteQuantityData: (qd) => Padding(
                             padding: const EdgeInsets.all(24.0),
                             child: InfoText(
-                              text: 'End: ${df.format(qe.meta.dateTo)}'
-                                  '\n${formatType(qd.dataType)}: '
-                                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                              'End: ${df.format(qe.meta.dateTo)}'
+                              '\n${formatType(qd.dataType)}: '
+                              '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
                             ),
                           ),
                         ),
@@ -144,7 +159,7 @@ class JournalListItem extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             vertical: 4.0, horizontal: 16.0),
-                        child: InfoText(text: df.format(item.meta.dateFrom)),
+                        child: InfoText(df.format(item.meta.dateFrom)),
                       ),
                       ElevatedButton(
                         child: const Text('Close'),
@@ -164,17 +179,20 @@ class JournalListItem extends StatelessWidget {
 
 class InfoText extends StatelessWidget {
   final String text;
-  const InfoText({
+  final int maxLines;
+  const InfoText(
+    this.text, {
     Key? key,
-    required this.text,
+    this.maxLines = 5,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Text(text,
+        maxLines: maxLines,
         style: const TextStyle(
           fontFamily: 'ShareTechMono',
-          fontSize: 16.0,
+          fontSize: 14.0,
         ));
   }
 }

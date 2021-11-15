@@ -36,7 +36,7 @@ class _MapWidgetState extends State<MapWidget> {
 
     return Center(
       child: SizedBox(
-        height: 180,
+        height: 120,
         child: Listener(
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
