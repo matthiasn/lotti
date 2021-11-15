@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -11,16 +12,20 @@ import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/audio_note.dart';
+import 'package:wisely/classes/entry_text.dart';
+import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/health.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceDb _db;
-  final uuid = Uuid();
+  final uuid = const Uuid();
+  DeviceLocation location = DeviceLocation();
 
   PersistenceCubit({
     required VectorClockCubit vectorClockCubit,
@@ -167,6 +172,40 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
+  Future<bool> createTextEntry(EntryText entryText) async {
+    final transaction = Sentry.startTransaction('createTextEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock();
+      String id = uuid.v1();
+      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+
+      JournalEntity journalEntity = JournalEntity.journalEntry(
+        entryText: entryText,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        geolocation: geolocation,
+      );
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool?> createDbEntity(JournalEntity journalEntity,
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
@@ -184,7 +223,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
-      print('Exception $exception');
+      debugPrint('Exception $exception');
     }
   }
 }
