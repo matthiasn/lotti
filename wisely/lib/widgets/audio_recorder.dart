@@ -90,7 +90,7 @@ class VuMeterWidget extends StatelessWidget {
         width: 280,
         child: LinearProgressIndicator(
           value: decibels / 160,
-          minHeight: 24.0,
+          minHeight: 16.0,
           color: (decibels > 130)
               ? AppColors.audioMeterPeakedBar
               : (decibels > 100)

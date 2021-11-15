@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -187,68 +188,70 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              widget.title,
-              style: TextStyle(
-                color: AppColors.headerFontColor,
-                fontFamily: 'Oswald',
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              ' v$version Build $buildNumber',
-              style: TextStyle(
-                  color: AppColors.headerFontColor2,
+    return KeyboardDismisser(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                widget.title,
+                style: TextStyle(
+                  color: AppColors.headerFontColor,
                   fontFamily: 'Oswald',
-                  fontSize: 12.0,
-                  fontWeight: FontWeight.w400),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                ' v$version Build $buildNumber',
+                style: TextStyle(
+                    color: AppColors.headerFontColor2,
+                    fontFamily: 'Oswald',
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.w400),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.headerBgColor,
+        ),
+        backgroundColor: AppColors.bodyBgColor,
+        body: Center(
+          child: _widgetOptions.elementAt(_selectedIndex),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_box),
+              label: 'Add',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.camera_roll),
+              label: 'Photos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.mic),
+              label: 'Audio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.directions_run),
+              label: 'Health',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
             ),
           ],
+          currentIndex: _selectedIndex,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.amber[800],
+          unselectedItemColor: AppColors.headerFontColor,
+          backgroundColor: AppColors.headerBgColor,
+          onTap: _onItemTapped,
         ),
-        backgroundColor: AppColors.headerBgColor,
-      ),
-      backgroundColor: AppColors.bodyBgColor,
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
-            label: 'Add',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_roll),
-            label: 'Photos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mic),
-            label: 'Audio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_run),
-            label: 'Health',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: AppColors.headerFontColor,
-        backgroundColor: AppColors.headerBgColor,
-        onTap: _onItemTapped,
       ),
     );
   }
