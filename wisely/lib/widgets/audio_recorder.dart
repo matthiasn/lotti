@@ -6,6 +6,8 @@ import 'package:wisely/blocs/audio/recorder_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_state.dart';
 import 'package:wisely/theme.dart';
 
+const double iconSize = 64.0;
+
 class AudioRecorderWidget extends StatelessWidget {
   const AudioRecorderWidget({Key? key}) : super(key: key);
 
@@ -29,7 +31,7 @@ class AudioRecorderWidget extends StatelessWidget {
             children: <Widget>[
               IconButton(
                 icon: const Icon(Icons.mic_rounded),
-                iconSize: 40.0,
+                iconSize: iconSize,
                 tooltip: 'Record',
                 color: state.status == AudioRecorderStatus.recording
                     ? AppColors.activeAudioControl
@@ -38,7 +40,7 @@ class AudioRecorderWidget extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.stop),
-                iconSize: 40.0,
+                iconSize: iconSize,
                 tooltip: 'Stop',
                 color: AppColors.inactiveAudioControl,
                 onPressed: () => context.read<AudioRecorderCubit>().stop(),
@@ -49,7 +51,7 @@ class AudioRecorderWidget extends StatelessWidget {
                   formatDuration(state.progress.toString()),
                   style: TextStyle(
                     fontFamily: 'ShareTechMono',
-                    fontSize: 24.0,
+                    fontSize: 32.0,
                     color: AppColors.inactiveAudioControl,
                   ),
                 ),
@@ -65,7 +67,7 @@ class AudioRecorderWidget extends StatelessWidget {
               formatDecibels(state.decibels),
               style: TextStyle(
                 fontFamily: 'ShareTechMono',
-                fontSize: 16.0,
+                fontSize: 20.0,
                 color: AppColors.inactiveAudioControl,
               ),
             ),
@@ -82,17 +84,20 @@ class VuMeterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 200,
-      child: LinearProgressIndicator(
-        value: decibels / 160,
-        minHeight: 8.0,
-        color: (decibels > 130)
-            ? AppColors.audioMeterPeakedBar
-            : (decibels > 100)
-                ? AppColors.audioMeterTooHotBar
-                : AppColors.audioMeterBar,
-        backgroundColor: AppColors.audioMeterBarBackground,
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+      child: SizedBox(
+        width: 280,
+        child: LinearProgressIndicator(
+          value: decibels / 160,
+          minHeight: 24.0,
+          color: (decibels > 130)
+              ? AppColors.audioMeterPeakedBar
+              : (decibels > 100)
+                  ? AppColors.audioMeterTooHotBar
+                  : AppColors.audioMeterBar,
+          backgroundColor: AppColors.audioMeterBarBackground,
+        ),
       ),
     );
   }
