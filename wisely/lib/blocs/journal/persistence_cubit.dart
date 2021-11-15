@@ -19,6 +19,7 @@ import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/location.dart';
 import 'package:wisely/sync/vector_clock.dart';
+import 'package:wisely/utils/file_utils.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
@@ -198,6 +199,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         geolocation: geolocation,
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+
+      if (journalEntity is JournalEntry) {
+        await saveJournalEntryJson(journalEntity);
+      }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
