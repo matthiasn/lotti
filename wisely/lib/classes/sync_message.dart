@@ -9,6 +9,7 @@ part 'sync_message.g.dart';
 class SyncMessage with _$SyncMessage {
   factory SyncMessage.journalDbEntity({
     required JournalEntity journalEntity,
+    @Default(false) bool updated,
   }) = SyncJournalDbEntity;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

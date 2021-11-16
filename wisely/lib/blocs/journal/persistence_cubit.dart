@@ -238,7 +238,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createTextEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
 
       Metadata newMeta = journalEntity.meta.copyWith(
         updatedAt: now,
@@ -262,15 +263,19 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool?> updateDbEntity(JournalEntity journalEntity,
-      {bool enqueueSync = false}) async {
+  Future<bool?> updateDbEntity(
+    JournalEntity journalEntity, {
+    bool enqueueSync = false,
+  }) async {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
       bool saved = await _db.update(journalEntity);
 
       if (saved && enqueueSync) {
-        _outboundQueueCubit.enqueueMessage(
-            SyncMessage.journalDbEntity(journalEntity: journalEntity));
+        _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+          journalEntity: journalEntity,
+          updated: true,
+        ));
       }
       await transaction.finish();
 

@@ -55,8 +55,7 @@ class ImapCubit extends Cubit<ImapState> {
             await decryptMessage(encryptedMessage, message, _b64Secret);
 
         syncMessage?.when(
-          journalDbEntity: (JournalEntity journalEntity) async {
-            debugPrint('processMessage inserting ${journalEntity.runtimeType}');
+          journalDbEntity: (JournalEntity journalEntity, bool updated) async {
             journalEntity.maybeMap(
               journalAudio: (JournalAudio journalAudio) async {
                 await saveAudioAttachment(message, journalAudio, _b64Secret);
@@ -70,7 +69,17 @@ class ImapCubit extends Cubit<ImapState> {
               orElse: () {},
             );
 
-            _persistenceCubit.createDbEntity(journalEntity, enqueueSync: false);
+            if (updated) {
+              debugPrint(
+                  'processMessage updating ${journalEntity.runtimeType}');
+              _persistenceCubit.updateDbEntity(journalEntity,
+                  enqueueSync: false);
+            } else {
+              debugPrint(
+                  'processMessage inserting ${journalEntity.runtimeType}');
+              _persistenceCubit.createDbEntity(journalEntity,
+                  enqueueSync: false);
+            }
           },
         );
       } else {
