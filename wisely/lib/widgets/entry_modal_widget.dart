@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:provider/src/provider.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
+import 'package:wisely/classes/entry_text.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/utils/image_utils.dart';
@@ -68,9 +72,24 @@ class EntryModalWidget extends StatelessWidget {
                     document: Document.fromJson(editorJson),
                     selection: const TextSelection.collapsed(offset: 0));
 
+                void saveText() {
+                  Delta delta = _controller.document.toDelta();
+                  String json = jsonEncode(delta.toJson());
+                  String markdown = deltaToMarkdown(json);
+
+                  context.read<PersistenceCubit>().createTextEntry(
+                        EntryText(
+                          plainText: _controller.document.toPlainText(),
+                          markdown: markdown,
+                          quill: json,
+                        ),
+                      );
+                }
+
                 return EditorWidget(
                   controller: _controller,
                   height: 240,
+                  saveFn: saveText,
                 );
               }
 
@@ -102,11 +121,17 @@ class EntryModalWidget extends StatelessWidget {
             child: InfoText(df.format(item.meta.dateFrom)),
           ),
           Center(
-              child: Button(
-            'Close',
-            onPressed: () => Navigator.pop(context),
-            padding: const EdgeInsets.only(bottom: 8.0),
-          )),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Button(
+                  'Close',
+                  onPressed: () => Navigator.pop(context),
+                  padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/theme.dart';
 
+import 'buttons.dart';
+
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
     Key? key,
@@ -10,16 +12,19 @@ class EditorWidget extends StatelessWidget {
     double height = 300,
     double padding = 16.0,
     bool readOnly = false,
+    Function? saveFn,
   })  : _controller = controller,
         _height = height,
         _readOnly = readOnly,
         _padding = padding,
+        _saveFn = saveFn,
         super(key: key);
 
   final QuillController _controller;
   final double _height;
   final bool _readOnly;
   final double _padding;
+  final Function? _saveFn;
 
   void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
     if (event.data.isMetaPressed && event.character == char) {
@@ -49,19 +54,29 @@ class EditorWidget extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: double.maxFinite,
               color: Colors.grey[100],
-              child: QuillToolbar.basic(
-                controller: _controller,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showListCheck: false,
-                showIndent: false,
-                showQuote: false,
-                showSmallButton: false,
-                showImageButton: false,
-                showLink: false,
-                showUnderLineButton: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  QuillToolbar.basic(
+                    controller: _controller,
+                    showColorButton: false,
+                    showBackgroundColorButton: false,
+                    showListCheck: false,
+                    showIndent: false,
+                    showQuote: false,
+                    showSmallButton: false,
+                    showImageButton: false,
+                    showLink: false,
+                    showUnderLineButton: false,
+                  ),
+                  Button('Save', onPressed: () {
+                    if (_saveFn != null) {
+                      _saveFn!();
+                    }
+                  }, padding: const EdgeInsets.all(4.0)),
+                ],
               ),
             ),
             Expanded(

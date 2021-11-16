@@ -8,7 +8,6 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/classes/entry_text.dart';
-import 'package:wisely/widgets/buttons.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 
 class EditorPage extends StatefulWidget {
@@ -53,12 +52,14 @@ class _EditorPageState extends State<EditorPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Button('Save', onPressed: _save),
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                    child: EditorWidget(controller: _controller)),
+                    child: EditorWidget(
+                      controller: _controller,
+                      saveFn: _save,
+                    )),
               ),
             ],
           ),
