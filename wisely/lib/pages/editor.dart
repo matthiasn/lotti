@@ -19,7 +19,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  final QuillController _controller = QuillController.basic();
+  QuillController _controller = QuillController.basic();
 
   @override
   void initState() {
@@ -43,6 +43,8 @@ class _EditorPageState extends State<EditorPage> {
               ),
             );
 
+        _controller = QuillController.basic();
+
         FocusScope.of(context).unfocus();
       }
 
@@ -54,37 +56,55 @@ class _EditorPageState extends State<EditorPage> {
               Button('Save', onPressed: _save),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  height: 300,
-                  color: AppColors.editorBgColor,
-                  child: Column(
-                    children: [
-                      QuillToolbar.basic(
-                        controller: _controller,
-                        showColorButton: false,
-                        showBackgroundColorButton: false,
-                        showListCheck: false,
-                        showIndent: false,
-                        showQuote: false,
-                        showSmallButton: false,
-                        showImageButton: false,
-                        showLink: false,
-                      ),
-                      Expanded(
-                        child: QuillEditor.basic(
-                          controller: _controller,
-                          readOnly: false, // true for view only mode
-                        ),
-                      )
-                    ],
-                  ),
-                ),
+                child: EditorWidget(controller: _controller),
               ),
             ],
           ),
         ),
       );
     });
+  }
+}
+
+class EditorWidget extends StatelessWidget {
+  const EditorWidget({
+    Key? key,
+    required QuillController controller,
+  })  : _controller = controller,
+        super(key: key);
+
+  final QuillController _controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        height: 300,
+        color: AppColors.editorBgColor,
+        child: Column(
+          children: [
+            QuillToolbar.basic(
+              controller: _controller,
+              showColorButton: false,
+              showBackgroundColorButton: false,
+              showListCheck: false,
+              showIndent: false,
+              showQuote: false,
+              showSmallButton: false,
+              showImageButton: false,
+              showLink: false,
+            ),
+            Expanded(
+              child: QuillEditor.basic(
+                controller: _controller,
+                readOnly: false, // true for view only mode
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }

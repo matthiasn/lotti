@@ -31,7 +31,7 @@ class JournalListItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderRadius: const BorderRadius.all(Radius.circular(8.0)),
         child: Container(
           color: AppColors.entryBgColor,
           width: double.infinity,
@@ -74,7 +74,6 @@ class JournalListItem extends StatelessWidget {
             style: TextButton.styleFrom(
               primary: AppColors.listItemText,
               onSurface: Colors.yellow,
-              side: BorderSide(color: AppColors.listItemText, width: 0.5),
             ),
             onPressed: () async {
               item.mapOrNull(journalAudio: (JournalAudio audioNote) {
