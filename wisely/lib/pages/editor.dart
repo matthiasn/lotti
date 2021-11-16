@@ -4,7 +4,7 @@ import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/classes/entry_text.dart';

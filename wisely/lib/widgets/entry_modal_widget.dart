@@ -77,7 +77,8 @@ class EntryModalWidget extends StatelessWidget {
                   String json = jsonEncode(delta.toJson());
                   String markdown = deltaToMarkdown(json);
 
-                  context.read<PersistenceCubit>().createTextEntry(
+                  context.read<PersistenceCubit>().updateTextEntry(
+                        item,
                         EntryText(
                           plainText: _controller.document.toPlainText(),
                           markdown: markdown,
