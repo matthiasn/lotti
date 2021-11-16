@@ -5,7 +5,6 @@ import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';

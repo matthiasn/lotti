@@ -36,7 +36,7 @@ dependencies:
   bloc: ^8.0.0-dev.3
   bloc_test: ^9.0.0-dev.3
   flutter_bloc: ^8.0.0-dev.2
-  hydrated_bloc: ^8.0.0-dev.2
+  hydrated_bloc: 8.0.0-dev.4
   mocktail: ^0.2.0
   equatable: ^2.0.3
   intl: ^0.17.0
