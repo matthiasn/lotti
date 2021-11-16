@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/theme.dart';
 
-import 'buttons.dart';
-
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
     Key? key,
@@ -12,7 +10,7 @@ class EditorWidget extends StatelessWidget {
     double height = 300,
     double padding = 16.0,
     bool readOnly = false,
-    Function? saveFn,
+    required Function saveFn,
   })  : _controller = controller,
         _height = height,
         _readOnly = readOnly,
@@ -24,7 +22,7 @@ class EditorWidget extends StatelessWidget {
   final double _height;
   final bool _readOnly;
   final double _padding;
-  final Function? _saveFn;
+  final Function _saveFn;
 
   void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
     if (event.data.isMetaPressed && event.character == char) {
@@ -40,6 +38,12 @@ class EditorWidget extends StatelessWidget {
     }
   }
 
+  void saveViaKeyboard(RawKeyEvent event) {
+    if (event.data.isMetaPressed && event.character == 's') {
+      _saveFn();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -47,6 +51,7 @@ class EditorWidget extends StatelessWidget {
       onKey: (RawKeyEvent event) {
         keyFormatter(event, 'b', Attribute.bold);
         keyFormatter(event, 'i', Attribute.italic);
+        saveViaKeyboard(event);
       },
       child: Container(
         height: _height,
@@ -55,27 +60,33 @@ class EditorWidget extends StatelessWidget {
           children: [
             Container(
               color: Colors.grey[100],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              width: double.maxFinite,
+              child: Wrap(
+                //mainAxisAlignment: MainAxisAlignment.center,
+                //crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  QuillToolbar.basic(
-                    controller: _controller,
-                    showColorButton: false,
-                    showBackgroundColorButton: false,
-                    showListCheck: false,
-                    showIndent: false,
-                    showQuote: false,
-                    showSmallButton: false,
-                    showImageButton: false,
-                    showLink: false,
-                    showUnderLineButton: false,
+                  IconButton(
+                    icon: const Icon(Icons.save),
+                    iconSize: 20,
+                    tooltip: 'Save',
+                    onPressed: () => _saveFn(),
                   ),
-                  Button('Save', onPressed: () {
-                    if (_saveFn != null) {
-                      _saveFn!();
-                    }
-                  }, padding: const EdgeInsets.all(4.0)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3.0),
+                    child: QuillToolbar.basic(
+                      controller: _controller,
+                      showColorButton: false,
+                      showBackgroundColorButton: false,
+                      showListCheck: false,
+                      showIndent: false,
+                      showQuote: false,
+                      showSmallButton: false,
+                      showImageButton: false,
+                      showLink: false,
+                      showUnderLineButton: false,
+                      showAlignmentButtons: false,
+                    ),
+                  ),
                 ],
               ),
             ),
