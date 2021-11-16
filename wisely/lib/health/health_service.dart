@@ -70,6 +70,8 @@ class HealthService {
     final flutterHealthFit = FlutterHealthFit();
     final bool isAuthorized = await FlutterHealthFit().authorize(true);
     final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    DateTime now = DateTime.now();
+
     debugPrint(
         'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
@@ -95,9 +97,10 @@ class HealthService {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom.add(const Duration(days: 1));
+        DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         CumulativeQuantityData stepsForDay = CumulativeQuantityData(
           dateFrom: dateFrom,
-          dateTo: dateTo,
+          dateTo: dateToOrNow,
           value: dailyStepsEntry.value,
           dataType: type,
           unit: 'count',
