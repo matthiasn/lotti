@@ -3,11 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/utils/image_utils.dart';
 import 'package:wisely/widgets/audio_player.dart';
+import 'package:wisely/widgets/buttons.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 import 'package:wisely/widgets/entry_tools.dart';
 import 'package:wisely/widgets/map_widget.dart';
@@ -59,19 +60,21 @@ class EntryModalWidget extends StatelessWidget {
               );
             },
             journalEntry: (JournalEntry journalEntry) {
-              var editorJson = json.decode(journalEntry.entryText.quill!);
+              QuillController _controller = QuillController.basic();
 
-              quill.QuillController _controller = quill.QuillController.basic();
+              if (journalEntry.entryText.quill != null) {
+                var editorJson = json.decode(journalEntry.entryText.quill!);
+                _controller = QuillController(
+                    document: Document.fromJson(editorJson),
+                    selection: const TextSelection.collapsed(offset: 0));
 
-              _controller = quill.QuillController(
-                  document: quill.Document.fromJson(editorJson),
-                  selection: const TextSelection.collapsed(offset: 0));
+                return EditorWidget(
+                  controller: _controller,
+                  height: 240,
+                );
+              }
 
-              return EditorWidget(
-                controller: _controller,
-                height: 240,
-                readOnly: true,
-              );
+              return Container();
             },
             quantitative: (qe) => qe.data.map(
               cumulativeQuantityData: (qd) => Padding(
@@ -98,10 +101,12 @@ class EntryModalWidget extends StatelessWidget {
                 const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
             child: InfoText(df.format(item.meta.dateFrom)),
           ),
-          ElevatedButton(
-            child: const Text('Close'),
+          Center(
+              child: Button(
+            'Close',
             onPressed: () => Navigator.pop(context),
-          )
+            padding: const EdgeInsets.only(bottom: 8.0),
+          )),
         ],
       ),
     );
