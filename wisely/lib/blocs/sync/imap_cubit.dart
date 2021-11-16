@@ -11,7 +11,6 @@ import 'package:enough_mail/mail/mail_exception.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
