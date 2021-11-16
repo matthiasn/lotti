@@ -1,13 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/utils/image_utils.dart';
+import 'package:wisely/widgets/editor_widget.dart';
 
 import '../theme.dart';
 import 'audio_player.dart';
@@ -92,7 +95,7 @@ class JournalListItem extends StatelessWidget {
                 clipBehavior: Clip.antiAliasWithSaveLayer,
                 builder: (BuildContext context) {
                   return Container(
-                    color: AppColors.bodyBgColor,
+                    color: AppColors.entryBgColor,
                     child: ListView(
                       shrinkWrap: true,
                       children: <Widget>[
@@ -126,17 +129,24 @@ class JournalListItem extends StatelessWidget {
                               ),
                             );
                           },
-                          journalEntry: (JournalEntry journalEntry) =>
-                              Container(
-                            color: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: InfoText(
-                                journalEntry.entryText.plainText,
-                                maxLines: 500,
-                              ),
-                            ),
-                          ),
+                          journalEntry: (JournalEntry journalEntry) {
+                            var editorJson =
+                                json.decode(journalEntry.entryText.quill!);
+
+                            quill.QuillController _controller =
+                                quill.QuillController.basic();
+
+                            _controller = quill.QuillController(
+                                document: quill.Document.fromJson(editorJson),
+                                selection:
+                                    const TextSelection.collapsed(offset: 0));
+
+                            return EditorWidget(
+                              controller: _controller,
+                              height: 240,
+                              readOnly: true,
+                            );
+                          },
                           quantitative: (qe) => qe.data.map(
                             cumulativeQuantityData: (qd) => Padding(
                               padding: const EdgeInsets.all(24.0),

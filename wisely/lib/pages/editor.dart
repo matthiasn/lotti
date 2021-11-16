@@ -56,7 +56,9 @@ class _EditorPageState extends State<EditorPage> {
               Button('Save', onPressed: _save),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: EditorWidget(controller: _controller),
+                child: ClipRRect(
+                    borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                    child: EditorWidget(controller: _controller)),
               ),
             ],
           ),
