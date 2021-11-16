@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/location.dart';
@@ -16,14 +15,11 @@ import 'package:wisely/utils/image_utils.dart';
 import 'journal_image_state.dart';
 
 class JournalImageCubit extends Cubit<JournalImageState> {
-  late final VectorClockCubit _vectorClockCubit;
   late final PersistenceCubit _persistenceCubit;
 
   JournalImageCubit({
-    required VectorClockCubit vectorClockCubit,
     required PersistenceCubit persistenceCubit,
   }) : super(JournalImageState()) {
-    _vectorClockCubit = vectorClockCubit;
     _persistenceCubit = persistenceCubit;
   }
 

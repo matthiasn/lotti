@@ -11,7 +11,6 @@ import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
-import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -25,7 +24,6 @@ import 'outbound_queue_state.dart';
 class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
   late final ImapOutCubit _imapOutCubit;
-  late final VectorClockCubit _vectorClockCubit;
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
@@ -36,11 +34,9 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
     required ImapOutCubit imapOutCubit,
-    required VectorClockCubit vectorClockCubit,
   }) : super(OutboundQueueState.initial()) {
     _encryptionCubit = encryptionCubit;
     _imapOutCubit = imapOutCubit;
-    _vectorClockCubit = vectorClockCubit;
     _db = OutboundQueueDb();
     init();
 
