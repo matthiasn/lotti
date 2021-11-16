@@ -8,8 +8,8 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
 import 'package:wisely/classes/entry_text.dart';
-import 'package:wisely/theme.dart';
 import 'package:wisely/widgets/buttons.dart';
+import 'package:wisely/widgets/editor_widget.dart';
 
 class EditorPage extends StatefulWidget {
   const EditorPage({Key? key}) : super(key: key);
@@ -19,7 +19,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  final QuillController _controller = QuillController.basic();
+  QuillController _controller = QuillController.basic();
 
   @override
   void initState() {
@@ -43,6 +43,8 @@ class _EditorPageState extends State<EditorPage> {
               ),
             );
 
+        _controller = QuillController.basic();
+
         FocusScope.of(context).unfocus();
       }
 
@@ -54,32 +56,9 @@ class _EditorPageState extends State<EditorPage> {
               Button('Save', onPressed: _save),
               Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  height: 300,
-                  color: AppColors.editorBgColor,
-                  child: Column(
-                    children: [
-                      QuillToolbar.basic(
-                        controller: _controller,
-                        showColorButton: false,
-                        showBackgroundColorButton: false,
-                        showListCheck: false,
-                        showIndent: false,
-                        showQuote: false,
-                        showSmallButton: false,
-                        showImageButton: false,
-                        showLink: false,
-                      ),
-                      Expanded(
-                        child: QuillEditor.basic(
-                          controller: _controller,
-                          readOnly: false, // true for view only mode
-                        ),
-                      )
-                    ],
-                  ),
-                ),
+                child: ClipRRect(
+                    borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                    child: EditorWidget(controller: _controller)),
               ),
             ],
           ),

@@ -3,18 +3,20 @@ import 'package:flutter/painting.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 class AppColors {
-  static Color bodyBgColor = const Color.fromRGBO(155, 200, 245, 1);
+  static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
+  static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color editorBgColor = Colors.white;
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
   static Color headerFontColor = Colors.white;
-  static Color headerFontColor2 = bodyBgColor;
+  static Color headerFontColor2 = entryBgColor;
   static Color activeAudioControl = Colors.red;
   static Color audioMeterBar = Colors.blue;
   static Color audioMeterTooHotBar = Colors.orange;
   static Color audioMeterPeakedBar = Colors.red;
   static Color audioMeterBarBackground =
       TinyColor(headerBgColor).lighten(40).color;
-  static Color inactiveAudioControl = headerBgColor;
+  static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
+  static Color listItemText = bodyBgColor;
 }
 
 class AppNumbers {
