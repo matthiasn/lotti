@@ -93,6 +93,7 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => ImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<HealthCubit>(

@@ -16,6 +16,7 @@ import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
+import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/utils/file_utils.dart';
@@ -25,6 +26,7 @@ import 'imap_tools.dart';
 class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
   late final PersistenceCubit _persistenceCubit;
+  late final VectorClockCubit _vectorClockCubit;
   late final ImapClient _imapClient;
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
@@ -38,9 +40,11 @@ class ImapCubit extends Cubit<ImapState> {
   ImapCubit({
     required EncryptionCubit encryptionCubit,
     required PersistenceCubit persistenceCubit,
+    required VectorClockCubit vectorClockCubit,
   }) : super(ImapState.initial()) {
     _encryptionCubit = encryptionCubit;
     _persistenceCubit = persistenceCubit;
+    _vectorClockCubit = vectorClockCubit;
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
   }
@@ -151,9 +155,17 @@ class ImapCubit extends Cubit<ImapState> {
 
         if (messages.isNotEmpty) {
           int? oldest = fetchResult.messages.first.uid;
+          String subject = '${fetchResult.messages.first.decodeSubject()}';
           if (lastReadUid != oldest) {
             debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
-            await _fetchByUid(oldest);
+
+            if (subject.contains(_vectorClockCubit.getHostHash())) {
+              debugPrint('_pollInbox ignoring from same host: $oldest');
+              _setLastReadUid(oldest);
+            } else {
+              await _fetchByUid(oldest);
+            }
+
             if (messages.length > 1) {
               await _pollInbox();
             }
@@ -172,6 +184,10 @@ class ImapCubit extends Cubit<ImapState> {
     await transaction.finish();
   }
 
+  Future<void> _setLastReadUid(int? uid) async {
+    await _storage.write(key: lastReadUidKey, value: '$uid');
+  }
+
   Future<void> _fetchByUid(int? uid) async {
     final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
@@ -184,7 +200,7 @@ class ImapCubit extends Cubit<ImapState> {
         for (final message in res.messages) {
           await processMessage(message);
         }
-        await _storage.write(key: lastReadUidKey, value: '$uid');
+        await _setLastReadUid(uid);
         emit(ImapState.online(lastUpdate: DateTime.now()));
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
