@@ -34,6 +34,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   late final VectorClockCubit _vectorClockCubit;
   late final StreamSubscription<FGBGType> fgBgSubscription;
+  Timer? timer;
 
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
@@ -52,12 +53,17 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     });
 
     fgBgSubscription = FGBGEvents.stream.listen((event) {
-      print('fgBgSubscription: $event');
       Sentry.captureEvent(
           SentryEvent(
             message: SentryMessage(event.toString()),
           ),
           withScope: (Scope scope) => scope.level = SentryLevel.info);
+      if (event == FGBGType.foreground) {
+        _startPolling();
+      }
+      if (event == FGBGType.background) {
+        _stopPolling();
+      }
     });
   }
 
@@ -128,9 +134,15 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void _startPolling() async {
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       sendNext();
     });
+  }
+
+  void _stopPolling() async {
+    if (timer != null) {
+      timer!.cancel();
+    }
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
