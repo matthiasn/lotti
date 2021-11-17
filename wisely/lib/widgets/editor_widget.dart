@@ -10,16 +10,19 @@ class EditorWidget extends StatelessWidget {
     double height = 300,
     double padding = 16.0,
     bool readOnly = false,
+    required Function saveFn,
   })  : _controller = controller,
         _height = height,
         _readOnly = readOnly,
         _padding = padding,
+        _saveFn = saveFn,
         super(key: key);
 
   final QuillController _controller;
   final double _height;
   final bool _readOnly;
   final double _padding;
+  final Function _saveFn;
 
   void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
     if (event.data.isMetaPressed && event.character == char) {
@@ -35,6 +38,12 @@ class EditorWidget extends StatelessWidget {
     }
   }
 
+  void saveViaKeyboard(RawKeyEvent event) {
+    if (event.data.isMetaPressed && event.character == 's') {
+      _saveFn();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
@@ -42,6 +51,7 @@ class EditorWidget extends StatelessWidget {
       onKey: (RawKeyEvent event) {
         keyFormatter(event, 'b', Attribute.bold);
         keyFormatter(event, 'i', Attribute.italic);
+        saveViaKeyboard(event);
       },
       child: Container(
         height: _height,
@@ -49,19 +59,35 @@ class EditorWidget extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: double.maxFinite,
               color: Colors.grey[100],
-              child: QuillToolbar.basic(
-                controller: _controller,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showListCheck: false,
-                showIndent: false,
-                showQuote: false,
-                showSmallButton: false,
-                showImageButton: false,
-                showLink: false,
-                showUnderLineButton: false,
+              width: double.maxFinite,
+              child: Wrap(
+                //mainAxisAlignment: MainAxisAlignment.center,
+                //crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.save),
+                    iconSize: 20,
+                    tooltip: 'Save',
+                    onPressed: () => _saveFn(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3.0),
+                    child: QuillToolbar.basic(
+                      controller: _controller,
+                      showColorButton: false,
+                      showBackgroundColorButton: false,
+                      showListCheck: false,
+                      showIndent: false,
+                      showQuote: false,
+                      showSmallButton: false,
+                      showImageButton: false,
+                      showLink: false,
+                      showUnderLineButton: false,
+                      showAlignmentButtons: false,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(

@@ -230,4 +230,61 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       debugPrint('Exception $exception');
     }
   }
+
+  Future<bool> updateTextEntry(
+    JournalEntity journalEntity,
+    EntryText entryText,
+  ) async {
+    final transaction = Sentry.startTransaction('createTextEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
+
+      Metadata newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+      );
+
+      if (journalEntity is JournalEntry) {
+        JournalEntry newJournalEntry = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newJournalEntry, enqueueSync: true);
+        await saveJournalEntryJson(newJournalEntry);
+      }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool?> updateDbEntity(
+    JournalEntity journalEntity, {
+    bool enqueueSync = false,
+  }) async {
+    final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
+    try {
+      bool saved = await _db.update(journalEntity);
+
+      if (saved && enqueueSync) {
+        _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+          journalEntity: journalEntity,
+          status: SyncEntryStatus.update,
+        ));
+      }
+      await transaction.finish();
+
+      await Future.delayed(const Duration(seconds: 1));
+      queryJournal();
+      return saved;
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+      debugPrint('Exception $exception');
+    }
+  }
 }

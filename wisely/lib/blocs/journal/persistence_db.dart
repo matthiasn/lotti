@@ -51,42 +51,50 @@ class PersistenceDb {
     await _database;
   }
 
+  JournalRecord _journalEntityToDbRecord(JournalEntity journalEntity) {
+    final DateTime createdAt = journalEntity.meta.createdAt;
+    final subtype = journalEntity.maybeMap(
+      quantitative: (qd) => qd.data.dataType,
+      orElse: () => '',
+    );
+
+    Geolocation? geolocation;
+    journalEntity.mapOrNull(
+      journalAudio: (item) => geolocation = item.geolocation,
+      journalImage: (item) => geolocation = item.geolocation,
+      journalEntry: (item) => geolocation = item.geolocation,
+    );
+
+    String id = journalEntity.meta.id;
+    JournalRecord dbRecord = JournalRecord(
+      id: id,
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      dateFrom: journalEntity.meta.dateFrom,
+      dateTo: journalEntity.meta.dateTo,
+      type: journalEntity.runtimeType.toString(),
+      subtype: subtype,
+      serialized: json.encode(journalEntity),
+      schemaVersion: 0,
+      longitude: geolocation?.longitude,
+      latitude: geolocation?.latitude,
+      geohashString: geolocation?.geohashString,
+    );
+
+    return dbRecord;
+  }
+
   Future<bool> insert(JournalEntity journalEntity) async {
     try {
       final db = await _database;
-      final DateTime createdAt = journalEntity.meta.createdAt;
-      final subtype = journalEntity.maybeMap(
-        quantitative: (qd) => qd.data.dataType,
-        orElse: () => '',
-      );
-
-      Geolocation? geolocation;
-      journalEntity.mapOrNull(
-        journalAudio: (item) => geolocation = item.geolocation,
-        journalImage: (item) => geolocation = item.geolocation,
-        journalEntry: (item) => geolocation = item.geolocation,
-      );
-
-      String id = journalEntity.meta.id;
-      JournalRecord dbRecord = JournalRecord(
-        id: id,
-        createdAt: createdAt,
-        updatedAt: createdAt,
-        dateFrom: journalEntity.meta.dateFrom,
-        dateTo: journalEntity.meta.dateTo,
-        type: journalEntity.runtimeType.toString(),
-        subtype: subtype,
-        serialized: json.encode(journalEntity),
-        schemaVersion: 0,
-        longitude: geolocation?.longitude,
-        latitude: geolocation?.latitude,
-        geohashString: geolocation?.geohashString,
-      );
+      JournalRecord dbRecord = _journalEntityToDbRecord(journalEntity);
+      String id = dbRecord.id;
 
       List<Map> maps = await db.query(journalTable,
           columns: ['id'], where: 'id = ?', whereArgs: [id]);
       if (maps.isEmpty) {
         var res = await db.insert(journalTable, dbRecord.toMap());
+
         debugPrint('PersistenceDb inserted: $id $res');
         return true;
       } else {
@@ -95,7 +103,24 @@ class PersistenceDb {
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
-    return true;
+    return false;
+  }
+
+  Future<bool> update(JournalEntity journalEntity) async {
+    try {
+      final db = await _database;
+      JournalRecord dbRecord = _journalEntityToDbRecord(journalEntity);
+      String id = dbRecord.id;
+      var res = await db.update(journalTable, dbRecord.toMap(),
+          where: 'id = ?', whereArgs: [id]);
+
+      debugPrint('PersistenceDb updated: $id $res');
+      return true;
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+      debugPrint('DB update exception: $exception');
+    }
+    return false;
   }
 
   Future<List<JournalRecord>> journalEntries(int n) async {

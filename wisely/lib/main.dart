@@ -77,8 +77,8 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => OutboundQueueCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             imapOutCubit: BlocProvider.of<ImapOutCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<PersistenceCubit>(
@@ -93,6 +93,7 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => ImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<HealthCubit>(
@@ -104,7 +105,6 @@ class WiselyApp extends StatelessWidget {
         BlocProvider<JournalImageCubit>(
           lazy: false,
           create: (BuildContext context) => JournalImageCubit(
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
           ),
         ),

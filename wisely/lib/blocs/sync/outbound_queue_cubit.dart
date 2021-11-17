@@ -25,13 +25,14 @@ import 'outbound_queue_state.dart';
 class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
   late final ImapOutCubit _imapOutCubit;
-  late final VectorClockCubit _vectorClockCubit;
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
 
   late final OutboundQueueDb _db;
   late String? _b64Secret;
+
+  late final VectorClockCubit _vectorClockCubit;
 
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
@@ -131,7 +132,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         var docDir = await getApplicationDocumentsDirectory();
 
         File? attachment;
-        String subject = 'enqueueMessage ${journalEntity.meta.vectorClock}';
+        String host = _vectorClockCubit.getHost();
+        String hostHash = _vectorClockCubit.getHostHash();
+        int? localCounter = journalEntity.meta.vectorClock?.vclock[host];
+        String subject = '$hostHash:$localCounter';
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {
