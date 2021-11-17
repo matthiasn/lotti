@@ -31,6 +31,9 @@ class EntryModalWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.entryBgColor,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: ListView(
         shrinkWrap: true,
         children: <Widget>[
