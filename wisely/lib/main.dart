@@ -78,6 +78,7 @@ class WiselyApp extends StatelessWidget {
           create: (BuildContext context) => OutboundQueueCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             imapOutCubit: BlocProvider.of<ImapOutCubit>(context),
+            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<PersistenceCubit>(

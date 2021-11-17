@@ -11,6 +11,7 @@ import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/sync/encryption.dart';
@@ -31,12 +32,16 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final OutboundQueueDb _db;
   late String? _b64Secret;
 
+  late final VectorClockCubit _vectorClockCubit;
+
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
     required ImapOutCubit imapOutCubit,
+    required VectorClockCubit vectorClockCubit,
   }) : super(OutboundQueueState.initial()) {
     _encryptionCubit = encryptionCubit;
     _imapOutCubit = imapOutCubit;
+    _vectorClockCubit = vectorClockCubit;
     _db = OutboundQueueDb();
     init();
 
@@ -127,7 +132,10 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         var docDir = await getApplicationDocumentsDirectory();
 
         File? attachment;
-        String subject = 'enqueueMessage ${journalEntity.meta.vectorClock}';
+        String host = _vectorClockCubit.getHost();
+        String hostHash = _vectorClockCubit.getHostHash();
+        int? localCounter = journalEntity.meta.vectorClock?.vclock[host];
+        String subject = '$hostHash:$localCounter';
 
         journalEntity.maybeMap(
           journalAudio: (JournalAudio journalAudio) {
