@@ -274,7 +274,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       if (saved && enqueueSync) {
         _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
           journalEntity: journalEntity,
-          updated: true,
+          status: SyncEntryStatus.update,
         ));
       }
       await transaction.finish();
