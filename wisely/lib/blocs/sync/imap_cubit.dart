@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -51,19 +52,21 @@ class ImapCubit extends Cubit<ImapState> {
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
 
-    fgBgSubscription = FGBGEvents.stream.listen((event) {
-      Sentry.captureEvent(
-          SentryEvent(
-            message: SentryMessage(event.toString()),
-          ),
-          withScope: (Scope scope) => scope.level = SentryLevel.info);
-      if (event == FGBGType.foreground) {
-        _startPolling();
-      }
-      if (event == FGBGType.background) {
-        _stopPolling();
-      }
-    });
+    if (!Platform.isMacOS) {
+      fgBgSubscription = FGBGEvents.stream.listen((event) {
+        Sentry.captureEvent(
+            SentryEvent(
+              message: SentryMessage(event.toString()),
+            ),
+            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        if (event == FGBGType.foreground) {
+          _startPolling();
+        }
+        if (event == FGBGType.background) {
+          _stopPolling();
+        }
+      });
+    }
   }
 
   Future<void> processMessage(MimeMessage message) async {

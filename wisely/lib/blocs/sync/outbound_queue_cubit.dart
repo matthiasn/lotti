@@ -52,19 +52,21 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       debugPrint('Connectivity onConnectivityChanged $result');
     });
 
-    fgBgSubscription = FGBGEvents.stream.listen((event) {
-      Sentry.captureEvent(
-          SentryEvent(
-            message: SentryMessage(event.toString()),
-          ),
-          withScope: (Scope scope) => scope.level = SentryLevel.info);
-      if (event == FGBGType.foreground) {
-        _startPolling();
-      }
-      if (event == FGBGType.background) {
-        _stopPolling();
-      }
-    });
+    if (!Platform.isMacOS) {
+      fgBgSubscription = FGBGEvents.stream.listen((event) {
+        Sentry.captureEvent(
+            SentryEvent(
+              message: SentryMessage(event.toString()),
+            ),
+            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        if (event == FGBGType.foreground) {
+          _startPolling();
+        }
+        if (event == FGBGType.background) {
+          _stopPolling();
+        }
+      });
+    }
   }
 
   Future<void> init() async {
