@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/imap/response.dart';
 import 'package:flutter/foundation.dart';
@@ -50,6 +51,15 @@ class ImapOutCubit extends Cubit<ImapState> {
         emit(ImapState.loggedIn());
         await _imapClient.selectInbox();
         emit(ImapState.online(lastUpdate: DateTime.now()));
+
+        _imapClient.eventBus
+            .on<ImapEvent>()
+            .listen((ImapEvent imapEvent) async {
+          await Sentry.captureEvent(
+              SentryEvent(message: SentryMessage(imapEvent.toString())),
+              withScope: (Scope scope) => scope.level = SentryLevel.info);
+        });
+
         debugPrint('ImapOutCubit initialized');
       }
     } catch (exception, stackTrace) {

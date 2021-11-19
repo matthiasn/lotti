@@ -268,9 +268,7 @@ class ImapCubit extends Cubit<ImapState> {
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
           await Sentry.captureEvent(
-              SentryEvent(
-                message: SentryMessage(event.toString()),
-              ),
+              SentryEvent(message: SentryMessage(event.toString())),
               withScope: (Scope scope) => scope.level = SentryLevel.warning);
           await _observingClient!.resume();
 
