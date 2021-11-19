@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.66+80
+version: 0.1.67+81
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -38,7 +38,7 @@ dependencies:
   flutter_secure_storage: ^5.0.0
   flutter_sound: ^8.3.12
   freezed_annotation: ^1.0.0
-  health: ^3.1.1+1
+  health: 3.2.1
   hydrated_bloc: 8.0.0-dev.4
   intl: ^0.17.0
   json_annotation: ^4.3.0
