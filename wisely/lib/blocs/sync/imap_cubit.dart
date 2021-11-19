@@ -30,7 +30,7 @@ class ImapCubit extends Cubit<ImapState> {
   late final PersistenceCubit _persistenceCubit;
   late final VectorClockCubit _vectorClockCubit;
   late final ImapClient _imapClient;
-  late final MailClient _mailClient;
+  MailClient? _observingClient;
   late SyncConfig? _syncConfig;
   late String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
@@ -61,6 +61,7 @@ class ImapCubit extends Cubit<ImapState> {
             withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
           _startPolling();
+          _observingClient?.resume();
         }
         if (event == FGBGType.background) {
           _stopPolling();
@@ -252,17 +253,18 @@ class ImapCubit extends Cubit<ImapState> {
           imapConfig.password,
         );
 
-        _mailClient = MailClient(account, isLogEnabled: false);
-        await _mailClient.connect();
-        await _mailClient.selectInbox();
+        _observingClient = MailClient(account, isLogEnabled: false);
 
-        _mailClient.eventBus
+        await _observingClient!.connect();
+        await _observingClient!.selectInbox();
+
+        _observingClient!.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
           _pollInbox();
         });
 
-        _mailClient.eventBus
+        _observingClient!.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
           await Sentry.captureEvent(
@@ -270,9 +272,19 @@ class ImapCubit extends Cubit<ImapState> {
                 message: SentryMessage(event.toString()),
               ),
               withScope: (Scope scope) => scope.level = SentryLevel.warning);
+          await _observingClient!.resume();
+
+          await Sentry.captureEvent(
+              SentryEvent(
+                message: SentryMessage(
+                  'isConnected: ${_observingClient!.isConnected} '
+                  'isPolling: ${_observingClient!.isPolling()}',
+                ),
+              ),
+              withScope: (Scope scope) => scope.level = SentryLevel.info);
         });
 
-        _mailClient.startPolling();
+        _observingClient!.startPolling();
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
