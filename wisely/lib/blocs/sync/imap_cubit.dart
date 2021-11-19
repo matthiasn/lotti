@@ -30,7 +30,6 @@ class ImapCubit extends Cubit<ImapState> {
   late final PersistenceCubit _persistenceCubit;
   late final VectorClockCubit _vectorClockCubit;
   MailClient? _observingClient;
-  late SyncConfig? _syncConfig;
   late String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
@@ -124,7 +123,6 @@ class ImapCubit extends Cubit<ImapState> {
 
     try {
       if (syncConfig != null) {
-        _syncConfig = syncConfig;
         _b64Secret = syncConfig.sharedSecret;
         emit(ImapState.loading());
         ImapConfig imapConfig = syncConfig.imapConfig;
@@ -167,43 +165,41 @@ class ImapCubit extends Cubit<ImapState> {
     ImapClient? imapClient;
 
     try {
-      if (_syncConfig != null) {
-        imapClient = await imapClientInit();
+      imapClient = await imapClientInit();
 
-        String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
-        int lastReadUid =
-            lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
+      String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
+      int lastReadUid =
+          lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
 
-        var sequence = MessageSequence(isUidSequence: true);
-        sequence.addRangeToLast(lastReadUid + 1);
-        debugPrint('_pollInbox sequence: $sequence');
+      var sequence = MessageSequence(isUidSequence: true);
+      sequence.addRangeToLast(lastReadUid + 1);
+      debugPrint('_pollInbox sequence: $sequence');
 
-        if (imapClient != null) {
-          final fetchResult =
-              await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
+      if (imapClient != null) {
+        final fetchResult =
+            await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
-          List<MimeMessage> messages = fetchResult.messages;
+        List<MimeMessage> messages = fetchResult.messages;
 
-          if (messages.isNotEmpty) {
-            int? oldest = fetchResult.messages.first.uid;
-            String subject = '${fetchResult.messages.first.decodeSubject()}';
-            if (lastReadUid != oldest) {
-              debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
+        if (messages.isNotEmpty) {
+          int? oldest = fetchResult.messages.first.uid;
+          String subject = '${fetchResult.messages.first.decodeSubject()}';
+          if (lastReadUid != oldest) {
+            debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
 
-              if (subject.contains(_vectorClockCubit.getHostHash())) {
-                debugPrint('_pollInbox ignoring from same host: $oldest');
-                _setLastReadUid(oldest);
-              } else {
-                await _fetchByUid(oldest);
-              }
+            if (subject.contains(_vectorClockCubit.getHostHash())) {
+              debugPrint('_pollInbox ignoring from same host: $oldest');
+              _setLastReadUid(oldest);
+            } else {
+              await _fetchByUid(oldest);
+            }
 
-              if (messages.length > 1) {
-                await _fetchInbox();
-              }
+            if (messages.length > 1) {
+              await _fetchInbox();
             }
           }
-          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
+        emit(ImapState.online(lastUpdate: DateTime.now()));
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
@@ -258,8 +254,10 @@ class ImapCubit extends Cubit<ImapState> {
 
   Future<void> _observeInbox() async {
     try {
-      if (_syncConfig != null) {
-        ImapConfig imapConfig = _syncConfig!.imapConfig;
+      SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
+
+      if (syncConfig != null) {
+        ImapConfig imapConfig = syncConfig.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',
           imapConfig.userName,
