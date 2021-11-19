@@ -85,7 +85,16 @@ class ImapOutCubit extends Cubit<ImapState> {
       }
       await transaction.finish();
 
-      if (res?.details != null && res!.details!.contains('completed')) {
+      String? resDetails = res?.details;
+      await Sentry.captureEvent(
+          SentryEvent(
+            message: SentryMessage(
+              resDetails ?? 'no result details',
+            ),
+          ),
+          withScope: (Scope scope) => scope.level = SentryLevel.info);
+
+      if (resDetails != null && resDetails.contains('completed')) {
         return true;
       } else {
         return false;
