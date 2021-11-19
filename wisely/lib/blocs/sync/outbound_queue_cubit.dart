@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry/sentry.dart';
@@ -28,11 +29,12 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
-
   late final OutboundQueueDb _db;
   late String? _b64Secret;
 
   late final VectorClockCubit _vectorClockCubit;
+  late final StreamSubscription<FGBGType> fgBgSubscription;
+  Timer? timer;
 
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
@@ -49,6 +51,22 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
     });
+
+    if (!Platform.isMacOS) {
+      fgBgSubscription = FGBGEvents.stream.listen((event) {
+        Sentry.captureEvent(
+            SentryEvent(
+              message: SentryMessage(event.toString()),
+            ),
+            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        if (event == FGBGType.foreground) {
+          _startPolling();
+        }
+        if (event == FGBGType.background) {
+          _stopPolling();
+        }
+      });
+    }
   }
 
   Future<void> init() async {
@@ -118,9 +136,15 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void _startPolling() async {
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       sendNext();
     });
+  }
+
+  void _stopPolling() async {
+    if (timer != null) {
+      timer!.cancel();
+    }
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
@@ -169,5 +193,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         await Sentry.captureException(exception, stackTrace: stackTrace);
       }
     }
+  }
+
+  @override
+  Future<void> close() async {
+    super.close();
+    fgBgSubscription.cancel();
   }
 }

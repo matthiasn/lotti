@@ -11,7 +11,7 @@ enum SyncEntryStatus { initial, update }
 class SyncMessage with _$SyncMessage {
   factory SyncMessage.journalDbEntity({
     required JournalEntity journalEntity,
-    @Default(SyncEntryStatus.initial) SyncEntryStatus status,
+    required SyncEntryStatus status,
   }) = SyncJournalDbEntity;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

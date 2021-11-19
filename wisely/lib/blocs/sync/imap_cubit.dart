@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/imap/imap_client.dart';
@@ -10,6 +11,7 @@ import 'package:enough_mail/mail/mail_events.dart';
 import 'package:enough_mail/mail/mail_exception.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
@@ -31,6 +33,8 @@ class ImapCubit extends Cubit<ImapState> {
   late final MailClient _mailClient;
   late SyncConfig? _syncConfig;
   late String? _b64Secret;
+  late final StreamSubscription<FGBGType> fgBgSubscription;
+  Timer? timer;
 
   final _storage = const FlutterSecureStorage();
   final String sharedSecretKey = 'sharedSecret';
@@ -47,6 +51,22 @@ class ImapCubit extends Cubit<ImapState> {
     _vectorClockCubit = vectorClockCubit;
     _imapClient = ImapClient(isLogEnabled: false);
     imapClientInit();
+
+    if (!Platform.isMacOS) {
+      fgBgSubscription = FGBGEvents.stream.listen((event) {
+        Sentry.captureEvent(
+            SentryEvent(
+              message: SentryMessage(event.toString()),
+            ),
+            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        if (event == FGBGType.foreground) {
+          _startPolling();
+        }
+        if (event == FGBGType.background) {
+          _stopPolling();
+        }
+      });
+    }
   }
 
   Future<void> processMessage(MimeMessage message) async {
@@ -131,9 +151,15 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   void _startPolling() async {
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       _pollInbox();
     });
+  }
+
+  void _stopPolling() async {
+    if (timer != null) {
+      timer!.cancel();
+    }
   }
 
   Future<void> _pollInbox() async {
