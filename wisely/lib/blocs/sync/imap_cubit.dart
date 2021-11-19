@@ -29,7 +29,6 @@ class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
   late final PersistenceCubit _persistenceCubit;
   late final VectorClockCubit _vectorClockCubit;
-  late final ImapClient _imapClient;
   MailClient? _observingClient;
   late SyncConfig? _syncConfig;
   late String? _b64Secret;
@@ -49,8 +48,6 @@ class ImapCubit extends Cubit<ImapState> {
     _encryptionCubit = encryptionCubit;
     _persistenceCubit = persistenceCubit;
     _vectorClockCubit = vectorClockCubit;
-    _imapClient = ImapClient(isLogEnabled: false);
-    imapClientInit();
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
@@ -60,14 +57,16 @@ class ImapCubit extends Cubit<ImapState> {
             ),
             withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
-          _startPolling();
+          _startPeriodicFetching();
           _observingClient?.resume();
         }
         if (event == FGBGType.background) {
-          _stopPolling();
+          _stopPeriodicFetching();
         }
       });
     }
+    _startPeriodicFetching();
+    _observeInbox();
   }
 
   Future<void> processMessage(MimeMessage message) async {
@@ -119,7 +118,7 @@ class ImapCubit extends Cubit<ImapState> {
     await transaction.finish();
   }
 
-  Future<void> imapClientInit() async {
+  Future<ImapClient?> imapClientInit() async {
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
     final transaction = Sentry.startTransaction('imapClientInit()', 'task');
 
@@ -129,20 +128,20 @@ class ImapCubit extends Cubit<ImapState> {
         _b64Secret = syncConfig.sharedSecret;
         emit(ImapState.loading());
         ImapConfig imapConfig = syncConfig.imapConfig;
+        ImapClient imapClient = ImapClient(isLogEnabled: false);
 
-        await _imapClient.connectToServer(
+        await imapClient.connectToServer(
           imapConfig.host,
           imapConfig.port,
           isSecure: true,
         );
         emit(ImapState.connected());
-        await _imapClient.login(imapConfig.userName, imapConfig.password);
+        await imapClient.login(imapConfig.userName, imapConfig.password);
         emit(ImapState.loggedIn());
-        await _imapClient.selectInbox();
-        await _pollInbox();
+        await imapClient.selectInbox();
         emit(ImapState.online(lastUpdate: DateTime.now()));
-        _startPolling();
-        _observeInbox();
+
+        return imapClient;
       }
     } catch (e, stackTrace) {
       await Sentry.captureException(e, stackTrace: stackTrace);
@@ -151,22 +150,26 @@ class ImapCubit extends Cubit<ImapState> {
     await transaction.finish();
   }
 
-  void _startPolling() async {
+  void _startPeriodicFetching() async {
     timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      _pollInbox();
+      _fetchInbox();
     });
   }
 
-  void _stopPolling() async {
+  void _stopPeriodicFetching() async {
     if (timer != null) {
       timer!.cancel();
     }
   }
 
-  Future<void> _pollInbox() async {
+  Future<void> _fetchInbox() async {
     final transaction = Sentry.startTransaction('_pollInbox()', 'task');
+    ImapClient? imapClient;
+
     try {
       if (_syncConfig != null) {
+        imapClient = await imapClientInit();
+
         String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
         int lastReadUid =
             lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
@@ -175,30 +178,32 @@ class ImapCubit extends Cubit<ImapState> {
         sequence.addRangeToLast(lastReadUid + 1);
         debugPrint('_pollInbox sequence: $sequence');
 
-        final fetchResult =
-            await _imapClient.uidFetchMessages(sequence, 'ENVELOPE');
+        if (imapClient != null) {
+          final fetchResult =
+              await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
-        List<MimeMessage> messages = fetchResult.messages;
+          List<MimeMessage> messages = fetchResult.messages;
 
-        if (messages.isNotEmpty) {
-          int? oldest = fetchResult.messages.first.uid;
-          String subject = '${fetchResult.messages.first.decodeSubject()}';
-          if (lastReadUid != oldest) {
-            debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
+          if (messages.isNotEmpty) {
+            int? oldest = fetchResult.messages.first.uid;
+            String subject = '${fetchResult.messages.first.decodeSubject()}';
+            if (lastReadUid != oldest) {
+              debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
 
-            if (subject.contains(_vectorClockCubit.getHostHash())) {
-              debugPrint('_pollInbox ignoring from same host: $oldest');
-              _setLastReadUid(oldest);
-            } else {
-              await _fetchByUid(oldest);
-            }
+              if (subject.contains(_vectorClockCubit.getHostHash())) {
+                debugPrint('_pollInbox ignoring from same host: $oldest');
+                _setLastReadUid(oldest);
+              } else {
+                await _fetchByUid(oldest);
+              }
 
-            if (messages.length > 1) {
-              await _pollInbox();
+              if (messages.length > 1) {
+                await _fetchInbox();
+              }
             }
           }
+          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
-        emit(ImapState.online(lastUpdate: DateTime.now()));
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
@@ -207,6 +212,8 @@ class ImapCubit extends Cubit<ImapState> {
     } catch (e) {
       debugPrint('Exception $e');
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+    } finally {
+      imapClient?.disconnect();
     }
     await transaction.finish();
   }
@@ -218,17 +225,23 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> _fetchByUid(int? uid) async {
     final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
-      try {
-        // odd workaround, prevents intermittent failures on macOS
-        await _imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
-        FetchImapResult res =
-            await _imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+      ImapClient? imapClient;
 
-        for (final message in res.messages) {
-          await processMessage(message);
+      try {
+        imapClient = await imapClientInit();
+
+        if (imapClient != null) {
+          // odd workaround, prevents intermittent failures on macOS
+          await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+          FetchImapResult res =
+              await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
+
+          for (final message in res.messages) {
+            await processMessage(message);
+          }
+          await _setLastReadUid(uid);
+          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
-        await _setLastReadUid(uid);
-        emit(ImapState.online(lastUpdate: DateTime.now()));
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
         await Sentry.captureException(e);
@@ -236,6 +249,8 @@ class ImapCubit extends Cubit<ImapState> {
       } catch (e, stackTrace) {
         await Sentry.captureException(e, stackTrace: stackTrace);
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+      } finally {
+        imapClient?.disconnect();
       }
     }
     await transaction.finish();
@@ -261,7 +276,7 @@ class ImapCubit extends Cubit<ImapState> {
         _observingClient!.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
-          _pollInbox();
+          _fetchInbox();
         });
 
         _observingClient!.eventBus
