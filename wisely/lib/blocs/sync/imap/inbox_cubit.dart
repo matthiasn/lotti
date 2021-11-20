@@ -31,7 +31,6 @@ class InboxImapCubit extends Cubit<ImapState> {
   late final PersistenceCubit _persistenceCubit;
   late final VectorClockCubit _vectorClockCubit;
   MailClient? _observingClient;
-  late String? _b64Secret;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
@@ -73,34 +72,46 @@ class InboxImapCubit extends Cubit<ImapState> {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
     try {
       String? encryptedMessage = readMessage(message);
-      SyncMessage? syncMessage =
-          await decryptMessage(encryptedMessage, message, _b64Secret);
+      SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
-      syncMessage?.when(
-        journalDbEntity:
-            (JournalEntity journalEntity, SyncEntryStatus status) async {
-          journalEntity.maybeMap(
-            journalAudio: (JournalAudio journalAudio) async {
-              await saveAudioAttachment(message, journalAudio, _b64Secret);
-            },
-            journalImage: (JournalImage journalImage) async {
-              await saveImageAttachment(message, journalImage, _b64Secret);
-            },
-            journalEntry: (JournalEntry journalEntry) async {
-              await saveJournalEntryJson(journalEntry);
-            },
-            orElse: () {},
-          );
+      if (syncConfig != null) {
+        String b64Secret = syncConfig.sharedSecret;
 
-          if (status == SyncEntryStatus.update) {
-            debugPrint('processMessage updating ${journalEntity.runtimeType}');
-            _persistenceCubit.updateDbEntity(journalEntity, enqueueSync: false);
-          } else {
-            debugPrint('processMessage inserting ${journalEntity.runtimeType}');
-            _persistenceCubit.createDbEntity(journalEntity, enqueueSync: false);
-          }
-        },
-      );
+        SyncMessage? syncMessage =
+            await decryptMessage(encryptedMessage, message, b64Secret);
+
+        syncMessage?.when(
+          journalDbEntity:
+              (JournalEntity journalEntity, SyncEntryStatus status) async {
+            journalEntity.maybeMap(
+              journalAudio: (JournalAudio journalAudio) async {
+                await saveAudioAttachment(message, journalAudio, b64Secret);
+              },
+              journalImage: (JournalImage journalImage) async {
+                await saveImageAttachment(message, journalImage, b64Secret);
+              },
+              journalEntry: (JournalEntry journalEntry) async {
+                await saveJournalEntryJson(journalEntry);
+              },
+              orElse: () {},
+            );
+
+            if (status == SyncEntryStatus.update) {
+              debugPrint(
+                  'processMessage updating ${journalEntity.runtimeType}');
+              _persistenceCubit.updateDbEntity(journalEntity,
+                  enqueueSync: false);
+            } else {
+              debugPrint(
+                  'processMessage inserting ${journalEntity.runtimeType}');
+              _persistenceCubit.createDbEntity(journalEntity,
+                  enqueueSync: false);
+            }
+          },
+        );
+      } else {
+        throw Exception('missing IMAP config');
+      }
     } catch (e, stackTrace) {
       await Sentry.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));

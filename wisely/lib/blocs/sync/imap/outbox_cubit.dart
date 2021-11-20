@@ -14,7 +14,6 @@ import 'package:wisely/utils/image_utils.dart';
 
 class OutboxImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
-  late String? _b64Secret;
 
   final String sharedSecretKey = 'sharedSecret';
   final String imapConfigKey = 'imapConfig';
@@ -37,7 +36,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
       imapClient = await createImapClient(_encryptionCubit);
 
       GenericImapResult? res;
-      if (_b64Secret != null && imapClient != null) {
+      if (imapClient != null) {
         if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
           File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
           int fileLength = encryptedFile.lengthSync();
