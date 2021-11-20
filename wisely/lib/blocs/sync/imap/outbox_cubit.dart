@@ -8,11 +8,11 @@ import 'package:enough_mail/imap/response.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap/create_client.dart';
+import 'package:wisely/blocs/sync/imap/imap_state.dart';
 import 'package:wisely/blocs/sync/imap/outbox_save_imap.dart';
-import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/utils/image_utils.dart';
 
-class ImapOutCubit extends Cubit<ImapState> {
+class OutboxImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
   late String? _b64Secret;
 
@@ -20,7 +20,7 @@ class ImapOutCubit extends Cubit<ImapState> {
   final String imapConfigKey = 'imapConfig';
   final String lastReadUidKey = 'lastReadUid';
 
-  ImapOutCubit({
+  OutboxImapCubit({
     required EncryptionCubit encryptionCubit,
   }) : super(ImapState.initial()) {
     _encryptionCubit = encryptionCubit;

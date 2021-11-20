@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wisely/blocs/sync/imap/imap_state.dart';
 import 'package:wisely/blocs/sync/imap_cubit.dart';
-import 'package:wisely/blocs/sync/imap_state.dart';
-
-import '../buttons.dart';
+import 'package:wisely/widgets/buttons.dart';
 
 class ImapStatusWidget extends StatelessWidget {
   const ImapStatusWidget({Key? key}) : super(key: key);

@@ -12,6 +12,9 @@ import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/imap/outbox_cubit.dart';
+import 'package:wisely/blocs/sync/outbound_queue_db.dart';
+import 'package:wisely/blocs/sync/outbound_queue_state.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
@@ -19,13 +22,9 @@ import 'package:wisely/sync/encryption.dart';
 import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/image_utils.dart';
 
-import 'imap_out_cubit.dart';
-import 'outbound_queue_db.dart';
-import 'outbound_queue_state.dart';
-
 class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final EncryptionCubit _encryptionCubit;
-  late final ImapOutCubit _imapOutCubit;
+  late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
@@ -38,11 +37,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
   OutboundQueueCubit({
     required EncryptionCubit encryptionCubit,
-    required ImapOutCubit imapOutCubit,
+    required OutboxImapCubit outboxImapCubit,
     required VectorClockCubit vectorClockCubit,
   }) : super(OutboundQueueState.initial()) {
     _encryptionCubit = encryptionCubit;
-    _imapOutCubit = imapOutCubit;
+    _outboxImapCubit = outboxImapCubit;
     _vectorClockCubit = vectorClockCubit;
     _db = OutboundQueueDb();
     init();
@@ -105,7 +104,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         if (unprocessed.isNotEmpty) {
           sendMutex.acquire();
           OutboundQueueRecord nextPending = unprocessed.first;
-          bool saveSuccess = await _imapOutCubit.saveImap(
+          bool saveSuccess = await _outboxImapCubit.saveImap(
             nextPending.encryptedMessage,
             nextPending.subject,
             encryptedFilePath: nextPending.encryptedFilePath,
