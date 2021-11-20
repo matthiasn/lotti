@@ -17,7 +17,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
-import 'package:wisely/blocs/sync/imap/create_client.dart';
+import 'package:wisely/blocs/sync/imap/imap_client.dart';
 import 'package:wisely/blocs/sync/imap/imap_state.dart';
 import 'package:wisely/blocs/sync/imap/inbox_read.dart';
 import 'package:wisely/blocs/sync/imap/inbox_save_attachments.dart';

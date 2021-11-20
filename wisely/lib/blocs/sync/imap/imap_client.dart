@@ -10,7 +10,7 @@ Future<ImapClient?> createImapClient(EncryptionCubit encryptionCubit) async {
   try {
     if (syncConfig != null) {
       ImapConfig imapConfig = syncConfig.imapConfig;
-      ImapClient imapClient = ImapClient(isLogEnabled: false);
+      ImapClient imapClient = ImapClient(isLogEnabled: true);
 
       await imapClient.connectToServer(
         imapConfig.host,
