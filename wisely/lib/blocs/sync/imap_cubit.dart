@@ -71,44 +71,35 @@ class ImapCubit extends Cubit<ImapState> {
   Future<void> processMessage(MimeMessage message) async {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
     try {
-      // TODO: check that message is from different host
-      if (true) {
-        String? encryptedMessage = readMessage(message);
-        SyncMessage? syncMessage =
-            await decryptMessage(encryptedMessage, message, _b64Secret);
+      String? encryptedMessage = readMessage(message);
+      SyncMessage? syncMessage =
+          await decryptMessage(encryptedMessage, message, _b64Secret);
 
-        syncMessage?.when(
-          journalDbEntity:
-              (JournalEntity journalEntity, SyncEntryStatus status) async {
-            journalEntity.maybeMap(
-              journalAudio: (JournalAudio journalAudio) async {
-                await saveAudioAttachment(message, journalAudio, _b64Secret);
-              },
-              journalImage: (JournalImage journalImage) async {
-                await saveImageAttachment(message, journalImage, _b64Secret);
-              },
-              journalEntry: (JournalEntry journalEntry) async {
-                await saveJournalEntryJson(journalEntry);
-              },
-              orElse: () {},
-            );
+      syncMessage?.when(
+        journalDbEntity:
+            (JournalEntity journalEntity, SyncEntryStatus status) async {
+          journalEntity.maybeMap(
+            journalAudio: (JournalAudio journalAudio) async {
+              await saveAudioAttachment(message, journalAudio, _b64Secret);
+            },
+            journalImage: (JournalImage journalImage) async {
+              await saveImageAttachment(message, journalImage, _b64Secret);
+            },
+            journalEntry: (JournalEntry journalEntry) async {
+              await saveJournalEntryJson(journalEntry);
+            },
+            orElse: () {},
+          );
 
-            if (status == SyncEntryStatus.update) {
-              debugPrint(
-                  'processMessage updating ${journalEntity.runtimeType}');
-              _persistenceCubit.updateDbEntity(journalEntity,
-                  enqueueSync: false);
-            } else {
-              debugPrint(
-                  'processMessage inserting ${journalEntity.runtimeType}');
-              _persistenceCubit.createDbEntity(journalEntity,
-                  enqueueSync: false);
-            }
-          },
-        );
-      } else {
-        debugPrint('Ignoring message');
-      }
+          if (status == SyncEntryStatus.update) {
+            debugPrint('processMessage updating ${journalEntity.runtimeType}');
+            _persistenceCubit.updateDbEntity(journalEntity, enqueueSync: false);
+          } else {
+            debugPrint('processMessage inserting ${journalEntity.runtimeType}');
+            _persistenceCubit.createDbEntity(journalEntity, enqueueSync: false);
+          }
+        },
+      );
     } catch (e, stackTrace) {
       await Sentry.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
@@ -161,7 +152,7 @@ class ImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> _fetchInbox() async {
-    final transaction = Sentry.startTransaction('_pollInbox()', 'task');
+    final transaction = Sentry.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
 
     try {
@@ -173,7 +164,7 @@ class ImapCubit extends Cubit<ImapState> {
 
       var sequence = MessageSequence(isUidSequence: true);
       sequence.addRangeToLast(lastReadUid + 1);
-      debugPrint('_pollInbox sequence: $sequence');
+      debugPrint('_fetchInbox sequence: $sequence');
 
       if (imapClient != null) {
         final fetchResult =
@@ -185,10 +176,10 @@ class ImapCubit extends Cubit<ImapState> {
           int? oldest = fetchResult.messages.first.uid;
           String subject = '${fetchResult.messages.first.decodeSubject()}';
           if (lastReadUid != oldest) {
-            debugPrint('_pollInbox lastReadUid $lastReadUid oldest $oldest');
+            debugPrint('_fetchInbox lastReadUid $lastReadUid oldest $oldest');
 
             if (subject.contains(_vectorClockCubit.getHostHash())) {
-              debugPrint('_pollInbox ignoring from same host: $oldest');
+              debugPrint('_fetchInbox ignoring from same host: $oldest');
               _setLastReadUid(oldest);
             } else {
               await _fetchByUid(oldest);
