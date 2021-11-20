@@ -5,14 +5,12 @@ import 'package:bloc/bloc.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/imap/imap_client.dart';
 import 'package:enough_mail/imap/response.dart';
-import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/imap/create_client.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
+import 'package:wisely/blocs/sync/imap_tools.dart';
 import 'package:wisely/utils/image_utils.dart';
-
-import 'imap_tools.dart';
 
 class ImapOutCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
@@ -28,50 +26,6 @@ class ImapOutCubit extends Cubit<ImapState> {
     _encryptionCubit = encryptionCubit;
   }
 
-  Future<ImapClient?> imapClientInit() async {
-    final transaction = Sentry.startTransaction('imapClientInit()', 'task');
-    SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
-
-    try {
-      if (syncConfig != null) {
-        _b64Secret = syncConfig.sharedSecret;
-        emit(ImapState.loading());
-        ImapConfig imapConfig = syncConfig.imapConfig;
-
-        ImapClient imapClient = ImapClient(isLogEnabled: false);
-
-        await imapClient.connectToServer(
-          imapConfig.host,
-          imapConfig.port,
-          isSecure: true,
-        );
-        emit(ImapState.connected());
-        await imapClient.login(imapConfig.userName, imapConfig.password);
-        emit(ImapState.loggedIn());
-        await imapClient.selectInbox();
-        emit(ImapState.online(lastUpdate: DateTime.now()));
-
-        imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
-          await Sentry.captureEvent(
-              SentryEvent(message: SentryMessage(imapEvent.toString())),
-              withScope: (Scope scope) => scope.level = SentryLevel.info);
-        });
-
-        return imapClient;
-
-        debugPrint('ImapOutCubit initialized');
-      }
-    } catch (exception, stackTrace) {
-      emit(ImapState.failed(
-          error: 'failed: $exception ${exception.toString()}'));
-      await Sentry.captureException(
-        exception,
-        stackTrace: stackTrace,
-      );
-    }
-    await transaction.finish();
-  }
-
   Future<bool> saveImap(
     String encryptedMessage,
     String subject, {
@@ -80,7 +34,8 @@ class ImapOutCubit extends Cubit<ImapState> {
     ImapClient? imapClient;
     try {
       final transaction = Sentry.startTransaction('saveImap()', 'task');
-      imapClient = await imapClientInit();
+      imapClient = await createImapClient(_encryptionCubit);
+
       GenericImapResult? res;
       if (_b64Secret != null && imapClient != null) {
         if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {

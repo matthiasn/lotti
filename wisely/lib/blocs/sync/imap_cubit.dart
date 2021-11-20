@@ -17,6 +17,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/imap/create_client.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
@@ -108,40 +109,10 @@ class ImapCubit extends Cubit<ImapState> {
     await transaction.finish();
   }
 
-  Future<ImapClient?> imapClientInit() async {
-    SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
-    final transaction = Sentry.startTransaction('imapClientInit()', 'task');
-
-    try {
-      if (syncConfig != null) {
-        _b64Secret = syncConfig.sharedSecret;
-        emit(ImapState.loading());
-        ImapConfig imapConfig = syncConfig.imapConfig;
-        ImapClient imapClient = ImapClient(isLogEnabled: false);
-
-        await imapClient.connectToServer(
-          imapConfig.host,
-          imapConfig.port,
-          isSecure: true,
-        );
-        emit(ImapState.connected());
-        await imapClient.login(imapConfig.userName, imapConfig.password);
-        emit(ImapState.loggedIn());
-        await imapClient.selectInbox();
-        emit(ImapState.online(lastUpdate: DateTime.now()));
-
-        return imapClient;
-      }
-    } catch (e, stackTrace) {
-      await Sentry.captureException(e, stackTrace: stackTrace);
-      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
-    }
-    await transaction.finish();
-  }
-
   void _startPeriodicFetching() async {
     timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       _fetchInbox();
+      emit(ImapState.online(lastUpdate: DateTime.now()));
     });
   }
 
@@ -156,7 +127,7 @@ class ImapCubit extends Cubit<ImapState> {
     ImapClient? imapClient;
 
     try {
-      imapClient = await imapClientInit();
+      imapClient = await createImapClient(_encryptionCubit);
 
       String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
       int lastReadUid =
@@ -215,7 +186,7 @@ class ImapCubit extends Cubit<ImapState> {
       ImapClient? imapClient;
 
       try {
-        imapClient = await imapClientInit();
+        imapClient = await createImapClient(_encryptionCubit);
 
         if (imapClient != null) {
           // odd workaround, prevents intermittent failures on macOS
