@@ -15,7 +15,7 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap/create_client.dart';
 import 'package:wisely/blocs/sync/imap/imap_state.dart';
@@ -26,7 +26,7 @@ import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/utils/file_utils.dart';
 
-class ImapCubit extends Cubit<ImapState> {
+class InboxImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
   late final PersistenceCubit _persistenceCubit;
   late final VectorClockCubit _vectorClockCubit;
@@ -40,7 +40,7 @@ class ImapCubit extends Cubit<ImapState> {
   final String imapConfigKey = 'imapConfig';
   final String lastReadUidKey = 'lastReadUid';
 
-  ImapCubit({
+  InboxImapCubit({
     required EncryptionCubit encryptionCubit,
     required PersistenceCubit persistenceCubit,
     required VectorClockCubit vectorClockCubit,

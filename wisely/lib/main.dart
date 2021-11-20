@@ -14,8 +14,8 @@ import 'package:wisely/blocs/journal/health_cubit.dart';
 import 'package:wisely/blocs/journal/journal_image_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
+import 'package:wisely/blocs/sync/imap/inbox_cubit.dart';
 import 'package:wisely/blocs/sync/imap/outbox_cubit.dart';
-import 'package:wisely/blocs/sync/imap_cubit.dart';
 import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/pages/audio.dart';
@@ -87,9 +87,9 @@ class WiselyApp extends StatelessWidget {
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
-        BlocProvider<ImapCubit>(
+        BlocProvider<InboxImapCubit>(
           lazy: false,
-          create: (BuildContext context) => ImapCubit(
+          create: (BuildContext context) => InboxImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),

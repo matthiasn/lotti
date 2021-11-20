@@ -1,6 +1,6 @@
 import 'package:enough_mail/enough_mail.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 
 Future<ImapClient?> createImapClient(EncryptionCubit encryptionCubit) async {

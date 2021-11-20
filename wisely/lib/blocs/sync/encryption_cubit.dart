@@ -5,7 +5,7 @@ import 'package:encrypt/encrypt.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'classes.dart';
+import 'config_classes.dart';
 
 part 'encryption_cubit.freezed.dart';
 part 'encryption_state.dart';

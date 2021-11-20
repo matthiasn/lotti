@@ -10,7 +10,7 @@ import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap/outbox_cubit.dart';
 import 'package:wisely/blocs/sync/outbound_queue_db.dart';
