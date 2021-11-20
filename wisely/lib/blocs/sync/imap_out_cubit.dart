@@ -8,8 +8,8 @@ import 'package:enough_mail/imap/response.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap/create_client.dart';
+import 'package:wisely/blocs/sync/imap/outbox_save_imap.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
-import 'package:wisely/blocs/sync/imap_tools.dart';
 import 'package:wisely/utils/image_utils.dart';
 
 class ImapOutCubit extends Cubit<ImapState> {

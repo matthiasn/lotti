@@ -18,13 +18,13 @@ import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/blocs/sync/imap/create_client.dart';
+import 'package:wisely/blocs/sync/imap/inbox_read.dart';
+import 'package:wisely/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:wisely/blocs/sync/imap_state.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
 import 'package:wisely/utils/file_utils.dart';
-
-import 'imap_tools.dart';
 
 class ImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
