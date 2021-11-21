@@ -57,7 +57,7 @@ class InboxImapCubit extends Cubit<ImapState> {
             withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
           _startPeriodicFetching();
-          _observingClient?.resume();
+          _observeInbox();
         }
         if (event == FGBGType.background) {
           _stopPeriodicFetching();
@@ -123,7 +123,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   void _startPeriodicFetching() async {
     timer?.cancel();
     _fetchInbox();
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       _fetchInbox();
       emit(ImapState.online(lastUpdate: DateTime.now()));
     });
@@ -233,6 +233,9 @@ class InboxImapCubit extends Cubit<ImapState> {
       SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
       if (syncConfig != null) {
+        _observingClient?.disconnect();
+        _observingClient = null;
+
         ImapConfig imapConfig = syncConfig.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',
