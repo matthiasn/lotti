@@ -17,7 +17,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
-import 'package:wisely/blocs/sync/imap/create_client.dart';
+import 'package:wisely/blocs/sync/imap/imap_client.dart';
 import 'package:wisely/blocs/sync/imap/imap_state.dart';
 import 'package:wisely/blocs/sync/imap/inbox_read.dart';
 import 'package:wisely/blocs/sync/imap/inbox_save_attachments.dart';
@@ -57,7 +57,7 @@ class InboxImapCubit extends Cubit<ImapState> {
             withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
           _startPeriodicFetching();
-          _observingClient?.resume();
+          _observeInbox();
         }
         if (event == FGBGType.background) {
           _stopPeriodicFetching();
@@ -121,6 +121,8 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   void _startPeriodicFetching() async {
+    timer?.cancel();
+    _fetchInbox();
     timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       _fetchInbox();
       emit(ImapState.online(lastUpdate: DateTime.now()));
@@ -130,6 +132,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   void _stopPeriodicFetching() async {
     if (timer != null) {
       timer!.cancel();
+      timer = null;
     }
   }
 
@@ -230,6 +233,9 @@ class InboxImapCubit extends Cubit<ImapState> {
       SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
       if (syncConfig != null) {
+        _observingClient?.disconnect();
+        _observingClient = null;
+
         ImapConfig imapConfig = syncConfig.imapConfig;
         final account = MailAccount.fromManualSettings(
           'sync',

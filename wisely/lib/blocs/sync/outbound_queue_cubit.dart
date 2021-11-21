@@ -126,6 +126,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           }
           sendMutex.release();
           sendNext();
+        } else {
+          _stopPolling();
         }
       }
     } catch (exception, stackTrace) {
@@ -135,6 +137,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   void _startPolling() async {
+    sendNext();
     timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       sendNext();
     });
@@ -187,7 +190,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           }
         }
         await transaction.finish();
-        sendNext();
+        _startPolling();
       } catch (exception, stackTrace) {
         await Sentry.captureException(exception, stackTrace: stackTrace);
       }
