@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:wisely/blocs/sync/classes.dart';
+import 'package:wisely/blocs/sync/config_classes.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/widgets/buttons.dart';

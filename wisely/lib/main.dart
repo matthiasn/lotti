@@ -11,8 +11,13 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/audio/player_cubit.dart';
 import 'package:wisely/blocs/audio/recorder_cubit.dart';
 import 'package:wisely/blocs/journal/health_cubit.dart';
+import 'package:wisely/blocs/journal/journal_image_cubit.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/encryption_cubit.dart';
-import 'package:wisely/blocs/sync/imap_cubit.dart';
+import 'package:wisely/blocs/sync/imap/inbox_cubit.dart';
+import 'package:wisely/blocs/sync/imap/outbox_cubit.dart';
+import 'package:wisely/blocs/sync/outbound_queue_cubit.dart';
+import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health_page.dart';
@@ -20,12 +25,6 @@ import 'package:wisely/pages/journal_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/theme.dart';
-
-import 'blocs/journal/journal_image_cubit.dart';
-import 'blocs/journal/persistence_cubit.dart';
-import 'blocs/sync/imap_out_cubit.dart';
-import 'blocs/sync/outbound_queue_cubit.dart';
-import 'blocs/sync/vector_clock_cubit.dart';
 
 const enableSentry = true;
 
@@ -67,9 +66,9 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => VectorClockCubit(),
         ),
-        BlocProvider<ImapOutCubit>(
+        BlocProvider<OutboxImapCubit>(
           lazy: false,
-          create: (BuildContext context) => ImapOutCubit(
+          create: (BuildContext context) => OutboxImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
           ),
         ),
@@ -77,7 +76,7 @@ class WiselyApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => OutboundQueueCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-            imapOutCubit: BlocProvider.of<ImapOutCubit>(context),
+            outboxImapCubit: BlocProvider.of<OutboxImapCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
@@ -88,9 +87,9 @@ class WiselyApp extends StatelessWidget {
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
-        BlocProvider<ImapCubit>(
+        BlocProvider<InboxImapCubit>(
           lazy: false,
-          create: (BuildContext context) => ImapCubit(
+          create: (BuildContext context) => InboxImapCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),

@@ -1,17 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wisely/blocs/sync/imap_cubit.dart';
-import 'package:wisely/blocs/sync/imap_state.dart';
-
-import '../buttons.dart';
+import 'package:wisely/blocs/sync/imap/imap_state.dart';
+import 'package:wisely/blocs/sync/imap/inbox_cubit.dart';
+import 'package:wisely/widgets/buttons.dart';
 
 class ImapStatusWidget extends StatelessWidget {
   const ImapStatusWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImapCubit, ImapState>(
+    return BlocBuilder<InboxImapCubit, ImapState>(
         builder: (context, ImapState state) {
       return Column(
         children: [
@@ -26,7 +25,8 @@ class ImapStatusWidget extends StatelessWidget {
               children: [
                 StatusTextWidget('online, last update: $lastUpdate'),
                 Button('reset offset',
-                    onPressed: () => context.read<ImapCubit>().resetOffset(),
+                    onPressed: () =>
+                        context.read<InboxImapCubit>().resetOffset(),
                     primaryColor: Colors.red),
               ],
             ),

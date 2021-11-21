@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'classes.freezed.dart';
-part 'classes.g.dart';
+part 'config_classes.freezed.dart';
+part 'config_classes.g.dart';
 
 @freezed
 class ImapConfig with _$ImapConfig {
