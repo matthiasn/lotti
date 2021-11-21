@@ -121,7 +121,9 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   void _startPeriodicFetching() async {
-    timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    timer?.cancel();
+    _fetchInbox();
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       _fetchInbox();
       emit(ImapState.online(lastUpdate: DateTime.now()));
     });
@@ -130,6 +132,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   void _stopPeriodicFetching() async {
     if (timer != null) {
       timer!.cancel();
+      timer = null;
     }
   }
 
