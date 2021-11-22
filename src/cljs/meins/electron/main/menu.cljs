@@ -60,11 +60,11 @@
                      (put-fn [:import/photos files])))]
     (.showOpenDialog dialog options callback)))
 
-(defn import-media-dialog [put-fn]
+(defn flutter-path-dialog [put-fn]
   (let [options (clj->js {:properties  ["openDirectory"]
-                          :buttonLabel "Import Documents"})
+                          :buttonLabel "Select Container Documents Path"})
         selected-dir (first (js->clj (.showOpenDialogSync dialog options)))]
-    (put-fn [:import/media {:directory selected-dir}])))
+    (put-fn [:import/set-flutter-docs-path {:directory selected-dir}])))
 
 (defn import-health-dialog [put-fn]
   (let [options (clj->js {:properties  ["openFile" "multiSelections"]
@@ -123,8 +123,10 @@
                 :submenu [{:label       "Photos"
                            :accelerator "CmdOrCtrl+I"
                            :click       #(import-dialog put-fn)}
+                          {:label "Set Flutter Documents Path"
+                           :click #(flutter-path-dialog put-fn)}
                           {:label "Media from Flutter app"
-                           :click #(import-media-dialog put-fn)}
+                           :click #(put-fn [:import/media])}
                           {:label "Health Data from Flutter app"
                            :click #(import-health-dialog put-fn)}
                           (when (contains? capabilities :git-import)
