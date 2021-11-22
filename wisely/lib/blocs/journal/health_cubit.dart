@@ -53,7 +53,7 @@ class HealthCubit extends Cubit<HealthState> {
     debugPrint(
         'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
 
-    void addEntries(Map<DateTime, int> data, String type) {
+    Future<void> addEntries(Map<DateTime, int> data, String type) async {
       for (MapEntry<DateTime, int> dailyStepsEntry in data.entries) {
         DateTime dateFrom = dailyStepsEntry.key;
         DateTime dateTo = dateFrom
@@ -69,7 +69,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        _persistenceCubit.createQuantitativeEntry(activityForDay);
+        await _persistenceCubit.createQuantitativeEntry(activityForDay);
       }
     }
 
@@ -114,7 +114,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          _persistenceCubit.createQuantitativeEntry(discreteQuantity);
+          await _persistenceCubit.createQuantitativeEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');

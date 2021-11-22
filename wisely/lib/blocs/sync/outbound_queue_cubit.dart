@@ -91,8 +91,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
-      debugPrint('sendNext Connectivity $_connectivityResult');
-
       if (_connectivityResult == ConnectivityResult.none) {
         reportConnectivity();
       }
