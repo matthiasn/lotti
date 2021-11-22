@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.74+90
+version: 0.1.75+91
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -14,8 +14,8 @@ dependencies:
     git: https://github.com/metaflowltd/flutter_health_fit.git
 
   audio_video_progress_bar: ^0.10.0
-  bloc: ^8.0.0
-  bloc_test: ^9.0.0
+  bloc: ^8.0.1
+  bloc_test: ^9.0.1
   cached_network_image: ^3.1.0
   connectivity_plus: ^2.0.2
   crypto: ^3.0.1
