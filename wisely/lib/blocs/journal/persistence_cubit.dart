@@ -26,6 +26,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   late final PersistenceDb _db;
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
+  Timer? timer;
 
   PersistenceCubit({
     required VectorClockCubit vectorClockCubit,
@@ -57,6 +58,13 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     }
 
     await transaction.finish();
+  }
+
+  void queryJournalDelayed(int seconds) {
+    timer ??= Timer(Duration(seconds: seconds), () {
+      queryJournal();
+      timer = null;
+    });
   }
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
@@ -224,8 +232,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       }
       await transaction.finish();
 
-      await Future.delayed(const Duration(seconds: 1));
-      queryJournal();
+      queryJournalDelayed(1);
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
@@ -281,8 +288,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       }
       await transaction.finish();
 
-      await Future.delayed(const Duration(seconds: 1));
-      queryJournal();
+      queryJournalDelayed(1);
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
