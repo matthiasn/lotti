@@ -143,7 +143,7 @@ class InboxImapCubit extends Cubit<ImapState> {
     ImapClient? imapClient;
 
     if (!fetchMutex.isLocked) {
-      fetchMutex.acquire();
+      await fetchMutex.acquire();
 
       try {
         imapClient = await createImapClient(_encryptionCubit);
@@ -192,7 +192,9 @@ class InboxImapCubit extends Cubit<ImapState> {
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
       } finally {
         imapClient?.disconnect();
-        fetchMutex.release();
+        if (fetchMutex.isLocked) {
+          fetchMutex.release();
+        }
       }
     }
     await transaction.finish();
