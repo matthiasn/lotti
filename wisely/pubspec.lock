@@ -176,6 +176,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.1"
+  carp_core:
+    dependency: transitive
+    description:
+      name: carp_core
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.31.3+1"
   characters:
     dependency: transitive
     description:
@@ -793,6 +800,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.15.0"
+  html_unescape:
+    dependency: transitive
+    description:
+      name: html_unescape
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   http:
     dependency: transitive
     description:
@@ -1325,6 +1339,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.0"
+  research_package:
+    dependency: "direct main"
+    description:
+      name: research_package
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.6.7"
   rxdart:
     dependency: transitive
     description:
@@ -1381,6 +1402,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.1"
+  signature:
+    dependency: transitive
+    description:
+      name: signature
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.1.1"
+  simple_html_css:
+    dependency: transitive
+    description:
+      name: simple_html_css
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.1+1"
   sky_engine:
     dependency: transitive
     description: flutter
