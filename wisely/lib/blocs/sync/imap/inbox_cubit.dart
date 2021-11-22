@@ -13,6 +13,7 @@ import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mutex/mutex.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/sync/config_classes.dart';
@@ -33,6 +34,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
+  final fetchMutex = Mutex();
 
   final _storage = const FlutterSecureStorage();
   final String sharedSecretKey = 'sharedSecret';
@@ -140,52 +142,58 @@ class InboxImapCubit extends Cubit<ImapState> {
     final transaction = Sentry.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
 
-    try {
-      imapClient = await createImapClient(_encryptionCubit);
+    if (!fetchMutex.isLocked) {
+      fetchMutex.acquire();
 
-      String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
-      int lastReadUid =
-          lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
+      try {
+        imapClient = await createImapClient(_encryptionCubit);
 
-      var sequence = MessageSequence(isUidSequence: true);
-      sequence.addRangeToLast(lastReadUid + 1);
-      debugPrint('_fetchInbox sequence: $sequence');
+        String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
+        int lastReadUid =
+            lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
 
-      if (imapClient != null) {
-        final fetchResult =
-            await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
+        var sequence = MessageSequence(isUidSequence: true);
+        sequence.addRangeToLast(lastReadUid + 1);
+        debugPrint('_fetchInbox sequence: $sequence');
 
-        List<MimeMessage> messages = fetchResult.messages;
+        if (imapClient != null) {
+          final fetchResult =
+              await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
-        if (messages.isNotEmpty) {
-          int? oldest = fetchResult.messages.first.uid;
-          String subject = '${fetchResult.messages.first.decodeSubject()}';
-          if (lastReadUid != oldest) {
-            debugPrint('_fetchInbox lastReadUid $lastReadUid oldest $oldest');
+          List<MimeMessage> messages = fetchResult.messages;
 
-            if (subject.contains(_vectorClockCubit.getHostHash())) {
-              debugPrint('_fetchInbox ignoring from same host: $oldest');
-              _setLastReadUid(oldest);
-            } else {
-              await _fetchByUid(oldest);
-            }
+          if (messages.isNotEmpty) {
+            int? oldest = fetchResult.messages.first.uid;
+            String subject = '${fetchResult.messages.first.decodeSubject()}';
+            if (lastReadUid != oldest) {
+              debugPrint('_fetchInbox lastReadUid $lastReadUid oldest $oldest');
 
-            if (messages.length > 1) {
-              await _fetchInbox();
+              if (subject.contains(_vectorClockCubit.getHostHash())) {
+                debugPrint('_fetchInbox ignoring from same host: $oldest');
+                await _setLastReadUid(oldest);
+              } else {
+                await _fetchByUid(oldest);
+              }
+              fetchMutex.release();
+
+              if (messages.length > 1) {
+                await _fetchInbox();
+              }
             }
           }
+          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
-        emit(ImapState.online(lastUpdate: DateTime.now()));
+      } on MailException catch (e) {
+        debugPrint('High level API failed with $e');
+        emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
+        await Sentry.captureException(e);
+      } catch (e) {
+        debugPrint('Exception $e');
+        emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+      } finally {
+        imapClient?.disconnect();
+        fetchMutex.release();
       }
-    } on MailException catch (e) {
-      debugPrint('High level API failed with $e');
-      emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
-      await Sentry.captureException(e);
-    } catch (e) {
-      debugPrint('Exception $e');
-      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
-    } finally {
-      imapClient?.disconnect();
     }
     await transaction.finish();
   }
