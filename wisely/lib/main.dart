@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -22,6 +23,7 @@ import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health_page.dart';
 import 'package:wisely/pages/journal_page.dart';
+import 'package:wisely/pages/linear_survey_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
 import 'package:wisely/theme.dart';
@@ -176,6 +178,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     PhotoImportPage(),
     AudioPage(),
     HealthPage(),
+    LinearSurveyPage(),
     SettingsPage(),
   ];
 
@@ -238,6 +241,10 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.directions_run),
               label: 'Health',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(MdiIcons.clipboardOutline),
+              label: 'Surveys',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),
