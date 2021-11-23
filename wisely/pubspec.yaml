@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.79+99
+version: 0.1.80+100
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -81,6 +81,7 @@ flutter:
 
   assets:
     - .env
+    - assets/icons/
     - assets/sqlite/
     # from https://www.iconfinder.com/paomedia
     - assets/images/map/299087_marker_map_icon.png
