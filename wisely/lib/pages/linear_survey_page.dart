@@ -33,18 +33,38 @@ class LinearSurveyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flex(direction: Axis.vertical, children: [
       Expanded(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 40.0),
-          child: RPUITask(
-            task: task,
-            onSubmit: resultCallback,
-            onCancel: (RPTaskResult? result) {
-              if (result == null) {
-                debugPrint("No result");
-              } else {
-                cancelCallBack(result);
-              }
-            },
+        child: Theme(
+          data: ThemeData(
+            primaryColor: Colors.lightBlue[800],
+            fontFamily: 'Oswald',
+
+            // Define the default `TextTheme`. Use this to specify the default
+            // text styling for headlines, titles, bodies of text, and more.
+            textTheme: const TextTheme(
+              headline5: TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.w100,
+              ),
+              headline6: TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.w400,
+              ),
+              bodyText2: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 40.0),
+            child: RPUITask(
+              task: task,
+              onSubmit: resultCallback,
+              onCancel: (RPTaskResult? result) {
+                if (result == null) {
+                  debugPrint("No result");
+                } else {
+                  cancelCallBack(result);
+                }
+              },
+            ),
           ),
         ),
       ),
