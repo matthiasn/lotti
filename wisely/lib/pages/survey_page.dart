@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:research_package/research_package.dart';
 import 'package:wisely/surveys/cfq11_survey.dart';
+import 'package:wisely/surveys/panas_survey.dart';
 import 'package:wisely/widgets/buttons.dart';
 
 class LinearSurveyPage extends StatelessWidget {
@@ -40,20 +41,20 @@ class LinearSurveyPage extends StatelessWidget {
 
             // Define the default `TextTheme`. Use this to specify the default
             // text styling for headlines, titles, bodies of text, and more.
-            textTheme: const TextTheme(
-              headline3: TextStyle(
+            textTheme: TextTheme(
+              headline3: const TextStyle(
                 fontSize: 24.0,
                 fontWeight: FontWeight.bold,
               ),
-              headline5: TextStyle(
+              headline5: const TextStyle(
                 fontSize: 18.0,
                 fontWeight: FontWeight.w100,
               ),
               headline6: TextStyle(
-                fontSize: 18.0,
+                fontSize: 24.0,
                 fontWeight: FontWeight.w400,
+                color: Colors.grey[800],
               ),
-              bodyText2: TextStyle(fontSize: 14.0, fontFamily: 'Hind'),
             ),
           ),
           child: Padding(
@@ -109,7 +110,7 @@ class SurveyPage extends StatelessWidget {
             ),
             Button(
               'PANAS',
-              onPressed: () => runSurvey(cfq11SurveyTask),
+              onPressed: () => runSurvey(panasSurveyTask),
               primaryColor: CupertinoColors.systemOrange,
             ),
           ],
