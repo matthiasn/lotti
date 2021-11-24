@@ -13,6 +13,9 @@ dependencies:
   flutter_health_fit:
     git: https://github.com/metaflowltd/flutter_health_fit.git
 
+  research_package:
+    git: https://github.com/matthiasn/research.package.git
+
   audio_video_progress_bar: ^0.10.0
   bloc: ^8.0.1
   bloc_test: ^9.0.1
@@ -55,7 +58,7 @@ dependencies:
   permission_handler: ^8.1.6
   qr_code_scanner: ^0.6.1
   qr_flutter: ^4.0.0
-  research_package: ^0.6.7
+  # research_package: ^0.6.7
   sentry_flutter: ^6.0.1
   sqflite: ^2.0.0+4
   syncfusion_flutter_datepicker: ^19.3.46

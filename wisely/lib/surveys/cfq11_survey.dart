@@ -43,8 +43,8 @@ RPCompletionStep cfq11CompletionStep = RPCompletionStep(
 
 RPInstructionStep cfq11InstructionStep = RPInstructionStep(
   identifier: 'cfq11Instructions',
-  title: 'Welcome!',
-  text: ' Chalder Fatigue Scale (CFQ 11)\n\n'
+  title: 'Chalder Fatigue Scale (CFQ 11)',
+  text:
       'We would like to know more about any problems you have had with feeling '
       'tired, weak or lacking in energy in the last month. Please answer ALL '
       'the questions by ticking the answer which applies to you most closely. '
