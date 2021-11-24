@@ -57,7 +57,7 @@ RPInstructionStep instructionStep = RPInstructionStep(
       'community settings." J Psychosom Res 69(1): 17-22.',
 );
 
-RPOrderedTask linearSurveyTask = RPOrderedTask(
+RPOrderedTask cfq11SurveyTask = RPOrderedTask(
   identifier: 'surveyTaskID',
   steps: [
     instructionStep,

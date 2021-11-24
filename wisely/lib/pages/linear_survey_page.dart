@@ -1,12 +1,15 @@
 // modified from https://github.com/cph-cachet/research.package/blob/master/example/lib/linear_survey_page.dart
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:research_package/research_package.dart';
 import 'package:wisely/surveys/linear_survey_objects.dart';
+import 'package:wisely/widgets/buttons.dart';
 
 class LinearSurveyPage extends StatelessWidget {
-  const LinearSurveyPage({Key? key}) : super(key: key);
+  final RPOrderedTask task;
+  const LinearSurveyPage(this.task, {Key? key}) : super(key: key);
 
   String _encode(Object object) =>
       const JsonEncoder.withIndent(' ').convert(object);
@@ -30,18 +33,64 @@ class LinearSurveyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Flex(direction: Axis.vertical, children: [
       Expanded(
-        child: RPUITask(
-          task: linearSurveyTask,
-          onSubmit: resultCallback,
-          onCancel: (RPTaskResult? result) {
-            if (result == null) {
-              debugPrint("No result");
-            } else {
-              cancelCallBack(result);
-            }
-          },
+        child: Padding(
+          padding: const EdgeInsets.only(top: 40.0),
+          child: RPUITask(
+            task: task,
+            onSubmit: resultCallback,
+            onCancel: (RPTaskResult? result) {
+              if (result == null) {
+                debugPrint("No result");
+              } else {
+                cancelCallBack(result);
+              }
+            },
+          ),
         ),
       ),
     ]);
+  }
+}
+
+class SurveyPage extends StatelessWidget {
+  const SurveyPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    void runSurvey(RPOrderedTask task) async {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(16),
+          ),
+        ),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        builder: (BuildContext context) {
+          return LinearSurveyPage(task);
+        },
+      );
+    }
+
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Button(
+              'CFQ 11',
+              onPressed: () => runSurvey(cfq11SurveyTask),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+            Button(
+              'PANAS',
+              onPressed: () => runSurvey(cfq11SurveyTask),
+              primaryColor: CupertinoColors.systemOrange,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

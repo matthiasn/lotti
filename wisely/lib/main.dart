@@ -178,7 +178,7 @@ class _WiselyHomePageState extends State<WiselyHomePage> {
     PhotoImportPage(),
     AudioPage(),
     HealthPage(),
-    LinearSurveyPage(),
+    SurveyPage(),
     SettingsPage(),
   ];
 
