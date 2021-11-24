@@ -28,8 +28,8 @@ class LinearSurveyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Expanded(
+    return Flex(direction: Axis.vertical, children: [
+      Expanded(
         child: RPUITask(
           task: linearSurveyTask,
           onSubmit: resultCallback,
@@ -42,6 +42,6 @@ class LinearSurveyPage extends StatelessWidget {
           },
         ),
       ),
-    );
+    ]);
   }
 }
