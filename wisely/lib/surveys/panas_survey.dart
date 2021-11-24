@@ -55,102 +55,102 @@ RPOrderedTask panasSurveyTask = RPOrderedTask(
   steps: [
     panasInstructionStep,
     RPQuestionStep(
-      identifier: 'panasStep1',
+      identifier: 'panasQuestion1',
       title: 'Interested',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep2',
+      identifier: 'panasQuestion2',
       title: 'Distressed',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep3',
+      identifier: 'panasQuestion3',
       title: 'Excited',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep4',
+      identifier: 'panasQuestion4',
       title: 'Upset',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep5',
+      identifier: 'panasQuestion5',
       title: 'Strong',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep6',
+      identifier: 'panasQuestion6',
       title: 'Guilty',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep7',
+      identifier: 'panasQuestion7',
       title: 'Scared',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep8',
+      identifier: 'panasQuestion8',
       title: 'Hostile',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep9',
+      identifier: 'panasQuestion9',
       title: 'Enthusiastic',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep10',
+      identifier: 'panasQuestion10',
       title: 'Proud',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep11',
+      identifier: 'panasQuestion11',
       title: 'Irritable',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep12',
+      identifier: 'panasQuestion12',
       title: 'Alert',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep13',
+      identifier: 'panasQuestion13',
       title: 'Ashamed',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep14',
+      identifier: 'panasQuestion14',
       title: 'Inspired',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep15',
+      identifier: 'panasQuestion15',
       title: 'Nervous',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep16',
+      identifier: 'panasQuestion16',
       title: 'Determined',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep17',
+      identifier: 'panasQuestion17',
       title: 'Attentive',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep18',
+      identifier: 'panasQuestion18',
       title: 'Jittery',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep19',
+      identifier: 'panasQuestion19',
       title: 'Active',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
     RPQuestionStep(
-      identifier: 'panasStep20',
+      identifier: 'panasQuestion20',
       title: 'Afraid',
       answerFormat: panasImageChoiceAnswerFormat,
     ),
@@ -158,7 +158,24 @@ RPOrderedTask panasSurveyTask = RPOrderedTask(
   ],
 );
 
-void panasResultCallback(RPTaskResult result) {
-  // Do anything with the result
-  debugPrint(result.toString());
+Map<String, Set<int>> scores = {
+  'Positive Affect Score': {1, 3, 5, 9, 10, 12, 14, 16, 17, 19},
+  'Negative Affect Score': {2, 4, 6, 7, 8, 11, 13, 15, 18, 20},
+};
+
+void panasResultCallback(RPTaskResult taskResult) {
+  Map<String, dynamic> results = taskResult.results;
+
+  for (MapEntry<String, Set<int>> scoreEntry in scores.entries) {
+    int score = 0;
+
+    for (int index in scoreEntry.value) {
+      RPStepResult stepResult = results['panasQuestion$index'];
+      RPImageChoice choice = stepResult.results['answer'];
+      int value = choice.value;
+      score = score + value;
+    }
+
+    debugPrint('${scoreEntry.key}: $score');
+  }
 }
