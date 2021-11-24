@@ -1351,7 +1351,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "5b8ff5add6208ccbf2c4cc796a5fb3f782f559a2"
+      resolved-ref: a8c2fb5231e24d0d548fbf780f5d0eab00f8a6d3
       url: "https://github.com/matthiasn/research.package.git"
     source: git
     version: "0.6.6-1"

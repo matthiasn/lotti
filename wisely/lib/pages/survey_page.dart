@@ -8,9 +8,11 @@ import 'package:wisely/surveys/cfq11_survey.dart';
 import 'package:wisely/surveys/panas_survey.dart';
 import 'package:wisely/widgets/buttons.dart';
 
-class LinearSurveyPage extends StatelessWidget {
+class SurveyWidget extends StatelessWidget {
   final RPOrderedTask task;
-  const LinearSurveyPage(this.task, {Key? key}) : super(key: key);
+  final void Function(RPTaskResult) resultCallback;
+  const SurveyWidget(this.task, this.resultCallback, {Key? key})
+      : super(key: key);
 
   String _encode(Object object) =>
       const JsonEncoder.withIndent(' ').convert(object);
@@ -20,11 +22,6 @@ class LinearSurveyPage extends StatelessWidget {
     pattern.allMatches(text).forEach((match) => debugPrint(match.group(0)));
   }
 
-  void resultCallback(RPTaskResult result) {
-    // Do anything with the result
-    debugPrint(_encode(result));
-  }
-
   void cancelCallBack(RPTaskResult result) {
     // Do anything with the result at the moment of the cancellation
     debugPrint("The result so far:\n" + _encode(result));
@@ -32,48 +29,54 @@ class LinearSurveyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Flex(direction: Axis.vertical, children: [
-      Expanded(
-        child: Theme(
-          data: ThemeData(
-            primaryColor: Colors.lightBlue[800],
-            fontFamily: 'Oswald',
+    return SizedBox(
+      height: 500,
+      child: Flex(
+        direction: Axis.horizontal,
+        children: [
+          Flexible(
+            child: Theme(
+              data: ThemeData(
+                primaryColor: Colors.lightBlue[800],
+                fontFamily: 'Oswald',
 
-            // Define the default `TextTheme`. Use this to specify the default
-            // text styling for headlines, titles, bodies of text, and more.
-            textTheme: TextTheme(
-              headline3: const TextStyle(
-                fontSize: 24.0,
-                fontWeight: FontWeight.bold,
+                // Define the default `TextTheme`. Use this to specify the default
+                // text styling for headlines, titles, bodies of text, and more.
+                textTheme: TextTheme(
+                  headline3: const TextStyle(
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  headline5: const TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w100,
+                  ),
+                  headline6: TextStyle(
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey[800],
+                  ),
+                ),
               ),
-              headline5: const TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.w100,
-              ),
-              headline6: TextStyle(
-                fontSize: 24.0,
-                fontWeight: FontWeight.w400,
-                color: Colors.grey[800],
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40.0),
+                child: RPUITask(
+                  task: task,
+                  onSubmit: resultCallback,
+                  onCancel: (RPTaskResult? result) {
+                    if (result == null) {
+                      debugPrint("No result");
+                    } else {
+                      cancelCallBack(result);
+                    }
+                  },
+                ),
               ),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.only(top: 40.0),
-            child: RPUITask(
-              task: task,
-              onSubmit: resultCallback,
-              onCancel: (RPTaskResult? result) {
-                if (result == null) {
-                  debugPrint("No result");
-                } else {
-                  cancelCallBack(result);
-                }
-              },
-            ),
-          ),
-        ),
+        ],
       ),
-    ]);
+    );
   }
 }
 
@@ -82,7 +85,10 @@ class SurveyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void runSurvey(RPOrderedTask task) async {
+    void runSurvey(
+      RPOrderedTask task,
+      void Function(RPTaskResult) resultCallback,
+    ) async {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -93,7 +99,7 @@ class SurveyPage extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAliasWithSaveLayer,
         builder: (BuildContext context) {
-          return LinearSurveyPage(task);
+          return SurveyWidget(task, resultCallback);
         },
       );
     }
@@ -105,12 +111,18 @@ class SurveyPage extends StatelessWidget {
           children: <Widget>[
             Button(
               'CFQ 11',
-              onPressed: () => runSurvey(cfq11SurveyTask),
+              onPressed: () => runSurvey(
+                cfq11SurveyTask,
+                cfq11ResultCallback,
+              ),
               primaryColor: CupertinoColors.systemOrange,
             ),
             Button(
               'PANAS',
-              onPressed: () => runSurvey(panasSurveyTask),
+              onPressed: () => runSurvey(
+                panasSurveyTask,
+                panasResultCallback,
+              ),
               primaryColor: CupertinoColors.systemOrange,
             ),
           ],

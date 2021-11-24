@@ -28,7 +28,7 @@ import 'package:wisely/pages/settings.dart';
 import 'package:wisely/pages/survey_page.dart';
 import 'package:wisely/theme.dart';
 
-const enableSentry = true;
+const enableSentry = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

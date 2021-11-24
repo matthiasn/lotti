@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:research_package/model.dart';
 
 RPInstructionStep panasInstructionStep = RPInstructionStep(
@@ -50,116 +51,114 @@ RPCompletionStep panasCompletionStep = RPCompletionStep(
     text: 'Thank you for filling out the PANAS!');
 
 RPOrderedTask panasSurveyTask = RPOrderedTask(
-  identifier: 'surveyTaskID',
+  identifier: 'panasSurveyTask',
   steps: [
     panasInstructionStep,
-    RPFormStep(
-      identifier: "panasForm",
-      steps: [
-        RPQuestionStep(
-          identifier: 'panasStep1',
-          title: 'Interested',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep2',
-          title: 'Distressed',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep3',
-          title: 'Excited',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep4',
-          title: 'Upset',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep5',
-          title: 'Strong',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep6',
-          title: 'Guilty',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep7',
-          title: 'Scared',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep8',
-          title: 'Hostile',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep9',
-          title: 'Enthusiastic',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep10',
-          title: 'Proud',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep11',
-          title: 'Irritable',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep12',
-          title: 'Alert',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep13',
-          title: 'Ashamed',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep14',
-          title: 'Inspired',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep15',
-          title: 'Nervous',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep16',
-          title: 'Determined',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep17',
-          title: 'Attentive',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep18',
-          title: 'Jittery',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep19',
-          title: 'Active',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'panasStep20',
-          title: 'Afraid',
-          answerFormat: panasImageChoiceAnswerFormat,
-        ),
-      ],
-      title: 'The Positive and Negative Affect Schedule (PANAS; Watson et '
-          'al., 1988)',
+    RPQuestionStep(
+      identifier: 'panasStep1',
+      title: 'Interested',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep2',
+      title: 'Distressed',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep3',
+      title: 'Excited',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep4',
+      title: 'Upset',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep5',
+      title: 'Strong',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep6',
+      title: 'Guilty',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep7',
+      title: 'Scared',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep8',
+      title: 'Hostile',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep9',
+      title: 'Enthusiastic',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep10',
+      title: 'Proud',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep11',
+      title: 'Irritable',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep12',
+      title: 'Alert',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep13',
+      title: 'Ashamed',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep14',
+      title: 'Inspired',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep15',
+      title: 'Nervous',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep16',
+      title: 'Determined',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep17',
+      title: 'Attentive',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep18',
+      title: 'Jittery',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep19',
+      title: 'Active',
+      answerFormat: panasImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'panasStep20',
+      title: 'Afraid',
+      answerFormat: panasImageChoiceAnswerFormat,
     ),
     panasCompletionStep
   ],
 );
+
+void panasResultCallback(RPTaskResult result) {
+  // Do anything with the result
+  debugPrint(result.toString());
+}

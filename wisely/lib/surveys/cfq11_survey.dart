@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:research_package/model.dart';
 
 List<RPChoice> cqf11Choices = [
@@ -59,70 +62,80 @@ RPInstructionStep cfq11InstructionStep = RPInstructionStep(
 );
 
 RPOrderedTask cfq11SurveyTask = RPOrderedTask(
-  identifier: 'surveyTaskID',
+  identifier: 'cfq11SurveyTask',
   steps: [
     cfq11InstructionStep,
-    RPFormStep(
-      identifier: "cfq11FormStep",
-      steps: [
-        RPQuestionStep(
-          identifier: 'cfq11Step1',
-          title: 'Do you have problems with tiredness?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step2',
-          title: 'Do you need to rest more?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step3',
-          title: 'Do you feel sleepy or drowsy?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step4',
-          title: 'Do you have problems starting things?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step5',
-          title: 'Do you lack energy?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step6',
-          title: 'Do you have less strength in your muscles?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step7',
-          title: 'Do you feel weak?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step8',
-          title: 'Do you have difficulty concentrating?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step9',
-          title: 'Do you make slips of the tongue when speaking?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step10',
-          title: 'Do you find it more difficult to find the right word?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-        RPQuestionStep(
-          identifier: 'cfq11Step11',
-          title: 'How is your memory?',
-          answerFormat: cfq11ImageChoiceAnswerFormat,
-        ),
-      ],
-      title: 'Chalder Fatigue Scale (CFQ 11)',
+    RPQuestionStep(
+      identifier: 'cfq11Step1',
+      title: 'Do you have problems with tiredness?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step2',
+      title: 'Do you need to rest more?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step3',
+      title: 'Do you feel sleepy or drowsy?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step4',
+      title: 'Do you have problems starting things?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step5',
+      title: 'Do you lack energy?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step6',
+      title: 'Do you have less strength in your muscles?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step7',
+      title: 'Do you feel weak?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step8',
+      title: 'Do you have difficulty concentrating?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step9',
+      title: 'Do you make slips of the tongue when speaking?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step10',
+      title: 'Do you find it more difficult to find the right word?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
+    ),
+    RPQuestionStep(
+      identifier: 'cfq11Step11',
+      title: 'How is your memory?',
+      answerFormat: cfq11ImageChoiceAnswerFormat,
     ),
     cfq11CompletionStep
   ],
 );
+
+String encode(Object object) =>
+    const JsonEncoder.withIndent(' ').convert(object);
+
+void cfq11ResultCallback(RPTaskResult taskResult) {
+  Map<String, dynamic> results = taskResult.results;
+  int score = 0;
+
+  for (RPStepResult result in results.values) {
+    RPImageChoice choice = result.results['answer'];
+    int value = choice.value;
+    score = score + value;
+  }
+
+  debugPrint('Score: $score');
+}
