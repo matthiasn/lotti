@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:research_package/research_package.dart';
-import 'package:wisely/surveys/linear_survey_objects.dart';
+import 'package:wisely/surveys/cfq11_survey.dart';
 import 'package:wisely/widgets/buttons.dart';
 
 class LinearSurveyPage extends StatelessWidget {

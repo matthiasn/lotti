@@ -23,9 +23,9 @@ import 'package:wisely/pages/audio.dart';
 import 'package:wisely/pages/editor.dart';
 import 'package:wisely/pages/health_page.dart';
 import 'package:wisely/pages/journal_page.dart';
-import 'package:wisely/pages/linear_survey_page.dart';
 import 'package:wisely/pages/photo_import.dart';
 import 'package:wisely/pages/settings.dart';
+import 'package:wisely/pages/survey_page.dart';
 import 'package:wisely/theme.dart';
 
 const enableSentry = true;

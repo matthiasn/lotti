@@ -31,16 +31,17 @@ List<RPImageChoice> cfq11Images = [
       description: 'Much worse than usual'),
 ];
 
-RPImageChoiceAnswerFormat imageChoiceAnswerFormat = RPImageChoiceAnswerFormat(
+RPImageChoiceAnswerFormat cfq11ImageChoiceAnswerFormat =
+    RPImageChoiceAnswerFormat(
   choices: cfq11Images,
 );
 
-RPCompletionStep completionStep = RPCompletionStep(
-    identifier: 'completionID',
+RPCompletionStep cfq11CompletionStep = RPCompletionStep(
+    identifier: 'cfq11Completion',
     title: 'Finished',
     text: 'Thank you for filling out the CFQ11!');
 
-RPInstructionStep instructionStep = RPInstructionStep(
+RPInstructionStep cfq11InstructionStep = RPInstructionStep(
   identifier: 'cfq11Instructions',
   title: 'Welcome!',
   text: ' Chalder Fatigue Scale (CFQ 11)\n\n'
@@ -60,68 +61,68 @@ RPInstructionStep instructionStep = RPInstructionStep(
 RPOrderedTask cfq11SurveyTask = RPOrderedTask(
   identifier: 'surveyTaskID',
   steps: [
-    instructionStep,
+    cfq11InstructionStep,
     RPFormStep(
-      identifier: "formstepID",
+      identifier: "cfq11FormStep",
       steps: [
         RPQuestionStep(
           identifier: 'cfq11Step1',
           title: 'Do you have problems with tiredness?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step2',
           title: 'Do you need to rest more?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step3',
           title: 'Do you feel sleepy or drowsy?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step4',
           title: 'Do you have problems starting things?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step5',
           title: 'Do you lack energy?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step6',
           title: 'Do you have less strength in your muscles?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step7',
           title: 'Do you feel weak?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step8',
           title: 'Do you have difficulty concentrating?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step9',
           title: 'Do you make slips of the tongue when speaking?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step10',
           title: 'Do you find it more difficult to find the right word?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
         RPQuestionStep(
           identifier: 'cfq11Step11',
           title: 'How is your memory?',
-          answerFormat: imageChoiceAnswerFormat,
+          answerFormat: cfq11ImageChoiceAnswerFormat,
         ),
       ],
       title: 'Chalder Fatigue Scale (CFQ 11)',
     ),
-    completionStep
+    cfq11CompletionStep
   ],
 );
