@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:provider/src/provider.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/classes/entry_text.dart';
@@ -48,6 +48,30 @@ class EntryModalWidget extends StatelessWidget {
               geolocation: entry.geolocation,
             ),
             orElse: () => Container(),
+          ),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 4.0, horizontal: 16.0),
+                  child: Text(
+                    df.format(item.meta.dateFrom),
+                    style: const TextStyle(
+                      fontFamily: 'Oswald',
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                ),
+                Button(
+                  'Close',
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
           item.maybeMap(
             journalAudio: (JournalAudio audio) {
@@ -118,23 +142,6 @@ class EntryModalWidget extends StatelessWidget {
               ),
             ),
             orElse: () => Container(),
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-            child: InfoText(df.format(item.meta.dateFrom)),
-          ),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Button(
-                  'Close',
-                  onPressed: () => Navigator.pop(context),
-                  padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
-                ),
-              ],
-            ),
           ),
         ],
       ),
