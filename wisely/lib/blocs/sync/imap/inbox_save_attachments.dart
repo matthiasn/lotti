@@ -31,7 +31,6 @@ Future<void> saveAudioAttachment(
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
-      await AudioUtils.saveAudioNoteJson(journalAudio);
     }
   }
   await transaction.finish();
@@ -58,7 +57,6 @@ Future<void> saveImageAttachment(
       debugPrint('saveAttachment $filePath');
       await writeToFile(bytes, encrypted.path);
       await decryptFile(encrypted, File(filePath), b64Secret);
-      await saveJournalImageJson(journalImage);
     }
   }
   await transaction.finish();
