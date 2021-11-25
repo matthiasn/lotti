@@ -80,6 +80,10 @@ class EntryModalWidget extends StatelessWidget {
               void saveText() {
                 EntryText entryText = entryTextFromController(_controller);
                 debugPrint(entryText.toString());
+
+                context
+                    .read<PersistenceCubit>()
+                    .updateAudioEntry(item, entryText);
               }
 
               return Column(
@@ -99,7 +103,10 @@ class EntryModalWidget extends StatelessWidget {
 
               void saveText() {
                 EntryText entryText = entryTextFromController(_controller);
-                debugPrint(entryText.toString());
+
+                context
+                    .read<PersistenceCubit>()
+                    .updateImageEntry(item, entryText);
               }
 
               File file = File(getFullImagePathWithDocDir(image, docDir));

@@ -244,7 +244,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     JournalEntity journalEntity,
     EntryText entryText,
   ) async {
-    final transaction = Sentry.startTransaction('createTextEntry()', 'task');
+    final transaction = Sentry.startTransaction('updateTextEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = _vectorClockCubit.getNextVectorClock(
@@ -263,6 +263,68 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
         await updateDbEntity(newJournalEntry, enqueueSync: true);
         await saveJournalEntryJson(newJournalEntry);
+      }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> updateImageEntry(
+    JournalEntity journalEntity,
+    EntryText entryText,
+  ) async {
+    final transaction = Sentry.startTransaction('updateImageEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
+
+      Metadata newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+      );
+
+      if (journalEntity is JournalImage) {
+        JournalImage newJournalImage = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newJournalImage, enqueueSync: true);
+      }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> updateAudioEntry(
+    JournalEntity journalEntity,
+    EntryText entryText,
+  ) async {
+    final transaction = Sentry.startTransaction('updateAudioEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = _vectorClockCubit.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
+
+      Metadata newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+      );
+
+      if (journalEntity is JournalAudio) {
+        JournalAudio newJournalAudio = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newJournalAudio, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
