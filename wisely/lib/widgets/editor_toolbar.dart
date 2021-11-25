@@ -5,7 +5,7 @@ class ToolbarWidget extends StatelessWidget {
   const ToolbarWidget({
     Key? key,
     required QuillController controller,
-    double toolbarIconSize = 18.0,
+    double toolbarIconSize = 24.0,
     required Function saveFn,
     this.iconTheme,
   })  : _controller = controller,
