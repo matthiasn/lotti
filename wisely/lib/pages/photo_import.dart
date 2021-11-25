@@ -5,18 +5,8 @@ import 'package:wisely/blocs/journal/journal_image_cubit.dart';
 import 'package:wisely/blocs/journal/journal_image_state.dart';
 import 'package:wisely/widgets/buttons.dart';
 
-class PhotoImportPage extends StatefulWidget {
+class PhotoImportPage extends StatelessWidget {
   const PhotoImportPage({Key? key}) : super(key: key);
-
-  @override
-  State<PhotoImportPage> createState() => _PhotoImportPageState();
-}
-
-class _PhotoImportPageState extends State<PhotoImportPage> {
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {

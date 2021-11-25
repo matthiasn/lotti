@@ -1349,10 +1349,12 @@ packages:
   research_package:
     dependency: "direct main"
     description:
-      name: research_package
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.6.7"
+      path: "."
+      ref: HEAD
+      resolved-ref: a8c2fb5231e24d0d548fbf780f5d0eab00f8a6d3
+      url: "https://github.com/matthiasn/research.package.git"
+    source: git
+    version: "0.6.6-1"
   rxdart:
     dependency: transitive
     description:
