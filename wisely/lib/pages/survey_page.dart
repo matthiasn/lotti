@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:research_package/research_package.dart';
+import 'package:wisely/surveys/calculate.dart';
 import 'package:wisely/surveys/cfq11_survey.dart';
 import 'package:wisely/surveys/panas_survey.dart';
 import 'package:wisely/widgets/buttons.dart';
@@ -113,7 +114,7 @@ class SurveyPage extends StatelessWidget {
               'CFQ 11',
               onPressed: () => runSurvey(
                 cfq11SurveyTask,
-                cfq11ResultCallback,
+                createResultCallback(scoreDefinitions: cfq11ScoreDefinitions),
               ),
               primaryColor: CupertinoColors.systemOrange,
             ),
@@ -121,7 +122,7 @@ class SurveyPage extends StatelessWidget {
               'PANAS',
               onPressed: () => runSurvey(
                 panasSurveyTask,
-                panasResultCallback,
+                createResultCallback(scoreDefinitions: panasScoreDefinitions),
               ),
               primaryColor: CupertinoColors.systemOrange,
             ),

@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:research_package/model.dart';
 
 List<RPChoice> cqf11Choices = [
@@ -124,18 +121,18 @@ RPOrderedTask cfq11SurveyTask = RPOrderedTask(
   ],
 );
 
-String encode(Object object) =>
-    const JsonEncoder.withIndent(' ').convert(object);
-
-void cfq11ResultCallback(RPTaskResult taskResult) {
-  Map<String, dynamic> results = taskResult.results;
-  int score = 0;
-
-  for (RPStepResult result in results.values) {
-    RPImageChoice choice = result.results['answer'];
-    int value = choice.value;
-    score = score + value;
-  }
-
-  debugPrint('Score: $score');
-}
+Map<String, Set<String>> cfq11ScoreDefinitions = {
+  'CFQ11': {
+    'cfq11Step1',
+    'cfq11Step2',
+    'cfq11Step3',
+    'cfq11Step4',
+    'cfq11Step5',
+    'cfq11Step6',
+    'cfq11Step7',
+    'cfq11Step8',
+    'cfq11Step9',
+    'cfq11Step10',
+    'cfq11Step11',
+  },
+};
