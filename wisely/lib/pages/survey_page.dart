@@ -114,7 +114,10 @@ class SurveyPage extends StatelessWidget {
               'CFQ 11',
               onPressed: () => runSurvey(
                 cfq11SurveyTask,
-                createResultCallback(scoreDefinitions: cfq11ScoreDefinitions),
+                createResultCallback(
+                  scoreDefinitions: cfq11ScoreDefinitions,
+                  context: context,
+                ),
               ),
               primaryColor: CupertinoColors.systemOrange,
             ),
@@ -122,7 +125,10 @@ class SurveyPage extends StatelessWidget {
               'PANAS',
               onPressed: () => runSurvey(
                 panasSurveyTask,
-                createResultCallback(scoreDefinitions: panasScoreDefinitions),
+                createResultCallback(
+                  scoreDefinitions: panasScoreDefinitions,
+                  context: context,
+                ),
               ),
               primaryColor: CupertinoColors.systemOrange,
             ),

@@ -55,6 +55,8 @@ class PersistenceDb {
     final DateTime createdAt = journalEntity.meta.createdAt;
     final subtype = journalEntity.maybeMap(
       quantitative: (qd) => qd.data.dataType,
+      survey: (SurveyEntry surveyEntry) =>
+          surveyEntry.data.taskResult.identifier,
       orElse: () => '',
     );
 

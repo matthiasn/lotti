@@ -1,5 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:provider/src/provider.dart';
 import 'package:research_package/model.dart';
+import 'package:wisely/blocs/journal/persistence_cubit.dart';
+import 'package:wisely/classes/journal_entities.dart';
 
 Map<String, int> calculateScores({
   required Map<String, Set<String>> scoreDefinitions,
@@ -27,13 +30,18 @@ Map<String, int> calculateScores({
 
 Function(RPTaskResult) createResultCallback({
   required Map<String, Set<String>> scoreDefinitions,
+  required BuildContext context,
 }) {
   return (RPTaskResult taskResult) {
-    Map<String, int> calculatedScores = calculateScores(
-      scoreDefinitions: scoreDefinitions,
-      taskResult: taskResult,
-    );
-
-    debugPrint('Scores: $calculatedScores');
+    context.read<PersistenceCubit>().createSurveyEntry(
+          data: SurveyData(
+            taskResult: taskResult,
+            scoreDefinitions: scoreDefinitions,
+            calculatedScores: calculateScores(
+              scoreDefinitions: scoreDefinitions,
+              taskResult: taskResult,
+            ),
+          ),
+        );
   };
 }
