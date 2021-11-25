@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/theme.dart';
@@ -58,9 +60,12 @@ class EditorWidget extends StatelessWidget {
         color: AppColors.editorBgColor,
         child: Column(
           children: [
-            ToolbarWidget(
-              controller: _controller,
-              saveFn: _saveFn,
+            Visibility(
+              visible: Platform.isMacOS,
+              child: ToolbarWidget(
+                controller: _controller,
+                saveFn: _saveFn,
+              ),
             ),
             Expanded(
               child: Padding(
@@ -70,7 +75,14 @@ class EditorWidget extends StatelessWidget {
                   readOnly: _readOnly,
                 ),
               ),
-            )
+            ),
+            Visibility(
+              visible: Platform.isIOS || Platform.isAndroid,
+              child: ToolbarWidget(
+                controller: _controller,
+                saveFn: _saveFn,
+              ),
+            ),
           ],
         ),
       ),
