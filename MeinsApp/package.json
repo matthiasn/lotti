@@ -17,7 +17,7 @@
     "@react-native-community/async-storage": "1.7.1",
     "@react-native-community/geolocation": "2.0.2",
     "@react-native-community/netinfo": "5.0.0",
-    "@react-native-mapbox-gl/maps": "7.0.8",
+    "@react-native-mapbox-gl/maps": "8.4.0",
     "buffer": "5.4.3",
     "create-react-class": "15.6.3",
     "events": "3.0.0",
