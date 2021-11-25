@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:wisely/theme.dart';
+import 'package:wisely/widgets/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
@@ -58,44 +58,16 @@ class EditorWidget extends StatelessWidget {
         color: AppColors.editorBgColor,
         child: Column(
           children: [
-            Container(
-              color: Colors.grey[100],
-              width: double.maxFinite,
-              child: Wrap(
-                //mainAxisAlignment: MainAxisAlignment.center,
-                //crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.save),
-                    iconSize: 20,
-                    tooltip: 'Save',
-                    onPressed: () => _saveFn(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3.0),
-                    child: QuillToolbar.basic(
-                      controller: _controller,
-                      showColorButton: false,
-                      showBackgroundColorButton: false,
-                      showListCheck: false,
-                      showIndent: false,
-                      showQuote: false,
-                      showSmallButton: false,
-                      showImageButton: false,
-                      showLink: false,
-                      showUnderLineButton: false,
-                      showAlignmentButtons: false,
-                    ),
-                  ),
-                ],
-              ),
+            ToolbarWidget(
+              controller: _controller,
+              saveFn: _saveFn,
             ),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: _padding),
                 child: QuillEditor.basic(
                   controller: _controller,
-                  readOnly: _readOnly, // true for view only mode
+                  readOnly: _readOnly,
                 ),
               ),
             )
