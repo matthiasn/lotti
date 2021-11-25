@@ -25,7 +25,9 @@ import 'package:wisely/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
+import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/file_utils.dart';
+import 'package:wisely/utils/image_utils.dart';
 
 class InboxImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
@@ -87,10 +89,16 @@ class InboxImapCubit extends Cubit<ImapState> {
               (JournalEntity journalEntity, SyncEntryStatus status) async {
             journalEntity.maybeMap(
               journalAudio: (JournalAudio journalAudio) async {
-                await saveAudioAttachment(message, journalAudio, b64Secret);
+                if (syncMessage.status == SyncEntryStatus.initial) {
+                  await saveAudioAttachment(message, journalAudio, b64Secret);
+                }
+                await AudioUtils.saveAudioNoteJson(journalAudio);
               },
               journalImage: (JournalImage journalImage) async {
-                await saveImageAttachment(message, journalImage, b64Secret);
+                if (syncMessage.status == SyncEntryStatus.initial) {
+                  await saveImageAttachment(message, journalImage, b64Secret);
+                }
+                await saveJournalImageJson(journalImage);
               },
               journalEntry: (JournalEntry journalEntry) async {
                 await saveJournalEntryJson(journalEntry);

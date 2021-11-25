@@ -55,6 +55,29 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
+(def new-audio-test-entry-with-text
+  {:mentions   #{}
+   :timezone   "Europe/Berlin"
+   :utc-offset 60
+   :timestamp  1636326416054
+   :audio_file "2021-11-07_23-06-56-054.aac"
+   :text       "Blah \nFoo\nBar\nBaz \n"
+   :md         "# Blah \n\n* Foo\n* Bar\n* Baz \n"
+   :tags       #{"#import" "#audio"}
+   :perm_tags  #{"#audio" "#task"}
+   :longitude  9
+   :latitude   53
+   :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
+
+(deftest read-new-audio-entry-test-with-text
+  (let [json-file "./src/test/meins/shared/test-json/test3.aac.json"
+        data (h/parse-json json-file)
+        entry (ai/convert-new-audio-entry data)]
+    (testing "JSON is parsed correctly"
+      (is (= entry new-audio-test-entry-with-text)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
 (def time-recording-test-entry
   {:timezone       "Europe/Berlin"
    :utc-offset     60

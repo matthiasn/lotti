@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
@@ -13,6 +11,7 @@ import 'package:wisely/theme.dart';
 import 'package:wisely/utils/image_utils.dart';
 import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/buttons.dart';
+import 'package:wisely/widgets/editor_tools.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 import 'package:wisely/widgets/entry_tools.dart';
 import 'package:wisely/widgets/map_widget.dart';
@@ -75,53 +74,77 @@ class EntryModalWidget extends StatelessWidget {
           ),
           item.maybeMap(
             journalAudio: (JournalAudio audio) {
-              return const AudioPlayerWidget();
+              QuillController _controller =
+                  makeController(serializedQuill: audio.entryText?.quill);
+
+              void saveText() {
+                EntryText entryText = entryTextFromController(_controller);
+                debugPrint(entryText.toString());
+
+                context
+                    .read<PersistenceCubit>()
+                    .updateJournalEntity(item, entryText);
+              }
+
+              return Column(
+                children: [
+                  const AudioPlayerWidget(),
+                  EditorWidget(
+                    controller: _controller,
+                    height: 240,
+                    saveFn: saveText,
+                  ),
+                ],
+              );
             },
             journalImage: (JournalImage image) {
+              QuillController _controller =
+                  makeController(serializedQuill: image.entryText?.quill);
+
+              void saveText() {
+                EntryText entryText = entryTextFromController(_controller);
+
+                context
+                    .read<PersistenceCubit>()
+                    .updateJournalEntity(item, entryText);
+              }
+
               File file = File(getFullImagePathWithDocDir(image, docDir));
-              return Container(
-                color: Colors.black,
-                child: Image.file(
-                  file,
-                  cacheHeight: 1200,
-                  width: double.infinity,
-                  height: 400,
-                  fit: BoxFit.scaleDown,
-                ),
+
+              return Column(
+                children: [
+                  Container(
+                    color: Colors.black,
+                    child: Image.file(
+                      file,
+                      cacheHeight: 1200,
+                      width: double.infinity,
+                      height: 400,
+                      fit: BoxFit.scaleDown,
+                    ),
+                  ),
+                  EditorWidget(
+                    controller: _controller,
+                    height: 240,
+                    saveFn: saveText,
+                  ),
+                ],
               );
             },
             journalEntry: (JournalEntry journalEntry) {
-              QuillController _controller = QuillController.basic();
+              QuillController _controller =
+                  makeController(serializedQuill: journalEntry.entryText.quill);
 
-              if (journalEntry.entryText.quill != null) {
-                var editorJson = json.decode(journalEntry.entryText.quill!);
-                _controller = QuillController(
-                    document: Document.fromJson(editorJson),
-                    selection: const TextSelection.collapsed(offset: 0));
-
-                void saveText() {
-                  Delta delta = _controller.document.toDelta();
-                  String json = jsonEncode(delta.toJson());
-                  String markdown = deltaToMarkdown(json);
-
-                  context.read<PersistenceCubit>().updateTextEntry(
-                        item,
-                        EntryText(
-                          plainText: _controller.document.toPlainText(),
-                          markdown: markdown,
-                          quill: json,
-                        ),
-                      );
-                }
-
-                return EditorWidget(
-                  controller: _controller,
-                  height: 240,
-                  saveFn: saveText,
-                );
+              void saveText() {
+                context.read<PersistenceCubit>().updateJournalEntity(
+                    item, entryTextFromController(_controller));
               }
 
-              return Container();
+              return EditorWidget(
+                controller: _controller,
+                height: 240,
+                saveFn: saveText,
+              );
             },
             quantitative: (qe) => qe.data.map(
               cumulativeQuantityData: (qd) => Padding(

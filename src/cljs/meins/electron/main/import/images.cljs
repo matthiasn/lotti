@@ -33,13 +33,16 @@
 (defn convert-new-image-entry [json]
   (let [meta-data (get json "meta")
         date-from (get meta-data "dateFrom")
+        entry-text-object (get json "entryText")
+        plain-text (get entry-text-object "plainText")
+        markdown (get entry-text-object "markdown")
         ts (.valueOf (moment date-from))
         data (get json "data")
-        text (str (h/format-time ts) " Image")
+        placeholder-text (str (h/format-time ts) " Image")
         geolocation (get json "geolocation")
         entry {:timestamp  ts
-               :md         text
-               :text       text
+               :md         (or markdown placeholder-text)
+               :text       (or plain-text placeholder-text)
                :mentions   #{}
                :utc-offset 0
                :img_file   (s/replace (get data "imageFile") "HEIC" "JPG")
