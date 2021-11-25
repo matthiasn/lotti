@@ -15,6 +15,7 @@ import 'package:wisely/widgets/editor_tools.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 import 'package:wisely/widgets/entry_tools.dart';
 import 'package:wisely/widgets/map_widget.dart';
+import 'package:wisely/widgets/survey_summary.dart';
 
 class EntryModalWidget extends StatelessWidget {
   const EntryModalWidget({
@@ -146,6 +147,8 @@ class EntryModalWidget extends StatelessWidget {
                 saveFn: saveText,
               );
             },
+            survey: (SurveyEntry surveyEntry) =>
+                SurveySummaryWidget(surveyEntry),
             quantitative: (qe) => qe.data.map(
               cumulativeQuantityData: (qd) => Padding(
                 padding: const EdgeInsets.all(24.0),
