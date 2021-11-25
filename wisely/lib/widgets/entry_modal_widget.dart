@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:provider/src/provider.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
+import 'package:wisely/classes/entry_text.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/utils/image_utils.dart';
@@ -73,19 +74,54 @@ class EntryModalWidget extends StatelessWidget {
           ),
           item.maybeMap(
             journalAudio: (JournalAudio audio) {
-              return const AudioPlayerWidget();
+              QuillController _controller =
+                  makeController(serializedQuill: audio.entryText?.quill);
+
+              void saveText() {
+                EntryText entryText = entryTextFromController(_controller);
+                debugPrint(entryText.toString());
+              }
+
+              return Column(
+                children: [
+                  const AudioPlayerWidget(),
+                  EditorWidget(
+                    controller: _controller,
+                    height: 240,
+                    saveFn: saveText,
+                  ),
+                ],
+              );
             },
             journalImage: (JournalImage image) {
+              QuillController _controller =
+                  makeController(serializedQuill: image.entryText?.quill);
+
+              void saveText() {
+                EntryText entryText = entryTextFromController(_controller);
+                debugPrint(entryText.toString());
+              }
+
               File file = File(getFullImagePathWithDocDir(image, docDir));
-              return Container(
-                color: Colors.black,
-                child: Image.file(
-                  file,
-                  cacheHeight: 1200,
-                  width: double.infinity,
-                  height: 400,
-                  fit: BoxFit.scaleDown,
-                ),
+
+              return Column(
+                children: [
+                  Container(
+                    color: Colors.black,
+                    child: Image.file(
+                      file,
+                      cacheHeight: 1200,
+                      width: double.infinity,
+                      height: 400,
+                      fit: BoxFit.scaleDown,
+                    ),
+                  ),
+                  EditorWidget(
+                    controller: _controller,
+                    height: 240,
+                    saveFn: saveText,
+                  ),
+                ],
               );
             },
             journalEntry: (JournalEntry journalEntry) {
