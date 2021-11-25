@@ -9,6 +9,7 @@ import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/widgets/entry_modal_widget.dart';
 import 'package:wisely/widgets/entry_tools.dart';
+import 'package:wisely/widgets/survey_summary.dart';
 
 class JournalListItem extends StatelessWidget {
   final JournalEntity item;
@@ -52,36 +53,8 @@ class JournalListItem extends StatelessWidget {
                           InfoText(journalEntry.entryText.plainText),
                       journalImage: (JournalImage journalImage) =>
                           InfoText(journalImage.data.imageFile),
-                      survey: (SurveyEntry surveyEntry) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: surveyEntry.data.calculatedScores.entries
-                            .map((mapEntry) => Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${mapEntry.key}: ',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 20,
-                                        ),
-                                      ),
-                                      Text(
-                                        mapEntry.value.toString(),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w300,
-                                          fontSize: 20,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                      ),
+                      survey: (SurveyEntry surveyEntry) =>
+                          SurveySummaryWidget(surveyEntry),
                       orElse: () => Row(
                         children: const [],
                       ),
