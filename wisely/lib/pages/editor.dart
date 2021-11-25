@@ -1,13 +1,10 @@
-import 'dart:convert';
-
-import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
 import 'package:wisely/blocs/journal/persistence_state.dart';
-import 'package:wisely/classes/entry_text.dart';
+import 'package:wisely/widgets/editor_tools.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 
 class EditorPage extends StatefulWidget {
@@ -18,7 +15,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  QuillController _controller = QuillController.basic();
+  QuillController _controller = makeController();
 
   @override
   void initState() {
@@ -30,20 +27,11 @@ class _EditorPageState extends State<EditorPage> {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
         builder: (context, PersistenceState state) {
       void _save() async {
-        Delta delta = _controller.document.toDelta();
-        String json = jsonEncode(delta.toJson());
-        String markdown = deltaToMarkdown(json);
+        context
+            .read<PersistenceCubit>()
+            .createTextEntry(entryTextFromController(_controller));
 
-        context.read<PersistenceCubit>().createTextEntry(
-              EntryText(
-                plainText: _controller.document.toPlainText(),
-                markdown: markdown,
-                quill: json,
-              ),
-            );
-
-        _controller = QuillController.basic();
-
+        _controller = makeController();
         FocusScope.of(context).unfocus();
       }
 

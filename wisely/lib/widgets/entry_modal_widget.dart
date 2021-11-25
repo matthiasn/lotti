@@ -1,18 +1,16 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:provider/src/provider.dart';
 import 'package:wisely/blocs/journal/persistence_cubit.dart';
-import 'package:wisely/classes/entry_text.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/theme.dart';
 import 'package:wisely/utils/image_utils.dart';
 import 'package:wisely/widgets/audio_player.dart';
 import 'package:wisely/widgets/buttons.dart';
+import 'package:wisely/widgets/editor_tools.dart';
 import 'package:wisely/widgets/editor_widget.dart';
 import 'package:wisely/widgets/entry_tools.dart';
 import 'package:wisely/widgets/map_widget.dart';
@@ -91,37 +89,19 @@ class EntryModalWidget extends StatelessWidget {
               );
             },
             journalEntry: (JournalEntry journalEntry) {
-              QuillController _controller = QuillController.basic();
+              QuillController _controller =
+                  makeController(serializedQuill: journalEntry.entryText.quill);
 
-              if (journalEntry.entryText.quill != null) {
-                var editorJson = json.decode(journalEntry.entryText.quill!);
-                _controller = QuillController(
-                    document: Document.fromJson(editorJson),
-                    selection: const TextSelection.collapsed(offset: 0));
-
-                void saveText() {
-                  Delta delta = _controller.document.toDelta();
-                  String json = jsonEncode(delta.toJson());
-                  String markdown = deltaToMarkdown(json);
-
-                  context.read<PersistenceCubit>().updateTextEntry(
-                        item,
-                        EntryText(
-                          plainText: _controller.document.toPlainText(),
-                          markdown: markdown,
-                          quill: json,
-                        ),
-                      );
-                }
-
-                return EditorWidget(
-                  controller: _controller,
-                  height: 240,
-                  saveFn: saveText,
-                );
+              void saveText() {
+                context.read<PersistenceCubit>().updateTextEntry(
+                    item, entryTextFromController(_controller));
               }
 
-              return Container();
+              return EditorWidget(
+                controller: _controller,
+                height: 240,
+                saveFn: saveText,
+              );
             },
             quantitative: (qe) => qe.data.map(
               cumulativeQuantityData: (qd) => Padding(
