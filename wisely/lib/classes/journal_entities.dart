@@ -115,6 +115,7 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.survey({
     required Metadata meta,
     required SurveyData data,
+    Geolocation? geolocation,
   }) = SurveyEntry;
 
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
