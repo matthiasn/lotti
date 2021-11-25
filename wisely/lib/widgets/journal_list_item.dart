@@ -52,6 +52,36 @@ class JournalListItem extends StatelessWidget {
                           InfoText(journalEntry.entryText.plainText),
                       journalImage: (JournalImage journalImage) =>
                           InfoText(journalImage.data.imageFile),
+                      survey: (SurveyEntry surveyEntry) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: surveyEntry.data.calculatedScores.entries
+                            .map((mapEntry) => Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${mapEntry.key}: ',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                      Text(
+                                        mapEntry.value.toString(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w300,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                      ),
                       orElse: () => Row(
                         children: const [],
                       ),
