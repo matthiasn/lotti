@@ -36,11 +36,14 @@
         meta-data (get json "meta")
         date-from (get meta-data "dateFrom")
         ts (.valueOf (moment date-from))
-        text (str (h/format-time ts) " Audio")
+        placeholder-text (str (h/format-time ts) " Audio")
+        entry-text-object (get json "entryText")
+        plain-text (get entry-text-object "plainText")
+        markdown (get entry-text-object "markdown")
         geolocation (get json "geolocation")
         entry {:timestamp  ts
-               :md         text
-               :text       text
+               :md         (or markdown placeholder-text)
+               :text       (or plain-text placeholder-text)
                :mentions   #{}
                :utc-offset (get meta-data "utcOffset")
                :audio_file (get data "audioFile")
