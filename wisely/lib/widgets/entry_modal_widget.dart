@@ -83,7 +83,7 @@ class EntryModalWidget extends StatelessWidget {
 
                 context
                     .read<PersistenceCubit>()
-                    .updateAudioEntry(item, entryText);
+                    .updateJournalEntity(item, entryText);
               }
 
               return Column(
@@ -106,7 +106,7 @@ class EntryModalWidget extends StatelessWidget {
 
                 context
                     .read<PersistenceCubit>()
-                    .updateImageEntry(item, entryText);
+                    .updateJournalEntity(item, entryText);
               }
 
               File file = File(getFullImagePathWithDocDir(image, docDir));
@@ -136,7 +136,7 @@ class EntryModalWidget extends StatelessWidget {
                   makeController(serializedQuill: journalEntry.entryText.quill);
 
               void saveText() {
-                context.read<PersistenceCubit>().updateTextEntry(
+                context.read<PersistenceCubit>().updateJournalEntity(
                     item, entryTextFromController(_controller));
               }
 
