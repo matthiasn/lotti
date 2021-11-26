@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:research_package/model.dart';
 
 RPInstructionStep panasInstructionStep = RPInstructionStep(
@@ -158,24 +157,29 @@ RPOrderedTask panasSurveyTask = RPOrderedTask(
   ],
 );
 
-Map<String, Set<int>> scores = {
-  'Positive Affect Score': {1, 3, 5, 9, 10, 12, 14, 16, 17, 19},
-  'Negative Affect Score': {2, 4, 6, 7, 8, 11, 13, 15, 18, 20},
+Map<String, Set<String>> panasScoreDefinitions = {
+  'Positive Affect Score': {
+    'panasQuestion1',
+    'panasQuestion3',
+    'panasQuestion5',
+    'panasQuestion9',
+    'panasQuestion10',
+    'panasQuestion12',
+    'panasQuestion14',
+    'panasQuestion16',
+    'panasQuestion17',
+    'panasQuestion19',
+  },
+  'Negative Affect Score': {
+    'panasQuestion2',
+    'panasQuestion4',
+    'panasQuestion6',
+    'panasQuestion7',
+    'panasQuestion8',
+    'panasQuestion11',
+    'panasQuestion13',
+    'panasQuestion15',
+    'panasQuestion18',
+    'panasQuestion20',
+  },
 };
-
-void panasResultCallback(RPTaskResult taskResult) {
-  Map<String, dynamic> results = taskResult.results;
-
-  for (MapEntry<String, Set<int>> scoreEntry in scores.entries) {
-    int score = 0;
-
-    for (int index in scoreEntry.value) {
-      RPStepResult stepResult = results['panasQuestion$index'];
-      RPImageChoice choice = stepResult.results['answer'];
-      int value = choice.value;
-      score = score + value;
-    }
-
-    debugPrint('${scoreEntry.key}: $score');
-  }
-}

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:research_package/model.dart';
 import 'package:wisely/classes/geolocation.dart';
 import 'package:wisely/classes/health.dart';
 import 'package:wisely/classes/task.dart';
@@ -57,6 +58,18 @@ class AudioData with _$AudioData {
 }
 
 @freezed
+class SurveyData with _$SurveyData {
+  factory SurveyData({
+    required RPTaskResult taskResult,
+    required Map<String, Set<String>> scoreDefinitions,
+    required Map<String, int> calculatedScores,
+  }) = _SurveyData;
+
+  factory SurveyData.fromJson(Map<String, dynamic> json) =>
+      _$SurveyDataFromJson(json);
+}
+
+@freezed
 class JournalEntity with _$JournalEntity {
   factory JournalEntity.journalEntry({
     required Metadata meta,
@@ -98,6 +111,12 @@ class JournalEntity with _$JournalEntity {
     required Metadata meta,
     required QuantitativeData data,
   }) = QuantitativeEntry;
+
+  const factory JournalEntity.survey({
+    required Metadata meta,
+    required SurveyData data,
+    Geolocation? geolocation,
+  }) = SurveyEntry;
 
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
