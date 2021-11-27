@@ -1,0 +1,1068 @@
+{
+  "meta": {
+    "id": "1a7b6735-cc86-5674-a4fc-a49fbfa297ad",
+    "createdAt": "2021-11-27T17:42:19.869060",
+    "updatedAt": "2021-11-27T17:42:19.869060",
+    "dateFrom": "2021-11-27T17:41:15.784132",
+    "dateTo": "2021-11-27T17:42:19.868840",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "67b16d73-6653-4f5f-be81-bf923a6273c5": 23
+    }
+  },
+  "data": {
+    "taskResult": {
+      "identifier": "panasSurveyTask",
+      "start_date": "2021-11-27T17:41:15.784132",
+      "end_date": "2021-11-27T17:42:19.868840",
+      "results": {
+        "panasQuestion1": {
+          "identifier": "panasQuestion1",
+          "start_date": "2021-11-27T17:41:18.229550",
+          "end_date": "2021-11-27T17:41:19.416109",
+          "question_title": "Interested",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-1.png",
+              "value": 1,
+              "description": "Very slightly or not at all"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion2": {
+          "identifier": "panasQuestion2",
+          "start_date": "2021-11-27T17:41:20.829952",
+          "end_date": "2021-11-27T17:41:22.068513",
+          "question_title": "Distressed",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-2.png",
+              "value": 2,
+              "description": "A little"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion3": {
+          "identifier": "panasQuestion3",
+          "start_date": "2021-11-27T17:41:23.329934",
+          "end_date": "2021-11-27T17:41:24.685437",
+          "question_title": "Excited",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-3.png",
+              "value": 3,
+              "description": "Moderately"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion4": {
+          "identifier": "panasQuestion4",
+          "start_date": "2021-11-27T17:41:26.165367",
+          "end_date": "2021-11-27T17:41:27.268329",
+          "question_title": "Upset",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-4.png",
+              "value": 4,
+              "description": "Quite a bit"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion5": {
+          "identifier": "panasQuestion5",
+          "start_date": "2021-11-27T17:41:28.713342",
+          "end_date": "2021-11-27T17:41:30.285334",
+          "question_title": "Strong",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-5.png",
+              "value": 5,
+              "description": "Extremely"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion6": {
+          "identifier": "panasQuestion6",
+          "start_date": "2021-11-27T17:41:31.847802",
+          "end_date": "2021-11-27T17:41:33.067023",
+          "question_title": "Guilty",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-4.png",
+              "value": 4,
+              "description": "Quite a bit"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion7": {
+          "identifier": "panasQuestion7",
+          "start_date": "2021-11-27T17:41:34.516043",
+          "end_date": "2021-11-27T17:41:35.784748",
+          "question_title": "Scared",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-3.png",
+              "value": 3,
+              "description": "Moderately"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion8": {
+          "identifier": "panasQuestion8",
+          "start_date": "2021-11-27T17:41:37.214599",
+          "end_date": "2021-11-27T17:41:38.518397",
+          "question_title": "Hostile",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-2.png",
+              "value": 2,
+              "description": "A little"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion9": {
+          "identifier": "panasQuestion9",
+          "start_date": "2021-11-27T17:41:40.180472",
+          "end_date": "2021-11-27T17:41:41.617897",
+          "question_title": "Enthusiastic",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-1.png",
+              "value": 1,
+              "description": "Very slightly or not at all"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion10": {
+          "identifier": "panasQuestion10",
+          "start_date": "2021-11-27T17:41:43.114255",
+          "end_date": "2021-11-27T17:41:44.234490",
+          "question_title": "Proud",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-2.png",
+              "value": 2,
+              "description": "A little"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion11": {
+          "identifier": "panasQuestion11",
+          "start_date": "2021-11-27T17:41:46.047153",
+          "end_date": "2021-11-27T17:41:47.300688",
+          "question_title": "Irritable",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-3.png",
+              "value": 3,
+              "description": "Moderately"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion12": {
+          "identifier": "panasQuestion12",
+          "start_date": "2021-11-27T17:41:48.828972",
+          "end_date": "2021-11-27T17:41:50.001480",
+          "question_title": "Alert",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-4.png",
+              "value": 4,
+              "description": "Quite a bit"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion13": {
+          "identifier": "panasQuestion13",
+          "start_date": "2021-11-27T17:41:51.279627",
+          "end_date": "2021-11-27T17:41:52.300705",
+          "question_title": "Ashamed",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-5.png",
+              "value": 5,
+              "description": "Extremely"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion14": {
+          "identifier": "panasQuestion14",
+          "start_date": "2021-11-27T17:41:53.661887",
+          "end_date": "2021-11-27T17:41:54.801331",
+          "question_title": "Inspired",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-4.png",
+              "value": 4,
+              "description": "Quite a bit"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion15": {
+          "identifier": "panasQuestion15",
+          "start_date": "2021-11-27T17:41:56.400254",
+          "end_date": "2021-11-27T17:41:57.517886",
+          "question_title": "Nervous",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-3.png",
+              "value": 3,
+              "description": "Moderately"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion16": {
+          "identifier": "panasQuestion16",
+          "start_date": "2021-11-27T17:41:58.699745",
+          "end_date": "2021-11-27T17:41:59.916339",
+          "question_title": "Determined",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-2.png",
+              "value": 2,
+              "description": "A little"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion17": {
+          "identifier": "panasQuestion17",
+          "start_date": "2021-11-27T17:42:01.930221",
+          "end_date": "2021-11-27T17:42:03.351711",
+          "question_title": "Attentive",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-1.png",
+              "value": 1,
+              "description": "Very slightly or not at all"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion18": {
+          "identifier": "panasQuestion18",
+          "start_date": "2021-11-27T17:42:06.681390",
+          "end_date": "2021-11-27T17:42:07.915930",
+          "question_title": "Jittery",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-2.png",
+              "value": 2,
+              "description": "A little"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion19": {
+          "identifier": "panasQuestion19",
+          "start_date": "2021-11-27T17:42:09.815533",
+          "end_date": "2021-11-27T17:42:10.916170",
+          "question_title": "Active",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-3.png",
+              "value": 3,
+              "description": "Moderately"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        },
+        "panasQuestion20": {
+          "identifier": "panasQuestion20",
+          "start_date": "2021-11-27T17:42:12.265821",
+          "end_date": "2021-11-27T17:42:13.633847",
+          "question_title": "Afraid",
+          "results": {
+            "answer": {
+              "$type": "RPImageChoice",
+              "image_url": "assets/icons/gray-4.png",
+              "value": 4,
+              "description": "Quite a bit"
+            }
+          },
+          "answer_format": {
+            "$type": "RPImageChoiceAnswerFormat",
+            "choices": [
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-1.png",
+                "value": 1,
+                "description": "Very slightly or not at all"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-2.png",
+                "value": 2,
+                "description": "A little"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-3.png",
+                "value": 3,
+                "description": "Moderately"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-4.png",
+                "value": 4,
+                "description": "Quite a bit"
+              },
+              {
+                "$type": "RPImageChoice",
+                "image_url": "assets/icons/gray-5.png",
+                "value": 5,
+                "description": "Extremely"
+              }
+            ],
+            "question_type": "ImageChoice"
+          }
+        }
+      }
+    },
+    "scoreDefinitions": {
+      "Positive Affect Score": [
+        "panasQuestion1",
+        "panasQuestion3",
+        "panasQuestion5",
+        "panasQuestion9",
+        "panasQuestion10",
+        "panasQuestion12",
+        "panasQuestion14",
+        "panasQuestion16",
+        "panasQuestion17",
+        "panasQuestion19"
+      ],
+      "Negative Affect Score": [
+        "panasQuestion2",
+        "panasQuestion4",
+        "panasQuestion6",
+        "panasQuestion7",
+        "panasQuestion8",
+        "panasQuestion11",
+        "panasQuestion13",
+        "panasQuestion15",
+        "panasQuestion18",
+        "panasQuestion20"
+      ]
+    },
+    "calculatedScores": {
+      "Positive Affect Score": 26,
+      "Negative Affect Score": 32
+    }
+  },
+  "geolocation": {
+    "createdAt": "2021-11-27T17:42:19.882974",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 52.0,
+    "longitude": 13.0,
+    "geohashString": "u31pzf63c",
+    "accuracy": 35.0,
+    "speed": -1.0,
+    "speedAccuracy": 0.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 0.0
+  },
+  "runtimeType": "survey"
+}

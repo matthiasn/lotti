@@ -127,12 +127,21 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(deftest survey-import-test
+(deftest survey-import-cfq11-test
   (let [json-file (test-data-file "cfq11_test_entry.json")
         input-data (h/parse-json json-file)
         expected (h/parse-edn (test-data-file "cfq11_test_entry_converted.edn"))
         entry (is/convert-survey input-data)]
-    (pp/pprint [expected entry])
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest survey-import-panas-test
+  (let [json-file (test-data-file "panas_test_entry.json")
+        input-data (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "panas_test_entry_converted.edn"))
+        entry (is/convert-survey input-data)]
     (testing "Survey JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"
