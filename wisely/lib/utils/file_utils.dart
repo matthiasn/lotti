@@ -15,3 +15,14 @@ Future<void> saveJournalEntryJson(JournalEntry journalEntry) async {
   File file = await File(path).create(recursive: true);
   await file.writeAsString(json);
 }
+
+Future<void> saveSurveyEntryJson(SurveyEntry surveyEntry) async {
+  String json = jsonEncode(surveyEntry);
+  var docDir = await getApplicationDocumentsDirectory();
+  DateFormat df = DateFormat('yyyy-MM-dd');
+  String folder = df.format(surveyEntry.meta.createdAt);
+  String fileName = '${surveyEntry.meta.id}.json';
+  String path = '${docDir.path}/surveys/$folder/$fileName';
+  File file = await File(path).create(recursive: true);
+  await file.writeAsString(json);
+}

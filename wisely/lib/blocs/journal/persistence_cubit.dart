@@ -130,6 +130,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
+
+      if (journalEntity is SurveyEntry) {
+        await saveSurveyEntryJson(journalEntity);
+      }
+
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);

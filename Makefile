@@ -67,7 +67,7 @@ npm-deps:
 	@npm install -g electron-builder
 	@npx electron-rebuild -v 13.1.7 -w keytar
 
-test: deps cljs-shared-tests
+test: deps cljs-test
 	@echo Running Clojure tests...
 	@lein test
 
@@ -77,7 +77,7 @@ nsorg:
 	@lein nsorg --replace src/cljs
 	@lein nsorg --replace MeinsApp/src
 
-cljs-shared-tests: npm-deps
+cljs-test: npm-deps
 	@echo Running ClojureScript tests...
 	@npx shadow-cljs compile shared-tests
 	@TZ=UTC node out/shared-tests.js
@@ -108,7 +108,7 @@ cljs: deps npm-deps
 figwheel:
 	@lein cljs-figwheel
 
-electron: deps test cljs-shared-tests sass cljs
+electron: deps test cljs-test sass cljs
 
 directories:
 	@echo Preparing target directories...
