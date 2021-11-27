@@ -78,8 +78,10 @@
                :vclock         (get meta-data "vectorClock")}]
     entry))
 
-(defn import-filled-survey [path put-fn]
+(defn import-filled-surveys [path put-fn]
   (let [files (sync (str path "/**/*.survey.json"))]
     (doseq [json-file files]
-      (when-not (s/includes? json-file "trash")
-        (let [data (h/parse-json json-file)])))))
+      (let [data (h/parse-json json-file)
+            entry (convert-survey data)]
+        (when (spec/valid? :meins.entry/spec entry)
+          (put-fn [:entry/save-initial entry]))))))
