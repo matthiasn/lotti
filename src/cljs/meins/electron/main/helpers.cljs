@@ -1,6 +1,7 @@
 (ns meins.electron.main.helpers
   (:require ["moment" :as moment]
-            ["fs" :refer [readFileSync]]))
+            ["fs" :refer [readFileSync]]
+            [cljs.tools.reader.edn :as edn]))
 
 (defn format-time [m] (.format (moment m) "YYYY-MM-DD HH:mm"))
 
@@ -14,3 +15,6 @@
   (let [json (.parse js/JSON (readFileSync file))
         data (js->clj json)]
     data))
+
+(defn parse-edn [file]
+  (edn/read-string (readFileSync file "utf-8")))

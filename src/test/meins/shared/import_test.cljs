@@ -5,7 +5,11 @@
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as s]
             [cljs.pprint :as pp]
-            [meins.electron.main.import.images :as ii]))
+            [meins.electron.main.import.images :as ii]
+            [meins.electron.main.import.survey :as is]))
+
+(defn test-data-file [file]
+  (str "./src/test/meins/shared/test-files/" file))
 
 (def expected-text (str (h/format-time 1634044303702) " Audio"))
 (def test-entry
@@ -23,7 +27,7 @@
    :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 28}})
 
 (deftest read-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/test1.aac.json"
+  (let [json-file (test-data-file "test1.aac.json")
         data (h/parse-json json-file)
         entry (ai/convert-audio-entry data)]
     (testing "JSON is parsed correctly"
@@ -47,7 +51,7 @@
    :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
 
 (deftest read-new-audio-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/test2.aac.json"
+  (let [json-file (test-data-file "test2.aac.json")
         data (h/parse-json json-file)
         entry (ai/convert-new-audio-entry data)]
     (testing "JSON is parsed correctly"
@@ -70,7 +74,7 @@
    :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
 
 (deftest read-new-audio-entry-test-with-text
-  (let [json-file "./src/test/meins/shared/test-json/test3.aac.json"
+  (let [json-file (test-data-file "test3.aac.json")
         data (h/parse-json json-file)
         entry (ai/convert-new-audio-entry data)]
     (testing "JSON is parsed correctly"
@@ -91,7 +95,7 @@
    :md             "- recording"})
 
 (deftest time-recording-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/test2.aac.json"
+  (let [json-file (test-data-file "test2.aac.json")
         data (h/parse-json json-file)
         entry (ai/time-recording-entry data)]
     (testing "JSON is parsed correctly"
@@ -115,10 +119,21 @@
    :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 4}})
 
 (deftest read-new-image-entry-test
-  (let [json-file "./src/test/meins/shared/test-json/test.HEIC.json"
+  (let [json-file (test-data-file "test.HEIC.json")
         data (h/parse-json json-file)
         entry (ii/convert-new-image-entry data)]
     (testing "JSON is parsed correctly"
       (is (= entry new-image-test-entry)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest survey-import-test
+  (let [json-file (test-data-file "cfq11_test_entry.json")
+        input-data (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "cfq11_test_entry_converted.edn"))
+        entry (is/convert-survey input-data)]
+    (pp/pprint [expected entry])
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
