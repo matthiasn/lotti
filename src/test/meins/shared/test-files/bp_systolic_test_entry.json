@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "id": "55929fc2-829a-543d-8864-ed2d018093e5",
+    "createdAt": "2021-11-28T14:50:33.197653",
+    "updatedAt": "2021-11-28T14:50:33.197653",
+    "dateFrom": "2021-11-22T11:55:12.000",
+    "dateTo": "2021-11-22T11:55:12.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 2012
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-22T11:55:12.000",
+    "dateTo": "2021-11-22T11:55:12.000",
+    "value": 120.0,
+    "dataType": "HealthDataType.BLOOD_PRESSURE_SYSTOLIC",
+    "unit": "HealthDataUnit.MILLIMETER_OF_MERCURY",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "sourceName": "Health Mate",
+    "sourceId": "com.withings.wiScaleNG",
+    "deviceId": "some-device-id",
+    "runtimeType": "discreteQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

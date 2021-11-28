@@ -90,39 +90,45 @@
        :health_data   data
        :custom_fields {"#body-fat" {:bodyfat rounded-value}}})))
 
-(defn import-bp-entry [data put-fn]
-  (let [date-to (get data "date_to")
+(defn convert-bp-entry-systolic [item]
+  (let [data (get item "data")
+        meta-data (get item "meta")
+        date-to (get data "dateTo")
         ts (h/health-date-to-ts date-to)
         value (get data "value")
-        data-type (get data "data_type")]
-    (when (= data-type "blood_pressure_systolic")
-      (let [text (str "BP: " value " systolic")
-            entry {:timestamp     (+ ts 1)
-                   :md            text
-                   :text          text
-                   :mentions      #{}
-                   :utc-offset    120
-                   :timezone      "Europe/Berlin"
-                   :perm_tags     #{"#BP"}
-                   :tags          #{"#BP"}
-                   :health_data   data
-                   :custom_fields {"#BP" {:bp_systolic value}}}]
-        (when (and entry (spec/valid? :meins.entry/spec entry))
-          (put-fn [:entry/save-initial entry]))))
-    (when (= data-type "blood_pressure_diastolic")
-      (let [text (str "BP: " value " mmHg diastolic")
-            entry {:timestamp     (+ ts 2)
-                   :md            text
-                   :text          text
-                   :mentions      #{}
-                   :utc-offset    120
-                   :timezone      "Europe/Berlin"
-                   :perm_tags     #{"#BP"}
-                   :tags          #{"#BP"}
-                   :health_data   data
-                   :custom_fields {"#BP" {:bp_diastolic value}}}]
-        (when (and entry (spec/valid? :meins.entry/spec entry))
-          (put-fn [:entry/save-initial entry]))))))
+        data-type (get data "dataType")]
+    (when (= data-type "HealthDataType.BLOOD_PRESSURE_SYSTOLIC")
+      (let [text (str "BP: " value " mmHg systolic")]
+        {:timestamp     (+ ts 1)
+         :md            text
+         :text          text
+         :mentions      #{}
+         :utc-offset    (get meta-data "utcOffset")
+         :timezone      (get meta-data "timezone")
+         :perm_tags     #{"#BP"}
+         :tags          #{"#BP"}
+         :health_data   data
+         :custom_fields {"#BP" {:bp_systolic value}}}))))
+
+(defn convert-bp-entry-diastolic [item]
+  (let [data (get item "data")
+        meta-data (get item "meta")
+        date-to (get data "dateTo")
+        ts (h/health-date-to-ts date-to)
+        value (get data "value")
+        data-type (get data "dataType")]
+    (when (= data-type "HealthDataType.BLOOD_PRESSURE_DIASTOLIC")
+      (let [text (str "BP: " value " mmHg diastolic")]
+        {:timestamp     (+ ts 2)
+         :md            text
+         :text          text
+         :mentions      #{}
+         :utc-offset    (get meta-data "utcOffset")
+         :timezone      (get meta-data "timezone")
+         :perm_tags     #{"#BP"}
+         :tags          #{"#BP"}
+         :health_data   data
+         :custom_fields {"#BP" {:bp_diastolic value}}}))))
 
 (defn import-entry [item convert-fn put-fn]
   (let [entry (convert-fn item)]
@@ -136,5 +142,6 @@
         (import-entry item convert-sleep-entry put-fn)
         (import-entry item convert-weight-entry put-fn)
         (import-entry item convert-bodyfat-entry put-fn)
-        ;(import-bp-entry item put-fn)
+        (import-entry item convert-bp-entry-systolic put-fn)
+        (import-entry item convert-bp-entry-diastolic put-fn)
         (import-entry item convert-steps-entry put-fn)))))
