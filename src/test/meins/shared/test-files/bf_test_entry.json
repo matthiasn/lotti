@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "id": "39c1ace8-aa4e-5048-98c3-ff709bd37f86",
+    "createdAt": "2021-11-28T14:51:07.483650",
+    "updatedAt": "2021-11-28T14:51:07.483650",
+    "dateFrom": "2021-11-28T13:47:02.000",
+    "dateTo": "2021-11-28T13:47:02.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 2103
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-28T13:47:02.000",
+    "dateTo": "2021-11-28T13:47:02.000",
+    "value": 0.20,
+    "dataType": "HealthDataType.BODY_FAT_PERCENTAGE",
+    "unit": "HealthDataUnit.PERCENTAGE",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "sourceName": "Health Mate",
+    "sourceId": "com.withings.wiScaleNG",
+    "deviceId": "some-device-id",
+    "runtimeType": "discreteQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

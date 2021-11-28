@@ -12,7 +12,7 @@
  :mentions      #{},
  :timezone      "Europe/Berlin",
  :custom_fields {"#weight" {:weight 88.4}},
- :utc-offset    120,
+ :utc-offset    60,
  :perm_tags     #{"#weight"},
  :timestamp     1637658000000,
  :text          "Weight: 88.4 kg",

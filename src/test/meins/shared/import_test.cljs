@@ -150,9 +150,9 @@
 
 (deftest steps-import-test
   (let [json-file (test-data-file "steps_test_entry.json")
-        input-data (get (h/parse-json json-file) "data")
+        input (h/parse-json json-file)
         expected (h/parse-edn (test-data-file "steps_test_entry_converted.edn"))
-        entry (ih/convert-steps-entry input-data)]
+        entry (ih/convert-steps-entry input)]
     (testing "Survey JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"
@@ -160,9 +160,19 @@
 
 (deftest weight-import-test
   (let [json-file (test-data-file "weight_test_entry.json")
-        input-data (get (h/parse-json json-file) "data")
+        input (h/parse-json json-file)
         expected (h/parse-edn (test-data-file "weight_test_entry_converted.edn"))
-        entry (ih/convert-weight-entry input-data)]
+        entry (ih/convert-weight-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest bodyfat-import-test
+  (let [json-file (test-data-file "bf_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "bf_test_entry_converted.edn"))
+        entry (ih/convert-bodyfat-entry input)]
     (testing "Survey JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"

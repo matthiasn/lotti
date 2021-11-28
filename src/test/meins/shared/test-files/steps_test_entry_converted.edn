@@ -9,7 +9,7 @@
  :mentions      #{},
  :timezone      "Europe/Berlin",
  :custom_fields {"#steps" {:cnt 13897}},
- :utc-offset    120,
+ :utc-offset    60,
  :perm_tags     #{"#steps"},
  :timestamp     1637539199876,
  :text          "Steps: 13897 total",
