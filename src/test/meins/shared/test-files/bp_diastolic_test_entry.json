@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "id": "4fe3453f-999b-5b45-9eb6-27d6b7f29ca1",
+    "createdAt": "2021-11-28T14:50:55.999764",
+    "updatedAt": "2021-11-28T14:50:55.999764",
+    "dateFrom": "2021-11-27T13:34:00.000",
+    "dateTo": "2021-11-27T13:34:00.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 2053
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-27T13:34:00.000",
+    "dateTo": "2021-11-27T13:34:00.000",
+    "value": 80.0,
+    "dataType": "HealthDataType.BLOOD_PRESSURE_DIASTOLIC",
+    "unit": "HealthDataUnit.MILLIMETER_OF_MERCURY",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "sourceName": "omron connect",
+    "sourceId": "jp.co.omron.healthcare.omronconnect",
+    "deviceId": "some-device-id",
+    "runtimeType": "discreteQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

@@ -6,6 +6,7 @@
             [cljs.spec.alpha :as s]
             [cljs.pprint :as pp]
             [meins.electron.main.import.images :as ii]
+            [meins.electron.main.import.health :as ih]
             [meins.electron.main.import.survey :as is]))
 
 (defn test-data-file [file]
@@ -142,6 +143,66 @@
         input-data (h/parse-json json-file)
         expected (h/parse-edn (test-data-file "panas_test_entry_converted.edn"))
         entry (is/convert-survey input-data)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest steps-import-test
+  (let [json-file (test-data-file "steps_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "steps_test_entry_converted.edn"))
+        entry (ih/convert-steps-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest weight-import-test
+  (let [json-file (test-data-file "weight_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "weight_test_entry_converted.edn"))
+        entry (ih/convert-weight-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest bodyfat-import-test
+  (let [json-file (test-data-file "bf_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "bf_test_entry_converted.edn"))
+        entry (ih/convert-bodyfat-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest sleep-import-test
+  (let [json-file (test-data-file "sleep_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "sleep_test_entry_converted.edn"))
+        entry (ih/convert-sleep-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest bp-diastolic-import-test
+  (let [json-file (test-data-file "bp_diastolic_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "bp_diastolic_test_entry_converted.edn"))
+        entry (ih/convert-bp-entry-diastolic input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest bp-systolic-import-test
+  (let [json-file (test-data-file "bp_systolic_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "bp_systolic_test_entry_converted.edn"))
+        entry (ih/convert-bp-entry-systolic input)]
     (testing "Survey JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"

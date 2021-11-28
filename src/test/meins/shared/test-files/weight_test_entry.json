@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "id": "914824e7-317c-5ff7-95f6-d97369657656",
+    "createdAt": "2021-11-28T14:50:42.162862",
+    "updatedAt": "2021-11-28T14:50:42.162862",
+    "dateFrom": "2021-11-23T09:00:00.000",
+    "dateTo": "2021-11-23T09:00:00.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 2018
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-23T09:00:00.000",
+    "dateTo": "2021-11-23T09:00:00.000",
+    "value": 88.4,
+    "dataType": "HealthDataType.WEIGHT",
+    "unit": "HealthDataUnit.KILOGRAMS",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "sourceName": "Health",
+    "sourceId": "com.apple.Health",
+    "deviceId": "some-device-id",
+    "runtimeType": "discreteQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

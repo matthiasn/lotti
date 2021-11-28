@@ -26,3 +26,15 @@ Future<void> saveSurveyEntryJson(SurveyEntry surveyEntry) async {
   File file = await File(path).create(recursive: true);
   await file.writeAsString(json);
 }
+
+Future<void> saveQuantitativeEntryJson(
+    QuantitativeEntry quantitativeEntry) async {
+  String json = jsonEncode(quantitativeEntry);
+  var docDir = await getApplicationDocumentsDirectory();
+  DateFormat df = DateFormat('yyyy-MM-dd');
+  String folder = df.format(quantitativeEntry.meta.createdAt);
+  String fileName = '${quantitativeEntry.meta.id}.quantitative.json';
+  String path = '${docDir.path}/quantitative/$folder/$fileName';
+  File file = await File(path).create(recursive: true);
+  await file.writeAsString(json);
+}

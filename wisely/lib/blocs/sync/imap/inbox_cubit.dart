@@ -106,6 +106,9 @@ class InboxImapCubit extends Cubit<ImapState> {
               survey: (SurveyEntry surveyEntry) async {
                 await saveSurveyEntryJson(surveyEntry);
               },
+              quantitative: (QuantitativeEntry quantitativeEntry) async {
+                await saveQuantitativeEntryJson(quantitativeEntry);
+              },
               orElse: () {},
             );
 

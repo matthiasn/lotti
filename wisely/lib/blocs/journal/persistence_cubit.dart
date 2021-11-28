@@ -94,6 +94,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ),
       );
       await createDbEntity(journalEntity, enqueueSync: true);
+
+      if (journalEntity is QuantitativeEntry) {
+        await saveQuantitativeEntryJson(journalEntity);
+      }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }

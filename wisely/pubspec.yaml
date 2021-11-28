@@ -1,7 +1,7 @@
 name: wisely
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.1.84+115
+version: 0.1.85+118
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -37,7 +37,7 @@ dependencies:
   flutter_image_compress: ^1.1.0
   flutter_map: ^0.14.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^2.0.9
+  flutter_quill: ^2.0.21
   flutter_secure_storage: ^5.0.0
   flutter_sound: ^8.3.12
   freezed_annotation: ^1.0.0
@@ -61,7 +61,7 @@ dependencies:
   # research_package: ^0.6.7
   sentry_flutter: ^6.0.1
   sqflite: ^2.0.0+4
-  syncfusion_flutter_datepicker: ^19.3.46
+  syncfusion_flutter_datepicker: ^19.3.55
   tinycolor2: ^2.0.0
   uuid: ^3.0.4
   wechat_assets_picker: ^6.2.2
