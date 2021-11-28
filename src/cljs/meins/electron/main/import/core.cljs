@@ -40,6 +40,5 @@
   (reset! ai/audio-path-atom audio-path)
   (reset! ii/image-path-atom img-path)
   {:cmp-id      cmp-id
-   :handler-map {:import/health                hi/import-health
-                 :import/set-flutter-docs-path set-flutter-docs-path
+   :handler-map {:import/set-flutter-docs-path set-flutter-docs-path
                  :import/media                 import-media}})
