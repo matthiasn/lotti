@@ -157,3 +157,13 @@
       (is (= entry expected)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
+
+(deftest weight-import-test
+  (let [json-file (test-data-file "weight_test_entry.json")
+        input-data (get (h/parse-json json-file) "data")
+        expected (h/parse-edn (test-data-file "weight_test_entry_converted.edn"))
+        entry (ih/convert-weight-entry input-data)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))

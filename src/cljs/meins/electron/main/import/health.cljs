@@ -53,25 +53,28 @@
     (when (and entry (spec/valid? :meins.entry/spec entry))
       (put-fn [:entry/save-initial entry]))))
 
-(defn import-weight-entry [data put-fn]
-  (let [date-to (get data "date_to")
+(defn convert-weight-entry [data]
+  (let [date-to (get data "dateTo")
         ts (h/health-date-to-ts date-to)
         value (get data "value")
         rounded-value (/ (Math/round (* value 10)) 10)
         text (str "Weight: " rounded-value " kg")
-        data-type (get data "data_type")]
-    (when (= data-type "weight")
-      (let [entry {:timestamp     ts
-                   :md            text
-                   :text          text
-                   :mentions      #{}
-                   :utc-offset    120
-                   :timezone      "Europe/Berlin"
-                   :perm_tags     #{"#weight"}
-                   :health_data   data
-                   :custom_fields {"#weight" {:weight value}}}]
-        (when (and entry (spec/valid? :meins.entry/spec entry))
-          (put-fn [:entry/save-initial entry]))))))
+        data-type (get data "dataType")]
+    (when (= data-type "HealthDataType.WEIGHT")
+      {:timestamp     ts
+       :md            text
+       :text          text
+       :mentions      #{}
+       :utc-offset    120
+       :timezone      "Europe/Berlin"
+       :perm_tags     #{"#weight"}
+       :health_data   data
+       :custom_fields {"#weight" {:weight value}}})))
+
+(defn import-weight-entry [data put-fn]
+  (let [entry (convert-weight-entry data)]
+    (when (and entry (spec/valid? :meins.entry/spec entry))
+      (put-fn [:entry/save-initial entry]))))
 
 (defn import-bp-entry [data put-fn]
   (let [date-to (get data "date_to")
@@ -123,4 +126,7 @@
     (doseq [json-file files]
       (let [data (h/parse-json json-file)
             item (get data "data")]
+        (import-sleep-entry item put-fn)
+        (import-weight-entry item put-fn)
+        (import-bp-entry item put-fn)
         (import-steps-entry item put-fn)))))
