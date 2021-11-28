@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "id": "5f4c1894-1f08-52db-8b24-ab1c439fac34",
+    "createdAt": "2021-11-28T14:51:16.664032",
+    "updatedAt": "2021-11-28T14:51:16.664032",
+    "dateFrom": "2021-11-25T04:34:50.813",
+    "dateTo": "2021-11-25T04:45:50.813",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 2149
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-25T04:34:50.813",
+    "dateTo": "2021-11-25T04:45:50.813",
+    "value": 11.0,
+    "dataType": "HealthDataType.SLEEP_ASLEEP",
+    "unit": "HealthDataUnit.MINUTES",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "sourceName": "Some Apple Watch",
+    "sourceId": "com.apple.health.some-id",
+    "deviceId": "some-device-id",
+    "runtimeType": "discreteQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

@@ -177,3 +177,13 @@
       (is (= entry expected)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
+
+(deftest sleep-import-test
+  (let [json-file (test-data-file "sleep_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "sleep_test_entry_converted.edn"))
+        entry (ih/convert-sleep-entry input)]
+    (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))

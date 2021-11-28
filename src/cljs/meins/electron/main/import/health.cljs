@@ -10,26 +10,26 @@
             [expound.alpha :as exp]
             [clojure.string :as s]))
 
-(defn import-sleep-entry [data put-fn]
-  (let [date-to (get data "date_to")
+(defn convert-sleep-entry [item]
+  (let [data (get item "data")
+        meta-data (get item "meta")
+        date-to (get data "dateTo")
         ts (h/health-date-to-ts date-to)
         value (get data "value")
         text (str "Sleep: " value " min")
-        data-type (get data "data_type")]
-    (when (= data-type "sleep_asleep")
-      (let [entry {:timestamp     ts
-                   :md            text
-                   :text          text
-                   :mentions      #{}
-                   :utc-offset    120
-                   :timezone      "Europe/Berlin"
-                   :perm_tags     #{"#sleep"}
-                   :tags          #{"#sleep"}
-                   :primary_story 1479889430353
-                   :health_data   data
-                   :custom_fields {"#sleep" {:duration value}}}]
-        (when (and entry (spec/valid? :meins.entry/spec entry))
-          (put-fn [:entry/save-initial entry]))))))
+        data-type (get data "dataType")]
+    (when (= data-type "HealthDataType.SLEEP_ASLEEP")
+      {:timestamp     ts
+       :md            text
+       :text          text
+       :mentions      #{}
+       :utc-offset    (get meta-data "utcOffset")
+       :timezone      (get meta-data "timezone")
+       :perm_tags     #{"#sleep"}
+       :tags          #{"#sleep"}
+       :primary_story 1479889430353
+       :health_data   data
+       :custom_fields {"#sleep" {:duration value}}})))
 
 (defn convert-steps-entry [item]
   (let [data (get item "data")
@@ -133,7 +133,7 @@
   (let [files (sync (str path "/**/*.quantitative.json"))]
     (doseq [json-file files]
       (let [item (h/parse-json json-file)]
-        ; (import-sleep-entry item put-fn)
+        (import-entry item convert-sleep-entry put-fn)
         (import-entry item convert-weight-entry put-fn)
         (import-entry item convert-bodyfat-entry put-fn)
         ;(import-bp-entry item put-fn)
