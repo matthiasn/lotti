@@ -87,7 +87,6 @@
             (when (existsSync file)
               (copyFileSync file audio-file-path)
               (when (spec/valid? :meins.entry/spec entry)
-                (pp/pprint entry)
                 (put-fn [:entry/save-initial entry]))
               (when (spec/valid? :meins.entry/spec comment)
                 (pp/pprint comment)
