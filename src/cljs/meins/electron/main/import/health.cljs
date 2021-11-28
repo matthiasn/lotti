@@ -31,24 +31,27 @@
         (when (and entry (spec/valid? :meins.entry/spec entry))
           (put-fn [:entry/save-initial entry]))))))
 
-(defn import-steps-entry [data put-fn]
+(defn convert-steps-entry [data]
   (let [date-to (get data "dateTo")
         ts (- (h/health-date-to-ts2 date-to) 123)
         value (get data "value")
         text (str "Steps: " value " total")
         data-type (get data "dataType")]
     (when (= data-type "cumulative_step_count")
-      (let [entry {:timestamp     ts
-                   :md            text
-                   :text          text
-                   :mentions      #{}
-                   :utc-offset    120
-                   :timezone      "Europe/Berlin"
-                   :perm_tags     #{"#steps"}
-                   :health_data   data
-                   :custom_fields {"#steps" {:cnt value}}}]
-        (when (and entry (spec/valid? :meins.entry/spec entry))
-          (put-fn [:entry/save-initial entry]))))))
+      {:timestamp     ts
+       :md            text
+       :text          text
+       :mentions      #{}
+       :utc-offset    120
+       :timezone      "Europe/Berlin"
+       :perm_tags     #{"#steps"}
+       :health_data   data
+       :custom_fields {"#steps" {:cnt value}}})))
+
+(defn import-steps-entry [data put-fn]
+  (let [entry (convert-steps-entry data)]
+    (when (and entry (spec/valid? :meins.entry/spec entry))
+      (put-fn [:entry/save-initial entry]))))
 
 (defn import-weight-entry [data put-fn]
   (let [date-to (get data "date_to")
@@ -114,3 +117,10 @@
           (import-weight-entry item put-fn)
           (import-bp-entry item put-fn)
           (import-steps-entry item put-fn))))))
+
+(defn import-quantitative-data [path put-fn]
+  (let [files (sync (str path "/**/*.quantitative.json"))]
+    (doseq [json-file files]
+      (let [data (h/parse-json json-file)
+            item (get data "data")]
+        (import-steps-entry item put-fn)))))

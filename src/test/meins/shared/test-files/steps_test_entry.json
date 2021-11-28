@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "id": "66f5f530-8d6c-551d-8b6c-af29d92a2371",
+    "createdAt": "2021-11-28T14:22:28.391932",
+    "updatedAt": "2021-11-28T14:22:28.391932",
+    "dateFrom": "2021-11-21T00:00:00.000",
+    "dateTo": "2021-11-21T23:59:59.999",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 1958
+    }
+  },
+  "data": {
+    "dateFrom": "2021-11-21T00:00:00.000",
+    "dateTo": "2021-11-21T23:59:59.999",
+    "value": 13897,
+    "dataType": "cumulative_step_count",
+    "unit": "count",
+    "deviceType": "iPhone13,3",
+    "platformType": "IOS",
+    "runtimeType": "cumulativeQuantityData"
+  },
+  "runtimeType": "quantitative"
+}

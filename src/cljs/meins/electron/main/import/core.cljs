@@ -6,7 +6,8 @@
             [cljs.reader :refer [read-string]]
             [meins.electron.main.import.health :as hi]
             [meins.electron.main.import.images :as ii]
-            [meins.electron.main.import.survey :as is]))
+            [meins.electron.main.import.survey :as is]
+            [meins.electron.main.import.health :as ih]))
 
 (def data-path (:data-path rt/runtime-info))
 (def cfg-path (str data-path "/flutter-import-cfg.edn"))
@@ -26,6 +27,7 @@
       (info "import-images:" path)
       (ii/import-image-files path put-fn)
       (is/import-filled-surveys path put-fn)
+      (ih/import-quantitative-data path put-fn)
       (ai/import-audio-files path put-fn))))
 
 (defn set-flutter-docs-path [{:keys [msg-payload put-fn]}]
