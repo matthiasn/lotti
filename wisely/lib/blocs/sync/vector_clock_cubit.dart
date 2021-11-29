@@ -1,36 +1,64 @@
 import 'dart:convert';
 
+import 'package:bloc/bloc.dart';
 import 'package:crypto/crypto.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:uuid/uuid.dart';
-import 'package:wisely/blocs/sync/vector_clock_state.dart';
+import 'package:wisely/sync/secure_storage.dart';
 import 'package:wisely/sync/vector_clock.dart';
 
 const uuid = Uuid();
+const String hostKey = 'VC_HOST';
+const String nextAvailableCounterKey = 'VC_NEXT_AVAILABLE_COUNTER';
 
-class VectorClockCubit extends HydratedCubit<VectorClockCounterState> {
-  VectorClockCubit()
-      : super(
-            VectorClockCounterState(host: uuid.v4(), nextAvailableCounter: 0));
+class VectorClockCubit extends Cubit<void> {
+  VectorClockCubit() : super(null);
 
-  void increment() {
-    emit(VectorClockCounterState.next(state));
+  Future<void> increment() async {
+    int next = await getNextAvailableCounter() + 1;
+    setNextAvailableCounter(next);
   }
 
-  String getHost() {
-    return state.host;
+  Future<String> getHost() async {
+    String? host = await SecureStorage.readValue(hostKey);
+
+    if (host == null) {
+      host = uuid.v4();
+      SecureStorage.writeValue(hostKey, host);
+    }
+    return host;
   }
 
-  String getHostHash() {
-    var bytes = utf8.encode(state.host);
+  Future<void> setNextAvailableCounter(int nextAvailableCounter) async {
+    SecureStorage.writeValue(
+      nextAvailableCounterKey,
+      nextAvailableCounter.toString(),
+    );
+  }
+
+  Future<int> getNextAvailableCounter() async {
+    int? nextAvailableCounter;
+    String? nextAvailableCounterString =
+        await SecureStorage.readValue(nextAvailableCounterKey);
+
+    if (nextAvailableCounterString != null) {
+      nextAvailableCounter = int.parse(nextAvailableCounterString);
+    } else {
+      nextAvailableCounter = 0;
+      await setNextAvailableCounter(nextAvailableCounter);
+    }
+    return nextAvailableCounter;
+  }
+
+  Future<String> getHostHash() async {
+    var bytes = utf8.encode(await getHost());
     var digest = sha1.convert(bytes);
     return digest.toString();
   }
 
   // TODO: only increment after successful insertion
-  VectorClock getNextVectorClock({VectorClock? previous}) {
-    String host = state.host;
-    int nextAvailableCounter = state.nextAvailableCounter;
+  Future<VectorClock> getNextVectorClock({VectorClock? previous}) async {
+    String host = await getHost();
+    int nextAvailableCounter = await getNextAvailableCounter();
     increment();
 
     return VectorClock({
@@ -38,11 +66,4 @@ class VectorClockCubit extends HydratedCubit<VectorClockCounterState> {
       host: nextAvailableCounter,
     });
   }
-
-  @override
-  VectorClockCounterState fromJson(Map<String, dynamic> json) =>
-      VectorClockCounterState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(VectorClockCounterState state) => state.toJson();
 }

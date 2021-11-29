@@ -182,7 +182,7 @@ class InboxImapCubit extends Cubit<ImapState> {
             if (lastReadUid != oldest) {
               debugPrint('_fetchInbox lastReadUid $lastReadUid oldest $oldest');
 
-              if (subject.contains(_vectorClockCubit.getHostHash())) {
+              if (subject.contains(await _vectorClockCubit.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $oldest');
                 await _setLastReadUid(oldest);
               } else {
