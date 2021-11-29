@@ -1,13 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'helpers/hydrated_bloc.dart';
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    initHydratedBloc();
-  });
+  setUpAll(() {});
 
   // TODO: fix test, broke after fixed database loading
   testWidgets('Audio page controls exist', (WidgetTester tester) async {

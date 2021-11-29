@@ -156,8 +156,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         var docDir = await getApplicationDocumentsDirectory();
 
         File? attachment;
-        String host = _vectorClockCubit.getHost();
-        String hostHash = _vectorClockCubit.getHostHash();
+        String host = await _vectorClockCubit.getHost();
+        String hostHash = await _vectorClockCubit.getHostHash();
         int? localCounter = journalEntity.meta.vectorClock?.vclock[host];
         String subject = '$hostHash:$localCounter';
 
