@@ -34,7 +34,7 @@
     "draft-js-linkify-plugin": "2.0.2",
     "draft-js-mention-plugin": "3.1.4",
     "draft-js-plugins-editor": "3.0.0",
-    "electron-context-menu": "0.15.2",
+    "electron-context-menu": "3.1.1",
     "electron-fetch": "1.4.0",
     "electron-log": "4.0.3",
     "electron-updater": "4.2.0",
