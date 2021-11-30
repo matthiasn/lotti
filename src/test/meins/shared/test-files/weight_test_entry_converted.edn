@@ -14,6 +14,6 @@
  :custom_fields {"#weight" {:weight 88.4}},
  :utc-offset    60,
  :perm_tags     #{"#weight"},
- :timestamp     1637658000000,
+ :timestamp     1637658000003,
  :text          "Weight: 88.4 kg",
  :md            "Weight: 88.4 kg"}
