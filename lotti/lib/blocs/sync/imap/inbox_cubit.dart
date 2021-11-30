@@ -159,27 +159,25 @@ class InboxImapCubit extends Cubit<ImapState> {
           final fetchResult =
               await imapClient.uidFetchMessages(sequence, 'ENVELOPE');
 
-          List<MimeMessage> messages = fetchResult.messages;
-
-          if (messages.isNotEmpty) {
-            int? oldest = fetchResult.messages.first.uid;
-            String subject = '${fetchResult.messages.first.decodeSubject()}';
-            if (lastReadUid != oldest) {
-              debugPrint('_fetchInbox lastReadUid $lastReadUid oldest $oldest');
-
+          for (MimeMessage msg in fetchResult.messages) {
+            String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
+            int lastReadUid =
+                lastReadUidValue != null ? int.parse(lastReadUidValue) : 0;
+            int? current = msg.uid;
+            String subject = '${msg.decodeSubject()}';
+            if (lastReadUid != current) {
+              debugPrint(
+                  '_fetchInbox lastReadUid $lastReadUid current $current');
               if (subject.contains(await _vectorClockCubit.getHostHash())) {
-                debugPrint('_fetchInbox ignoring from same host: $oldest');
-                await _setLastReadUid(oldest);
+                debugPrint('_fetchInbox ignoring from same host: $current');
+                await _setLastReadUid(current);
               } else {
-                await _fetchByUid(oldest);
-              }
-              fetchMutex.release();
-
-              if (messages.length > 1) {
-                await _fetchInbox();
+                await _fetchByUid(uid: current, imapClient: imapClient);
               }
             }
           }
+          fetchMutex.release();
+
           emit(ImapState.online(lastUpdate: DateTime.now()));
         }
       } on MailException catch (e) {
@@ -203,14 +201,13 @@ class InboxImapCubit extends Cubit<ImapState> {
     await _storage.write(key: lastReadUidKey, value: '$uid');
   }
 
-  Future<void> _fetchByUid(int? uid) async {
+  Future<void> _fetchByUid({
+    int? uid,
+    ImapClient? imapClient,
+  }) async {
     final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
-      ImapClient? imapClient;
-
       try {
-        imapClient = await createImapClient(_encryptionCubit);
-
         if (imapClient != null) {
           // odd workaround, prevents intermittent failures on macOS
           await imapClient.uidFetchMessage(uid, 'BODY.PEEK[]');
@@ -230,9 +227,7 @@ class InboxImapCubit extends Cubit<ImapState> {
       } catch (e, stackTrace) {
         await Sentry.captureException(e, stackTrace: stackTrace);
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
-      } finally {
-        imapClient?.disconnect();
-      }
+      } finally {}
     }
     await transaction.finish();
   }
