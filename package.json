@@ -90,7 +90,7 @@
     "electron-builder": "22.10.5",
     "electron-notarize": "1.1.1",
     "electron-rebuild": "^3.2.3",
-    "module-deps": "6.2.2",
+    "module-deps": "6.2.3",
     "resolve": "1.14.2",
     "shadow-cljs": "2.10.13",
     "webpack": "4.41.2"
