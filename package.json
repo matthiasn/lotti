@@ -30,7 +30,7 @@
     "cldr-data": "36.0.0",
     "cookie-parser": "1.4.4",
     "create-react-class": "15.6.3",
-    "draft-js": "0.11.4",
+    "draft-js": "0.11.7",
     "draft-js-linkify-plugin": "2.0.2",
     "draft-js-mention-plugin": "3.1.4",
     "draft-js-plugins-editor": "3.0.0",
