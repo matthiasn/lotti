@@ -113,10 +113,16 @@ class PersistenceDb {
       final db = await _database;
       JournalRecord dbRecord = _journalEntityToDbRecord(journalEntity);
       String id = dbRecord.id;
-      var res = await db.update(journalTable, dbRecord.toMap(),
-          where: 'id = ?', whereArgs: [id]);
 
-      debugPrint('PersistenceDb updated: $id $res');
+      List<Map> maps = await db.query(journalTable,
+          columns: ['id'], where: 'id = ?', whereArgs: [id]);
+      if (maps.isEmpty) {
+        insert(journalEntity);
+      } else {
+        int res = await db.update(journalTable, dbRecord.toMap(),
+            where: 'id = ?', whereArgs: [id]);
+        debugPrint('PersistenceDb updated: $id $res');
+      }
       return true;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
