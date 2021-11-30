@@ -5,6 +5,6 @@ CREATE TABLE "outbound" (
   "retries" INTEGER NOT NULL,
   "updated_at" INTEGER,
   "message" TEXT NOT NULL,
-  "encrypted_file_path" TEXT,
+  "file_path" TEXT,
   "subject" TEXT NOT NULL
 );

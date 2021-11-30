@@ -9,7 +9,6 @@ import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/outbox_save_imap.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OutboxImapCubit extends Cubit<ImapState> {
@@ -25,9 +24,9 @@ class OutboxImapCubit extends Cubit<ImapState> {
     _encryptionCubit = encryptionCubit;
   }
 
-  Future<bool> saveImap(
-    String encryptedMessage,
-    String subject, {
+  Future<bool> saveImap({
+    required String encryptedMessage,
+    required String subject,
     String? encryptedFilePath,
   }) async {
     ImapClient? imapClient;
@@ -38,7 +37,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
       GenericImapResult? res;
       if (imapClient != null) {
         if (encryptedFilePath != null && encryptedFilePath.isNotEmpty) {
-          File encryptedFile = File(await getFullAssetPath(encryptedFilePath));
+          File encryptedFile = File(encryptedFilePath);
           int fileLength = encryptedFile.lengthSync();
           if (fileLength > 0) {
             res = await saveImapMessage(imapClient, subject, encryptedMessage,
