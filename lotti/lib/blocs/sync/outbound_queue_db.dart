@@ -50,18 +50,18 @@ class OutboundQueueDb {
     await _database;
   }
 
-  Future<void> queueInsert(
-    String encryptedMessage,
-    String subject, {
-    String? encryptedFilePath,
+  Future<void> queueInsert({
+    required String message,
+    required String subject,
+    String? filePath,
   }) async {
     final transaction = Sentry.startTransaction('insert()', 'task');
     try {
       final db = await _database;
 
       OutboundQueueRecord dbRecord = OutboundQueueRecord(
-        encryptedMessage: encryptedMessage,
-        encryptedFilePath: getRelativeAssetPath(encryptedFilePath),
+        message: message,
+        filePath: getRelativeAssetPath(filePath),
         subject: subject,
         status: OutboundMessageStatus.pending,
         retries: 0,
@@ -91,13 +91,13 @@ class OutboundQueueDb {
 
       OutboundQueueRecord dbRecord = OutboundQueueRecord(
         id: prev.id,
-        encryptedMessage: prev.encryptedMessage,
+        message: prev.message,
         subject: prev.subject,
         status: status,
         retries: retries,
         createdAt: prev.createdAt,
         updatedAt: DateTime.now(),
-        encryptedFilePath: prev.encryptedFilePath,
+        filePath: prev.filePath,
       );
 
       await db.insert(

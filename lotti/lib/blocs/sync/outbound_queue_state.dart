@@ -14,22 +14,22 @@ enum OutboundMessageStatus { pending, sent, error }
 
 class OutboundQueueRecord {
   final int? id;
-  final String encryptedMessage;
+  final String message;
   final OutboundMessageStatus status;
   final int retries;
   final String subject;
-  final String? encryptedFilePath;
+  final String? filePath;
   final DateTime createdAt;
   DateTime? updatedAt;
 
   OutboundQueueRecord({
     this.id,
-    required this.encryptedMessage,
+    required this.message,
     required this.subject,
     required this.status,
     required this.retries,
     required this.createdAt,
-    this.encryptedFilePath,
+    this.filePath,
     this.updatedAt,
   });
 
@@ -41,8 +41,8 @@ class OutboundQueueRecord {
   factory OutboundQueueRecord.fromMap(Map<String, dynamic> data) =>
       OutboundQueueRecord(
         id: data['id'],
-        encryptedMessage: data['message'],
-        encryptedFilePath: data['encrypted_file_path'],
+        message: data['message'],
+        filePath: data['file_path'],
         status: OutboundMessageStatus.values[data['status']],
         retries: data['retries'],
         subject: data['subject'],
@@ -57,8 +57,8 @@ class OutboundQueueRecord {
       'updated_at': updatedAt?.millisecondsSinceEpoch,
       'status': status.index,
       'retries': retries,
-      'message': encryptedMessage,
-      'encrypted_file_path': encryptedFilePath,
+      'message': message,
+      'file_path': filePath,
       'subject': subject,
     };
   }

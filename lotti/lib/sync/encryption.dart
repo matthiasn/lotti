@@ -11,7 +11,7 @@ FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
   final transaction = Sentry.startTransaction('encryptFile()', 'task');
 
   if (!msg.inputFile.existsSync()) {
-    debugPrint('File does not exist, aborting');
+    debugPrint('File ${msg.inputFile} does not exist, aborting');
     throw Exception("File not found");
   }
 
@@ -94,7 +94,10 @@ Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
   return base64.encode(secretBox.concatenation());
 }
 
-Future<String> encryptString(String plainText, b64Secret) async {
+Future<String> encryptString({
+  required String plainText,
+  required b64Secret,
+}) async {
   return compute(
     encryptStringIsolate,
     EncryptStringMessage(

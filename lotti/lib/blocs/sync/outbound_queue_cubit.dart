@@ -95,37 +95,57 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         reportConnectivity();
       }
 
-      // TODO: check why not working reliably on macOS - workaround
-      bool isConnected = _connectivityResult != ConnectivityResult.none;
-      if (isConnected && !sendMutex.isLocked) {
-        List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
-        if (unprocessed.isNotEmpty) {
-          sendMutex.acquire();
-          OutboundQueueRecord nextPending = unprocessed.first;
-          bool saveSuccess = await _outboxImapCubit.saveImap(
-            nextPending.encryptedMessage,
-            nextPending.subject,
-            encryptedFilePath: nextPending.encryptedFilePath,
-          );
-          if (saveSuccess) {
-            _db.update(
-              nextPending,
-              OutboundMessageStatus.sent,
-              nextPending.retries,
+      if (_b64Secret != null) {
+        // TODO: check why not working reliably on macOS - workaround
+        bool isConnected = _connectivityResult != ConnectivityResult.none;
+        if (isConnected && !sendMutex.isLocked) {
+          List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
+          if (unprocessed.isNotEmpty) {
+            sendMutex.acquire();
+
+            OutboundQueueRecord nextPending = unprocessed.first;
+            String encryptedMessage = await encryptString(
+              b64Secret: _b64Secret,
+              plainText: nextPending.message,
             );
+
+            String? filePath = nextPending.filePath;
+            String? encryptedFilePath;
+
+            if (filePath != null) {
+              Directory docDir = await getApplicationDocumentsDirectory();
+              File encryptedFile =
+                  File('${docDir.path}${nextPending.filePath}.aes');
+              File attachment = File('${docDir.path}$filePath');
+              await encryptFile(attachment, encryptedFile, _b64Secret!);
+              encryptedFilePath = encryptedFile.path;
+            }
+
+            bool saveSuccess = await _outboxImapCubit.saveImap(
+              encryptedFilePath: encryptedFilePath,
+              subject: nextPending.subject,
+              encryptedMessage: encryptedMessage,
+            );
+            if (saveSuccess) {
+              _db.update(
+                nextPending,
+                OutboundMessageStatus.sent,
+                nextPending.retries,
+              );
+            } else {
+              _db.update(
+                nextPending,
+                nextPending.retries < 10
+                    ? OutboundMessageStatus.pending
+                    : OutboundMessageStatus.error,
+                nextPending.retries + 1,
+              );
+            }
+            sendMutex.release();
+            sendNext();
           } else {
-            _db.update(
-              nextPending,
-              nextPending.retries < 10
-                  ? OutboundMessageStatus.pending
-                  : OutboundMessageStatus.error,
-              nextPending.retries + 1,
-            );
+            _stopPolling();
           }
-          sendMutex.release();
-          sendNext();
-        } else {
-          _stopPolling();
         }
       }
     } catch (exception, stackTrace) {
@@ -176,20 +196,19 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           orElse: () {},
         );
 
-        if (_b64Secret != null) {
-          String encryptedMessage = await encryptString(jsonString, _b64Secret);
-          if (attachment != null) {
-            int fileLength = attachment!.lengthSync();
-            if (fileLength > 0) {
-              File encryptedFile = File('${attachment!.path}.aes');
-              await encryptFile(attachment!, encryptedFile, _b64Secret!);
-              await _db.queueInsert(encryptedMessage, subject,
-                  encryptedFilePath: encryptedFile.path);
-            }
-          } else {
-            await _db.queueInsert(encryptedMessage, subject);
+        if (attachment != null) {
+          int fileLength = attachment!.lengthSync();
+          if (fileLength > 0) {
+            await _db.queueInsert(
+              message: jsonString,
+              filePath: attachment!.path,
+              subject: subject,
+            );
           }
+        } else {
+          await _db.queueInsert(message: jsonString, subject: subject);
         }
+
         await transaction.finish();
         _startPolling();
       } catch (exception, stackTrace) {
