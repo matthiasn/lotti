@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+
+APP_NAME=Lotti
+PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyMobile
