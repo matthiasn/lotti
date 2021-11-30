@@ -1,0 +1,12 @@
+{:mentions   #{},
+ :timezone   "Europe/Berlin",
+ :utc-offset 60,
+ :perm_tags  #{},
+ :tags       #{},
+ :timestamp  1637541521108,
+ :longitude  9,
+ :latitude   53,
+ :text       "test 123",
+ :md         "test 123",
+ :vclock     {"67b16d73-6653-4f5f-be81-bf923a6273c5" 5,
+              "5a80bebf-f153-473b-ac95-403b3e95eca7" 51}}

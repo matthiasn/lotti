@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -125,10 +124,4 @@ Future<String> getFullImagePath(JournalImage img) async {
 
 String getFullImagePathWithDocDir(JournalImage img, Directory docDir) {
   return '${docDir.path}${img.data.imageDirectory}${img.data.imageFile}';
-}
-
-Future<void> saveJournalImageJson(JournalImage journalImage) async {
-  String json = jsonEncode(journalImage);
-  File file = File('${await getFullImagePath(journalImage)}.json');
-  await file.writeAsString(json);
 }

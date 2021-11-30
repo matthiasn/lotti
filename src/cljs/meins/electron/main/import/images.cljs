@@ -55,7 +55,7 @@
     entry))
 
 (defn import-image-files [path put-fn]
-  (let [files (sync (str path "/**/*.+(JPG|JPEG|jpg|jpeg).json"))]
+  (let [files (sync (str path "/images/**/*.+(JPG|JPEG|jpg|jpeg).json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
         (let [data (h/parse-json json-file)

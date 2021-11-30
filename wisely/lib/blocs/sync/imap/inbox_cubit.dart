@@ -25,9 +25,7 @@ import 'package:wisely/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:wisely/blocs/sync/vector_clock_cubit.dart';
 import 'package:wisely/classes/journal_entities.dart';
 import 'package:wisely/classes/sync_message.dart';
-import 'package:wisely/utils/audio_utils.dart';
 import 'package:wisely/utils/file_utils.dart';
-import 'package:wisely/utils/image_utils.dart';
 
 class InboxImapCubit extends Cubit<ImapState> {
   late final EncryptionCubit _encryptionCubit;
@@ -87,40 +85,27 @@ class InboxImapCubit extends Cubit<ImapState> {
         syncMessage?.when(
           journalDbEntity:
               (JournalEntity journalEntity, SyncEntryStatus status) async {
+            await saveJournalEntityJson(journalEntity);
+
             journalEntity.maybeMap(
               journalAudio: (JournalAudio journalAudio) async {
                 if (syncMessage.status == SyncEntryStatus.initial) {
                   await saveAudioAttachment(message, journalAudio, b64Secret);
                 }
-                await AudioUtils.saveAudioNoteJson(journalAudio);
               },
               journalImage: (JournalImage journalImage) async {
                 if (syncMessage.status == SyncEntryStatus.initial) {
                   await saveImageAttachment(message, journalImage, b64Secret);
                 }
-                await saveJournalImageJson(journalImage);
-              },
-              journalEntry: (JournalEntry journalEntry) async {
-                await saveJournalEntryJson(journalEntry);
-              },
-              survey: (SurveyEntry surveyEntry) async {
-                await saveSurveyEntryJson(surveyEntry);
-              },
-              quantitative: (QuantitativeEntry quantitativeEntry) async {
-                await saveQuantitativeEntryJson(quantitativeEntry);
               },
               orElse: () {},
             );
 
             if (status == SyncEntryStatus.update) {
-              debugPrint(
-                  'processMessage updating ${journalEntity.runtimeType}');
-              _persistenceCubit.updateDbEntity(journalEntity,
+              await _persistenceCubit.updateDbEntity(journalEntity,
                   enqueueSync: false);
             } else {
-              debugPrint(
-                  'processMessage inserting ${journalEntity.runtimeType}');
-              _persistenceCubit.createDbEntity(journalEntity,
+              await _persistenceCubit.createDbEntity(journalEntity,
                   enqueueSync: false);
             }
           },

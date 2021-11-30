@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "id": "28725490-4b24-11ec-b1a8-0de1389950d3",
+    "createdAt": "2021-11-22T00:38:41.108623",
+    "updatedAt": "2021-11-22T00:39:29.047208",
+    "dateFrom": "2021-11-22T00:38:41.108623",
+    "dateTo": "2021-11-22T00:38:41.108623",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "67b16d73-6653-4f5f-be81-bf923a6273c5": 5,
+      "5a80bebf-f153-473b-ac95-403b3e95eca7": 51
+    }
+  },
+  "entryText": {
+    "plainText": "test 123",
+    "geolocation": null,
+    "markdown": "test 123",
+    "quill": ""
+  },
+  "geolocation": {
+    "createdAt": "2021-11-22T00:38:41.123120",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 53,
+    "longitude": 9,
+    "geohashString": "u31pzf63c",
+    "accuracy": 35.0,
+    "speed": -1.0,
+    "speedAccuracy": 0.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 0.0
+  },
+  "runtimeType": "journalEntry"
+}
