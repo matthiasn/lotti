@@ -6,6 +6,7 @@
             [cljs.spec.alpha :as s]
             [cljs.pprint :as pp]
             [meins.electron.main.import.images :as ii]
+            [meins.electron.main.import.text :as it]
             [meins.electron.main.import.health :as ih]
             [meins.electron.main.import.survey :as is]))
 
@@ -204,6 +205,16 @@
         expected (h/parse-edn (test-data-file "bp_systolic_test_entry_converted.edn"))
         entry (ih/convert-bp-entry-systolic input)]
     (testing "Survey JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest text-entry-import-test
+  (let [json-file (test-data-file "text_test_entry.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "text_test_entry_converted.edn"))
+        entry (it/convert-text-entry input)]
+    (testing "Text entry JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))

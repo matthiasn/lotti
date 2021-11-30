@@ -136,7 +136,7 @@
       (put-fn [:entry/save-initial entry]))))
 
 (defn import-quantitative-data [path put-fn]
-  (let [files (sync (str path "/**/*.quantitative.json"))]
+  (let [files (sync (str path "/quantitative/**/*.quantitative.json"))]
     (doseq [json-file files]
       (let [item (h/parse-json json-file)]
         (import-entry item convert-sleep-entry put-fn)
