@@ -35,7 +35,7 @@
     "draft-js-mention-plugin": "3.1.4",
     "draft-js-plugins-editor": "3.0.0",
     "electron-context-menu": "0.15.2",
-    "electron-fetch": "1.4.0",
+    "electron-fetch": "1.7.4",
     "electron-log": "4.0.3",
     "electron-updater": "4.2.0",
     "emoji-flags": "1.2.0",
