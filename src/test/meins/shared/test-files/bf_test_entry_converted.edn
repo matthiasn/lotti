@@ -13,6 +13,6 @@
  :custom_fields {"#body-fat" {:bodyfat 20}},
  :utc-offset    60,
  :perm_tags     #{"#body-fat"},
- :timestamp     1638107222000,
+ :timestamp     1638107222004,
  :text          "Body fat: 20%",
  :md            "Body fat: 20%"}
