@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -12,13 +11,6 @@ class AudioUtils {
 
   static String getAudioPath(JournalAudio j, Directory docDir) {
     return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
-  }
-
-  static Future<String> saveAudioNoteJson(JournalAudio journalAudio) async {
-    String json = jsonEncode(journalAudio);
-    File file = File('${await AudioUtils.getFullAudioPath(journalAudio)}.json');
-    await file.writeAsString(json);
-    return json;
   }
 
   static Future<String> createAssetDirectory(String relativePath) async {

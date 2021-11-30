@@ -166,14 +166,12 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
             if (syncMessage.status == SyncEntryStatus.initial) {
               attachment = File(AudioUtils.getAudioPath(journalAudio, docDir));
             }
-            AudioUtils.saveAudioNoteJson(journalAudio);
           },
           journalImage: (JournalImage journalImage) {
             if (syncMessage.status == SyncEntryStatus.initial) {
               attachment =
                   File(getFullImagePathWithDocDir(journalImage, docDir));
             }
-            saveJournalImageJson(journalImage);
           },
           orElse: () {},
         );

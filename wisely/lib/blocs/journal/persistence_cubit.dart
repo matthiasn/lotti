@@ -94,10 +94,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ),
       );
       await createDbEntity(journalEntity, enqueueSync: true);
-
-      if (journalEntity is QuantitativeEntry) {
-        await saveQuantitativeEntryJson(journalEntity);
-      }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
@@ -134,10 +130,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
-
-      if (journalEntity is SurveyEntry) {
-        await saveSurveyEntryJson(journalEntity);
-      }
 
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
@@ -252,10 +244,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         geolocation: geolocation,
       );
       await createDbEntity(journalEntity, enqueueSync: true);
-
-      if (journalEntity is JournalEntry) {
-        await saveJournalEntryJson(journalEntity);
-      }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
@@ -269,6 +257,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
       bool saved = await _db.insert(journalEntity);
+      await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
@@ -309,7 +298,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         );
 
         await updateDbEntity(newJournalEntry, enqueueSync: true);
-        await saveJournalEntryJson(newJournalEntry);
       }
 
       if (journalEntity is JournalAudio) {
@@ -344,6 +332,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
       bool saved = await _db.update(journalEntity);
+      await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
