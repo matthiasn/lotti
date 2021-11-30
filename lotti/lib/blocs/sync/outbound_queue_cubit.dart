@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/config_classes.dart';
@@ -87,7 +88,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         withScope: (Scope scope) => scope.level = SentryLevel.warning);
   }
 
-  void sendNext() async {
+  void sendNext({ImapClient? imapClient}) async {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
@@ -121,12 +122,13 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
               encryptedFilePath = encryptedFile.path;
             }
 
-            bool saveSuccess = await _outboxImapCubit.saveImap(
+            ImapClient? successfulClient = await _outboxImapCubit.saveImap(
               encryptedFilePath: encryptedFilePath,
               subject: nextPending.subject,
               encryptedMessage: encryptedMessage,
+              prevImapClient: imapClient,
             );
-            if (saveSuccess) {
+            if (successfulClient != null) {
               _db.update(
                 nextPending,
                 OutboundMessageStatus.sent,
@@ -142,7 +144,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
               );
             }
             sendMutex.release();
-            sendNext();
+            sendNext(imapClient: successfulClient);
           } else {
             _stopPolling();
           }

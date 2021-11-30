@@ -24,15 +24,20 @@ class OutboxImapCubit extends Cubit<ImapState> {
     _encryptionCubit = encryptionCubit;
   }
 
-  Future<bool> saveImap({
+  Future<ImapClient?> saveImap({
     required String encryptedMessage,
     required String subject,
     String? encryptedFilePath,
+    ImapClient? prevImapClient,
   }) async {
     ImapClient? imapClient;
     try {
       final transaction = Sentry.startTransaction('saveImap()', 'task');
-      imapClient = await createImapClient(_encryptionCubit);
+      if (prevImapClient != null) {
+        imapClient = prevImapClient;
+      } else {
+        imapClient = await createImapClient(_encryptionCubit);
+      }
 
       GenericImapResult? res;
       if (imapClient != null) {
@@ -59,9 +64,10 @@ class OutboxImapCubit extends Cubit<ImapState> {
           withScope: (Scope scope) => scope.level = SentryLevel.info);
 
       if (resDetails != null && resDetails.contains('completed')) {
-        return true;
+        return imapClient;
       } else {
-        return false;
+        await imapClient?.disconnect();
+        return null;
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(
@@ -69,8 +75,6 @@ class OutboxImapCubit extends Cubit<ImapState> {
         stackTrace: stackTrace,
       );
       rethrow;
-    } finally {
-      await imapClient?.disconnect();
-    }
+    } finally {}
   }
 }
