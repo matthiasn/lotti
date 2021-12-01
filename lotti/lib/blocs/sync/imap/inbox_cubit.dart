@@ -98,7 +98,7 @@ class InboxImapCubit extends Cubit<ImapState> {
         SyncMessage? syncMessage =
             await decryptMessage(encryptedMessage, message, b64Secret);
 
-        detectConflict(syncMessage);
+        //detectConflict(syncMessage);
 
         syncMessage?.when(
           journalDbEntity:

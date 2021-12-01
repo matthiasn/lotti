@@ -4,17 +4,18 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:drift/drift.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/config_classes.dart';
 import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbound_queue_db.dart';
 import 'package:lotti/blocs/sync/outbound_queue_state.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/drift_db/sync_db.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -29,7 +30,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
-  late final OutboundQueueDb _db;
+  final SyncDatabase _syncDatabase = SyncDatabase();
   late String? _b64Secret;
 
   late final VectorClockCubit _vectorClockCubit;
@@ -44,7 +45,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     _encryptionCubit = encryptionCubit;
     _outboxImapCubit = outboxImapCubit;
     _vectorClockCubit = vectorClockCubit;
-    _db = OutboundQueueDb();
     init();
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -70,7 +70,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   Future<void> init() async {
-    await _db.openDb();
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
     if (syncConfig != null) {
@@ -99,12 +98,14 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       if (_b64Secret != null) {
         // TODO: check why not working reliably on macOS - workaround
         bool isConnected = _connectivityResult != ConnectivityResult.none;
+
         if (isConnected && !sendMutex.isLocked) {
-          List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
+          List<OutboxItem> unprocessed =
+              await _syncDatabase.oldestOutboxItems(1);
           if (unprocessed.isNotEmpty) {
             sendMutex.acquire();
 
-            OutboundQueueRecord nextPending = unprocessed.first;
+            OutboxItem nextPending = unprocessed.first;
             String encryptedMessage = await encryptString(
               b64Secret: _b64Secret,
               plainText: nextPending.message,
@@ -129,18 +130,21 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
               prevImapClient: imapClient,
             );
             if (successfulClient != null) {
-              _db.update(
-                nextPending,
-                OutboundMessageStatus.sent,
-                nextPending.retries,
+              _syncDatabase.updateOutboxItem(
+                OutboxCompanion(
+                  id: Value(nextPending.id),
+                  status: Value(OutboundMessageStatus.sent.index),
+                ),
               );
             } else {
-              _db.update(
-                nextPending,
-                nextPending.retries < 10
-                    ? OutboundMessageStatus.pending
-                    : OutboundMessageStatus.error,
-                nextPending.retries + 1,
+              _syncDatabase.updateOutboxItem(
+                OutboxCompanion(
+                  id: Value(nextPending.id),
+                  status: Value(nextPending.retries < 10
+                      ? OutboundMessageStatus.pending.index
+                      : OutboundMessageStatus.error.index),
+                  retries: Value(nextPending.retries + 1),
+                ),
               );
             }
             sendMutex.release();
@@ -198,18 +202,13 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           orElse: () {},
         );
 
-        if (attachment != null) {
-          int fileLength = attachment!.lengthSync();
-          if (fileLength > 0) {
-            await _db.queueInsert(
-              message: jsonString,
-              filePath: attachment!.path,
-              subject: subject,
-            );
-          }
-        } else {
-          await _db.queueInsert(message: jsonString, subject: subject);
-        }
+        int fileLength = attachment?.lengthSync() ?? 0;
+        await _syncDatabase.addOutboxItem(OutboxCompanion(
+          status: Value(OutboundMessageStatus.pending.index),
+          filePath: Value((fileLength > 0) ? attachment!.path : null),
+          subject: Value(subject),
+          message: Value(jsonString),
+        ));
 
         await transaction.finish();
         _startPolling();
