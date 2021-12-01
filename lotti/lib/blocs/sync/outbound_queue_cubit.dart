@@ -214,7 +214,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         int fileLength = attachment?.lengthSync() ?? 0;
         await _syncDatabase.addOutboxItem(OutboxCompanion(
           status: Value(OutboundMessageStatus.pending.index),
-          filePath: Value((fileLength > 0) ? attachment!.path : null),
+          filePath: Value(
+              (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
           subject: Value(subject),
           message: Value(jsonString),
         ));
