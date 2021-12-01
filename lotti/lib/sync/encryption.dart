@@ -33,7 +33,7 @@ FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
 
 Future<void> encryptFile(
     File inputFile, File encryptedFile, String b64Secret) async {
-  if (inputFile.existsSync()) {
+  if (!inputFile.existsSync()) {
     debugPrint('File $inputFile does not exist, aborting');
     throw Exception("File not found");
   }

@@ -92,13 +92,12 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   // /var/mobile/Containers/Data/Application/8075B080-B8E5-41D2-9B15-E52619585ACC/Documents/var/mobile/Containers/Data/Application/D4D2DD26-19EA-4BC4-8A89-5CB151402F06/Documents/audio/2021-12-01/2021-12-01_13-10-55-043.aac
   String fixPath(String pathWithFlawedFullPathInDatabase) {
     List<String> elements = pathWithFlawedFullPathInDatabase.split('Documents');
-    String correctedPath = '${elements.first}Documents${elements.last}Nope';
+    String correctedPath = '${elements.first}Documents${elements.last}';
     return correctedPath;
   }
 
   void sendNext({ImapClient? imapClient}) async {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
-    debugPrint('sendNext');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
@@ -147,7 +146,9 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
                     status: Value(OutboundMessageStatus.sent.index),
                   ),
                 );
-                sendNext(imapClient: successfulClient);
+                if (unprocessed.length > 1) {
+                  sendNext(imapClient: successfulClient);
+                }
               } else {}
             } catch (e) {
               _syncDatabase.updateOutboxItem(
@@ -159,7 +160,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
                   retries: Value(nextPending.retries + 1),
                 ),
               );
-              sendNext();
             } finally {
               sendMutex.release();
             }
