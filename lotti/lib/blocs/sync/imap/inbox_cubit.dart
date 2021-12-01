@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/drift_db/database.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -35,6 +37,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
   final fetchMutex = Mutex();
+  final MyDriftDatabase _driftDb = MyDriftDatabase();
 
   final _storage = const FlutterSecureStorage();
   final String sharedSecretKey = 'sharedSecret';
@@ -70,6 +73,19 @@ class InboxImapCubit extends Cubit<ImapState> {
     _observeInbox();
   }
 
+  Future<void> detectConflict(SyncMessage? syncMessage) async {
+    if (syncMessage != null) {
+      DateTime now = DateTime.now();
+      _driftDb.addConflict(Conflict(
+        id: syncMessage.journalEntity.meta.id,
+        status: 0,
+        createdAt: now,
+        serialized: jsonEncode(syncMessage.journalEntity),
+        updatedAt: now,
+      ));
+    }
+  }
+
   Future<void> processMessage(MimeMessage message) async {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
     try {
@@ -81,6 +97,8 @@ class InboxImapCubit extends Cubit<ImapState> {
 
         SyncMessage? syncMessage =
             await decryptMessage(encryptedMessage, message, b64Secret);
+
+        detectConflict(syncMessage);
 
         syncMessage?.when(
           journalDbEntity:

@@ -89,6 +89,24 @@ PODS:
   - sqflite (0.0.2):
     - Flutter
     - FMDB (>= 2.7.5)
+  - sqlite3 (3.36.0):
+    - sqlite3/common (= 3.36.0)
+  - sqlite3/common (3.36.0)
+  - sqlite3/fts5 (3.36.0):
+    - sqlite3/common
+  - sqlite3/json1 (3.36.0):
+    - sqlite3/common
+  - sqlite3/perf-threadsafe (3.36.0):
+    - sqlite3/common
+  - sqlite3/rtree (3.36.0):
+    - sqlite3/common
+  - sqlite3_flutter_libs (0.0.1):
+    - Flutter
+    - sqlite3 (~> 3.36.0)
+    - sqlite3/fts5
+    - sqlite3/json1
+    - sqlite3/perf-threadsafe
+    - sqlite3/rtree
   - url_launcher (0.0.1):
     - Flutter
   - video_player (0.0.1):
@@ -118,6 +136,7 @@ DEPENDENCIES:
   - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
   - url_launcher (from `.symlinks/plugins/url_launcher/ios`)
   - video_player (from `.symlinks/plugins/video_player/ios`)
 
@@ -134,6 +153,7 @@ SPEC REPOS:
     - SDWebImage
     - SDWebImageWebPCoder
     - Sentry
+    - sqlite3
 
 EXTERNAL SOURCES:
   audio_session:
@@ -182,6 +202,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sentry_flutter/ios"
   sqflite:
     :path: ".symlinks/plugins/sqflite/ios"
+  sqlite3_flutter_libs:
+    :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
   url_launcher:
     :path: ".symlinks/plugins/url_launcher/ios"
   video_player:
@@ -222,6 +244,8 @@ SPEC CHECKSUMS:
   Sentry: 0718c3ad7a08e1107599610795adaf08864102f3
   sentry_flutter: 4cd99764f9fe01c9415790d1f3fb1c7fd3a5cbe9
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
+  sqlite3: 797b1b1f92baf74716a3179f69d9652ce4a5df3f
+  sqlite3_flutter_libs: a1d040d0c9b60435b50e9626a9e818ddff842487
   url_launcher: b6e016d912f04be9f5bf6e8e82dc599b7ba59649
   video_player: ecd305f42e9044793efd34846e1ce64c31ea6fcb
 

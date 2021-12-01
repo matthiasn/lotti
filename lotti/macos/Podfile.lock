@@ -36,6 +36,24 @@ PODS:
   - sqflite (0.0.2):
     - FlutterMacOS
     - FMDB (>= 2.7.5)
+  - sqlite3 (3.36.0):
+    - sqlite3/common (= 3.36.0)
+  - sqlite3/common (3.36.0)
+  - sqlite3/fts5 (3.36.0):
+    - sqlite3/common
+  - sqlite3/json1 (3.36.0):
+    - sqlite3/common
+  - sqlite3/perf-threadsafe (3.36.0):
+    - sqlite3/common
+  - sqlite3/rtree (3.36.0):
+    - sqlite3/common
+  - sqlite3_flutter_libs (0.0.1):
+    - FlutterMacOS
+    - sqlite3 (~> 3.36.0)
+    - sqlite3/fts5
+    - sqlite3/json1
+    - sqlite3/perf-threadsafe
+    - sqlite3/rtree
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
 
@@ -53,6 +71,7 @@ DEPENDENCIES:
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
   - sentry_flutter (from `Flutter/ephemeral/.symlinks/plugins/sentry_flutter/macos`)
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
+  - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
 
 SPEC REPOS:
@@ -60,6 +79,7 @@ SPEC REPOS:
     - FMDB
     - ReachabilitySwift
     - Sentry
+    - sqlite3
 
 EXTERNAL SOURCES:
   audio_session:
@@ -88,6 +108,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sentry_flutter/macos
   sqflite:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite/macos
+  sqlite3_flutter_libs:
+    :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
 
@@ -108,6 +130,8 @@ SPEC CHECKSUMS:
   Sentry: 0718c3ad7a08e1107599610795adaf08864102f3
   sentry_flutter: 4cd99764f9fe01c9415790d1f3fb1c7fd3a5cbe9
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
+  sqlite3: 797b1b1f92baf74716a3179f69d9652ce4a5df3f
+  sqlite3_flutter_libs: 88d67935d0135be061e7e310732a1ce6f204c446
   url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52
