@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -87,13 +88,14 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         withScope: (Scope scope) => scope.level = SentryLevel.warning);
   }
 
-  // TODO: remove workaround once data migrated
-  // The full path was persisted in database, which also had become stale, e.g.
-  // /var/mobile/Containers/Data/Application/8075B080-B8E5-41D2-9B15-E52619585ACC/Documents/var/mobile/Containers/Data/Application/D4D2DD26-19EA-4BC4-8A89-5CB151402F06/Documents/audio/2021-12-01/2021-12-01_13-10-55-043.aac
-  String fixPath(String pathWithFlawedFullPathInDatabase) {
-    List<String> elements = pathWithFlawedFullPathInDatabase.split('Documents');
-    String correctedPath = '${elements.first}Documents${elements.last}';
-    return correctedPath;
+  // Inserts a fault 25% of the time, where an exception would
+  // have to be handled, a retry intent recorded, and a retry
+  // scheduled. Improper handling of the retry would become
+  // very obvious and painful very soon.
+  String insertFault(String path) {
+    Random random = Random();
+    double randomNumber = random.nextDouble();
+    return (randomNumber < 0.25) ? '${path}Nope' : path;
   }
 
   void sendNext({ImapClient? imapClient}) async {
@@ -126,9 +128,9 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
               if (filePath != null) {
                 Directory docDir = await getApplicationDocumentsDirectory();
-                File encryptedFile =
-                    File(fixPath('${docDir.path}${nextPending.filePath}.aes'));
-                File attachment = File(fixPath('${docDir.path}$filePath'));
+                File encryptedFile = File(
+                    insertFault('${docDir.path}${nextPending.filePath}.aes'));
+                File attachment = File(insertFault('${docDir.path}$filePath'));
                 await encryptFile(attachment, encryptedFile, _b64Secret!);
                 encryptedFilePath = encryptedFile.path;
               }
@@ -160,6 +162,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
                   retries: Value(nextPending.retries + 1),
                 ),
               );
+              Timer(const Duration(seconds: 1), () => sendNext());
             } finally {
               sendMutex.release();
             }
