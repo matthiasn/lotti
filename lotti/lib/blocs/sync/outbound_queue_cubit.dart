@@ -87,6 +87,15 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         withScope: (Scope scope) => scope.level = SentryLevel.warning);
   }
 
+  // TODO: remove workaround once data migrated
+  // The full path was persisted in database, which also had become stale, e.g.
+  // /var/mobile/Containers/Data/Application/8075B080-B8E5-41D2-9B15-E52619585ACC/Documents/var/mobile/Containers/Data/Application/D4D2DD26-19EA-4BC4-8A89-5CB151402F06/Documents/audio/2021-12-01/2021-12-01_13-10-55-043.aac
+  String fixPath(String pathWithFlawedFullPathInDatabase) {
+    List<String> elements = pathWithFlawedFullPathInDatabase.split('Documents');
+    String correctedPath = '${elements.first}Documents${elements.last}';
+    return correctedPath;
+  }
+
   void sendNext({ImapClient? imapClient}) async {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
     try {
@@ -117,8 +126,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
             if (filePath != null) {
               Directory docDir = await getApplicationDocumentsDirectory();
               File encryptedFile =
-                  File('${docDir.path}${nextPending.filePath}.aes');
-              File attachment = File('${docDir.path}$filePath');
+                  File(fixPath('${docDir.path}${nextPending.filePath}.aes'));
+              File attachment = File(fixPath('${docDir.path}$filePath'));
               await encryptFile(attachment, encryptedFile, _b64Secret!);
               encryptedFilePath = encryptedFile.path;
             }
