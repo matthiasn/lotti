@@ -128,8 +128,8 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
 
               if (filePath != null) {
                 Directory docDir = await getApplicationDocumentsDirectory();
-                File encryptedFile = File(
-                    insertFault('${docDir.path}${nextPending.filePath}.aes'));
+                File encryptedFile =
+                    File('${docDir.path}${nextPending.filePath}.aes');
                 File attachment = File(insertFault('${docDir.path}$filePath'));
                 await encryptFile(attachment, encryptedFile, _b64Secret!);
                 encryptedFilePath = encryptedFile.path;
