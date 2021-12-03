@@ -12,7 +12,7 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbound_queue_cubit.dart';
+import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/pages/audio.dart';
 import 'package:lotti/pages/editor.dart';
@@ -68,9 +68,9 @@ class LottiApp extends StatelessWidget {
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
           ),
         ),
-        BlocProvider<OutboundQueueCubit>(
+        BlocProvider<OutboxCubit>(
           lazy: false,
-          create: (BuildContext context) => OutboundQueueCubit(
+          create: (BuildContext context) => OutboxCubit(
             encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             outboxImapCubit: BlocProvider.of<OutboxImapCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
@@ -79,7 +79,7 @@ class LottiApp extends StatelessWidget {
         BlocProvider<PersistenceCubit>(
           lazy: false,
           create: (BuildContext context) => PersistenceCubit(
-            outboundQueueCubit: BlocProvider.of<OutboundQueueCubit>(context),
+            outboundQueueCubit: BlocProvider.of<OutboxCubit>(context),
             vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),

@@ -8,10 +8,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-part 'journal_db.g.dart';
+part 'database.g.dart';
 
 @DriftDatabase(
-  include: {'journal_tables.drift'},
+  include: {'tables.drift'},
 )
 class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
