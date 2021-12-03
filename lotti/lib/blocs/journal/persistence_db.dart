@@ -117,7 +117,7 @@ class PersistenceDb {
       List<Map> maps = await db.query(journalTable,
           columns: ['id'], where: 'id = ?', whereArgs: [id]);
       if (maps.isEmpty) {
-        insert(journalEntity);
+        await insert(journalEntity);
       } else {
         int res = await db.update(journalTable, dbRecord.toMap(),
             where: 'id = ?', whereArgs: [id]);

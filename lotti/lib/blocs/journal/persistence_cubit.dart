@@ -261,7 +261,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     try {
       bool saved = await _db.insert(journalEntity);
       int driftRes = await _journalDb.addJournalEntity(journalEntity);
-      debugPrint('driftRes: $driftRes');
+      debugPrint('driftRes insert: $driftRes');
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
@@ -337,6 +337,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
       bool saved = await _db.update(journalEntity);
+      int driftRes = await _journalDb.updateJournalEntity(journalEntity);
+      debugPrint('driftRes insert: $driftRes');
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {

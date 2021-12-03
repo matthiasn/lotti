@@ -19,11 +19,16 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> addJournalEntry(JournalDbEntry entry) {
+  Future<int> addJournalEntry(JournalDbEntity entry) {
     return into(journal).insert(entry);
   }
 
-  Future<int> addJournalEntity(JournalEntity journalEntity) {
+  Future<int> addJournalEntity(JournalEntity journalEntity) async {
+    JournalDbEntity dbEntity = toDbEntity(journalEntity);
+    return into(journal).insert(dbEntity);
+  }
+
+  JournalDbEntity toDbEntity(JournalEntity journalEntity) {
     final DateTime createdAt = journalEntity.meta.createdAt;
     final subtype = journalEntity.maybeMap(
       quantitative: (qd) => qd.data.dataType,
@@ -40,7 +45,7 @@ class JournalDb extends _$JournalDb {
     );
 
     String id = journalEntity.meta.id;
-    JournalDbEntry entry = JournalDbEntry(
+    JournalDbEntity dbEntity = JournalDbEntity(
       id: id,
       createdAt: createdAt,
       updatedAt: createdAt,
@@ -55,15 +60,19 @@ class JournalDb extends _$JournalDb {
       geohashString: geolocation?.geohashString,
     );
 
-    return into(journal).insert(entry);
+    return dbEntity;
   }
 
-  Future<int> updateJournalEntry(JournalCompanion entry) {
-    return (update(journal)..where((t) => t.id.equals(entry.id.value)))
-        .write(entry);
+  Future<int> updateJournalEntity(JournalEntity journalEntity) {
+    JournalDbEntity dbEntity = toDbEntity(journalEntity).copyWith(
+      updatedAt: DateTime.now(),
+    );
+
+    return (update(journal)..where((t) => t.id.equals(dbEntity.id)))
+        .write(dbEntity);
   }
 
-  Future<List<JournalDbEntry>> latestEntries(int limit) {
+  Future<List<JournalDbEntity>> latestEntries(int limit) {
     return (select(journal)
           ..orderBy([(t) => OrderingTerm(expression: t.dateFrom)])
           ..limit(limit))

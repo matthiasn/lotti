@@ -15,7 +15,7 @@ CREATE TABLE journal (
   geohash_string TEXT,
   geohash_int INTEGER,
   PRIMARY KEY (id)
-) as JournalDbEntry;
+) as JournalDbEntity;
 
 CREATE INDEX idx_journal_created_at
 ON journal (created_at);
