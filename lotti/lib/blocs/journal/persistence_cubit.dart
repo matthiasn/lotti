@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:lotti/blocs/journal/persistence_db.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/blocs/sync/outbound_queue_cubit.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
@@ -24,7 +23,6 @@ import 'package:uuid/uuid.dart';
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
-  late final PersistenceDb _db;
   final JournalDb _journalDb = JournalDb();
 
   final uuid = const Uuid();
@@ -37,12 +35,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }) : super(PersistenceState.initial()) {
     _vectorClockCubit = vectorClockCubit;
     _outboundQueueCubit = outboundQueueCubit;
-    _db = PersistenceDb();
     init();
   }
 
   Future<void> init() async {
-    await _db.openDb();
     emit(PersistenceState.online(entries: []));
     queryJournal();
   }
@@ -50,12 +46,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> queryJournal() async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
-      // List<JournalRecord> records = await _db.journalEntries(100);
-      // List<JournalEntity> entries = records
-      //     .map((JournalRecord r) =>
-      //         JournalEntity.fromJson(json.decode(r.serialized)))
-      //     .toList();
-
       List<JournalEntity> entries = await _journalDb.latestJournalEntities(100);
       emit(PersistenceState.online(entries: entries));
     } catch (exception, stackTrace) {
@@ -261,9 +251,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
-      bool saved = await _db.insert(journalEntity);
-      int driftRes = await _journalDb.addJournalEntity(journalEntity);
-      debugPrint('driftRes insert: $driftRes');
+      int res = await _journalDb.addJournalEntity(journalEntity);
+      bool saved = res == 1;
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
@@ -338,9 +327,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }) async {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
-      bool saved = await _db.update(journalEntity);
-      int driftRes = await _journalDb.updateJournalEntity(journalEntity);
-      debugPrint('driftRes insert: $driftRes');
+      int res = await _journalDb.updateJournalEntity(journalEntity);
+      bool saved = res == 1;
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
