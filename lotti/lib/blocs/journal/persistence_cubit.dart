@@ -14,6 +14,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/drift_db/journal_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -24,6 +25,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
   late final OutboundQueueCubit _outboundQueueCubit;
   late final PersistenceDb _db;
+  final JournalDb _journalDb = JournalDb();
+
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
   Timer? timer;
@@ -257,6 +260,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
       bool saved = await _db.insert(journalEntity);
+      int driftRes = await _journalDb.addJournalEntity(journalEntity);
+      debugPrint('driftRes: $driftRes');
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {

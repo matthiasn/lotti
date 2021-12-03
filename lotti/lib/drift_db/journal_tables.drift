@@ -1,10 +1,10 @@
 /* Journal ----------------------------------------------------- */
 CREATE TABLE journal (
   id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  date_from INTEGER NOT NULL,
-  date_to INTEGER NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  date_from DATETIME NOT NULL,
+  date_to DATETIME NOT NULL,
   type TEXT NOT NULL,
   subtype TEXT,
   serialized TEXT NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE journal (
   geohash_string TEXT,
   geohash_int INTEGER,
   PRIMARY KEY (id)
-) as JournalEntry;
+) as JournalDbEntry;
 
 CREATE INDEX idx_journal_created_at
 ON journal (created_at);

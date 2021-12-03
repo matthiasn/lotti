@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -16,7 +19,42 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> addJournalEntry(JournalEntry entry) {
+  Future<int> addJournalEntry(JournalDbEntry entry) {
+    return into(journal).insert(entry);
+  }
+
+  Future<int> addJournalEntity(JournalEntity journalEntity) {
+    final DateTime createdAt = journalEntity.meta.createdAt;
+    final subtype = journalEntity.maybeMap(
+      quantitative: (qd) => qd.data.dataType,
+      survey: (SurveyEntry surveyEntry) =>
+          surveyEntry.data.taskResult.identifier,
+      orElse: () => '',
+    );
+
+    Geolocation? geolocation;
+    journalEntity.mapOrNull(
+      journalAudio: (item) => geolocation = item.geolocation,
+      journalImage: (item) => geolocation = item.geolocation,
+      journalEntry: (item) => geolocation = item.geolocation,
+    );
+
+    String id = journalEntity.meta.id;
+    JournalDbEntry entry = JournalDbEntry(
+      id: id,
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      dateFrom: journalEntity.meta.dateFrom,
+      dateTo: journalEntity.meta.dateTo,
+      type: journalEntity.runtimeType.toString(),
+      subtype: subtype,
+      serialized: json.encode(journalEntity),
+      schemaVersion: 0,
+      longitude: geolocation?.longitude,
+      latitude: geolocation?.latitude,
+      geohashString: geolocation?.geohashString,
+    );
+
     return into(journal).insert(entry);
   }
 
@@ -25,7 +63,7 @@ class JournalDb extends _$JournalDb {
         .write(entry);
   }
 
-  Future<List<JournalEntry>> latestEntries(int limit) {
+  Future<List<JournalDbEntry>> latestEntries(int limit) {
     return (select(journal)
           ..orderBy([(t) => OrderingTerm(expression: t.dateFrom)])
           ..limit(limit))
