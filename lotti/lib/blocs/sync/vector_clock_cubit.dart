@@ -18,13 +18,15 @@ class VectorClockCubit extends Cubit<void> {
     setNextAvailableCounter(next);
   }
 
+  Future<String> setNewHost() async {
+    String host = uuid.v4();
+    SecureStorage.writeValue(hostKey, host);
+    return host;
+  }
+
   Future<String> getHost() async {
     String? host = await SecureStorage.readValue(hostKey);
-
-    if (host == null) {
-      host = uuid.v4();
-      SecureStorage.writeValue(hostKey, host);
-    }
+    host ??= await setNewHost();
     return host;
   }
 

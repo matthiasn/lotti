@@ -301,5 +301,6 @@ class InboxImapCubit extends Cubit<ImapState> {
 
   Future<void> resetOffset() async {
     await _storage.delete(key: lastReadUidKey);
+    await _vectorClockCubit.setNewHost();
   }
 }
