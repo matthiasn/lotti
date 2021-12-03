@@ -1,20 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:drift/drift.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/config_classes.dart';
 import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbound_queue_db.dart';
 import 'package:lotti/blocs/sync/outbound_queue_state.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/drift_db/sync_db.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -29,7 +31,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
-  late final OutboundQueueDb _db;
+  final SyncDatabase _syncDatabase = SyncDatabase();
   late String? _b64Secret;
 
   late final VectorClockCubit _vectorClockCubit;
@@ -44,7 +46,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     _encryptionCubit = encryptionCubit;
     _outboxImapCubit = outboxImapCubit;
     _vectorClockCubit = vectorClockCubit;
-    _db = OutboundQueueDb();
     init();
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -70,7 +71,6 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   }
 
   Future<void> init() async {
-    await _db.openDb();
     SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
 
     if (syncConfig != null) {
@@ -88,6 +88,16 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
         withScope: (Scope scope) => scope.level = SentryLevel.warning);
   }
 
+  // Inserts a fault 25% of the time, where an exception would
+  // have to be handled, a retry intent recorded, and a retry
+  // scheduled. Improper handling of the retry would become
+  // very obvious and painful very soon.
+  String insertFault(String path) {
+    Random random = Random();
+    double randomNumber = random.nextDouble();
+    return (randomNumber < 0.25) ? '${path}Nope' : path;
+  }
+
   void sendNext({ImapClient? imapClient}) async {
     final transaction = Sentry.startTransaction('sendNext()', 'task');
     try {
@@ -99,66 +109,79 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
       if (_b64Secret != null) {
         // TODO: check why not working reliably on macOS - workaround
         bool isConnected = _connectivityResult != ConnectivityResult.none;
+
         if (isConnected && !sendMutex.isLocked) {
-          List<OutboundQueueRecord> unprocessed = await _db.oldestEntries();
+          List<OutboxItem> unprocessed =
+              await _syncDatabase.oldestOutboxItems(1);
           if (unprocessed.isNotEmpty) {
             sendMutex.acquire();
 
-            OutboundQueueRecord nextPending = unprocessed.first;
-            String encryptedMessage = await encryptString(
-              b64Secret: _b64Secret,
-              plainText: nextPending.message,
-            );
-
-            String? filePath = nextPending.filePath;
-            String? encryptedFilePath;
-
-            if (filePath != null) {
-              Directory docDir = await getApplicationDocumentsDirectory();
-              File encryptedFile =
-                  File('${docDir.path}${nextPending.filePath}.aes');
-              File attachment = File('${docDir.path}$filePath');
-              await encryptFile(attachment, encryptedFile, _b64Secret!);
-              encryptedFilePath = encryptedFile.path;
-            }
-
-            ImapClient? successfulClient = await _outboxImapCubit.saveImap(
-              encryptedFilePath: encryptedFilePath,
-              subject: nextPending.subject,
-              encryptedMessage: encryptedMessage,
-              prevImapClient: imapClient,
-            );
-            if (successfulClient != null) {
-              _db.update(
-                nextPending,
-                OutboundMessageStatus.sent,
-                nextPending.retries,
+            OutboxItem nextPending = unprocessed.first;
+            try {
+              String encryptedMessage = await encryptString(
+                b64Secret: _b64Secret,
+                plainText: nextPending.message,
               );
-            } else {
-              _db.update(
-                nextPending,
-                nextPending.retries < 10
-                    ? OutboundMessageStatus.pending
-                    : OutboundMessageStatus.error,
-                nextPending.retries + 1,
+
+              String? filePath = nextPending.filePath;
+              String? encryptedFilePath;
+
+              if (filePath != null) {
+                Directory docDir = await getApplicationDocumentsDirectory();
+                File encryptedFile =
+                    File('${docDir.path}${nextPending.filePath}.aes');
+                File attachment = File(insertFault('${docDir.path}$filePath'));
+                await encryptFile(attachment, encryptedFile, _b64Secret!);
+                encryptedFilePath = encryptedFile.path;
+              }
+
+              ImapClient? successfulClient = await _outboxImapCubit.saveImap(
+                encryptedFilePath: encryptedFilePath,
+                subject: nextPending.subject,
+                encryptedMessage: encryptedMessage,
+                prevImapClient: imapClient,
               );
+              if (successfulClient != null) {
+                _syncDatabase.updateOutboxItem(
+                  OutboxCompanion(
+                    id: Value(nextPending.id),
+                    status: Value(OutboundMessageStatus.sent.index),
+                  ),
+                );
+                if (unprocessed.length > 1) {
+                  sendNext(imapClient: successfulClient);
+                }
+              } else {}
+            } catch (e) {
+              _syncDatabase.updateOutboxItem(
+                OutboxCompanion(
+                  id: Value(nextPending.id),
+                  // status: Value(nextPending.retries < 10
+                  //     ? OutboundMessageStatus.pending.index
+                  //     : OutboundMessageStatus.error.index),
+                  retries: Value(nextPending.retries + 1),
+                ),
+              );
+              Timer(const Duration(seconds: 1), () => sendNext());
+            } finally {
+              sendMutex.release();
             }
-            sendMutex.release();
-            sendNext(imapClient: successfulClient);
-          } else {
-            _stopPolling();
           }
         }
+      } else {
+        _stopPolling();
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
+      sendMutex.release();
+      sendNext();
     }
     await transaction.finish();
   }
 
   void _startPolling() async {
     sendNext();
-    timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+    timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       sendNext();
     });
   }
@@ -198,18 +221,14 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
           orElse: () {},
         );
 
-        if (attachment != null) {
-          int fileLength = attachment!.lengthSync();
-          if (fileLength > 0) {
-            await _db.queueInsert(
-              message: jsonString,
-              filePath: attachment!.path,
-              subject: subject,
-            );
-          }
-        } else {
-          await _db.queueInsert(message: jsonString, subject: subject);
-        }
+        int fileLength = attachment?.lengthSync() ?? 0;
+        await _syncDatabase.addOutboxItem(OutboxCompanion(
+          status: Value(OutboundMessageStatus.pending.index),
+          filePath: Value(
+              (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
+          subject: Value(subject),
+          message: Value(jsonString),
+        ));
 
         await transaction.finish();
         _startPolling();
