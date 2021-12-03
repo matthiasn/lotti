@@ -15,6 +15,22 @@ class JournalDb extends _$JournalDb {
 
   @override
   int get schemaVersion => 1;
+
+  Future<int> addJournalEntry(JournalEntry entry) {
+    return into(journal).insert(entry);
+  }
+
+  Future<int> updateJournalEntry(JournalCompanion entry) {
+    return (update(journal)..where((t) => t.id.equals(entry.id.value)))
+        .write(entry);
+  }
+
+  Future<List<JournalEntry>> latestEntries(int limit) {
+    return (select(journal)
+          ..orderBy([(t) => OrderingTerm(expression: t.dateFrom)])
+          ..limit(limit))
+        .get();
+  }
 }
 
 LazyDatabase _openConnection() {
