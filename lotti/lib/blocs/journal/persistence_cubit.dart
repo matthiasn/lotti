@@ -50,11 +50,13 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> queryJournal() async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
-      List<JournalRecord> records = await _db.journalEntries(100);
-      List<JournalEntity> entries = records
-          .map((JournalRecord r) =>
-              JournalEntity.fromJson(json.decode(r.serialized)))
-          .toList();
+      // List<JournalRecord> records = await _db.journalEntries(100);
+      // List<JournalEntity> entries = records
+      //     .map((JournalRecord r) =>
+      //         JournalEntity.fromJson(json.decode(r.serialized)))
+      //     .toList();
+
+      List<JournalEntity> entries = await _journalDb.latestJournalEntities(100);
       emit(PersistenceState.online(entries: entries));
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);

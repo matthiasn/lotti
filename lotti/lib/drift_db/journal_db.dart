@@ -19,13 +19,13 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> addJournalEntry(JournalDbEntity entry) {
+  Future<int> addJournalDbEntity(JournalDbEntity entry) async {
     return into(journal).insert(entry);
   }
 
   Future<int> addJournalEntity(JournalEntity journalEntity) async {
     JournalDbEntity dbEntity = toDbEntity(journalEntity);
-    return into(journal).insert(dbEntity);
+    return addJournalDbEntity(dbEntity);
   }
 
   JournalDbEntity toDbEntity(JournalEntity journalEntity) {
@@ -63,7 +63,7 @@ class JournalDb extends _$JournalDb {
     return dbEntity;
   }
 
-  Future<int> updateJournalEntity(JournalEntity journalEntity) {
+  Future<int> updateJournalEntity(JournalEntity journalEntity) async {
     JournalDbEntity dbEntity = toDbEntity(journalEntity).copyWith(
       updatedAt: DateTime.now(),
     );
@@ -72,11 +72,24 @@ class JournalDb extends _$JournalDb {
         .write(dbEntity);
   }
 
-  Future<List<JournalDbEntity>> latestEntries(int limit) {
+  Future<List<JournalDbEntity>> latestDbEntities(int limit) async {
     return (select(journal)
-          ..orderBy([(t) => OrderingTerm(expression: t.dateFrom)])
+          ..orderBy([
+            (t) => OrderingTerm(
+                  expression: t.dateFrom,
+                  mode: OrderingMode.desc,
+                )
+          ])
           ..limit(limit))
         .get();
+  }
+
+  Future<List<JournalEntity>> latestJournalEntities(int limit) async {
+    List<JournalDbEntity> dbEntities = await latestDbEntities(limit);
+    return dbEntities
+        .map((JournalDbEntity dbEntity) =>
+            JournalEntity.fromJson(json.decode(dbEntity.serialized)))
+        .toList();
   }
 }
 
