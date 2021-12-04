@@ -44,10 +44,10 @@ ON journal (geohash_int);
 /* Conflicts --------------------------------------------------- */
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
   serialized TEXT NOT NULL,
   schema_version INTEGER NOT NULL DEFAULT 0,
-  status INTEGER,
+  status INTEGER NOT NULL,
   PRIMARY KEY (id)
 );

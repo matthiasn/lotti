@@ -70,13 +70,6 @@ class InboxImapCubit extends Cubit<ImapState> {
     _observeInbox();
   }
 
-  Future<void> detectConflict(SyncMessage? syncMessage) async {
-    if (syncMessage != null) {
-      DateTime now = DateTime.now();
-      // TODO: implement
-    }
-  }
-
   Future<void> processMessage(MimeMessage message) async {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
     try {
@@ -88,8 +81,6 @@ class InboxImapCubit extends Cubit<ImapState> {
 
         SyncMessage? syncMessage =
             await decryptMessage(encryptedMessage, message, b64Secret);
-
-        detectConflict(syncMessage);
 
         syncMessage?.when(
           journalDbEntity:
