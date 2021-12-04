@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
-import 'package:lotti/widgets/buttons.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
 class SurveyWidget extends StatelessWidget {

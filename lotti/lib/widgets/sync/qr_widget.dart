@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/config_classes.dart';
 import 'package:lotti/blocs/sync/encryption_cubit.dart';
-import 'package:lotti/widgets/buttons.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 

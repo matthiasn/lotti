@@ -8,13 +8,13 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/widgets/audio_player.dart';
-import 'package:lotti/widgets/buttons.dart';
-import 'package:lotti/widgets/editor_tools.dart';
-import 'package:lotti/widgets/editor_widget.dart';
-import 'package:lotti/widgets/entry_tools.dart';
-import 'package:lotti/widgets/map_widget.dart';
-import 'package:lotti/widgets/survey_summary.dart';
+import 'package:lotti/widgets/audio/audio_player.dart';
+import 'package:lotti/widgets/journal/editor_tools.dart';
+import 'package:lotti/widgets/journal/editor_widget.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
+import 'package:lotti/widgets/misc/map_widget.dart';
+import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:provider/src/provider.dart';
 
 class EntryModalWidget extends StatelessWidget {

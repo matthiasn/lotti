@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/health_cubit.dart';
 import 'package:lotti/blocs/journal/health_state.dart';
-import 'package:lotti/widgets/buttons.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 class HealthPage extends StatefulWidget {
