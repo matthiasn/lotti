@@ -12,11 +12,11 @@ import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:lotti/blocs/sync/config_classes.dart';
 import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbound_queue_state.dart';
+import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
-import 'package:lotti/drift_db/sync_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -25,7 +25,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-class OutboundQueueCubit extends Cubit<OutboundQueueState> {
+class OutboxCubit extends Cubit<OutboxState> {
   late final EncryptionCubit _encryptionCubit;
   late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
@@ -38,11 +38,11 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
-  OutboundQueueCubit({
+  OutboxCubit({
     required EncryptionCubit encryptionCubit,
     required OutboxImapCubit outboxImapCubit,
     required VectorClockCubit vectorClockCubit,
-  }) : super(OutboundQueueState.initial()) {
+  }) : super(OutboxState.initial()) {
     _encryptionCubit = encryptionCubit;
     _outboxImapCubit = outboxImapCubit;
     _vectorClockCubit = vectorClockCubit;
@@ -76,7 +76,7 @@ class OutboundQueueCubit extends Cubit<OutboundQueueState> {
     if (syncConfig != null) {
       _b64Secret = syncConfig.sharedSecret;
     }
-    emit(OutboundQueueState.online());
+    emit(OutboxState.online());
     _startPolling();
   }
 

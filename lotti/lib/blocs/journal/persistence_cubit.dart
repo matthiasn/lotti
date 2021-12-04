@@ -4,9 +4,8 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:lotti/blocs/journal/persistence_db.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
-import 'package:lotti/blocs/sync/outbound_queue_cubit.dart';
+import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -22,24 +22,23 @@ import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final VectorClockCubit _vectorClockCubit;
-  late final OutboundQueueCubit _outboundQueueCubit;
-  late final PersistenceDb _db;
+  late final OutboxCubit _outboundQueueCubit;
+  final JournalDb _journalDb = JournalDb();
+
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
   Timer? timer;
 
   PersistenceCubit({
     required VectorClockCubit vectorClockCubit,
-    required OutboundQueueCubit outboundQueueCubit,
+    required OutboxCubit outboundQueueCubit,
   }) : super(PersistenceState.initial()) {
     _vectorClockCubit = vectorClockCubit;
     _outboundQueueCubit = outboundQueueCubit;
-    _db = PersistenceDb();
     init();
   }
 
   Future<void> init() async {
-    await _db.openDb();
     emit(PersistenceState.online(entries: []));
     queryJournal();
   }
@@ -47,11 +46,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> queryJournal() async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
-      List<JournalRecord> records = await _db.journalEntries(100);
-      List<JournalEntity> entries = records
-          .map((JournalRecord r) =>
-              JournalEntity.fromJson(json.decode(r.serialized)))
-          .toList();
+      List<JournalEntity> entries = await _journalDb.latestJournalEntities(100);
       emit(PersistenceState.online(entries: entries));
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
@@ -256,7 +251,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
-      bool saved = await _db.insert(journalEntity);
+      int? res = await _journalDb.addJournalEntity(journalEntity);
+      bool saved = (res == 1);
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
@@ -331,7 +327,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }) async {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
-      bool saved = await _db.update(journalEntity);
+      int res = await _journalDb.updateJournalEntity(journalEntity);
+      bool saved = (res == 1);
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
