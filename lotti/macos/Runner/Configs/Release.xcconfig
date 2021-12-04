@@ -2,4 +2,4 @@
 #include "Warnings.xcconfig"
 
 PRODUCT_NAME=Lotti
-PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.wiselyDesktop
+PRODUCT_BUNDLE_IDENTIFIER=com.matthiasnehlsen.lotti.desktop
