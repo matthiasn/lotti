@@ -48,6 +48,6 @@ CREATE TABLE conflicts (
   updated_at DATETIME NOT NULL,
   serialized TEXT NOT NULL,
   schema_version INTEGER NOT NULL DEFAULT 0,
-  status INTEGER,
+  status INTEGER NOT NULL,
   PRIMARY KEY (id)
 );

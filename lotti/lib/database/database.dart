@@ -12,6 +12,11 @@ import 'package:path_provider/path_provider.dart';
 
 part 'database.g.dart';
 
+enum ConflictStatus {
+  unprocessed,
+  resolved,
+}
+
 @DriftDatabase(
   include: {'tables.drift'},
 )
@@ -98,6 +103,7 @@ class JournalDb extends _$JournalDb {
           updatedAt: now,
           serialized: jsonEncode(updated),
           schemaVersion: schemaVersion,
+          status: ConflictStatus.unprocessed.index,
         ));
       }
 
