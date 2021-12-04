@@ -38,6 +38,8 @@ class _JournalPageState extends State<JournalPage> {
                 loading: () => const Text('loading'),
                 failed: () => const Text('failed'),
                 online: (List<JournalEntity> entries) {
+                  debugPrint('entries.length ${entries.length}');
+
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const ClampingScrollPhysics(),

@@ -93,3 +93,72 @@ class JournalListItem extends StatelessWidget {
     );
   }
 }
+
+class JournalListItem2 extends StatelessWidget {
+  final JournalEntity item;
+
+  const JournalListItem2({Key? key, required this.item}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+        child: Container(
+          //color: AppColors.entryBgColor,
+          width: double.infinity,
+          child: TextButton(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
+              child: Center(
+                child: Column(
+                  children: [
+                    InfoText(df.format(item.meta.dateFrom)),
+                    item.maybeMap(
+                      quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
+                        cumulativeQuantityData: (qd) => InfoText(
+                          'End: ${df.format(qd.dateTo)}'
+                          '\n${formatType(qd.dataType)}: '
+                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                        ),
+                        discreteQuantityData: (qd) => InfoText(
+                          'End: ${df.format(item.meta.dateTo)}'
+                          '\n${formatType(qd.dataType)}: '
+                          '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                        ),
+                        orElse: () => Container(),
+                      ),
+                      journalAudio: (JournalAudio audioNote) =>
+                          InfoText(formatAudio(audioNote)),
+                      journalEntry: (JournalEntry journalEntry) =>
+                          InfoText(journalEntry.entryText.plainText),
+                      journalImage: (JournalImage journalImage) =>
+                          InfoText(journalImage.data.imageFile),
+                      survey: (SurveyEntry surveyEntry) =>
+                          SurveySummaryWidget(surveyEntry),
+                      orElse: () => Row(
+                        children: const [],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            style: TextButton.styleFrom(
+              primary: AppColors.listItemText,
+              onSurface: Colors.yellow,
+            ),
+            onPressed: () async {
+              item.mapOrNull(journalAudio: (JournalAudio audioNote) {
+                context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+              });
+              Directory docDir = await getApplicationDocumentsDirectory();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}

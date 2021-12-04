@@ -13,7 +13,7 @@ import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
-import 'package:lotti/widgets/home.dart';
+import 'package:lotti/widgets/home2.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 const enableSentry = false;
@@ -107,7 +107,8 @@ class LottiApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.grey,
         ),
-        home: const LottiHomePage(title: 'Lotti'),
+//        home: const LottiHomePage(title: 'Lotti'),
+        home: HomePage2(),
       ),
     );
   }

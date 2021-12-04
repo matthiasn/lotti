@@ -76,10 +76,11 @@ class _LottiHomePageState extends State<LottiHomePage> {
               Text(
                 ' v$version Build $buildNumber',
                 style: TextStyle(
-                    color: AppColors.headerFontColor2,
-                    fontFamily: 'Oswald',
-                    fontSize: 12.0,
-                    fontWeight: FontWeight.w400),
+                  color: AppColors.headerFontColor2,
+                  fontFamily: 'Oswald',
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ],
           ),
