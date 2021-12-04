@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
-import 'package:lotti/widgets/buttons.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 
 class ImapStatusWidget extends StatelessWidget {
   const ImapStatusWidget({Key? key}) : super(key: key);

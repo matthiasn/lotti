@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
-import 'package:lotti/widgets/editor_tools.dart';
-import 'package:lotti/widgets/editor_widget.dart';
+import 'package:lotti/widgets/journal/editor_tools.dart';
+import 'package:lotti/widgets/journal/editor_widget.dart';
 
 class EditorPage extends StatefulWidget {
   const EditorPage({Key? key}) : super(key: key);

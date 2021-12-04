@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_state.dart';
-import 'package:lotti/widgets/buttons.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 
 class PhotoImportPage extends StatelessWidget {
   const PhotoImportPage({Key? key}) : super(key: key);

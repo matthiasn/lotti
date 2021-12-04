@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/audio_recorder.dart';
+import 'package:lotti/widgets/audio/audio_recorder.dart';
 
 class AudioPage extends StatefulWidget {
   const AudioPage({Key? key}) : super(key: key);

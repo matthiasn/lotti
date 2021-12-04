@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/editor_toolbar.dart';
+import 'package:lotti/widgets/journal/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
   const EditorWidget({

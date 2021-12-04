@@ -5,9 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/entry_modal_widget.dart';
-import 'package:lotti/widgets/entry_tools.dart';
-import 'package:lotti/widgets/survey_summary.dart';
+import 'package:lotti/widgets/journal/entry_modal_widget.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
