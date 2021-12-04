@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/sync/vector_clock.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -22,6 +23,10 @@ class JournalDb extends _$JournalDb {
 
   Future<int> addJournalDbEntity(JournalDbEntity entry) async {
     return into(journal).insert(entry);
+  }
+
+  Future<int> addConflict(Conflict conflict) async {
+    return into(conflicts).insert(conflict);
   }
 
   Future<int?> addJournalEntity(JournalEntity journalEntity) async {
@@ -70,18 +75,57 @@ class JournalDb extends _$JournalDb {
     return dbEntity;
   }
 
-  Future<int> updateJournalEntity(JournalEntity journalEntity) async {
-    JournalDbEntity dbEntity = toDbEntity(journalEntity).copyWith(
+  JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
+    return JournalEntity.fromJson(json.decode(dbEntity.serialized));
+  }
+
+  Future<VclockStatus> detectConflict(
+    JournalEntity existing,
+    JournalEntity updated,
+  ) async {
+    VectorClock? vcA = existing.meta.vectorClock;
+    VectorClock? vcB = updated.meta.vectorClock;
+
+    if (vcA != null && vcB != null) {
+      VclockStatus status = VectorClock.compare(vcA, vcB);
+
+      if (status == VclockStatus.concurrent) {
+        debugPrint('Conflicting vector clocks: $status');
+        DateTime now = DateTime.now();
+        await addConflict(Conflict(
+          id: updated.meta.id,
+          createdAt: now,
+          updatedAt: now,
+          serialized: jsonEncode(updated),
+          schemaVersion: schemaVersion,
+        ));
+      }
+
+      return status;
+    }
+    return VclockStatus.b_gt_a;
+  }
+
+  Future<int> updateJournalEntity(JournalEntity updated) async {
+    int rowsAffected = 0;
+    JournalDbEntity dbEntity = toDbEntity(updated).copyWith(
       updatedAt: DateTime.now(),
     );
 
-    bool exists = await entityById(dbEntity.id) != null;
-    if (exists) {
-      return (update(journal)..where((t) => t.id.equals(dbEntity.id)))
-          .write(dbEntity);
+    JournalDbEntity? existingDbEntity = await entityById(dbEntity.id);
+    if (existingDbEntity != null) {
+      JournalEntity existing = fromDbEntity(existingDbEntity);
+      VclockStatus status = await detectConflict(existing, updated);
+
+      if (status == VclockStatus.b_gt_a) {
+        rowsAffected = await (update(journal)
+              ..where((t) => t.id.equals(dbEntity.id)))
+            .write(dbEntity);
+      }
     } else {
-      return addJournalDbEntity(dbEntity);
+      rowsAffected = await addJournalDbEntity(dbEntity);
     }
+    return rowsAffected;
   }
 
   Future<List<JournalDbEntity>> latestDbEntities(int limit) async {
@@ -106,10 +150,7 @@ class JournalDb extends _$JournalDb {
 
   Future<List<JournalEntity>> latestJournalEntities(int limit) async {
     List<JournalDbEntity> dbEntities = await latestDbEntities(limit);
-    return dbEntities
-        .map((JournalDbEntity dbEntity) =>
-            JournalEntity.fromJson(json.decode(dbEntity.serialized)))
-        .toList();
+    return dbEntities.map(fromDbEntity).toList();
   }
 }
 
