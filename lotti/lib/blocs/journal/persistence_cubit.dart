@@ -251,8 +251,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       {bool enqueueSync = false}) async {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
-      int res = await _journalDb.addJournalEntity(journalEntity);
-      bool saved = res == 1;
+      int? res = await _journalDb.addJournalEntity(journalEntity);
+      bool saved = (res == 1);
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
@@ -328,7 +328,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
       int res = await _journalDb.updateJournalEntity(journalEntity);
-      bool saved = res == 1;
+      bool saved = (res == 1);
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {

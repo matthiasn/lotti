@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:path/path.dart' as p;
@@ -23,9 +24,15 @@ class JournalDb extends _$JournalDb {
     return into(journal).insert(entry);
   }
 
-  Future<int> addJournalEntity(JournalEntity journalEntity) async {
+  Future<int?> addJournalEntity(JournalEntity journalEntity) async {
     JournalDbEntity dbEntity = toDbEntity(journalEntity);
-    return addJournalDbEntity(dbEntity);
+
+    bool exists = await entityById(dbEntity.id) != null;
+    if (!exists) {
+      return addJournalDbEntity(dbEntity);
+    } else {
+      debugPrint('PersistenceDb already exists: ${dbEntity.id}');
+    }
   }
 
   JournalDbEntity toDbEntity(JournalEntity journalEntity) {
@@ -68,8 +75,13 @@ class JournalDb extends _$JournalDb {
       updatedAt: DateTime.now(),
     );
 
-    return (update(journal)..where((t) => t.id.equals(dbEntity.id)))
-        .write(dbEntity);
+    bool exists = await entityById(dbEntity.id) != null;
+    if (exists) {
+      return (update(journal)..where((t) => t.id.equals(dbEntity.id)))
+          .write(dbEntity);
+    } else {
+      return addJournalDbEntity(dbEntity);
+    }
   }
 
   Future<List<JournalDbEntity>> latestDbEntities(int limit) async {
@@ -82,6 +94,14 @@ class JournalDb extends _$JournalDb {
           ])
           ..limit(limit))
         .get();
+  }
+
+  Future<JournalDbEntity?> entityById(String id) async {
+    List<JournalDbEntity> res =
+        await (select(journal)..where((t) => t.id.equals(id))).get();
+    if (res.isNotEmpty) {
+      return res.first;
+    }
   }
 
   Future<List<JournalEntity>> latestJournalEntities(int limit) async {
