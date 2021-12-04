@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   Future<int?> addJournalEntity(JournalEntity journalEntity) async {
     JournalDbEntity dbEntity = toDbEntity(journalEntity);
 
-    bool exists = await entityById(dbEntity.id) != null;
+    bool exists = (await entityById(dbEntity.id)) != null;
     if (!exists) {
       return addJournalDbEntity(dbEntity);
     } else {
