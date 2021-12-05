@@ -16,8 +16,8 @@ import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:provider/src/provider.dart';
 
-class EntryModalWidget2 extends StatelessWidget {
-  const EntryModalWidget2({
+class EntryDetailWidget extends StatelessWidget {
+  const EntryDetailWidget({
     Key? key,
     required this.item,
     required this.docDir,

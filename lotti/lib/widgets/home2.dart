@@ -46,8 +46,13 @@ class _HomePage2State extends State<HomePage2> {
               index: _pageIndex,
               children: <Widget>[
                 JournalPage2(
-                  child: const Text('Journal'),
-                  navigatorKey: navigatorKeys[0],
+                  child: Text(
+                    'Journal',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      color: AppColors.entryBgColor,
+                    ),
+                  ),
                 ),
                 const JournalPage(),
                 const EditorPage(),
