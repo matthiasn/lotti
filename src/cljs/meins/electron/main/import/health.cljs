@@ -17,7 +17,8 @@
         ts (h/health-date-to-ts date-to)
         value (get data "value")
         text (str "Sleep: " value " min")
-        data-type (get data "dataType")]
+        data-type (get data "dataType")
+        tag "#sleep"]
     (when (= data-type "HealthDataType.SLEEP_ASLEEP")
       {:timestamp     ts
        :md            text
@@ -25,11 +26,33 @@
        :mentions      #{}
        :utc-offset    (get meta-data "utcOffset")
        :timezone      (get meta-data "timezone")
-       :perm_tags     #{"#sleep"}
-       :tags          #{"#sleep"}
+       :perm_tags     #{tag}
+       :tags          #{tag}
        :primary_story 1479889430353
        :health_data   data
-       :custom_fields {"#sleep" {:duration value}}})))
+       :custom_fields {tag {:duration value}}})))
+
+(defn convert-in-bed-entry [item]
+  (let [data (get item "data")
+        meta-data (get item "meta")
+        date-to (get data "dateTo")
+        ts (h/health-date-to-ts date-to)
+        value (get data "value")
+        text (str "In bed: " value " min")
+        data-type (get data "dataType")
+        tag "#in-bed"]
+    (when (= data-type "HealthDataType.SLEEP_IN_BED")
+      {:timestamp     ts
+       :md            text
+       :text          text
+       :mentions      #{}
+       :utc-offset    (get meta-data "utcOffset")
+       :timezone      (get meta-data "timezone")
+       :perm_tags     #{tag}
+       :tags          #{tag}
+       :primary_story 1479889430353
+       :health_data   data
+       :custom_fields {tag {:duration value}}})))
 
 (defn convert-steps-entry [item]
   (let [data (get item "data")
@@ -140,6 +163,7 @@
     (doseq [json-file files]
       (let [item (h/parse-json json-file)]
         (import-entry item convert-sleep-entry put-fn)
+        (import-entry item convert-in-bed-entry put-fn)
         (import-entry item convert-weight-entry put-fn)
         (import-entry item convert-bodyfat-entry put-fn)
         (import-entry item convert-bp-entry-systolic put-fn)
