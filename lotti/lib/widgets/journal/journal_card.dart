@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
+import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
@@ -106,30 +108,33 @@ class JournalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const FlutterLogo(),
-        //title: Text('Item ${index + 1}'),
-        title: JournalCardTitle(item: item),
-        enabled: true,
-        onTap: () {
-          item.mapOrNull(journalAudio: (JournalAudio audioNote) {
-            context.read<AudioPlayerCubit>().setAudioNote(audioNote);
-          });
+    return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
+        builder: (BuildContext context, AudioPlayerState state) {
+      return Card(
+        child: ListTile(
+          leading: const FlutterLogo(),
+          //title: Text('Item ${index + 1}'),
+          title: JournalCardTitle(item: item),
+          enabled: true,
+          onTap: () {
+            item.mapOrNull(journalAudio: (JournalAudio audioNote) {
+              context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+            });
 
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return DetailRoute(
-                  item: item,
-                  index: index,
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  return DetailRoute(
+                    item: item,
+                    index: index,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      );
+    });
   }
 }
 

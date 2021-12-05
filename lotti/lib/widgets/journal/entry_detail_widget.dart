@@ -52,13 +52,12 @@ class EntryDetailWidget extends StatelessWidget {
 
               return Column(
                 children: [
-                  const AudioPlayerWidget(),
                   EditorWidget(
                     controller: _controller,
-                    //height: 240,
-                    height: double.infinity,
+                    height: 240,
                     saveFn: saveText,
                   ),
+                  const AudioPlayerWidget(),
                 ],
               );
             },
