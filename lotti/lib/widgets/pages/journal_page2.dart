@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -73,6 +74,13 @@ class _JournalPage2State extends State<JournalPage2> {
                                   title: JournalListItem2(item: item),
                                   enabled: true,
                                   onTap: () {
+                                    item.mapOrNull(
+                                        journalAudio: (JournalAudio audioNote) {
+                                      context
+                                          .read<AudioPlayerCubit>()
+                                          .setAudioNote(audioNote);
+                                    });
+
                                     _currentRoute = index;
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
@@ -119,7 +127,7 @@ class DetailRoute extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           df.format(item.meta.dateFrom),
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.entryBgColor),
         ),
         backgroundColor: AppColors.headerBgColor,
       ),

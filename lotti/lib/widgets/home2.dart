@@ -20,6 +20,7 @@ class HomePage2 extends StatefulWidget {
 class _HomePage2State extends State<HomePage2> {
   int _pageIndex = 0;
 
+  // TODO: cleanup unused
   Map<int, GlobalKey> navigatorKeys = {
     0: GlobalKey(),
     1: GlobalKey(),
@@ -45,12 +46,8 @@ class _HomePage2State extends State<HomePage2> {
               index: _pageIndex,
               children: <Widget>[
                 JournalPage2(
-                  child: const Text('Journal2'),
-                  navigatorKey: navigatorKeys[0],
-                ),
-                NavigatorPage(
                   child: const Text('Journal'),
-                  navigatorKey: navigatorKeys[1],
+                  navigatorKey: navigatorKeys[0],
                 ),
                 const JournalPage(),
                 const EditorPage(),
@@ -112,108 +109,6 @@ class _HomePage2State extends State<HomePage2> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class NavigatorPage extends StatefulWidget {
-  const NavigatorPage({this.navigatorKey, required this.child});
-
-  final Widget child;
-  final GlobalKey? navigatorKey;
-
-  @override
-  _NavigatorPageState createState() => _NavigatorPageState();
-}
-
-class _NavigatorPageState extends State<NavigatorPage> {
-  late TextEditingController _textEditingController;
-
-  int _currentRoute = 0;
-
-  @override
-  void initState() {
-    _textEditingController = TextEditingController();
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Navigator(
-      key: widget.navigatorKey,
-      onGenerateRoute: (RouteSettings settings) {
-        return MaterialPageRoute(
-          settings: settings,
-          builder: (BuildContext context) {
-            return Scaffold(
-              appBar: AppBar(
-                backgroundColor: AppColors.headerBgColor,
-                title: widget.child,
-                centerTitle: true,
-              ),
-              backgroundColor: AppColors.bodyBgColor,
-              body: Container(
-                margin: const EdgeInsets.symmetric(
-                  vertical: 10.0,
-                  horizontal: 20.0,
-                ),
-                child: ListView(
-                  children: List.generate(
-                    50,
-                    (int index) {
-                      return Card(
-                        child: ListTile(
-                          leading: const FlutterLogo(),
-                          title: Text('Item ${index + 1}'),
-                          enabled: true,
-                          onTap: () {
-                            if (_currentRoute != index) {
-                              _textEditingController = TextEditingController();
-                            }
-                            _currentRoute = index;
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return DetailRoute(
-                                    textEditingController:
-                                        _textEditingController,
-                                    index: index,
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class DetailRoute extends StatelessWidget {
-  const DetailRoute({required this.textEditingController, required this.index});
-
-  final TextEditingController textEditingController;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Route for $index Item'),
-      ),
-      body: Container(
-        padding: const EdgeInsets.all(16.0),
-        alignment: Alignment.center,
-        child: TextField(controller: textEditingController),
       ),
     );
   }
