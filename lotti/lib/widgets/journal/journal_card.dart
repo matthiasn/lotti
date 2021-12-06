@@ -8,6 +8,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/src/provider.dart';
 
 class JournalCardTitle extends StatelessWidget {
@@ -110,8 +111,36 @@ class JournalCard extends StatelessWidget {
         builder: (BuildContext context, AudioPlayerState state) {
       return Card(
         child: ListTile(
-          leading: const FlutterLogo(),
-          //title: Text('Item ${index + 1}'),
+          leading: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+            child: Container(
+              width: 50,
+              height: 50,
+              color: AppColors.entryBgColor,
+              child: item.maybeMap(
+                journalImage: (JournalImage journalImage) {
+                  return EntryImageWidget(
+                    journalImage: journalImage,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  );
+                },
+                journalAudio: (_) => const Icon(
+                  Icons.mic,
+                  size: 32,
+                ),
+                journalEntry: (_) => const Icon(
+                  Icons.article,
+                  size: 32,
+                ),
+                survey: (_) => const Icon(
+                  MdiIcons.clipboardOutline,
+                  size: 32,
+                ),
+                orElse: () => Container(),
+              ),
+            ),
+          ),
           title: JournalCardTitle(item: item),
           enabled: true,
           onTap: () {

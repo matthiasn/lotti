@@ -90,7 +90,10 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
               return Column(
                 children: [
-                  EntryImageWidget(journalImage: image),
+                  EntryImageWidget(
+                    journalImage: image,
+                    height: 400,
+                  ),
                   EditorWidget(
                     controller: _controller,
                     //height: 240,
@@ -156,10 +159,15 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
 class EntryImageWidget extends StatefulWidget {
   final JournalImage journalImage;
-  const EntryImageWidget({
-    Key? key,
-    required this.journalImage,
-  }) : super(key: key);
+  final int height;
+  final BoxFit fit;
+
+  const EntryImageWidget(
+      {Key? key,
+      required this.journalImage,
+      required this.height,
+      this.fit = BoxFit.scaleDown})
+      : super(key: key);
 
   @override
   State<EntryImageWidget> createState() => _EntryImageWidgetState();
@@ -187,12 +195,13 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
 
       return Container(
         color: Colors.black,
+        height: widget.height.toDouble(),
         child: Image.file(
           file,
-          cacheHeight: 1200,
+          cacheHeight: widget.height * 3,
           width: double.infinity,
-          height: 400,
-          fit: BoxFit.scaleDown,
+          height: widget.height.toDouble(),
+          fit: widget.fit,
         ),
       );
     } else {
