@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -163,7 +161,6 @@ class DetailRoute extends StatelessWidget {
       ),
       body: EntryDetailWidget(
         item: item,
-        docDir: Directory('docDir'),
       ),
     );
   }

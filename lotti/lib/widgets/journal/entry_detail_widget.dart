@@ -14,17 +14,33 @@ import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
 
-class EntryDetailWidget extends StatelessWidget {
+class EntryDetailWidget extends StatefulWidget {
+  final JournalEntity item;
   const EntryDetailWidget({
     Key? key,
     required this.item,
-    required this.docDir,
   }) : super(key: key);
 
-  final JournalEntity item;
-  final Directory docDir;
+  @override
+  State<EntryDetailWidget> createState() => _EntryDetailWidgetState();
+}
+
+class _EntryDetailWidgetState extends State<EntryDetailWidget> {
+  Directory? docDir;
+
+  @override
+  void initState() {
+    super.initState();
+
+    getApplicationDocumentsDirectory().then((value) {
+      setState(() {
+        docDir = value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,18 +52,17 @@ class EntryDetailWidget extends StatelessWidget {
       child: ListView(
         shrinkWrap: false,
         children: <Widget>[
-          item.maybeMap(
+          widget.item.maybeMap(
             journalAudio: (JournalAudio audio) {
               QuillController _controller =
                   makeController(serializedQuill: audio.entryText?.quill);
 
               void saveText() {
                 EntryText entryText = entryTextFromController(_controller);
-                debugPrint(entryText.toString());
 
                 context
                     .read<PersistenceCubit>()
-                    .updateJournalEntity(item, entryText);
+                    .updateJournalEntity(widget.item, entryText);
               }
 
               return Column(
@@ -70,30 +85,34 @@ class EntryDetailWidget extends StatelessWidget {
 
                 context
                     .read<PersistenceCubit>()
-                    .updateJournalEntity(item, entryText);
+                    .updateJournalEntity(widget.item, entryText);
               }
 
-              File file = File(getFullImagePathWithDocDir(image, docDir));
+              if (docDir != null) {
+                File file = File(getFullImagePathWithDocDir(image, docDir!));
 
-              return Column(
-                children: [
-                  Container(
-                    color: Colors.black,
-                    child: Image.file(
-                      file,
-                      cacheHeight: 1200,
-                      width: double.infinity,
-                      height: 400,
-                      fit: BoxFit.scaleDown,
+                return Column(
+                  children: [
+                    Container(
+                      color: Colors.black,
+                      child: Image.file(
+                        file,
+                        cacheHeight: 1200,
+                        width: double.infinity,
+                        height: 400,
+                        fit: BoxFit.scaleDown,
+                      ),
                     ),
-                  ),
-                  EditorWidget(
-                    controller: _controller,
-                    //height: 240,
-                    saveFn: saveText,
-                  ),
-                ],
-              );
+                    EditorWidget(
+                      controller: _controller,
+                      //height: 240,
+                      saveFn: saveText,
+                    ),
+                  ],
+                );
+              } else {
+                return Container();
+              }
             },
             journalEntry: (JournalEntry journalEntry) {
               QuillController _controller =
@@ -101,7 +120,7 @@ class EntryDetailWidget extends StatelessWidget {
 
               void saveText() {
                 context.read<PersistenceCubit>().updateJournalEntity(
-                    item, entryTextFromController(_controller));
+                    widget.item, entryTextFromController(_controller));
               }
 
               return EditorWidget(
@@ -132,7 +151,7 @@ class EntryDetailWidget extends StatelessWidget {
             ),
             orElse: () => Container(),
           ),
-          item.maybeMap(
+          widget.item.maybeMap(
             journalAudio: (audio) => MapWidget(
               geolocation: audio.geolocation,
             ),
