@@ -46,8 +46,8 @@ class _JournalPageState extends State<JournalPage> {
                   backgroundColor: AppColors.bodyBgColor,
                   body: Container(
                     margin: const EdgeInsets.symmetric(
-                      vertical: 10.0,
-                      horizontal: 20.0,
+                      vertical: 8.0,
+                      horizontal: 8.0,
                     ),
                     child: state.when(
                       initial: () => const Text('initial'),
@@ -59,8 +59,10 @@ class _JournalPageState extends State<JournalPage> {
                           children: List.generate(
                             entries.length,
                             (int index) {
-                              JournalEntity item = entries.elementAt(index);
-                              return JournalCard(item: item, index: index);
+                              return JournalCard(
+                                item: entries.elementAt(index),
+                                index: index,
+                              );
                             },
                           ),
                         );

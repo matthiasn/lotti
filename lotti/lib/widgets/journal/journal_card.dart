@@ -23,7 +23,7 @@ class JournalCardTitle extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(8.0)),
         child: Padding(
           padding: const EdgeInsets.only(
-              left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
+              left: 8.0, right: 16.0, top: 8.0, bottom: 8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,8 +31,8 @@ class JournalCardTitle extends StatelessWidget {
               Text(
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
-                  color: AppColors.entryBgColor,
-                  fontSize: 10,
+                  color: AppColors.headerBgColor,
+                  fontSize: 11,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
                 ),
