@@ -67,6 +67,7 @@ dependencies:
   yaml: ^3.1.0
   drift: ^1.0.1
   sqlite3_flutter_libs: ^0.5.0
+  multi_select_flutter: ^4.0.0
 
 dev_dependencies:
   flutter_test:

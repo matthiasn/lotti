@@ -51,3 +51,10 @@ CREATE TABLE conflicts (
   status INTEGER NOT NULL,
   PRIMARY KEY (id)
 );
+
+/* Queries ----------------------------------------------------- */
+filteredJournal:
+SELECT * FROM journal
+  WHERE type IN :types
+  ORDER BY date_from DESC
+  LIMIT :limit;
