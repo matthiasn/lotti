@@ -25,8 +25,8 @@ class SurveySummaryWidget extends StatelessWidget {
                     Text(
                       '${mapEntry.key}: ',
                       style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontFamily: 'Oswald',
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Lato',
                         color: AppColors.entryTextColor,
                         fontSize: 16,
                       ),
@@ -34,10 +34,10 @@ class SurveySummaryWidget extends StatelessWidget {
                     Text(
                       mapEntry.value.toString(),
                       style: TextStyle(
-                        fontWeight: FontWeight.w300,
+                        fontWeight: FontWeight.w400,
                         fontSize: 16,
                         color: AppColors.entryTextColor,
-                        fontFamily: 'Oswald',
+                        fontFamily: 'Lato',
                       ),
                     ),
                   ],

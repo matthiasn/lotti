@@ -33,7 +33,7 @@ class JournalCardTitle extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.entryTextColor,
                   fontSize: 11,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.w500,
                   fontFamily: 'Oswald',
                 ),
               ),
@@ -91,9 +91,9 @@ class EntryText extends StatelessWidget {
       child: Text(text,
           maxLines: maxLines,
           style: TextStyle(
-            fontFamily: 'Oswald',
+            fontFamily: 'Lato',
             color: AppColors.entryTextColor,
-            fontWeight: FontWeight.w200,
+            fontWeight: FontWeight.w300,
             fontSize: 16.0,
           )),
     );

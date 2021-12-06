@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.2.9+144
+version: 0.2.9+145
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -103,6 +103,18 @@ flutter:
         - asset: assets/fonts/Oswald-Medium.ttf
         - asset: assets/fonts/Oswald-SemiBold.ttf
         - asset: assets/fonts/Oswald-Bold.ttf
+    - family: Lato
+      fonts:
+        - asset: assets/fonts/lato/Lato-Thin.ttf
+        - asset: assets/fonts/lato/Lato-Light.ttf
+        - asset: assets/fonts/lato/Lato-Regular.ttf
+        - asset: assets/fonts/lato/Lato-Bold.ttf
+        - asset: assets/fonts/lato/Lato-Black.ttf
+        - asset: assets/fonts/lato/Lato-ThinItalic.ttf
+        - asset: assets/fonts/lato/Lato-LightItalic.ttf
+        - asset: assets/fonts/lato/Lato-Italic.ttf
+        - asset: assets/fonts/lato/Lato-BoldItalic.ttf
+        - asset: assets/fonts/lato/Lato-BlackItalic.ttf
     - family: ShareTechMono
       fonts:
         - asset: assets/fonts/ShareTechMono-Regular.ttf
