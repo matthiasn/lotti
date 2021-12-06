@@ -4,13 +4,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/widgets/journal/journal_list_item.dart';
+import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/journal_card.dart';
 
 class JournalPage extends StatefulWidget {
-  const JournalPage({Key? key}) : super(key: key);
+  const JournalPage({
+    Key? key,
+    this.navigatorKey,
+    required this.child,
+  });
+
+  final Widget child;
+  final GlobalKey? navigatorKey;
 
   @override
-  State<JournalPage> createState() => _JournalPageState();
+  _JournalPageState createState() => _JournalPageState();
 }
 
 class _JournalPageState extends State<JournalPage> {
@@ -20,48 +28,51 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (context, PersistenceState state) {
-      return Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              state.when(
-                initial: () => const Text('initial'),
-                loading: () => const Text('loading'),
-                failed: () => const Text('failed'),
-                online: (List<JournalEntity> entries) {
-                  debugPrint('entries.length ${entries.length}');
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const ClampingScrollPhysics(),
-                    itemCount: entries.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      JournalEntity item = entries.elementAt(index);
-                      return Dismissible(
-                        key: Key(index.toString()),
-                        background: Container(color: Colors.red),
-                        child: JournalListItem(item: item),
-                        onDismissed: (DismissDirection direction) {
-                          debugPrint('Dismiss: ${item.meta.id}');
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    });
+    return Navigator(
+      key: widget.navigatorKey,
+      onGenerateRoute: (RouteSettings settings) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (BuildContext context) {
+            return BlocBuilder<PersistenceCubit, PersistenceState>(
+              builder: (BuildContext context, PersistenceState state) {
+                return Scaffold(
+                  appBar: AppBar(
+                    backgroundColor: AppColors.headerBgColor,
+                    title: widget.child,
+                    centerTitle: true,
+                  ),
+                  backgroundColor: AppColors.bodyBgColor,
+                  body: Container(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 10.0,
+                      horizontal: 20.0,
+                    ),
+                    child: state.when(
+                      initial: () => const Text('initial'),
+                      loading: () => const Text('loading'),
+                      failed: () => const Text('failed'),
+                      online: (List<JournalEntity> entries) {
+                        debugPrint('entries.length ${entries.length}');
+                        return ListView(
+                          children: List.generate(
+                            entries.length,
+                            (int index) {
+                              JournalEntity item = entries.elementAt(index);
+                              return JournalCard(item: item, index: index);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
   }
 }

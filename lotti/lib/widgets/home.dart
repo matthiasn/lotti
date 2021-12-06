@@ -6,7 +6,6 @@ import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/editor.dart';
 import 'package:lotti/widgets/pages/health_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
-import 'package:lotti/widgets/pages/journal_page2.dart';
 import 'package:lotti/widgets/pages/photo_import.dart';
 import 'package:lotti/widgets/pages/settings.dart';
 import 'package:lotti/widgets/pages/survey_page.dart';
@@ -47,7 +46,7 @@ class _HomePageState extends State<HomePage> {
             child: IndexedStack(
               index: _pageIndex,
               children: <Widget>[
-                JournalPage2(
+                JournalPage(
                   child: Text(
                     'Journal',
                     style: TextStyle(
@@ -56,7 +55,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                const JournalPage(),
                 const EditorPage(),
                 const PhotoImportPage(),
                 const AudioPage(),
@@ -74,10 +72,6 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
               label: 'Journal',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Journal2',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.add_box),

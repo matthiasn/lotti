@@ -19,20 +19,22 @@ class SurveySummaryWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(4.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       '${mapEntry.key}: ',
                       style: const TextStyle(
                         fontWeight: FontWeight.normal,
-                        fontSize: 20,
+                        fontFamily: 'Oswald',
+                        fontSize: 16,
                       ),
                     ),
                     Text(
                       mapEntry.value.toString(),
                       style: const TextStyle(
                         fontWeight: FontWeight.w300,
-                        fontSize: 20,
+                        fontSize: 16,
+                        fontFamily: 'Oswald',
                       ),
                     ),
                   ],
