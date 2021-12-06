@@ -88,31 +88,16 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     .updateJournalEntity(widget.item, entryText);
               }
 
-              if (docDir != null) {
-                File file = File(getFullImagePathWithDocDir(image, docDir!));
-
-                return Column(
-                  children: [
-                    Container(
-                      color: Colors.black,
-                      child: Image.file(
-                        file,
-                        cacheHeight: 1200,
-                        width: double.infinity,
-                        height: 400,
-                        fit: BoxFit.scaleDown,
-                      ),
-                    ),
-                    EditorWidget(
-                      controller: _controller,
-                      //height: 240,
-                      saveFn: saveText,
-                    ),
-                  ],
-                );
-              } else {
-                return Container();
-              }
+              return Column(
+                children: [
+                  EntryImageWidget(journalImage: image),
+                  EditorWidget(
+                    controller: _controller,
+                    //height: 240,
+                    saveFn: saveText,
+                  ),
+                ],
+              );
             },
             journalEntry: (JournalEntry journalEntry) {
               QuillController _controller =
@@ -166,5 +151,52 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         ],
       ),
     );
+  }
+}
+
+class EntryImageWidget extends StatefulWidget {
+  final JournalImage journalImage;
+  const EntryImageWidget({
+    Key? key,
+    required this.journalImage,
+  }) : super(key: key);
+
+  @override
+  State<EntryImageWidget> createState() => _EntryImageWidgetState();
+}
+
+class _EntryImageWidgetState extends State<EntryImageWidget> {
+  Directory? docDir;
+
+  @override
+  void initState() {
+    super.initState();
+
+    getApplicationDocumentsDirectory().then((value) {
+      setState(() {
+        docDir = value;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (docDir != null) {
+      File file =
+          File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
+
+      return Container(
+        color: Colors.black,
+        child: Image.file(
+          file,
+          cacheHeight: 1200,
+          width: double.infinity,
+          height: 400,
+          fit: BoxFit.scaleDown,
+        ),
+      );
+    } else {
+      return Container();
+    }
   }
 }
