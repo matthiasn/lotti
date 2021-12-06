@@ -55,6 +55,23 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     await transaction.finish();
   }
 
+  Future<void> queryFilteredJournal(List<String> types) async {
+    final transaction = Sentry.startTransaction('queryJournal()', 'task');
+    try {
+      debugPrint(types.toString());
+      List<JournalEntity> entries = await _journalDb.filteredJournalEntities(
+        types: types,
+        limit: 100,
+      );
+
+      emit(PersistenceState.online(entries: entries));
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+  }
+
   void queryJournalDelayed(int seconds) {
     timer ??= Timer(Duration(seconds: seconds), () {
       queryJournal();

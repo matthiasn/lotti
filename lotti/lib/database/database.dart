@@ -18,7 +18,7 @@ enum ConflictStatus {
 }
 
 @DriftDatabase(
-  include: {'tables.drift'},
+  include: {'database.drift'},
 )
 class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
@@ -156,6 +156,14 @@ class JournalDb extends _$JournalDb {
 
   Future<List<JournalEntity>> latestJournalEntities(int limit) async {
     List<JournalDbEntity> dbEntities = await latestDbEntities(limit);
+    return dbEntities.map(fromDbEntity).toList();
+  }
+
+  Future<List<JournalEntity>> filteredJournalEntities({
+    required List<String> types,
+    required int limit,
+  }) async {
+    var dbEntities = await filteredJournal(types, 100).get();
     return dbEntities.map(fromDbEntity).toList();
   }
 }

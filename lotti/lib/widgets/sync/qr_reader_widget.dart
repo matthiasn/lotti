@@ -17,15 +17,15 @@ class EncryptionQrReaderWidget extends StatefulWidget {
 
 class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  late QRViewController controller;
+  QRViewController? controller;
 
   @override
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller.pauseCamera();
+      controller?.pauseCamera();
     } else if (Platform.isIOS) {
-      controller.resumeCamera();
+      controller?.resumeCamera();
     }
   }
 
@@ -72,6 +72,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
             children: [
               SizedBox(
                 height: 300.0,
+                width: 300.0,
                 child: QRView(
                   key: qrKey,
                   onQRViewCreated: _onQRViewCreated,
@@ -87,7 +88,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
   @override
   void dispose() {
-    controller.dispose();
+    controller?.dispose();
     super.dispose();
   }
 }

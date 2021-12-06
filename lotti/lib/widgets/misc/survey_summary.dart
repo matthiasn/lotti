@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/theme.dart';
 
 class SurveySummaryWidget extends StatelessWidget {
   final SurveyEntry surveyEntry;
@@ -19,20 +20,24 @@ class SurveySummaryWidget extends StatelessWidget {
                 padding: const EdgeInsets.all(4.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       '${mapEntry.key}: ',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Lato',
+                        color: AppColors.entryTextColor,
+                        fontSize: 16,
                       ),
                     ),
                     Text(
                       mapEntry.value.toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w300,
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 16,
+                        color: AppColors.entryTextColor,
+                        fontFamily: 'Lato',
                       ),
                     ),
                   ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/audio.dart';
@@ -11,89 +10,68 @@ import 'package:lotti/widgets/pages/photo_import.dart';
 import 'package:lotti/widgets/pages/settings.dart';
 import 'package:lotti/widgets/pages/survey_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
-class LottiHomePage extends StatefulWidget {
-  const LottiHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<LottiHomePage> createState() => _LottiHomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _LottiHomePageState extends State<LottiHomePage> {
-  int _selectedIndex = 0;
-  String version = '';
-  String buildNumber = '';
+class _HomePageState extends State<HomePage> {
+  int _pageIndex = 0;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Future<void> getVersions() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    setState(() {
-      version = packageInfo.version;
-      buildNumber = packageInfo.buildNumber;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getVersions();
-  }
-
-  static const List<Widget> _widgetOptions = <Widget>[
-    JournalPage(),
-    EditorPage(),
-    PhotoImportPage(),
-    AudioPage(),
-    HealthPage(),
-    SurveyPage(),
-    SettingsPage(),
-  ];
+  // TODO: cleanup unused
+  Map<int, GlobalKey> navigatorKeys = {
+    0: GlobalKey(),
+    1: GlobalKey(),
+    2: GlobalKey(),
+    3: GlobalKey(),
+  };
 
   @override
   Widget build(BuildContext context) {
     return KeyboardDismisser(
       child: Scaffold(
-        appBar: AppBar(
-          title: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.title,
-                style: TextStyle(
-                  color: AppColors.headerFontColor,
-                  fontFamily: 'Oswald',
-                  fontWeight: FontWeight.w500,
+        body: SafeArea(
+          child: WillPopScope(
+            onWillPop: () async {
+              debugPrint(
+                  'On Will called ${navigatorKeys[_pageIndex]!.currentState!.context.widget}');
+              // return !await navigatorKeys[_pageIndex].currentState.context;
+              return !await Navigator.maybePop(
+                  navigatorKeys[_pageIndex]!.currentState!.context);
+              // Navigator.pop(navigatorKeys[_pageIndex].currentState.context);
+            },
+            child: IndexedStack(
+              index: _pageIndex,
+              children: <Widget>[
+                JournalPage(
+                  child: Text(
+                    'Journal',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      color: AppColors.entryBgColor,
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                ' v$version Build $buildNumber',
-                style: TextStyle(
-                    color: AppColors.headerFontColor2,
-                    fontFamily: 'Oswald',
-                    fontSize: 12.0,
-                    fontWeight: FontWeight.w400),
-              ),
-            ],
+                const EditorPage(),
+                const PhotoImportPage(),
+                const AudioPage(),
+                const HealthPage(),
+                const SurveyPage(),
+                const SettingsPage(),
+              ],
+            ),
           ),
-          backgroundColor: AppColors.headerBgColor,
         ),
         backgroundColor: AppColors.bodyBgColor,
-        body: Center(
-          child: _widgetOptions.elementAt(_selectedIndex),
-        ),
         bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Journal',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.add_box),
@@ -120,12 +98,17 @@ class _LottiHomePageState extends State<LottiHomePage> {
               label: 'Settings',
             ),
           ],
-          currentIndex: _selectedIndex,
-          type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.amber[800],
           unselectedItemColor: AppColors.headerFontColor,
           backgroundColor: AppColors.headerBgColor,
-          onTap: _onItemTapped,
+          currentIndex: _pageIndex,
+          onTap: (int index) {
+            setState(
+              () {
+                _pageIndex = index;
+              },
+            );
+          },
         ),
       ),
     );

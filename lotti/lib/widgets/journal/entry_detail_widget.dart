@@ -12,20 +12,35 @@ import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
 
-class EntryModalWidget extends StatelessWidget {
-  const EntryModalWidget({
+class EntryDetailWidget extends StatefulWidget {
+  final JournalEntity item;
+  const EntryDetailWidget({
     Key? key,
     required this.item,
-    required this.docDir,
   }) : super(key: key);
 
-  final JournalEntity item;
-  final Directory docDir;
+  @override
+  State<EntryDetailWidget> createState() => _EntryDetailWidgetState();
+}
+
+class _EntryDetailWidgetState extends State<EntryDetailWidget> {
+  Directory? docDir;
+
+  @override
+  void initState() {
+    super.initState();
+
+    getApplicationDocumentsDirectory().then((value) {
+      setState(() {
+        docDir = value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,66 +50,29 @@ class EntryModalWidget extends StatelessWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: ListView(
-        shrinkWrap: true,
+        shrinkWrap: false,
         children: <Widget>[
-          item.maybeMap(
-            journalAudio: (audio) => MapWidget(
-              geolocation: audio.geolocation,
-            ),
-            journalImage: (image) => MapWidget(
-              geolocation: image.geolocation,
-            ),
-            journalEntry: (entry) => MapWidget(
-              geolocation: entry.geolocation,
-            ),
-            orElse: () => Container(),
-          ),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 4.0, horizontal: 16.0),
-                  child: Text(
-                    df.format(item.meta.dateFrom),
-                    style: const TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ),
-                Button(
-                  'Close',
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          item.maybeMap(
+          widget.item.maybeMap(
             journalAudio: (JournalAudio audio) {
               QuillController _controller =
                   makeController(serializedQuill: audio.entryText?.quill);
 
               void saveText() {
                 EntryText entryText = entryTextFromController(_controller);
-                debugPrint(entryText.toString());
 
                 context
                     .read<PersistenceCubit>()
-                    .updateJournalEntity(item, entryText);
+                    .updateJournalEntity(widget.item, entryText);
               }
 
               return Column(
                 children: [
-                  const AudioPlayerWidget(),
                   EditorWidget(
                     controller: _controller,
                     height: 240,
                     saveFn: saveText,
                   ),
+                  const AudioPlayerWidget(),
                 ],
               );
             },
@@ -107,26 +85,18 @@ class EntryModalWidget extends StatelessWidget {
 
                 context
                     .read<PersistenceCubit>()
-                    .updateJournalEntity(item, entryText);
+                    .updateJournalEntity(widget.item, entryText);
               }
-
-              File file = File(getFullImagePathWithDocDir(image, docDir));
 
               return Column(
                 children: [
-                  Container(
-                    color: Colors.black,
-                    child: Image.file(
-                      file,
-                      cacheHeight: 1200,
-                      width: double.infinity,
-                      height: 400,
-                      fit: BoxFit.scaleDown,
-                    ),
+                  EntryImageWidget(
+                    journalImage: image,
+                    height: 400,
                   ),
                   EditorWidget(
                     controller: _controller,
-                    height: 240,
+                    //height: 240,
                     saveFn: saveText,
                   ),
                 ],
@@ -138,12 +108,12 @@ class EntryModalWidget extends StatelessWidget {
 
               void saveText() {
                 context.read<PersistenceCubit>().updateJournalEntity(
-                    item, entryTextFromController(_controller));
+                    widget.item, entryTextFromController(_controller));
               }
 
               return EditorWidget(
                 controller: _controller,
-                height: 240,
+                //height: 240,
                 saveFn: saveText,
               );
             },
@@ -169,8 +139,73 @@ class EntryModalWidget extends StatelessWidget {
             ),
             orElse: () => Container(),
           ),
+          widget.item.maybeMap(
+            journalAudio: (audio) => MapWidget(
+              geolocation: audio.geolocation,
+            ),
+            journalImage: (image) => MapWidget(
+              geolocation: image.geolocation,
+            ),
+            journalEntry: (entry) => MapWidget(
+              geolocation: entry.geolocation,
+            ),
+            orElse: () => Container(),
+          ),
         ],
       ),
     );
+  }
+}
+
+class EntryImageWidget extends StatefulWidget {
+  final JournalImage journalImage;
+  final int height;
+  final BoxFit fit;
+
+  const EntryImageWidget(
+      {Key? key,
+      required this.journalImage,
+      required this.height,
+      this.fit = BoxFit.scaleDown})
+      : super(key: key);
+
+  @override
+  State<EntryImageWidget> createState() => _EntryImageWidgetState();
+}
+
+class _EntryImageWidgetState extends State<EntryImageWidget> {
+  Directory? docDir;
+
+  @override
+  void initState() {
+    super.initState();
+
+    getApplicationDocumentsDirectory().then((value) {
+      setState(() {
+        docDir = value;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (docDir != null) {
+      File file =
+          File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
+
+      return Container(
+        color: Colors.black,
+        height: widget.height.toDouble(),
+        child: Image.file(
+          file,
+          cacheHeight: widget.height * 3,
+          width: double.infinity,
+          height: widget.height.toDouble(),
+          fit: widget.fit,
+        ),
+      );
+    } else {
+      return Container();
+    }
   }
 }

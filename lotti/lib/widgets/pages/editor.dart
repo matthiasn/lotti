@@ -43,11 +43,12 @@ class _EditorPageState extends State<EditorPage> {
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: ClipRRect(
-                    borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                    child: EditorWidget(
-                      controller: _controller,
-                      saveFn: _save,
-                    )),
+                  borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                  child: EditorWidget(
+                    controller: _controller,
+                    saveFn: _save,
+                  ),
+                ),
               ),
             ],
           ),
