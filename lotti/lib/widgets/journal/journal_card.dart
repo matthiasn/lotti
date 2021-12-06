@@ -31,7 +31,7 @@ class JournalCardTitle extends StatelessWidget {
               Text(
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
-                  color: AppColors.headerBgColor,
+                  color: AppColors.entryTextColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
@@ -86,8 +86,9 @@ class EntryText extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4.0),
       child: Text(text,
           maxLines: maxLines,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Oswald',
+            color: AppColors.entryTextColor,
             fontWeight: FontWeight.w200,
             fontSize: 16.0,
           )),
@@ -110,6 +111,11 @@ class JournalCard extends StatelessWidget {
     return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
         builder: (BuildContext context, AudioPlayerState state) {
       return Card(
+        color: AppColors.headerBgColor,
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
         child: ListTile(
           leading: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(8.0)),

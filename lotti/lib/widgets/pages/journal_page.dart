@@ -72,7 +72,7 @@ class _JournalPageState extends State<JournalPage> {
                         decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.1),
                           borderRadius:
-                              BorderRadius.all(const Radius.circular(40)),
+                              const BorderRadius.all(Radius.circular(40)),
                           border: Border.all(
                             color: AppColors.entryBgColor,
                             width: 2,
