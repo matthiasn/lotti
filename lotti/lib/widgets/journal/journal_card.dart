@@ -51,12 +51,16 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   orElse: () => Container(),
                 ),
-                journalAudio: (JournalAudio audioNote) =>
-                    EntryText(formatAudio(audioNote)),
+                journalAudio: (JournalAudio journalAudio) => EntryText(
+                    journalAudio.entryText?.plainText != null
+                        ? journalAudio.entryText!.plainText
+                        : formatAudio(journalAudio)),
                 journalEntry: (JournalEntry journalEntry) =>
                     EntryText(journalEntry.entryText.plainText),
-                journalImage: (JournalImage journalImage) =>
-                    EntryText(journalImage.data.imageFile),
+                journalImage: (JournalImage journalImage) => EntryText(
+                    journalImage.entryText?.plainText != null
+                        ? journalImage.entryText!.plainText
+                        : journalImage.data.imageFile),
                 survey: (SurveyEntry surveyEntry) =>
                     SurveySummaryWidget(surveyEntry),
                 orElse: () => Row(
