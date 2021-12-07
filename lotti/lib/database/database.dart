@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -125,6 +126,15 @@ class JournalDb extends _$JournalDb {
   }) async {
     var dbEntities = await filteredJournal(types, 100).get();
     return dbEntities.map(fromDbEntity).toList();
+  }
+
+  Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
+    return (select(measurableTypes)).map(measurableDataType).watch();
+  }
+
+  Future<int> addMeasurable(MeasurableDataType dataType) async {
+    return into(measurableTypes)
+        .insertOnConflictUpdate(measurableDbEntity(dataType));
   }
 }
 
