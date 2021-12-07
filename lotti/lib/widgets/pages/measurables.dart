@@ -147,12 +147,23 @@ class MeasurableTypeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: ListTile(
+          contentPadding:
+              const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
           title: Text(
             item.name,
             style: TextStyle(
               color: AppColors.entryBgColor,
               fontFamily: 'Oswald',
-              fontSize: 20.0,
+              fontSize: 24.0,
+            ),
+          ),
+          subtitle: Text(
+            item.description,
+            style: TextStyle(
+              color: AppColors.entryBgColor,
+              fontFamily: 'Oswald',
+              fontWeight: FontWeight.w200,
+              fontSize: 16.0,
             ),
           ),
           enabled: true,
@@ -192,6 +203,7 @@ class DetailRoute extends StatefulWidget {
 
 class _DetailRouteState extends State<DetailRoute> {
   final _formKey = GlobalKey<FormBuilderState>();
+  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +219,27 @@ class _DetailRouteState extends State<DetailRoute> {
             fontFamily: 'Oswald',
           ),
         ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              _formKey.currentState!.save();
+              if (_formKey.currentState!.validate()) {
+                final formData = _formKey.currentState?.value;
+                MeasurableDataType dataType = item.copyWith(
+                  name: formData!['name'],
+                  description: formData['description'],
+                  unitName: formData['unitName'],
+                  displayName: formData['displayName'],
+                );
+                _db.addMeasurable(dataType);
+              }
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text('Save'),
+            ),
+          ),
+        ],
         backgroundColor: AppColors.headerBgColor,
       ),
       body: Padding(
@@ -220,7 +253,6 @@ class _DetailRouteState extends State<DetailRoute> {
                 children: <Widget>[
                   FormBuilderTextField(
                     name: 'name',
-                    //onChanged: _onChanged,
                     initialValue: item.name,
                     validator: FormBuilderValidators.required(context),
                     decoration: const InputDecoration(
