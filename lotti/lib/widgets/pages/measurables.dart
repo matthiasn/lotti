@@ -23,15 +23,6 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   @override
   void initState() {
     super.initState();
-
-    stream.listen((List<MeasurableDataType> data) {
-      debugPrint('DataReceived: $data');
-    }, onDone: () {
-      debugPrint('Task Done');
-    }, onError: (error) {
-      debugPrint('Some Error');
-    });
-
     DateTime now = DateTime.now();
 
     _db.addMeasurable(MeasurableDataType(

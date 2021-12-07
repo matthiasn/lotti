@@ -56,9 +56,33 @@ class _SettingsPageState extends State<SettingsPage> {
                       horizontal: 8.0,
                     ),
                     child: ListView(
-                      children: const [
-                        SyncSettingsCard(),
-                        MeasurablesSettingsCard(),
+                      children: [
+                        SettingsCard(
+                          iconData: Icons.sync,
+                          title: 'Synchronization',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const SyncSettingsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
+                          iconData: MdiIcons.tapeMeasure,
+                          title: 'Measurables',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const MeasurablesPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -72,12 +96,17 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 }
 
-const contentPadding = EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0);
-
-class SyncSettingsCard extends StatelessWidget {
-  const SyncSettingsCard({
+class SettingsCard extends StatelessWidget {
+  const SettingsCard({
     Key? key,
+    required this.iconData,
+    required this.title,
+    required this.onTap,
   }) : super(key: key);
+
+  final IconData iconData;
+  final String title;
+  final void Function() onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -88,63 +117,18 @@ class SyncSettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: ListTile(
-        contentPadding: contentPadding,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
         leading: ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(8.0)),
           child: Icon(
-            Icons.sync,
-            size: 36,
-            color: AppColors.entryTextColor,
-          ),
-        ),
-        title: Text(
-          'Synchronization',
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-            fontSize: 20.0,
-          ),
-        ),
-        enabled: true,
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return const SyncSettingsPage();
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class MeasurablesSettingsCard extends StatelessWidget {
-  const MeasurablesSettingsCard({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.headerBgColor,
-      elevation: 8.0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: ListTile(
-        contentPadding: contentPadding,
-        leading: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-          child: Icon(
-            MdiIcons.tapeMeasure,
+            iconData,
             size: 40,
             color: AppColors.entryTextColor,
           ),
         ),
         title: Text(
-          'Measurables',
+          title,
           style: TextStyle(
             color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
@@ -152,15 +136,7 @@ class MeasurablesSettingsCard extends StatelessWidget {
           ),
         ),
         enabled: true,
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return const MeasurablesPage();
-              },
-            ),
-          );
-        },
+        onTap: onTap,
       ),
     );
   }
