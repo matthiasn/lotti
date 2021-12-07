@@ -43,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: Text(
                       'Settings',
                       style: TextStyle(
-                        color: AppColors.entryBgColor,
+                        color: AppColors.entryTextColor,
                         fontFamily: 'Oswald',
                       ),
                     ),
@@ -72,6 +72,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 }
 
+const contentPadding = EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0);
+
 class SyncSettingsCard extends StatelessWidget {
   const SyncSettingsCard({
     Key? key,
@@ -85,36 +87,34 @@ class SyncSettingsCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ListTile(
-          leading: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            child: Icon(
-              Icons.sync,
-              size: 40,
-              color: AppColors.entryBgColor,
-            ),
+      child: ListTile(
+        contentPadding: contentPadding,
+        leading: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+          child: Icon(
+            Icons.sync,
+            size: 36,
+            color: AppColors.entryTextColor,
           ),
-          title: Text(
-            'Synchronization',
-            style: TextStyle(
-              color: AppColors.entryBgColor,
-              fontFamily: 'Oswald',
-              fontSize: 20.0,
-            ),
-          ),
-          enabled: true,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return const SyncSettingsPage();
-                },
-              ),
-            );
-          },
         ),
+        title: Text(
+          'Synchronization',
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+            fontSize: 20.0,
+          ),
+        ),
+        enabled: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return const SyncSettingsPage();
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -133,36 +133,34 @@ class MeasurablesSettingsCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ListTile(
-          leading: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            child: Icon(
-              MdiIcons.tapeMeasure,
-              size: 40,
-              color: AppColors.entryBgColor,
-            ),
+      child: ListTile(
+        contentPadding: contentPadding,
+        leading: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+          child: Icon(
+            MdiIcons.tapeMeasure,
+            size: 40,
+            color: AppColors.entryTextColor,
           ),
-          title: Text(
-            'Measurables',
-            style: TextStyle(
-              color: AppColors.entryBgColor,
-              fontFamily: 'Oswald',
-              fontSize: 20.0,
-            ),
-          ),
-          enabled: true,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return const MeasurablesPage();
-                },
-              ),
-            );
-          },
         ),
+        title: Text(
+          'Measurables',
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+            fontSize: 20.0,
+          ),
+        ),
+        enabled: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return const MeasurablesPage();
+              },
+            ),
+          );
+        },
       ),
     );
   }

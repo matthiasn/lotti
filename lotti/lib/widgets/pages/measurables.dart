@@ -72,7 +72,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
             title: Text(
               'Measurables',
               style: TextStyle(
-                color: AppColors.entryBgColor,
+                color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
               ),
             ),
@@ -128,9 +128,8 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 class MeasurableTypeCard extends StatelessWidget {
   final MeasurableDataType item;
   final int index;
-  final _formKey = GlobalKey<FormBuilderState>();
 
-  MeasurableTypeCard({
+  const MeasurableTypeCard({
     Key? key,
     required this.item,
     required this.index,
@@ -152,7 +151,7 @@ class MeasurableTypeCard extends StatelessWidget {
           title: Text(
             item.name,
             style: TextStyle(
-              color: AppColors.entryBgColor,
+              color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontSize: 24.0,
             ),
@@ -160,7 +159,7 @@ class MeasurableTypeCard extends StatelessWidget {
           subtitle: Text(
             item.description,
             style: TextStyle(
-              color: AppColors.entryBgColor,
+              color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
               fontWeight: FontWeight.w200,
               fontSize: 16.0,
@@ -210,12 +209,12 @@ class _DetailRouteState extends State<DetailRoute> {
     final MeasurableDataType item = widget.item;
 
     return Scaffold(
-      backgroundColor: AppColors.entryBgColor,
+      backgroundColor: AppColors.bodyBgColor,
       appBar: AppBar(
         title: Text(
           item.displayName,
           style: TextStyle(
-            color: AppColors.entryBgColor,
+            color: AppColors.entryTextColor,
             fontFamily: 'Oswald',
           ),
         ),
@@ -236,7 +235,14 @@ class _DetailRouteState extends State<DetailRoute> {
             },
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text('Save'),
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Oswald',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -246,52 +252,77 @@ class _DetailRouteState extends State<DetailRoute> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            FormBuilder(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                children: <Widget>[
-                  FormBuilderTextField(
-                    name: 'name',
-                    initialValue: item.name,
-                    validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                    ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                color: AppColors.headerBgColor,
+                padding: const EdgeInsets.all(24.0),
+                child: FormBuilder(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    children: <Widget>[
+                      FormTextField(
+                        initialValue: item.name,
+                        labelText: 'Name',
+                        name: 'name',
+                      ),
+                      FormTextField(
+                        initialValue: item.displayName,
+                        labelText: 'Display name',
+                        name: 'displayName',
+                      ),
+                      FormTextField(
+                        initialValue: item.description,
+                        labelText: 'Description',
+                        name: 'description',
+                      ),
+                      FormTextField(
+                        initialValue: item.unitName,
+                        labelText: 'Unit abbreviation',
+                        name: 'unitName',
+                      ),
+                    ],
                   ),
-                  FormBuilderTextField(
-                    name: 'displayName',
-                    initialValue: item.displayName,
-                    validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Display name',
-                    ),
-                  ),
-                  FormBuilderTextField(
-                    name: 'description',
-                    initialValue: item.description,
-                    validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                    ),
-                  ),
-                  FormBuilderTextField(
-                    name: 'unitName',
-                    initialValue: item.unitName,
-                    validator: FormBuilderValidators.required(context),
-                    decoration: const InputDecoration(
-                      labelText: 'Unit Abbreviation',
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 80.0),
-              child: Text(item.toString()),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class FormTextField extends StatelessWidget {
+  const FormTextField({
+    Key? key,
+    required this.initialValue,
+    required this.name,
+    required this.labelText,
+  }) : super(key: key);
+
+  final String initialValue;
+  final String name;
+  final String labelText;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormBuilderTextField(
+      name: name,
+      minLines: 1,
+      maxLines: 3,
+      initialValue: initialValue,
+      validator: FormBuilderValidators.required(context),
+      style: TextStyle(
+        color: AppColors.entryTextColor,
+        height: 1.6,
+        fontFamily: 'Lato',
+        fontSize: 20,
+      ),
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
       ),
     );
   }
