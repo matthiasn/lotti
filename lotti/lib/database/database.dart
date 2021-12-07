@@ -4,11 +4,12 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+import 'conversions.dart';
 
 part 'database.g.dart';
 
@@ -26,12 +27,12 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> addJournalDbEntity(JournalDbEntity entry) async {
-    return into(journal).insert(entry);
+  Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
+    return into(journal).insertOnConflictUpdate(entry);
   }
 
   Future<int> addConflict(Conflict conflict) async {
-    return into(conflicts).insert(conflict);
+    return into(conflicts).insertOnConflictUpdate(conflict);
   }
 
   Future<int?> addJournalEntity(JournalEntity journalEntity) async {
@@ -39,49 +40,10 @@ class JournalDb extends _$JournalDb {
 
     bool exists = (await entityById(dbEntity.id)) != null;
     if (!exists) {
-      return addJournalDbEntity(dbEntity);
+      return upsertJournalDbEntity(dbEntity);
     } else {
       debugPrint('PersistenceDb already exists: ${dbEntity.id}');
     }
-  }
-
-  JournalDbEntity toDbEntity(JournalEntity journalEntity) {
-    final DateTime createdAt = journalEntity.meta.createdAt;
-    final subtype = journalEntity.maybeMap(
-      quantitative: (qd) => qd.data.dataType,
-      survey: (SurveyEntry surveyEntry) =>
-          surveyEntry.data.taskResult.identifier,
-      orElse: () => '',
-    );
-
-    Geolocation? geolocation;
-    journalEntity.mapOrNull(
-      journalAudio: (item) => geolocation = item.geolocation,
-      journalImage: (item) => geolocation = item.geolocation,
-      journalEntry: (item) => geolocation = item.geolocation,
-    );
-
-    String id = journalEntity.meta.id;
-    JournalDbEntity dbEntity = JournalDbEntity(
-      id: id,
-      createdAt: createdAt,
-      updatedAt: createdAt,
-      dateFrom: journalEntity.meta.dateFrom,
-      dateTo: journalEntity.meta.dateTo,
-      type: journalEntity.runtimeType.toString(),
-      subtype: subtype,
-      serialized: json.encode(journalEntity),
-      schemaVersion: 0,
-      longitude: geolocation?.longitude,
-      latitude: geolocation?.latitude,
-      geohashString: geolocation?.geohashString,
-    );
-
-    return dbEntity;
-  }
-
-  JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
-    return JournalEntity.fromJson(json.decode(dbEntity.serialized));
   }
 
   Future<VclockStatus> detectConflict(
@@ -124,12 +86,10 @@ class JournalDb extends _$JournalDb {
       VclockStatus status = await detectConflict(existing, updated);
 
       if (status == VclockStatus.b_gt_a) {
-        rowsAffected = await (update(journal)
-              ..where((t) => t.id.equals(dbEntity.id)))
-            .write(dbEntity);
+        rowsAffected = await upsertJournalDbEntity(dbEntity);
       }
     } else {
-      rowsAffected = await addJournalDbEntity(dbEntity);
+      rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
     return rowsAffected;
   }
