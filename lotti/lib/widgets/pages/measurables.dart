@@ -61,10 +61,110 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<List<MeasurableDataType>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<MeasurableDataType>> snapshot,
+      ) {
+        List<MeasurableDataType> items = snapshot.data ?? [];
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              'Measurables',
+              style: TextStyle(
+                color: AppColors.entryBgColor,
+                fontFamily: 'Oswald',
+              ),
+            ),
+            backgroundColor: AppColors.headerBgColor,
+          ),
+          backgroundColor: AppColors.bodyBgColor,
+          body: SingleChildScrollView(
+              child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8.0),
+            children: List.generate(
+              items.length,
+              (int index) {
+                return MeasurableTypeCard(
+                  item: items.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
+          )),
+        );
+      },
+    );
+  }
+}
+
+class MeasurableTypeCard extends StatelessWidget {
+  final MeasurableDataType item;
+  final int index;
+
+  const MeasurableTypeCard({
+    Key? key,
+    required this.item,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: Card(
+        color: AppColors.headerBgColor,
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: ListTile(
+          title: Text(
+            item.displayName,
+            style: TextStyle(
+              color: AppColors.entryBgColor,
+              fontFamily: 'Oswald',
+              fontSize: 20.0,
+            ),
+          ),
+          enabled: true,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  return DetailRoute(
+                    item: item,
+                    index: index,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class DetailRoute extends StatelessWidget {
+  const DetailRoute({
+    Key? key,
+    required this.item,
+    required this.index,
+  }) : super(key: key);
+
+  final int index;
+  final MeasurableDataType item;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Measurables',
+          item.displayName,
           style: TextStyle(
             color: AppColors.entryBgColor,
             fontFamily: 'Oswald',
@@ -72,15 +172,9 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         ),
         backgroundColor: AppColors.headerBgColor,
       ),
-      backgroundColor: AppColors.entryBgColor,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: const <Widget>[],
-          ),
-        ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(item.toString()),
       ),
     );
   }
