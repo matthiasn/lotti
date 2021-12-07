@@ -9,8 +9,9 @@ class MeasurableDataType with _$MeasurableDataType {
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required String uniqueName,
+    required String name,
     required String displayName,
+    required String description,
     required String unitName,
     required int version,
   }) = _MeasurableDataType;

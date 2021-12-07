@@ -51,7 +51,7 @@ MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
 MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   return MeasurableDbEntity(
     id: dataType.id,
-    uniqueName: dataType.uniqueName,
+    uniqueName: dataType.name,
     createdAt: dataType.createdAt,
     updatedAt: dataType.updatedAt,
     serialized: jsonEncode(dataType),
