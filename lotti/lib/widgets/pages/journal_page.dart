@@ -14,10 +14,8 @@ class JournalPage extends StatefulWidget {
   const JournalPage({
     Key? key,
     this.navigatorKey,
-    required this.child,
   });
 
-  final Widget child;
   final GlobalKey? navigatorKey;
 
   @override

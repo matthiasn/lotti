@@ -7,7 +7,7 @@ import 'package:lotti/widgets/pages/editor.dart';
 import 'package:lotti/widgets/pages/health_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/photo_import.dart';
-import 'package:lotti/widgets/pages/settings.dart';
+import 'package:lotti/widgets/pages/settings_page.dart';
 import 'package:lotti/widgets/pages/survey_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -45,22 +45,14 @@ class _HomePageState extends State<HomePage> {
             },
             child: IndexedStack(
               index: _pageIndex,
-              children: <Widget>[
-                JournalPage(
-                  child: Text(
-                    'Journal',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      color: AppColors.entryBgColor,
-                    ),
-                  ),
-                ),
-                const EditorPage(),
-                const PhotoImportPage(),
-                const AudioPage(),
-                const HealthPage(),
-                const SurveyPage(),
-                const SettingsPage(),
+              children: const <Widget>[
+                JournalPage(),
+                EditorPage(),
+                PhotoImportPage(),
+                AudioPage(),
+                HealthPage(),
+                SurveyPage(),
+                SettingsPage(),
               ],
             ),
           ),
