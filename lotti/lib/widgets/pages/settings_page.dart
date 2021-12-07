@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/pages/measurables.dart';
 import 'package:lotti/widgets/pages/sync_settings.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -100,7 +101,7 @@ class SyncSettingsCard extends StatelessWidget {
             style: TextStyle(
               color: AppColors.entryBgColor,
               fontFamily: 'Oswald',
-              fontSize: 24.0,
+              fontSize: 20.0,
             ),
           ),
           enabled: true,
@@ -148,7 +149,7 @@ class MeasurablesSettingsCard extends StatelessWidget {
             style: TextStyle(
               color: AppColors.entryBgColor,
               fontFamily: 'Oswald',
-              fontSize: 24.0,
+              fontSize: 20.0,
             ),
           ),
           enabled: true,
@@ -156,7 +157,7 @@ class MeasurablesSettingsCard extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
-                  return const SyncSettingsPage();
+                  return const MeasurablesPage();
                 },
               ),
             );
