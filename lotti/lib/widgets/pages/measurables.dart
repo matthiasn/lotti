@@ -3,6 +3,8 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:units_converter/units_converter.dart';
 
 class MeasurablesPage extends StatefulWidget {
@@ -81,6 +83,31 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
             backgroundColor: AppColors.headerBgColor,
           ),
           backgroundColor: AppColors.bodyBgColor,
+          floatingActionButton: FloatingActionButton(
+            child: const Icon(MdiIcons.plus, size: 32),
+            backgroundColor: AppColors.entryBgColor,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    DateTime now = DateTime.now();
+                    return DetailRoute(
+                      item: MeasurableDataType(
+                        id: uuid.v1(),
+                        uniqueName: '',
+                        version: 0,
+                        displayName: '',
+                        createdAt: now,
+                        updatedAt: now,
+                        unitName: '',
+                      ),
+                      index: -1,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           body: SingleChildScrollView(
               child: ListView(
             shrinkWrap: true,
@@ -162,6 +189,7 @@ class DetailRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.entryBgColor,
       appBar: AppBar(
         title: Text(
           item.displayName,

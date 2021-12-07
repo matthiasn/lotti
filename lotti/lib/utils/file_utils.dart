@@ -4,9 +4,12 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import 'audio_utils.dart';
 import 'image_utils.dart';
+
+Uuid uuid = const Uuid();
 
 String folderForJournalEntity(JournalEntity journalEntity) {
   return journalEntity.map(

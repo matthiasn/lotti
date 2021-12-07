@@ -11,11 +11,10 @@ import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:uuid/uuid.dart';
 
-var uuid = const Uuid();
 AudioRecorderState initialState = AudioRecorderState(
   status: AudioRecorderStatus.initializing,
   decibels: 0.0,
