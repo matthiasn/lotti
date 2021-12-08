@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/sync/vector_clock.dart';
 
 part 'measurables.freezed.dart';
 part 'measurables.g.dart';
@@ -14,6 +15,7 @@ class MeasurableDataType with _$MeasurableDataType {
     required String description,
     required String unitName,
     required int version,
+    required VectorClock? vectorClock,
   }) = _MeasurableDataType;
 
   factory MeasurableDataType.fromJson(Map<String, dynamic> json) =>

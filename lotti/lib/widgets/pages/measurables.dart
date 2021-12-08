@@ -23,6 +23,10 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   @override
   void initState() {
     super.initState();
+    createDefaults();
+  }
+
+  void createDefaults() async {
     DateTime now = DateTime.now();
 
     _db.addMeasurable(MeasurableDataType(
@@ -34,6 +38,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       description: 'Volume of water consumed, in milliliters',
       unitName: 'ml',
       version: 0,
+      vectorClock: null,
     ));
 
     _db.addMeasurable(MeasurableDataType(
@@ -45,6 +50,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       description: 'Amount of caffeine consumed, in milligrams',
       unitName: 'mg',
       version: 0,
+      vectorClock: null,
     ));
   }
 
@@ -88,6 +94,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
                         updatedAt: now,
                         unitName: '',
                         description: '',
+                        vectorClock: null,
                       ),
                       index: -1,
                     );
