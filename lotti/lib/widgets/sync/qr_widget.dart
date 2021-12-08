@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_reader_widget.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -18,15 +18,15 @@ class EncryptionQrWidget extends StatelessWidget {
     if (Platform.isIOS || Platform.isAndroid) {
       return const EncryptionQrReaderWidget();
     }
-    return BlocBuilder<EncryptionCubit, EncryptionState>(
-        builder: (context, EncryptionState state) {
+    return BlocBuilder<SyncConfigCubit, SyncConfigState>(
+        builder: (context, SyncConfigState state) {
       return Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             Button('Generate Shared Key',
                 onPressed: () =>
-                    context.read<EncryptionCubit>().generateSharedKey(),
+                    context.read<SyncConfigCubit>().generateSharedKey(),
                 primaryColor: Colors.red),
             const Padding(padding: EdgeInsets.all(8.0)),
             state.when(
@@ -53,7 +53,7 @@ class EncryptionQrWidget extends StatelessWidget {
                       StatusTextWidget(sharedKey),
                       Button('Delete Shared Key',
                           onPressed: () =>
-                              context.read<EncryptionCubit>().deleteSharedKey(),
+                              context.read<SyncConfigCubit>().deleteSharedKey(),
                           primaryColor: Colors.red),
                     ],
                   );

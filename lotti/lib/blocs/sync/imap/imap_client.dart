@@ -1,10 +1,12 @@
 import 'package:enough_mail/enough_mail.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
+import 'package:lotti/classes/config.dart';
+import 'package:lotti/main.dart';
+import 'package:lotti/services/sync_config_service.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-Future<ImapClient?> createImapClient(EncryptionCubit encryptionCubit) async {
-  SyncConfig? syncConfig = await encryptionCubit.loadSyncConfig();
+Future<ImapClient?> createImapClient() async {
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
+  SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
   final transaction = Sentry.startTransaction('createImapClient()', 'task');
 
   try {

@@ -14,23 +14,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/inbox_read.dart';
 import 'package:lotti/blocs/sync/imap/inbox_save_attachments.dart';
-import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/main.dart';
+import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class InboxImapCubit extends Cubit<ImapState> {
-  late final EncryptionCubit _encryptionCubit;
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   late final PersistenceCubit _persistenceCubit;
-  late final VectorClockCubit _vectorClockCubit;
+  late final VectorClockService _vectorClockService;
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
@@ -42,13 +43,10 @@ class InboxImapCubit extends Cubit<ImapState> {
   final String lastReadUidKey = 'lastReadUid';
 
   InboxImapCubit({
-    required EncryptionCubit encryptionCubit,
     required PersistenceCubit persistenceCubit,
-    required VectorClockCubit vectorClockCubit,
   }) : super(ImapState.initial()) {
-    _encryptionCubit = encryptionCubit;
     _persistenceCubit = persistenceCubit;
-    _vectorClockCubit = vectorClockCubit;
+    _vectorClockService = getIt<VectorClockService>();
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
@@ -74,7 +72,7 @@ class InboxImapCubit extends Cubit<ImapState> {
     final transaction = Sentry.startTransaction('processMessage()', 'task');
     try {
       String? encryptedMessage = readMessage(message);
-      SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
+      SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
 
       if (syncConfig != null) {
         String b64Secret = syncConfig.sharedSecret;
@@ -145,7 +143,7 @@ class InboxImapCubit extends Cubit<ImapState> {
       await fetchMutex.acquire();
 
       try {
-        imapClient = await createImapClient(_encryptionCubit);
+        imapClient = await createImapClient();
 
         String? lastReadUidValue = await _storage.read(key: lastReadUidKey);
         int lastReadUid =
@@ -168,7 +166,7 @@ class InboxImapCubit extends Cubit<ImapState> {
             if (lastReadUid != current) {
               debugPrint(
                   '_fetchInbox lastReadUid $lastReadUid current $current');
-              if (subject.contains(await _vectorClockCubit.getHostHash())) {
+              if (subject.contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
                 await _setLastReadUid(current);
               } else {
@@ -234,7 +232,7 @@ class InboxImapCubit extends Cubit<ImapState> {
 
   Future<void> _observeInbox() async {
     try {
-      SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
+      SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
 
       if (syncConfig != null) {
         _observingClient?.disconnect();
@@ -292,6 +290,6 @@ class InboxImapCubit extends Cubit<ImapState> {
 
   Future<void> resetOffset() async {
     await _storage.delete(key: lastReadUidKey);
-    await _vectorClockCubit.setNewHost();
+    await _vectorClockService.setNewHost();
   }
 }

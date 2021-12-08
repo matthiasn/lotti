@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -15,26 +14,27 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/main.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
-  late final VectorClockCubit _vectorClockCubit;
   late final OutboxCubit _outboundQueueCubit;
-  final JournalDb _journalDb = JournalDb();
+  final JournalDb _journalDb = getIt<JournalDb>();
+  late final VectorClockService _vectorClockService;
 
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
   Timer? timer;
 
   PersistenceCubit({
-    required VectorClockCubit vectorClockCubit,
     required OutboxCubit outboundQueueCubit,
   }) : super(PersistenceState.initial()) {
-    _vectorClockCubit = vectorClockCubit;
     _outboundQueueCubit = outboundQueueCubit;
+    _vectorClockService = getIt<VectorClockService>();
     init();
   }
 
@@ -84,7 +84,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         Sentry.startTransaction('createQuantitativeEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
@@ -120,7 +120,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createSurveyEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
@@ -156,7 +156,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createImageEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(imageData));
@@ -199,7 +199,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
 
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
 
       // avoid inserting the same external entity multiple times
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(audioData));
@@ -234,7 +234,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createTextEntry()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v1();
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
@@ -298,7 +298,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         Sentry.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
-      VectorClock vc = await _vectorClockCubit.getNextVectorClock(
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);
 
       Metadata newMeta = journalEntity.meta.copyWith(

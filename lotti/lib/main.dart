@@ -3,24 +3,33 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/health_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/widgets/home.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'database/database.dart';
+
 const enableSentry = false;
+final getIt = GetIt.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  getIt.registerSingleton<JournalDb>(JournalDb());
+  getIt.registerSingleton<VectorClockService>(VectorClockService());
+  getIt.registerSingleton<SyncConfigService>(SyncConfigService());
 
   if (enableSentry) {
     await SentryFlutter.init(
@@ -44,41 +53,30 @@ class LottiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<EncryptionCubit>(
+        BlocProvider<SyncConfigCubit>(
           lazy: false,
-          create: (BuildContext context) => EncryptionCubit(),
-        ),
-        BlocProvider<VectorClockCubit>(
-          lazy: false,
-          create: (BuildContext context) => VectorClockCubit(),
+          create: (BuildContext context) => SyncConfigCubit(),
         ),
         BlocProvider<OutboxImapCubit>(
           lazy: false,
-          create: (BuildContext context) => OutboxImapCubit(
-            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
-          ),
+          create: (BuildContext context) => OutboxImapCubit(),
         ),
         BlocProvider<OutboxCubit>(
           lazy: false,
           create: (BuildContext context) => OutboxCubit(
-            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             outboxImapCubit: BlocProvider.of<OutboxImapCubit>(context),
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<PersistenceCubit>(
           lazy: false,
           create: (BuildContext context) => PersistenceCubit(
             outboundQueueCubit: BlocProvider.of<OutboxCubit>(context),
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<InboxImapCubit>(
           lazy: false,
           create: (BuildContext context) => InboxImapCubit(
-            encryptionCubit: BlocProvider.of<EncryptionCubit>(context),
             persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-            vectorClockCubit: BlocProvider.of<VectorClockCubit>(context),
           ),
         ),
         BlocProvider<HealthCubit>(
