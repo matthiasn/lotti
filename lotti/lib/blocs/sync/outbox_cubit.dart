@@ -9,14 +9,15 @@ import 'package:drift/drift.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
-import 'package:lotti/blocs/sync/vector_clock_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/main.dart';
+import 'package:lotti/services/sync_config_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -26,7 +27,7 @@ import 'package:sentry/sentry.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
-  late final EncryptionCubit _encryptionCubit;
+  final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
 
@@ -34,18 +35,13 @@ class OutboxCubit extends Cubit<OutboxState> {
   final SyncDatabase _syncDatabase = SyncDatabase();
   late String? _b64Secret;
 
-  late final VectorClockCubit _vectorClockCubit;
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
   OutboxCubit({
-    required EncryptionCubit encryptionCubit,
     required OutboxImapCubit outboxImapCubit,
-    required VectorClockCubit vectorClockCubit,
   }) : super(OutboxState.initial()) {
-    _encryptionCubit = encryptionCubit;
     _outboxImapCubit = outboxImapCubit;
-    _vectorClockCubit = vectorClockCubit;
     init();
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -71,7 +67,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   Future<void> init() async {
-    SyncConfig? syncConfig = await _encryptionCubit.loadSyncConfig();
+    SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
 
     if (syncConfig != null) {
       _b64Secret = syncConfig.sharedSecret;
@@ -199,10 +195,12 @@ class OutboxCubit extends Cubit<OutboxState> {
         JournalEntity journalEntity = syncMessage.journalEntity;
         String jsonString = json.encode(syncMessage);
         var docDir = await getApplicationDocumentsDirectory();
+        final VectorClockService vectorClockService =
+            getIt<VectorClockService>();
 
         File? attachment;
-        String host = await _vectorClockCubit.getHost();
-        String hostHash = await _vectorClockCubit.getHostHash();
+        String host = await vectorClockService.getHost();
+        String hostHash = await vectorClockService.getHostHash();
         int? localCounter = journalEntity.meta.vectorClock?.vclock[host];
         String subject = '$hostHash:$localCounter';
 

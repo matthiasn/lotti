@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:bloc/bloc.dart';
 import 'package:crypto/crypto.dart';
 import 'package:lotti/sync/secure_storage.dart';
 import 'package:lotti/sync/vector_clock.dart';
@@ -10,9 +9,7 @@ const uuid = Uuid();
 const String hostKey = 'VC_HOST';
 const String nextAvailableCounterKey = 'VC_NEXT_AVAILABLE_COUNTER';
 
-class VectorClockCubit extends Cubit<void> {
-  VectorClockCubit() : super(null);
-
+class VectorClockService {
   Future<void> increment() async {
     int next = await getNextAvailableCounter() + 1;
     setNextAvailableCounter(next);

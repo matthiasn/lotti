@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -31,13 +31,13 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<EncryptionCubit, EncryptionState>(
-        builder: (context, EncryptionState state) {
+    return BlocBuilder<SyncConfigCubit, SyncConfigState>(
+        builder: (context, SyncConfigState state) {
       void _onQRViewCreated(QRViewController controller) {
         this.controller = controller;
         controller.scannedDataStream.listen((scanData) {
           if (scanData.code != null) {
-            context.read<EncryptionCubit>().setSyncConfig(scanData.code!);
+            context.read<SyncConfigCubit>().setSyncConfig(scanData.code!);
           }
         });
       }
@@ -55,7 +55,7 @@ class _EncryptionQrReaderWidgetState extends State<EncryptionQrReaderWidget> {
                     ),
                     backgroundColor: Colors.red),
                 onPressed: () =>
-                    context.read<EncryptionCubit>().deleteSharedKey(),
+                    context.read<SyncConfigCubit>().deleteSharedKey(),
                 child: const Text(
                   'Delete Shared Key',
                   style: TextStyle(

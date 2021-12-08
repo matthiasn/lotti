@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:lotti/blocs/sync/config_classes.dart';
-import 'package:lotti/blocs/sync/encryption_cubit.dart';
+import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
@@ -24,8 +24,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
   @override
   Widget build(BuildContext context) {
     if (Platform.isIOS || Platform.isAndroid) {
-      return BlocBuilder<EncryptionCubit, EncryptionState>(
-          builder: (context, EncryptionState state) {
+      return BlocBuilder<SyncConfigCubit, SyncConfigState>(
+          builder: (context, SyncConfigState state) {
         return Center(
           child: state.maybeWhen(
               (sharedKey, imapConfig) =>
@@ -35,8 +35,8 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
       });
     }
 
-    return BlocBuilder<EncryptionCubit, EncryptionState>(
-        builder: (context, EncryptionState state) {
+    return BlocBuilder<SyncConfigCubit, SyncConfigState>(
+        builder: (context, SyncConfigState state) {
       return SizedBox(
         width: 300,
         child: Column(
@@ -75,22 +75,25 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                       labelText: 'Port',
                     ),
                   ),
-                  Button('Save IMAP Config',
-                      padding: const EdgeInsets.all(24.0),
-                      primaryColor: Colors.white,
-                      textColor: AppColors.headerBgColor, onPressed: () {
-                    _formKey.currentState!.save();
-                    if (_formKey.currentState!.validate()) {
-                      final formData = _formKey.currentState?.value;
-                      ImapConfig cfg = ImapConfig(
-                        host: formData!['imap_host'],
-                        userName: formData['imap_userName'],
-                        password: formData['imap_password'],
-                        port: int.parse(formData['imap_port']),
-                      );
-                      context.read<EncryptionCubit>().setImapConfig(cfg);
-                    }
-                  }),
+                  Button(
+                    'Save IMAP Config',
+                    padding: const EdgeInsets.all(24.0),
+                    primaryColor: Colors.white,
+                    textColor: AppColors.headerBgColor,
+                    onPressed: () {
+                      _formKey.currentState!.save();
+                      if (_formKey.currentState!.validate()) {
+                        final formData = _formKey.currentState?.value;
+                        ImapConfig cfg = ImapConfig(
+                          host: formData!['imap_host'],
+                          userName: formData['imap_userName'],
+                          password: formData['imap_password'],
+                          port: int.parse(formData['imap_port']),
+                        );
+                        context.read<SyncConfigCubit>().setImapConfig(cfg);
+                      }
+                    },
+                  ),
                   Center(
                     child: state.maybeWhen(
                         (sharedKey, imapConfig) =>
