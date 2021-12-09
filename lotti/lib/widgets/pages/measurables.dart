@@ -233,7 +233,6 @@ class _DetailRouteState extends State<DetailRoute> {
                     unitName: formData['unitName'],
                     displayName: formData['displayName'],
                   );
-//                  _db.upsertEntityDefinition(dataType);
 
                   context
                       .read<PersistenceCubit>()

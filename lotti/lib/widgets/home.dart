@@ -6,7 +6,6 @@ import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/editor.dart';
 import 'package:lotti/widgets/pages/health_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
-import 'package:lotti/widgets/pages/photo_import.dart';
 import 'package:lotti/widgets/pages/settings_page.dart';
 import 'package:lotti/widgets/pages/survey_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -48,7 +47,6 @@ class _HomePageState extends State<HomePage> {
               children: const <Widget>[
                 JournalPage(),
                 EditorPage(),
-                PhotoImportPage(),
                 AudioPage(),
                 HealthPage(),
                 SurveyPage(),
@@ -68,10 +66,6 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.add_box),
               label: 'Add',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.camera_roll),
-              label: 'Photos',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.mic),
