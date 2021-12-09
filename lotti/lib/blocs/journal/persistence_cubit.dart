@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
@@ -275,7 +276,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       debugPrint('createDbEntity saved $saved');
 
       if (saved && enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.initial,
         ));
@@ -351,7 +352,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.update,
         ));
@@ -364,5 +365,14 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await Sentry.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
+  }
+
+  Future<int> upsertEntityDefinition(EntityDefinition definition) async {
+    int linesAffected = await _journalDb.upsertEntityDefinition(definition);
+    await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
+      entityDefinition: definition,
+      status: SyncEntryStatus.update,
+    ));
+    return linesAffected;
   }
 }

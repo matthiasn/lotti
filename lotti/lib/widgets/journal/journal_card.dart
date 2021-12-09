@@ -9,7 +9,6 @@ import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 class JournalCardTitle extends StatelessWidget {
   final JournalEntity item;

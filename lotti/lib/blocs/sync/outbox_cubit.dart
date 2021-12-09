@@ -189,7 +189,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
-    if (syncMessage is SyncJournalDbEntity) {
+    if (syncMessage is SyncJournalEntity) {
       final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
       try {
         JournalEntity journalEntity = syncMessage.journalEntity;
@@ -224,6 +224,32 @@ class OutboxCubit extends Cubit<OutboxState> {
           status: Value(OutboundMessageStatus.pending.index),
           filePath: Value(
               (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
+          subject: Value(subject),
+          message: Value(jsonString),
+        ));
+
+        await transaction.finish();
+        _startPolling();
+      } catch (exception, stackTrace) {
+        await Sentry.captureException(exception, stackTrace: stackTrace);
+      }
+    }
+
+    if (syncMessage is SyncEntityDefinition) {
+      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+      try {
+        String jsonString = json.encode(syncMessage);
+        final VectorClockService vectorClockService =
+            getIt<VectorClockService>();
+
+        String host = await vectorClockService.getHost();
+        String hostHash = await vectorClockService.getHostHash();
+        int? localCounter =
+            syncMessage.entityDefinition.vectorClock?.vclock[host];
+        String subject = '$hostHash:$localCounter';
+
+        await _syncDatabase.addOutboxItem(OutboxCompanion(
+          status: Value(OutboundMessageStatus.pending.index),
           subject: Value(subject),
           message: Value(jsonString),
         ));

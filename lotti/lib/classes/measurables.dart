@@ -5,8 +5,8 @@ part 'measurables.freezed.dart';
 part 'measurables.g.dart';
 
 @freezed
-class MeasurableDataType with _$MeasurableDataType {
-  factory MeasurableDataType({
+class EntityDefinition with _$EntityDefinition {
+  factory EntityDefinition.measurableDataType({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -16,8 +16,8 @@ class MeasurableDataType with _$MeasurableDataType {
     required String unitName,
     required int version,
     required VectorClock? vectorClock,
-  }) = _MeasurableDataType;
+  }) = MeasurableDataType;
 
-  factory MeasurableDataType.fromJson(Map<String, dynamic> json) =>
-      _$MeasurableDataTypeFromJson(json);
+  factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
+      _$EntityDefinitionFromJson(json);
 }

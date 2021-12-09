@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:lotti/blocs/journal/persistence_cubit.dart';
+import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -29,7 +32,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   void createDefaults() async {
     DateTime now = DateTime.now();
 
-    _db.addMeasurable(MeasurableDataType(
+    _db.upsertEntityDefinition(MeasurableDataType(
       id: '9e9e7a62-1e56-4059-a568-12234db7399b',
       createdAt: now,
       updatedAt: now,
@@ -41,7 +44,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       vectorClock: null,
     ));
 
-    _db.addMeasurable(MeasurableDataType(
+    _db.upsertEntityDefinition(MeasurableDataType(
       id: 'f2518f33-af1d-4dbe-ae9b-6a05def5d8f9',
       createdAt: now,
       updatedAt: now,
@@ -204,91 +207,98 @@ class _DetailRouteState extends State<DetailRoute> {
 
   @override
   Widget build(BuildContext context) {
-    final MeasurableDataType item = widget.item;
+    return BlocBuilder<PersistenceCubit, PersistenceState>(
+        builder: (BuildContext context, PersistenceState state) {
+      final MeasurableDataType item = widget.item;
 
-    return Scaffold(
-      backgroundColor: AppColors.bodyBgColor,
-      appBar: AppBar(
-        title: Text(
-          item.displayName,
-          style: TextStyle(
-            color: AppColors.entryTextColor,
-            fontFamily: 'Oswald',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              _formKey.currentState!.save();
-              if (_formKey.currentState!.validate()) {
-                final formData = _formKey.currentState?.value;
-                MeasurableDataType dataType = item.copyWith(
-                  name: formData!['name'],
-                  description: formData['description'],
-                  unitName: formData['unitName'],
-                  displayName: formData['displayName'],
-                );
-                _db.addMeasurable(dataType);
-              }
-            },
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Save',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Oswald',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+      return Scaffold(
+        backgroundColor: AppColors.bodyBgColor,
+        appBar: AppBar(
+          title: Text(
+            item.displayName,
+            style: TextStyle(
+              color: AppColors.entryTextColor,
+              fontFamily: 'Oswald',
             ),
           ),
-        ],
-        backgroundColor: AppColors.headerBgColor,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                color: AppColors.headerBgColor,
-                padding: const EdgeInsets.all(24.0),
-                child: FormBuilder(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    children: <Widget>[
-                      FormTextField(
-                        initialValue: item.name,
-                        labelText: 'Name',
-                        name: 'name',
-                      ),
-                      FormTextField(
-                        initialValue: item.displayName,
-                        labelText: 'Display name',
-                        name: 'displayName',
-                      ),
-                      FormTextField(
-                        initialValue: item.description,
-                        labelText: 'Description',
-                        name: 'description',
-                      ),
-                      FormTextField(
-                        initialValue: item.unitName,
-                        labelText: 'Unit abbreviation',
-                        name: 'unitName',
-                      ),
-                    ],
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                _formKey.currentState!.save();
+                if (_formKey.currentState!.validate()) {
+                  final formData = _formKey.currentState?.value;
+                  MeasurableDataType dataType = item.copyWith(
+                    name: formData!['name'],
+                    description: formData['description'],
+                    unitName: formData['unitName'],
+                    displayName: formData['displayName'],
+                  );
+//                  _db.upsertEntityDefinition(dataType);
+
+                  context
+                      .read<PersistenceCubit>()
+                      .upsertEntityDefinition(dataType);
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontFamily: 'Oswald',
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
           ],
+          backgroundColor: AppColors.headerBgColor,
         ),
-      ),
-    );
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  color: AppColors.headerBgColor,
+                  padding: const EdgeInsets.all(24.0),
+                  child: FormBuilder(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      children: <Widget>[
+                        FormTextField(
+                          initialValue: item.name,
+                          labelText: 'Name',
+                          name: 'name',
+                        ),
+                        FormTextField(
+                          initialValue: item.displayName,
+                          labelText: 'Display name',
+                          name: 'displayName',
+                        ),
+                        FormTextField(
+                          initialValue: item.description,
+                          labelText: 'Description',
+                          name: 'description',
+                        ),
+                        FormTextField(
+                          initialValue: item.unitName,
+                          labelText: 'Unit abbreviation',
+                          name: 'unitName',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 

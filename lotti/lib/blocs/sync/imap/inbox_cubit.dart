@@ -20,7 +20,9 @@ import 'package:lotti/blocs/sync/imap/inbox_read.dart';
 import 'package:lotti/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -37,6 +39,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   Timer? timer;
   final fetchMutex = Mutex();
   final _storage = const FlutterSecureStorage();
+  final JournalDb _journalDb = getIt<JournalDb>();
 
   final String sharedSecretKey = 'sharedSecret';
   final String imapConfigKey = 'imapConfig';
@@ -81,7 +84,7 @@ class InboxImapCubit extends Cubit<ImapState> {
             await decryptMessage(encryptedMessage, message, b64Secret);
 
         syncMessage?.when(
-          journalDbEntity:
+          journalEntity:
               (JournalEntity journalEntity, SyncEntryStatus status) async {
             await saveJournalEntityJson(journalEntity);
 
@@ -106,6 +109,13 @@ class InboxImapCubit extends Cubit<ImapState> {
               await _persistenceCubit.createDbEntity(journalEntity,
                   enqueueSync: false);
             }
+          },
+          entityDefinition: (
+            EntityDefinition entityDefinition,
+            SyncEntryStatus status,
+          ) {
+            debugPrint('processMessage entityDefinition $entityDefinition');
+            _journalDb.upsertEntityDefinition(entityDefinition);
           },
         );
       } else {

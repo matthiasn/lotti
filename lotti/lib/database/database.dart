@@ -132,9 +132,9 @@ class JournalDb extends _$JournalDb {
     return (select(measurableTypes)).map(measurableDataType).watch();
   }
 
-  Future<int> addMeasurable(MeasurableDataType dataType) async {
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     return into(measurableTypes)
-        .insertOnConflictUpdate(measurableDbEntity(dataType));
+        .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
   }
 }
 

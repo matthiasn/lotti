@@ -48,7 +48,7 @@ MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
   return MeasurableDataType.fromJson(json.decode(dbEntity.serialized));
 }
 
-MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
+MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
   return MeasurableDbEntity(
     id: dataType.id,
     uniqueName: dataType.name,
