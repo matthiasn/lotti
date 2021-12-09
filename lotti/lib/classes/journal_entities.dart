@@ -7,6 +7,7 @@ import 'package:research_package/model.dart';
 
 import 'check_list_item.dart';
 import 'entry_text.dart';
+import 'measurables.dart';
 
 part 'journal_entities.freezed.dart';
 part 'journal_entities.g.dart';
@@ -111,6 +112,11 @@ class JournalEntity with _$JournalEntity {
     required Metadata meta,
     required QuantitativeData data,
   }) = QuantitativeEntry;
+
+  const factory JournalEntity.measurement({
+    required Metadata meta,
+    required MeasurementData data,
+  }) = MeasurementEntry;
 
   const factory JournalEntity.survey({
     required Metadata meta,

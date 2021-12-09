@@ -20,6 +20,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     task: (_) => 'tasks',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'surveys',
+    measurement: (_) => 'measurement',
   );
 }
 
@@ -32,6 +33,7 @@ String typeSuffix(JournalEntity journalEntity) {
     task: (_) => 'task',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'survey',
+    measurement: (_) => 'measurement',
   );
 }
 

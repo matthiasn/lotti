@@ -21,3 +21,16 @@ class EntityDefinition with _$EntityDefinition {
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);
 }
+
+@freezed
+class MeasurementData with _$MeasurementData {
+  factory MeasurementData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+    required num value,
+    required MeasurableDataType dataType,
+  }) = _MeasurementData;
+
+  factory MeasurementData.fromJson(Map<String, dynamic> json) =>
+      _$MeasurementDataFromJson(json);
+}
