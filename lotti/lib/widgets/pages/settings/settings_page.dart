@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/pages/measurables.dart';
-import 'package:lotti/widgets/pages/sync_settings.dart';
+import 'package:lotti/widgets/pages/settings/measurables.dart';
+import 'package:lotti/widgets/pages/settings/sync_settings.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SettingsPage extends StatefulWidget {
