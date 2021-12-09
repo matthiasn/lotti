@@ -6,8 +6,6 @@ import 'package:lotti/widgets/pages/add/add_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
-import 'package:lotti/widgets/pages/survey_page.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -47,7 +45,6 @@ class _HomePageState extends State<HomePage> {
                 JournalPage(),
                 AddPage(),
                 AudioPage(),
-                SurveyPage(),
                 SettingsPage(),
               ],
             ),
@@ -68,10 +65,6 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.mic),
               label: 'Audio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(MdiIcons.clipboardOutline),
-              label: 'Surveys',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),

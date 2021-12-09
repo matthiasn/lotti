@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:research_package/research_package.dart';
 
@@ -105,34 +106,47 @@ class SurveyPage extends StatelessWidget {
       );
     }
 
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Button(
-              'CFQ 11',
-              onPressed: () => runSurvey(
-                cfq11SurveyTask,
-                createResultCallback(
-                  scoreDefinitions: cfq11ScoreDefinitions,
-                  context: context,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Add Survey',
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+          ),
+        ),
+        backgroundColor: AppColors.headerBgColor,
+      ),
+      backgroundColor: AppColors.bodyBgColor,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Button(
+                'CFQ 11',
+                onPressed: () => runSurvey(
+                  cfq11SurveyTask,
+                  createResultCallback(
+                    scoreDefinitions: cfq11ScoreDefinitions,
+                    context: context,
+                  ),
                 ),
+                primaryColor: CupertinoColors.systemOrange,
               ),
-              primaryColor: CupertinoColors.systemOrange,
-            ),
-            Button(
-              'PANAS',
-              onPressed: () => runSurvey(
-                panasSurveyTask,
-                createResultCallback(
-                  scoreDefinitions: panasScoreDefinitions,
-                  context: context,
+              Button(
+                'PANAS',
+                onPressed: () => runSurvey(
+                  panasSurveyTask,
+                  createResultCallback(
+                    scoreDefinitions: panasScoreDefinitions,
+                    context: context,
+                  ),
                 ),
+                primaryColor: CupertinoColors.systemOrange,
               ),
-              primaryColor: CupertinoColors.systemOrange,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

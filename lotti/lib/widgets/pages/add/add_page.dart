@@ -7,6 +7,7 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
+import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AddPage extends StatefulWidget {
@@ -51,71 +52,93 @@ class _AddPageState extends State<AddPage> {
             ),
           ),
         ),
-        floatingActionButton: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FloatingActionButton(
-              child: const Icon(
-                MdiIcons.tapeMeasure,
-                size: 32,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton(
+                child: const Icon(
+                  MdiIcons.tapeMeasure,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  context.read<JournalImageCubit>().pickImageAssets(context);
+                },
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                context.read<JournalImageCubit>().pickImageAssets(context);
-              },
-            ),
-            const SizedBox(
-              width: 16,
-            ),
-            FloatingActionButton(
-              child: const Icon(
-                Icons.camera_roll,
-                size: 32,
+              const SizedBox(
+                width: 16,
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                context.read<JournalImageCubit>().pickImageAssets(context);
-              },
-            ),
-            const SizedBox(
-              width: 16,
-            ),
-            FloatingActionButton(
-              child: const Icon(
-                MdiIcons.textLong,
-                size: 32,
+              FloatingActionButton(
+                child: const Icon(
+                  MdiIcons.clipboardOutline,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const SurveyPage();
+                      },
+                    ),
+                  );
+                },
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return const EditorPage();
-                    },
-                  ),
-                );
-              },
-            ),
-            const SizedBox(
-              width: 16,
-            ),
-            FloatingActionButton(
-              child: const Icon(
-                MdiIcons.heart,
-                size: 32,
+              const SizedBox(
+                width: 16,
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return const HealthPage();
-                    },
-                  ),
-                );
-              },
-            ),
-          ],
+              FloatingActionButton(
+                child: const Icon(
+                  Icons.camera_roll,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  context.read<JournalImageCubit>().pickImageAssets(context);
+                },
+              ),
+              const SizedBox(
+                width: 16,
+              ),
+              FloatingActionButton(
+                child: const Icon(
+                  MdiIcons.textLong,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const EditorPage();
+                      },
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(
+                width: 16,
+              ),
+              FloatingActionButton(
+                child: const Icon(
+                  MdiIcons.heart,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const HealthPage();
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       );
     });
