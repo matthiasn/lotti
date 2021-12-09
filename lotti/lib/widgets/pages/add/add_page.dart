@@ -7,6 +7,7 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
+import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -64,7 +65,13 @@ class _AddPageState extends State<AddPage> {
                 ),
                 backgroundColor: AppColors.entryBgColor,
                 onPressed: () {
-                  context.read<JournalImageCubit>().pickImageAssets(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const NewMeasurementPage();
+                      },
+                    ),
+                  );
                 },
               ),
               const SizedBox(
