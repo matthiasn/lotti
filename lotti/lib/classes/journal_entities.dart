@@ -116,6 +116,8 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.measurement({
     required Metadata meta,
     required MeasurementData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
   }) = MeasurementEntry;
 
   const factory JournalEntity.survey({
