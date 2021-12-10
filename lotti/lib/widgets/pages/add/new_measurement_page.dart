@@ -82,13 +82,11 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       child: Column(
                         children: <Widget>[
                           FormBuilderDropdown(
-                            name: 'gender',
+                            name: 'type',
                             decoration: const InputDecoration(
                               labelText: 'Type',
                             ),
-                            // initialValue: 'Male',
-                            allowClear: true,
-                            hint: const Text('Select Measuremnt Type'),
+                            hint: const Text('Select Measurement Type'),
                             validator: FormBuilderValidators.compose(
                                 [FormBuilderValidators.required(context)]),
                             items: items
@@ -103,6 +101,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                             initialValue: '',
                             labelText: 'Value',
                             name: 'value',
+                            keyboardType:
+                                TextInputType.numberWithOptions(decimal: true),
                           ),
                         ],
                       ),
@@ -124,26 +124,27 @@ class FormTextField extends StatelessWidget {
     required this.initialValue,
     required this.name,
     required this.labelText,
+    this.keyboardType,
   }) : super(key: key);
 
   final String initialValue;
   final String name;
   final String labelText;
+  final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
     return FormBuilderTextField(
       name: name,
-      minLines: 1,
-      maxLines: 3,
       initialValue: initialValue,
       validator: FormBuilderValidators.required(context),
       style: TextStyle(
         color: AppColors.entryTextColor,
         height: 1.6,
         fontFamily: 'Lato',
-        fontSize: 20,
+        fontSize: 24,
       ),
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
