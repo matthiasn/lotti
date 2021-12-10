@@ -4,9 +4,12 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import 'audio_utils.dart';
 import 'image_utils.dart';
+
+Uuid uuid = const Uuid();
 
 String folderForJournalEntity(JournalEntity journalEntity) {
   return journalEntity.map(
@@ -17,6 +20,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     task: (_) => 'tasks',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'surveys',
+    measurement: (_) => 'measurement',
   );
 }
 
@@ -29,6 +33,7 @@ String typeSuffix(JournalEntity journalEntity) {
     task: (_) => 'task',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'survey',
+    measurement: (_) => 'measurement',
   );
 }
 

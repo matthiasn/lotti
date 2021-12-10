@@ -117,6 +117,21 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 saveFn: saveText,
               );
             },
+            measurement: (MeasurementEntry entry) {
+              QuillController _controller =
+                  makeController(serializedQuill: entry.entryText?.quill);
+
+              void saveText() {
+                context.read<PersistenceCubit>().updateJournalEntity(
+                    widget.item, entryTextFromController(_controller));
+              }
+
+              return EditorWidget(
+                controller: _controller,
+                //height: 240,
+                saveFn: saveText,
+              );
+            },
             survey: (SurveyEntry surveyEntry) =>
                 SurveySummaryWidget(surveyEntry),
             quantitative: (qe) => qe.data.map(
@@ -147,6 +162,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               geolocation: image.geolocation,
             ),
             journalEntry: (entry) => MapWidget(
+              geolocation: entry.geolocation,
+            ),
+            measurement: (entry) => MapWidget(
               geolocation: entry.geolocation,
             ),
             orElse: () => Container(),

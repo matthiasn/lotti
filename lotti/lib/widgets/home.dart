@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/pages/add/add_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
-import 'package:lotti/widgets/pages/editor.dart';
-import 'package:lotti/widgets/pages/health_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
-import 'package:lotti/widgets/pages/photo_import.dart';
-import 'package:lotti/widgets/pages/settings.dart';
-import 'package:lotti/widgets/pages/survey_page.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:lotti/widgets/pages/settings/settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -45,22 +41,11 @@ class _HomePageState extends State<HomePage> {
             },
             child: IndexedStack(
               index: _pageIndex,
-              children: <Widget>[
-                JournalPage(
-                  child: Text(
-                    'Journal',
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      color: AppColors.entryBgColor,
-                    ),
-                  ),
-                ),
-                const EditorPage(),
-                const PhotoImportPage(),
-                const AudioPage(),
-                const HealthPage(),
-                const SurveyPage(),
-                const SettingsPage(),
+              children: const <Widget>[
+                JournalPage(),
+                AddPage(),
+                AudioPage(),
+                SettingsPage(),
               ],
             ),
           ),
@@ -78,20 +63,8 @@ class _HomePageState extends State<HomePage> {
               label: 'Add',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.camera_roll),
-              label: 'Photos',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.mic),
               label: 'Audio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.directions_run),
-              label: 'Health',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(MdiIcons.clipboardOutline),
-              label: 'Surveys',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings),

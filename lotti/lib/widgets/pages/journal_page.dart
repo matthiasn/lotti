@@ -14,10 +14,8 @@ class JournalPage extends StatefulWidget {
   const JournalPage({
     Key? key,
     this.navigatorKey,
-    required this.child,
   });
 
-  final Widget child;
   final GlobalKey? navigatorKey;
 
   @override
@@ -90,7 +88,6 @@ class _JournalPageState extends State<JournalPage> {
                           ),
                         ),
                         onConfirm: (List<FilterBy?> results) {
-                          debugPrint(results.toString());
                           context.read<PersistenceCubit>().queryFilteredJournal(
                               results
                                   .map((FilterBy? e) => e!.typeName)

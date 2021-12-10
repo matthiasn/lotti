@@ -4,12 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 class JournalCardTitle extends StatelessWidget {
   final JournalEntity item;
@@ -63,6 +63,11 @@ class JournalCardTitle extends StatelessWidget {
                         : journalImage.data.imageFile),
                 survey: (SurveyEntry surveyEntry) =>
                     SurveySummaryWidget(surveyEntry),
+                measurement: (MeasurementEntry measurementEntry) {
+                  MeasurementData data = measurementEntry.data;
+                  return EntryText('${data.dataType.displayName}: ${data.value}'
+                      '\n${measurementEntry.entryText?.plainText ?? ''}');
+                },
                 orElse: () => Row(
                   children: const [],
                 ),
@@ -145,6 +150,10 @@ class JournalCard extends StatelessWidget {
                 ),
                 survey: (_) => const Icon(
                   MdiIcons.clipboardOutline,
+                  size: 32,
+                ),
+                measurement: (_) => const Icon(
+                  MdiIcons.tapeMeasure,
                   size: 32,
                 ),
                 orElse: () => Container(),

@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
@@ -58,7 +59,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> queryFilteredJournal(List<String> types) async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
-      debugPrint(types.toString());
       List<JournalEntity> entries = await _journalDb.filteredJournalEntities(
         types: types,
         limit: 100,
@@ -136,6 +136,44 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           updatedAt: now,
           dateFrom: data.taskResult.startDate ?? now,
           dateTo: data.taskResult.endDate ?? now,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> createMeasurementEntry({
+    required MeasurementData data,
+  }) async {
+    final transaction = Sentry.startTransaction('createSurveyEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null, // TODO: report timeout in Sentry
+          );
+
+      JournalEntity journalEntity = JournalEntity.measurement(
+        data: data,
+        geolocation: geolocation,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
           id: id,
           vectorClock: vc,
           timezone: await FlutterNativeTimezone.getLocalTimezone(),
@@ -269,13 +307,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
       int? res = await _journalDb.addJournalEntity(journalEntity);
-      debugPrint('createDbEntity res $res');
       bool saved = (res != 0);
       await saveJournalEntityJson(journalEntity);
-      debugPrint('createDbEntity saved $saved');
 
       if (saved && enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.initial,
         ));
@@ -332,6 +368,15 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
         await updateDbEntity(newJournalImage, enqueueSync: true);
       }
+
+      if (journalEntity is MeasurementEntry) {
+        MeasurementEntry newEntry = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newEntry, enqueueSync: true);
+      }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
@@ -351,7 +396,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await saveJournalEntityJson(journalEntity);
 
       if (saved && enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalDbEntity(
+        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.update,
         ));
@@ -364,5 +409,14 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await Sentry.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
+  }
+
+  Future<int> upsertEntityDefinition(EntityDefinition definition) async {
+    int linesAffected = await _journalDb.upsertEntityDefinition(definition);
+    await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
+      entityDefinition: definition,
+      status: SyncEntryStatus.update,
+    ));
+    return linesAffected;
   }
 }

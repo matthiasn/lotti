@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/measurables.dart';
 
 import 'database.dart';
 
@@ -41,4 +42,20 @@ JournalDbEntity toDbEntity(JournalEntity journalEntity) {
 
 JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
   return JournalEntity.fromJson(json.decode(dbEntity.serialized));
+}
+
+MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
+  return MeasurableDataType.fromJson(json.decode(dbEntity.serialized));
+}
+
+MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
+  return MeasurableDbEntity(
+    id: dataType.id,
+    uniqueName: dataType.name,
+    createdAt: dataType.createdAt,
+    updatedAt: dataType.updatedAt,
+    serialized: jsonEncode(dataType),
+    version: dataType.version,
+    status: 0,
+  );
 }
