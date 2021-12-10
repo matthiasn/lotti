@@ -88,7 +88,6 @@ class _JournalPageState extends State<JournalPage> {
                           ),
                         ),
                         onConfirm: (List<FilterBy?> results) {
-                          debugPrint(results.toString());
                           context.read<PersistenceCubit>().queryFilteredJournal(
                               results
                                   .map((FilterBy? e) => e!.typeName)

@@ -114,7 +114,6 @@ class InboxImapCubit extends Cubit<ImapState> {
             EntityDefinition entityDefinition,
             SyncEntryStatus status,
           ) {
-            debugPrint('processMessage entityDefinition $entityDefinition');
             _journalDb.upsertEntityDefinition(entityDefinition);
           },
         );

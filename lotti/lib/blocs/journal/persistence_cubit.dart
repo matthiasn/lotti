@@ -59,7 +59,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<void> queryFilteredJournal(List<String> types) async {
     final transaction = Sentry.startTransaction('queryJournal()', 'task');
     try {
-      debugPrint(types.toString());
       List<JournalEntity> entries = await _journalDb.filteredJournalEntities(
         types: types,
         limit: 100,
@@ -308,10 +307,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('createDbEntity()', 'task');
     try {
       int? res = await _journalDb.addJournalEntity(journalEntity);
-      debugPrint('createDbEntity res $res');
       bool saved = (res != 0);
       await saveJournalEntityJson(journalEntity);
-      debugPrint('createDbEntity saved $saved');
 
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
