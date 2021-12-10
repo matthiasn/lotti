@@ -227,7 +227,8 @@
   (let [json-file (test-data-file "test.measurement.json")
         input (h/parse-json json-file)
         expected (h/parse-edn (test-data-file "test.measurement.converted.edn"))
-        entry (im/convert-measurement-entry input)]
+        mapping-table (h/parse-edn (test-data-file "mapping_table.edn"))
+        entry (im/convert-measurement-entry input mapping-table)]
     (testing "Measurement entry JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"
