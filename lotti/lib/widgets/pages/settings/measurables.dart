@@ -225,7 +225,7 @@ class _DetailRouteState extends State<DetailRoute> {
           ),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 _formKey.currentState!.save();
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
@@ -236,9 +236,10 @@ class _DetailRouteState extends State<DetailRoute> {
                     displayName: formData['displayName'],
                   );
 
-                  context
+                  await context
                       .read<PersistenceCubit>()
                       .upsertEntityDefinition(dataType);
+                  Navigator.pop(context);
                 }
               },
               child: const Padding(
