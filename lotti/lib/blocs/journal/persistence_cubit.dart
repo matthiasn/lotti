@@ -153,6 +153,44 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
+  Future<bool> createMeasurementEntry({
+    required MeasurementData data,
+  }) async {
+    final transaction = Sentry.startTransaction('createSurveyEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null, // TODO: report timeout in Sentry
+          );
+
+      JournalEntity journalEntity = JournalEntity.measurement(
+        data: data,
+        geolocation: geolocation,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool> createImageEntry(ImageData imageData) async {
     final transaction = Sentry.startTransaction('createImageEntry()', 'task');
     try {
@@ -332,6 +370,15 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         );
 
         await updateDbEntity(newJournalImage, enqueueSync: true);
+      }
+
+      if (journalEntity is MeasurementEntry) {
+        MeasurementEntry newEntry = journalEntity.copyWith(
+          meta: newMeta,
+          entryText: entryText,
+        );
+
+        await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
