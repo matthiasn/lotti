@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class MeasurablesPage extends StatefulWidget {
@@ -68,16 +69,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         List<MeasurableDataType> items = snapshot.data ?? [];
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'Measurables',
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-              ),
-            ),
-            backgroundColor: AppColors.headerBgColor,
-          ),
+          appBar: const VersionAppBar(title: 'Measurables'),
           backgroundColor: AppColors.bodyBgColor,
           floatingActionButton: FloatingActionButton(
             child: const Icon(MdiIcons.plus, size: 32),

@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_recorder.dart';
+import 'package:lotti/widgets/misc/app_bar_version.dart';
 
 class AudioPage extends StatefulWidget {
   const AudioPage({Key? key}) : super(key: key);
@@ -22,13 +24,17 @@ class _AudioPageState extends State<AudioPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: const [
-          AudioRecorderWidget(),
-        ],
+    return Scaffold(
+      appBar: const VersionAppBar(title: 'Record Audio'),
+      backgroundColor: AppColors.bodyBgColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            AudioRecorderWidget(),
+          ],
+        ),
       ),
     );
   }
