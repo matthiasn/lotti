@@ -62,7 +62,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         dateFrom: now,
                         value: double.parse(formData['value']),
                       );
-                      await context
+                      context
                           .read<PersistenceCubit>()
                           .createMeasurementEntry(data: measurement);
                       Navigator.pop(context);

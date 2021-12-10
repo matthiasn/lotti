@@ -98,8 +98,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
               );
             },
           ),
-          body: SingleChildScrollView(
-              child: ListView(
+          body: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(8.0),
             children: List.generate(
@@ -111,7 +110,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
                 );
               },
             ),
-          )),
+          ),
         );
       },
     );
@@ -228,7 +227,7 @@ class _DetailRouteState extends State<DetailRoute> {
                     displayName: formData['displayName'],
                   );
 
-                  await context
+                  context
                       .read<PersistenceCubit>()
                       .upsertEntityDefinition(dataType);
                   Navigator.pop(context);
