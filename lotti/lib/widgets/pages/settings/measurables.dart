@@ -146,39 +146,41 @@ class MeasurableTypeCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
         ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
-          title: Text(
-            item.name,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-              fontSize: 24.0,
-            ),
-          ),
-          subtitle: Text(
-            item.description,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-              fontWeight: FontWeight.w200,
-              fontSize: 16.0,
-            ),
-          ),
-          enabled: true,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return DetailRoute(
-                    item: item,
-                    index: index,
-                  );
-                },
+        child: SingleChildScrollView(
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
+            title: Text(
+              item.name,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontFamily: 'Oswald',
+                fontSize: 24.0,
               ),
-            );
-          },
+            ),
+            subtitle: Text(
+              item.description,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontFamily: 'Oswald',
+                fontWeight: FontWeight.w200,
+                fontSize: 16.0,
+              ),
+            ),
+            enabled: true,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return DetailRoute(
+                      item: item,
+                      index: index,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
