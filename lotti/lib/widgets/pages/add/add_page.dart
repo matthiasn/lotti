@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
@@ -34,16 +35,7 @@ class _AddPageState extends State<AddPage> {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
         builder: (context, PersistenceState state) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Add Entry',
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-            ),
-          ),
-          backgroundColor: AppColors.headerBgColor,
-        ),
+        appBar: const VersionAppBar(title: 'Add Entry'),
         backgroundColor: AppColors.bodyBgColor,
         body: Center(
           child: SingleChildScrollView(

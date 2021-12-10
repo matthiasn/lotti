@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/measurables.dart';
 import 'package:lotti/widgets/pages/settings/sync_settings.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -38,17 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
             return BlocBuilder<PersistenceCubit, PersistenceState>(
               builder: (BuildContext context, PersistenceState state) {
                 return Scaffold(
-                  appBar: AppBar(
-                    backgroundColor: AppColors.headerBgColor,
-                    title: Text(
-                      'Settings',
-                      style: TextStyle(
-                        color: AppColors.entryTextColor,
-                        fontFamily: 'Oswald',
-                      ),
-                    ),
-                    centerTitle: true,
-                  ),
+                  appBar: const VersionAppBar(title: 'Settings'),
                   backgroundColor: AppColors.bodyBgColor,
                   body: Container(
                     margin: const EdgeInsets.symmetric(

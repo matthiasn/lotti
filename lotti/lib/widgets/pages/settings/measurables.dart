@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class MeasurablesPage extends StatefulWidget {
@@ -68,16 +69,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
         List<MeasurableDataType> items = snapshot.data ?? [];
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'Measurables',
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-              ),
-            ),
-            backgroundColor: AppColors.headerBgColor,
-          ),
+          appBar: const VersionAppBar(title: 'Measurables'),
           backgroundColor: AppColors.bodyBgColor,
           floatingActionButton: FloatingActionButton(
             child: const Icon(MdiIcons.plus, size: 32),
@@ -146,39 +138,41 @@ class MeasurableTypeCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
         ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
-          title: Text(
-            item.name,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-              fontSize: 24.0,
-            ),
-          ),
-          subtitle: Text(
-            item.description,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-              fontWeight: FontWeight.w200,
-              fontSize: 16.0,
-            ),
-          ),
-          enabled: true,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return DetailRoute(
-                    item: item,
-                    index: index,
-                  );
-                },
+        child: SingleChildScrollView(
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
+            title: Text(
+              item.name,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontFamily: 'Oswald',
+                fontSize: 24.0,
               ),
-            );
-          },
+            ),
+            subtitle: Text(
+              item.description,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontFamily: 'Oswald',
+                fontWeight: FontWeight.w200,
+                fontSize: 16.0,
+              ),
+            ),
+            enabled: true,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return DetailRoute(
+                      item: item,
+                      index: index,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -223,7 +217,7 @@ class _DetailRouteState extends State<DetailRoute> {
           ),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 _formKey.currentState!.save();
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
@@ -234,9 +228,10 @@ class _DetailRouteState extends State<DetailRoute> {
                     displayName: formData['displayName'],
                   );
 
-                  context
+                  await context
                       .read<PersistenceCubit>()
                       .upsertEntityDefinition(dataType);
+                  Navigator.pop(context);
                 }
               },
               child: const Padding(
