@@ -6,6 +6,7 @@
             [cljs.reader :refer [read-string]]
             [meins.electron.main.import.health :as hi]
             [meins.electron.main.import.images :as ii]
+            [meins.electron.main.import.measurement :as im]
             [meins.electron.main.import.survey :as is]
             [meins.electron.main.import.health :as ih]
             [meins.electron.main.import.text :as it]))
@@ -30,6 +31,7 @@
       (it/import-text-entries path put-fn)
       (is/import-filled-surveys path put-fn)
       (ih/import-quantitative-data path put-fn)
+      (im/import-measurement-entries path put-fn)
       (ai/import-audio-files path put-fn))))
 
 (defn set-flutter-docs-path [{:keys [msg-payload]}]

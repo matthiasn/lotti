@@ -1,0 +1,13 @@
+{:measurement_data {:id "75e7a16f-c7fe-42da-aa9b-0d9964b7a1e1"},
+ :mentions         #{},
+ :timezone         "Europe/Berlin",
+ :custom_fields    {"#water" {:vol 100}},
+ :utc-offset       60,
+ :latitude         nil
+ :longitude        nil
+ :perm_tags        #{"#water"},
+ :tags             #{"#water"},
+ :vclock           {"607a7ba8-19d4-41a5-917b-9311830011b4" 21}
+ :timestamp        1639161785890,
+ :text             "100 ml #water",
+ :md               "100 ml #water"}

@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "id": "75e7a16f-c7fe-42da-aa9b-0d9964b7a1e1",
+    "createdAt": "2021-12-10T18:43:05.890882",
+    "updatedAt": "2021-12-10T18:43:05.890882",
+    "dateFrom": "2021-12-10T18:43:05.890877",
+    "dateTo": "2021-12-10T18:43:05.890877",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "607a7ba8-19d4-41a5-917b-9311830011b4": 21
+    }
+  },
+  "data": {
+    "dateFrom": "2021-12-10T18:43:05.890877",
+    "dateTo": "2021-12-10T18:43:05.890877",
+    "value": 100.0,
+    "dataType": {
+      "id": "9e9e7a62-1e56-4059-a568-12234db7399b",
+      "createdAt": "2021-12-10T08:48:19.196767",
+      "updatedAt": "2021-12-10T08:48:19.196767",
+      "name": "water",
+      "displayName": "Water",
+      "description": "Volume of water consumed, in milliliters",
+      "unitName": "ml",
+      "version": 0,
+      "vectorClock": null
+    }
+  },
+  "entryText": null,
+  "geolocation": null,
+  "runtimeType": "measurement"
+}
