@@ -50,7 +50,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        backgroundColor: AppColors.bodyBgColor,
+        backgroundColor: AppColors.headerBgColor,
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           items: const <BottomNavigationBarItem>[
