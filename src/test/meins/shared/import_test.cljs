@@ -5,7 +5,9 @@
             [meins.electron.main.helpers :as h]
             [cljs.spec.alpha :as s]
             [cljs.pprint :as pp]
+            [clojure.data :as data]
             [meins.electron.main.import.images :as ii]
+            [meins.electron.main.import.measurement :as im]
             [meins.electron.main.import.text :as it]
             [meins.electron.main.import.health :as ih]
             [meins.electron.main.import.survey :as is]))
@@ -111,7 +113,9 @@
    :timezone   "Europe/Berlin"
    :utc-offset 0
    :timestamp  1636319781000
-   :img_file   "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.JPG",
+   :img_file   "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.JPG"
+
+
    :md         expected-text3
    :text       expected-text3
    :tags       #{"#import" "#photo"}
@@ -215,6 +219,17 @@
         expected (h/parse-edn (test-data-file "text_test_entry_converted.edn"))
         entry (it/convert-text-entry input)]
     (testing "Text entry JSON is parsed correctly"
+      (is (= entry expected)))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec entry))))
+
+(deftest measurement-entry-import-test
+  (let [json-file (test-data-file "test.measurement.json")
+        input (h/parse-json json-file)
+        expected (h/parse-edn (test-data-file "test.measurement.converted.edn"))
+        mapping-table (h/parse-edn (test-data-file "mapping_table.edn"))
+        entry (im/convert-measurement-entry input mapping-table)]
+    (testing "Measurement entry JSON is parsed correctly"
       (is (= entry expected)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
