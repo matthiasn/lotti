@@ -34,7 +34,8 @@
                :longitude        (get geolocation "longitude")
                :latitude         (get geolocation "latitude")
                :vclock           (get meta-data "vectorClock")}]
-    entry))
+    (when measurement-key
+      entry)))
 
 (defn import-measurement-entries [path data-path put-fn]
   (let [files (sync (str path "/measurement/**/*.measurement.json"))]
