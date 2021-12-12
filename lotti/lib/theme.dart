@@ -8,6 +8,9 @@ class AppColors {
   static Color entryTextColor = const Color.fromRGBO(180, 190, 200, 1);
   static Color editorBgColor = Colors.white;
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
+  static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
+  static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
+  static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);
   static Color headerFontColor = Colors.white;
   static Color headerFontColor2 = entryBgColor;
   static Color activeAudioControl = Colors.red;

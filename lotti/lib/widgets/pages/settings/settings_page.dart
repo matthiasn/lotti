@@ -7,6 +7,7 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/measurables.dart';
+import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
 import 'package:lotti/widgets/pages/settings/sync_settings.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -69,6 +70,19 @@ class _SettingsPageState extends State<SettingsPage> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) {
                                   return const MeasurablesPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
+                          iconData: MdiIcons.mailbox,
+                          title: 'Sync Outbox',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const OutboxMonitorPage();
                                 },
                               ),
                             );
