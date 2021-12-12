@@ -19,6 +19,7 @@ import 'package:lotti/widgets/home.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'database/database.dart';
+import 'database/sync_db.dart';
 
 const enableSentry = false;
 final getIt = GetIt.instance;
@@ -28,6 +29,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   getIt.registerSingleton<JournalDb>(JournalDb());
+  getIt.registerSingleton<SyncDatabase>(SyncDatabase());
   getIt.registerSingleton<VectorClockService>(VectorClockService());
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
 

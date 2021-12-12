@@ -32,7 +32,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   ConnectivityResult? _connectivityResult;
 
   final sendMutex = Mutex();
-  final SyncDatabase _syncDatabase = SyncDatabase();
+  final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
   late String? _b64Secret;
 
   late final StreamSubscription<FGBGType> fgBgSubscription;

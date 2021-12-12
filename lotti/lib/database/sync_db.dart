@@ -58,6 +58,14 @@ class SyncDatabase extends _$SyncDatabase {
         .get();
   }
 
+  Stream<List<OutboxItem>> watchOutboxOpenItems(int limit) {
+    return (select(outbox)
+          ..where((t) => t.status.isNotIn([OutboundMessageStatus.sent.index]))
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..limit(limit))
+        .watch();
+  }
+
   @override
   int get schemaVersion => 1;
 }
