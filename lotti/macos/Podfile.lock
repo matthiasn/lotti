@@ -26,9 +26,9 @@ PODS:
     - Flutter
     - FlutterMacOS
   - ReachabilitySwift (5.0.0)
-  - Sentry (7.5.1):
-    - Sentry/Core (= 7.5.1)
-  - Sentry/Core (7.5.1)
+  - Sentry (7.5.4):
+    - Sentry/Core (= 7.5.4)
+  - Sentry/Core (7.5.4)
   - sentry_flutter (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -36,20 +36,20 @@ PODS:
   - sqflite (0.0.2):
     - FlutterMacOS
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.36.0):
-    - sqlite3/common (= 3.36.0)
-  - sqlite3/common (3.36.0)
-  - sqlite3/fts5 (3.36.0):
+  - sqlite3 (3.37.0):
+    - sqlite3/common (= 3.37.0)
+  - sqlite3/common (3.37.0)
+  - sqlite3/fts5 (3.37.0):
     - sqlite3/common
-  - sqlite3/json1 (3.36.0):
+  - sqlite3/json1 (3.37.0):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.36.0):
+  - sqlite3/perf-threadsafe (3.37.0):
     - sqlite3/common
-  - sqlite3/rtree (3.36.0):
+  - sqlite3/rtree (3.37.0):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - FlutterMacOS
-    - sqlite3 (~> 3.36.0)
+    - sqlite3 (~> 3.37.0)
     - sqlite3/fts5
     - sqlite3/json1
     - sqlite3/perf-threadsafe
@@ -127,11 +127,11 @@ SPEC CHECKSUMS:
   path_provider_macos: 160cab0d5461f0c0e02995469a98f24bdb9a3f1f
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  Sentry: 0718c3ad7a08e1107599610795adaf08864102f3
+  Sentry: 5c5dd4005f3b7b9765d5a8871232cddbd0d888b7
   sentry_flutter: 4cd99764f9fe01c9415790d1f3fb1c7fd3a5cbe9
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
-  sqlite3: 797b1b1f92baf74716a3179f69d9652ce4a5df3f
-  sqlite3_flutter_libs: 88d67935d0135be061e7e310732a1ce6f204c446
+  sqlite3: b56b05777c433a55d852a3405c1903e2b57be2ce
+  sqlite3_flutter_libs: 7327b478a892c09df59f7dca547c504ec0ed21ae
   url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52

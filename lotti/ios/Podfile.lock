@@ -3,7 +3,7 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
-    - Reachability
+    - ReachabilitySwift
   - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -54,9 +54,9 @@ PODS:
   - libwebp/webp (1.2.1)
   - location (0.0.1):
     - Flutter
-  - Mantle (2.1.6):
-    - Mantle/extobjc (= 2.1.6)
-  - Mantle/extobjc (2.1.6)
+  - Mantle (2.2.0):
+    - Mantle/extobjc (= 2.2.0)
+  - Mantle/extobjc (2.2.0)
   - mobile-ffmpeg-audio (4.4.LTS)
   - MTBBarcodeScanner (5.0.11)
   - OrderedSet (5.0.0)
@@ -72,16 +72,16 @@ PODS:
   - qr_code_scanner (0.2.0):
     - Flutter
     - MTBBarcodeScanner
-  - Reachability (3.2)
+  - ReachabilitySwift (5.0.0)
   - SDWebImage (5.12.1):
     - SDWebImage/Core (= 5.12.1)
   - SDWebImage/Core (5.12.1)
   - SDWebImageWebPCoder (0.8.4):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
-  - Sentry (7.5.1):
-    - Sentry/Core (= 7.5.1)
-  - Sentry/Core (7.5.1)
+  - Sentry (7.5.4):
+    - Sentry/Core (= 7.5.4)
+  - Sentry/Core (7.5.4)
   - sentry_flutter (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -89,25 +89,25 @@ PODS:
   - sqflite (0.0.2):
     - Flutter
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.36.0):
-    - sqlite3/common (= 3.36.0)
-  - sqlite3/common (3.36.0)
-  - sqlite3/fts5 (3.36.0):
+  - sqlite3 (3.37.0):
+    - sqlite3/common (= 3.37.0)
+  - sqlite3/common (3.37.0)
+  - sqlite3/fts5 (3.37.0):
     - sqlite3/common
-  - sqlite3/json1 (3.36.0):
+  - sqlite3/json1 (3.37.0):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.36.0):
+  - sqlite3/perf-threadsafe (3.37.0):
     - sqlite3/common
-  - sqlite3/rtree (3.36.0):
+  - sqlite3/rtree (3.37.0):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.36.0)
+    - sqlite3 (~> 3.37.0)
     - sqlite3/fts5
     - sqlite3/json1
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
-  - url_launcher (0.0.1):
+  - url_launcher_ios (0.0.1):
     - Flutter
   - video_player (0.0.1):
     - Flutter
@@ -137,7 +137,7 @@ DEPENDENCIES:
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
-  - url_launcher (from `.symlinks/plugins/url_launcher/ios`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player (from `.symlinks/plugins/video_player/ios`)
 
 SPEC REPOS:
@@ -149,7 +149,7 @@ SPEC REPOS:
     - mobile-ffmpeg-audio
     - MTBBarcodeScanner
     - OrderedSet
-    - Reachability
+    - ReachabilitySwift
     - SDWebImage
     - SDWebImageWebPCoder
     - Sentry
@@ -204,14 +204,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite/ios"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
-  url_launcher:
-    :path: ".symlinks/plugins/url_launcher/ios"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player:
     :path: ".symlinks/plugins/video_player/ios"
 
 SPEC CHECKSUMS:
   audio_session: 4f3e461722055d21515cf3261b64c973c062f345
-  connectivity_plus: 5f0eb61093bec56935f21a1699dd2758bc895587
+  connectivity_plus: 413a8857dd5d9f1c399a39130850d02fe0feaf7e
   device_info_plus: e5c5da33f982a436e103237c0c85f9031142abed
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   flutter_fgbg: 31c0d1140a131daea2d342121808f6aa0dcd879d
@@ -229,7 +229,7 @@ SPEC CHECKSUMS:
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 98a37e597e40bfdb4c911fc98f2c53d0b12d05fc
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
-  Mantle: 4c0ed6ce47c96eccc4dc3bb071deb3def0e2c3be
+  Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   mobile-ffmpeg-audio: 1e0a053f8a6de57114e50ff48b3a85ff1c60f902
   MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
@@ -238,15 +238,15 @@ SPEC CHECKSUMS:
   permission_handler: ccb20a9fad0ee9b1314a52b70b76b473c5f8dab0
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
-  Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
+  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
   SDWebImage: 4dc3e42d9ec0c1028b960a33ac6b637bb432207b
   SDWebImageWebPCoder: f93010f3f6c031e2f8fb3081ca4ee6966c539815
-  Sentry: 0718c3ad7a08e1107599610795adaf08864102f3
+  Sentry: 5c5dd4005f3b7b9765d5a8871232cddbd0d888b7
   sentry_flutter: 4cd99764f9fe01c9415790d1f3fb1c7fd3a5cbe9
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
-  sqlite3: 797b1b1f92baf74716a3179f69d9652ce4a5df3f
-  sqlite3_flutter_libs: a1d040d0c9b60435b50e9626a9e818ddff842487
-  url_launcher: b6e016d912f04be9f5bf6e8e82dc599b7ba59649
+  sqlite3: b56b05777c433a55d852a3405c1903e2b57be2ce
+  sqlite3_flutter_libs: 83a1fbbabdcee09e4e34511bb246136a8a97c9d6
+  url_launcher_ios: 02f1989d4e14e998335b02b67a7590fa34f971af
   video_player: ecd305f42e9044793efd34846e1ce64c31ea6fcb
 
 PODFILE CHECKSUM: ad5bf9f735c40eede66cde505a0d4d051ddea7b2
