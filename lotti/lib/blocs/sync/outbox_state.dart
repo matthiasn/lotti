@@ -10,4 +10,8 @@ class OutboxState with _$OutboxState {
   factory OutboxState.failed() = _Failed;
 }
 
-enum OutboundMessageStatus { pending, sent, error }
+enum OutboxStatus {
+  pending,
+  sent,
+  error,
+}

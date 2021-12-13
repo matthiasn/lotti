@@ -141,7 +141,7 @@ class OutboxCubit extends Cubit<OutboxState> {
                 _syncDatabase.updateOutboxItem(
                   OutboxCompanion(
                     id: Value(nextPending.id),
-                    status: Value(OutboundMessageStatus.sent.index),
+                    status: Value(OutboxStatus.sent.index),
                   ),
                 );
                 if (unprocessed.length > 1) {
@@ -221,7 +221,7 @@ class OutboxCubit extends Cubit<OutboxState> {
 
         int fileLength = attachment?.lengthSync() ?? 0;
         await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboundMessageStatus.pending.index),
+          status: Value(OutboxStatus.pending.index),
           filePath: Value(
               (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
           subject: Value(subject),
@@ -249,7 +249,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         String subject = '$hostHash:$localCounter';
 
         await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboundMessageStatus.pending.index),
+          status: Value(OutboxStatus.pending.index),
           subject: Value(subject),
           message: Value(jsonString),
         ));

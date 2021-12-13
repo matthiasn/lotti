@@ -19,7 +19,7 @@ class Outbox extends Table {
       dateTime().named('updated_at').withDefault(Constant(DateTime.now()))();
 
   IntColumn get status =>
-      integer().withDefault(Constant(OutboundMessageStatus.pending.index))();
+      integer().withDefault(Constant(OutboxStatus.pending.index))();
 
   IntColumn get retries => integer().withDefault(const Constant(0))();
   TextColumn get message => text()();
@@ -52,15 +52,23 @@ class SyncDatabase extends _$SyncDatabase {
 
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
     return (select(outbox)
-          ..where((t) => t.status.equals(OutboundMessageStatus.pending.index))
+          ..where((t) => t.status.equals(OutboxStatus.pending.index))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
           ..limit(limit))
         .get();
   }
 
-  Stream<List<OutboxItem>> watchOutboxOpenItems(int limit) {
+  Stream<List<OutboxItem>> watchOutboxItems({
+    int limit = 1000,
+    List<OutboxStatus> statuses = const [
+      OutboxStatus.pending,
+      OutboxStatus.error,
+      OutboxStatus.sent,
+    ],
+  }) {
     return (select(outbox)
-          ..where((t) => t.status.isNotIn([OutboundMessageStatus.sent.index]))
+          ..where((t) => t.status
+              .isIn(statuses.map((OutboxStatus status) => status.index)))
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
           ..limit(limit))
         .watch();
