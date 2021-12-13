@@ -142,7 +142,7 @@ class MeasurableTypeCard extends StatelessWidget {
             contentPadding:
                 const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
             title: Text(
-              item.name,
+              item.displayName,
               style: TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
@@ -221,10 +221,10 @@ class _DetailRouteState extends State<DetailRoute> {
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
                   MeasurableDataType dataType = item.copyWith(
-                    name: formData!['name'],
-                    description: formData['description'],
-                    unitName: formData['unitName'],
-                    displayName: formData['displayName'],
+                    name: '${formData!['name']}'.trim().replaceAll(' ', '_'),
+                    description: '${formData['description']}'.trim(),
+                    unitName: '${formData['unitName']}'.trim(),
+                    displayName: '${formData['displayName']}'.trim(),
                   );
 
                   context
