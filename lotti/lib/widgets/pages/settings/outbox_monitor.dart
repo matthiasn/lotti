@@ -1,11 +1,11 @@
 import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/app_bar_version.dart';
 
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({Key? key}) : super(key: key);
@@ -16,7 +16,9 @@ class OutboxMonitorPage extends StatefulWidget {
 
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   final SyncDatabase _db = getIt<SyncDatabase>();
-  late final Stream<List<OutboxItem>> stream = _db.watchOutboxOpenItems(250);
+  late Stream<List<OutboxItem>> stream =
+      _db.watchOutboxItems(statuses: [OutboxStatus.pending]);
+  String _selectedValue = 'pending';
 
   @override
   void initState() {
@@ -34,7 +36,61 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         List<OutboxItem> items = snapshot.data ?? [];
 
         return Scaffold(
-          appBar: const VersionAppBar(title: 'Sync Outbox'),
+          appBar: AppBar(
+            backgroundColor: AppColors.headerBgColor,
+            title: CupertinoSegmentedControl(
+              selectedColor: AppColors.entryBgColor,
+              unselectedColor: AppColors.bodyBgColor,
+              borderColor: AppColors.bodyBgColor,
+              groupValue: _selectedValue,
+              onValueChanged: (String value) {
+                setState(() {
+                  _selectedValue = value;
+                  if (_selectedValue == 'all') {
+                    stream = _db.watchOutboxItems();
+                  }
+                  if (_selectedValue == 'pending') {
+                    stream =
+                        _db.watchOutboxItems(statuses: [OutboxStatus.pending]);
+                  }
+                  if (_selectedValue == 'error') {
+                    stream =
+                        _db.watchOutboxItems(statuses: [OutboxStatus.error]);
+                  }
+                });
+              },
+              children: const {
+                'pending': SizedBox(
+                  width: 100,
+                  height: 40,
+                  child: Center(
+                    child: Text(
+                      'pending',
+                      style: TextStyle(fontFamily: 'Oswald'),
+                    ),
+                  ),
+                ),
+                'error': SizedBox(
+                  width: 100,
+                  child: Center(
+                    child: Text(
+                      'error',
+                      style: TextStyle(fontFamily: 'Oswald'),
+                    ),
+                  ),
+                ),
+                'all': SizedBox(
+                  width: 100,
+                  child: Center(
+                    child: Text(
+                      'all',
+                      style: TextStyle(fontFamily: 'Oswald'),
+                    ),
+                  ),
+                ),
+              },
+            ),
+          ),
           backgroundColor: AppColors.bodyBgColor,
           body: ListView(
             shrinkWrap: true,
@@ -67,15 +123,14 @@ class OutboxItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    OutboundMessageStatus statusEnum =
-        OutboundMessageStatus.values[item.status];
+    OutboxStatus statusEnum = OutboxStatus.values[item.status];
     String status = EnumToString.convertToString(statusEnum);
 
-    Color cardColor(OutboundMessageStatus status) {
+    Color cardColor(OutboxStatus status) {
       switch (statusEnum) {
-        case OutboundMessageStatus.pending:
+        case OutboxStatus.pending:
           return AppColors.outboxPendingColor;
-        case OutboundMessageStatus.error:
+        case OutboxStatus.error:
           return AppColors.outboxErrorColor;
         default:
           return AppColors.outboxSuccessColor;

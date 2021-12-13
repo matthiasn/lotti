@@ -141,7 +141,8 @@ class OutboxCubit extends Cubit<OutboxState> {
                 _syncDatabase.updateOutboxItem(
                   OutboxCompanion(
                     id: Value(nextPending.id),
-                    status: Value(OutboundMessageStatus.sent.index),
+                    status: Value(OutboxStatus.sent.index),
+                    updatedAt: Value(DateTime.now()),
                   ),
                 );
                 if (unprocessed.length > 1) {
@@ -152,10 +153,11 @@ class OutboxCubit extends Cubit<OutboxState> {
               _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
                   id: Value(nextPending.id),
-                  // status: Value(nextPending.retries < 10
-                  //     ? OutboundMessageStatus.pending.index
-                  //     : OutboundMessageStatus.error.index),
+                  status: Value(nextPending.retries < 10
+                      ? OutboxStatus.pending.index
+                      : OutboxStatus.error.index),
                   retries: Value(nextPending.retries + 1),
+                  updatedAt: Value(DateTime.now()),
                 ),
               );
               Timer(const Duration(seconds: 1), () => sendNext());
@@ -221,11 +223,13 @@ class OutboxCubit extends Cubit<OutboxState> {
 
         int fileLength = attachment?.lengthSync() ?? 0;
         await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboundMessageStatus.pending.index),
+          status: Value(OutboxStatus.pending.index),
           filePath: Value(
               (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null),
           subject: Value(subject),
           message: Value(jsonString),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
         ));
 
         await transaction.finish();
@@ -249,9 +253,11 @@ class OutboxCubit extends Cubit<OutboxState> {
         String subject = '$hostHash:$localCounter';
 
         await _syncDatabase.addOutboxItem(OutboxCompanion(
-          status: Value(OutboundMessageStatus.pending.index),
+          status: Value(OutboxStatus.pending.index),
           subject: Value(subject),
           message: Value(jsonString),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
         ));
 
         await transaction.finish();
