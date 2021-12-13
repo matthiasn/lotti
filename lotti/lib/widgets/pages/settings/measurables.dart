@@ -196,7 +196,6 @@ class DetailRoute extends StatefulWidget {
 
 class _DetailRouteState extends State<DetailRoute> {
   final _formKey = GlobalKey<FormBuilderState>();
-  final JournalDb _db = getIt<JournalDb>();
 
   @override
   Widget build(BuildContext context) {

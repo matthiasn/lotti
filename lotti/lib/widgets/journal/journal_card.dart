@@ -65,7 +65,8 @@ class JournalCardTitle extends StatelessWidget {
                     SurveySummaryWidget(surveyEntry),
                 measurement: (MeasurementEntry measurementEntry) {
                   MeasurementData data = measurementEntry.data;
-                  return EntryText('${data.dataType.displayName}: ${data.value}'
+                  return EntryText(
+                      '${data.dataType.displayName}: ${nf.format(data.value)}'
                       '\n${measurementEntry.entryText?.plainText ?? ''}');
                 },
                 orElse: () => Row(
