@@ -7,6 +7,7 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class NewMeasurementPage extends StatefulWidget {
   const NewMeasurementPage({Key? key}) : super(key: key);
@@ -60,7 +61,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         dataType: formData!['type'] as MeasurableDataType,
                         dateTo: now,
                         dateFrom: now,
-                        value: double.parse(formData['value']),
+                        value: nf
+                            .parse('${formData['value']}'.replaceAll(',', '.')),
                       );
                       context
                           .read<PersistenceCubit>()

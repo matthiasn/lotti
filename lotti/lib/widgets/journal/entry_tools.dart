@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-NumberFormat nf = NumberFormat("###.0#", "en_US");
+NumberFormat nf = NumberFormat('###.##');
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
