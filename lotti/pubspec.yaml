@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.1+167
+version: 0.3.2+168
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -40,7 +40,7 @@ dependencies:
   flutter_image_compress: ^1.1.0
   flutter_map: ^0.14.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^2.3.0
+  flutter_quill: ^2.3.1
   flutter_secure_storage: ^5.0.0
   flutter_sound: ^8.3.12
   freezed_annotation: ^1.1.0
