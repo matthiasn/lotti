@@ -129,7 +129,10 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
-    return (select(measurableTypes)).map(measurableDataType).watch();
+    return (select(measurableTypes)
+          ..orderBy([(t) => OrderingTerm(expression: t.uniqueName)]))
+        .map(measurableDataType)
+        .watch();
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
