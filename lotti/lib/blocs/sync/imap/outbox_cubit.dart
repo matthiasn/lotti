@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:enough_mail/enough_mail.dart';
-import 'package:enough_mail/imap/imap_client.dart';
-import 'package:enough_mail/imap/response.dart';
 import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/outbox_save_imap.dart';

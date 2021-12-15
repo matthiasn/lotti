@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';

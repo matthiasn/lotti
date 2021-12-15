@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/add_page.dart';
