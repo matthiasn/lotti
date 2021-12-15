@@ -128,6 +128,23 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
+    return dbEntities.map((e) => fromDbEntity(e)).toList();
+  }
+
+  Stream<List<JournalEntity>> watchJournalEntities({int limit = 1000}) {
+    return (select(journal)
+          ..orderBy([
+            (t) => OrderingTerm(
+                  expression: t.dateFrom,
+                  mode: OrderingMode.desc,
+                )
+          ])
+          ..limit(limit))
+        .watch()
+        .map(entityStreamMapper);
+  }
+
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
     return (select(measurableTypes)
           ..orderBy([(t) => OrderingTerm(expression: t.uniqueName)]))

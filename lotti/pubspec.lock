@@ -558,7 +558,7 @@ packages:
       name: flutter_colorpicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.1"
+    version: "1.0.3"
   flutter_dotenv:
     dependency: "direct main"
     description:
@@ -670,7 +670,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.0"
+    version: "2.4.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
