@@ -40,11 +40,11 @@ class _HomePageState extends State<HomePage> {
             },
             child: IndexedStack(
               index: _pageIndex,
-              children: <Widget>[
+              children: const <Widget>[
                 JournalPage(),
-                const AddPage(),
-                const AudioPage(),
-                const SettingsPage(),
+                AddPage(),
+                AudioPage(),
+                SettingsPage(),
               ],
             ),
           ),

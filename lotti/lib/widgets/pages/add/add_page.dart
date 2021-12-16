@@ -40,7 +40,7 @@ class _AddPageState extends State<AddPage> {
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[],
+              children: const <Widget>[],
             ),
           ),
         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -11,11 +10,7 @@ import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class JournalPage extends StatefulWidget {
-  final JournalDb _db = getIt<JournalDb>();
-
-  late final Stream<List<JournalEntity>> stream = _db.watchJournalEntities();
-
-  JournalPage({
+  const JournalPage({
     Key? key,
     this.navigatorKey,
   }) : super(key: key);
@@ -37,6 +32,9 @@ class FilterBy {
 }
 
 class _JournalPageState extends State<JournalPage> {
+  final JournalDb _db = getIt<JournalDb>();
+  late final Stream<List<JournalEntity>> stream = _db.watchJournalEntities();
+
   static final List<FilterBy> _entryTypes = [
     FilterBy(typeName: r'_$JournalEntry', name: "Text"),
     FilterBy(typeName: r'_$JournalAudio', name: "Audio"),
@@ -60,74 +58,79 @@ class _JournalPageState extends State<JournalPage> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            return BlocBuilder<PersistenceCubit, PersistenceState>(
-              builder: (BuildContext context, PersistenceState state) {
-                return Scaffold(
-                  appBar: AppBar(
-                    backgroundColor: AppColors.headerBgColor,
-                    title: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: MultiSelectDialogField(
-                        items: _items,
-                        title: const Text("Entry Types"),
-                        selectedColor: Colors.blue,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(40)),
-                          border: Border.all(
-                            color: AppColors.entryBgColor,
-                            width: 2,
+            return StreamBuilder<List<JournalEntity>>(
+              stream: stream,
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<JournalEntity>> snapshot,
+              ) {
+                if (snapshot.data == null) {
+                  return Container();
+                } else {
+                  List<JournalEntity> items = snapshot.data!;
+
+                  return Scaffold(
+                    appBar: AppBar(
+                      backgroundColor: AppColors.headerBgColor,
+                      title: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: MultiSelectDialogField(
+                          items: _items,
+                          title: const Text("Entry Types"),
+                          selectedColor: Colors.blue,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(40)),
+                            border: Border.all(
+                              color: AppColors.entryBgColor,
+                              width: 2,
+                            ),
                           ),
-                        ),
-                        buttonIcon: Icon(
-                          Icons.search,
-                          color: AppColors.entryBgColor,
-                        ),
-                        buttonText: Text(
-                          "Filter by Type",
-                          style: TextStyle(
+                          buttonIcon: Icon(
+                            Icons.search,
                             color: AppColors.entryBgColor,
-                            fontSize: 16,
                           ),
+                          buttonText: Text(
+                            "Filter by Type",
+                            style: TextStyle(
+                              color: AppColors.entryBgColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                          onConfirm: (List<FilterBy?> results) {
+                            context
+                                .read<PersistenceCubit>()
+                                .queryFilteredJournal(results
+                                    .map((FilterBy? e) => e!.typeName)
+                                    .toList());
+                          },
                         ),
-                        onConfirm: (List<FilterBy?> results) {
-                          context.read<PersistenceCubit>().queryFilteredJournal(
-                              results
-                                  .map((FilterBy? e) => e!.typeName)
-                                  .toList());
-                        },
+                      ),
+                      centerTitle: true,
+                    ),
+                    backgroundColor: AppColors.bodyBgColor,
+                    body: Container(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 8.0,
+                      ),
+                      child: ListView(
+                        children: List.generate(
+                          items.length,
+                          (int index) {
+                            debugPrint(index.toString());
+                            return JournalCard(
+                              item: items.elementAt(index),
+                              index: index,
+                            );
+                          },
+                          growable: true,
+                        ),
                       ),
                     ),
-                    centerTitle: true,
-                  ),
-                  backgroundColor: AppColors.bodyBgColor,
-                  body: Container(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 8.0,
-                    ),
-                    child: state.when(
-                      initial: () => const Text('initial'),
-                      loading: () => const Text('loading'),
-                      failed: () => const Text('failed'),
-                      online: (List<JournalEntity> entries) {
-                        debugPrint('entries.length ${entries.length}');
-                        return ListView(
-                          children: List.generate(
-                            entries.length,
-                            (int index) {
-                              return JournalCard(
-                                item: entries.elementAt(index),
-                                index: index,
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
+                  );
+                }
               },
             );
           },
