@@ -70,3 +70,8 @@ SELECT * FROM journal
   WHERE type IN :types
   ORDER BY date_from DESC
   LIMIT :limit;
+
+orderedJournal:
+SELECT * FROM journal
+  ORDER BY date_from DESC
+  LIMIT :limit;
