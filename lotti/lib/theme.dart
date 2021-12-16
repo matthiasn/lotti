@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 class AppColors {

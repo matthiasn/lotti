@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
@@ -41,7 +40,7 @@ class _AddPageState extends State<AddPage> {
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[],
+              children: const <Widget>[],
             ),
           ),
         ),

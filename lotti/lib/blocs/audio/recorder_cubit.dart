@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';

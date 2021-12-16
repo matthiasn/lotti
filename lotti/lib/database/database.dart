@@ -95,18 +95,6 @@ class JournalDb extends _$JournalDb {
     return rowsAffected;
   }
 
-  Future<List<JournalDbEntity>> latestDbEntities(int limit) async {
-    return (select(journal)
-          ..orderBy([
-            (t) => OrderingTerm(
-                  expression: t.dateFrom,
-                  mode: OrderingMode.desc,
-                )
-          ])
-          ..limit(limit))
-        .get();
-  }
-
   Future<JournalDbEntity?> entityById(String id) async {
     List<JournalDbEntity> res =
         await (select(journal)..where((t) => t.id.equals(id))).get();
@@ -115,17 +103,15 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Future<List<JournalEntity>> latestJournalEntities(int limit) async {
-    List<JournalDbEntity> dbEntities = await latestDbEntities(limit);
-    return dbEntities.map(fromDbEntity).toList();
+  List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
+    return dbEntities.map((e) => fromDbEntity(e)).toList();
   }
 
-  Future<List<JournalEntity>> filteredJournalEntities({
+  Stream<List<JournalEntity>> watchJournalEntities({
     required List<String> types,
-    required int limit,
-  }) async {
-    var dbEntities = await filteredJournal(types, 100).get();
-    return dbEntities.map(fromDbEntity).toList();
+    int limit = 1000,
+  }) {
+    return filteredJournal(types, limit).watch().map(entityStreamMapper);
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {

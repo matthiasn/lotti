@@ -1,10 +1,7 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
@@ -14,7 +11,7 @@ class JournalPage extends StatefulWidget {
   const JournalPage({
     Key? key,
     this.navigatorKey,
-  });
+  }) : super(key: key);
 
   final GlobalKey? navigatorKey;
 
@@ -33,19 +30,29 @@ class FilterBy {
 }
 
 class _JournalPageState extends State<JournalPage> {
+  final JournalDb _db = getIt<JournalDb>();
+
   static final List<FilterBy> _entryTypes = [
     FilterBy(typeName: r'_$JournalEntry', name: "Text"),
     FilterBy(typeName: r'_$JournalAudio', name: "Audio"),
     FilterBy(typeName: r'_$JournalImage', name: "Photo"),
     FilterBy(typeName: r'_$QuantitativeEntry', name: "Quantitative"),
+    FilterBy(typeName: r'_$MeasurementEntry', name: "Measurement"),
+    FilterBy(typeName: r'_$SurveyEntry', name: "Questionnaire"),
   ];
-  final _items = _entryTypes
+
+  late Stream<List<JournalEntity>> stream;
+
+  final List<MultiSelectItem<FilterBy?>> _items = _entryTypes
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
       .toList();
+
+  final List<String> _allTypes = _entryTypes.map((e) => e.typeName).toList();
 
   @override
   void initState() {
     super.initState();
+    stream = _db.watchJournalEntities(types: _allTypes);
   }
 
   @override
@@ -56,74 +63,81 @@ class _JournalPageState extends State<JournalPage> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            return BlocBuilder<PersistenceCubit, PersistenceState>(
-              builder: (BuildContext context, PersistenceState state) {
-                return Scaffold(
-                  appBar: AppBar(
-                    backgroundColor: AppColors.headerBgColor,
-                    title: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: MultiSelectDialogField(
-                        items: _items,
-                        title: const Text("Entry Types"),
-                        selectedColor: Colors.blue,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(40)),
-                          border: Border.all(
-                            color: AppColors.entryBgColor,
-                            width: 2,
+            return StreamBuilder<List<JournalEntity>>(
+              stream: stream,
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<JournalEntity>> snapshot,
+              ) {
+                if (snapshot.data == null) {
+                  return Container();
+                } else {
+                  List<JournalEntity> items = snapshot.data!;
+
+                  return Scaffold(
+                    appBar: AppBar(
+                      backgroundColor: AppColors.headerBgColor,
+                      title: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: MultiSelectDialogField(
+                          items: _items,
+                          title: const Text("Entry Types"),
+                          selectedColor: Colors.blue,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(40)),
+                            border: Border.all(
+                              color: AppColors.entryBgColor,
+                              width: 2,
+                            ),
                           ),
-                        ),
-                        buttonIcon: Icon(
-                          Icons.search,
-                          color: AppColors.entryBgColor,
-                        ),
-                        buttonText: Text(
-                          "Filter by Type",
-                          style: TextStyle(
+                          buttonIcon: Icon(
+                            Icons.search,
                             color: AppColors.entryBgColor,
-                            fontSize: 16,
                           ),
+                          buttonText: Text(
+                            "Filter by Type",
+                            style: TextStyle(
+                              color: AppColors.entryBgColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                          onConfirm: (List<FilterBy?> results) {
+                            final List<String> types = results.isNotEmpty
+                                ? results.map((e) => e?.typeName ?? '').toList()
+                                : _allTypes;
+
+                            setState(() {
+                              stream = _db.watchJournalEntities(types: types);
+                            });
+                          },
                         ),
-                        onConfirm: (List<FilterBy?> results) {
-                          context.read<PersistenceCubit>().queryFilteredJournal(
-                              results
-                                  .map((FilterBy? e) => e!.typeName)
-                                  .toList());
-                        },
+                      ),
+                      centerTitle: true,
+                    ),
+                    backgroundColor: AppColors.bodyBgColor,
+                    body: Container(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 8.0,
+                      ),
+                      child: ListView(
+                        children: List.generate(
+                          items.length,
+                          (int index) {
+                            debugPrint(index.toString());
+                            return JournalCard(
+                              item: items.elementAt(index),
+                              index: index,
+                            );
+                          },
+                          growable: true,
+                        ),
                       ),
                     ),
-                    centerTitle: true,
-                  ),
-                  backgroundColor: AppColors.bodyBgColor,
-                  body: Container(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 8.0,
-                    ),
-                    child: state.when(
-                      initial: () => const Text('initial'),
-                      loading: () => const Text('loading'),
-                      failed: () => const Text('failed'),
-                      online: (List<JournalEntity> entries) {
-                        debugPrint('entries.length ${entries.length}');
-                        return ListView(
-                          children: List.generate(
-                            entries.length,
-                            (int index) {
-                              return JournalCard(
-                                item: entries.elementAt(index),
-                                index: index,
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
+                  );
+                }
               },
             );
           },
