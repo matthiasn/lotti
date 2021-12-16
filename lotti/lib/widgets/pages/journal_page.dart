@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -98,13 +96,7 @@ class _JournalPageState extends State<JournalPage> {
                               fontSize: 16,
                             ),
                           ),
-                          onConfirm: (List<FilterBy?> results) {
-                            context
-                                .read<PersistenceCubit>()
-                                .queryFilteredJournal(results
-                                    .map((FilterBy? e) => e!.typeName)
-                                    .toList());
-                          },
+                          onConfirm: (List<FilterBy?> results) {},
                         ),
                       ),
                       centerTitle: true,

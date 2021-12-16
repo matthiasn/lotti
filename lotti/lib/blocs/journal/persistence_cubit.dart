@@ -41,42 +41,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<void> init() async {
     emit(PersistenceState.online(entries: []));
-    queryJournal();
-  }
-
-  Future<void> queryJournal() async {
-    final transaction = Sentry.startTransaction('queryJournal()', 'task');
-    try {
-      List<JournalEntity> entries = await _journalDb.latestJournalEntities(100);
-      emit(PersistenceState.online(entries: entries));
-    } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
-    }
-
-    await transaction.finish();
-  }
-
-  Future<void> queryFilteredJournal(List<String> types) async {
-    final transaction = Sentry.startTransaction('queryJournal()', 'task');
-    try {
-      List<JournalEntity> entries = await _journalDb.filteredJournalEntities(
-        types: types,
-        limit: 100,
-      );
-
-      emit(PersistenceState.online(entries: entries));
-    } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
-    }
-
-    await transaction.finish();
-  }
-
-  void queryJournalDelayed(int seconds) {
-    timer ??= Timer(Duration(seconds: seconds), () {
-      queryJournal();
-      timer = null;
-    });
   }
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
@@ -317,8 +281,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ));
       }
       await transaction.finish();
-
-      queryJournalDelayed(1);
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
@@ -402,8 +364,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ));
       }
       await transaction.finish();
-
-      queryJournalDelayed(1);
       return saved;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
