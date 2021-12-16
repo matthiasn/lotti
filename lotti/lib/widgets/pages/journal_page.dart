@@ -31,21 +31,28 @@ class FilterBy {
 
 class _JournalPageState extends State<JournalPage> {
   final JournalDb _db = getIt<JournalDb>();
-  late final Stream<List<JournalEntity>> stream = _db.watchJournalEntities();
 
   static final List<FilterBy> _entryTypes = [
     FilterBy(typeName: r'_$JournalEntry', name: "Text"),
     FilterBy(typeName: r'_$JournalAudio', name: "Audio"),
     FilterBy(typeName: r'_$JournalImage', name: "Photo"),
     FilterBy(typeName: r'_$QuantitativeEntry', name: "Quantitative"),
+    FilterBy(typeName: r'_$MeasurementEntry', name: "Measurement"),
+    FilterBy(typeName: r'_$SurveyEntry', name: "Questionnaire"),
   ];
-  final _items = _entryTypes
+
+  late Stream<List<JournalEntity>> stream;
+
+  final List<MultiSelectItem<FilterBy?>> _items = _entryTypes
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
       .toList();
+
+  final List<String> _allTypes = _entryTypes.map((e) => e.typeName).toList();
 
   @override
   void initState() {
     super.initState();
+    stream = _db.watchJournalEntities(types: _allTypes);
   }
 
   @override
@@ -96,7 +103,15 @@ class _JournalPageState extends State<JournalPage> {
                               fontSize: 16,
                             ),
                           ),
-                          onConfirm: (List<FilterBy?> results) {},
+                          onConfirm: (List<FilterBy?> results) {
+                            final List<String> types = results.isNotEmpty
+                                ? results.map((e) => e?.typeName ?? '').toList()
+                                : _allTypes;
+
+                            setState(() {
+                              stream = _db.watchJournalEntities(types: types);
+                            });
+                          },
                         ),
                       ),
                       centerTitle: true,

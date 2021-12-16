@@ -107,11 +107,7 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map((e) => fromDbEntity(e)).toList();
   }
 
-  Stream<List<JournalEntity>> watchJournalEntities({int limit = 1000}) {
-    return orderedJournal(limit).watch().map(entityStreamMapper);
-  }
-
-  Stream<List<JournalEntity>> watchFilteredJournalEntities({
+  Stream<List<JournalEntity>> watchJournalEntities({
     required List<String> types,
     int limit = 1000,
   }) {
