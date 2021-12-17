@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/measurables.dart';
@@ -27,6 +28,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
   void initState() {
     super.initState();
   }
+
+  String description = '';
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +62,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       DateTime now = DateTime.now();
                       MeasurementData measurement = MeasurementData(
                         dataType: formData!['type'] as MeasurableDataType,
-                        dateTo: now,
-                        dateFrom: now,
+                        dateTo: formData['date'],
+                        dateFrom: formData['date'],
                         value: nf
                             .parse('${formData['value']}'.replaceAll(',', '.')),
                       );
@@ -105,6 +108,11 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                 labelText: 'Type',
                               ),
                               hint: const Text('Select Measurement Type'),
+                              onChanged: (MeasurableDataType? value) {
+                                setState(() {
+                                  description = value?.description ?? '';
+                                });
+                              },
                               validator: FormBuilderValidators.compose(
                                   [FormBuilderValidators.required(context)]),
                               items: items
@@ -115,13 +123,27 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                       ))
                                   .toList(),
                             ),
-                            const FormTextField(
-                              initialValue: '',
-                              labelText: 'Value',
-                              name: 'value',
-                              keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true),
-                            ),
+                            if (description.isNotEmpty)
+                              FormBuilderDateTimePicker(
+                                name: 'date',
+                                alwaysUse24HourFormat: true,
+                                format: DateFormat(
+                                    'EEEE, MMMM d, yyyy \'at\' HH:mm'),
+                                inputType: InputType.both,
+                                decoration: const InputDecoration(
+                                  labelText: 'Measurement taken',
+                                ),
+                                initialValue: DateTime.now(),
+                              ),
+                            if (description.isNotEmpty)
+                              FormTextField(
+                                initialValue: '',
+                                labelText: description,
+                                name: 'value',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                              ),
                           ],
                         ),
                       ),
