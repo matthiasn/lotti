@@ -88,7 +88,7 @@ class InboxImapCubit extends Cubit<ImapState> {
               (JournalEntity journalEntity, SyncEntryStatus status) async {
             await saveJournalEntityJson(journalEntity);
 
-            journalEntity.maybeMap(
+            await journalEntity.maybeMap(
               journalAudio: (JournalAudio journalAudio) async {
                 if (syncMessage.status == SyncEntryStatus.initial) {
                   await saveAudioAttachment(message, journalAudio, b64Secret);
