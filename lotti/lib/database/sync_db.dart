@@ -69,7 +69,12 @@ class SyncDatabase extends _$SyncDatabase {
     return (select(outbox)
           ..where((t) => t.status
               .isIn(statuses.map((OutboxStatus status) => status.index)))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy([
+            (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                )
+          ])
           ..limit(limit))
         .watch();
   }
