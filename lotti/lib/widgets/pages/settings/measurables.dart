@@ -207,6 +207,7 @@ class _DetailRouteState extends State<DetailRoute> {
       return Scaffold(
         backgroundColor: AppColors.bodyBgColor,
         appBar: AppBar(
+          foregroundColor: AppColors.appBarFgColor,
           title: Text(
             item.displayName,
             style: TextStyle(

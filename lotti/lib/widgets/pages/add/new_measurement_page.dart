@@ -54,6 +54,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                 ),
               ),
               backgroundColor: AppColors.headerBgColor,
+              foregroundColor: AppColors.appBarFgColor,
               actions: <Widget>[
                 TextButton(
                   onPressed: () async {
@@ -73,7 +74,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       Navigator.pop(context);
                     }
                   },
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24.0),
                     child: Text(
                       'Save',
@@ -81,6 +82,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         fontSize: 20,
                         fontFamily: 'Oswald',
                         fontWeight: FontWeight.bold,
+                        color: AppColors.appBarFgColor,
                       ),
                     ),
                   ),
