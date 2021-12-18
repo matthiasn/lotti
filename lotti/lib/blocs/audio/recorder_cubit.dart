@@ -30,7 +30,6 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   AudioRecorderCubit({required PersistenceCubit persistenceCubit})
       : super(initialState) {
     _persistenceCubit = persistenceCubit;
-    _openAudioSession();
   }
 
   Future<void> _openAudioSession() async {
@@ -43,12 +42,11 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         }
       }
 
-      _myRecorder?.openAudioSession().then((value) {
-        emit(state.copyWith(status: AudioRecorderStatus.initialized));
-        _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
-        _myRecorder?.onProgress?.listen((event) {
-          updateProgress(event);
-        });
+      await _myRecorder?.openAudioSession();
+      emit(state.copyWith(status: AudioRecorderStatus.initialized));
+      _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
+      _myRecorder?.onProgress?.listen((event) {
+        updateProgress(event);
       });
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
@@ -83,6 +81,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void record() async {
     try {
+      await _openAudioSession();
       DateTime created = DateTime.now();
       String fileName =
           '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
