@@ -45,6 +45,7 @@ class _HealthPageState extends State<HealthPage> {
             ),
           ),
           backgroundColor: AppColors.headerBgColor,
+          foregroundColor: AppColors.appBarFgColor,
         ),
         backgroundColor: AppColors.bodyBgColor,
         body: Center(

@@ -38,6 +38,7 @@ class _EditorPageState extends State<EditorPage> {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: AppColors.headerBgColor,
+          foregroundColor: AppColors.appBarFgColor,
         ),
         backgroundColor: AppColors.bodyBgColor,
         body: Center(

@@ -39,12 +39,13 @@ class _VersionAppBarState extends State<VersionAppBar> {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: AppColors.headerBgColor,
+      foregroundColor: AppColors.appBarFgColor,
       title: Column(
         children: [
           Text(
             widget.title,
             style: TextStyle(
-              color: AppColors.entryTextColor,
+              color: AppColors.appBarFgColor,
               fontFamily: 'Oswald',
             ),
           ),

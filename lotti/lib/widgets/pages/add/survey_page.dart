@@ -116,6 +116,7 @@ class SurveyPage extends StatelessWidget {
           ),
         ),
         backgroundColor: AppColors.headerBgColor,
+        foregroundColor: AppColors.appBarFgColor,
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: Center(

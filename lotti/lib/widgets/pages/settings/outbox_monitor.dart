@@ -42,7 +42,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: AppColors.headerBgColor,
-                foregroundColor: AppColors.entryBgColor,
+                foregroundColor: AppColors.appBarFgColor,
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
