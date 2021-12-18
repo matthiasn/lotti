@@ -59,7 +59,6 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                     _formKey.currentState!.save();
                     if (_formKey.currentState!.validate()) {
                       final formData = _formKey.currentState?.value;
-                      DateTime now = DateTime.now();
                       MeasurementData measurement = MeasurementData(
                         dataType: formData!['type'] as MeasurableDataType,
                         dateTo: formData['date'],

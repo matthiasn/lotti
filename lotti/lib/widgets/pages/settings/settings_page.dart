@@ -13,7 +13,7 @@ class SettingsPage extends StatefulWidget {
   const SettingsPage({
     Key? key,
     this.navigatorKey,
-  });
+  }) : super(key: key);
 
   final GlobalKey? navigatorKey;
 

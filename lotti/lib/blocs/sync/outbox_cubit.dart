@@ -57,10 +57,10 @@ class OutboxCubit extends Cubit<OutboxState> {
             ),
             withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
-          _startPolling();
+          startPolling();
         }
         if (event == FGBGType.background) {
-          _stopPolling();
+          stopPolling();
         }
       });
     }
@@ -73,7 +73,7 @@ class OutboxCubit extends Cubit<OutboxState> {
       _b64Secret = syncConfig.sharedSecret;
     }
     emit(OutboxState.online());
-    _startPolling();
+    startPolling();
   }
 
   void reportConnectivity() async {
@@ -167,7 +167,7 @@ class OutboxCubit extends Cubit<OutboxState> {
           }
         }
       } else {
-        _stopPolling();
+        stopPolling();
       }
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
@@ -177,14 +177,14 @@ class OutboxCubit extends Cubit<OutboxState> {
     await transaction.finish();
   }
 
-  void _startPolling() async {
+  void startPolling() async {
     sendNext();
     timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       sendNext();
     });
   }
 
-  void _stopPolling() async {
+  void stopPolling() async {
     if (timer != null) {
       timer!.cancel();
     }
@@ -233,7 +233,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         ));
 
         await transaction.finish();
-        _startPolling();
+        startPolling();
       } catch (exception, stackTrace) {
         await Sentry.captureException(exception, stackTrace: stackTrace);
       }
@@ -261,7 +261,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         ));
 
         await transaction.finish();
-        _startPolling();
+        startPolling();
       } catch (exception, stackTrace) {
         await Sentry.captureException(exception, stackTrace: stackTrace);
       }

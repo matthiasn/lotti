@@ -6,7 +6,7 @@ class VersionAppBar extends StatefulWidget with PreferredSizeWidget {
   const VersionAppBar({
     Key? key,
     required this.title,
-  });
+  }) : super(key: key);
 
   final String title;
 
