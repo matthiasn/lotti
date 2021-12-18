@@ -1,6 +1,8 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/main.dart';
@@ -27,84 +29,102 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<OutboxItem>>(
-      stream: stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<OutboxItem>> snapshot,
-      ) {
-        List<OutboxItem> items = snapshot.data ?? [];
+    return BlocBuilder<OutboxCubit, OutboxState>(
+      builder: (context, OutboxState state) {
+        return StreamBuilder<List<OutboxItem>>(
+          stream: stream,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<List<OutboxItem>> snapshot,
+          ) {
+            List<OutboxItem> items = snapshot.data ?? [];
 
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: AppColors.headerBgColor,
-            title: CupertinoSegmentedControl(
-              selectedColor: AppColors.entryBgColor,
-              unselectedColor: AppColors.bodyBgColor,
-              borderColor: AppColors.bodyBgColor,
-              groupValue: _selectedValue,
-              onValueChanged: (String value) {
-                setState(() {
-                  _selectedValue = value;
-                  if (_selectedValue == 'all') {
-                    stream = _db.watchOutboxItems();
-                  }
-                  if (_selectedValue == 'pending') {
-                    stream =
-                        _db.watchOutboxItems(statuses: [OutboxStatus.pending]);
-                  }
-                  if (_selectedValue == 'error') {
-                    stream =
-                        _db.watchOutboxItems(statuses: [OutboxStatus.error]);
-                  }
-                });
-              },
-              children: const {
-                'pending': SizedBox(
-                  width: 100,
-                  height: 40,
-                  child: Center(
-                    child: Text(
-                      'pending',
-                      style: TextStyle(fontFamily: 'Oswald'),
+            return Scaffold(
+              appBar: AppBar(
+                backgroundColor: AppColors.headerBgColor,
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CupertinoSegmentedControl(
+                      selectedColor: AppColors.entryBgColor,
+                      unselectedColor: AppColors.bodyBgColor,
+                      borderColor: AppColors.bodyBgColor,
+                      groupValue: _selectedValue,
+                      onValueChanged: (String value) {
+                        setState(() {
+                          _selectedValue = value;
+                          if (_selectedValue == 'all') {
+                            stream = _db.watchOutboxItems();
+                          }
+                          if (_selectedValue == 'pending') {
+                            stream = _db.watchOutboxItems(
+                                statuses: [OutboxStatus.pending]);
+                          }
+                          if (_selectedValue == 'error') {
+                            stream = _db.watchOutboxItems(
+                                statuses: [OutboxStatus.error]);
+                          }
+                        });
+                      },
+                      children: const {
+                        'pending': SizedBox(
+                          width: 100,
+                          height: 40,
+                          child: Center(
+                            child: Text(
+                              'pending',
+                              style: TextStyle(fontFamily: 'Oswald'),
+                            ),
+                          ),
+                        ),
+                        'error': SizedBox(
+                          width: 100,
+                          child: Center(
+                            child: Text(
+                              'error',
+                              style: TextStyle(fontFamily: 'Oswald'),
+                            ),
+                          ),
+                        ),
+                        'all': SizedBox(
+                          width: 100,
+                          child: Center(
+                            child: Text(
+                              'all',
+                              style: TextStyle(fontFamily: 'Oswald'),
+                            ),
+                          ),
+                        ),
+                      },
                     ),
-                  ),
+                    IconButton(
+                        icon: const Icon(Icons.refresh),
+                        iconSize: 40,
+                        tooltip: 'Restart',
+                        color: AppColors.entryBgColor,
+                        onPressed: () {
+                          context.read<OutboxCubit>().stopPolling();
+                          context.read<OutboxCubit>().startPolling();
+                        })
+                  ],
                 ),
-                'error': SizedBox(
-                  width: 100,
-                  child: Center(
-                    child: Text(
-                      'error',
-                      style: TextStyle(fontFamily: 'Oswald'),
-                    ),
-                  ),
+              ),
+              backgroundColor: AppColors.bodyBgColor,
+              body: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(8.0),
+                children: List.generate(
+                  items.length,
+                  (int index) {
+                    return OutboxItemCard(
+                      item: items.elementAt(index),
+                      index: index,
+                    );
+                  },
                 ),
-                'all': SizedBox(
-                  width: 100,
-                  child: Center(
-                    child: Text(
-                      'all',
-                      style: TextStyle(fontFamily: 'Oswald'),
-                    ),
-                  ),
-                ),
-              },
-            ),
-          ),
-          backgroundColor: AppColors.bodyBgColor,
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return OutboxItemCard(
-                  item: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
