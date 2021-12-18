@@ -113,7 +113,7 @@ class OutboxCubit extends Cubit<OutboxState> {
 
         if (isConnected && !sendMutex.isLocked) {
           List<OutboxItem> unprocessed =
-              await _syncDatabase.oldestOutboxItems(1);
+              await _syncDatabase.oldestOutboxItems(10);
           if (unprocessed.isNotEmpty) {
             sendMutex.acquire();
 
