@@ -14,6 +14,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
           totalDuration: const Duration(minutes: 0),
           progress: const Duration(minutes: 0),
           pausedAt: const Duration(minutes: 0),
+          speed: 1.0,
         )) {
     _audioPlayer.positionStream.listen((event) {
       updateProgress(event);
@@ -37,6 +38,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         progress: const Duration(minutes: 0),
         pausedAt: const Duration(minutes: 0),
         totalDuration: const Duration(minutes: 0),
+        speed: 1.0,
         audioNote: audioNote,
       );
       emit(newState);
@@ -52,7 +54,7 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
 
   void play() async {
     try {
-      await _audioPlayer.setSpeed(1.2);
+      await _audioPlayer.setSpeed(state.speed);
       _audioPlayer.play();
       await _audioPlayer.seek(state.pausedAt);
       emit(state.copyWith(status: AudioPlayerStatus.playing));
@@ -80,6 +82,15 @@ class AudioPlayerCubit extends Cubit<AudioPlayerState> {
         progress: newPosition,
         pausedAt: newPosition,
       ));
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+  }
+
+  void setSpeed(double speed) async {
+    try {
+      await _audioPlayer.setSpeed(speed);
+      emit(state.copyWith(speed: speed));
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }

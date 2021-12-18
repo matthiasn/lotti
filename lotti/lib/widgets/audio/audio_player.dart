@@ -22,7 +22,7 @@ class AudioPlayerWidget extends StatelessWidget {
               children: <Widget>[
                 IconButton(
                   icon: const Icon(Icons.play_arrow),
-                  iconSize: 40.0,
+                  iconSize: 32.0,
                   tooltip: 'Play',
                   color: (state.status == AudioPlayerStatus.playing)
                       ? AppColors.activeAudioControl
@@ -31,31 +31,76 @@ class AudioPlayerWidget extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.fast_rewind),
-                  iconSize: 40.0,
+                  iconSize: 32.0,
                   tooltip: 'Rewind 15s',
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioPlayerCubit>().rew(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.pause),
-                  iconSize: 40.0,
+                  iconSize: 32.0,
                   tooltip: 'Pause',
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioPlayerCubit>().pause(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.fast_forward),
-                  iconSize: 40.0,
+                  iconSize: 32.0,
                   tooltip: 'Fast forward 15s',
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioPlayerCubit>().fwd(),
                 ),
                 IconButton(
                   icon: const Icon(Icons.stop),
-                  iconSize: 40.0,
+                  iconSize: 32.0,
                   tooltip: 'Stop',
                   color: AppColors.inactiveAudioControl,
                   onPressed: () => context.read<AudioPlayerCubit>().stopPlay(),
+                ),
+                IconButton(
+                  icon: Text(
+                    '1x',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      fontWeight: FontWeight.bold,
+                      color: (state.speed == 1.0)
+                          ? AppColors.activeAudioControl
+                          : AppColors.inactiveAudioControl,
+                    ),
+                  ),
+                  tooltip: 'Normal speed',
+                  onPressed: () =>
+                      context.read<AudioPlayerCubit>().setSpeed(1.0),
+                ),
+                IconButton(
+                  icon: Text(
+                    '1.5x',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      fontWeight: FontWeight.bold,
+                      color: (state.speed == 1.5)
+                          ? AppColors.activeAudioControl
+                          : AppColors.inactiveAudioControl,
+                    ),
+                  ),
+                  tooltip: '1.5x speed',
+                  onPressed: () =>
+                      context.read<AudioPlayerCubit>().setSpeed(1.5),
+                ),
+                IconButton(
+                  icon: Text(
+                    '2x',
+                    style: TextStyle(
+                      fontFamily: 'Oswald',
+                      fontWeight: FontWeight.bold,
+                      color: (state.speed == 2.0)
+                          ? AppColors.activeAudioControl
+                          : AppColors.inactiveAudioControl,
+                    ),
+                  ),
+                  tooltip: 'Double speed',
+                  onPressed: () =>
+                      context.read<AudioPlayerCubit>().setSpeed(2.0),
                 ),
               ],
             ),
