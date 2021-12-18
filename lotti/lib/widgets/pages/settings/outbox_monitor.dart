@@ -42,13 +42,14 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: AppColors.headerBgColor,
+                foregroundColor: AppColors.entryBgColor,
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CupertinoSegmentedControl(
                       selectedColor: AppColors.entryBgColor,
-                      unselectedColor: AppColors.bodyBgColor,
-                      borderColor: AppColors.bodyBgColor,
+                      unselectedColor: AppColors.headerBgColor,
+                      borderColor: AppColors.entryBgColor,
                       groupValue: _selectedValue,
                       onValueChanged: (String value) {
                         setState(() {
@@ -68,30 +69,37 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                       },
                       children: const {
                         'pending': SizedBox(
-                          width: 100,
-                          height: 40,
+                          width: 64,
+                          height: 32,
                           child: Center(
                             child: Text(
                               'pending',
-                              style: TextStyle(fontFamily: 'Oswald'),
+                              style: TextStyle(
+                                fontFamily: 'Oswald',
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
                         'error': SizedBox(
-                          width: 100,
                           child: Center(
                             child: Text(
                               'error',
-                              style: TextStyle(fontFamily: 'Oswald'),
+                              style: TextStyle(
+                                fontFamily: 'Oswald',
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
                         'all': SizedBox(
-                          width: 100,
                           child: Center(
                             child: Text(
                               'all',
-                              style: TextStyle(fontFamily: 'Oswald'),
+                              style: TextStyle(
+                                fontFamily: 'Oswald',
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
@@ -99,7 +107,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                     ),
                     IconButton(
                         icon: const Icon(Icons.refresh),
-                        iconSize: 40,
+                        iconSize: 32,
                         tooltip: 'Restart',
                         color: AppColors.entryBgColor,
                         onPressed: () {
