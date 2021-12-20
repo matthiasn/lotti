@@ -47,6 +47,11 @@ class OutboxCubit extends Cubit<OutboxState> {
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
+      if (result == ConnectivityResult.none) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
     });
 
     if (!Platform.isMacOS) {
@@ -108,7 +113,7 @@ class OutboxCubit extends Cubit<OutboxState> {
 
         if (isConnected && !sendMutex.isLocked) {
           List<OutboxItem> unprocessed =
-              await _syncDatabase.oldestOutboxItems(1);
+              await _syncDatabase.oldestOutboxItems(10);
           if (unprocessed.isNotEmpty) {
             sendMutex.acquire();
 
@@ -148,7 +153,7 @@ class OutboxCubit extends Cubit<OutboxState> {
                 if (unprocessed.length > 1) {
                   sendNext(imapClient: successfulClient);
                 }
-              } else {}
+              }
             } catch (e) {
               _syncDatabase.updateOutboxItem(
                 OutboxCompanion(
