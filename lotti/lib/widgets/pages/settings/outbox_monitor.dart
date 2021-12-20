@@ -38,6 +38,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             AsyncSnapshot<List<OutboxItem>> snapshot,
           ) {
             List<OutboxItem> items = snapshot.data ?? [];
+            bool onlineStatus = state is! OutboxDisabled;
 
             return Scaffold(
               appBar: AppBar(
@@ -105,15 +106,12 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
                         ),
                       },
                     ),
-                    IconButton(
-                        icon: const Icon(Icons.refresh),
-                        iconSize: 32,
-                        tooltip: 'Restart',
-                        color: AppColors.entryBgColor,
-                        onPressed: () {
-                          context.read<OutboxCubit>().stopPolling();
-                          context.read<OutboxCubit>().startPolling();
-                        })
+                    CupertinoSwitch(
+                      value: onlineStatus,
+                      onChanged: (_) {
+                        context.read<OutboxCubit>().toggleStatus();
+                      },
+                    ),
                   ],
                 ),
               ),
