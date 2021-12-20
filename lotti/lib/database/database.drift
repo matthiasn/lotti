@@ -75,3 +75,9 @@ orderedJournal:
 SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
+
+conflictsByStatus:
+SELECT * FROM conflicts
+  WHERE status = :status
+  ORDER BY created_at DESC
+  LIMIT :limit;

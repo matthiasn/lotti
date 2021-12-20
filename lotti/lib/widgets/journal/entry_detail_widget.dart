@@ -44,12 +44,12 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.entryBgColor,
+      color: AppColors.bodyBgColor,
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: ListView(
-        shrinkWrap: false,
+        shrinkWrap: true,
         children: <Widget>[
           widget.item.maybeMap(
             journalAudio: (JournalAudio audio) {

@@ -103,6 +103,13 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<JournalEntity?> journalEntityById(String id) async {
+    JournalDbEntity? dbEntity = await entityById(id);
+    if (dbEntity != null) {
+      return fromDbEntity(dbEntity);
+    }
+  }
+
   List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
     return dbEntities.map((e) => fromDbEntity(e)).toList();
   }
@@ -119,6 +126,13 @@ class JournalDb extends _$JournalDb {
           ..orderBy([(t) => OrderingTerm(expression: t.uniqueName)]))
         .map(measurableDataType)
         .watch();
+  }
+
+  Stream<List<Conflict>> watchConflicts(
+    ConflictStatus status, {
+    int limit = 1000,
+  }) {
+    return conflictsByStatus(status.index, limit).watch();
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
