@@ -1,3 +1,4 @@
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -121,6 +122,10 @@ class _ConflictsPageState extends State<ConflictsPage> {
   }
 }
 
+String statusString(Conflict conflict) {
+  return EnumToString.convertToString(ConflictStatus.values[conflict.status]);
+}
+
 class ConflictCard extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
 
@@ -145,7 +150,7 @@ class ConflictCard extends StatelessWidget {
         child: ListTile(
           contentPadding: const EdgeInsets.only(left: 24, right: 24),
           title: Text(
-            '${df.format(conflict.createdAt)} - ${conflict.status}',
+            '${df.format(conflict.createdAt)} - ${statusString(conflict)}',
             style: TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
@@ -153,7 +158,7 @@ class ConflictCard extends StatelessWidget {
             ),
           ),
           subtitle: Text(
-            '$conflict',
+            '${fromSerialized(conflict.serialized).meta.vectorClock}',
             style: TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
@@ -185,9 +190,7 @@ class ConflictCard extends StatelessWidget {
 }
 
 class DetailRoute extends StatelessWidget {
-  final JournalDb _db = getIt<JournalDb>();
-
-  DetailRoute({
+  const DetailRoute({
     Key? key,
     required this.local,
     required this.index,
@@ -216,26 +219,6 @@ class DetailRoute extends StatelessWidget {
           ),
         ),
         backgroundColor: AppColors.headerBgColor,
-        actions: <Widget>[
-          TextButton(
-            onPressed: () async {
-              _db.resolveConflict(conflict);
-              Navigator.pop(context);
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                'Resolve',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Oswald',
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.appBarFgColor,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: SingleChildScrollView(
