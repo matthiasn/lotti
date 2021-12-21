@@ -207,8 +207,16 @@ class DetailRoute extends StatelessWidget {
         ),
         backgroundColor: AppColors.headerBgColor,
       ),
-      body: EntryDetailWidget(
-        item: item,
+      body: Container(
+        color: AppColors.bodyBgColor,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: EntryDetailWidget(
+            item: item,
+          ),
+        ),
       ),
     );
   }

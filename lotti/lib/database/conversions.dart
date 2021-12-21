@@ -40,8 +40,12 @@ JournalDbEntity toDbEntity(JournalEntity journalEntity) {
   return dbEntity;
 }
 
+JournalEntity fromSerialized(String serialized) {
+  return JournalEntity.fromJson(json.decode(serialized));
+}
+
 JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
-  return JournalEntity.fromJson(json.decode(dbEntity.serialized));
+  return fromSerialized(dbEntity.serialized);
 }
 
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {

@@ -81,6 +81,15 @@ class OutboxCubit extends Cubit<OutboxState> {
     startPolling();
   }
 
+  Future<void> toggleStatus() async {
+    if (state is OutboxDisabled) {
+      emit(OutboxState.online());
+      startPolling();
+    } else {
+      emit(OutboxState.disabled());
+    }
+  }
+
   void reportConnectivity() async {
     await Sentry.captureEvent(
         SentryEvent(
@@ -100,6 +109,8 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void sendNext({ImapClient? imapClient}) async {
+    if (state is OutboxDisabled) return;
+
     final transaction = Sentry.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();

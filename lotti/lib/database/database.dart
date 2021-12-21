@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
@@ -15,7 +16,7 @@ import 'conversions.dart';
 part 'database.g.dart';
 
 enum ConflictStatus {
-  unprocessed,
+  unresolved,
   resolved,
 }
 
@@ -66,7 +67,7 @@ class JournalDb extends _$JournalDb {
           updatedAt: now,
           serialized: jsonEncode(updated),
           schemaVersion: schemaVersion,
-          status: ConflictStatus.unprocessed.index,
+          status: ConflictStatus.unresolved.index,
         ));
       }
 
@@ -85,10 +86,17 @@ class JournalDb extends _$JournalDb {
     if (existingDbEntity != null) {
       JournalEntity existing = fromDbEntity(existingDbEntity);
       VclockStatus status = await detectConflict(existing, updated);
+      debugPrint('Conflict status: ${EnumToString.convertToString(status)}');
 
       if (status == VclockStatus.b_gt_a) {
         rowsAffected = await upsertJournalDbEntity(dbEntity);
-      }
+
+        Conflict? existingConflict = await conflictById(dbEntity.id);
+
+        if (existingConflict != null) {
+          await resolveConflict(existingConflict);
+        }
+      } else {}
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
@@ -100,6 +108,21 @@ class JournalDb extends _$JournalDb {
         await (select(journal)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
       return res.first;
+    }
+  }
+
+  Future<Conflict?> conflictById(String id) async {
+    List<Conflict> res =
+        await (select(conflicts)..where((t) => t.id.equals(id))).get();
+    if (res.isNotEmpty) {
+      return res.first;
+    }
+  }
+
+  Future<JournalEntity?> journalEntityById(String id) async {
+    JournalDbEntity? dbEntity = await entityById(id);
+    if (dbEntity != null) {
+      return fromDbEntity(dbEntity);
     }
   }
 
@@ -119,6 +142,18 @@ class JournalDb extends _$JournalDb {
           ..orderBy([(t) => OrderingTerm(expression: t.uniqueName)]))
         .map(measurableDataType)
         .watch();
+  }
+
+  Stream<List<Conflict>> watchConflicts(
+    ConflictStatus status, {
+    int limit = 1000,
+  }) {
+    return conflictsByStatus(status.index, limit).watch();
+  }
+
+  Future<int> resolveConflict(Conflict conflict) {
+    return (update(conflicts)..where((t) => t.id.equals(conflict.id)))
+        .write(conflict.copyWith(status: ConflictStatus.resolved.index));
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

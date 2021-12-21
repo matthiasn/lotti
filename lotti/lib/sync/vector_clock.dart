@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 
 class VclockException implements Exception {
@@ -69,6 +71,27 @@ class VectorClock {
     }
 
     return VclockStatus.concurrent;
+  }
+
+  static VectorClock merge(VectorClock? vc1, VectorClock? vc2) {
+    Map<String, int> merged = <String, int>{};
+    Set<String> nodeIds = <String>{};
+
+    if (vc1?.vclock != null) {
+      nodeIds.addAll(vc1!.vclock.keys);
+    }
+    if (vc2?.vclock != null) {
+      nodeIds.addAll(vc2!.vclock.keys);
+    }
+
+    for (String nodeId in nodeIds) {
+      merged[nodeId] = max(
+        vc1?.get(nodeId) ?? 0,
+        vc2?.get(nodeId) ?? 0,
+      );
+    }
+
+    return VectorClock(merged);
   }
 
   int get(String node) {

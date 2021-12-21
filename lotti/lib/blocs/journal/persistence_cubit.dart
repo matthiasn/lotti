@@ -354,17 +354,17 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
     try {
       int res = await _journalDb.updateJournalEntity(journalEntity);
-      bool saved = (res != 0);
+      debugPrint('updateDbEntity res $res');
       await saveJournalEntityJson(journalEntity);
 
-      if (saved && enqueueSync) {
+      if (enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.update,
         ));
       }
       await transaction.finish();
-      return saved;
+      return true;
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');

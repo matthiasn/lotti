@@ -61,7 +61,7 @@ class EditorWidget extends StatelessWidget {
         child: Column(
           children: [
             Visibility(
-              visible: Platform.isMacOS,
+              visible: Platform.isMacOS && !_readOnly,
               child: ToolbarWidget(
                 controller: _controller,
                 saveFn: _saveFn,
@@ -77,7 +77,7 @@ class EditorWidget extends StatelessWidget {
               ),
             ),
             Visibility(
-              visible: Platform.isIOS || Platform.isAndroid,
+              visible: (Platform.isIOS || Platform.isAndroid) && !_readOnly,
               child: ToolbarWidget(
                 controller: _controller,
                 saveFn: _saveFn,
