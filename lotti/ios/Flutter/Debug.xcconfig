@@ -3,4 +3,4 @@
 #include "Base.xcconfig"
 
 APP_NAME=$(inherited)Dev
-PRODUCT_BUNDLE_IDENTIFIER=$(inherited)Dev
+PRODUCT_BUNDLE_IDENTIFIER=$(inherited).dev
