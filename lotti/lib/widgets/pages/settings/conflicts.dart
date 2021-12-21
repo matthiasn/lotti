@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -22,7 +23,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
   final JournalDb _db = getIt<JournalDb>();
 
   late Stream<List<Conflict>> stream =
-      _db.watchConflicts(ConflictStatus.unprocessed);
+      _db.watchConflicts(ConflictStatus.unresolved);
 
   String _selectedValue = 'unresolved';
 
@@ -60,7 +61,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
                           _selectedValue = value;
                           if (_selectedValue == 'unresolved') {
                             stream =
-                                _db.watchConflicts(ConflictStatus.unprocessed);
+                                _db.watchConflicts(ConflictStatus.unresolved);
                           }
                           if (_selectedValue == 'resolved') {
                             stream =
@@ -107,7 +108,6 @@ class _ConflictsPageState extends State<ConflictsPage> {
                   (int index) {
                     return ConflictCard(
                       conflict: items.elementAt(index),
-                      db: _db,
                       index: index,
                     );
                   },
@@ -122,14 +122,14 @@ class _ConflictsPageState extends State<ConflictsPage> {
 }
 
 class ConflictCard extends StatelessWidget {
+  final JournalDb _db = getIt<JournalDb>();
+
   final Conflict conflict;
-  final JournalDb db;
   final int index;
 
-  const ConflictCard({
+  ConflictCard({
     Key? key,
     required this.conflict,
-    required this.db,
     required this.index,
   }) : super(key: key);
 
@@ -163,7 +163,7 @@ class ConflictCard extends StatelessWidget {
           ),
           enabled: true,
           onTap: () async {
-            JournalEntity? entity = await db.journalEntityById(conflict.id);
+            JournalEntity? entity = await _db.journalEntityById(conflict.id);
             if (entity == null) return;
 
             Navigator.of(context).push(
@@ -185,7 +185,9 @@ class ConflictCard extends StatelessWidget {
 }
 
 class DetailRoute extends StatelessWidget {
-  const DetailRoute({
+  final JournalDb _db = getIt<JournalDb>();
+
+  DetailRoute({
     Key? key,
     required this.local,
     required this.index,
@@ -199,6 +201,10 @@ class DetailRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final JournalEntity fromSync = fromSerialized(conflict.serialized);
+    final VectorClock merged =
+        VectorClock.merge(local.meta.vectorClock, fromSync.meta.vectorClock);
+    final withResolvedVectorClock =
+        local.copyWith(meta: local.meta.copyWith(vectorClock: merged));
 
     return Scaffold(
       appBar: AppBar(
@@ -210,6 +216,26 @@ class DetailRoute extends StatelessWidget {
           ),
         ),
         backgroundColor: AppColors.headerBgColor,
+        actions: <Widget>[
+          TextButton(
+            onPressed: () async {
+              _db.resolveConflict(conflict);
+              Navigator.pop(context);
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                'Resolve',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Oswald',
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.appBarFgColor,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: SingleChildScrollView(
@@ -230,7 +256,7 @@ class DetailRoute extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                  child: EntryDetailWidget(item: local),
+                  child: EntryDetailWidget(item: withResolvedVectorClock),
                 ),
               ),
               const Text(

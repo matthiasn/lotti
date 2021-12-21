@@ -15,7 +15,7 @@ import 'conversions.dart';
 part 'database.g.dart';
 
 enum ConflictStatus {
-  unprocessed,
+  unresolved,
   resolved,
 }
 
@@ -66,7 +66,7 @@ class JournalDb extends _$JournalDb {
           updatedAt: now,
           serialized: jsonEncode(updated),
           schemaVersion: schemaVersion,
-          status: ConflictStatus.unprocessed.index,
+          status: ConflictStatus.unresolved.index,
         ));
       }
 
@@ -133,6 +133,11 @@ class JournalDb extends _$JournalDb {
     int limit = 1000,
   }) {
     return conflictsByStatus(status.index, limit).watch();
+  }
+
+  Future<int> resolveConflict(Conflict conflict) {
+    return (update(conflicts)..where((t) => t.id.equals(conflict.id)))
+        .write(conflict.copyWith(status: ConflictStatus.resolved.index));
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
