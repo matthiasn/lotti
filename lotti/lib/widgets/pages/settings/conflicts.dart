@@ -252,6 +252,13 @@ class DetailRoute extends StatelessWidget {
                   fontFamily: 'ShareTechMono',
                 ),
               ),
+              Text(
+                'Merged: ${withResolvedVectorClock.meta.vectorClock}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'ShareTechMono',
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,

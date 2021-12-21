@@ -212,8 +212,10 @@ class DetailRoute extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: EntryDetailWidget(
-          item: item,
+        child: SingleChildScrollView(
+          child: EntryDetailWidget(
+            item: item,
+          ),
         ),
       ),
     );
