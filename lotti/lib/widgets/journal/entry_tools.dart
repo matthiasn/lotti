@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
 NumberFormat nf = NumberFormat('###.##');
+NumberFormat latLonFormat = NumberFormat('###.####');
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');

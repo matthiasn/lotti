@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
@@ -30,6 +31,7 @@ class EntryDetailWidget extends StatefulWidget {
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   Directory? docDir;
+  bool mapVisible = false;
 
   @override
   void initState() {
@@ -44,6 +46,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   @override
   Widget build(BuildContext context) {
+    Geolocation? loc = widget.item.geolocation;
+
     return Column(
       children: <Widget>[
         widget.item.maybeMap(
@@ -147,20 +151,21 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           ),
           orElse: () => Container(),
         ),
-        widget.item.maybeMap(
-          journalAudio: (audio) => MapWidget(
-            geolocation: audio.geolocation,
+        Visibility(
+          visible: loc != null,
+          child: TextButton(
+            onPressed: () => setState(() {
+              mapVisible = !mapVisible;
+            }),
+            child: Text('${latLonFormat.format(loc?.latitude)}, '
+                '${latLonFormat.format(loc?.longitude)}'),
           ),
-          journalImage: (image) => MapWidget(
-            geolocation: image.geolocation,
+        ),
+        Visibility(
+          visible: mapVisible,
+          child: MapWidget(
+            geolocation: widget.item.geolocation,
           ),
-          journalEntry: (entry) => MapWidget(
-            geolocation: entry.geolocation,
-          ),
-          measurement: (entry) => MapWidget(
-            geolocation: entry.geolocation,
-          ),
-          orElse: () => Container(),
         ),
       ],
     );

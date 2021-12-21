@@ -111,6 +111,7 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.quantitative({
     required Metadata meta,
     required QuantitativeData data,
+    Geolocation? geolocation,
   }) = QuantitativeEntry;
 
   const factory JournalEntity.measurement({
