@@ -213,37 +213,45 @@ class DetailRoute extends StatelessWidget {
       ),
       backgroundColor: AppColors.bodyBgColor,
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const Text(
-              'Local:',
-              style: TextStyle(color: Colors.white),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8,
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            children: [
+              const Text(
+                'Local:',
+                style: TextStyle(color: Colors.white),
               ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                child: EntryDetailWidget(item: local),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                  child: EntryDetailWidget(item: local),
+                ),
               ),
-            ),
-            const Text(
-              'From Sync:',
-              style: TextStyle(color: Colors.white),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8,
+              const Text(
+                'From Sync:',
+                style: TextStyle(color: Colors.white),
               ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-                child: EntryDetailWidget(item: fromSync),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                  child: EntryDetailWidget(
+                    item: fromSync,
+                    readOnly: true,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
