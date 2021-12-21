@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
@@ -85,10 +86,17 @@ class JournalDb extends _$JournalDb {
     if (existingDbEntity != null) {
       JournalEntity existing = fromDbEntity(existingDbEntity);
       VclockStatus status = await detectConflict(existing, updated);
+      debugPrint('Conflict status: ${EnumToString.convertToString(status)}');
 
       if (status == VclockStatus.b_gt_a) {
         rowsAffected = await upsertJournalDbEntity(dbEntity);
-      }
+
+        Conflict? existingConflict = await conflictById(dbEntity.id);
+
+        if (existingConflict != null) {
+          await resolveConflict(existingConflict);
+        }
+      } else {}
     } else {
       rowsAffected = await upsertJournalDbEntity(dbEntity);
     }
@@ -98,6 +106,14 @@ class JournalDb extends _$JournalDb {
   Future<JournalDbEntity?> entityById(String id) async {
     List<JournalDbEntity> res =
         await (select(journal)..where((t) => t.id.equals(id))).get();
+    if (res.isNotEmpty) {
+      return res.first;
+    }
+  }
+
+  Future<Conflict?> conflictById(String id) async {
+    List<Conflict> res =
+        await (select(conflicts)..where((t) => t.id.equals(id))).get();
     if (res.isNotEmpty) {
       return res.first;
     }
