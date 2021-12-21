@@ -6,6 +6,7 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
 
@@ -151,15 +153,31 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           ),
           orElse: () => Container(),
         ),
-        Visibility(
-          visible: loc != null,
-          child: TextButton(
-            onPressed: () => setState(() {
-              mapVisible = !mapVisible;
-            }),
-            child: Text('${latLonFormat.format(loc?.latitude)}, '
-                '${latLonFormat.format(loc?.longitude)}'),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () {},
+              child: Text(df.format(widget.item.meta.dateFrom)),
+            ),
+            Visibility(
+              visible: loc != null,
+              child: TextButton(
+                onPressed: () => setState(() {
+                  mapVisible = !mapVisible;
+                }),
+                child: Text('${latLonFormat.format(loc?.latitude)}, '
+                    '${latLonFormat.format(loc?.longitude)}'),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(MdiIcons.trashCanOutline),
+              iconSize: 24,
+              tooltip: 'Stop',
+              color: AppColors.appBarFgColor,
+              onPressed: () {},
+            ),
+          ],
         ),
         Visibility(
           visible: mapVisible,
