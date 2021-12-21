@@ -245,9 +245,12 @@ class DetailRoute extends StatelessWidget {
           ),
           child: Column(
             children: [
-              const Text(
-                'Local:',
-                style: TextStyle(color: Colors.white),
+              Text(
+                'Local: ${local.meta.vectorClock}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'ShareTechMono',
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -259,9 +262,12 @@ class DetailRoute extends StatelessWidget {
                   child: EntryDetailWidget(item: withResolvedVectorClock),
                 ),
               ),
-              const Text(
-                'From Sync:',
-                style: TextStyle(color: Colors.white),
+              Text(
+                'From Sync: ${fromSync.meta.vectorClock}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'ShareTechMono',
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(
