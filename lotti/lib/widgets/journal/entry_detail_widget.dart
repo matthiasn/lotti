@@ -175,7 +175,12 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               iconSize: 24,
               tooltip: 'Stop',
               color: AppColors.appBarFgColor,
-              onPressed: () {},
+              onPressed: () {
+                context
+                    .read<PersistenceCubit>()
+                    .deleteJournalEntity(widget.item);
+                Navigator.pop(context);
+              },
             ),
           ],
         ),
