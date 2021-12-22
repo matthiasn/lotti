@@ -6,31 +6,32 @@ import 'package:lotti/classes/measurables.dart';
 
 import 'database.dart';
 
-JournalDbEntity toDbEntity(JournalEntity journalEntity) {
-  final DateTime createdAt = journalEntity.meta.createdAt;
-  final subtype = journalEntity.maybeMap(
+JournalDbEntity toDbEntity(JournalEntity entity) {
+  final DateTime createdAt = entity.meta.createdAt;
+  final subtype = entity.maybeMap(
     quantitative: (qd) => qd.data.dataType,
     survey: (SurveyEntry surveyEntry) => surveyEntry.data.taskResult.identifier,
     orElse: () => '',
   );
 
   Geolocation? geolocation;
-  journalEntity.mapOrNull(
+  entity.mapOrNull(
     journalAudio: (item) => geolocation = item.geolocation,
     journalImage: (item) => geolocation = item.geolocation,
     journalEntry: (item) => geolocation = item.geolocation,
   );
 
-  String id = journalEntity.meta.id;
+  String id = entity.meta.id;
   JournalDbEntity dbEntity = JournalDbEntity(
     id: id,
     createdAt: createdAt,
     updatedAt: createdAt,
-    dateFrom: journalEntity.meta.dateFrom,
-    dateTo: journalEntity.meta.dateTo,
-    type: journalEntity.runtimeType.toString(),
+    dateFrom: entity.meta.dateFrom,
+    deleted: entity.meta.deleted ?? false,
+    dateTo: entity.meta.dateTo,
+    type: entity.runtimeType.toString(),
     subtype: subtype,
-    serialized: json.encode(journalEntity),
+    serialized: json.encode(entity),
     schemaVersion: 0,
     longitude: geolocation?.longitude,
     latitude: geolocation?.latitude,

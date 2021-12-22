@@ -5,6 +5,7 @@ CREATE TABLE journal (
   updated_at DATETIME NOT NULL,
   date_from DATETIME NOT NULL,
   date_to DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
   type TEXT NOT NULL,
   subtype TEXT,
   serialized TEXT NOT NULL,
@@ -28,6 +29,9 @@ ON journal (date_from);
 
 CREATE INDEX idx_journal_date_to
 ON journal (date_to);
+
+CREATE INDEX idx_journal_deleted
+ON journal (deleted);
 
 CREATE INDEX idx_journal_type
 ON journal (type);
@@ -67,12 +71,13 @@ CREATE TABLE measurable_types (
 /* Queries ----------------------------------------------------- */
 filteredJournal:
 SELECT * FROM journal
-  WHERE type IN :types
+  WHERE type IN :types AND deleted = false
   ORDER BY date_from DESC
   LIMIT :limit;
 
 orderedJournal:
 SELECT * FROM journal
+  WHERE deleted = false
   ORDER BY date_from DESC
   LIMIT :limit;
 

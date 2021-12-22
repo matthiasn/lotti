@@ -23,6 +23,7 @@ class Metadata with _$Metadata {
     int? utcOffset,
     String? timezone,
     VectorClock? vectorClock,
+    bool? deleted,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>
