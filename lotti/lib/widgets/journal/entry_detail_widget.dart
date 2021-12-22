@@ -161,7 +161,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               child: Text(df.format(widget.item.meta.dateFrom)),
             ),
             Visibility(
-              visible: loc != null,
+              visible: loc != null && loc.longitude != 0,
               child: TextButton(
                 onPressed: () => setState(() {
                   mapVisible = !mapVisible;
