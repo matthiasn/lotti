@@ -27,7 +27,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     createdAt: createdAt,
     updatedAt: createdAt,
     dateFrom: entity.meta.dateFrom,
-    deleted: entity.meta.deleted ?? false,
+    deleted: entity.meta.deletedAt != null,
     dateTo: entity.meta.dateTo,
     type: entity.runtimeType.toString(),
     subtype: subtype,
