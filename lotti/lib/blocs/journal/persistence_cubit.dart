@@ -347,6 +347,32 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
+  Future<bool> deleteJournalEntity(
+    JournalEntity journalEntity,
+  ) async {
+    final transaction =
+        Sentry.startTransaction('updateJournalEntity()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
+
+      Metadata newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+        deletedAt: now,
+      );
+
+      JournalEntity newEntity = journalEntity.copyWith(meta: newMeta);
+      await updateDbEntity(newEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
     bool enqueueSync = false,

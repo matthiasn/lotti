@@ -197,6 +197,7 @@ class DetailRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bodyBgColor,
       appBar: AppBar(
         title: Text(
           df.format(item.meta.dateFrom),

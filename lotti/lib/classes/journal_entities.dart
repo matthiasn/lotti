@@ -23,6 +23,7 @@ class Metadata with _$Metadata {
     int? utcOffset,
     String? timezone,
     VectorClock? vectorClock,
+    DateTime? deletedAt,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>
@@ -111,6 +112,7 @@ class JournalEntity with _$JournalEntity {
   const factory JournalEntity.quantitative({
     required Metadata meta,
     required QuantitativeData data,
+    Geolocation? geolocation,
   }) = QuantitativeEntry;
 
   const factory JournalEntity.measurement({
