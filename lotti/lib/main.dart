@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:get_it/get_it.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/health_cubit.dart';
@@ -31,6 +33,8 @@ Future<void> main() async {
   getIt.registerSingleton<SyncDatabase>(SyncDatabase());
   getIt.registerSingleton<VectorClockService>(VectorClockService());
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
+
+  initializeDateFormatting();
 
   if (enableSentry) {
     await SentryFlutter.init(
@@ -107,6 +111,11 @@ class LottiApp extends StatelessWidget {
           primarySwatch: Colors.grey,
         ),
         home: const HomePage(),
+        supportedLocales: const [
+          Locale('en'),
+          Locale('de'),
+        ],
+        localizationsDelegates: const [FormBuilderLocalizations.delegate],
       ),
     );
   }
