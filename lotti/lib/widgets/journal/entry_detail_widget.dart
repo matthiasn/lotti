@@ -173,7 +173,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             IconButton(
               icon: const Icon(MdiIcons.trashCanOutline),
               iconSize: 24,
-              tooltip: 'Stop',
+              tooltip: 'Delete',
               color: AppColors.appBarFgColor,
               onPressed: () {
                 context
