@@ -166,8 +166,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 onPressed: () => setState(() {
                   mapVisible = !mapVisible;
                 }),
-                child: Text('${latLonFormat.format(loc?.latitude)}, '
-                    '${latLonFormat.format(loc?.longitude)}'),
+                child: Text('📍 ${formatLatLon(loc?.latitude)}, '
+                    '${formatLatLon(loc?.longitude)}'),
               ),
             ),
             IconButton(
