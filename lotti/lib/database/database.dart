@@ -126,10 +126,6 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
-    return dbEntities.map((e) => fromDbEntity(e)).toList();
-  }
-
   Stream<List<JournalEntity>> watchJournalEntities({
     required List<String> types,
     int limit = 1000,
@@ -138,10 +134,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
-    return (select(measurableTypes)
-          ..orderBy([(t) => OrderingTerm(expression: t.uniqueName)]))
-        .map(measurableDataType)
-        .watch();
+    return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
 
   Stream<List<Conflict>> watchConflicts(
