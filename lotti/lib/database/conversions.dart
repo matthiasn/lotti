@@ -49,8 +49,17 @@ JournalEntity fromDbEntity(JournalDbEntity dbEntity) {
   return fromSerialized(dbEntity.serialized);
 }
 
+List<JournalEntity> entityStreamMapper(List<JournalDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromDbEntity(e)).toList();
+}
+
 MeasurableDataType measurableDataType(MeasurableDbEntity dbEntity) {
   return MeasurableDataType.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<MeasurableDataType> measurableDataTypeStreamMapper(
+    List<MeasurableDbEntity> dbEntities) {
+  return dbEntities.map((e) => measurableDataType(e)).toList();
 }
 
 MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
@@ -62,5 +71,6 @@ MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
     serialized: jsonEncode(dataType),
     version: dataType.version,
     status: 0,
+    deleted: dataType.deletedAt != null,
   );
 }

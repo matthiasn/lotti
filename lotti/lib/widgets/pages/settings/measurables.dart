@@ -258,33 +258,61 @@ class _DetailRouteState extends State<DetailRoute> {
                 child: Container(
                   color: AppColors.headerBgColor,
                   padding: const EdgeInsets.all(24.0),
-                  child: FormBuilder(
-                    key: _formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Column(
-                      children: <Widget>[
-                        FormTextField(
-                          initialValue: item.name,
-                          labelText: 'Name',
-                          name: 'name',
+                  child: Column(
+                    children: [
+                      FormBuilder(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        child: Column(
+                          children: <Widget>[
+                            FormTextField(
+                              initialValue: item.name,
+                              labelText: 'Name',
+                              name: 'name',
+                            ),
+                            FormTextField(
+                              initialValue: item.displayName,
+                              labelText: 'Display name',
+                              name: 'displayName',
+                            ),
+                            FormTextField(
+                              initialValue: item.description,
+                              labelText: 'Description',
+                              name: 'description',
+                            ),
+                            FormTextField(
+                              initialValue: item.unitName,
+                              labelText: 'Unit abbreviation',
+                              name: 'unitName',
+                            ),
+                          ],
                         ),
-                        FormTextField(
-                          initialValue: item.displayName,
-                          labelText: 'Display name',
-                          name: 'displayName',
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              icon: const Icon(MdiIcons.trashCanOutline),
+                              iconSize: 24,
+                              tooltip: 'Delete',
+                              color: AppColors.appBarFgColor,
+                              onPressed: () {
+                                context
+                                    .read<PersistenceCubit>()
+                                    .upsertEntityDefinition(
+                                      item.copyWith(
+                                        deletedAt: DateTime.now(),
+                                      ),
+                                    );
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
                         ),
-                        FormTextField(
-                          initialValue: item.description,
-                          labelText: 'Description',
-                          name: 'description',
-                        ),
-                        FormTextField(
-                          initialValue: item.unitName,
-                          labelText: 'Unit abbreviation',
-                          name: 'unitName',
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

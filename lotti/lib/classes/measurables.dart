@@ -16,6 +16,7 @@ class EntityDefinition with _$EntityDefinition {
     required String unitName,
     required int version,
     required VectorClock? vectorClock,
+    DateTime? deletedAt,
   }) = MeasurableDataType;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
