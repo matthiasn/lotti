@@ -113,7 +113,6 @@ class LottiApp extends StatelessWidget {
         home: const HomePage(),
         supportedLocales: const [
           Locale('en'),
-          Locale('de'),
         ],
         localizationsDelegates: const [FormBuilderLocalizations.delegate],
       ),
