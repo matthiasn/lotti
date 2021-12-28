@@ -32,6 +32,17 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
 
   String description = '';
 
+  TextStyle inputStyle = TextStyle(
+    color: AppColors.entryTextColor,
+    fontWeight: FontWeight.w300,
+    fontSize: 18.0,
+  );
+
+  TextStyle labelStyle = TextStyle(
+    color: AppColors.entryTextColor,
+    fontSize: 16.0,
+  );
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
@@ -105,11 +116,16 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         child: Column(
                           children: <Widget>[
                             FormBuilderDropdown(
+                              dropdownColor: AppColors.headerBgColor,
                               name: 'type',
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Type',
+                                labelStyle: labelStyle,
                               ),
-                              hint: const Text('Select Measurement Type'),
+                              hint: Text(
+                                'Select Measurement Type',
+                                style: inputStyle,
+                              ),
                               onChanged: (MeasurableDataType? value) {
                                 setState(() {
                                   description = value?.description ?? '';
@@ -121,7 +137,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                   .map((MeasurableDataType item) =>
                                       DropdownMenuItem(
                                         value: item,
-                                        child: Text(item.displayName),
+                                        child: Text(
+                                          item.displayName,
+                                          style: inputStyle,
+                                        ),
                                       ))
                                   .toList(),
                             ),
@@ -132,8 +151,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                 format: DateFormat(
                                     'EEEE, MMMM d, yyyy \'at\' HH:mm'),
                                 inputType: InputType.both,
-                                decoration: const InputDecoration(
+                                style: inputStyle,
+                                decoration: InputDecoration(
                                   labelText: 'Measurement taken',
+                                  labelStyle: labelStyle,
                                 ),
                                 initialValue: DateTime.now(),
                               ),
@@ -142,7 +163,9 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                 initialValue: '',
                                 decoration: InputDecoration(
                                   labelText: description,
+                                  labelStyle: labelStyle,
                                 ),
+                                style: inputStyle,
                                 name: 'value',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -160,40 +183,5 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
         },
       );
     });
-  }
-}
-
-class FormTextField extends StatelessWidget {
-  const FormTextField({
-    Key? key,
-    required this.initialValue,
-    required this.name,
-    required this.labelText,
-    this.keyboardType,
-  }) : super(key: key);
-
-  final String initialValue;
-  final String name;
-  final String labelText;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormBuilderTextField(
-      name: name,
-      initialValue: initialValue,
-      validator: FormBuilderValidators.required(context),
-      style: TextStyle(
-        color: AppColors.entryTextColor,
-        height: 1.6,
-        fontFamily: 'Lato',
-        fontSize: 24,
-      ),
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
-      ),
-    );
   }
 }
