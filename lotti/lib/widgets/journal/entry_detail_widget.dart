@@ -46,10 +46,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
     super.initState();
     stream = _db.watchEntityById(widget.item.meta.id);
 
-    stream.listen((event) {
-      debugPrint(event.toString());
-    });
-
     getApplicationDocumentsDirectory().then((value) {
       setState(() {
         docDir = value;
