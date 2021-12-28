@@ -10,6 +10,7 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/simple_barchart.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -180,6 +181,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         ),
                       ),
                     ),
+                  ),
+                  Container(
+                    height: 100,
+                    child: SimpleBarChart.withSampleData(),
                   ),
                 ],
               ),
