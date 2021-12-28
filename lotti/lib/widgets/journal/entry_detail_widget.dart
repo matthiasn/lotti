@@ -6,11 +6,14 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
+import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -32,12 +35,16 @@ class EntryDetailWidget extends StatefulWidget {
 }
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
+  final JournalDb _db = getIt<JournalDb>();
+  late Stream<JournalEntity?> stream;
+
   Directory? docDir;
   bool mapVisible = false;
 
   @override
   void initState() {
     super.initState();
+    stream = _db.watchEntityById(widget.item.meta.id);
 
     getApplicationDocumentsDirectory().then((value) {
       setState(() {
@@ -48,149 +55,186 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   @override
   Widget build(BuildContext context) {
-    Geolocation? loc = widget.item.geolocation;
+    return StreamBuilder(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<JournalEntity?> snapshot,
+      ) {
+        JournalEntity? journalEntity = snapshot.data;
 
-    return Column(
-      children: <Widget>[
-        widget.item.maybeMap(
-          journalAudio: (JournalAudio audio) {
-            QuillController _controller =
-                makeController(serializedQuill: audio.entryText?.quill);
+        if (journalEntity == null) {
+          return Container();
+        }
 
-            void saveText() {
-              EntryText entryText = entryTextFromController(_controller);
+        Geolocation? loc = journalEntity.geolocation;
 
-              context
-                  .read<PersistenceCubit>()
-                  .updateJournalEntity(widget.item, entryText);
-            }
+        return Column(
+          children: <Widget>[
+            journalEntity.maybeMap(
+              journalAudio: (JournalAudio audio) {
+                QuillController _controller =
+                    makeController(serializedQuill: audio.entryText?.quill);
 
-            return Column(
-              children: [
-                EditorWidget(
-                  controller: _controller,
-                  height: 240,
-                  saveFn: saveText,
-                ),
-                const AudioPlayerWidget(),
-              ],
-            );
-          },
-          journalImage: (JournalImage image) {
-            QuillController _controller =
-                makeController(serializedQuill: image.entryText?.quill);
+                void saveText() {
+                  EntryText entryText = entryTextFromController(_controller);
 
-            void saveText() {
-              EntryText entryText = entryTextFromController(_controller);
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntityText(journalEntity, entryText);
+                }
 
-              context
-                  .read<PersistenceCubit>()
-                  .updateJournalEntity(widget.item, entryText);
-            }
+                return Column(
+                  children: [
+                    EditorWidget(
+                      controller: _controller,
+                      height: 240,
+                      saveFn: saveText,
+                    ),
+                    const AudioPlayerWidget(),
+                  ],
+                );
+              },
+              journalImage: (JournalImage image) {
+                QuillController _controller =
+                    makeController(serializedQuill: image.entryText?.quill);
 
-            return Column(
-              children: [
-                EntryImageWidget(
-                  journalImage: image,
-                  height: 400,
-                ),
-                EditorWidget(
+                void saveText() {
+                  EntryText entryText = entryTextFromController(_controller);
+
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntityText(journalEntity, entryText);
+                }
+
+                return Column(
+                  children: [
+                    EntryImageWidget(
+                      journalImage: image,
+                      height: 400,
+                    ),
+                    EditorWidget(
+                      controller: _controller,
+                      readOnly: widget.readOnly,
+                      saveFn: saveText,
+                    ),
+                  ],
+                );
+              },
+              journalEntry: (JournalEntry journalEntry) {
+                QuillController _controller = makeController(
+                    serializedQuill: journalEntry.entryText.quill);
+
+                void saveText() {
+                  context.read<PersistenceCubit>().updateJournalEntityText(
+                      journalEntity, entryTextFromController(_controller));
+                }
+
+                return EditorWidget(
                   controller: _controller,
                   readOnly: widget.readOnly,
                   saveFn: saveText,
+                );
+              },
+              measurement: (MeasurementEntry entry) {
+                QuillController _controller =
+                    makeController(serializedQuill: entry.entryText?.quill);
+
+                void saveText() {
+                  context.read<PersistenceCubit>().updateJournalEntityText(
+                      journalEntity, entryTextFromController(_controller));
+                }
+
+                return EditorWidget(
+                  controller: _controller,
+                  readOnly: widget.readOnly,
+                  saveFn: saveText,
+                );
+              },
+              survey: (SurveyEntry surveyEntry) =>
+                  SurveySummaryWidget(surveyEntry),
+              quantitative: (qe) => qe.data.map(
+                cumulativeQuantityData: (qd) => Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: InfoText(
+                    'End: ${df.format(qe.meta.dateTo)}'
+                    '\n${formatType(qd.dataType)}: '
+                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                  ),
+                ),
+                discreteQuantityData: (qd) => Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: InfoText(
+                    'End: ${df.format(qe.meta.dateTo)}'
+                    '\n${formatType(qd.dataType)}: '
+                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                  ),
+                ),
+              ),
+              orElse: () => Container(),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAliasWithSaveLayer,
+                      builder: (BuildContext context) {
+                        return EntryDateTimeModal(
+                          item: journalEntity,
+                        );
+                      },
+                    );
+                  },
+                  child: Text(
+                    df.format(journalEntity.meta.dateFrom),
+                    style: textStyle,
+                  ),
+                ),
+                Visibility(
+                  visible: loc != null && loc.longitude != 0,
+                  child: TextButton(
+                    onPressed: () => setState(() {
+                      mapVisible = !mapVisible;
+                    }),
+                    child: Text(
+                      '📍 ${formatLatLon(loc?.latitude)}, '
+                      '${formatLatLon(loc?.longitude)}',
+                      style: textStyle,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(MdiIcons.trashCanOutline),
+                  iconSize: 24,
+                  tooltip: 'Delete',
+                  color: AppColors.appBarFgColor,
+                  onPressed: () {
+                    context
+                        .read<PersistenceCubit>()
+                        .deleteJournalEntity(journalEntity);
+                    Navigator.pop(context);
+                  },
                 ),
               ],
-            );
-          },
-          journalEntry: (JournalEntry journalEntry) {
-            QuillController _controller =
-                makeController(serializedQuill: journalEntry.entryText.quill);
-
-            void saveText() {
-              context.read<PersistenceCubit>().updateJournalEntity(
-                  widget.item, entryTextFromController(_controller));
-            }
-
-            return EditorWidget(
-              controller: _controller,
-              readOnly: widget.readOnly,
-              saveFn: saveText,
-            );
-          },
-          measurement: (MeasurementEntry entry) {
-            QuillController _controller =
-                makeController(serializedQuill: entry.entryText?.quill);
-
-            void saveText() {
-              context.read<PersistenceCubit>().updateJournalEntity(
-                  widget.item, entryTextFromController(_controller));
-            }
-
-            return EditorWidget(
-              controller: _controller,
-              readOnly: widget.readOnly,
-              saveFn: saveText,
-            );
-          },
-          survey: (SurveyEntry surveyEntry) => SurveySummaryWidget(surveyEntry),
-          quantitative: (qe) => qe.data.map(
-            cumulativeQuantityData: (qd) => Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: InfoText(
-                'End: ${df.format(qe.meta.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-              ),
-            ),
-            discreteQuantityData: (qd) => Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: InfoText(
-                'End: ${df.format(qe.meta.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-              ),
-            ),
-          ),
-          orElse: () => Container(),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () {},
-              child: Text(df.format(widget.item.meta.dateFrom)),
             ),
             Visibility(
-              visible: loc != null && loc.longitude != 0,
-              child: TextButton(
-                onPressed: () => setState(() {
-                  mapVisible = !mapVisible;
-                }),
-                child: Text('📍 ${formatLatLon(loc?.latitude)}, '
-                    '${formatLatLon(loc?.longitude)}'),
+              visible: mapVisible,
+              child: MapWidget(
+                geolocation: journalEntity.geolocation,
               ),
             ),
-            IconButton(
-              icon: const Icon(MdiIcons.trashCanOutline),
-              iconSize: 24,
-              tooltip: 'Delete',
-              color: AppColors.appBarFgColor,
-              onPressed: () {
-                context
-                    .read<PersistenceCubit>()
-                    .deleteJournalEntity(widget.item);
-                Navigator.pop(context);
-              },
-            ),
           ],
-        ),
-        Visibility(
-          visible: mapVisible,
-          child: MapWidget(
-            geolocation: widget.item.geolocation,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
