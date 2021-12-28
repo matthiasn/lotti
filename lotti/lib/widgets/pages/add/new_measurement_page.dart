@@ -9,6 +9,7 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class NewMeasurementPage extends StatefulWidget {
@@ -134,12 +135,13 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                   .toList(),
                             ),
                             if (description.isNotEmpty)
-                              FormBuilderDateTimePicker(
+                              FormBuilderCupertinoDateTimePicker(
                                 name: 'date',
                                 alwaysUse24HourFormat: true,
                                 format: DateFormat(
                                     'EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                                inputType: InputType.both,
+                                inputType:
+                                    CupertinoDateTimePickerInputType.both,
                                 style: inputStyle,
                                 decoration: InputDecoration(
                                   labelText: 'Measurement taken',
