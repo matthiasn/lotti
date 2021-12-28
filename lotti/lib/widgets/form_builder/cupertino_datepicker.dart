@@ -237,11 +237,7 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
         newValue = null != newTime ? convert(newTime) : null;
         break;
       case CupertinoDateTimePickerInputType.both:
-        final date = await _showDatePicker(context, currentValue);
-        if (date != null) {
-          final time = await _showTimePicker(context, currentValue);
-          newValue = combine(date, time);
-        }
+        newValue = await _showDateTimePicker(context, currentValue);
         break;
       default:
         throw 'Unexpected input type ${widget.inputType}';
@@ -266,6 +262,21 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
     );
   }
 
+  Future<DateTime?> _showDateTimePicker(
+      BuildContext context, DateTime? currentValue) {
+    return DatePicker.showDateTimePicker(
+      context,
+      showTitleActions: true,
+      minTime: widget.firstDate ?? DateTime(1900),
+      maxTime: widget.lastDate ?? DateTime(2100),
+      currentTime: currentValue,
+      locale: _localeType(),
+      theme: widget.theme,
+      onCancel: widget.onCancel,
+      onConfirm: widget.onConfirm,
+    );
+  }
+
   Future<TimeOfDay?> _showTimePicker(
       BuildContext context, DateTime? currentValue) async {
     final timePicker = widget.alwaysUse24HourFormat
@@ -274,6 +285,7 @@ class _FormBuilderCupertinoDateTimePickerState extends FormBuilderFieldState<
             showTitleActions: true,
             currentTime: currentValue,
             showSecondsColumn: false,
+            theme: widget.theme,
             locale: _localeType(),
           )
         : DatePicker.showTime12hPicker(
