@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class NewMeasurementPage extends StatefulWidget {
@@ -134,18 +136,32 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                   .toList(),
                             ),
                             if (description.isNotEmpty)
-                              FormBuilderDateTimePicker(
+                              FormBuilderCupertinoDateTimePicker(
                                 name: 'date',
                                 alwaysUse24HourFormat: true,
                                 format: DateFormat(
                                     'EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                                inputType: InputType.both,
+                                inputType:
+                                    CupertinoDateTimePickerInputType.both,
                                 style: inputStyle,
                                 decoration: InputDecoration(
                                   labelText: 'Measurement taken',
                                   labelStyle: labelStyle,
                                 ),
                                 initialValue: DateTime.now(),
+                                theme: DatePickerTheme(
+                                  headerColor: AppColors.headerBgColor,
+                                  backgroundColor: AppColors.bodyBgColor,
+                                  itemStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                  doneStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             if (description.isNotEmpty)
                               FormBuilderTextField(
