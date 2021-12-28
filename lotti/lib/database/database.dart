@@ -111,6 +111,15 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<JournalEntity?> watchEntityById(String id) {
+    Stream<JournalEntity?> res = (select(journal)
+          ..where((t) => t.id.equals(id)))
+        .watch()
+        .map(entityStreamMapper)
+        .map((event) => event.first);
+    return res;
+  }
+
   Future<Conflict?> conflictById(String id) async {
     List<Conflict> res =
         await (select(conflicts)..where((t) => t.id.equals(id))).get();
