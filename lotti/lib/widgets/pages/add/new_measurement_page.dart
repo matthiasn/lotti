@@ -32,17 +32,6 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
 
   String description = '';
 
-  TextStyle inputStyle = TextStyle(
-    color: AppColors.entryTextColor,
-    fontWeight: FontWeight.w300,
-    fontSize: 18.0,
-  );
-
-  TextStyle labelStyle = TextStyle(
-    color: AppColors.entryTextColor,
-    fontSize: 16.0,
-  );
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(

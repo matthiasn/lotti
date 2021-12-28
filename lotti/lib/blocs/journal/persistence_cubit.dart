@@ -288,7 +288,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     }
   }
 
-  Future<bool> updateJournalEntity(
+  Future<bool> updateJournalEntityText(
     JournalEntity journalEntity,
     EntryText entryText,
   ) async {
@@ -339,6 +339,38 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
         await updateDbEntity(newEntry, enqueueSync: true);
       }
+    } catch (exception, stackTrace) {
+      await Sentry.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> updateJournalEntityDate(
+    JournalEntity journalEntity, {
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    final transaction =
+        Sentry.startTransaction('updateJournalEntity()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+          previous: journalEntity.meta.vectorClock);
+
+      Metadata newMeta = journalEntity.meta.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+
+      JournalEntity newJournalEntity = journalEntity.copyWith(
+        meta: newMeta,
+      );
+
+      await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
       await Sentry.captureException(exception, stackTrace: stackTrace);
     }
