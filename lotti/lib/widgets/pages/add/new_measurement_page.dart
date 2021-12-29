@@ -10,6 +10,7 @@ import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/measurement_barchart.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -32,7 +33,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
     super.initState();
   }
 
-  String description = '';
+  MeasurableDataType? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +120,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                               ),
                               onChanged: (MeasurableDataType? value) {
                                 setState(() {
-                                  description = value?.description ?? '';
+                                  selected = value;
                                 });
                               },
                               validator: FormBuilderValidators.compose(
@@ -135,7 +136,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                       ))
                                   .toList(),
                             ),
-                            if (description.isNotEmpty)
+                            if (selected != null)
                               FormBuilderCupertinoDateTimePicker(
                                 name: 'date',
                                 alwaysUse24HourFormat: true,
@@ -163,11 +164,11 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                                   ),
                                 ),
                               ),
-                            if (description.isNotEmpty)
+                            if (selected != null)
                               FormBuilderTextField(
                                 initialValue: '',
                                 decoration: InputDecoration(
-                                  labelText: description,
+                                  labelText: selected!.description,
                                   labelStyle: labelStyle,
                                 ),
                                 style: inputStyle,
@@ -181,6 +182,22 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  if (selected != null)
+                    MeasurementBarChart(measurableDataType: selected),
+                  if (selected == null)
+                    Expanded(
+                      child: ListView(
+                        children: List.generate(
+                          items.length,
+                          (int index) {
+                            return MeasurementBarChart(
+                                measurableDataType: items[index]);
+                          },
+                          growable: true,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

@@ -119,7 +119,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<bool> createMeasurementEntry({
     required MeasurementData data,
   }) async {
-    final transaction = Sentry.startTransaction('createSurveyEntry()', 'task');
+    final transaction =
+        Sentry.startTransaction('createMeasurementEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();

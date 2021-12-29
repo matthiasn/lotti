@@ -4,6 +4,8 @@ import 'package:lotti/sync/vector_clock.dart';
 part 'measurables.freezed.dart';
 part 'measurables.g.dart';
 
+enum AggregationType { none, dailySum, dailyMax }
+
 @freezed
 class EntityDefinition with _$EntityDefinition {
   factory EntityDefinition.measurableDataType({
@@ -17,6 +19,7 @@ class EntityDefinition with _$EntityDefinition {
     required int version,
     required VectorClock? vectorClock,
     DateTime? deletedAt,
+    AggregationType? aggregationType,
   }) = MeasurableDataType;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>

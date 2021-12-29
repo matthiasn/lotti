@@ -222,7 +222,10 @@ class _DetailRouteState extends State<DetailRoute> {
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
                   MeasurableDataType dataType = item.copyWith(
-                    name: '${formData!['name']}'.trim().replaceAll(' ', '_'),
+                    name: '${formData!['name']}'
+                        .trim()
+                        .replaceAll(' ', '_')
+                        .toLowerCase(),
                     description: '${formData['description']}'.trim(),
                     unitName: '${formData['unitName']}'.trim(),
                     displayName: '${formData['displayName']}'.trim(),

@@ -92,3 +92,10 @@ activeMeasurableTypes:
 SELECT * FROM measurable_types
   WHERE deleted = false
   ORDER BY unique_name ASC;
+
+measurementsByType:
+SELECT * FROM journal
+  WHERE type = 'MeasurementEntry'
+  AND subtype = :subtype
+  AND date_from >= :from
+  ORDER BY date_from DESC;

@@ -146,6 +146,13 @@ class JournalDb extends _$JournalDb {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchMeasurementsByType(
+    String type,
+    DateTime from,
+  ) {
+    return measurementsByType(type, from).watch().map(entityStreamMapper);
+  }
+
   Stream<List<Conflict>> watchConflicts(
     ConflictStatus status, {
     int limit = 1000,
