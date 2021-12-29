@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/measurement_barchart.dart';
-import 'package:lotti/widgets/charts/simple_barchart.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -183,16 +182,17 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       ),
                     ),
                   ),
-                  Container(
-                    height: 100,
-                    child: SimpleBarChart.withSampleData(),
-                  ),
+                  const SizedBox(height: 16),
                   if (selected != null)
-                    SizedBox(
-                      key: Key(selected?.description ?? ''),
-                      height: 100,
-                      child: MeasurementBarChart(
-                        measurementType: selected,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        key: Key(selected?.description ?? ''),
+                        color: Colors.white,
+                        height: 240,
+                        padding: const EdgeInsets.all(8.0),
+                        child:
+                            MeasurementBarChart(measurableDataType: selected),
                       ),
                     ),
                 ],

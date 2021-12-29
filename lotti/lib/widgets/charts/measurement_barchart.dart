@@ -1,66 +1,21 @@
+import 'dart:core';
+
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
-import 'package:lotti/theme.dart';
 
-class MeasurementBarChart1 extends StatelessWidget {
-  final List<charts.Series<OrdinalSales, String>> seriesList;
-  final bool animate;
-
-  const MeasurementBarChart1(this.seriesList, {required this.animate});
+class SumPerDay {
+  final String day;
+  final num sum;
+  SumPerDay(this.day, this.sum);
 
   @override
-  Widget build(BuildContext context) {
-    return charts.BarChart(
-      seriesList,
-      animate: animate,
-    );
+  String toString() {
+    return '$day $sum';
   }
-
-  /// Create one series with sample hard coded data.
-  static List<charts.Series<OrdinalSales, String>> _createSampleData() {
-    final data = [
-      OrdinalSales('10', 15),
-      OrdinalSales('11', 28),
-      OrdinalSales('12', 83),
-      OrdinalSales('13', 79),
-      OrdinalSales('14', 5),
-      OrdinalSales('15', 25),
-      OrdinalSales('16', 122),
-      OrdinalSales('17', 75),
-      OrdinalSales('18', 51),
-      OrdinalSales('19', 42),
-      OrdinalSales('20', 93),
-      OrdinalSales('21', 70),
-    ];
-
-    return [
-      charts.Series<OrdinalSales, String>(
-        id: 'Sales',
-        colorFn: (OrdinalSales val, _) {
-          debugPrint('${val.sales}');
-          if (val.sales < 50) {
-            return charts.MaterialPalette.red.shadeDefault;
-          }
-          return charts.MaterialPalette.blue.shadeDefault;
-        },
-        domainFn: (OrdinalSales sales, _) => sales.year,
-        measureFn: (OrdinalSales sales, _) => sales.sales,
-        data: data,
-      )
-    ];
-  }
-}
-
-/// Sample ordinal data type.
-class OrdinalSales {
-  final String year;
-  final int sales;
-
-  OrdinalSales(this.year, this.sales);
 }
 
 class MeasurementBarChart extends StatefulWidget {
@@ -75,10 +30,44 @@ class MeasurementBarChart extends StatefulWidget {
   _MeasurementBarChartState createState() => _MeasurementBarChartState();
 }
 
+const days = 15;
+const duration = Duration(days: 15);
+
+List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
+  List<String> dayStrings = [];
+  Map<String, num> sumsByDay = {};
+  DateTime now = DateTime.now();
+
+  String ymd(DateTime day) {
+    return day.toIso8601String().substring(0, 10);
+  }
+
+  for (int i = days; i >= 0; i--) {
+    DateTime day = now.subtract(Duration(days: i));
+    String dayString = ymd(day);
+    dayStrings.add(dayString);
+    sumsByDay[dayString] = 0;
+  }
+
+  for (final entity in entities) {
+    String dayString = ymd(entity!.meta.dateFrom);
+    num n = sumsByDay[dayString] ?? 0;
+    if (entity is MeasurementEntry) {
+      sumsByDay[dayString] = n + entity.data.value;
+    }
+  }
+
+  List<SumPerDay> aggregated = [];
+  for (final dayString in dayStrings) {
+    aggregated.add(SumPerDay(dayString, sumsByDay[dayString] ?? 0));
+  }
+
+  return aggregated;
+}
+
 class _MeasurementBarChartState extends State<MeasurementBarChart> {
   final JournalDb _db = getIt<JournalDb>();
   late Stream<List<JournalEntity?>> stream;
-  static const duration = Duration(days: 15);
 
   @override
   void initState() {
@@ -88,10 +77,6 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
         widget.measurableDataType!.name,
         DateTime.now().subtract(duration),
       );
-
-      stream.listen((event) {
-        debugPrint('$event');
-      });
     }
   }
 
@@ -106,15 +91,24 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
           List<JournalEntity?>? measurements = snapshot.data;
 
           if (measurements == null) {
-            return Container();
+            return const SizedBox.shrink();
           }
 
-          return Text(
-            'foo',
-            style: TextStyle(
-              color: AppColors.entryBgColor,
-              fontFamily: 'Oswald',
-            ),
+          List<charts.Series<SumPerDay, String>> seriesList = [
+            charts.Series<SumPerDay, String>(
+              id: 'Sales',
+              colorFn: (SumPerDay val, _) {
+                return charts.MaterialPalette.blue.shadeDefault;
+              },
+              domainFn: (SumPerDay val, _) => val.day.substring(8, 10),
+              measureFn: (SumPerDay val, _) => val.sum,
+              data: aggregateByDay(measurements),
+            )
+          ];
+
+          return charts.BarChart(
+            seriesList,
+            animate: true,
           );
         });
   }
