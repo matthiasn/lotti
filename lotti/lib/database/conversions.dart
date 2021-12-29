@@ -20,6 +20,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     journalAudio: (item) => geolocation = item.geolocation,
     journalImage: (item) => geolocation = item.geolocation,
     journalEntry: (item) => geolocation = item.geolocation,
+    measurement: (item) => geolocation = item.geolocation,
   );
 
   String id = entity.meta.id;
