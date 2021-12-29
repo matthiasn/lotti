@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/theme.dart';
 
 class SumPerDay {
   final String day;
@@ -31,7 +32,7 @@ class MeasurementBarChart extends StatefulWidget {
 }
 
 const days = 15;
-const duration = Duration(days: 15);
+const duration = Duration(days: days + 1);
 
 List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
   List<String> dayStrings = [];
@@ -90,7 +91,7 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
         ) {
           List<JournalEntity?>? measurements = snapshot.data;
 
-          if (measurements == null) {
+          if (measurements == null || measurements.isEmpty) {
             return const SizedBox.shrink();
           }
 
@@ -105,10 +106,35 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
               data: aggregateByDay(measurements),
             )
           ];
-
-          return charts.BarChart(
-            seriesList,
-            animate: true,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                key: Key(widget.measurableDataType?.description ?? ''),
+                color: Colors.white,
+                height: 240,
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.measurableDataType?.displayName ?? '',
+                      style: TextStyle(
+                        fontFamily: 'Oswald',
+                        fontSize: 16,
+                        color: AppColors.bodyBgColor,
+                      ),
+                    ),
+                    Expanded(
+                      child: charts.BarChart(
+                        seriesList,
+                        animate: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         });
   }

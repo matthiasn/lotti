@@ -184,15 +184,18 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                   ),
                   const SizedBox(height: 16),
                   if (selected != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        key: Key(selected?.description ?? ''),
-                        color: Colors.white,
-                        height: 240,
-                        padding: const EdgeInsets.all(8.0),
-                        child:
-                            MeasurementBarChart(measurableDataType: selected),
+                    MeasurementBarChart(measurableDataType: selected),
+                  if (selected == null)
+                    Expanded(
+                      child: ListView(
+                        children: List.generate(
+                          items.length,
+                          (int index) {
+                            return MeasurementBarChart(
+                                measurableDataType: items[index]);
+                          },
+                          growable: true,
+                        ),
                       ),
                     ),
                 ],

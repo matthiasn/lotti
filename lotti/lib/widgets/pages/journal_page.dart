@@ -126,7 +126,6 @@ class _JournalPageState extends State<JournalPage> {
                         children: List.generate(
                           items.length,
                           (int index) {
-                            debugPrint(index.toString());
                             return JournalCard(
                               item: items.elementAt(index),
                               index: index,
