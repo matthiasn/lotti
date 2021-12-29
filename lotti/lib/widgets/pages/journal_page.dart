@@ -33,12 +33,12 @@ class _JournalPageState extends State<JournalPage> {
   final JournalDb _db = getIt<JournalDb>();
 
   static final List<FilterBy> _entryTypes = [
-    FilterBy(typeName: r'_$JournalEntry', name: "Text"),
-    FilterBy(typeName: r'_$JournalAudio', name: "Audio"),
-    FilterBy(typeName: r'_$JournalImage', name: "Photo"),
-    FilterBy(typeName: r'_$QuantitativeEntry', name: "Quantitative"),
-    FilterBy(typeName: r'_$MeasurementEntry', name: "Measurement"),
-    FilterBy(typeName: r'_$SurveyEntry', name: "Questionnaire"),
+    FilterBy(typeName: 'JournalEntry', name: "Text"),
+    FilterBy(typeName: 'JournalAudio', name: "Audio"),
+    FilterBy(typeName: 'JournalImage', name: "Photo"),
+    FilterBy(typeName: 'QuantitativeEntry', name: "Quantitative"),
+    FilterBy(typeName: 'MeasurementEntry', name: "Measurement"),
+    FilterBy(typeName: 'SurveyEntry', name: "Questionnaire"),
   ];
 
   late Stream<List<JournalEntity>> stream;
