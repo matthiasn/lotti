@@ -8,12 +8,15 @@ import 'database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
   final DateTime createdAt = entity.meta.createdAt;
-  final subtype = entity.maybeMap(
-    quantitative: (qd) => qd.data.dataType,
-    measurement: (qd) => qd.data.dataType.name,
-    survey: (SurveyEntry surveyEntry) => surveyEntry.data.taskResult.identifier,
-    orElse: () => '',
-  );
+  final subtype = entity
+      .maybeMap(
+        quantitative: (qd) => qd.data.dataType,
+        measurement: (qd) => qd.data.dataType.name,
+        survey: (SurveyEntry surveyEntry) =>
+            surveyEntry.data.taskResult.identifier,
+        orElse: () => '',
+      )
+      .toLowerCase();
 
   Geolocation? geolocation;
   entity.mapOrNull(
