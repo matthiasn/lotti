@@ -9,7 +9,7 @@ import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 
 class SumPerDay {
-  final String day;
+  final DateTime day;
   final num sum;
   SumPerDay(this.day, this.sum);
 
@@ -60,7 +60,8 @@ List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
 
   List<SumPerDay> aggregated = [];
   for (final dayString in dayStrings) {
-    aggregated.add(SumPerDay(dayString, sumsByDay[dayString] ?? 0));
+    DateTime day = DateTime.parse(dayString);
+    aggregated.add(SumPerDay(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
@@ -95,13 +96,13 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
             return const SizedBox.shrink();
           }
 
-          List<charts.Series<SumPerDay, String>> seriesList = [
-            charts.Series<SumPerDay, String>(
+          List<charts.Series<SumPerDay, DateTime>> seriesList = [
+            charts.Series<SumPerDay, DateTime>(
               id: 'Sales',
               colorFn: (SumPerDay val, _) {
                 return charts.MaterialPalette.blue.shadeDefault;
               },
-              domainFn: (SumPerDay val, _) => val.day.substring(8, 10),
+              domainFn: (SumPerDay val, _) => val.day,
               measureFn: (SumPerDay val, _) => val.sum,
               data: aggregateByDay(measurements),
             )
@@ -126,9 +127,10 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
                       ),
                     ),
                     Expanded(
-                      child: charts.BarChart(
+                      child: charts.TimeSeriesChart(
                         seriesList,
                         animate: true,
+                        defaultRenderer: charts.BarRendererConfig<DateTime>(),
                       ),
                     ),
                   ],
