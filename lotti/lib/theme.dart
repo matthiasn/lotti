@@ -5,6 +5,7 @@ class AppColors {
   static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
+  static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
   static Color editorBgColor = Colors.white;
 
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);

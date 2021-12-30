@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
+import 'package:tuple/tuple.dart';
 
 class EditorWidget extends StatelessWidget {
   const EditorWidget({
@@ -70,9 +72,64 @@ class EditorWidget extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: _padding),
-                child: QuillEditor.basic(
+                child: QuillEditor(
                   controller: _controller,
                   readOnly: _readOnly,
+                  scrollController: ScrollController(),
+                  scrollable: true,
+                  focusNode: FocusNode(),
+                  autoFocus: true,
+                  expands: false,
+                  padding: const EdgeInsets.only(top: 8, bottom: 16),
+                  keyboardAppearance: Brightness.dark,
+                  customStyles: DefaultStyles(
+                    h1: DefaultTextBlockStyle(
+                      GoogleFonts.oswald(
+                        fontSize: 24,
+                        color: AppColors.editorTextColor,
+                      ),
+                      const Tuple2(8, 0),
+                      const Tuple2(0, 0),
+                      null,
+                    ),
+                    h2: DefaultTextBlockStyle(
+                      GoogleFonts.oswald(
+                        fontSize: 20,
+                        color: AppColors.editorTextColor,
+                      ),
+                      const Tuple2(8, 0),
+                      const Tuple2(0, 0),
+                      null,
+                    ),
+                    h3: DefaultTextBlockStyle(
+                      GoogleFonts.oswald(
+                        fontSize: 18,
+                        color: AppColors.editorTextColor,
+                      ),
+                      const Tuple2(8, 0),
+                      const Tuple2(0, 0),
+                      null,
+                    ),
+                    paragraph: DefaultTextBlockStyle(
+                      GoogleFonts.lato(
+                        fontSize: 16,
+                        color: AppColors.editorTextColor,
+                      ),
+                      const Tuple2(2, 0),
+                      const Tuple2(0, 0),
+                      null,
+                    ),
+                    lists: DefaultListBlockStyle(
+                      GoogleFonts.lato(
+                        fontSize: 16,
+                        color: AppColors.editorTextColor,
+                      ),
+                      const Tuple2(4, 0),
+                      const Tuple2(0, 0),
+                      null,
+                      null,
+                    ),
+                  ),
                 ),
               ),
             ),
