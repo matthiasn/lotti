@@ -98,15 +98,41 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(def expected-text3 (str (h/format-time 1636319781000) " Image"))
+(deftest import-flag-audio-test
+  (let [flagged-import (ai/convert-audio-entry
+                         (h/parse-json
+                           (test-data-file "flagged_import.aac.json")))
+        import-flag-removed (ai/convert-audio-entry
+                              (h/parse-json
+                                (test-data-file "flagged_import_removed.aac.json")))]
+    (testing "Entry with import flag is ignored"
+      (is (nil? flagged-import)))
+    (testing "Entry is converted after removing the flag"
+      (is (= import-flag-removed {:mentions   #{}
+                                  :tags       #{"#import" "#audio"}
+                                  :timezone   "Europe/Berlin"
+                                  :audio_file "2022-01-02_00-16-00-466.aac"
+                                  :utc-offset 60
+                                  :perm_tags  #{"#task" "#audio"}
+                                  :vclock     {"1f9af04b-9cbe-454e-9937-a3729d2f7371" 43
+                                               "f44742d5-972f-4a6f-ba4c-03152bb4527b" 106}
+                                  :latitude   54
+                                  :longitude  10
+                                  :timestamp  1641082560466
+                                  :text       "test\n"
+                                  :md         "test\n"})))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec import-flag-removed))))
+
+(def expected-text-image (str (h/format-time 1636319781000) " Image"))
 (def new-image-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 0
    :timestamp  1636319781000
    :img_file   "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.JPG"
-   :md         expected-text3
-   :text       expected-text3
+   :md         expected-text-image
+   :text       expected-text-image
    :tags       #{"#import" "#photo"}
    :perm_tags  #{"#photo"}
    :longitude  9
