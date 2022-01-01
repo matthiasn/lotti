@@ -12,6 +12,12 @@ import 'measurables.dart';
 part 'journal_entities.freezed.dart';
 part 'journal_entities.g.dart';
 
+enum EntryFlag {
+  none,
+  import,
+  followUpNeeded,
+}
+
 @freezed
 class Metadata with _$Metadata {
   factory Metadata({
@@ -24,6 +30,8 @@ class Metadata with _$Metadata {
     String? timezone,
     VectorClock? vectorClock,
     DateTime? deletedAt,
+    EntryFlag? flag,
+    bool? starred,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>

@@ -33,6 +33,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     updatedAt: createdAt,
     dateFrom: entity.meta.dateFrom,
     deleted: entity.meta.deletedAt != null,
+    starred: entity.meta.starred ?? false,
+    flag: entity.meta.flag?.index ?? 0,
     dateTo: entity.meta.dateTo,
     type: entity.runtimeType.toString().replaceFirst(r'_$', ''),
     subtype: subtype,
