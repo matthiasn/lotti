@@ -177,6 +177,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           vectorClock: vc,
           timezone: await FlutterNativeTimezone.getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
+          flag: EntryFlag.import,
         ),
         // TODO: should this be geolocation at capture or insertion?
         geolocation: imageData.geolocation,
@@ -220,6 +221,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           vectorClock: vc,
           timezone: await FlutterNativeTimezone.getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
+          flag: EntryFlag.import,
         ),
         // TODO: should this be geolocation at capture or insertion?
         geolocation: audioNote.geolocation,
@@ -300,7 +302,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);
 
-      Metadata newMeta = journalEntity.meta.copyWith(
+      Metadata oldMeta = journalEntity.meta;
+      Metadata newMeta = oldMeta.copyWith(
         updatedAt: now,
         vectorClock: vc,
       );
@@ -316,7 +319,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       if (journalEntity is JournalAudio) {
         JournalAudio newJournalAudio = journalEntity.copyWith(
-          meta: newMeta,
+          meta: newMeta.copyWith(
+            flag: oldMeta.flag == EntryFlag.import
+                ? EntryFlag.none
+                : oldMeta.flag,
+          ),
           entryText: entryText,
         );
 
@@ -325,7 +332,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       if (journalEntity is JournalImage) {
         JournalImage newJournalImage = journalEntity.copyWith(
-          meta: newMeta,
+          meta: newMeta.copyWith(
+            flag: oldMeta.flag == EntryFlag.import
+                ? EntryFlag.none
+                : oldMeta.flag,
+          ),
           entryText: entryText,
         );
 
