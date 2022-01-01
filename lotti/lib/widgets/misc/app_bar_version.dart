@@ -50,7 +50,7 @@ class _VersionAppBarState extends State<VersionAppBar> {
             ),
           ),
           Text(
-            'v$version Build $buildNumber',
+            'v$version ($buildNumber), n = 11231',
             style: TextStyle(
               color: AppColors.headerFontColor2,
               fontFamily: 'Oswald',

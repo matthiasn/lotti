@@ -90,6 +90,12 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+entriesFlaggedImport:
+SELECT * FROM journal
+  WHERE deleted = false AND flag = 1
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
 conflictsByStatus:
 SELECT * FROM conflicts
   WHERE status = :status

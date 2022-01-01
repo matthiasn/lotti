@@ -3,8 +3,10 @@ import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/add_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
+import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -42,6 +44,7 @@ class _HomePageState extends State<HomePage> {
               index: _pageIndex,
               children: const <Widget>[
                 JournalPage(),
+                FlaggedEntriesPage(),
                 AddPage(),
                 AudioPage(),
                 SettingsPage(),
@@ -56,6 +59,10 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
               label: 'Journal',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(MdiIcons.flag),
+              label: 'Flagged',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.add_box),

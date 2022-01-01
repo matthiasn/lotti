@@ -142,6 +142,12 @@ class JournalDb extends _$JournalDb {
     return filteredJournal(types, limit).watch().map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchFlaggedImport({
+    int limit = 1000,
+  }) {
+    return entriesFlaggedImport(limit).watch().map(entityStreamMapper);
+  }
+
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
