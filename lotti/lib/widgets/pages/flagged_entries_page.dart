@@ -44,7 +44,7 @@ class _FlaggedEntriesPageState extends State<FlaggedEntriesPage> {
                 AsyncSnapshot<List<JournalEntity>> snapshot,
               ) {
                 if (snapshot.data == null) {
-                  return Container();
+                  return const SizedBox.shrink();
                 } else {
                   List<JournalEntity> items = snapshot.data!;
 

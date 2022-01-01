@@ -113,3 +113,6 @@ SELECT * FROM journal
   AND subtype = :subtype
   AND date_from >= :from
   ORDER BY date_from DESC;
+
+countJournalEntries:
+SELECT COUNT(*) FROM journal;
