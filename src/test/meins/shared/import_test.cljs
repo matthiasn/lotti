@@ -30,17 +30,8 @@
    :latitude   52
    :vclock     {"1231bb84-da9b-4abe-b0ab-b300349818af" 28}})
 
-(deftest read-entry-test
-  (let [json-file (test-data-file "test1.aac.json")
-        data (h/parse-json json-file)
-        entry (ai/convert-audio-entry data)]
-    (testing "JSON is parsed correctly"
-      (is (= entry test-entry)))
-    (testing "Parsed entry is valid"
-      (s/valid? :meins.entry/spec entry))))
-
 (def expected-text2 (str (h/format-time 1636326416054) " Audio"))
-(def new-audio-test-entry
+(def audio-test-entry
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 60
@@ -54,16 +45,16 @@
    :latitude   53
    :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
 
-(deftest read-new-audio-entry-test
-  (let [json-file (test-data-file "test2.aac.json")
+(deftest read-audio-entry-test
+  (let [json-file (test-data-file "test.aac.json")
         data (h/parse-json json-file)
-        entry (ai/convert-new-audio-entry data)]
+        entry (ai/convert-audio-entry data)]
     (testing "JSON is parsed correctly"
-      (is (= entry new-audio-test-entry)))
+      (is (= entry audio-test-entry)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
-(def new-audio-test-entry-with-text
+(def audio-test-entry-with-text
   {:mentions   #{}
    :timezone   "Europe/Berlin"
    :utc-offset 60
@@ -77,12 +68,12 @@
    :latitude   53
    :vclock     {"bae5c26c-1580-4df1-a1e7-cb40a81444f7" 13}})
 
-(deftest read-new-audio-entry-test-with-text
+(deftest read-audio-entry-test-with-text
   (let [json-file (test-data-file "test3.aac.json")
         data (h/parse-json json-file)
-        entry (ai/convert-new-audio-entry data)]
+        entry (ai/convert-audio-entry data)]
     (testing "JSON is parsed correctly"
-      (is (= entry new-audio-test-entry-with-text)))
+      (is (= entry audio-test-entry-with-text)))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec entry))))
 
@@ -99,7 +90,7 @@
    :md             "- recording"})
 
 (deftest time-recording-entry-test
-  (let [json-file (test-data-file "test2.aac.json")
+  (let [json-file (test-data-file "test.aac.json")
         data (h/parse-json json-file)
         entry (ai/time-recording-entry data)]
     (testing "JSON is parsed correctly"
@@ -114,8 +105,6 @@
    :utc-offset 0
    :timestamp  1636319781000
    :img_file   "E5CC2467-56F0-4CA4-A168-EA6719091D76.IMG_7524.JPG"
-
-
    :md         expected-text3
    :text       expected-text3
    :tags       #{"#import" "#photo"}
