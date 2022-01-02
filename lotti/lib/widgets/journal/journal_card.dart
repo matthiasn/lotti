@@ -8,6 +8,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
@@ -51,23 +52,34 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   orElse: () => Container(),
                 ),
-                journalAudio: (JournalAudio journalAudio) => EntryText(
+                journalAudio: (JournalAudio journalAudio) =>
                     journalAudio.entryText?.plainText != null
-                        ? journalAudio.entryText!.plainText
-                        : formatAudio(journalAudio)),
-                journalEntry: (JournalEntry journalEntry) =>
-                    EntryText(journalEntry.entryText.plainText),
-                journalImage: (JournalImage journalImage) => EntryText(
+                        ? TextViewerWidget(entryText: journalAudio.entryText)
+                        : EntryText(formatAudio(journalAudio)),
+                journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
+                  entryText: journalEntry.entryText,
+                ),
+                journalImage: (JournalImage journalImage) =>
                     journalImage.entryText?.plainText != null
-                        ? journalImage.entryText!.plainText
-                        : journalImage.data.imageFile),
+                        ? TextViewerWidget(entryText: journalImage.entryText)
+                        : EntryText(journalImage.data.imageFile),
                 survey: (SurveyEntry surveyEntry) =>
                     SurveySummaryWidget(surveyEntry),
                 measurement: (MeasurementEntry measurementEntry) {
                   MeasurementData data = measurementEntry.data;
-                  return EntryText(
-                      '${data.dataType.displayName}: ${nf.format(data.value)}'
-                      '\n${measurementEntry.entryText?.plainText ?? ''}');
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (measurementEntry.entryText?.plainText != null)
+                        TextViewerWidget(entryText: measurementEntry.entryText),
+                      EntryText(
+                        '${data.dataType.displayName}: '
+                        '${nf.format(data.value)}',
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
+                  );
                 },
                 orElse: () => Row(
                   children: const [],
@@ -84,20 +96,22 @@ class JournalCardTitle extends StatelessWidget {
 class EntryText extends StatelessWidget {
   final String text;
   final int maxLines;
+  final EdgeInsets padding;
   const EntryText(
     this.text, {
     Key? key,
     this.maxLines = 5,
+    this.padding = const EdgeInsets.only(top: 4.0),
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
+      padding: padding,
       child: Text(text,
           maxLines: maxLines,
           style: TextStyle(
-            fontFamily: 'Lato',
+            fontFamily: 'ShareTechMono',
             color: AppColors.entryTextColor,
             fontWeight: FontWeight.w300,
             fontSize: 16.0,
