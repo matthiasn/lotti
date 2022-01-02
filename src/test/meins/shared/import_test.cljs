@@ -124,6 +124,33 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec import-flag-removed))))
 
+(deftest import-flag-image-test
+  (let [flagged-import (ii/convert-image-entry
+                         (h/parse-json
+                           (test-data-file "flagged_import.JPG.json")))
+        import-flag-removed (ii/convert-image-entry
+                              (h/parse-json
+                                (test-data-file "flagged_import_removed.JPG.json")))]
+    (testing "Entry with import flag is ignored"
+      (is (nil? flagged-import)))
+    (testing "Entry is converted after removing the flag"
+      (is (= import-flag-removed
+             {:mentions   #{}
+              :tags       #{"#photo" "#import"}
+              :timezone   "Europe/Berlin"
+              :utc-offset 0
+              :perm_tags  #{"#photo"}
+              :longitude  nil
+              :vclock     {"1f9af04b-9cbe-454e-9937-a3729d2f7371" 44
+                           "f44742d5-972f-4a6f-ba4c-03152bb4527b" 107}
+              :latitude   nil
+              :timestamp  1641086895000
+              :img_file   "05019F5D-25FD-4449-84E7-41B9362189D6.IMG_8959.JPG"
+              :text       "test\n"
+              :md         "test\n"})))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec import-flag-removed))))
+
 (def expected-text-image (str (h/format-time 1636319781000) " Image"))
 (def new-image-test-entry
   {:mentions   #{}
@@ -142,7 +169,7 @@
 (deftest read-new-image-entry-test
   (let [json-file (test-data-file "test.HEIC.json")
         data (h/parse-json json-file)
-        entry (ii/convert-new-image-entry data)]
+        entry (ii/convert-image-entry data)]
     (testing "JSON is parsed correctly"
       (is (= entry new-image-test-entry)))
     (testing "Parsed entry is valid"

@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "id": "124a090f-a171-519b-b389-66e720d33507",
+    "createdAt": "2022-01-02T01:28:24.430199",
+    "updatedAt": "2022-01-02T01:28:24.430199",
+    "dateFrom": "2022-01-02T01:28:15.000",
+    "dateTo": "2022-01-02T01:28:15.000",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "1f9af04b-9cbe-454e-9937-a3729d2f7371": 44
+    },
+    "deletedAt": null,
+    "flag": "import",
+    "starred": null
+  },
+  "data": {
+    "capturedAt": "2022-01-02T01:28:15.000",
+    "imageId": "05019F5D-25FD-4449-84E7-41B9362189D6/L0/001",
+    "imageFile": "05019F5D-25FD-4449-84E7-41B9362189D6.IMG_8959.JPG",
+    "imageDirectory": "/images/2022-01-02/",
+    "geolocation": null
+  },
+  "entryText": null,
+  "geolocation": null,
+  "runtimeType": "journalImage"
+}
