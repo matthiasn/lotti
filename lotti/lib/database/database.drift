@@ -6,6 +6,8 @@ CREATE TABLE journal (
   date_from DATETIME NOT NULL,
   date_to DATETIME NOT NULL,
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  starred BOOLEAN NOT NULL DEFAULT FALSE,
+  flag INTEGER NOT NULL DEFAULT 0,
   type TEXT NOT NULL,
   subtype TEXT,
   serialized TEXT NOT NULL,
@@ -32,6 +34,12 @@ ON journal (date_to);
 
 CREATE INDEX idx_journal_deleted
 ON journal (deleted);
+
+CREATE INDEX idx_journal_starred
+ON journal (starred);
+
+CREATE INDEX idx_journal_flag
+ON journal (flag);
 
 CREATE INDEX idx_journal_type
 ON journal (type);
@@ -82,6 +90,12 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+entriesFlaggedImport:
+SELECT * FROM journal
+  WHERE deleted = false AND flag = 1
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
 conflictsByStatus:
 SELECT * FROM conflicts
   WHERE status = :status
@@ -99,3 +113,6 @@ SELECT * FROM journal
   AND subtype = :subtype
   AND date_from >= :from
   ORDER BY date_from DESC;
+
+countJournalEntries:
+SELECT COUNT(*) FROM journal;
