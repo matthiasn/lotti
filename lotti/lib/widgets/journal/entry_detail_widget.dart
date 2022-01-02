@@ -64,7 +64,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         JournalEntity? journalEntity = snapshot.data;
 
         if (journalEntity == null) {
-          return Container();
+          return const SizedBox.shrink();
         }
 
         Geolocation? loc = journalEntity.geolocation;
