@@ -36,15 +36,15 @@ class JournalDb extends _$JournalDb {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        print('Migration from v$from to v$to');
+        debugPrint('Migration from v$from to v$to');
 
-        print('Creating tag_definitions table and indices');
+        debugPrint('Creating tag_definitions table and indices');
         await m.createTable(tagDefinitions);
         await m.createIndex(idxTagDefinitionsId);
         await m.createIndex(idxTagDefinitionsTag);
         await m.createIndex(idxTagDefinitionsPrivate);
 
-        print('Deleting redundant tags table');
+        debugPrint('Deleting redundant tags table');
         await m.deleteTable('tags');
       },
     );
@@ -260,6 +260,9 @@ class JournalDb extends _$JournalDb {
       },
       tagDefinition: (TagDefinition tagDefinition) async {
         return upsertTagDefinition(tagDefinition);
+      },
+      habitDefinition: (HabitDefinition value) {
+        return 0;
       },
     );
     return linesAffected;

@@ -22,8 +22,6 @@ class JournalCardTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> tags = item.meta.tags ?? [];
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(

@@ -15,10 +15,10 @@ class TagsService {
 
     stream.listen((List<TagDefinition> tagDefinitions) {
       tagsById.clear();
-      tagDefinitions.forEach((tagDefinition) {
+      for (TagDefinition tagDefinition in tagDefinitions) {
         tagsById[tagDefinition.id] = tagDefinition;
         tagsByName[tagDefinition.tag] = tagDefinition;
-      });
+      }
     });
   }
 
