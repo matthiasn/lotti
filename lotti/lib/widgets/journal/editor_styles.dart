@@ -64,7 +64,10 @@ DefaultStyles customEditorStyles({
       ),
       const Tuple2(0, 0),
       const Tuple2(0, 0),
-      BoxDecoration(color: codeBlockBackground),
+      BoxDecoration(
+        color: codeBlockBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
     ),
   );
 }
