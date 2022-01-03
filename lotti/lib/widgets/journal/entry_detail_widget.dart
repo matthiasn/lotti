@@ -41,6 +41,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   Directory? docDir;
   bool mapVisible = false;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
+  double imageTextEditorHeight =
+      (Platform.isIOS || Platform.isAndroid) ? 160 : 400;
 
   @override
   void initState() {
@@ -177,7 +179,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     EditorWidget(
                       controller: _controller,
                       readOnly: widget.readOnly,
-                      height: editorHeight,
+                      height: imageTextEditorHeight,
                       saveFn: saveText,
                     ),
                   ],
