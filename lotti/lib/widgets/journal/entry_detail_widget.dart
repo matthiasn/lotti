@@ -9,11 +9,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -40,6 +40,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   Directory? docDir;
   bool mapVisible = false;
+  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
+  double imageTextEditorHeight =
+      (Platform.isIOS || Platform.isAndroid) ? 160 : 400;
 
   @override
   void initState() {
@@ -70,109 +73,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         Geolocation? loc = journalEntity.geolocation;
 
         return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            journalEntity.maybeMap(
-              journalAudio: (JournalAudio audio) {
-                QuillController _controller =
-                    makeController(serializedQuill: audio.entryText?.quill);
-
-                void saveText() {
-                  EntryText entryText = entryTextFromController(_controller);
-
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntityText(journalEntity, entryText);
-                }
-
-                return Column(
-                  children: [
-                    EditorWidget(
-                      controller: _controller,
-                      height: 240,
-                      saveFn: saveText,
-                    ),
-                    const AudioPlayerWidget(),
-                  ],
-                );
-              },
-              journalImage: (JournalImage image) {
-                QuillController _controller =
-                    makeController(serializedQuill: image.entryText?.quill);
-
-                void saveText() {
-                  EntryText entryText = entryTextFromController(_controller);
-
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntityText(journalEntity, entryText);
-                }
-
-                return Column(
-                  children: [
-                    EntryImageWidget(
-                      journalImage: image,
-                      height: 400,
-                    ),
-                    EditorWidget(
-                      controller: _controller,
-                      readOnly: widget.readOnly,
-                      saveFn: saveText,
-                    ),
-                  ],
-                );
-              },
-              journalEntry: (JournalEntry journalEntry) {
-                QuillController _controller = makeController(
-                    serializedQuill: journalEntry.entryText.quill);
-
-                void saveText() {
-                  context.read<PersistenceCubit>().updateJournalEntityText(
-                      journalEntity, entryTextFromController(_controller));
-                }
-
-                return EditorWidget(
-                  controller: _controller,
-                  readOnly: widget.readOnly,
-                  saveFn: saveText,
-                );
-              },
-              measurement: (MeasurementEntry entry) {
-                QuillController _controller =
-                    makeController(serializedQuill: entry.entryText?.quill);
-
-                void saveText() {
-                  context.read<PersistenceCubit>().updateJournalEntityText(
-                      journalEntity, entryTextFromController(_controller));
-                }
-
-                return EditorWidget(
-                  controller: _controller,
-                  readOnly: widget.readOnly,
-                  saveFn: saveText,
-                );
-              },
-              survey: (SurveyEntry surveyEntry) =>
-                  SurveySummaryWidget(surveyEntry),
-              quantitative: (qe) => qe.data.map(
-                cumulativeQuantityData: (qd) => Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: InfoText(
-                    'End: ${df.format(qe.meta.dateTo)}'
-                    '\n${formatType(qd.dataType)}: '
-                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                  ),
-                ),
-                discreteQuantityData: (qd) => Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: InfoText(
-                    'End: ${df.format(qe.meta.dateTo)}'
-                    '\n${formatType(qd.dataType)}: '
-                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                  ),
-                ),
-              ),
-              orElse: () => Container(),
-            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -232,62 +134,112 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 geolocation: journalEntity.geolocation,
               ),
             ),
+            journalEntity.maybeMap(
+              journalAudio: (JournalAudio audio) {
+                QuillController _controller =
+                    makeController(serializedQuill: audio.entryText?.quill);
+
+                void saveText() {
+                  EntryText entryText = entryTextFromController(_controller);
+
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntityText(journalEntity, entryText);
+                }
+
+                return Column(
+                  children: [
+                    const AudioPlayerWidget(),
+                    EditorWidget(
+                      controller: _controller,
+                      height: editorHeight,
+                      saveFn: saveText,
+                    ),
+                  ],
+                );
+              },
+              journalImage: (JournalImage image) {
+                QuillController _controller =
+                    makeController(serializedQuill: image.entryText?.quill);
+
+                void saveText() {
+                  EntryText entryText = entryTextFromController(_controller);
+
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntityText(journalEntity, entryText);
+                }
+
+                return Column(
+                  children: [
+                    EntryImageWidget(
+                      journalImage: image,
+                      height: 400,
+                    ),
+                    EditorWidget(
+                      controller: _controller,
+                      readOnly: widget.readOnly,
+                      height: imageTextEditorHeight,
+                      saveFn: saveText,
+                    ),
+                  ],
+                );
+              },
+              journalEntry: (JournalEntry journalEntry) {
+                QuillController _controller = makeController(
+                    serializedQuill: journalEntry.entryText.quill);
+
+                void saveText() {
+                  context.read<PersistenceCubit>().updateJournalEntityText(
+                      journalEntity, entryTextFromController(_controller));
+                }
+
+                return EditorWidget(
+                  controller: _controller,
+                  readOnly: widget.readOnly,
+                  saveFn: saveText,
+                );
+              },
+              measurement: (MeasurementEntry entry) {
+                QuillController _controller =
+                    makeController(serializedQuill: entry.entryText?.quill);
+
+                void saveText() {
+                  context.read<PersistenceCubit>().updateJournalEntityText(
+                      journalEntity, entryTextFromController(_controller));
+                }
+
+                return EditorWidget(
+                  controller: _controller,
+                  readOnly: widget.readOnly,
+                  saveFn: saveText,
+                );
+              },
+              survey: (SurveyEntry surveyEntry) =>
+                  SurveySummaryWidget(surveyEntry),
+              quantitative: (qe) => qe.data.map(
+                cumulativeQuantityData: (qd) => Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: InfoText(
+                    'End: ${df.format(qe.meta.dateTo)}'
+                    '\n${formatType(qd.dataType)}: '
+                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                  ),
+                ),
+                discreteQuantityData: (qd) => Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: InfoText(
+                    'End: ${df.format(qe.meta.dateTo)}'
+                    '\n${formatType(qd.dataType)}: '
+                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                  ),
+                ),
+              ),
+              orElse: () => Container(),
+            ),
           ],
         );
       },
     );
-  }
-}
-
-class EntryImageWidget extends StatefulWidget {
-  final JournalImage journalImage;
-  final int height;
-  final BoxFit fit;
-
-  const EntryImageWidget(
-      {Key? key,
-      required this.journalImage,
-      required this.height,
-      this.fit = BoxFit.scaleDown})
-      : super(key: key);
-
-  @override
-  State<EntryImageWidget> createState() => _EntryImageWidgetState();
-}
-
-class _EntryImageWidgetState extends State<EntryImageWidget> {
-  Directory? docDir;
-
-  @override
-  void initState() {
-    super.initState();
-
-    getApplicationDocumentsDirectory().then((value) {
-      setState(() {
-        docDir = value;
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (docDir != null) {
-      File file =
-          File(getFullImagePathWithDocDir(widget.journalImage, docDir!));
-
-      return Container(
-        color: Colors.black,
-        height: widget.height.toDouble(),
-        child: Image.file(
-          file,
-          cacheHeight: widget.height * 3,
-          width: double.infinity,
-          height: widget.height.toDouble(),
-          fit: widget.fit,
-        ),
-      );
-    } else {
-      return Container();
-    }
   }
 }
