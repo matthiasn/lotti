@@ -78,6 +78,7 @@ class EntryDetailRoute extends StatelessWidget {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: SingleChildScrollView(
+          reverse: true,
           child: EntryDetailWidget(
             item: item,
           ),

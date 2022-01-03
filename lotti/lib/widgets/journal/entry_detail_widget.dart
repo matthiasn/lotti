@@ -40,6 +40,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   Directory? docDir;
   bool mapVisible = false;
+  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
         Geolocation? loc = journalEntity.geolocation;
 
         return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -148,7 +150,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     const AudioPlayerWidget(),
                     EditorWidget(
                       controller: _controller,
-                      height: 240,
+                      height: editorHeight,
                       saveFn: saveText,
                     ),
                   ],
@@ -175,6 +177,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     EditorWidget(
                       controller: _controller,
                       readOnly: widget.readOnly,
+                      height: editorHeight,
                       saveFn: saveText,
                     ),
                   ],
