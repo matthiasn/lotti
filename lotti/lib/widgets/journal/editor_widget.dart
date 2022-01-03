@@ -81,7 +81,10 @@ class EditorWidget extends StatelessWidget {
                   expands: false,
                   padding: const EdgeInsets.only(top: 8, bottom: 16),
                   keyboardAppearance: Brightness.dark,
-                  customStyles: customEditorStyles(AppColors.editorTextColor),
+                  customStyles: customEditorStyles(
+                    textColor: AppColors.editorTextColor,
+                    codeBlockBackground: AppColors.codeBlockBackground,
+                  ),
                 ),
               ),
             ),
