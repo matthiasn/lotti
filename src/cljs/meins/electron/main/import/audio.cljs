@@ -61,18 +61,20 @@
   (let [files (sync (str path "/audio/**/*.aac.json"))]
     (doseq [json-file files]
       (when-not (s/includes? json-file "trash")
-        (let [data (h/parse-json json-file)
-              entry (convert-audio-entry data)]
-          (when entry
-            (let [comment (time-recording-entry data)
-                  file (str/replace json-file ".json" "")
-                  audio-file (:audio_file entry)
-                  audio-file-path (str @audio-path-atom "/" audio-file)]
-              (when-not (existsSync audio-file-path)
-                (when (existsSync file)
-                  (copyFileSync file audio-file-path)
-                  (when (spec/valid? :meins.entry/spec entry)
-                    (put-fn [:entry/save-initial entry]))
-                  (when (spec/valid? :meins.entry/spec comment)
-                    (pp/pprint comment)
-                    (put-fn [:entry/save-initial comment])))))))))))
+        (try
+          (let [data (h/parse-json json-file)
+                entry (convert-audio-entry data)]
+            (when entry
+              (let [comment (time-recording-entry data)
+                    file (str/replace json-file ".json" "")
+                    audio-file (:audio_file entry)
+                    audio-file-path (str @audio-path-atom "/" audio-file)]
+                (when-not (existsSync audio-file-path)
+                  (when (existsSync file)
+                    (copyFileSync file audio-file-path)
+                    (when (spec/valid? :meins.entry/spec entry)
+                      (put-fn [:entry/save-initial entry]))
+                    (when (spec/valid? :meins.entry/spec comment)
+                      (pp/pprint comment)
+                      (put-fn [:entry/save-initial comment])))))))
+          (catch :default e (error json-file e)))))))
