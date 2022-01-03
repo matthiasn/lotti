@@ -71,6 +71,65 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
         return Column(
           children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAliasWithSaveLayer,
+                      builder: (BuildContext context) {
+                        return EntryDateTimeModal(
+                          item: journalEntity,
+                        );
+                      },
+                    );
+                  },
+                  child: Text(
+                    df.format(journalEntity.meta.dateFrom),
+                    style: textStyle,
+                  ),
+                ),
+                Visibility(
+                  visible: loc != null && loc.longitude != 0,
+                  child: TextButton(
+                    onPressed: () => setState(() {
+                      mapVisible = !mapVisible;
+                    }),
+                    child: Text(
+                      '📍 ${formatLatLon(loc?.latitude)}, '
+                      '${formatLatLon(loc?.longitude)}',
+                      style: textStyle,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(MdiIcons.trashCanOutline),
+                  iconSize: 24,
+                  tooltip: 'Delete',
+                  color: AppColors.appBarFgColor,
+                  onPressed: () {
+                    context
+                        .read<PersistenceCubit>()
+                        .deleteJournalEntity(journalEntity);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+            Visibility(
+              visible: mapVisible,
+              child: MapWidget(
+                geolocation: journalEntity.geolocation,
+              ),
+            ),
             journalEntity.maybeMap(
               journalAudio: (JournalAudio audio) {
                 QuillController _controller =
@@ -86,12 +145,12 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
                 return Column(
                   children: [
+                    const AudioPlayerWidget(),
                     EditorWidget(
                       controller: _controller,
                       height: 240,
                       saveFn: saveText,
                     ),
-                    const AudioPlayerWidget(),
                   ],
                 );
               },
@@ -172,65 +231,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 ),
               ),
               orElse: () => Container(),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAliasWithSaveLayer,
-                      builder: (BuildContext context) {
-                        return EntryDateTimeModal(
-                          item: journalEntity,
-                        );
-                      },
-                    );
-                  },
-                  child: Text(
-                    df.format(journalEntity.meta.dateFrom),
-                    style: textStyle,
-                  ),
-                ),
-                Visibility(
-                  visible: loc != null && loc.longitude != 0,
-                  child: TextButton(
-                    onPressed: () => setState(() {
-                      mapVisible = !mapVisible;
-                    }),
-                    child: Text(
-                      '📍 ${formatLatLon(loc?.latitude)}, '
-                      '${formatLatLon(loc?.longitude)}',
-                      style: textStyle,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(MdiIcons.trashCanOutline),
-                  iconSize: 24,
-                  tooltip: 'Delete',
-                  color: AppColors.appBarFgColor,
-                  onPressed: () {
-                    context
-                        .read<PersistenceCubit>()
-                        .deleteJournalEntity(journalEntity);
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-            Visibility(
-              visible: mapVisible,
-              child: MapWidget(
-                geolocation: journalEntity.geolocation,
-              ),
             ),
           ],
         );
