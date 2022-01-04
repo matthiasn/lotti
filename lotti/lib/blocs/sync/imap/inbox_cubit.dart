@@ -23,6 +23,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -40,6 +41,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   final fetchMutex = Mutex();
   final _storage = const FlutterSecureStorage();
   final JournalDb _journalDb = getIt<JournalDb>();
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final String sharedSecretKey = 'sharedSecret';
   final String imapConfigKey = 'imapConfig';
@@ -53,6 +55,8 @@ class InboxImapCubit extends Cubit<ImapState> {
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
+        _insightsDb.captureEvent(event, domain: 'INBOX_CUBIT');
+
         Sentry.captureEvent(
             SentryEvent(
               message: SentryMessage(event.toString()),
@@ -148,6 +152,8 @@ class InboxImapCubit extends Cubit<ImapState> {
     final transaction = Sentry.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
 
+    _insightsDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
+
     if (!fetchMutex.isLocked) {
       await fetchMutex.acquire();
 
@@ -177,6 +183,10 @@ class InboxImapCubit extends Cubit<ImapState> {
                   '_fetchInbox lastReadUid $lastReadUid current $current');
               if (subject.contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
+                _insightsDb.captureEvent(
+                    '_fetchInbox ignoring from same host: $current',
+                    domain: 'INBOX_CUBIT');
+
                 await _setLastReadUid(current);
               } else {
                 await _fetchByUid(uid: current, imapClient: imapClient);
@@ -189,6 +199,7 @@ class InboxImapCubit extends Cubit<ImapState> {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
+
         emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
         await Sentry.captureException(e);
       } catch (e) {
