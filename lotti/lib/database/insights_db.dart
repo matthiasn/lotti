@@ -29,7 +29,7 @@ class InsightsDb extends _$InsightsDb {
   @override
   int get schemaVersion => 1;
 
-  Future<int> logInsight(InsightsDbEntity insight) async {
+  Future<int> logInsight(Insight insight) async {
     return into(insights).insert(insight);
   }
 
@@ -39,7 +39,7 @@ class InsightsDb extends _$InsightsDb {
     InsightLevel level = InsightLevel.info,
     InsightType type = InsightType.log,
   }) async {
-    logInsight(InsightsDbEntity(
+    logInsight(Insight(
       id: uuid.v1(),
       createdAt: DateTime.now().toIso8601String(),
       domain: domain,
@@ -49,11 +49,10 @@ class InsightsDb extends _$InsightsDb {
     ));
   }
 
-  Stream<List<InsightsDbEntity>> watchInsights({
-    required List<String> types,
+  Stream<List<Insight>> watchInsights({
     int limit = 1000,
   }) {
-    return filteredInsights(types, limit).watch();
+    return allInsights(limit).watch();
   }
 }
 

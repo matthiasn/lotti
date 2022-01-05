@@ -7,7 +7,7 @@ CREATE TABLE insights (
   message TEXT NOT NULL,
   stacktrace TEXT,
   PRIMARY KEY (id)
-) as InsightsDbEntity;
+);
 
 CREATE INDEX idx_insights_created_at
 ON insights (created_at);
@@ -19,6 +19,11 @@ CREATE INDEX idx_insights_type
 ON insights (type);
 
 /* Queries ----------------------------------------------------- */
+allInsights:
+SELECT * FROM insights
+  ORDER BY created_at DESC
+  LIMIT :limit;
+
 filteredInsights:
 SELECT * FROM insights
   WHERE type IN :types
