@@ -64,7 +64,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
         return null;
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(
+      await _insightsDb.captureException(
         exception,
         stackTrace: stackTrace,
       );

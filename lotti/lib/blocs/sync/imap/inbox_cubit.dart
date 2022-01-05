@@ -120,7 +120,7 @@ class InboxImapCubit extends Cubit<ImapState> {
         throw Exception('missing IMAP config');
       }
     } catch (e, stackTrace) {
-      await Sentry.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
 
@@ -196,7 +196,7 @@ class InboxImapCubit extends Cubit<ImapState> {
         debugPrint('High level API failed with $e');
 
         emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
-        await Sentry.captureException(e);
+        await _insightsDb.captureException(e);
       } catch (e) {
         debugPrint('Exception $e');
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
@@ -235,10 +235,10 @@ class InboxImapCubit extends Cubit<ImapState> {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
-        await Sentry.captureException(e);
+        await _insightsDb.captureException(e);
         emit(ImapState.failed(error: 'failed: $e ${e.details}'));
       } catch (e, stackTrace) {
-        await Sentry.captureException(e, stackTrace: stackTrace);
+        await _insightsDb.captureException(e, stackTrace: stackTrace);
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
       } finally {}
     }
@@ -292,10 +292,10 @@ class InboxImapCubit extends Cubit<ImapState> {
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      await Sentry.captureException(e);
+      await _insightsDb.captureException(e);
       emit(ImapState.failed(error: 'failed: $e ${e.details}'));
     } catch (e, stackTrace) {
-      await Sentry.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }

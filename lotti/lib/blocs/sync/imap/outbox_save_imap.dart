@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/main.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<GenericImapResult> saveImapMessage(
@@ -10,6 +12,8 @@ Future<GenericImapResult> saveImapMessage(
   String encryptedMessage, {
   File? file,
 }) async {
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+
   try {
     final transaction = Sentry.startTransaction('saveImapMessage()', 'task');
     Mailbox inbox = await imapClient.selectInbox();
@@ -35,7 +39,7 @@ Future<GenericImapResult> saveImapMessage(
     await transaction.finish();
     return res;
   } catch (exception, stackTrace) {
-    await Sentry.captureException(
+    await _insightsDb.captureException(
       exception,
       stackTrace: stackTrace,
     );

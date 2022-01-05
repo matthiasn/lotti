@@ -49,6 +49,24 @@ class InsightsDb extends _$InsightsDb {
     ));
   }
 
+  Future<void> captureException(
+    dynamic exception, {
+    String domain = '',
+    dynamic stackTrace,
+    InsightLevel level = InsightLevel.error,
+    InsightType type = InsightType.exception,
+  }) async {
+    logInsight(Insight(
+      id: uuid.v1(),
+      createdAt: DateTime.now().toIso8601String(),
+      domain: domain,
+      message: exception.toString(),
+      stacktrace: stackTrace.toString(),
+      level: level.name.toUpperCase(),
+      type: type.name.toUpperCase(),
+    ));
+  }
+
   Stream<List<Insight>> watchInsights({
     int limit = 1000,
   }) {

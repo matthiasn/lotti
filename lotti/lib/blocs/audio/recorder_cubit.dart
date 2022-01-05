@@ -8,11 +8,12 @@ import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 AudioRecorderState initialState = AudioRecorderState(
   status: AudioRecorderStatus.initializing,
@@ -22,6 +23,7 @@ AudioRecorderState initialState = AudioRecorderState(
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final PersistenceCubit _persistenceCubit;
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
   AudioNote? _audioNote;
@@ -49,7 +51,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         updateProgress(event);
       });
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
   }
 
@@ -75,7 +77,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         }
       });
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
   }
 
@@ -115,7 +117,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         emit(state.copyWith(status: AudioRecorderStatus.recording));
       });
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
   }
 
@@ -131,7 +133,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         _persistenceCubit.createAudioEntry(audioNote);
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
   }
 

@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -26,6 +27,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   late final OutboxCubit _outboundQueueCubit;
   final JournalDb _journalDb = getIt<JournalDb>();
   late final VectorClockService _vectorClockService;
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
@@ -71,7 +73,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -109,7 +111,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -148,7 +150,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -184,7 +186,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -228,7 +230,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -262,7 +264,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -286,7 +288,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await transaction.finish();
       return saved;
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
   }
@@ -352,7 +354,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -384,7 +386,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -410,7 +412,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       JournalEntity newEntity = journalEntity.copyWith(meta: newMeta);
       await updateDbEntity(newEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -436,7 +438,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await transaction.finish();
       return true;
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
   }

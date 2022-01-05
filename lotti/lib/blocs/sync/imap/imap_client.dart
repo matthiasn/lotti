@@ -33,7 +33,7 @@ Future<ImapClient?> createImapClient() async {
       throw Exception('missing IMAP config');
     }
   } catch (e, stackTrace) {
-    await Sentry.captureException(e, stackTrace: stackTrace);
+    await _insightsDb.captureException(e, stackTrace: stackTrace);
   }
   await transaction.finish();
 }

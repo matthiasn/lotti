@@ -182,7 +182,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         stopPolling();
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       sendMutex.release();
       sendNext();
     }
@@ -247,7 +247,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
       }
     }
 
@@ -275,7 +275,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
       }
     }
   }
