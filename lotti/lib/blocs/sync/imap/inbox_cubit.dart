@@ -29,7 +29,6 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class InboxImapCubit extends Cubit<ImapState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
@@ -281,12 +280,10 @@ class InboxImapCubit extends Cubit<ImapState> {
 
           await _observingClient!.resume();
 
-          _insightsDb.captureEvent(SentryEvent(
-            message: SentryMessage(
-              'isConnected: ${_observingClient!.isConnected} '
-              'isPolling: ${_observingClient!.isPolling()}',
-            ),
-          ));
+          _insightsDb.captureEvent(
+            'isConnected: ${_observingClient!.isConnected} '
+            'isPolling: ${_observingClient!.isPolling()}',
+          );
         });
 
         _observingClient!.startPolling();

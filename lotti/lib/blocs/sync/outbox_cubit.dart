@@ -24,8 +24,6 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sentry/sentry.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
@@ -89,9 +87,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void reportConnectivity() async {
-    _insightsDb.captureEvent(SentryEvent(
-      message: SentryMessage(_connectivityResult.toString()),
-    ));
+    _insightsDb.captureEvent(_connectivityResult);
   }
 
   // Inserts a fault 25% of the time, where an exception would

@@ -18,12 +18,10 @@ import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/widgets/home.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'database/database.dart';
 import 'database/sync_db.dart';
 
-const enableSentry = false;
 final getIt = GetIt.instance;
 
 Future<void> main() async {
@@ -37,20 +35,7 @@ Future<void> main() async {
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
 
   initializeDateFormatting();
-
-  if (enableSentry) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = dotenv.env['SENTRY_DSN'];
-        // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-        // We recommend adjusting this value in production.
-        options.tracesSampleRate = 1.0;
-      },
-      appRunner: () => runApp(const LottiApp()),
-    );
-  } else {
-    runApp(const LottiApp());
-  }
+  runApp(const LottiApp());
 }
 
 class LottiApp extends StatelessWidget {

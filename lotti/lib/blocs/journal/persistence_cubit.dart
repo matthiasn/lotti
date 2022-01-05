@@ -91,7 +91,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Sentry
+            onTimeout: () => null, // TODO: report timeout in Insights
           );
 
       JournalEntity journalEntity = JournalEntity.survey(
@@ -130,7 +130,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Sentry
+            onTimeout: () => null, // TODO: report timeout in Insights
           );
 
       JournalEntity journalEntity = JournalEntity.measurement(

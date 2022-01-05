@@ -8,7 +8,6 @@ import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/outbox_save_imap.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OutboxImapCubit extends Cubit<ImapState> {
   final String sharedSecretKey = 'sharedSecret';
@@ -49,13 +48,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
       await transaction.finish();
 
       String? resDetails = res?.details;
-      _insightsDb.captureEvent(
-        SentryEvent(
-          message: SentryMessage(
-            resDetails ?? 'no result details',
-          ),
-        ),
-      );
+      _insightsDb.captureEvent(resDetails ?? 'no result details');
 
       if (resDetails != null && resDetails.contains('completed')) {
         return imapClient;
