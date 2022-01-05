@@ -23,12 +23,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class InboxImapCubit extends Cubit<ImapState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
@@ -40,6 +40,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   final fetchMutex = Mutex();
   final _storage = const FlutterSecureStorage();
   final JournalDb _journalDb = getIt<JournalDb>();
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final String sharedSecretKey = 'sharedSecret';
   final String imapConfigKey = 'imapConfig';
@@ -53,11 +54,8 @@ class InboxImapCubit extends Cubit<ImapState> {
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        Sentry.captureEvent(
-            SentryEvent(
-              message: SentryMessage(event.toString()),
-            ),
-            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        _insightsDb.captureEvent(event, domain: 'INBOX_CUBIT');
+
         if (event == FGBGType.foreground) {
           _startPeriodicFetching();
           _observeInbox();
@@ -72,7 +70,8 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> processMessage(MimeMessage message) async {
-    final transaction = Sentry.startTransaction('processMessage()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('processMessage()', 'task');
     try {
       String? encryptedMessage = readMessage(message);
       SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
@@ -121,7 +120,7 @@ class InboxImapCubit extends Cubit<ImapState> {
         throw Exception('missing IMAP config');
       }
     } catch (e, stackTrace) {
-      await Sentry.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
 
@@ -145,8 +144,10 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> _fetchInbox() async {
-    final transaction = Sentry.startTransaction('_fetchInbox()', 'task');
+    final transaction = _insightsDb.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
+
+    _insightsDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
 
     if (!fetchMutex.isLocked) {
       await fetchMutex.acquire();
@@ -177,6 +178,10 @@ class InboxImapCubit extends Cubit<ImapState> {
                   '_fetchInbox lastReadUid $lastReadUid current $current');
               if (subject.contains(await _vectorClockService.getHostHash())) {
                 debugPrint('_fetchInbox ignoring from same host: $current');
+                _insightsDb.captureEvent(
+                    '_fetchInbox ignoring from same host: $current',
+                    domain: 'INBOX_CUBIT');
+
                 await _setLastReadUid(current);
               } else {
                 await _fetchByUid(uid: current, imapClient: imapClient);
@@ -189,8 +194,9 @@ class InboxImapCubit extends Cubit<ImapState> {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
+
         emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
-        await Sentry.captureException(e);
+        await _insightsDb.captureException(e);
       } catch (e) {
         debugPrint('Exception $e');
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
@@ -212,7 +218,7 @@ class InboxImapCubit extends Cubit<ImapState> {
     int? uid,
     ImapClient? imapClient,
   }) async {
-    final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
+    final transaction = _insightsDb.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
       try {
         if (imapClient != null) {
@@ -229,10 +235,10 @@ class InboxImapCubit extends Cubit<ImapState> {
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
-        await Sentry.captureException(e);
+        await _insightsDb.captureException(e);
         emit(ImapState.failed(error: 'failed: $e ${e.details}'));
       } catch (e, stackTrace) {
-        await Sentry.captureException(e, stackTrace: stackTrace);
+        await _insightsDb.captureException(e, stackTrace: stackTrace);
         emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
       } finally {}
     }
@@ -270,29 +276,24 @@ class InboxImapCubit extends Cubit<ImapState> {
         _observingClient!.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
-          await Sentry.captureEvent(
-              SentryEvent(message: SentryMessage(event.toString())),
-              withScope: (Scope scope) => scope.level = SentryLevel.warning);
+          _insightsDb.captureEvent(event);
+
           await _observingClient!.resume();
 
-          await Sentry.captureEvent(
-              SentryEvent(
-                message: SentryMessage(
-                  'isConnected: ${_observingClient!.isConnected} '
-                  'isPolling: ${_observingClient!.isPolling()}',
-                ),
-              ),
-              withScope: (Scope scope) => scope.level = SentryLevel.info);
+          _insightsDb.captureEvent(
+            'isConnected: ${_observingClient!.isConnected} '
+            'isPolling: ${_observingClient!.isPolling()}',
+          );
         });
 
         _observingClient!.startPolling();
       }
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
-      await Sentry.captureException(e);
+      await _insightsDb.captureException(e);
       emit(ImapState.failed(error: 'failed: $e ${e.details}'));
     } catch (e, stackTrace) {
-      await Sentry.captureException(e, stackTrace: stackTrace);
+      await _insightsDb.captureException(e, stackTrace: stackTrace);
       emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }

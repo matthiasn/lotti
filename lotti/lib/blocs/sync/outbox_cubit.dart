@@ -14,6 +14,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -23,13 +24,12 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sentry/sentry.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
@@ -56,11 +56,7 @@ class OutboxCubit extends Cubit<OutboxState> {
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        Sentry.captureEvent(
-            SentryEvent(
-              message: SentryMessage(event.toString()),
-            ),
-            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        _insightsDb.captureEvent(event);
         if (event == FGBGType.foreground) {
           startPolling();
         }
@@ -91,11 +87,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void reportConnectivity() async {
-    await Sentry.captureEvent(
-        SentryEvent(
-          message: SentryMessage(_connectivityResult.toString()),
-        ),
-        withScope: (Scope scope) => scope.level = SentryLevel.warning);
+    _insightsDb.captureEvent(_connectivityResult);
   }
 
   // Inserts a fault 25% of the time, where an exception would
@@ -111,7 +103,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   void sendNext({ImapClient? imapClient}) async {
     if (state is OutboxDisabled) return;
 
-    final transaction = Sentry.startTransaction('sendNext()', 'task');
+    final transaction = _insightsDb.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
@@ -186,7 +178,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         stopPolling();
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       sendMutex.release();
       sendNext();
     }
@@ -208,7 +200,8 @@ class OutboxCubit extends Cubit<OutboxState> {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalEntity) {
-      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'task');
       try {
         JournalEntity journalEntity = syncMessage.journalEntity;
         String jsonString = json.encode(syncMessage);
@@ -251,12 +244,13 @@ class OutboxCubit extends Cubit<OutboxState> {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
       }
     }
 
     if (syncMessage is SyncEntityDefinition) {
-      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'task');
       try {
         String jsonString = json.encode(syncMessage);
         final VectorClockService vectorClockService =
@@ -279,7 +273,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         await transaction.finish();
         startPolling();
       } catch (exception, stackTrace) {
-        await Sentry.captureException(exception, stackTrace: stackTrace);
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
       }
     }
   }

@@ -14,15 +14,14 @@ import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/widgets/home.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'database/database.dart';
 import 'database/sync_db.dart';
 
-const enableSentry = false;
 final getIt = GetIt.instance;
 
 Future<void> main() async {
@@ -31,24 +30,12 @@ Future<void> main() async {
 
   getIt.registerSingleton<JournalDb>(JournalDb());
   getIt.registerSingleton<SyncDatabase>(SyncDatabase());
+  getIt.registerSingleton<InsightsDb>(InsightsDb());
   getIt.registerSingleton<VectorClockService>(VectorClockService());
   getIt.registerSingleton<SyncConfigService>(SyncConfigService());
 
   initializeDateFormatting();
-
-  if (enableSentry) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = dotenv.env['SENTRY_DSN'];
-        // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-        // We recommend adjusting this value in production.
-        options.tracesSampleRate = 1.0;
-      },
-      appRunner: () => runApp(const LottiApp()),
-    );
-  } else {
-    runApp(const LottiApp());
-  }
+  runApp(const LottiApp());
 }
 
 class LottiApp extends StatelessWidget {

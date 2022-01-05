@@ -5,17 +5,21 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> saveAudioAttachment(
   MimeMessage message,
   JournalAudio? journalAudio,
   String? b64Secret,
 ) async {
-  final transaction = Sentry.startTransaction('saveAudioAttachment()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+
+  final transaction =
+      _insightsDb.startTransaction('saveAudioAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 
@@ -41,7 +45,9 @@ Future<void> saveImageAttachment(
   JournalImage? journalImage,
   String? b64Secret,
 ) async {
-  final transaction = Sentry.startTransaction('saveImageAttachment()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final transaction =
+      _insightsDb.startTransaction('saveImageAttachment()', 'task');
   final attachments =
       message.findContentInfo(disposition: ContentDisposition.attachment);
 

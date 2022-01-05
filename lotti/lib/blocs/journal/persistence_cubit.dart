@@ -14,18 +14,19 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   late final OutboxCubit _outboundQueueCubit;
   final JournalDb _journalDb = getIt<JournalDb>();
   late final VectorClockService _vectorClockService;
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final uuid = const Uuid();
   DeviceLocation location = DeviceLocation();
@@ -45,7 +46,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
     final transaction =
-        Sentry.startTransaction('createQuantitativeEntry()', 'task');
+        _insightsDb.startTransaction('createQuantitativeEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -71,7 +72,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -81,7 +82,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<bool> createSurveyEntry({
     required SurveyData data,
   }) async {
-    final transaction = Sentry.startTransaction('createSurveyEntry()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('createSurveyEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -89,7 +91,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Sentry
+            onTimeout: () => null, // TODO: report timeout in Insights
           );
 
       JournalEntity journalEntity = JournalEntity.survey(
@@ -109,7 +111,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -120,7 +122,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     required MeasurementData data,
   }) async {
     final transaction =
-        Sentry.startTransaction('createMeasurementEntry()', 'task');
+        _insightsDb.startTransaction('createMeasurementEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -128,7 +130,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
             const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Sentry
+            onTimeout: () => null, // TODO: report timeout in Insights
           );
 
       JournalEntity journalEntity = JournalEntity.measurement(
@@ -148,7 +150,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -156,7 +158,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<bool> createImageEntry(ImageData imageData) async {
-    final transaction = Sentry.startTransaction('createImageEntry()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('createImageEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -184,7 +187,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -192,7 +195,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<bool> createAudioEntry(AudioNote audioNote) async {
-    final transaction = Sentry.startTransaction('createImageEntry()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('createImageEntry()', 'task');
     try {
       AudioData audioData = AudioData(
         audioDirectory: audioNote.audioDirectory,
@@ -228,7 +232,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -236,7 +240,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<bool> createTextEntry(EntryText entryText) async {
-    final transaction = Sentry.startTransaction('createTextEntry()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('createTextEntry()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
@@ -262,7 +267,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
       await createDbEntity(journalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -271,7 +276,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool?> createDbEntity(JournalEntity journalEntity,
       {bool enqueueSync = false}) async {
-    final transaction = Sentry.startTransaction('createDbEntity()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('createDbEntity()', 'task');
     try {
       int? res = await _journalDb.addJournalEntity(journalEntity);
       bool saved = (res != 0);
@@ -286,7 +292,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await transaction.finish();
       return saved;
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
   }
@@ -296,7 +302,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     EntryText entryText,
   ) async {
     final transaction =
-        Sentry.startTransaction('updateJournalEntity()', 'task');
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -352,7 +358,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         await updateDbEntity(newEntry, enqueueSync: true);
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -365,7 +371,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     required DateTime dateTo,
   }) async {
     final transaction =
-        Sentry.startTransaction('updateJournalEntity()', 'task');
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -384,7 +390,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -395,7 +401,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     JournalEntity journalEntity,
   ) async {
     final transaction =
-        Sentry.startTransaction('updateJournalEntity()', 'task');
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -410,7 +416,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       JournalEntity newEntity = journalEntity.copyWith(meta: newMeta);
       await updateDbEntity(newEntity, enqueueSync: true);
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
 
     await transaction.finish();
@@ -421,7 +427,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     JournalEntity journalEntity, {
     bool enqueueSync = false,
   }) async {
-    final transaction = Sentry.startTransaction('updateDbEntity()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('updateDbEntity()', 'task');
     try {
       int res = await _journalDb.updateJournalEntity(journalEntity);
       debugPrint('updateDbEntity res $res');
@@ -436,7 +443,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await transaction.finish();
       return true;
     } catch (exception, stackTrace) {
-      await Sentry.captureException(exception, stackTrace: stackTrace);
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
   }

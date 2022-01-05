@@ -6,12 +6,14 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/outbox_save_imap.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/main.dart';
 
 class OutboxImapCubit extends Cubit<ImapState> {
   final String sharedSecretKey = 'sharedSecret';
   final String imapConfigKey = 'imapConfig';
   final String lastReadUidKey = 'lastReadUid';
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   OutboxImapCubit() : super(ImapState.initial());
 
@@ -23,7 +25,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
   }) async {
     ImapClient? imapClient;
     try {
-      final transaction = Sentry.startTransaction('saveImap()', 'task');
+      final transaction = _insightsDb.startTransaction('saveImap()', 'task');
       if (prevImapClient != null) {
         imapClient = prevImapClient;
       } else {
@@ -46,13 +48,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
       await transaction.finish();
 
       String? resDetails = res?.details;
-      await Sentry.captureEvent(
-          SentryEvent(
-            message: SentryMessage(
-              resDetails ?? 'no result details',
-            ),
-          ),
-          withScope: (Scope scope) => scope.level = SentryLevel.info);
+      _insightsDb.captureEvent(resDetails ?? 'no result details');
 
       if (resDetails != null && resDetails.contains('completed')) {
         return imapClient;
@@ -61,7 +57,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
         return null;
       }
     } catch (exception, stackTrace) {
-      await Sentry.captureException(
+      await _insightsDb.captureException(
         exception,
         stackTrace: stackTrace,
       );
