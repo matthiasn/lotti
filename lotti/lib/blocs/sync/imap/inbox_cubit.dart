@@ -57,11 +57,6 @@ class InboxImapCubit extends Cubit<ImapState> {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _insightsDb.captureEvent(event, domain: 'INBOX_CUBIT');
 
-        Sentry.captureEvent(
-            SentryEvent(
-              message: SentryMessage(event.toString()),
-            ),
-            withScope: (Scope scope) => scope.level = SentryLevel.info);
         if (event == FGBGType.foreground) {
           _startPeriodicFetching();
           _observeInbox();
@@ -281,19 +276,16 @@ class InboxImapCubit extends Cubit<ImapState> {
         _observingClient!.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
-          await Sentry.captureEvent(
-              SentryEvent(message: SentryMessage(event.toString())),
-              withScope: (Scope scope) => scope.level = SentryLevel.warning);
+          _insightsDb.captureEvent(event);
+
           await _observingClient!.resume();
 
-          await Sentry.captureEvent(
-              SentryEvent(
-                message: SentryMessage(
-                  'isConnected: ${_observingClient!.isConnected} '
-                  'isPolling: ${_observingClient!.isPolling()}',
-                ),
-              ),
-              withScope: (Scope scope) => scope.level = SentryLevel.info);
+          _insightsDb.captureEvent(SentryEvent(
+            message: SentryMessage(
+              'isConnected: ${_observingClient!.isConnected} '
+              'isPolling: ${_observingClient!.isPolling()}',
+            ),
+          ));
         });
 
         _observingClient!.startPolling();

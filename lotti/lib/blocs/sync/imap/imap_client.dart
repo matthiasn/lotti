@@ -26,9 +26,6 @@ Future<ImapClient?> createImapClient() async {
 
       imapClient.eventBus.on<ImapEvent>().listen((ImapEvent imapEvent) async {
         _insightsDb.captureEvent(imapEvent, domain: 'IMAP_CLIENT');
-        await Sentry.captureEvent(
-            SentryEvent(message: SentryMessage(imapEvent.toString())),
-            withScope: (Scope scope) => scope.level = SentryLevel.info);
       });
 
       return imapClient;

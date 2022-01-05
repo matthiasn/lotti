@@ -35,7 +35,7 @@ class InsightsDb extends _$InsightsDb {
 
   Future<void> captureEvent(
     dynamic event, {
-    required String domain,
+    String domain = '',
     InsightLevel level = InsightLevel.info,
     InsightType type = InsightType.log,
   }) async {

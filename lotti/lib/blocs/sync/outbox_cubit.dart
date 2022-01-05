@@ -14,6 +14,7 @@ import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
@@ -30,6 +31,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final sendMutex = Mutex();
   final SyncDatabase _syncDatabase = getIt<SyncDatabase>();
@@ -56,11 +58,7 @@ class OutboxCubit extends Cubit<OutboxState> {
 
     if (!Platform.isMacOS) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
-        Sentry.captureEvent(
-            SentryEvent(
-              message: SentryMessage(event.toString()),
-            ),
-            withScope: (Scope scope) => scope.level = SentryLevel.info);
+        _insightsDb.captureEvent(event);
         if (event == FGBGType.foreground) {
           startPolling();
         }
@@ -91,11 +89,9 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void reportConnectivity() async {
-    await Sentry.captureEvent(
-        SentryEvent(
-          message: SentryMessage(_connectivityResult.toString()),
-        ),
-        withScope: (Scope scope) => scope.level = SentryLevel.warning);
+    _insightsDb.captureEvent(SentryEvent(
+      message: SentryMessage(_connectivityResult.toString()),
+    ));
   }
 
   // Inserts a fault 25% of the time, where an exception would
