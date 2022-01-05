@@ -4,14 +4,9 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
-import 'package:lotti/database/insights_db.dart';
-import 'package:lotti/main.dart';
 import 'package:lotti/sync/encryption_messages.dart';
 
 FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
-  final transaction = _insightsDb.startTransaction('encryptFile()', 'task');
-
   if (!msg.inputFile.existsSync()) {
     debugPrint('File ${msg.inputFile} does not exist, aborting');
     throw Exception("File not found");
@@ -30,7 +25,6 @@ FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
   );
 
   await msg.encryptedFile.writeAsBytes(secretBox.concatenation());
-  await transaction.finish();
 }
 
 Future<void> encryptFile(
@@ -50,9 +44,6 @@ Future<void> encryptFile(
 }
 
 FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
-  final transaction = _insightsDb.startTransaction('decryptFile()', 'task');
-
   if (!msg.inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
     throw Exception("File not found");
@@ -71,7 +62,6 @@ FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
   );
 
   await msg.decryptedFile.writeAsBytes(decryptedBytes);
-  await transaction.finish();
 }
 
 Future<void> decryptFile(
@@ -86,10 +76,6 @@ Future<void> decryptFile(
 }
 
 Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
-  final transaction =
-      _insightsDb.startTransaction('encryptStringIsolate()', 'task');
-
   final List<int> message = utf8.encode(msg.plaintext);
   final algorithm = AesGcm.with256bits();
   final secretKey =
@@ -101,7 +87,6 @@ Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
     secretKey: secretKey,
     nonce: nonce,
   );
-  transaction.finish();
   return base64.encode(secretBox.concatenation());
 }
 
@@ -119,10 +104,6 @@ Future<String> encryptString({
 }
 
 FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
-  final InsightsDb _insightsDb = getIt<InsightsDb>();
-  final transaction =
-      _insightsDb.startTransaction('decryptStringIsolate()', 'task');
-
   final algorithm = AesGcm.with256bits();
   final List<int> bytes = base64.decode(msg.encrypted);
   final deserializedSecretBox =
@@ -136,7 +117,6 @@ FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
   );
 
   String decrypted = utf8.decode(decryptedBytes);
-  transaction.finish();
   return decrypted;
 }
 
