@@ -4,11 +4,13 @@ import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/sync/encryption_messages.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 FutureOr<void> encryptFileIsolate(EncryptFileMessage msg) async {
-  final transaction = Sentry.startTransaction('encryptFile()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final transaction = _insightsDb.startTransaction('encryptFile()', 'task');
 
   if (!msg.inputFile.existsSync()) {
     debugPrint('File ${msg.inputFile} does not exist, aborting');
@@ -48,7 +50,8 @@ Future<void> encryptFile(
 }
 
 FutureOr<void> decryptFileIsolate(DecryptFileMessage msg) async {
-  final transaction = Sentry.startTransaction('decryptFile()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final transaction = _insightsDb.startTransaction('decryptFile()', 'task');
 
   if (!msg.inputFile.existsSync()) {
     debugPrint('File does not exist, aborting');
@@ -83,7 +86,10 @@ Future<void> decryptFile(
 }
 
 Future<String> encryptStringIsolate(EncryptStringMessage msg) async {
-  final transaction = Sentry.startTransaction('encryptStringIsolate()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final transaction =
+      _insightsDb.startTransaction('encryptStringIsolate()', 'task');
+
   final List<int> message = utf8.encode(msg.plaintext);
   final algorithm = AesGcm.with256bits();
   final secretKey =
@@ -113,7 +119,9 @@ Future<String> encryptString({
 }
 
 FutureOr<String> decryptStringIsolate(DecryptStringMessage msg) async {
-  final transaction = Sentry.startTransaction('decryptStringIsolate()', 'task');
+  final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final transaction =
+      _insightsDb.startTransaction('decryptStringIsolate()', 'task');
 
   final algorithm = AesGcm.with256bits();
   final List<int> bytes = base64.decode(msg.encrypted);

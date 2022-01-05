@@ -26,7 +26,7 @@ class OutboxImapCubit extends Cubit<ImapState> {
   }) async {
     ImapClient? imapClient;
     try {
-      final transaction = Sentry.startTransaction('saveImap()', 'task');
+      final transaction = _insightsDb.startTransaction('saveImap()', 'task');
       if (prevImapClient != null) {
         imapClient = prevImapClient;
       } else {

@@ -9,7 +9,8 @@ import 'package:health/health.dart';
 import 'package:lotti/blocs/journal/health_state.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/health.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/main.dart';
 
 class HealthCubit extends Cubit<HealthState> {
   late final PersistenceCubit _persistenceCubit;
@@ -45,8 +46,10 @@ class HealthCubit extends Cubit<HealthState> {
     DateTime now = DateTime.now();
     DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
+    final InsightsDb _insightsDb = getIt<InsightsDb>();
     final transaction =
-        Sentry.startTransaction('getActivityHealthData()', 'task');
+        _insightsDb.startTransaction('getActivityHealthData()', 'task');
+
     final flutterHealthFit = FlutterHealthFit();
     final bool isAuthorized = await FlutterHealthFit().authorize(true);
     final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
@@ -90,7 +93,10 @@ class HealthCubit extends Cubit<HealthState> {
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
-    final transaction = Sentry.startTransaction('fetchHealthData()', 'task');
+    final InsightsDb _insightsDb = getIt<InsightsDb>();
+
+    final transaction =
+        _insightsDb.startTransaction('fetchHealthData()', 'task');
     HealthFactory health = HealthFactory();
     bool accessWasGranted = await health.requestAuthorization(types);
 

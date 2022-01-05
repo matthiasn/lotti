@@ -71,7 +71,8 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> processMessage(MimeMessage message) async {
-    final transaction = Sentry.startTransaction('processMessage()', 'task');
+    final transaction =
+        _insightsDb.startTransaction('processMessage()', 'task');
     try {
       String? encryptedMessage = readMessage(message);
       SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
@@ -144,7 +145,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   }
 
   Future<void> _fetchInbox() async {
-    final transaction = Sentry.startTransaction('_fetchInbox()', 'task');
+    final transaction = _insightsDb.startTransaction('_fetchInbox()', 'task');
     ImapClient? imapClient;
 
     _insightsDb.captureEvent('_fetchInbox()', domain: 'INBOX_CUBIT');
@@ -218,7 +219,7 @@ class InboxImapCubit extends Cubit<ImapState> {
     int? uid,
     ImapClient? imapClient,
   }) async {
-    final transaction = Sentry.startTransaction('_fetchByUid()', 'task');
+    final transaction = _insightsDb.startTransaction('_fetchByUid()', 'task');
     if (uid != null) {
       try {
         if (imapClient != null) {

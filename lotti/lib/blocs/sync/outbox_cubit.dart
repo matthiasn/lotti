@@ -107,7 +107,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   void sendNext({ImapClient? imapClient}) async {
     if (state is OutboxDisabled) return;
 
-    final transaction = Sentry.startTransaction('sendNext()', 'task');
+    final transaction = _insightsDb.startTransaction('sendNext()', 'task');
     try {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
@@ -204,7 +204,8 @@ class OutboxCubit extends Cubit<OutboxState> {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     if (syncMessage is SyncJournalEntity) {
-      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'task');
       try {
         JournalEntity journalEntity = syncMessage.journalEntity;
         String jsonString = json.encode(syncMessage);
@@ -252,7 +253,8 @@ class OutboxCubit extends Cubit<OutboxState> {
     }
 
     if (syncMessage is SyncEntityDefinition) {
-      final transaction = Sentry.startTransaction('enqueueMessage()', 'task');
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'task');
       try {
         String jsonString = json.encode(syncMessage);
         final VectorClockService vectorClockService =

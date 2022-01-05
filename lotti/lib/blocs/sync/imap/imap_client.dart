@@ -3,13 +3,13 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<ImapClient?> createImapClient() async {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
   SyncConfig? syncConfig = await _syncConfigService.getSyncConfig();
-  final transaction = Sentry.startTransaction('createImapClient()', 'task');
+  final transaction =
+      _insightsDb.startTransaction('createImapClient()', 'task');
 
   try {
     if (syncConfig != null) {

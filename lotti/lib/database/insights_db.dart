@@ -67,11 +67,19 @@ class InsightsDb extends _$InsightsDb {
     ));
   }
 
+  InsightsSpan startTransaction(String name, String operation) {
+    return InsightsSpan();
+  }
+
   Stream<List<Insight>> watchInsights({
     int limit = 1000,
   }) {
     return allInsights(limit).watch();
   }
+}
+
+class InsightsSpan {
+  Future<void> finish() async {}
 }
 
 LazyDatabase _openConnection() {
