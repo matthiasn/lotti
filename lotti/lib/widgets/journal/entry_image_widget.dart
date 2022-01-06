@@ -47,7 +47,6 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
         child: Image.file(
           file,
           cacheHeight: widget.height * 3,
-          width: double.infinity,
           height: widget.height.toDouble(),
           fit: widget.fit,
         ),

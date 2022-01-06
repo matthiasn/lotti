@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.25+228
+version: 0.3.26+229
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -48,6 +48,7 @@ dependencies:
   form_builder_validators: ^7.2.0
   freezed_annotation: ^1.1.0
   get_it: ^7.2.0
+  getwidget: ^2.0.4
   google_fonts: ^2.1.1
   health: 3.2.1
   intl: ^0.17.0

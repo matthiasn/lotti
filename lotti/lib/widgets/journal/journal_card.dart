@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:getwidget/components/list_tile/gf_list_tile.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -193,6 +194,65 @@ class JournalCard extends StatelessWidget {
               ),
             );
           },
+        ),
+      );
+    });
+  }
+}
+
+class JournalImageCard extends StatelessWidget {
+  final JournalImage item;
+  final int index;
+
+  const JournalImageCard({
+    Key? key,
+    required this.item,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AudioPlayerCubit, AudioPlayerState>(
+        builder: (BuildContext context, AudioPlayerState state) {
+      return Card(
+        color: AppColors.headerBgColor,
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: GFListTile(
+            margin: EdgeInsets.zero,
+            padding: EdgeInsets.only(right: 16),
+            avatar: EntryImageWidget(
+              journalImage: item,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
+            title: JournalCardTitle(item: item),
+            icon: Column(
+              children: [
+                Icon(Icons.favorite, color: AppColors.bodyBgColor),
+              ],
+            ),
+            onTap: () {
+              item.mapOrNull(journalAudio: (JournalAudio audioNote) {
+                context.read<AudioPlayerCubit>().setAudioNote(audioNote);
+              });
+
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return EntryDetailRoute(
+                      item: item,
+                      index: index,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       );
     });

@@ -26,13 +26,6 @@ PODS:
     - Flutter
     - FlutterMacOS
   - ReachabilitySwift (5.0.0)
-  - Sentry (7.5.4):
-    - Sentry/Core (= 7.5.4)
-  - Sentry/Core (7.5.4)
-  - sentry_flutter (0.0.1):
-    - Flutter
-    - FlutterMacOS
-    - Sentry (~> 7.5.1)
   - sqflite (0.0.2):
     - FlutterMacOS
     - FMDB (>= 2.7.5)
@@ -69,7 +62,6 @@ DEPENDENCIES:
   - package_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus_macos/macos`)
   - path_provider_macos (from `Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos`)
   - photo_manager (from `Flutter/ephemeral/.symlinks/plugins/photo_manager/macos`)
-  - sentry_flutter (from `Flutter/ephemeral/.symlinks/plugins/sentry_flutter/macos`)
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
@@ -78,7 +70,6 @@ SPEC REPOS:
   trunk:
     - FMDB
     - ReachabilitySwift
-    - Sentry
     - sqlite3
 
 EXTERNAL SOURCES:
@@ -104,8 +95,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos
   photo_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/photo_manager/macos
-  sentry_flutter:
-    :path: Flutter/ephemeral/.symlinks/plugins/sentry_flutter/macos
   sqflite:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite/macos
   sqlite3_flutter_libs:
@@ -127,8 +116,6 @@ SPEC CHECKSUMS:
   path_provider_macos: 160cab0d5461f0c0e02995469a98f24bdb9a3f1f
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  Sentry: 5c5dd4005f3b7b9765d5a8871232cddbd0d888b7
-  sentry_flutter: 4cd99764f9fe01c9415790d1f3fb1c7fd3a5cbe9
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
   sqlite3: b56b05777c433a55d852a3405c1903e2b57be2ce
   sqlite3_flutter_libs: 7327b478a892c09df59f7dca547c504ec0ed21ae
