@@ -152,6 +152,11 @@ class JournalDb extends _$JournalDb {
     return countJournalEntries().watch().map((List<int> res) => res.first);
   }
 
+  Future<int> getCountImportFlagEntries() async {
+    List<int> res = await countImportFlagEntries().get();
+    return res.first;
+  }
+
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }

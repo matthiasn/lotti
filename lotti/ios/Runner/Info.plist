@@ -38,6 +38,7 @@
 		<array>
 			<string>audio</string>
 			<string>location</string>
+			<string>remote-notification</string>
 		</array>
 		<key>UIFileSharingEnabled</key>
 		<true/>
