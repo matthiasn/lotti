@@ -172,9 +172,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
                 return Column(
                   children: [
-                    EntryImageWidget(
-                      journalImage: image,
-                      height: 400,
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      color: Colors.black,
+                      child: EntryImageWidget(
+                        journalImage: image,
+                        height: 400,
+                      ),
                     ),
                     EditorWidget(
                       controller: _controller,
