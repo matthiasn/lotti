@@ -224,7 +224,7 @@ class JournalImageCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
           child: GFListTile(
             margin: EdgeInsets.zero,
-            padding: EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 16),
             avatar: EntryImageWidget(
               journalImage: item,
               height: 160,
