@@ -60,10 +60,19 @@ class _FlaggedEntriesPageState extends State<FlaggedEntriesPage> {
                         children: List.generate(
                           items.length,
                           (int index) {
-                            return JournalCard(
-                              item: items.elementAt(index),
-                              index: index,
-                            );
+                            JournalEntity item = items.elementAt(index);
+                            return item.maybeMap(
+                                journalImage: (JournalImage image) {
+                              return JournalImageCard(
+                                item: image,
+                                index: index,
+                              );
+                            }, orElse: () {
+                              return JournalCard(
+                                item: item,
+                                index: index,
+                              );
+                            });
                           },
                           growable: true,
                         ),
