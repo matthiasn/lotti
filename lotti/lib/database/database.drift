@@ -116,4 +116,9 @@ SELECT * FROM journal
   ORDER BY date_from DESC;
 
 countJournalEntries:
-SELECT COUNT(*) FROM journal;
+SELECT COUNT(*) FROM journal
+  WHERE deleted = false;
+
+countImportFlagEntries:
+SELECT COUNT(*) FROM journal
+  WHERE deleted = false AND flag = 1;
