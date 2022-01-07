@@ -112,6 +112,7 @@ SELECT * FROM journal
   WHERE type = 'MeasurementEntry'
   AND subtype = :subtype
   AND date_from >= :from
+  AND deleted = false
   ORDER BY date_from DESC;
 
 countJournalEntries:
