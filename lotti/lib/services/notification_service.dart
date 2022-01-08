@@ -7,6 +7,24 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> updateBadge() async {
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
     final JournalDb _journalDb = getIt<JournalDb>();
     int counter = await _journalDb.getCountImportFlagEntries();
     if (counter == 0) {
