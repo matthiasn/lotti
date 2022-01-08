@@ -215,7 +215,7 @@ SPEC CHECKSUMS:
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   flutter_app_badger: 65de4d6f0c34a891df49e6cfb8a1c0496426fa68
   flutter_fgbg: 31c0d1140a131daea2d342121808f6aa0dcd879d
-  flutter_health_fit: a96be00d6d54c5853fc0d5e08204d0d6821517ed
+  flutter_health_fit: af332b5d7512b9cc8a05e7282cfcee02b056d32e
   flutter_image_compress: fd2b476345226e1a10ea352fa306af95704642c1
   flutter_inappwebview: bfd58618f49dc62f2676de690fc6dcda1d6c3721
   flutter_keyboard_visibility: 0339d06371254c3eb25eeb90ba8d17dca8f9c069
