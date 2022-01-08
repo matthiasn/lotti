@@ -452,9 +452,11 @@ packages:
   enough_mail:
     dependency: "direct main"
     description:
-      name: enough_mail
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: "0c261a7"
+      resolved-ref: "0c261a7eaa9a97d2ca01bb5370c3034e3d7aa3a1"
+      url: "https://github.com/matthiasn/enough_mail"
+    source: git
     version: "1.3.6"
   enough_serialization:
     dependency: transitive

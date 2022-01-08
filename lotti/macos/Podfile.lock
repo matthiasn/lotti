@@ -6,6 +6,8 @@ PODS:
     - ReachabilitySwift
   - device_info_plus_macos (0.0.1):
     - FlutterMacOS
+  - flutter_local_notifications (0.0.1):
+    - FlutterMacOS
   - flutter_native_timezone (0.0.1):
     - FlutterMacOS
   - flutter_secure_storage_macos (3.3.1):
@@ -54,6 +56,7 @@ DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
   - connectivity_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/connectivity_plus_macos/macos`)
   - device_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus_macos/macos`)
+  - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
   - flutter_native_timezone (from `Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
@@ -79,6 +82,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/connectivity_plus_macos/macos
   device_info_plus_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus_macos/macos
+  flutter_local_notifications:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
   flutter_native_timezone:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos
   flutter_secure_storage_macos:
@@ -106,6 +111,7 @@ SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
   connectivity_plus_macos: f6e86fd000e971d361e54b5afcadc8c8fa773308
   device_info_plus_macos: 1ad388a1ef433505c4038e7dd9605aadd1e2e9c7
+  flutter_local_notifications: 3805ca215b2fb7f397d78b66db91f6a747af52e4
   flutter_native_timezone: 3a4724189c47dea215bb3e168e555e18308d312c
   flutter_secure_storage_macos: 6ceee8fbc7f484553ad17f79361b556259df89aa
   FlutterMacOS: 57701585bf7de1b3fc2bb61f6378d73bbdea8424

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:enough_mail/enough_mail.dart';
-import 'package:enough_mail/mime_message.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/sync/encryption.dart';
 

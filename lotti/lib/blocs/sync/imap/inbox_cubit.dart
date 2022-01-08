@@ -2,14 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:enough_mail/imap/imap_client.dart';
-import 'package:enough_mail/imap/message_sequence.dart';
-import 'package:enough_mail/imap/response.dart';
-import 'package:enough_mail/mail/mail_account.dart';
-import 'package:enough_mail/mail/mail_client.dart';
-import 'package:enough_mail/mail/mail_events.dart';
-import 'package:enough_mail/mail/mail_exception.dart';
-import 'package:enough_mail/mime_message.dart';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
