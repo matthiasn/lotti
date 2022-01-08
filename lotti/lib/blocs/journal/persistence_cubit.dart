@@ -17,7 +17,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
-import 'package:lotti/services/badge_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -291,7 +291,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ));
       }
       await transaction.finish();
-      BadgeService.setFlaggedCounter();
+
+      NotificationService.updateBadge();
 
       return saved;
     } catch (exception, stackTrace) {
@@ -418,7 +419,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
       JournalEntity newEntity = journalEntity.copyWith(meta: newMeta);
       await updateDbEntity(newEntity, enqueueSync: true);
-      BadgeService.setFlaggedCounter();
+
+      NotificationService.updateBadge();
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -445,7 +447,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ));
       }
       await transaction.finish();
-      BadgeService.setFlaggedCounter();
+
+      NotificationService.updateBadge();
 
       return true;
     } catch (exception, stackTrace) {
