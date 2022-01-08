@@ -24,7 +24,7 @@ class TextViewerWidget extends StatelessWidget {
           controller: _controller,
           readOnly: true,
           scrollController: ScrollController(),
-          scrollable: false,
+          scrollable: true,
           focusNode: FocusNode(canRequestFocus: false),
           autoFocus: false,
           expands: false,

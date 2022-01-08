@@ -368,9 +368,11 @@ packages:
   delta_markdown:
     dependency: "direct main"
     description:
-      name: delta_markdown
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: "1a6da0a"
+      resolved-ref: "1a6da0a8e913a8b24c54a7368955d11799e2b318"
+      url: "https://github.com/matthiasn/delta_markdown"
+    source: git
     version: "0.3.0"
   device_info_plus:
     dependency: "direct main"
@@ -714,7 +716,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.5.2"
+    version: "3.2.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
