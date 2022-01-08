@@ -33,12 +33,8 @@ class _HomePageState extends State<HomePage> {
         body: SafeArea(
           child: WillPopScope(
             onWillPop: () async {
-              debugPrint(
-                  'On Will called ${navigatorKeys[_pageIndex]!.currentState!.context.widget}');
-              // return !await navigatorKeys[_pageIndex].currentState.context;
               return !await Navigator.maybePop(
                   navigatorKeys[_pageIndex]!.currentState!.context);
-              // Navigator.pop(navigatorKeys[_pageIndex].currentState.context);
             },
             child: IndexedStack(
               index: _pageIndex,
