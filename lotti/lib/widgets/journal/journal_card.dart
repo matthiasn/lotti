@@ -225,10 +225,13 @@ class JournalImageCard extends StatelessWidget {
           child: GFListTile(
             margin: EdgeInsets.zero,
             padding: const EdgeInsets.only(right: 16),
-            avatar: EntryImageWidget(
-              journalImage: item,
-              height: 160,
-              fit: BoxFit.cover,
+            avatar: LimitedBox(
+              maxWidth: MediaQuery.of(context).size.width / 2,
+              child: EntryImageWidget(
+                journalImage: item,
+                height: 160,
+                fit: BoxFit.cover,
+              ),
             ),
             title: JournalCardTitle(item: item),
             icon: Column(
