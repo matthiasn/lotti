@@ -58,7 +58,7 @@ class NotificationService {
       body,
       NotificationDetails(
         iOS: IOSNotificationDetails(
-          presentAlert: true,
+          presentAlert: false,
           presentBadge: true,
           badgeNumber: counter,
         ),

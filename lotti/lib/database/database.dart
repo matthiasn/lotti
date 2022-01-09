@@ -157,6 +157,10 @@ class JournalDb extends _$JournalDb {
     return res.first;
   }
 
+  Stream<int> watchCountImportFlagEntries() {
+    return countImportFlagEntries().watch().map((event) => event.first);
+  }
+
   Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
