@@ -81,6 +81,7 @@ dependencies:
   wechat_assets_picker: ^6.3.0
   yaml: ^3.1.0
   flutter_app_badger: ^1.3.0
+  badges: ^2.0.2
 
 dev_dependencies:
   flutter_test:

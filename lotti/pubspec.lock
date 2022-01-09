@@ -71,6 +71,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.10.0"
+  badges:
+    dependency: "direct main"
+    description:
+      name: badges
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.2"
   basic_utils:
     dependency: transitive
     description:
@@ -368,12 +375,10 @@ packages:
   delta_markdown:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "1a6da0a"
-      resolved-ref: "1a6da0a8e913a8b24c54a7368955d11799e2b318"
-      url: "https://github.com/matthiasn/delta_markdown"
-    source: git
-    version: "0.3.0"
+      name: delta_markdown
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0"
   device_info_plus:
     dependency: "direct main"
     description:

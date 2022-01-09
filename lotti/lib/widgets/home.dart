@@ -6,7 +6,8 @@ import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+import 'bottom_nav/flagged_badge_icon.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -51,24 +52,24 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: AppColors.headerBgColor,
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
+          items: <BottomNavigationBarItem>[
+            const BottomNavigationBarItem(
               icon: Icon(Icons.home),
               label: 'Journal',
             ),
             BottomNavigationBarItem(
-              icon: Icon(MdiIcons.flag),
+              icon: FlaggedBadgeIcon(),
               label: 'Flagged',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.add_box),
               label: 'Add',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.mic),
               label: 'Audio',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.settings),
               label: 'Settings',
             ),
