@@ -350,7 +350,7 @@ packages:
       name: dart_code_metrics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.8.1"
+    version: "4.9.0"
   dart_geohash:
     dependency: "direct main"
     description:
@@ -441,7 +441,7 @@ packages:
       name: drift_dev
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   encrypt:
     dependency: transitive
     description:
@@ -801,7 +801,7 @@ packages:
       name: form_builder_validators
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.2.0"
+    version: "7.3.0"
   freezed:
     dependency: "direct dev"
     description:
@@ -878,7 +878,7 @@ packages:
       name: health
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.1"
+    version: "3.4.3"
   html:
     dependency: transitive
     description:
@@ -1034,7 +1034,7 @@ packages:
     source: hosted
     version: "1.8.1"
   lints:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: lints
       url: "https://pub.dartlang.org"
@@ -1550,14 +1550,14 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.0"
+    version: "1.5.0"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
       name: sqlite3_flutter_libs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.2"
+    version: "0.5.3"
   sqlparser:
     dependency: transitive
     description:
