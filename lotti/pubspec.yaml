@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.35+246
+version: 0.3.36+247
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -11,7 +11,9 @@ dependencies:
     sdk: flutter
 
   flutter_health_fit:
-    git: https://github.com/metaflowltd/flutter_health_fit.git
+    git:
+      url: https://github.com/metaflowltd/flutter_health_fit.git
+      ref: 459aaa3
 
   # research_package: ^0.6.7
   research_package:
