@@ -56,22 +56,27 @@ class _HomePageState extends State<HomePage> {
             const BottomNavigationBarItem(
               icon: Icon(Icons.home),
               label: 'Journal',
+              tooltip: '',
             ),
             BottomNavigationBarItem(
               icon: FlaggedBadgeIcon(),
               label: 'Flagged',
+              tooltip: '',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.add_box),
               label: 'Add',
+              tooltip: '',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.mic),
               label: 'Audio',
+              tooltip: '',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.settings),
               label: 'Settings',
+              tooltip: '',
             ),
           ],
           selectedItemColor: Colors.amber[800],
