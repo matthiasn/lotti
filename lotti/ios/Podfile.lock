@@ -77,29 +77,29 @@ PODS:
     - Flutter
     - MTBBarcodeScanner
   - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.12.1):
-    - SDWebImage/Core (= 5.12.1)
-  - SDWebImage/Core (5.12.1)
+  - SDWebImage (5.12.2):
+    - SDWebImage/Core (= 5.12.2)
+  - SDWebImage/Core (5.12.2)
   - SDWebImageWebPCoder (0.8.4):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
   - sqflite (0.0.2):
     - Flutter
     - FMDB (>= 2.7.5)
-  - sqlite3 (3.37.0):
-    - sqlite3/common (= 3.37.0)
-  - sqlite3/common (3.37.0)
-  - sqlite3/fts5 (3.37.0):
+  - sqlite3 (3.37.2):
+    - sqlite3/common (= 3.37.2)
+  - sqlite3/common (3.37.2)
+  - sqlite3/fts5 (3.37.2):
     - sqlite3/common
-  - sqlite3/json1 (3.37.0):
+  - sqlite3/json1 (3.37.2):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.37.0):
+  - sqlite3/perf-threadsafe (3.37.2):
     - sqlite3/common
-  - sqlite3/rtree (3.37.0):
+  - sqlite3/rtree (3.37.2):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.37.0)
+    - sqlite3 (~> 3.37.2)
     - sqlite3/fts5
     - sqlite3/json1
     - sqlite3/perf-threadsafe
@@ -240,11 +240,11 @@ SPEC CHECKSUMS:
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 4dc3e42d9ec0c1028b960a33ac6b637bb432207b
+  SDWebImage: 240e5c12b592fb1268c1d03b8c90d90e8c2ffe82
   SDWebImageWebPCoder: f93010f3f6c031e2f8fb3081ca4ee6966c539815
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
-  sqlite3: b56b05777c433a55d852a3405c1903e2b57be2ce
-  sqlite3_flutter_libs: 83a1fbbabdcee09e4e34511bb246136a8a97c9d6
+  sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
+  sqlite3_flutter_libs: b26eb56ee9f5d821e55739a0e3917301e5ed4628
   url_launcher_ios: 02f1989d4e14e998335b02b67a7590fa34f971af
   video_player: ecd305f42e9044793efd34846e1ce64c31ea6fcb
 
