@@ -614,7 +614,7 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
+      ref: "459aaa3"
       resolved-ref: "459aaa32e8bd29288b093a22905a185d04b0c1e6"
       url: "https://github.com/metaflowltd/flutter_health_fit.git"
     source: git
@@ -1034,7 +1034,7 @@ packages:
     source: hosted
     version: "1.8.1"
   lints:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: lints
       url: "https://pub.dartlang.org"
