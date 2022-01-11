@@ -4,23 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_view/photo_view.dart';
 
-class EntryImageWidget extends StatefulWidget {
+class CardImageWidget extends StatefulWidget {
   final JournalImage journalImage;
   final int height;
+  final BoxFit fit;
 
-  const EntryImageWidget({
-    Key? key,
-    required this.journalImage,
-    required this.height,
-  }) : super(key: key);
+  const CardImageWidget(
+      {Key? key,
+      required this.journalImage,
+      required this.height,
+      this.fit = BoxFit.scaleDown})
+      : super(key: key);
 
   @override
-  State<EntryImageWidget> createState() => _EntryImageWidgetState();
+  State<CardImageWidget> createState() => _CardImageWidgetState();
 }
 
-class _EntryImageWidgetState extends State<EntryImageWidget> {
+class _CardImageWidgetState extends State<CardImageWidget> {
   Directory? docDir;
 
   @override
@@ -43,8 +44,11 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
       return Container(
         color: Colors.black,
         height: widget.height.toDouble(),
-        child: PhotoView(
-          imageProvider: FileImage(file),
+        child: Image.file(
+          file,
+          cacheHeight: widget.height * 3,
+          height: widget.height.toDouble(),
+          fit: widget.fit,
         ),
       );
     } else {

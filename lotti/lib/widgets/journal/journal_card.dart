@@ -6,8 +6,8 @@ import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
-import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -217,7 +217,7 @@ class JournalImageCard extends StatelessWidget {
             padding: const EdgeInsets.only(right: 16),
             avatar: LimitedBox(
               maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
-              child: EntryImageWidget(
+              child: CardImageWidget(
                 journalImage: item,
                 height: 160,
                 fit: BoxFit.cover,
