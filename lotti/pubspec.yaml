@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.40+252
+version: 0.3.41+253
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -106,7 +106,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/icons/
     - assets/sqlite/
     # from https://www.iconfinder.com/paomedia
