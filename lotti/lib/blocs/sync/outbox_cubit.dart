@@ -47,6 +47,9 @@ class OutboxCubit extends Cubit<OutboxState> {
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       _connectivityResult = result;
       debugPrint('Connectivity onConnectivityChanged $result');
+      _insightsDb
+          .captureEvent('OUTBOX: Connectivity onConnectivityChanged $result');
+
       if (result == ConnectivityResult.none) {
         stopPolling();
       } else {
