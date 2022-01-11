@@ -57,7 +57,7 @@ class OutboxCubit extends Cubit<OutboxState> {
       }
     });
 
-    if (!Platform.isMacOS) {
+    if (!Platform.isMacOS && !Platform.isLinux) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _insightsDb.captureEvent(event);
         if (event == FGBGType.foreground) {
