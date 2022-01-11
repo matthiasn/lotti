@@ -16,6 +16,7 @@ class EditorPage extends StatefulWidget {
 
 class _EditorPageState extends State<EditorPage> {
   QuillController _controller = makeController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _EditorPageState extends State<EditorPage> {
                 borderRadius: const BorderRadius.all(Radius.circular(8.0)),
                 child: EditorWidget(
                   controller: _controller,
+                  focusNode: _focusNode,
                   saveFn: _save,
                 ),
               ),
