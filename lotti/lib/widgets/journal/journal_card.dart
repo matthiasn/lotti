@@ -20,75 +20,68 @@ class JournalCardTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-        child: Padding(
-          padding: const EdgeInsets.only(
-              left: 8.0, right: 16.0, top: 8.0, bottom: 8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                df.format(item.meta.dateFrom),
-                style: TextStyle(
-                  color: AppColors.entryTextColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Oswald',
-                ),
-              ),
-              item.maybeMap(
-                quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
-                  cumulativeQuantityData: (qd) => EntryText(
-                    'End: ${df.format(qd.dateTo)}'
-                    '\n${formatType(qd.dataType)}: '
-                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                  ),
-                  discreteQuantityData: (qd) => EntryText(
-                    'End: ${df.format(item.meta.dateTo)}'
-                    '\n${formatType(qd.dataType)}: '
-                    '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
-                  ),
-                  orElse: () => Container(),
-                ),
-                journalAudio: (JournalAudio journalAudio) =>
-                    journalAudio.entryText?.plainText != null
-                        ? TextViewerWidget(entryText: journalAudio.entryText)
-                        : EntryText(formatAudio(journalAudio)),
-                journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
-                  entryText: journalEntry.entryText,
-                ),
-                journalImage: (JournalImage journalImage) =>
-                    journalImage.entryText?.plainText != null
-                        ? TextViewerWidget(entryText: journalImage.entryText)
-                        : EntryText(journalImage.data.imageFile.substring(37)),
-                survey: (SurveyEntry surveyEntry) =>
-                    SurveySummaryWidget(surveyEntry),
-                measurement: (MeasurementEntry measurementEntry) {
-                  MeasurementData data = measurementEntry.data;
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (measurementEntry.entryText?.plainText != null)
-                        TextViewerWidget(entryText: measurementEntry.entryText),
-                      EntryText(
-                        '${data.dataType.displayName}: '
-                        '${nf.format(data.value)}',
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  );
-                },
-                orElse: () => Row(
-                  children: const [],
-                ),
-              ),
-            ],
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            df.format(item.meta.dateFrom),
+            style: TextStyle(
+              color: AppColors.entryTextColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Oswald',
+            ),
           ),
-        ),
+          item.maybeMap(
+            quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
+              cumulativeQuantityData: (qd) => EntryText(
+                'End: ${df.format(qd.dateTo)}'
+                '\n${formatType(qd.dataType)}: '
+                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+              ),
+              discreteQuantityData: (qd) => EntryText(
+                'End: ${df.format(item.meta.dateTo)}'
+                '\n${formatType(qd.dataType)}: '
+                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+              ),
+              orElse: () => Container(),
+            ),
+            journalAudio: (JournalAudio journalAudio) =>
+                journalAudio.entryText?.plainText != null
+                    ? TextViewerWidget(entryText: journalAudio.entryText)
+                    : EntryText(formatAudio(journalAudio)),
+            journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
+              entryText: journalEntry.entryText,
+            ),
+            journalImage: (JournalImage journalImage) =>
+                journalImage.entryText?.plainText != null
+                    ? TextViewerWidget(entryText: journalImage.entryText)
+                    : EntryText(journalImage.data.imageFile.substring(37)),
+            survey: (SurveyEntry surveyEntry) =>
+                SurveySummaryWidget(surveyEntry),
+            measurement: (MeasurementEntry measurementEntry) {
+              MeasurementData data = measurementEntry.data;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (measurementEntry.entryText?.plainText != null)
+                    TextViewerWidget(entryText: measurementEntry.entryText),
+                  EntryText(
+                    '${data.dataType.displayName}: '
+                    '${nf.format(data.value)}',
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              );
+            },
+            orElse: () => Row(
+              children: const [],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -149,13 +142,6 @@ class JournalCard extends StatelessWidget {
               height: 50,
               color: AppColors.entryBgColor,
               child: item.maybeMap(
-                journalImage: (JournalImage journalImage) {
-                  return EntryImageWidget(
-                    journalImage: journalImage,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  );
-                },
                 journalAudio: (_) => const Icon(
                   Icons.mic,
                   size: 32,
@@ -166,6 +152,10 @@ class JournalCard extends StatelessWidget {
                 ),
                 survey: (_) => const Icon(
                   MdiIcons.clipboardOutline,
+                  size: 32,
+                ),
+                quantitative: (_) => const Icon(
+                  MdiIcons.heart,
                   size: 32,
                 ),
                 measurement: (_) => const Icon(
@@ -226,18 +216,16 @@ class JournalImageCard extends StatelessWidget {
             margin: EdgeInsets.zero,
             padding: const EdgeInsets.only(right: 16),
             avatar: LimitedBox(
-              maxWidth: MediaQuery.of(context).size.width / 2,
+              maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
               child: EntryImageWidget(
                 journalImage: item,
                 height: 160,
                 fit: BoxFit.cover,
               ),
             ),
-            title: JournalCardTitle(item: item),
-            icon: Column(
-              children: [
-                Icon(Icons.favorite, color: AppColors.bodyBgColor),
-              ],
+            title: SizedBox(
+              height: 160,
+              child: JournalCardTitle(item: item),
             ),
             onTap: () {
               item.mapOrNull(journalAudio: (JournalAudio audioNote) {
