@@ -25,7 +25,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   late final PersistenceCubit _persistenceCubit;
   final InsightsDb _insightsDb = getIt<InsightsDb>();
 
-  final FlutterSoundRecorder? _myRecorder = FlutterSoundRecorder();
+  FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
   final DeviceLocation _deviceLocation = DeviceLocation();
 
@@ -43,7 +43,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
               'Microphone permission not granted');
         }
       }
-
+      _myRecorder = FlutterSoundRecorder();
       await _myRecorder?.openAudioSession();
       emit(state.copyWith(status: AudioRecorderStatus.initialized));
       _myRecorder?.setSubscriptionDuration(const Duration(milliseconds: 500));
