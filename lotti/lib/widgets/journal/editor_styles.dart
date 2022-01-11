@@ -71,3 +71,69 @@ DefaultStyles customEditorStyles({
     ),
   );
 }
+
+DefaultStyles customTextViewerStyles({
+  required Color textColor,
+  required Color codeBlockBackground,
+}) {
+  return DefaultStyles(
+    h1: DefaultTextBlockStyle(
+      GoogleFonts.oswald(
+        fontSize: 16,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      null,
+    ),
+    h2: DefaultTextBlockStyle(
+      GoogleFonts.oswald(
+        fontSize: 16,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      null,
+    ),
+    h3: DefaultTextBlockStyle(
+      GoogleFonts.oswald(
+        fontSize: 16,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      null,
+    ),
+    paragraph: DefaultTextBlockStyle(
+      GoogleFonts.lato(
+        fontSize: 12,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      null,
+    ),
+    lists: DefaultListBlockStyle(
+      GoogleFonts.lato(
+        fontSize: 12,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      null,
+      null,
+    ),
+    code: DefaultTextBlockStyle(
+      GoogleFonts.shareTechMono(
+        fontSize: 12,
+        color: textColor,
+      ),
+      const Tuple2(0, 0),
+      const Tuple2(0, 0),
+      BoxDecoration(
+        color: codeBlockBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+  );
+}

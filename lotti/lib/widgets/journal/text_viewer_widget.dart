@@ -31,7 +31,7 @@ class TextViewerWidget extends StatelessWidget {
           maxHeight: 120,
           padding: const EdgeInsets.only(top: 8, bottom: 16),
           keyboardAppearance: Brightness.dark,
-          customStyles: customEditorStyles(
+          customStyles: customTextViewerStyles(
             textColor: AppColors.entryTextColor,
             codeBlockBackground: AppColors.bodyBgColor,
           ),
