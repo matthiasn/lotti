@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
@@ -58,6 +59,19 @@ class InboxImapCubit extends Cubit<ImapState> {
         }
       });
     }
+
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      _insightsDb
+          .captureEvent('INBOX: Connectivity onConnectivityChanged $result');
+
+      if (result == ConnectivityResult.none) {
+        _stopPeriodicFetching();
+      } else {
+        _startPeriodicFetching();
+        _observeInbox();
+      }
+    });
+
     _startPeriodicFetching();
     _observeInbox();
   }
