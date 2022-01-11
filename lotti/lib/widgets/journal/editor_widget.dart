@@ -14,11 +14,13 @@ class EditorWidget extends StatelessWidget {
     double padding = 16.0,
     bool readOnly = false,
     required Function saveFn,
+    required FocusNode focusNode,
   })  : _controller = controller,
         _height = height,
         _readOnly = readOnly,
         _padding = padding,
         _saveFn = saveFn,
+        _focusNode = focusNode,
         super(key: key);
 
   final QuillController _controller;
@@ -26,6 +28,7 @@ class EditorWidget extends StatelessWidget {
   final bool _readOnly;
   final double _padding;
   final Function _saveFn;
+  final FocusNode _focusNode;
 
   void keyFormatter(RawKeyEvent event, String char, Attribute attribute) {
     if (event.data.isMetaPressed && event.character == char) {
@@ -76,7 +79,7 @@ class EditorWidget extends StatelessWidget {
                   readOnly: _readOnly,
                   scrollController: ScrollController(),
                   scrollable: true,
-                  focusNode: FocusNode(),
+                  focusNode: _focusNode,
                   autoFocus: true,
                   expands: false,
                   padding: const EdgeInsets.only(top: 8, bottom: 16),

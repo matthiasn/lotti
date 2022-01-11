@@ -33,6 +33,8 @@ class EntryDetailWidget extends StatefulWidget {
 }
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
+  final FocusNode _focusNode = FocusNode();
+
   Directory? docDir;
   bool mapVisible = false;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
@@ -134,6 +136,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                 const AudioPlayerWidget(),
                 EditorWidget(
                   controller: _controller,
+                  focusNode: _focusNode,
                   height: editorHeight,
                   saveFn: saveText,
                 ),
@@ -158,12 +161,14 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   width: MediaQuery.of(context).size.width,
                   color: Colors.black,
                   child: EntryImageWidget(
+                    focusNode: _focusNode,
                     journalImage: image,
-                    height: 400,
+                    height: 200,
                   ),
                 ),
                 EditorWidget(
                   controller: _controller,
+                  focusNode: _focusNode,
                   readOnly: widget.readOnly,
                   height: imageTextEditorHeight,
                   saveFn: saveText,
@@ -182,6 +187,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
             return EditorWidget(
               controller: _controller,
+              focusNode: _focusNode,
               readOnly: widget.readOnly,
               saveFn: saveText,
             );
@@ -197,6 +203,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
             return EditorWidget(
               controller: _controller,
+              focusNode: _focusNode,
               readOnly: widget.readOnly,
               saveFn: saveText,
             );
