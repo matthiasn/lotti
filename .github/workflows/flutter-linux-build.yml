@@ -1,4 +1,4 @@
-name: Flutter Test
+name: Flutter Linux Build
 
 on:
   push:
@@ -7,13 +7,13 @@ on:
 
 jobs:
   test:
-    name: Flutter Test on Linux
+    name: Flutter Build on Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-      - name: Run Flutter tests
+      - name: Test and build
         working-directory: ./lotti
-        run: make clean_test
+        run: make linux
