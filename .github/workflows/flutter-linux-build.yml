@@ -1,4 +1,4 @@
-name: Flutter Linux Build
+name: Flutter Linux
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - '**'
 
 jobs:
-  test:
+  build:
     name: Flutter Build on Linux
     runs-on: ubuntu-latest
     steps:
