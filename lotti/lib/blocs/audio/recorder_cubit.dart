@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 AudioRecorderState initialState = AudioRecorderState(
@@ -95,14 +95,13 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
       String relativePath = '/audio/$day/';
       String directory = await AudioUtils.createAssetDirectory(relativePath);
       String filePath = '$directory$fileName';
-      String timezone = await FlutterNativeTimezone.getLocalTimezone();
 
       _audioNote = AudioNote(
           id: uuid.v1(options: {'msecs': created.millisecondsSinceEpoch}),
           timestamp: created.millisecondsSinceEpoch,
           createdAt: created,
           utcOffset: created.timeZoneOffset.inMinutes,
-          timezone: timezone,
+          timezone: await getLocalTimezone(),
           audioFile: fileName,
           audioDirectory: relativePath,
           duration: const Duration(seconds: 0));

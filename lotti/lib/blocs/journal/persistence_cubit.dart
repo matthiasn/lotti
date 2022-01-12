@@ -22,6 +22,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
@@ -71,7 +72,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
@@ -110,7 +111,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: data.taskResult.endDate ?? now,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
@@ -150,7 +151,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: data.dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
