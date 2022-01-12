@@ -21,6 +21,9 @@ jobs:
       - name: Enable Linux Desktop
         working-directory: ./lotti
         run: flutter config --enable-linux-desktop
+      - name: Flutter Doctor
+        working-directory: ./lotti
+        run: make doctor
       - name: Test and build
         working-directory: ./lotti
         run: make linux
