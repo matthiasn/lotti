@@ -14,6 +14,8 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
+      - name: Install libraries
+        run: sudo apt-get install libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
       - name: Enable Linux Desktop
         working-directory: ./lotti
         run: flutter config --enable-linux-desktop
