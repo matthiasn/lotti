@@ -50,6 +50,7 @@ class _AddPageState extends State<AddPage> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               FloatingActionButton(
+                heroTag: 'measurement',
                 child: const Icon(
                   MdiIcons.tapeMeasure,
                   size: 32,
@@ -69,6 +70,7 @@ class _AddPageState extends State<AddPage> {
                 width: 16,
               ),
               FloatingActionButton(
+                heroTag: 'survey',
                 child: const Icon(
                   MdiIcons.clipboardOutline,
                   size: 32,
@@ -88,6 +90,7 @@ class _AddPageState extends State<AddPage> {
                 width: 16,
               ),
               FloatingActionButton(
+                heroTag: 'photo',
                 child: const Icon(
                   Icons.camera_roll,
                   size: 32,
@@ -101,6 +104,7 @@ class _AddPageState extends State<AddPage> {
                 width: 16,
               ),
               FloatingActionButton(
+                heroTag: 'text',
                 child: const Icon(
                   MdiIcons.textLong,
                   size: 32,
@@ -120,6 +124,7 @@ class _AddPageState extends State<AddPage> {
                 width: 16,
               ),
               FloatingActionButton(
+                heroTag: 'health',
                 child: const Icon(
                   MdiIcons.heart,
                   size: 32,
