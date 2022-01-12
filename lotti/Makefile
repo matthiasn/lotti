@@ -10,6 +10,10 @@ clean:
 deps:
 	flutter pub get
 
+.PHONY: doctor
+doctor:
+	flutter doctor
+
 .PHONY: coverage
 coverage: test
 	genhtml coverage/lcov.info -o coverage
@@ -41,6 +45,10 @@ macos: clean_test
 	flutter build macos
 	open ./build/macos/Build/Products/Release/
 
+.PHONY: linux
+linux: clean_test
+	flutter build linux
+
 .PHONY: all
 all: ipa macos
 
@@ -63,4 +71,4 @@ viz:
 	open classes.viz.png
 
 .PHONY: clean_test
-clean_test: clean deps build_runner bundle test
+clean_test: clean deps build_runner test

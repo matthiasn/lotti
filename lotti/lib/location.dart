@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dart_geohash/dart_geohash.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -13,6 +15,10 @@ class DeviceLocation {
   void init() async {
     bool _serviceEnabled;
     PermissionStatus _permissionGranted;
+
+    if (Platform.isLinux || Platform.isWindows) {
+      return null;
+    }
 
     _serviceEnabled = await location.serviceEnabled();
     if (!_serviceEnabled) {
@@ -31,11 +37,6 @@ class DeviceLocation {
     }
   }
 
-  Future<LocationData> getCurrentLocation() async {
-    LocationData _locationData = await location.getLocation();
-    return _locationData;
-  }
-
   static String getGeoHash({
     required double latitude,
     required double longitude,
@@ -44,6 +45,10 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocation() async {
+    if (Platform.isLinux || Platform.isWindows) {
+      return null;
+    }
+
     LocationData locationData = await location.getLocation();
     DateTime now = DateTime.now();
     double? longitude = locationData.longitude;

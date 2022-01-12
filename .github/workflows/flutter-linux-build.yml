@@ -1,0 +1,33 @@
+name: Flutter Linux Build
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    name: Flutter Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+      - name: Update apt
+        run: sudo apt-get update && sudo apt-get upgrade
+      - name: Install libraries
+        run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
+      - name: Enable Linux Desktop
+        working-directory: ./lotti
+        run: flutter config --enable-linux-desktop
+      - name: Flutter Doctor
+        working-directory: ./lotti
+        run: make doctor
+      - name: Test and build
+        working-directory: ./lotti
+        run: make linux
+      - uses: actions/upload-artifact@v2
+        with:
+          name: lotti
+          path: ./lotti/build/linux/x64/release/bundle/lotti

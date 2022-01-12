@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
@@ -30,7 +32,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   final InsightsDb _insightsDb = getIt<InsightsDb>();
 
   final uuid = const Uuid();
-  DeviceLocation location = DeviceLocation();
+  DeviceLocation? location;
   Timer? timer;
 
   PersistenceCubit({
@@ -42,6 +44,9 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<void> init() async {
+    if (!Platform.isLinux && !Platform.isWindows) {
+      location = DeviceLocation();
+    }
     emit(PersistenceState.online(entries: []));
   }
 
@@ -67,7 +72,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
@@ -90,10 +95,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Insights
-          );
+      Geolocation? geolocation =
+          await location?.getCurrentGeoLocation().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null, // TODO: report timeout in Insights
+              );
 
       JournalEntity journalEntity = JournalEntity.survey(
         data: data,
@@ -105,7 +111,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: data.taskResult.endDate ?? now,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
@@ -129,10 +135,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => null, // TODO: report timeout in Insights
-          );
+      Geolocation? geolocation =
+          await location?.getCurrentGeoLocation().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null, // TODO: report timeout in Insights
+              );
 
       JournalEntity journalEntity = JournalEntity.measurement(
         data: data,
@@ -144,7 +151,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
           dateTo: data.dateTo,
           id: id,
           vectorClock: vc,
-          timezone: await FlutterNativeTimezone.getLocalTimezone(),
+          timezone: await getLocalTimezone(),
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       );
@@ -247,10 +254,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v1();
-      Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => null,
-          );
+      Geolocation? geolocation =
+          await location?.getCurrentGeoLocation().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null,
+              );
 
       JournalEntity journalEntity = JournalEntity.journalEntry(
         entryText: entryText,
