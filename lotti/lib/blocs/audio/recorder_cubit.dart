@@ -27,11 +27,15 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
-  final DeviceLocation _deviceLocation = DeviceLocation();
+  DeviceLocation? _deviceLocation;
 
-  AudioRecorderCubit({required PersistenceCubit persistenceCubit})
-      : super(initialState) {
+  AudioRecorderCubit({
+    required PersistenceCubit persistenceCubit,
+  }) : super(initialState) {
     _persistenceCubit = persistenceCubit;
+    if (!Platform.isLinux && !Platform.isWindows) {
+      _deviceLocation = DeviceLocation();
+    }
   }
 
   Future<void> _openAudioSession() async {
@@ -70,7 +74,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
   void _addGeolocation() async {
     try {
-      _deviceLocation.getCurrentGeoLocation().then((Geolocation? geolocation) {
+      _deviceLocation?.getCurrentGeoLocation().then((Geolocation? geolocation) {
         if (geolocation != null) {
           _audioNote = _audioNote?.copyWith(geolocation: geolocation);
           _saveAudioNoteJson();
