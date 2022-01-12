@@ -14,8 +14,10 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
+      - name: Update libraries
+        run: sudo apt-get update && sudo apt-get upgrade
       - name: Install libraries
-        run: sudo apt-get install cmake ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
+        run: sudo apt-get install cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev
       - name: Enable Linux Desktop
         working-directory: ./lotti
         run: flutter config --enable-linux-desktop
