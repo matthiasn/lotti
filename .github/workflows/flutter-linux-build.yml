@@ -22,3 +22,7 @@ jobs:
       - name: Test and build
         working-directory: ./lotti
         run: make linux
+      - uses: actions/upload-artifact@v2
+        with:
+          name: lotti
+          path: ./lotti/build/linux/x64/release/bundle/lotti
