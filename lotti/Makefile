@@ -41,6 +41,10 @@ macos: clean_test
 	flutter build macos
 	open ./build/macos/Build/Products/Release/
 
+.PHONY: linux
+linux: clean_test
+	flutter build linux
+
 .PHONY: all
 all: ipa macos
 
