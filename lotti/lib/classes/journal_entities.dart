@@ -32,6 +32,7 @@ class Metadata with _$Metadata {
     DateTime? deletedAt,
     EntryFlag? flag,
     bool? starred,
+    bool? private,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>

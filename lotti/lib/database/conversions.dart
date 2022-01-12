@@ -34,6 +34,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     dateFrom: entity.meta.dateFrom,
     deleted: entity.meta.deletedAt != null,
     starred: entity.meta.starred ?? false,
+    private: entity.meta.private ?? false,
     flag: entity.meta.flag?.index ?? 0,
     dateTo: entity.meta.dateTo,
     type: entity.runtimeType.toString().replaceFirst(r'_$', ''),
@@ -78,6 +79,7 @@ MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
     serialized: jsonEncode(dataType),
     version: dataType.version,
     status: 0,
+    private: dataType.private ?? false,
     deleted: dataType.deletedAt != null,
   );
 }
