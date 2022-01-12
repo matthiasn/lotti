@@ -1,0 +1,34 @@
+name: Flutter Windows
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: Flutter Build on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+      - name: Enable Windows Desktop
+        working-directory: ./lotti
+        run: flutter config --enable-windows-desktop
+      - name: Flutter Doctor
+        working-directory: ./lotti
+        run: make doctor
+      - name: Flutter get dependencies
+        working-directory: ./lotti
+        run: flutter pub get
+      - name: Flutter build_runner
+        working-directory: ./lotti
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Flutter test
+        working-directory: ./lotti
+        run: flutter test
+      - name: Flutter build
+        working-directory: ./lotti
+        run: flutter build windows

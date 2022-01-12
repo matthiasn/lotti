@@ -49,6 +49,10 @@ macos: clean_test
 linux: clean_test
 	flutter build linux
 
+.PHONY: windows
+windows: clean_test
+	flutter build windows
+
 .PHONY: all
 all: ipa macos
 
