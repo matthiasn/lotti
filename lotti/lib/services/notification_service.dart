@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -7,6 +9,10 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> updateBadge() async {
+    if (Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
