@@ -173,7 +173,9 @@ class OutboxCubit extends Cubit<OutboxState> {
               );
               Timer(const Duration(seconds: 1), () => sendNext());
             } finally {
-              sendMutex.release();
+              if (sendMutex.isLocked) {
+                sendMutex.release();
+              }
             }
           }
         }
@@ -182,7 +184,9 @@ class OutboxCubit extends Cubit<OutboxState> {
       }
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
-      sendMutex.release();
+      if (sendMutex.isLocked) {
+        sendMutex.release();
+      }
       sendNext();
     }
     await transaction.finish();
