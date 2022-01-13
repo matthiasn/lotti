@@ -46,7 +46,7 @@ class InboxImapCubit extends Cubit<ImapState> {
     _persistenceCubit = persistenceCubit;
     _vectorClockService = getIt<VectorClockService>();
 
-    if (!Platform.isMacOS && !Platform.isLinux) {
+    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _insightsDb.captureEvent(event, domain: 'INBOX_CUBIT');
 
