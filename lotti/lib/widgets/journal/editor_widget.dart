@@ -65,7 +65,10 @@ class EditorWidget extends StatelessWidget {
         child: Column(
           children: [
             Visibility(
-              visible: Platform.isMacOS && !_readOnly,
+              visible: (Platform.isMacOS ||
+                      Platform.isLinux ||
+                      Platform.isWindows) &&
+                  !_readOnly,
               child: ToolbarWidget(
                 controller: _controller,
                 saveFn: _saveFn,
