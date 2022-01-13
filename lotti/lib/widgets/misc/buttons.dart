@@ -24,12 +24,12 @@ class Button extends StatelessWidget {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(
-            vertical: 8.0,
+            vertical: 16.0,
             horizontal: 32.0,
           ),
           primary: primaryColor,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4.0),
+            borderRadius: BorderRadius.circular(8.0),
           ),
         ),
         onPressed: onPressed,

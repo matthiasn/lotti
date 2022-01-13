@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/classes/config.dart';
@@ -32,7 +33,10 @@ class EncryptionQrWidget extends StatelessWidget {
               (String? sharedKey, ImapConfig? imapConfig) {
                 if (sharedKey != null && imapConfig != null) {
                   SyncConfig syncConfig = SyncConfig(
-                      imapConfig: imapConfig, sharedSecret: sharedKey);
+                    imapConfig: imapConfig,
+                    sharedSecret: sharedKey,
+                  );
+                  String syncCfgJson = json.encode(syncConfig);
                   return Column(
                     children: [
                       Container(
@@ -43,13 +47,50 @@ class EncryptionQrWidget extends StatelessWidget {
                             Radius.circular(8.0),
                           ),
                         ),
-                        child: QrImage(
-                          data: json.encode(syncConfig),
-                          version: QrVersions.auto,
-                          size: 280.0,
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog<String>(
+                              context: context,
+                              builder: (BuildContext context) => AlertDialog(
+                                title: const Text(
+                                  'Copy SyncConfig to Clipboard?',
+                                  style: TextStyle(fontFamily: 'Oswald'),
+                                ),
+                                content: const Text(
+                                  'With this data, anyone can read your journal. '
+                                  'Only copy when you know what you\'re doing. '
+                                  'Are you sure you want to proceed?',
+                                  style: TextStyle(fontFamily: 'Lato'),
+                                ),
+                                actions: <Widget>[
+                                  Button(
+                                    'Cancel',
+                                    onPressed: () {
+                                      Navigator.pop(context, 'Cancel');
+                                    },
+                                    primaryColor: Colors.grey,
+                                  ),
+                                  Button(
+                                    'Copy',
+                                    onPressed: () {
+                                      Clipboard.setData(
+                                          ClipboardData(text: syncCfgJson));
+                                      Navigator.pop(context, 'Copy SyncConfig');
+                                    },
+                                    primaryColor: Colors.red,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          child: QrImage(
+                            data: syncCfgJson,
+                            version: QrVersions.auto,
+                            size: 280.0,
+                          ),
                         ),
                       ),
-                      StatusTextWidget(sharedKey),
+                      StatusTextWidget('${sharedKey.substring(0, 20)}...'),
                       Button('Delete Shared Key',
                           onPressed: () =>
                               context.read<SyncConfigCubit>().deleteSharedKey(),
