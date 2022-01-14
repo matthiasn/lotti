@@ -51,6 +51,7 @@ class _JournalPageState extends State<JournalPage> {
   final List<String> allTypes = _entryTypes.map((e) => e.typeName).toList();
   late List<String> types;
   bool starredActive = false;
+  bool privateActive = false;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _JournalPageState extends State<JournalPage> {
     stream = _db.watchJournalEntities(
       types: types,
       starredStatuses: [true, false],
+      privateStatuses: [false],
     );
   }
 
@@ -127,6 +129,9 @@ class _JournalPageState extends State<JournalPage> {
                                       starredStatuses: starredActive
                                           ? [true]
                                           : [true, false],
+                                      privateStatuses: privateActive
+                                          ? [true, false]
+                                          : [false],
                                     );
                                   });
                                 },
@@ -142,6 +147,23 @@ class _JournalPageState extends State<JournalPage> {
                                   types: types,
                                   starredStatuses:
                                       starredActive ? [true] : [true, false],
+                                  privateStatuses:
+                                      privateActive ? [true, false] : [false],
+                                );
+                              });
+                            },
+                          ),
+                          CupertinoSwitch(
+                            value: privateActive,
+                            onChanged: (bool value) {
+                              setState(() {
+                                privateActive = value;
+                                stream = _db.watchJournalEntities(
+                                  types: types,
+                                  starredStatuses:
+                                      starredActive ? [true] : [true, false],
+                                  privateStatuses:
+                                      privateActive ? [true, false] : [false],
                                 );
                               });
                             },
