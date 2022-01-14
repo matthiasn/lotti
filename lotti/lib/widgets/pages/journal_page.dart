@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -47,12 +48,18 @@ class _JournalPageState extends State<JournalPage> {
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
       .toList();
 
-  final List<String> _allTypes = _entryTypes.map((e) => e.typeName).toList();
+  final List<String> allTypes = _entryTypes.map((e) => e.typeName).toList();
+  late List<String> types;
+  bool starredActive = false;
 
   @override
   void initState() {
     super.initState();
-    stream = _db.watchJournalEntities(types: _allTypes);
+    types = allTypes;
+    stream = _db.watchJournalEntities(
+      types: types,
+      starredStatuses: [true, false],
+    );
   }
 
   @override
@@ -77,42 +84,69 @@ class _JournalPageState extends State<JournalPage> {
                   return Scaffold(
                     appBar: AppBar(
                       backgroundColor: AppColors.headerBgColor,
-                      title: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                        child: MultiSelectDialogField(
-                          items: _items,
-                          title: const Text('Entry Types'),
-                          selectedColor: Colors.blue,
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(40)),
-                            border: Border.all(
-                              color: AppColors.entryBgColor,
-                              width: 2,
-                            ),
-                          ),
-                          buttonIcon: Icon(
-                            Icons.search,
-                            color: AppColors.entryBgColor,
-                          ),
-                          buttonText: Text(
-                            'Filter by Type',
-                            style: TextStyle(
-                              color: AppColors.entryBgColor,
-                              fontSize: 16,
-                            ),
-                          ),
-                          onConfirm: (List<FilterBy?> results) {
-                            final List<String> types = results.isNotEmpty
-                                ? results.map((e) => e?.typeName ?? '').toList()
-                                : _allTypes;
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: MultiSelectDialogField(
+                                items: _items,
+                                title: const Text('Entry Types'),
+                                selectedColor: Colors.blue,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(40)),
+                                  border: Border.all(
+                                    color: AppColors.entryBgColor,
+                                    width: 2,
+                                  ),
+                                ),
+                                buttonIcon: Icon(
+                                  Icons.search,
+                                  color: AppColors.entryBgColor,
+                                ),
+                                buttonText: Text(
+                                  'Filter by Type',
+                                  style: TextStyle(
+                                    color: AppColors.entryBgColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                onConfirm: (List<FilterBy?> results) {
+                                  types = results.isNotEmpty
+                                      ? results
+                                          .map((e) => e?.typeName ?? '')
+                                          .toList()
+                                      : allTypes;
 
-                            setState(() {
-                              stream = _db.watchJournalEntities(types: types);
-                            });
-                          },
-                        ),
+                                  setState(() {
+                                    stream = _db.watchJournalEntities(
+                                      types: types,
+                                      starredStatuses: starredActive
+                                          ? [true]
+                                          : [true, false],
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                          CupertinoSwitch(
+                            value: starredActive,
+                            onChanged: (bool value) {
+                              setState(() {
+                                starredActive = value;
+                                stream = _db.watchJournalEntities(
+                                  types: types,
+                                  starredStatuses:
+                                      starredActive ? [true] : [true, false],
+                                );
+                              });
+                            },
+                          ),
+                        ],
                       ),
                       centerTitle: true,
                     ),

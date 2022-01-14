@@ -137,9 +137,12 @@ class JournalDb extends _$JournalDb {
 
   Stream<List<JournalEntity>> watchJournalEntities({
     required List<String> types,
+    required List<bool> starredStatuses,
     int limit = 1000,
   }) {
-    return filteredJournal(types, limit).watch().map(entityStreamMapper);
+    return filteredJournal(types, starredStatuses, limit)
+        .watch()
+        .map(entityStreamMapper);
   }
 
   Stream<List<JournalEntity>> watchFlaggedImport({
