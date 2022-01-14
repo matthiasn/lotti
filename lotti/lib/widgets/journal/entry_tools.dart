@@ -15,6 +15,14 @@ String formatLatLon(double? number) {
   }
 }
 
+bool fromNullableBool(bool? value) {
+  if (value != null) {
+    return value;
+  } else {
+    return false;
+  }
+}
+
 DateFormat df = DateFormat('yyyy-MM-dd HH:mm:ss');
 
 String formatType(String s) => s.replaceAll('HealthDataType.', '');

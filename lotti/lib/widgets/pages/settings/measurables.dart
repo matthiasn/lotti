@@ -10,8 +10,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+const double iconSize = 24.0;
 
 class MeasurablesPage extends StatefulWidget {
   const MeasurablesPage({Key? key}) : super(key: key);
@@ -143,13 +146,38 @@ class MeasurableTypeCard extends StatelessWidget {
           child: ListTile(
             contentPadding:
                 const EdgeInsets.only(left: 24, top: 4, bottom: 12, right: 24),
-            title: Text(
-              item.displayName,
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
-                fontSize: 24.0,
-              ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  item.displayName,
+                  style: TextStyle(
+                    color: AppColors.entryTextColor,
+                    fontFamily: 'Oswald',
+                    fontSize: 24.0,
+                  ),
+                ),
+                Expanded(child: Container()),
+                Visibility(
+                  visible: fromNullableBool(item.private),
+                  child: Icon(
+                    MdiIcons.security,
+                    color: AppColors.error,
+                    size: iconSize,
+                  ),
+                ),
+                Visibility(
+                  visible: fromNullableBool(item.favorite),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Icon(
+                      MdiIcons.star,
+                      color: AppColors.starredGold,
+                      size: iconSize,
+                    ),
+                  ),
+                ),
+              ],
             ),
             subtitle: Text(
               item.description,
@@ -232,6 +260,7 @@ class _DetailRouteState extends State<DetailRoute> {
                     unitName: '${formData['unitName']}'.trim(),
                     displayName: '${formData['displayName']}'.trim(),
                     private: formData['private'],
+                    favorite: formData['favorite'],
                   );
 
                   context
@@ -296,7 +325,13 @@ class _DetailRouteState extends State<DetailRoute> {
                               initialValue: item.private,
                               title: Text('Private: ', style: labelStyle),
                               activeColor: AppColors.private,
-                            )
+                            ),
+                            FormBuilderSwitch(
+                              name: 'favorite',
+                              initialValue: item.favorite,
+                              title: Text('Favorite: ', style: labelStyle),
+                              activeColor: AppColors.starredGold,
+                            ),
                           ],
                         ),
                       ),
