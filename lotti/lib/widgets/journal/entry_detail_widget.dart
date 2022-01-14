@@ -1,11 +1,14 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -34,6 +37,7 @@ class EntryDetailWidget extends StatefulWidget {
 
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final FocusNode _focusNode = FocusNode();
+  bool showDetails = false;
 
   Directory? docDir;
   bool mapVisible = false;
@@ -99,18 +103,23 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               ),
             ),
             IconButton(
-              icon: const Icon(MdiIcons.trashCanOutline),
+              icon: Icon(showDetails
+                  ? MdiIcons.chevronDoubleUp
+                  : MdiIcons.chevronDoubleDown),
               iconSize: 24,
-              tooltip: 'Delete',
+              tooltip: 'Details',
               color: AppColors.appBarFgColor,
               onPressed: () {
-                context
-                    .read<PersistenceCubit>()
-                    .deleteJournalEntity(widget.item);
-                Navigator.pop(context);
+                setState(() {
+                  showDetails = !showDetails;
+                });
               },
             ),
           ],
+        ),
+        Visibility(
+          visible: showDetails,
+          child: EntryInfoRow(entityId: widget.item.meta.id),
         ),
         Visibility(
           visible: mapVisible,
@@ -230,6 +239,103 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           orElse: () => Container(),
         ),
       ],
+    );
+  }
+}
+
+class EntryInfoRow extends StatelessWidget {
+  final String entityId;
+  final JournalDb db = getIt<JournalDb>();
+
+  late final Stream<JournalEntity?> stream = db.watchEntityById(entityId);
+
+  EntryInfoRow({
+    Key? key,
+    required this.entityId,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<JournalEntity?>(
+        stream: stream,
+        builder: (
+          BuildContext context,
+          AsyncSnapshot<JournalEntity?> snapshot,
+        ) {
+          JournalEntity? liveEntity = snapshot.data;
+          if (liveEntity == null) {
+            return const SizedBox.shrink();
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SwitchRow(
+                label: 'Starred:',
+                onChanged: (bool value) {
+                  Metadata newMeta = liveEntity.meta.copyWith(
+                    starred: value,
+                  );
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntity(liveEntity, newMeta);
+                },
+                value: liveEntity.meta.starred ?? false,
+              ),
+              SwitchRow(
+                label: 'Private:',
+                onChanged: (bool value) {
+                  Metadata newMeta = liveEntity.meta.copyWith(
+                    private: value,
+                  );
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntity(liveEntity, newMeta);
+                },
+                value: liveEntity.meta.private ?? false,
+              ),
+              SwitchRow(
+                label: 'Deleted:',
+                onChanged: (bool value) {
+                  if (value) {
+                    context
+                        .read<PersistenceCubit>()
+                        .deleteJournalEntity(liveEntity);
+                    Navigator.pop(context);
+                  }
+                },
+                value: liveEntity.meta.deletedAt != null,
+              ),
+            ],
+          );
+        });
+  }
+}
+
+class SwitchRow extends StatelessWidget {
+  const SwitchRow({
+    Key? key,
+    required this.label,
+    required this.onChanged,
+    required this.value,
+  }) : super(key: key);
+
+  final String label;
+  final void Function(bool)? onChanged;
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: textStyle),
+          CupertinoSwitch(value: value, onChanged: onChanged),
+        ],
+      ),
     );
   }
 }
