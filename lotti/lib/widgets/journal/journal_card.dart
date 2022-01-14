@@ -13,6 +13,16 @@ import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+bool fromNullableBool(bool? value) {
+  if (value != null) {
+    return value;
+  } else {
+    return false;
+  }
+}
+
+const double iconSize = 18.0;
+
 class JournalCardTitle extends StatelessWidget {
   final JournalEntity item;
   const JournalCardTitle({Key? key, required this.item}) : super(key: key);
@@ -25,14 +35,39 @@ class JournalCardTitle extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            df.format(item.meta.dateFrom),
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Oswald',
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                df.format(item.meta.dateFrom),
+                style: TextStyle(
+                  color: AppColors.entryTextColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Oswald',
+                ),
+              ),
+              Expanded(child: Container()),
+              Visibility(
+                visible: fromNullableBool(item.meta.private),
+                child: Icon(
+                  MdiIcons.security,
+                  color: AppColors.error,
+                  size: iconSize,
+                ),
+              ),
+              Visibility(
+                visible: fromNullableBool(item.meta.starred),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Icon(
+                    MdiIcons.star,
+                    color: AppColors.starredGold,
+                    size: iconSize,
+                  ),
+                ),
+              ),
+            ],
           ),
           item.maybeMap(
             quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
@@ -214,7 +249,7 @@ class JournalImageCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
           child: GFListTile(
             margin: EdgeInsets.zero,
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 8.0),
             avatar: LimitedBox(
               maxWidth: (MediaQuery.of(context).size.width / 2) - 40,
               child: CardImageWidget(
