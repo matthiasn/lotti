@@ -137,7 +137,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
               context
                   .read<PersistenceCubit>()
-                  .updateJournalEntityText(widget.item, entryText);
+                  .updateJournalEntityText(widget.item.meta.id, entryText);
             }
 
             return Column(
@@ -161,7 +161,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
               context
                   .read<PersistenceCubit>()
-                  .updateJournalEntityText(widget.item, entryText);
+                  .updateJournalEntityText(widget.item.meta.id, entryText);
             }
 
             return Column(
@@ -191,7 +191,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
             void saveText() {
               context.read<PersistenceCubit>().updateJournalEntityText(
-                  widget.item, entryTextFromController(_controller));
+                  widget.item.meta.id, entryTextFromController(_controller));
             }
 
             return EditorWidget(
@@ -207,7 +207,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
             void saveText() {
               context.read<PersistenceCubit>().updateJournalEntityText(
-                  widget.item, entryTextFromController(_controller));
+                  widget.item.meta.id, entryTextFromController(_controller));
             }
 
             return EditorWidget(

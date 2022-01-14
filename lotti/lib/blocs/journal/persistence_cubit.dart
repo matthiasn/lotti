@@ -310,13 +310,20 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<bool> updateJournalEntityText(
-    JournalEntity journalEntity,
+    String journalEntityId,
     EntryText entryText,
   ) async {
     final transaction =
         _insightsDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);
 
