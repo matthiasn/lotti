@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -221,6 +222,7 @@ class _DetailRouteState extends State<DetailRoute> {
                 _formKey.currentState!.save();
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
+                  debugPrint('$formData');
                   MeasurableDataType dataType = item.copyWith(
                     name: '${formData!['name']}'
                         .trim()
@@ -229,6 +231,7 @@ class _DetailRouteState extends State<DetailRoute> {
                     description: '${formData['description']}'.trim(),
                     unitName: '${formData['unitName']}'.trim(),
                     displayName: '${formData['displayName']}'.trim(),
+                    private: formData['private'],
                   );
 
                   context
@@ -288,6 +291,12 @@ class _DetailRouteState extends State<DetailRoute> {
                               labelText: 'Unit abbreviation',
                               name: 'unitName',
                             ),
+                            FormBuilderSwitch(
+                              name: 'private',
+                              initialValue: item.private,
+                              title: Text('Private: ', style: labelStyle),
+                              activeColor: AppColors.private,
+                            )
                           ],
                         ),
                       ),
@@ -347,12 +356,7 @@ class FormTextField extends StatelessWidget {
       maxLines: 3,
       initialValue: initialValue,
       validator: FormBuilderValidators.required(context),
-      style: TextStyle(
-        color: AppColors.entryTextColor,
-        height: 1.6,
-        fontFamily: 'Lato',
-        fontSize: 20,
-      ),
+      style: labelStyle,
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
@@ -360,3 +364,10 @@ class FormTextField extends StatelessWidget {
     );
   }
 }
+
+TextStyle labelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  height: 1.6,
+  fontFamily: 'Lato',
+  fontSize: 20,
+);
