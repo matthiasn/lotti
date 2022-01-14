@@ -23,6 +23,7 @@ class AppColors {
   static Color audioMeterTooHotBar = Colors.orange;
   static Color audioMeterPeakedBar = Colors.red;
   static Color error = Colors.red;
+  static Color private = Colors.red;
   static Color audioMeterBarBackground =
       TinyColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);

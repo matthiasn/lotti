@@ -139,10 +139,11 @@ class _JournalPageState extends State<JournalPage> {
                             ),
                           ),
                           CupertinoSwitch(
-                            value: starredActive,
+                            value: privateActive,
+                            activeColor: AppColors.private,
                             onChanged: (bool value) {
                               setState(() {
-                                starredActive = value;
+                                privateActive = value;
                                 stream = _db.watchJournalEntities(
                                   types: types,
                                   starredStatuses:
@@ -154,10 +155,11 @@ class _JournalPageState extends State<JournalPage> {
                             },
                           ),
                           CupertinoSwitch(
-                            value: privateActive,
+                            value: starredActive,
+                            activeColor: AppColors.starredGold,
                             onChanged: (bool value) {
                               setState(() {
-                                privateActive = value;
+                                starredActive = value;
                                 stream = _db.watchJournalEntities(
                                   types: types,
                                   starredStatuses:
