@@ -23,6 +23,7 @@
         plain-text (get entry-text-object "plainText")
         markdown (get entry-text-object "markdown")
         geolocation (get json "geolocation")
+        starred (get meta-data "starred")
         entry {:timestamp  ts
                :md         (or markdown placeholder-text)
                :text       (or plain-text placeholder-text)
@@ -34,7 +35,8 @@
                :perm_tags  #{"#audio" "#task"}
                :longitude  (get geolocation "longitude")
                :latitude   (get geolocation "latitude")
-               :vclock     (get meta-data "vectorClock")}]
+               :vclock     (get meta-data "vectorClock")}
+        entry (if starred (assoc entry :starred true) entry)]
     (when (not= "import" (get meta-data "flag"))
       entry)))
 

@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "id": "c780844c-e027-50b7-a24f-ce0944c657d5",
+    "createdAt": "2022-01-02T00:16:02.949620",
+    "updatedAt": "2022-01-02T00:21:17.559676",
+    "dateFrom": "2022-01-02T00:16:00.466463",
+    "dateTo": "2022-01-02T00:16:02.492463",
+    "utcOffset": 60,
+    "timezone": "Europe/Berlin",
+    "vectorClock": {
+      "1f9af04b-9cbe-454e-9937-a3729d2f7371": 43,
+      "f44742d5-972f-4a6f-ba4c-03152bb4527b": 106
+    },
+    "deletedAt": null,
+    "flag": "none",
+    "starred": true
+  },
+  "data": {
+    "dateFrom": "2022-01-02T00:16:00.466463",
+    "dateTo": "2022-01-02T00:16:02.492463",
+    "audioFile": "2022-01-02_00-16-00-466.aac",
+    "audioDirectory": "/audio/2022-01-02/",
+    "duration": 2026000,
+    "transcript": null
+  },
+  "entryText": {
+    "plainText": "test\n",
+    "geolocation": null,
+    "markdown": "test\n",
+    "quill": "[{\"insert\":\"test\\n\"}]"
+  },
+  "geolocation": {
+    "createdAt": "2022-01-02T00:16:00.856674",
+    "utcOffset": 60,
+    "timezone": "CET",
+    "latitude": 54.0,
+    "longitude": 10.0,
+    "geohashString": "",
+    "accuracy": 12.1,
+    "speed": -1.0,
+    "speedAccuracy": -1.0,
+    "heading": -1.0,
+    "headingAccuracy": null,
+    "altitude": 1
+  },
+  "runtimeType": "journalAudio"
+}
