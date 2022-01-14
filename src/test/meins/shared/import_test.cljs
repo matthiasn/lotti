@@ -124,6 +124,28 @@
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec import-flag-removed))))
 
+(deftest import-starred-audio-test
+  (let [starred-import (ai/convert-audio-entry
+                         (h/parse-json
+                           (test-data-file "starred_import.aac.json")))]
+    (testing "Entry is imported with starred status"
+      (is (= starred-import {:mentions   #{}
+                             :tags       #{"#import" "#audio"}
+                             :timezone   "Europe/Berlin"
+                             :audio_file "2022-01-02_00-16-00-466.aac"
+                             :utc-offset 60
+                             :starred    true
+                             :perm_tags  #{"#task" "#audio"}
+                             :vclock     {"1f9af04b-9cbe-454e-9937-a3729d2f7371" 43
+                                          "f44742d5-972f-4a6f-ba4c-03152bb4527b" 106}
+                             :latitude   54
+                             :longitude  10
+                             :timestamp  1641082560466
+                             :text       "test\n"
+                             :md         "test\n"})))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec starred-import))))
+
 (deftest import-flag-image-test
   (let [flagged-import (ii/convert-image-entry
                          (h/parse-json
@@ -150,6 +172,29 @@
               :md         "test\n"})))
     (testing "Parsed entry is valid"
       (s/valid? :meins.entry/spec import-flag-removed))))
+
+(deftest import-starred-image-test
+  (let [starred-import (ii/convert-image-entry
+                         (h/parse-json
+                           (test-data-file "starred_import.JPG.json")))]
+    (testing "Entry is imported with starred status"
+      (is (= starred-import
+             {:mentions   #{}
+              :tags       #{"#photo" "#import"}
+              :timezone   "Europe/Berlin"
+              :utc-offset 0
+              :perm_tags  #{"#photo"}
+              :longitude  nil
+              :starred    true
+              :vclock     {"1f9af04b-9cbe-454e-9937-a3729d2f7371" 44
+                           "f44742d5-972f-4a6f-ba4c-03152bb4527b" 107}
+              :latitude   nil
+              :timestamp  1641086895000
+              :img_file   "05019F5D-25FD-4449-84E7-41B9362189D6.IMG_8959.JPG"
+              :text       "test\n"
+              :md         "test\n"})))
+    (testing "Parsed entry is valid"
+      (s/valid? :meins.entry/spec starred-import))))
 
 (def expected-text-image (str (h/format-time 1636319781000) " Image"))
 (def new-image-test-entry
