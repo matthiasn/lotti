@@ -85,7 +85,10 @@ CREATE TABLE measurable_types (
 /* Queries ----------------------------------------------------- */
 filteredJournal:
 SELECT * FROM journal
-  WHERE type IN :types AND deleted = false
+  WHERE type IN :types
+  AND deleted = false
+  AND starred IN :starredStatuses
+  AND private IN :privateStatuses
   ORDER BY date_from DESC
   LIMIT :limit;
 

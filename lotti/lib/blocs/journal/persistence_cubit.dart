@@ -310,13 +310,20 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   }
 
   Future<bool> updateJournalEntityText(
-    JournalEntity journalEntity,
+    String journalEntityId,
     EntryText entryText,
   ) async {
     final transaction =
         _insightsDb.startTransaction('updateJournalEntity()', 'task');
     try {
       DateTime now = DateTime.now();
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: journalEntity.meta.vectorClock);
 
@@ -383,7 +390,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     required DateTime dateTo,
   }) async {
     final transaction =
-        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+        _insightsDb.startTransaction('updateJournalEntityDate()', 'task');
     try {
       DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
@@ -394,6 +401,35 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         vectorClock: vc,
         dateFrom: dateFrom,
         dateTo: dateTo,
+      );
+
+      JournalEntity newJournalEntity = journalEntity.copyWith(
+        meta: newMeta,
+      );
+
+      await updateDbEntity(newJournalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> updateJournalEntity(
+    JournalEntity journalEntity,
+    Metadata metadata,
+  ) async {
+    final transaction =
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+          previous: metadata.vectorClock);
+
+      Metadata newMeta = metadata.copyWith(
+        updatedAt: now,
+        vectorClock: vc,
       );
 
       JournalEntity newJournalEntity = journalEntity.copyWith(

@@ -6,6 +6,7 @@ class AppColors {
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
+  static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
   static Color editorBgColor = Colors.white;
 
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
@@ -22,6 +23,7 @@ class AppColors {
   static Color audioMeterTooHotBar = Colors.orange;
   static Color audioMeterPeakedBar = Colors.red;
   static Color error = Colors.red;
+  static Color private = Colors.red;
   static Color audioMeterBarBackground =
       TinyColor(headerBgColor).lighten(40).color;
   static Color inactiveAudioControl = const Color.fromRGBO(155, 155, 177, 1);
