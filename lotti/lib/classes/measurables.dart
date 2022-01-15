@@ -20,6 +20,7 @@ class EntityDefinition with _$EntityDefinition {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     bool? private,
+    bool? favorite,
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 

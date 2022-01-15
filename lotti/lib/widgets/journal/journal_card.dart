@@ -13,14 +13,6 @@ import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-bool fromNullableBool(bool? value) {
-  if (value != null) {
-    return value;
-  } else {
-    return false;
-  }
-}
-
 const double iconSize = 18.0;
 
 class JournalCardTitle extends StatelessWidget {

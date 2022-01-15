@@ -46,6 +46,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
           AsyncSnapshot<List<MeasurableDataType>> snapshot,
         ) {
           List<MeasurableDataType> items = snapshot.data ?? [];
+          List<MeasurableDataType> favoriteItems =
+              items.where((m) => fromNullableBool(m.favorite)).toList();
 
           return Scaffold(
             appBar: AppBar(
@@ -189,10 +191,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                     Expanded(
                       child: ListView(
                         children: List.generate(
-                          items.length,
+                          favoriteItems.length,
                           (int index) {
                             return MeasurementBarChart(
-                                measurableDataType: items[index]);
+                                measurableDataType: favoriteItems[index]);
                           },
                           growable: true,
                         ),
