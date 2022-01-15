@@ -82,6 +82,13 @@ CREATE TABLE measurable_types (
   PRIMARY KEY (id)
 ) as MeasurableDbEntity;
 
+/* ConfigFlags ------------------------------------------------ */
+CREATE TABLE config_flags (
+  name TEXT NOT NULL UNIQUE,
+  status BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (name)
+);
+
 /* Queries ----------------------------------------------------- */
 filteredJournal:
 SELECT * FROM journal
