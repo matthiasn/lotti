@@ -48,7 +48,12 @@ class _JournalPageState extends State<JournalPage> {
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
       .toList();
 
-  final List<String> allTypes = _entryTypes.map((e) => e.typeName).toList();
+  final List<String> defaultTypes = [
+    'JournalEntry',
+    'JournalAudio',
+    'JournalImage',
+    'SurveyEntry'
+  ];
   late List<String> types;
   bool starredActive = false;
   bool privateActive = false;
@@ -56,7 +61,7 @@ class _JournalPageState extends State<JournalPage> {
   @override
   void initState() {
     super.initState();
-    types = allTypes;
+    types = defaultTypes;
     stream = _db.watchJournalEntities(
       types: types,
       starredStatuses: [true, false],
@@ -121,7 +126,7 @@ class _JournalPageState extends State<JournalPage> {
                                       ? results
                                           .map((e) => e?.typeName ?? '')
                                           .toList()
-                                      : allTypes;
+                                      : defaultTypes;
 
                                   setState(() {
                                     stream = _db.watchJournalEntities(
