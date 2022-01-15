@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,16 +26,27 @@ import 'database/sync_db.dart';
 final getIt = GetIt.instance;
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  getIt.registerSingleton<JournalDb>(JournalDb());
-  getIt.registerSingleton<SyncDatabase>(SyncDatabase());
-  getIt.registerSingleton<InsightsDb>(InsightsDb());
-  getIt.registerSingleton<VectorClockService>(VectorClockService());
-  getIt.registerSingleton<SyncConfigService>(SyncConfigService());
+    getIt.registerSingleton<JournalDb>(JournalDb());
+    getIt.registerSingleton<SyncDatabase>(SyncDatabase());
+    getIt.registerSingleton<InsightsDb>(InsightsDb());
+    getIt.registerSingleton<VectorClockService>(VectorClockService());
+    getIt.registerSingleton<SyncConfigService>(SyncConfigService());
 
-  initializeDateFormatting();
-  runApp(const LottiApp());
+    initializeDateFormatting();
+
+    FlutterError.onError = (FlutterErrorDetails details) {
+      final InsightsDb _insightsDb = getIt<InsightsDb>();
+      _insightsDb.captureException(details);
+    };
+
+    runApp(const LottiApp());
+  }, (Object error, StackTrace stackTrace) {
+    final InsightsDb _insightsDb = getIt<InsightsDb>();
+    _insightsDb.captureException(error, stackTrace: stackTrace);
+  });
 }
 
 class LottiApp extends StatelessWidget {
