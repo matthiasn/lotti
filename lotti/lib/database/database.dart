@@ -164,6 +164,10 @@ class JournalDb extends _$JournalDb {
     return listConfigFlags().get();
   }
 
+  Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
+    return into(configFlags).insertOnConflictUpdate(configFlag);
+  }
+
   Future<int> getCountImportFlagEntries() async {
     List<int> res = await countImportFlagEntries().get();
     return res.first;

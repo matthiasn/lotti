@@ -57,10 +57,12 @@ class _FlagsPageState extends State<FlagsPage> {
 }
 
 class ConfigFlagCard extends StatelessWidget {
+  final JournalDb _db = getIt<JournalDb>();
+
   final ConfigFlag item;
   final int index;
 
-  const ConfigFlagCard({
+  ConfigFlagCard({
     Key? key,
     required this.item,
     required this.index,
@@ -92,7 +94,9 @@ class ConfigFlagCard extends StatelessWidget {
               CupertinoSwitch(
                 value: item.status,
                 activeColor: AppColors.private,
-                onChanged: (bool status) {},
+                onChanged: (bool status) {
+                  _db.upsertConfigFlag(item.copyWith(status: status));
+                },
               ),
             ],
           ),
