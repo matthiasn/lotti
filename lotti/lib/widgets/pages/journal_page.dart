@@ -154,33 +154,18 @@ class _JournalPageState extends State<JournalPage> {
                               ),
                             ),
                           ),
-                          StreamBuilder<List<ConfigFlag>>(
-                            stream: configFlagsStream,
-                            builder: (
-                              BuildContext context,
-                              AsyncSnapshot<List<ConfigFlag>> snapshot,
-                            ) {
-                              bool visible = false;
-                              snapshot.data?.forEach((ConfigFlag flag) {
-                                if (flag.name == 'private') {
-                                  visible = flag.status;
-                                }
-                              });
-
-                              return Visibility(
-                                visible: visible,
-                                child: CupertinoSwitch(
-                                  value: privateEntriesOnly,
-                                  activeColor: AppColors.private,
-                                  onChanged: (bool value) {
-                                    setState(() {
-                                      privateEntriesOnly = value;
-                                      resetStream();
-                                    });
-                                  },
-                                ),
-                              );
-                            },
+                          Visibility(
+                            visible: showPrivateEntriesSwitch,
+                            child: CupertinoSwitch(
+                              value: privateEntriesOnly,
+                              activeColor: AppColors.private,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  privateEntriesOnly = value;
+                                  resetStream();
+                                });
+                              },
+                            ),
                           ),
                           CupertinoSwitch(
                             value: starredEntriesOnly,
