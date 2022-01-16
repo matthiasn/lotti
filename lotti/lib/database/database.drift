@@ -81,15 +81,15 @@ CREATE TABLE measurable_types (
 
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL UNIQUE,
   status BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (name)
 );
 
 /* Queries ----------------------------------------------------- */
-showPrivateEntries:
-SELECT status
-  FROM config_flags
-  WHERE name = 'private';
+listConfigFlags:
+SELECT *
+  FROM config_flags;
 
 filteredJournal:
 SELECT * FROM journal
