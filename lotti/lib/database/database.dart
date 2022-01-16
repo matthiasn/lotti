@@ -160,6 +160,14 @@ class JournalDb extends _$JournalDb {
     return listConfigFlags().watch();
   }
 
+  Future<void> initConfigFlags() async {
+    into(configFlags).insert(ConfigFlag(
+      name: 'private',
+      description: 'Show private entries?',
+      status: true,
+    ));
+  }
+
   Future<List<ConfigFlag>> getConfigFlags() {
     return listConfigFlags().get();
   }
