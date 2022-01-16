@@ -30,6 +30,7 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     getIt.registerSingleton<JournalDb>(JournalDb());
+    getIt<JournalDb>().initConfigFlags();
     getIt.registerSingleton<SyncDatabase>(SyncDatabase());
     getIt.registerSingleton<InsightsDb>(InsightsDb());
     getIt.registerSingleton<VectorClockService>(VectorClockService());

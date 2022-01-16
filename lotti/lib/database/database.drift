@@ -1,4 +1,3 @@
-/* Journal ----------------------------------------------------- */
 CREATE TABLE journal (
   id TEXT NOT NULL,
   created_at DATETIME NOT NULL,
@@ -57,7 +56,6 @@ ON journal (geohash_string);
 CREATE INDEX idx_journal_geohash_int
 ON journal (geohash_int);
 
-/* Conflicts --------------------------------------------------- */
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
   created_at DATETIME NOT NULL,
@@ -68,7 +66,6 @@ CREATE TABLE conflicts (
   PRIMARY KEY (id)
 );
 
-/* MeasurableTypes --------------------------------------------- */
 CREATE TABLE measurable_types (
   id TEXT NOT NULL,
   unique_name TEXT NOT NULL UNIQUE,
@@ -82,18 +79,23 @@ CREATE TABLE measurable_types (
   PRIMARY KEY (id)
 ) as MeasurableDbEntity;
 
-/* ConfigFlags ------------------------------------------------ */
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL UNIQUE,
   status BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (name)
 );
 
 /* Queries ----------------------------------------------------- */
+listConfigFlags:
+SELECT *
+  FROM config_flags;
+
 filteredJournal:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   ORDER BY date_from DESC
@@ -120,6 +122,7 @@ SELECT * FROM conflicts
 activeMeasurableTypes:
 SELECT * FROM measurable_types
   WHERE deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY unique_name ASC;
 
 measurementsByType:

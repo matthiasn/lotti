@@ -5,6 +5,7 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
+import 'package:lotti/widgets/pages/settings/flags.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
 import 'package:lotti/widgets/pages/settings/measurables.dart';
 import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
@@ -109,6 +110,19 @@ class _SettingsPageState extends State<SettingsPage> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) {
                                   return const ConflictsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
+                          iconData: MdiIcons.flag,
+                          title: 'Flags',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const FlagsPage();
                                 },
                               ),
                             );

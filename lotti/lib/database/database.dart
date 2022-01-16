@@ -156,6 +156,26 @@ class JournalDb extends _$JournalDb {
     return countJournalEntries().watch().map((List<int> res) => res.first);
   }
 
+  Stream<List<ConfigFlag>> watchConfigFlags() {
+    return listConfigFlags().watch();
+  }
+
+  Future<void> initConfigFlags() async {
+    into(configFlags).insert(ConfigFlag(
+      name: 'private',
+      description: 'Show private entries?',
+      status: true,
+    ));
+  }
+
+  Future<List<ConfigFlag>> getConfigFlags() {
+    return listConfigFlags().get();
+  }
+
+  Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
+    return into(configFlags).insertOnConflictUpdate(configFlag);
+  }
+
   Future<int> getCountImportFlagEntries() async {
     List<int> res = await countImportFlagEntries().get();
     return res.first;
