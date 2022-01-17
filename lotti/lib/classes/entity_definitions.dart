@@ -24,6 +24,13 @@ class EntityDefinition with _$EntityDefinition {
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
+  factory EntityDefinition.tagDefinition({
+    required String tag,
+    required bool private,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) = TagDefinition;
+
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);
 }
