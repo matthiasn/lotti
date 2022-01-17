@@ -5,8 +5,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +27,22 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 4;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) {
+        return m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        print('Migration from v$from to v$to');
+        if (to == 4) {
+          await m.createTable(tags);
+        }
+      },
+    );
+  }
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     return into(journal).insertOnConflictUpdate(entry);
@@ -208,9 +223,27 @@ class JournalDb extends _$JournalDb {
         .write(conflict.copyWith(status: ConflictStatus.resolved.index));
   }
 
-  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+  Future<int> upsertMeasurableDataType(
+      MeasurableDataType entityDefinition) async {
     return into(measurableTypes)
         .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
+  }
+
+  Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
+    return into(tags)
+        .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
+  }
+
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+    int linesAffected = await entityDefinition.map(
+      measurableDataType: (MeasurableDataType measurableDataType) async {
+        return upsertMeasurableDataType(measurableDataType);
+      },
+      tagDefinition: (TagDefinition tagDefinition) async {
+        return upsertTagDefinition(tagDefinition);
+      },
+    );
+    return linesAffected;
   }
 }
 

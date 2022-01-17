@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/sync/vector_clock.dart';
 
-part 'measurables.freezed.dart';
-part 'measurables.g.dart';
+part 'entity_definitions.freezed.dart';
+part 'entity_definitions.g.dart';
 
 enum AggregationType { none, dailySum, dailyMax }
 
@@ -23,6 +23,14 @@ class EntityDefinition with _$EntityDefinition {
     bool? favorite,
     AggregationType? aggregationType,
   }) = MeasurableDataType;
+
+  factory EntityDefinition.tagDefinition({
+    required String tag,
+    required bool private,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+  }) = TagDefinition;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/measurables.dart';
 
 import 'database.dart';
 
@@ -70,7 +70,7 @@ List<MeasurableDataType> measurableDataTypeStreamMapper(
   return dbEntities.map((e) => measurableDataType(e)).toList();
 }
 
-MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
+MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   return MeasurableDbEntity(
     id: dataType.id,
     uniqueName: dataType.name,
@@ -81,5 +81,15 @@ MeasurableDbEntity measurableDbEntity(EntityDefinition dataType) {
     status: 0,
     private: dataType.private ?? false,
     deleted: dataType.deletedAt != null,
+  );
+}
+
+TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
+  return TagDefinitionDbEntity(
+    tag: tagDefinition.tag,
+    private: tagDefinition.private,
+    createdAt: tagDefinition.createdAt,
+    updatedAt: tagDefinition.updatedAt,
+    serialized: jsonEncode(tagDefinition),
   );
 }

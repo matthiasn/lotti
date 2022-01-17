@@ -1,11 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
-import 'package:lotti/classes/measurables.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
@@ -38,7 +37,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   void createDefaults() async {
     DateTime now = DateTime.now();
 
-    _db.upsertEntityDefinition(MeasurableDataType(
+    _db.upsertMeasurableDataType(MeasurableDataType(
       id: '9e9e7a62-1e56-4059-a568-12234db7399b',
       createdAt: now,
       updatedAt: now,
@@ -50,7 +49,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       vectorClock: null,
     ));
 
-    _db.upsertEntityDefinition(MeasurableDataType(
+    _db.upsertMeasurableDataType(MeasurableDataType(
       id: 'f2518f33-af1d-4dbe-ae9b-6a05def5d8f9',
       createdAt: now,
       updatedAt: now,

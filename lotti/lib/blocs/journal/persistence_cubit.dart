@@ -8,11 +8,11 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/measurables.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
@@ -501,10 +501,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     }
   }
 
-  Future<int> upsertEntityDefinition(EntityDefinition definition) async {
-    int linesAffected = await _journalDb.upsertEntityDefinition(definition);
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+    int linesAffected =
+        await _journalDb.upsertEntityDefinition(entityDefinition);
     await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
-      entityDefinition: definition,
+      entityDefinition: entityDefinition,
       status: SyncEntryStatus.update,
     ));
     return linesAffected;
