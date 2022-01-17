@@ -25,6 +25,7 @@ class Metadata with _$Metadata {
     required DateTime updatedAt,
     required DateTime dateFrom,
     required DateTime dateTo,
+    List<String>? tags,
     int? utcOffset,
     String? timezone,
     VectorClock? vectorClock,
