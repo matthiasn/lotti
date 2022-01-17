@@ -406,7 +406,7 @@ packages:
       name: device_info_plus_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.0"
+    version: "2.3.0+1"
   device_info_plus_web:
     dependency: transitive
     description:
@@ -721,7 +721,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.0"
+    version: "3.2.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1837,7 +1837,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.3"
+    version: "2.3.6"
   wkt_parser:
     dependency: transitive
     description:
