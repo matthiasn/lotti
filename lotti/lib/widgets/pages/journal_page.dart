@@ -43,6 +43,7 @@ class _JournalPageState extends State<JournalPage> {
   ];
 
   late Stream<List<JournalEntity>> stream;
+  late Stream<List<ConfigFlag>> configFlagsStream;
 
   final List<MultiSelectItem<FilterBy?>> _items = _entryTypes
       .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
@@ -55,18 +56,39 @@ class _JournalPageState extends State<JournalPage> {
     'SurveyEntry'
   ];
   late List<String> types;
-  bool starredActive = false;
-  bool privateActive = false;
+  bool starredEntriesOnly = false;
+  bool privateEntriesOnly = false;
+  bool showPrivateEntriesSwitch = false;
 
   @override
   void initState() {
     super.initState();
     types = defaultTypes;
-    stream = _db.watchJournalEntities(
-      types: types,
-      starredStatuses: [true, false],
-      privateStatuses: [false],
-    );
+    configFlagsStream = _db.watchConfigFlags();
+    configFlagsStream.listen((List<ConfigFlag> configFlags) {
+      setState(() {
+        for (ConfigFlag flag in configFlags) {
+          if (flag.name == 'private') {
+            showPrivateEntriesSwitch = flag.status;
+          }
+        }
+        if (showPrivateEntriesSwitch == false) {
+          privateEntriesOnly = false;
+        }
+      });
+      resetStream();
+    });
+    resetStream();
+  }
+
+  void resetStream() {
+    setState(() {
+      stream = _db.watchJournalEntities(
+        types: types,
+        starredStatuses: starredEntriesOnly ? [true] : [true, false],
+        privateStatuses: privateEntriesOnly ? [true] : [true, false],
+      );
+    });
   }
 
   @override
@@ -127,51 +149,31 @@ class _JournalPageState extends State<JournalPage> {
                                           .map((e) => e?.typeName ?? '')
                                           .toList()
                                       : defaultTypes;
-
-                                  setState(() {
-                                    stream = _db.watchJournalEntities(
-                                      types: types,
-                                      starredStatuses: starredActive
-                                          ? [true]
-                                          : [true, false],
-                                      privateStatuses: privateActive
-                                          ? [true, false]
-                                          : [false],
-                                    );
-                                  });
+                                  resetStream();
                                 },
                               ),
                             ),
                           ),
-                          CupertinoSwitch(
-                            value: privateActive,
-                            activeColor: AppColors.private,
-                            onChanged: (bool value) {
-                              setState(() {
-                                privateActive = value;
-                                stream = _db.watchJournalEntities(
-                                  types: types,
-                                  starredStatuses:
-                                      starredActive ? [true] : [true, false],
-                                  privateStatuses:
-                                      privateActive ? [true, false] : [false],
-                                );
-                              });
-                            },
+                          Visibility(
+                            visible: showPrivateEntriesSwitch,
+                            child: CupertinoSwitch(
+                              value: privateEntriesOnly,
+                              activeColor: AppColors.private,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  privateEntriesOnly = value;
+                                  resetStream();
+                                });
+                              },
+                            ),
                           ),
                           CupertinoSwitch(
-                            value: starredActive,
+                            value: starredEntriesOnly,
                             activeColor: AppColors.starredGold,
                             onChanged: (bool value) {
                               setState(() {
-                                starredActive = value;
-                                stream = _db.watchJournalEntities(
-                                  types: types,
-                                  starredStatuses:
-                                      starredActive ? [true] : [true, false],
-                                  privateStatuses:
-                                      privateActive ? [true, false] : [false],
-                                );
+                                starredEntriesOnly = value;
+                                resetStream();
                               });
                             },
                           ),
