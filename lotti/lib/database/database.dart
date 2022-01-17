@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 1;
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     return into(journal).insertOnConflictUpdate(entry);
