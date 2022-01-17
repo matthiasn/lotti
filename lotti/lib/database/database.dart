@@ -208,9 +208,27 @@ class JournalDb extends _$JournalDb {
         .write(conflict.copyWith(status: ConflictStatus.resolved.index));
   }
 
-  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+  Future<int> upsertMeasurableDataType(
+      MeasurableDataType entityDefinition) async {
     return into(measurableTypes)
         .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
+  }
+
+  Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
+    return into(tags)
+        .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
+  }
+
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+    int linesAffected = await entityDefinition.map(
+      measurableDataType: (MeasurableDataType measurableDataType) async {
+        return upsertMeasurableDataType(measurableDataType);
+      },
+      tagDefinition: (TagDefinition tagDefinition) async {
+        return upsertTagDefinition(tagDefinition);
+      },
+    );
+    return linesAffected;
   }
 }
 

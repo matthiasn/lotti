@@ -86,6 +86,15 @@ CREATE TABLE config_flags (
   PRIMARY KEY (name)
 );
 
+CREATE TABLE tags (
+  tag TEXT NOT NULL UNIQUE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (tag)
+) as TagDefinitionDbEntity;
+
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
 SELECT *

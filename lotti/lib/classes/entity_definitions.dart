@@ -29,6 +29,7 @@ class EntityDefinition with _$EntityDefinition {
     required bool private,
     required DateTime createdAt,
     required DateTime updatedAt,
+    required VectorClock? vectorClock,
   }) = TagDefinition;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>

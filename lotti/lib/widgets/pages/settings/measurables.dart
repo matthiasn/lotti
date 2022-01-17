@@ -37,7 +37,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
   void createDefaults() async {
     DateTime now = DateTime.now();
 
-    _db.upsertEntityDefinition(MeasurableDataType(
+    _db.upsertMeasurableDataType(MeasurableDataType(
       id: '9e9e7a62-1e56-4059-a568-12234db7399b',
       createdAt: now,
       updatedAt: now,
@@ -49,7 +49,7 @@ class _MeasurablesPageState extends State<MeasurablesPage> {
       vectorClock: null,
     ));
 
-    _db.upsertEntityDefinition(MeasurableDataType(
+    _db.upsertMeasurableDataType(MeasurableDataType(
       id: 'f2518f33-af1d-4dbe-ae9b-6a05def5d8f9',
       createdAt: now,
       updatedAt: now,

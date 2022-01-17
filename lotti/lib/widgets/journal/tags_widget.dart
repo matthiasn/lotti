@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/theme.dart';
 
 class TagsWidget extends StatelessWidget {
+  final List<String> tags;
+
   const TagsWidget({
+    required this.tags,
     Key? key,
   }) : super(key: key);
 

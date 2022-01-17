@@ -501,10 +501,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     }
   }
 
-  Future<int> upsertEntityDefinition(EntityDefinition definition) async {
-    int linesAffected = await _journalDb.upsertEntityDefinition(definition);
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+    int linesAffected =
+        await _journalDb.upsertEntityDefinition(entityDefinition);
     await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
-      entityDefinition: definition,
+      entityDefinition: entityDefinition,
       status: SyncEntryStatus.update,
     ));
     return linesAffected;
