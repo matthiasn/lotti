@@ -31,6 +31,14 @@ build_runner:
 watch:
 	flutter pub run build_runner watch --delete-conflicting-outputs
 
+.PHONY: migrate_db
+migrate_db:
+	@echo "Running database migration..."
+	@tput setaf 1
+	@echo "Rename drift_schema_v_REPLACE_ME.json when done!!!"
+	@tput sgr0
+	dart run drift_dev schema dump lib/database/database.dart drift_schemas/drift_schema_v_REPLACE_ME.json
+
 .PHONY: bundle
 bundle:
 	flutter build bundle
