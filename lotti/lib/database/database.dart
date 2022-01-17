@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -36,7 +36,8 @@ class JournalDb extends _$JournalDb {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from == 1 && to == 2) {
+        print('Migration from v$from to v$to');
+        if (to == 4) {
           await m.createTable(tags);
         }
       },
