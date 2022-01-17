@@ -27,7 +27,22 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) {
+        return m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        await m.createAll();
+        if (from == 2 && to == 3) {
+          await m.createAll();
+        }
+      },
+    );
+  }
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
     return into(journal).insertOnConflictUpdate(entry);
