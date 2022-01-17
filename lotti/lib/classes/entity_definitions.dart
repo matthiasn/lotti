@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/sync/vector_clock.dart';
 
-part 'measurables.freezed.dart';
-part 'measurables.g.dart';
+part 'entity_definitions.freezed.dart';
+part 'entity_definitions.g.dart';
 
 enum AggregationType { none, dailySum, dailyMax }
 

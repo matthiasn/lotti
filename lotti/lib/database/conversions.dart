@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/measurables.dart';
 
 import 'database.dart';
 

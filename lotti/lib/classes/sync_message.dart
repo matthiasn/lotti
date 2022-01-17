@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
-import 'journal_entities.dart';
-import 'measurables.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 
 part 'sync_message.freezed.dart';
 part 'sync_message.g.dart';

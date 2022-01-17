@@ -1,13 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/check_list_item.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
-
-import 'check_list_item.dart';
-import 'entry_text.dart';
-import 'measurables.dart';
 
 part 'journal_entities.freezed.dart';
 part 'journal_entities.g.dart';
