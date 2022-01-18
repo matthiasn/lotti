@@ -24,7 +24,7 @@ class EntryDetailHeader extends StatefulWidget {
 }
 
 class _EntryDetailHeaderState extends State<EntryDetailHeader> {
-  bool showDetails = false;
+  bool showDetails = true;
   bool mapVisible = false;
 
   @override
@@ -157,6 +157,18 @@ class EntryInfoRow extends StatelessWidget {
                       .updateJournalEntity(liveEntity, newMeta);
                 },
                 value: liveEntity.meta.private ?? false,
+              ),
+              SwitchRow(
+                label: 'Flagged:',
+                onChanged: (bool value) {
+                  Metadata newMeta = liveEntity.meta.copyWith(
+                    flag: value ? EntryFlag.import : EntryFlag.none,
+                  );
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntity(liveEntity, newMeta);
+                },
+                value: liveEntity.meta.flag == EntryFlag.import,
               ),
               SwitchRow(
                 label: 'Deleted:',

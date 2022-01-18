@@ -45,15 +45,22 @@ class TagsWidget extends StatelessWidget {
             }
           }
 
+          TextEditingController controller = TextEditingController();
+
           return Column(
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
                 child: TypeAheadField(
                   textFieldConfiguration: TextFieldConfiguration(
+                    textCapitalization: TextCapitalization.none,
+                    autocorrect: false,
+                    controller: controller,
                     onSubmitted: (String tag) {
+                      tag = tag.trim();
                       context.read<PersistenceCubit>().addTagDefinition(tag);
                       addTag(tag);
+                      controller.clear();
                     },
                     autofocus: true,
                     style: DefaultTextStyle.of(context)
@@ -73,6 +80,7 @@ class TagsWidget extends StatelessWidget {
                   },
                   onSuggestionSelected: (TagDefinition tagSuggestion) {
                     addTag(tagSuggestion.tag);
+                    controller.clear();
                   },
                 ),
               ),

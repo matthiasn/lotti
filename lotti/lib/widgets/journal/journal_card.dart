@@ -61,6 +61,17 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                 ),
               ),
+              Visibility(
+                visible: item.meta.flag == EntryFlag.import,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Icon(
+                    MdiIcons.flag,
+                    color: AppColors.error,
+                    size: iconSize,
+                  ),
+                ),
+              ),
             ],
           ),
           Padding(
