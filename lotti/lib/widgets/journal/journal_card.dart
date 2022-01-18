@@ -21,8 +21,10 @@ class JournalCardTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<String> tags = item.meta.tags ?? [];
+
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,6 +62,36 @@ class JournalCardTitle extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            child: Wrap(
+                spacing: 3,
+                runSpacing: 2,
+                children: tags
+                    .map(
+                      (String tag) => Padding(
+                        padding: const EdgeInsets.only(bottom: 1.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 1,
+                              horizontal: 4,
+                            ),
+                            color: AppColors.entryBgColor,
+                            child: Text(
+                              tag,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontFamily: 'Oswald',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList()),
           ),
           item.maybeMap(
             quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(

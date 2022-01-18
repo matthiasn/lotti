@@ -66,7 +66,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             geolocation: widget.item.geolocation,
           ),
         ),
-        TagsWidget(tags: []),
+        TagsWidget(item: widget.item),
         widget.item.maybeMap(
           journalAudio: (JournalAudio audio) {
             QuillController _controller =
