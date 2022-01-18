@@ -510,4 +510,17 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     ));
     return linesAffected;
   }
+
+  Future<int> addTagDefinition(String tagString) async {
+    DateTime now = DateTime.now();
+    return await upsertEntityDefinition(
+      TagDefinition(
+        tag: tagString,
+        private: false,
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+  }
 }

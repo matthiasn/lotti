@@ -95,6 +95,12 @@ CREATE TABLE tags (
   PRIMARY KEY (tag)
 ) as TagDefinitionDbEntity;
 
+CREATE INDEX idx_tags_tag
+ON tags (tag);
+
+CREATE INDEX idx_tags_private
+ON tags (private);
+
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
 SELECT *
@@ -149,3 +155,13 @@ SELECT COUNT(*) FROM journal
 countImportFlagEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false AND flag = 1;
+
+allTags:
+SELECT * FROM tags
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
+matchingTags:
+SELECT * FROM tags
+  WHERE tag LIKE :match
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  LIMIT :limit;

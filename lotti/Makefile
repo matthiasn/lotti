@@ -33,6 +33,7 @@ watch:
 
 .PHONY: migrate_db
 migrate_db:
+	@dart pub get
 	@echo "Running database migration..."
 	@tput setaf 1
 	@echo "Rename drift_schema_v_REPLACE_ME.json when done!!!"

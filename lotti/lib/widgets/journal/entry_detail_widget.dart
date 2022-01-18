@@ -6,17 +6,15 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
-import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
+import 'package:lotti/widgets/journal/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
 
@@ -61,66 +59,14 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () {
-                showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  builder: (BuildContext context) {
-                    return EntryDateTimeModal(
-                      item: widget.item,
-                    );
-                  },
-                );
-              },
-              child: Text(
-                df.format(widget.item.meta.dateFrom),
-                style: textStyle,
-              ),
-            ),
-            Visibility(
-              visible: loc != null && loc.longitude != 0,
-              child: TextButton(
-                onPressed: () => setState(() {
-                  mapVisible = !mapVisible;
-                }),
-                child: Text(
-                  '📍 ${formatLatLon(loc?.latitude)}, '
-                  '${formatLatLon(loc?.longitude)}',
-                  style: textStyle,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(MdiIcons.trashCanOutline),
-              iconSize: 24,
-              tooltip: 'Delete',
-              color: AppColors.appBarFgColor,
-              onPressed: () {
-                context
-                    .read<PersistenceCubit>()
-                    .deleteJournalEntity(widget.item);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
+        EntryDetailHeader(item: widget.item),
         Visibility(
           visible: mapVisible,
           child: MapWidget(
             geolocation: widget.item.geolocation,
           ),
         ),
-        TagsWidget(tags: []),
+        TagsWidget(item: widget.item),
         widget.item.maybeMap(
           journalAudio: (JournalAudio audio) {
             QuillController _controller =
