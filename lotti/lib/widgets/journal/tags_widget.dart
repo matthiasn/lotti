@@ -52,7 +52,7 @@ class TagsWidget extends StatelessWidget {
                 child: TypeAheadField(
                   textFieldConfiguration: TextFieldConfiguration(
                     onSubmitted: (String tag) {
-                      db.addTagDefinition(tag);
+                      context.read<PersistenceCubit>().addTagDefinition(tag);
                       addTag(tag);
                     },
                     autofocus: true,

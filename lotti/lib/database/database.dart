@@ -249,21 +249,6 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
   }
 
-  Future<int> addTagDefinition(String tagString) async {
-    DateTime now = DateTime.now();
-    return into(tags).insert(
-      tagDefinitionDbEntity(
-        TagDefinition(
-          tag: tagString,
-          private: false,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      ),
-    );
-  }
-
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     int linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {
