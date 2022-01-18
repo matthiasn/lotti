@@ -24,7 +24,7 @@ class EntryDetailHeader extends StatefulWidget {
 }
 
 class _EntryDetailHeaderState extends State<EntryDetailHeader> {
-  bool showDetails = false;
+  bool showDetails = true;
   bool mapVisible = false;
 
   @override
