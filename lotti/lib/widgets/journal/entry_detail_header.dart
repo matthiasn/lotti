@@ -159,6 +159,18 @@ class EntryInfoRow extends StatelessWidget {
                 value: liveEntity.meta.private ?? false,
               ),
               SwitchRow(
+                label: 'Flagged:',
+                onChanged: (bool value) {
+                  Metadata newMeta = liveEntity.meta.copyWith(
+                    flag: value ? EntryFlag.import : EntryFlag.none,
+                  );
+                  context
+                      .read<PersistenceCubit>()
+                      .updateJournalEntity(liveEntity, newMeta);
+                },
+                value: liveEntity.meta.flag == EntryFlag.import,
+              ),
+              SwitchRow(
                 label: 'Deleted:',
                 onChanged: (bool value) {
                   if (value) {
