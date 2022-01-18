@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -39,6 +39,11 @@ class JournalDb extends _$JournalDb {
         print('Migration from v$from to v$to');
         if (to == 4) {
           await m.createTable(tags);
+        }
+        if (to == 5) {
+          print('Creating indices in tags table');
+          await m.createIndex(idxTagsTag);
+          await m.createIndex(idxTagsPrivate);
         }
       },
     );
@@ -218,6 +223,16 @@ class JournalDb extends _$JournalDb {
     return conflictsByStatus(status.index, limit).watch();
   }
 
+  Future<List<TagDefinition>> getMatchingTags(
+    String match, {
+    int limit = 10,
+  }) async {
+    debugPrint('getMatchingTags: $match');
+    return (await matchingTags('$match%', limit).get())
+        .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
+        .toList();
+  }
+
   Future<int> resolveConflict(Conflict conflict) {
     return (update(conflicts)..where((t) => t.id.equals(conflict.id)))
         .write(conflict.copyWith(status: ConflictStatus.resolved.index));
@@ -232,6 +247,21 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
     return into(tags)
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
+  }
+
+  Future<int> addTagDefinition(String tagString) async {
+    DateTime now = DateTime.now();
+    return into(tags).insert(
+      tagDefinitionDbEntity(
+        TagDefinition(
+          tag: tagString,
+          private: false,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      ),
+    );
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

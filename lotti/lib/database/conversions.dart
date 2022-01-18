@@ -93,3 +93,7 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
     serialized: jsonEncode(tagDefinition),
   );
 }
+
+TagDefinition fromTagDefinitionDbEntity(TagDefinitionDbEntity dbEntity) {
+  return TagDefinition.fromJson(json.decode(dbEntity.serialized));
+}
