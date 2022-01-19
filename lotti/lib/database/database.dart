@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -37,13 +37,13 @@ class JournalDb extends _$JournalDb {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         print('Migration from v$from to v$to');
-        if (to == 6) {
-          print('Creating tag_definitions table and indices');
-          await m.createTable(tagDefinitions);
-          await m.createIndex(idxTagDefinitionsId);
-          await m.createIndex(idxTagDefinitionsTag);
-          await m.createIndex(idxTagDefinitionsPrivate);
-        }
+
+        print('Creating tag_definitions table and indices');
+        await m.createTable(tagDefinitions);
+        await m.createIndex(idxTagDefinitionsId);
+        await m.createIndex(idxTagDefinitionsTag);
+        await m.createIndex(idxTagDefinitionsPrivate);
+
         print('Deleting redundant tags table');
         await m.deleteTable('tags');
       },

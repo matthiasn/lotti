@@ -97,13 +97,13 @@ CREATE TABLE tag_definitions (
 ) as TagDefinitionDbEntity;
 
 CREATE INDEX idx_tag_definitions_id
-ON tags (id);
+ON tag_definitions (id);
 
 CREATE INDEX idx_tag_definitions_tag
-ON tags (tag);
+ON tag_definitions (tag);
 
 CREATE INDEX idx_tag_definitions_private
-ON tags (private);
+ON tag_definitions (private);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
