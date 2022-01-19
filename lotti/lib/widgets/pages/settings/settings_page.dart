@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
 import 'package:lotti/widgets/pages/settings/flags.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
@@ -129,6 +132,19 @@ class _SettingsPageState extends State<SettingsPage> {
                                 },
                               ),
                             );
+                          },
+                        ),
+                        Button(
+                          'migrate tags',
+                          onPressed: () async {
+                            final JournalDb _db = getIt<JournalDb>();
+                            List<DeprecatedTagDefinitionDbEntity> tags =
+                                await _db.getDeprecatedTags();
+                            tags.forEach((el) {
+                              context
+                                  .read<PersistenceCubit>()
+                                  .addTagDefinition(el.tag);
+                            });
                           },
                         ),
                       ],

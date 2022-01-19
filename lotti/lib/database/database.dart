@@ -235,9 +235,13 @@ class JournalDb extends _$JournalDb {
     int limit = 10,
   }) async {
     debugPrint('getMatchingTags: $match');
-    return (await matchingTags('%$match%', limit).get())
+    return (await matchingTagDefinitions('%$match%', limit).get())
         .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
         .toList();
+  }
+
+  Future<List<DeprecatedTagDefinitionDbEntity>> getDeprecatedTags() async {
+    return allTags().get();
   }
 
   Future<int> resolveConflict(Conflict conflict) {
@@ -252,7 +256,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
-    return into(tags)
+    return into(tagDefinitions)
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
   }
 

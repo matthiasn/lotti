@@ -84,9 +84,9 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   );
 }
 
-DeprecatedTagDefinitionDbEntity tagDefinitionDbEntity(
-    TagDefinition tagDefinition) {
-  return DeprecatedTagDefinitionDbEntity(
+TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
+  return TagDefinitionDbEntity(
+    id: tagDefinition.id,
     tag: tagDefinition.tag,
     private: tagDefinition.private,
     createdAt: tagDefinition.createdAt,
@@ -95,7 +95,6 @@ DeprecatedTagDefinitionDbEntity tagDefinitionDbEntity(
   );
 }
 
-TagDefinition fromTagDefinitionDbEntity(
-    DeprecatedTagDefinitionDbEntity dbEntity) {
+TagDefinition fromTagDefinitionDbEntity(TagDefinitionDbEntity dbEntity) {
   return TagDefinition.fromJson(json.decode(dbEntity.serialized));
 }
