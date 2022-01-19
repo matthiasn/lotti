@@ -160,6 +160,10 @@ countImportFlagEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false AND flag = 1;
 
+allTagDefinitions:
+SELECT * FROM tag_definitions
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
 matchingTagDefinitions:
 SELECT * FROM tag_definitions
   WHERE tag LIKE :match

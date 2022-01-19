@@ -224,6 +224,10 @@ class JournalDb extends _$JournalDb {
     return conflictsByStatus(status.index, limit).watch();
   }
 
+  Stream<List<TagDefinition>> watchTags() {
+    return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
+  }
+
   Future<List<TagDefinition>> getMatchingTags(
     String match, {
     int limit = 10,
