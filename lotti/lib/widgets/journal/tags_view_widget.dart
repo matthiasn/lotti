@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:provider/src/provider.dart';
 
 class TagsViewWidget extends StatelessWidget {
   final TagsService tagsService = getIt<TagsService>();
@@ -39,61 +41,46 @@ class TagsViewWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Column(
         children: [
-          Wrap(
-            spacing: 3,
-            runSpacing: 2,
-            children: tagNames
-                .map(
-                  (String tag) => Padding(
-                    padding: const EdgeInsets.only(bottom: 1.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 1,
-                          horizontal: 4,
-                        ),
-                        color: Colors.white,
-                        child: Text(
-                          tag,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Oswald',
+          GestureDetector(
+            onTap: () {
+              List<String> tagIds = tagsFromTagNames.map((e) => e.id).toList();
+              debugPrint('tagIds: $tagIds');
+              Metadata newMeta = item.meta.copyWith(
+                tagIds: tagIds,
+                tags: null,
+              );
+              context
+                  .read<PersistenceCubit>()
+                  .updateJournalEntity(item, newMeta);
+            },
+            child: Wrap(
+              spacing: 3,
+              runSpacing: 2,
+              children: tagsFromTagNames
+                  .map(
+                    (TagDefinition tagDefinition) => Padding(
+                      padding: const EdgeInsets.only(bottom: 1.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 1,
+                            horizontal: 4,
+                          ),
+                          color: AppColors.error,
+                          child: Text(
+                            tagDefinition.tag,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontFamily: 'Oswald',
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                )
-                .toList(),
-          ),
-          Wrap(
-            spacing: 3,
-            runSpacing: 2,
-            children: tagsFromTagNames
-                .map(
-                  (TagDefinition tagDefinition) => Padding(
-                    padding: const EdgeInsets.only(bottom: 1.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 1,
-                          horizontal: 4,
-                        ),
-                        color: AppColors.error,
-                        child: Text(
-                          tagDefinition.tag,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Oswald',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
+                  )
+                  .toList(),
+            ),
           ),
           Wrap(
             spacing: 3,
