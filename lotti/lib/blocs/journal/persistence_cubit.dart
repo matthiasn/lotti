@@ -515,6 +515,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     DateTime now = DateTime.now();
     return await upsertEntityDefinition(
       TagDefinition(
+        id: uuid.v1(),
         tag: tagString.trim(),
         private: false,
         createdAt: now,

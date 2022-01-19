@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -44,6 +44,13 @@ class JournalDb extends _$JournalDb {
           print('Creating indices in tags table');
           await m.createIndex(idxTagsTag);
           await m.createIndex(idxTagsPrivate);
+        }
+        if (to == 6) {
+          print('Creating tag_definitions table and indices');
+          await m.createTable(tagDefinitions);
+          await m.createIndex(idxTagDefinitionsId);
+          await m.createIndex(idxTagDefinitionsTag);
+          await m.createIndex(idxTagDefinitionsPrivate);
         }
       },
     );

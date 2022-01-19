@@ -25,6 +25,7 @@ class EntityDefinition with _$EntityDefinition {
   }) = MeasurableDataType;
 
   factory EntityDefinition.tagDefinition({
+    required String id,
     required String tag,
     required bool private,
     required DateTime createdAt,
