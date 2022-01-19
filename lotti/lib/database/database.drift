@@ -86,21 +86,6 @@ CREATE TABLE config_flags (
   PRIMARY KEY (name)
 );
 
-CREATE TABLE tags (
-  tag TEXT NOT NULL UNIQUE,
-  private BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at DATETIME NOT NULL,
-  updated_at DATETIME NOT NULL,
-  serialized TEXT NOT NULL,
-  PRIMARY KEY (tag)
-) as DeprecatedTagDefinitionDbEntity;
-
-CREATE INDEX idx_tags_tag
-ON tags (tag);
-
-CREATE INDEX idx_tags_private
-ON tags (private);
-
 CREATE TABLE tag_definitions (
   id TEXT NOT NULL UNIQUE,
   tag TEXT NOT NULL UNIQUE,
@@ -174,9 +159,6 @@ SELECT COUNT(*) FROM journal
 countImportFlagEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false AND flag = 1;
-
-allTags:
-SELECT * FROM tags;
 
 matchingTagDefinitions:
 SELECT * FROM tag_definitions

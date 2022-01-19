@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -37,14 +37,6 @@ class JournalDb extends _$JournalDb {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         print('Migration from v$from to v$to');
-        if (to == 4) {
-          await m.createTable(tags);
-        }
-        if (to == 5) {
-          print('Creating indices in tags table');
-          await m.createIndex(idxTagsTag);
-          await m.createIndex(idxTagsPrivate);
-        }
         if (to == 6) {
           print('Creating tag_definitions table and indices');
           await m.createTable(tagDefinitions);
@@ -52,6 +44,8 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxTagDefinitionsTag);
           await m.createIndex(idxTagDefinitionsPrivate);
         }
+        print('Deleting redundant tags table');
+        await m.deleteTable('tags');
       },
     );
   }
@@ -238,10 +232,6 @@ class JournalDb extends _$JournalDb {
     return (await matchingTagDefinitions('%$match%', limit).get())
         .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
         .toList();
-  }
-
-  Future<List<DeprecatedTagDefinitionDbEntity>> getDeprecatedTags() async {
-    return allTags().get();
   }
 
   Future<int> resolveConflict(Conflict conflict) {
