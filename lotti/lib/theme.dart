@@ -43,8 +43,7 @@ TextStyle inputStyle = TextStyle(
 
 TextStyle textStyle = TextStyle(
   color: AppColors.entryTextColor,
-  fontWeight: FontWeight.bold,
-  fontFamily: 'Lato',
+  fontFamily: 'Oswald',
   fontSize: 14.0,
 );
 

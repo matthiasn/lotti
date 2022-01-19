@@ -87,6 +87,7 @@ class TagsWidget extends StatelessWidget {
                           fontFamily: 'Oswald',
                           height: 1.2,
                           color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
                           fontSize: 20.0,
                         ),
                       ),
