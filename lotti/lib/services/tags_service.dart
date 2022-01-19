@@ -25,7 +25,11 @@ class TagsService {
     });
   }
 
-  TagDefinition? getTag(String id) {
+  TagDefinition? getTagById(String id) {
     return tagsById[id];
+  }
+
+  TagDefinition? getTagByName(String name) {
+    return tagsByName[name];
   }
 }
