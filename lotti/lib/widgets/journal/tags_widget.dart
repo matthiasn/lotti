@@ -63,9 +63,11 @@ class TagsWidget extends StatelessWidget {
                       controller.clear();
                     },
                     autofocus: true,
-                    style: DefaultTextStyle.of(context)
-                        .style
-                        .copyWith(color: AppColors.entryTextColor),
+                    style: DefaultTextStyle.of(context).style.copyWith(
+                          color: AppColors.entryTextColor,
+                          fontFamily: 'Oswald',
+                          fontSize: 20.0,
+                        ),
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                     ),
@@ -73,9 +75,22 @@ class TagsWidget extends StatelessWidget {
                   suggestionsCallback: (String pattern) async {
                     return db.getMatchingTags(pattern);
                   },
+                  suggestionsBoxDecoration: SuggestionsBoxDecoration(
+                    color: AppColors.headerBgColor,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   itemBuilder: (context, TagDefinition tagDefinition) {
                     return ListTile(
-                      title: Text(tagDefinition.tag),
+                      title: Text(
+                        tagDefinition.tag,
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          height: 1.2,
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 20.0,
+                        ),
+                      ),
                     );
                   },
                   onSuggestionSelected: (TagDefinition tagSuggestion) {

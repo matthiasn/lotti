@@ -24,7 +24,6 @@ class EntryDetailHeader extends StatefulWidget {
 }
 
 class _EntryDetailHeaderState extends State<EntryDetailHeader> {
-  bool showDetails = true;
   bool mapVisible = false;
 
   @override
@@ -78,7 +77,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               ),
             ),
             IconButton(
-              icon: Icon(showDetails
+              icon: Icon(mapVisible
                   ? MdiIcons.chevronDoubleUp
                   : MdiIcons.chevronDoubleDown),
               iconSize: 24,
@@ -86,15 +85,11 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
               color: AppColors.appBarFgColor,
               onPressed: () {
                 setState(() {
-                  showDetails = !showDetails;
+                  mapVisible = !mapVisible;
                 });
               },
             ),
           ],
-        ),
-        Visibility(
-          visible: showDetails,
-          child: EntryInfoRow(entityId: widget.item.meta.id),
         ),
         Visibility(
           visible: mapVisible,
@@ -102,6 +97,7 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
             geolocation: widget.item.geolocation,
           ),
         ),
+        EntryInfoRow(entityId: widget.item.meta.id),
       ],
     );
   }
@@ -136,6 +132,7 @@ class EntryInfoRow extends StatelessWidget {
             children: [
               SwitchRow(
                 label: 'Starred:',
+                activeColor: AppColors.starredGold,
                 onChanged: (bool value) {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     starred: value,
@@ -148,6 +145,7 @@ class EntryInfoRow extends StatelessWidget {
               ),
               SwitchRow(
                 label: 'Private:',
+                activeColor: AppColors.error,
                 onChanged: (bool value) {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     private: value,
@@ -160,6 +158,7 @@ class EntryInfoRow extends StatelessWidget {
               ),
               SwitchRow(
                 label: 'Flagged:',
+                activeColor: AppColors.error,
                 onChanged: (bool value) {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     flag: value ? EntryFlag.import : EntryFlag.none,
@@ -172,6 +171,7 @@ class EntryInfoRow extends StatelessWidget {
               ),
               SwitchRow(
                 label: 'Deleted:',
+                activeColor: AppColors.error,
                 onChanged: (bool value) {
                   if (value) {
                     context
@@ -194,22 +194,28 @@ class SwitchRow extends StatelessWidget {
     required this.label,
     required this.onChanged,
     required this.value,
+    required this.activeColor,
   }) : super(key: key);
 
   final String label;
   final void Function(bool)? onChanged;
   final bool value;
+  final Color activeColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
+      padding: const EdgeInsets.only(right: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(label, style: textStyle),
-          CupertinoSwitch(value: value, onChanged: onChanged),
+          CupertinoSwitch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: activeColor,
+          ),
         ],
       ),
     );
