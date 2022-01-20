@@ -103,7 +103,13 @@ class OutboxCubit extends Cubit<OutboxState> {
     return (randomNumber < 0.25) ? '${path}Nope' : path;
   }
 
+  Future<List<OutboxItem>> getNextItems() async {
+    return await _syncDatabase.oldestOutboxItems(10);
+  }
+
   void sendNext({ImapClient? imapClient}) async {
+    _insightsDb.captureEvent('sendNext()', domain: 'OUTBOX_CUBIT');
+
     if (state is OutboxDisabled) return;
 
     final transaction = _insightsDb.startTransaction('sendNext()', 'task');
@@ -120,8 +126,7 @@ class OutboxCubit extends Cubit<OutboxState> {
         bool isConnected = _connectivityResult != ConnectivityResult.none;
 
         if (isConnected && !sendMutex.isLocked) {
-          List<OutboxItem> unprocessed =
-              await _syncDatabase.oldestOutboxItems(10);
+          List<OutboxItem> unprocessed = await getNextItems();
           if (unprocessed.isNotEmpty) {
             sendMutex.acquire();
 
@@ -173,12 +178,14 @@ class OutboxCubit extends Cubit<OutboxState> {
                   updatedAt: Value(DateTime.now()),
                 ),
               );
-              Timer(const Duration(seconds: 1), () => sendNext());
+              stopPolling();
             } finally {
               if (sendMutex.isLocked) {
                 sendMutex.release();
               }
             }
+          } else {
+            stopPolling();
           }
         }
       } else {
@@ -194,15 +201,31 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void startPolling() async {
+    _insightsDb.captureEvent('startPolling()', domain: 'OUTBOX_CUBIT');
     sendNext();
     timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      sendNext();
+      _connectivityResult = await Connectivity().checkConnectivity();
+      _insightsDb.captureEvent('_connectivityResult: $_connectivityResult',
+          domain: 'OUTBOX_CUBIT');
+
+      List<OutboxItem> unprocessed = await getNextItems();
+
+      if (_connectivityResult == ConnectivityResult.none ||
+          unprocessed.isEmpty) {
+        timer.cancel();
+        _insightsDb.captureEvent('timer cancelled', domain: 'OUTBOX_CUBIT');
+      } else {
+        sendNext();
+      }
     });
   }
 
   void stopPolling() async {
+    _insightsDb.captureEvent('stopPolling()', domain: 'OUTBOX_CUBIT');
+
     if (timer != null) {
       timer!.cancel();
+      timer = null;
     }
   }
 
