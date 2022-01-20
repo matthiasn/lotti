@@ -90,7 +90,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   }
 
   void reportConnectivity() async {
-    _insightsDb.captureEvent(_connectivityResult);
+    _insightsDb.captureEvent('reportConnectivity: $_connectivityResult');
   }
 
   // Inserts a fault 25% of the time, where an exception would
@@ -111,6 +111,8 @@ class OutboxCubit extends Cubit<OutboxState> {
       _connectivityResult = await Connectivity().checkConnectivity();
       if (_connectivityResult == ConnectivityResult.none) {
         reportConnectivity();
+        stopPolling();
+        return;
       }
 
       if (_b64Secret != null) {
@@ -187,7 +189,6 @@ class OutboxCubit extends Cubit<OutboxState> {
       if (sendMutex.isLocked) {
         sendMutex.release();
       }
-      sendNext();
     }
     await transaction.finish();
   }

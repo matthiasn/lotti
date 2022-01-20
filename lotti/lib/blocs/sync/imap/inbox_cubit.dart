@@ -128,7 +128,6 @@ class InboxImapCubit extends Cubit<ImapState> {
       }
     } catch (e, stackTrace) {
       await _insightsDb.captureException(e, stackTrace: stackTrace);
-      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
 
     await transaction.finish();
@@ -137,10 +136,12 @@ class InboxImapCubit extends Cubit<ImapState> {
   void _startPeriodicFetching() async {
     timer?.cancel();
     _fetchInbox();
-    timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      _fetchInbox();
-      emit(ImapState.online(lastUpdate: DateTime.now()));
-    });
+    timer = Timer.periodic(
+      const Duration(seconds: 30),
+      (timer) async {
+        _fetchInbox();
+      },
+    );
   }
 
   void _stopPeriodicFetching() async {
@@ -199,14 +200,12 @@ class InboxImapCubit extends Cubit<ImapState> {
 
           emit(ImapState.online(lastUpdate: DateTime.now()));
         }
-      } on MailException catch (e) {
+      } on MailException catch (e, stackTrace) {
         debugPrint('High level API failed with $e');
-
-        emit(ImapState.failed(error: 'failed: $e ${e.details} ${e.message}'));
-        await _insightsDb.captureException(e);
-      } catch (e) {
+        await _insightsDb.captureException(e, stackTrace: stackTrace);
+      } catch (e, stackTrace) {
         debugPrint('Exception $e');
-        emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
+        await _insightsDb.captureException(e, stackTrace: stackTrace);
       } finally {
         imapClient?.disconnect();
         if (fetchMutex.isLocked) {
