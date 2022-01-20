@@ -5,12 +5,14 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:provider/src/provider.dart';
 
 class TagsWidget extends StatelessWidget {
   final JournalEntity item;
   final JournalDb db = getIt<JournalDb>();
+  final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
 
   TagsWidget({
@@ -31,13 +33,21 @@ class TagsWidget extends StatelessWidget {
             return const SizedBox.shrink();
           }
 
-          List<String> tags = liveEntity.meta.tags ?? [];
+          List<String> tagIds = liveEntity.meta.tagIds ?? [];
+          List<TagDefinition> tagsFromTagIds = [];
 
-          void addTag(String tag) {
-            List<String> existingTags = liveEntity.meta.tags ?? [];
-            if (!existingTags.contains(tag)) {
+          for (String tagId in tagIds) {
+            TagDefinition? tagDefinition = tagsService.getTagById(tagId);
+            if (tagDefinition != null) {
+              tagsFromTagIds.add(tagDefinition);
+            }
+          }
+
+          void addTagId(String tagId) {
+            List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+            if (!existingTagIds.contains(tagId)) {
               Metadata newMeta = liveEntity.meta.copyWith(
-                tags: [...existingTags, tag],
+                tagIds: [...existingTagIds, tagId],
               );
               context
                   .read<PersistenceCubit>()
@@ -56,10 +66,12 @@ class TagsWidget extends StatelessWidget {
                     textCapitalization: TextCapitalization.none,
                     autocorrect: false,
                     controller: controller,
-                    onSubmitted: (String tag) {
+                    onSubmitted: (String tag) async {
                       tag = tag.trim();
-                      context.read<PersistenceCubit>().addTagDefinition(tag);
-                      addTag(tag);
+                      String tagId = await context
+                          .read<PersistenceCubit>()
+                          .addTagDefinition(tag);
+                      addTagId(tagId);
                       controller.clear();
                     },
                     autofocus: true,
@@ -94,7 +106,7 @@ class TagsWidget extends StatelessWidget {
                     );
                   },
                   onSuggestionSelected: (TagDefinition tagSuggestion) {
-                    addTag(tagSuggestion.tag);
+                    addTagId(tagSuggestion.id);
                     controller.clear();
                   },
                 ),
@@ -104,8 +116,8 @@ class TagsWidget extends StatelessWidget {
                 child: Wrap(
                     spacing: 4,
                     runSpacing: 4,
-                    children: tags
-                        .map((String tag) => ClipRRect(
+                    children: tagsFromTagIds
+                        .map((TagDefinition tagDefinition) => ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: Container(
                                 padding: const EdgeInsets.only(
@@ -115,7 +127,7 @@ class TagsWidget extends StatelessWidget {
                                 ),
                                 color: AppColors.entryBgColor,
                                 child: Text(
-                                  tag,
+                                  tagDefinition.tag,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontFamily: 'Oswald',

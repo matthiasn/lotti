@@ -86,6 +86,7 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
 
 TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
   return TagDefinitionDbEntity(
+    id: tagDefinition.id,
     tag: tagDefinition.tag,
     private: tagDefinition.private,
     createdAt: tagDefinition.createdAt,
@@ -96,4 +97,9 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
 
 TagDefinition fromTagDefinitionDbEntity(TagDefinitionDbEntity dbEntity) {
   return TagDefinition.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<TagDefinition> tagDefinitionsStreamMapper(
+    List<TagDefinitionDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromTagDefinitionDbEntity(e)).toList();
 }

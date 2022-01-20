@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -37,14 +37,15 @@ class JournalDb extends _$JournalDb {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         print('Migration from v$from to v$to');
-        if (to == 4) {
-          await m.createTable(tags);
-        }
-        if (to == 5) {
-          print('Creating indices in tags table');
-          await m.createIndex(idxTagsTag);
-          await m.createIndex(idxTagsPrivate);
-        }
+
+        print('Creating tag_definitions table and indices');
+        await m.createTable(tagDefinitions);
+        await m.createIndex(idxTagDefinitionsId);
+        await m.createIndex(idxTagDefinitionsTag);
+        await m.createIndex(idxTagDefinitionsPrivate);
+
+        print('Deleting redundant tags table');
+        await m.deleteTable('tags');
       },
     );
   }
@@ -223,12 +224,16 @@ class JournalDb extends _$JournalDb {
     return conflictsByStatus(status.index, limit).watch();
   }
 
+  Stream<List<TagDefinition>> watchTags() {
+    return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
+  }
+
   Future<List<TagDefinition>> getMatchingTags(
     String match, {
     int limit = 10,
   }) async {
     debugPrint('getMatchingTags: $match');
-    return (await matchingTags('%$match%', limit).get())
+    return (await matchingTagDefinitions('%$match%', limit).get())
         .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
         .toList();
   }
@@ -245,7 +250,7 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
-    return into(tags)
+    return into(tagDefinitions)
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
   }
 

@@ -86,7 +86,8 @@ CREATE TABLE config_flags (
   PRIMARY KEY (name)
 );
 
-CREATE TABLE tags (
+CREATE TABLE tag_definitions (
+  id TEXT NOT NULL UNIQUE,
   tag TEXT NOT NULL UNIQUE,
   private BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL,
@@ -95,11 +96,14 @@ CREATE TABLE tags (
   PRIMARY KEY (tag)
 ) as TagDefinitionDbEntity;
 
-CREATE INDEX idx_tags_tag
-ON tags (tag);
+CREATE INDEX idx_tag_definitions_id
+ON tag_definitions (id);
 
-CREATE INDEX idx_tags_private
-ON tags (private);
+CREATE INDEX idx_tag_definitions_tag
+ON tag_definitions (tag);
+
+CREATE INDEX idx_tag_definitions_private
+ON tag_definitions (private);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
@@ -156,12 +160,12 @@ countImportFlagEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false AND flag = 1;
 
-allTags:
-SELECT * FROM tags
-  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+allTagDefinitions:
+SELECT * FROM tag_definitions
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
-matchingTags:
-SELECT * FROM tags
+matchingTagDefinitions:
+SELECT * FROM tag_definitions
   WHERE tag LIKE :match
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   LIMIT :limit;

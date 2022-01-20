@@ -9,6 +9,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -74,36 +75,7 @@ class JournalCardTitle extends StatelessWidget {
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2.0),
-            child: Wrap(
-                spacing: 3,
-                runSpacing: 2,
-                children: tags
-                    .map(
-                      (String tag) => Padding(
-                        padding: const EdgeInsets.only(bottom: 1.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 1,
-                              horizontal: 4,
-                            ),
-                            color: AppColors.entryBgColor,
-                            child: Text(
-                              tag,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontFamily: 'Oswald',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList()),
-          ),
+          TagsViewWidget(item: item),
           item.maybeMap(
             quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
               cumulativeQuantityData: (qd) => EntryText(
