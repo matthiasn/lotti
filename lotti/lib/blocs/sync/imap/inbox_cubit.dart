@@ -276,7 +276,9 @@ class InboxImapCubit extends Cubit<ImapState> {
         _observingClient!.eventBus
             .on<MailLoadEvent>()
             .listen((MailLoadEvent event) async {
-          _fetchInbox();
+          if (!fetchMutex.isLocked) {
+            _fetchInbox();
+          }
         });
 
         _observingClient!.eventBus
