@@ -33,9 +33,7 @@ class TagsWidget extends StatelessWidget {
             return const SizedBox.shrink();
           }
 
-          List<String> tags = liveEntity.meta.tags ?? [];
           List<String> tagIds = liveEntity.meta.tagIds ?? [];
-
           List<TagDefinition> tagsFromTagIds = [];
 
           for (String tagId in tagIds) {
@@ -106,7 +104,7 @@ class TagsWidget extends StatelessWidget {
                     );
                   },
                   onSuggestionSelected: (TagDefinition tagSuggestion) {
-                    addTag(tagSuggestion.tag);
+                    addTag(tagSuggestion.id);
                     controller.clear();
                   },
                 ),
