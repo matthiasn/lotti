@@ -111,33 +111,6 @@ class TagsWidget extends StatelessWidget {
                   },
                 ),
               ),
-              // TODO: remove after migration
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: tags
-                        .map((String tag) => ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Container(
-                                padding: const EdgeInsets.only(
-                                  left: 8,
-                                  right: 8,
-                                  bottom: 2,
-                                ),
-                                color: AppColors.error,
-                                child: Text(
-                                  tag,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Oswald',
-                                  ),
-                                ),
-                              ),
-                            ))
-                        .toList()),
-              ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Wrap(
