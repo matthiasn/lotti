@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -20,8 +19,6 @@ class TagsService {
         tagsById[tagDefinition.id] = tagDefinition;
         tagsByName[tagDefinition.tag] = tagDefinition;
       });
-      debugPrint('$tagsById');
-      debugPrint('$tagsByName');
     });
   }
 
