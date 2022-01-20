@@ -162,7 +162,7 @@ SELECT COUNT(*) FROM journal
 
 allTagDefinitions:
 SELECT * FROM tag_definitions
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 matchingTagDefinitions:
 SELECT * FROM tag_definitions
