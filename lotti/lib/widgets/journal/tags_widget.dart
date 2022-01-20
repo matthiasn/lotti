@@ -85,7 +85,7 @@ class TagsWidget extends StatelessWidget {
                     ),
                   ),
                   suggestionsCallback: (String pattern) async {
-                    return db.getMatchingTags(pattern);
+                    return db.getMatchingTags(pattern.trim());
                   },
                   suggestionsBoxDecoration: SuggestionsBoxDecoration(
                     color: AppColors.headerBgColor,

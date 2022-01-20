@@ -232,7 +232,6 @@ class JournalDb extends _$JournalDb {
     String match, {
     int limit = 10,
   }) async {
-    debugPrint('getMatchingTags: $match');
     return (await matchingTagDefinitions('%$match%', limit).get())
         .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
         .toList();
