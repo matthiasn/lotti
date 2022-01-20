@@ -79,6 +79,27 @@ CREATE TABLE measurable_types (
   PRIMARY KEY (id)
 ) as MeasurableDbEntity;
 
+CREATE TABLE habit_definitions (
+  id TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  active BOOLEAN NOT NULL,
+  PRIMARY KEY (id)
+) as HabitDefinitionDbEntity;
+
+CREATE INDEX idx_habit_definitions_id
+ON habit_definitions (id);
+
+CREATE INDEX idx_habit_definitions_name
+ON habit_definitions (name);
+
+CREATE INDEX idx_habit_definitions_private
+ON habit_definitions (private);
+
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL UNIQUE,
@@ -162,6 +183,10 @@ SELECT COUNT(*) FROM journal
 
 allTagDefinitions:
 SELECT * FROM tag_definitions
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+
+allHabitDefinitions:
+SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 matchingTagDefinitions:

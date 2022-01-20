@@ -56,13 +56,14 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime createdAt,
     required DateTime updatedAt,
     required String name,
-    required String displayName,
     required String description,
     required HabitSchedule habitSchedule,
-    required int version,
+    required String version,
+    required DateTime activeFrom,
+    required DateTime activeUntil,
     required VectorClock? vectorClock,
     DateTime? deletedAt,
-    bool? inactive,
+    bool? active,
     bool? private,
   }) = HabitDefinition;
 

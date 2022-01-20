@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -37,6 +37,12 @@ class JournalDb extends _$JournalDb {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('Migration from v$from to v$to');
+
+        debugPrint('Creating habit_definitions table and indices');
+        await m.createTable(habitDefinitions);
+        await m.createIndex(idxHabitDefinitionsId);
+        await m.createIndex(idxHabitDefinitionsName);
+        await m.createIndex(idxHabitDefinitionsPrivate);
 
         debugPrint('Creating tag_definitions table and indices');
         await m.createTable(tagDefinitions);
@@ -226,6 +232,10 @@ class JournalDb extends _$JournalDb {
 
   Stream<List<TagDefinition>> watchTags() {
     return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
+  }
+
+  Stream<List<HabitDefinition>> watchHabitDefinitions() {
+    return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
   }
 
   Future<List<TagDefinition>> getMatchingTags(

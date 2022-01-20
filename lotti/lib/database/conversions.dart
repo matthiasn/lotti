@@ -103,3 +103,12 @@ List<TagDefinition> tagDefinitionsStreamMapper(
     List<TagDefinitionDbEntity> dbEntities) {
   return dbEntities.map((e) => fromTagDefinitionDbEntity(e)).toList();
 }
+
+HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {
+  return HabitDefinition.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<HabitDefinition> habitDefinitionsStreamMapper(
+    List<HabitDefinitionDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromHabitDefinitionDbEntity(e)).toList();
+}
