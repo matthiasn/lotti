@@ -285,7 +285,13 @@ class InboxImapCubit extends Cubit<ImapState> {
             .listen((MailConnectionLostEvent event) async {
           _insightsDb.captureEvent(event);
 
-          await _observingClient!.resume();
+          try {
+            await _observingClient!.resume();
+          } catch (e, stackTrace) {
+            await _insightsDb.captureException(e, stackTrace: stackTrace);
+            _observingClient?.disconnect();
+            _observingClient = null;
+          }
 
           _insightsDb.captureEvent(
             'isConnected: ${_observingClient!.isConnected} '
