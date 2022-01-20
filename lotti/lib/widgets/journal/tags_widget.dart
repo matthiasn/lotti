@@ -5,12 +5,14 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:provider/src/provider.dart';
 
 class TagsWidget extends StatelessWidget {
   final JournalEntity item;
   final JournalDb db = getIt<JournalDb>();
+  final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
 
   TagsWidget({
@@ -32,12 +34,22 @@ class TagsWidget extends StatelessWidget {
           }
 
           List<String> tags = liveEntity.meta.tags ?? [];
+          List<String> tagIds = liveEntity.meta.tagIds ?? [];
 
-          void addTag(String tag) {
-            List<String> existingTags = liveEntity.meta.tags ?? [];
-            if (!existingTags.contains(tag)) {
+          List<TagDefinition> tagsFromTagIds = [];
+
+          for (String tagId in tagIds) {
+            TagDefinition? tagDefinition = tagsService.getTagById(tagId);
+            if (tagDefinition != null) {
+              tagsFromTagIds.add(tagDefinition);
+            }
+          }
+
+          void addTag(String tagId) {
+            List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+            if (!existingTagIds.contains(tagId)) {
               Metadata newMeta = liveEntity.meta.copyWith(
-                tags: [...existingTags, tag],
+                tagIds: [...existingTagIds, tagId],
               );
               context
                   .read<PersistenceCubit>()
@@ -99,6 +111,7 @@ class TagsWidget extends StatelessWidget {
                   },
                 ),
               ),
+              // TODO: remove after migration
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Wrap(
@@ -113,9 +126,35 @@ class TagsWidget extends StatelessWidget {
                                   right: 8,
                                   bottom: 2,
                                 ),
-                                color: AppColors.entryBgColor,
+                                color: AppColors.error,
                                 child: Text(
                                   tag,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Oswald',
+                                  ),
+                                ),
+                              ),
+                            ))
+                        .toList()),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: tagsFromTagIds
+                        .map((TagDefinition tagDefinition) => ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Container(
+                                padding: const EdgeInsets.only(
+                                  left: 8,
+                                  right: 8,
+                                  bottom: 2,
+                                ),
+                                color: AppColors.entryBgColor,
+                                child: Text(
+                                  tagDefinition.tag,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontFamily: 'Oswald',

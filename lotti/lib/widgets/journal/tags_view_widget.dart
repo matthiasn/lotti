@@ -30,6 +30,7 @@ class TagsViewWidget extends StatelessWidget {
         tagsFromTagNames.add(tagDefinition);
       }
     }
+
     for (String tagId in tagIds) {
       TagDefinition? tagDefinition = tagsService.getTagById(tagId);
       if (tagDefinition != null) {
@@ -41,6 +42,7 @@ class TagsViewWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Column(
         children: [
+          // TODO: remove after migration
           GestureDetector(
             onTap: () {
               List<String> tagIds = tagsFromTagNames.map((e) => e.id).toList();
