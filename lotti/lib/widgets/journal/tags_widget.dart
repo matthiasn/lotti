@@ -43,7 +43,7 @@ class TagsWidget extends StatelessWidget {
             }
           }
 
-          void addTag(String tagId) {
+          void addTagId(String tagId) {
             List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
             if (!existingTagIds.contains(tagId)) {
               Metadata newMeta = liveEntity.meta.copyWith(
@@ -66,10 +66,12 @@ class TagsWidget extends StatelessWidget {
                     textCapitalization: TextCapitalization.none,
                     autocorrect: false,
                     controller: controller,
-                    onSubmitted: (String tag) {
+                    onSubmitted: (String tag) async {
                       tag = tag.trim();
-                      context.read<PersistenceCubit>().addTagDefinition(tag);
-                      addTag(tag);
+                      String tagId = await context
+                          .read<PersistenceCubit>()
+                          .addTagDefinition(tag);
+                      addTagId(tagId);
                       controller.clear();
                     },
                     autofocus: true,
@@ -104,7 +106,7 @@ class TagsWidget extends StatelessWidget {
                     );
                   },
                   onSuggestionSelected: (TagDefinition tagSuggestion) {
-                    addTag(tagSuggestion.id);
+                    addTagId(tagSuggestion.id);
                     controller.clear();
                   },
                 ),

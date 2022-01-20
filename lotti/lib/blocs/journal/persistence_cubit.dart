@@ -511,11 +511,12 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return linesAffected;
   }
 
-  Future<int> addTagDefinition(String tagString) async {
+  Future<String> addTagDefinition(String tagString) async {
     DateTime now = DateTime.now();
-    return await upsertEntityDefinition(
+    String id = uuid.v1();
+    await upsertEntityDefinition(
       TagDefinition(
-        id: uuid.v1(),
+        id: id,
         tag: tagString.trim(),
         private: false,
         createdAt: now,
@@ -523,5 +524,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         vectorClock: null,
       ),
     );
+    return id;
   }
 }
