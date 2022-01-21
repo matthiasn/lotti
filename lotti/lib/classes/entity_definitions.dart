@@ -62,9 +62,9 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime activeFrom,
     required DateTime activeUntil,
     required VectorClock? vectorClock,
+    required bool active,
+    required bool private,
     DateTime? deletedAt,
-    bool? active,
-    bool? private,
   }) = HabitDefinition;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>

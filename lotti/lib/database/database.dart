@@ -38,20 +38,26 @@ class JournalDb extends _$JournalDb {
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('Migration from v$from to v$to');
 
-        debugPrint('Creating habit_definitions table and indices');
-        await m.createTable(habitDefinitions);
-        await m.createIndex(idxHabitDefinitionsId);
-        await m.createIndex(idxHabitDefinitionsName);
-        await m.createIndex(idxHabitDefinitionsPrivate);
+        () async {
+          debugPrint('Creating habit_definitions table and indices');
+          await m.createTable(habitDefinitions);
+          await m.createIndex(idxHabitDefinitionsId);
+          await m.createIndex(idxHabitDefinitionsName);
+          await m.createIndex(idxHabitDefinitionsPrivate);
+        }();
 
-        debugPrint('Creating tag_definitions table and indices');
-        await m.createTable(tagDefinitions);
-        await m.createIndex(idxTagDefinitionsId);
-        await m.createIndex(idxTagDefinitionsTag);
-        await m.createIndex(idxTagDefinitionsPrivate);
+        () async {
+          debugPrint('Creating tag_definitions table and indices');
+          await m.createTable(tagDefinitions);
+          await m.createIndex(idxTagDefinitionsId);
+          await m.createIndex(idxTagDefinitionsTag);
+          await m.createIndex(idxTagDefinitionsPrivate);
+        }();
 
-        debugPrint('Deleting redundant tags table');
-        await m.deleteTable('tags');
+        () async {
+          debugPrint('Deleting redundant tags table');
+          await m.deleteTable('tags');
+        }();
       },
     );
   }
@@ -263,6 +269,11 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
   }
 
+  Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
+    return into(habitDefinitions)
+        .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  }
+
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     int linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {
@@ -271,8 +282,8 @@ class JournalDb extends _$JournalDb {
       tagDefinition: (TagDefinition tagDefinition) async {
         return upsertTagDefinition(tagDefinition);
       },
-      habitDefinition: (HabitDefinition value) {
-        return 0;
+      habitDefinition: (HabitDefinition habitDefinition) {
+        return upsertHabitDefinition(habitDefinition);
       },
     );
     return linesAffected;

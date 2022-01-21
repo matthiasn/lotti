@@ -84,14 +84,27 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   );
 }
 
-TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tagDefinition) {
+TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
   return TagDefinitionDbEntity(
-    id: tagDefinition.id,
-    tag: tagDefinition.tag,
-    private: tagDefinition.private,
-    createdAt: tagDefinition.createdAt,
-    updatedAt: tagDefinition.updatedAt,
-    serialized: jsonEncode(tagDefinition),
+    id: tag.id,
+    tag: tag.tag,
+    private: tag.private,
+    createdAt: tag.createdAt,
+    updatedAt: tag.updatedAt,
+    serialized: jsonEncode(tag),
+  );
+}
+
+HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
+  return HabitDefinitionDbEntity(
+    id: habit.id,
+    createdAt: habit.createdAt,
+    updatedAt: habit.updatedAt,
+    serialized: jsonEncode(habit),
+    private: habit.private,
+    deleted: habit.deletedAt != null,
+    active: habit.active,
+    name: habit.name,
   );
 }
 
