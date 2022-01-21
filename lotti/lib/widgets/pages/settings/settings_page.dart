@@ -7,7 +7,7 @@ import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
 import 'package:lotti/widgets/pages/settings/flags_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
-import 'package:lotti/widgets/pages/settings/measurables.dart';
+import 'package:lotti/widgets/pages/settings/measurables_page.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
 import 'package:lotti/widgets/pages/settings/settings_card.dart';

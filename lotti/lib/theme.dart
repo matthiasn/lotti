@@ -63,3 +63,10 @@ TextStyle labelStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontSize: 16.0,
 );
+
+TextStyle formLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  height: 1.6,
+  fontFamily: 'Lato',
+  fontSize: 20,
+);
