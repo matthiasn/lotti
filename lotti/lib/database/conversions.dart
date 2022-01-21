@@ -92,6 +92,7 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
     createdAt: tag.createdAt,
     updatedAt: tag.updatedAt,
     serialized: jsonEncode(tag),
+    deleted: tag.deletedAt != null,
   );
 }
 
