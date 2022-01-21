@@ -13,27 +13,29 @@ Uuid uuid = const Uuid();
 
 String folderForJournalEntity(JournalEntity journalEntity) {
   return journalEntity.map(
+    habitCompletion: (_) => 'habit_completion',
+    journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text_entries',
     journalImage: (_) => 'images',
-    journalAudio: (_) => 'audio',
     loggedTime: (_) => 'logged_time',
-    task: (_) => 'tasks',
+    measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'surveys',
-    measurement: (_) => 'measurement',
+    task: (_) => 'tasks',
   );
 }
 
 String typeSuffix(JournalEntity journalEntity) {
   return journalEntity.map(
+    habitCompletion: (_) => 'habit_completion',
+    journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text',
     journalImage: (_) => 'image',
-    journalAudio: (_) => 'audio',
     loggedTime: (_) => 'logged_time',
-    task: (_) => 'task',
+    measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'survey',
-    measurement: (_) => 'measurement',
+    task: (_) => 'task',
   );
 }
 

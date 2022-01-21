@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -54,8 +53,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   @override
   Widget build(BuildContext context) {
-    Geolocation? loc = widget.item.geolocation;
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[

@@ -132,6 +132,13 @@ class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = MeasurementEntry;
 
+  const factory JournalEntity.habitCompletion({
+    required Metadata meta,
+    required HabitCompletionData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = HabitCompletionEntry;
+
   const factory JournalEntity.survey({
     required Metadata meta,
     required SurveyData data,

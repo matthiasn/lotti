@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -36,16 +36,33 @@ class JournalDb extends _$JournalDb {
         return m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        print('Migration from v$from to v$to');
+        debugPrint('Migration from v$from to v$to');
 
-        print('Creating tag_definitions table and indices');
-        await m.createTable(tagDefinitions);
-        await m.createIndex(idxTagDefinitionsId);
-        await m.createIndex(idxTagDefinitionsTag);
-        await m.createIndex(idxTagDefinitionsPrivate);
+        () async {
+          debugPrint('Creating habit_definitions table and indices');
+          await m.createTable(habitDefinitions);
+          await m.createIndex(idxHabitDefinitionsId);
+          await m.createIndex(idxHabitDefinitionsName);
+          await m.createIndex(idxHabitDefinitionsPrivate);
+        }();
 
-        print('Deleting redundant tags table');
-        await m.deleteTable('tags');
+        () async {
+          debugPrint('Creating tag_definitions table and indices');
+          await m.createTable(tagDefinitions);
+          await m.createIndex(idxTagDefinitionsId);
+          await m.createIndex(idxTagDefinitionsTag);
+          await m.createIndex(idxTagDefinitionsPrivate);
+        }();
+
+        () async {
+          debugPrint('Deleting redundant tags table');
+          await m.deleteTable('tags');
+        }();
+
+        () async {
+          debugPrint('Add missing column in tag_definitions table');
+          await m.addColumn(tagDefinitions, tagDefinitions.deleted);
+        }();
       },
     );
   }
@@ -228,6 +245,10 @@ class JournalDb extends _$JournalDb {
     return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
   }
 
+  Stream<List<HabitDefinition>> watchHabitDefinitions() {
+    return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
+  }
+
   Future<List<TagDefinition>> getMatchingTags(
     String match, {
     int limit = 10,
@@ -253,6 +274,11 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
   }
 
+  Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
+    return into(habitDefinitions)
+        .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  }
+
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     int linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {
@@ -260,6 +286,9 @@ class JournalDb extends _$JournalDb {
       },
       tagDefinition: (TagDefinition tagDefinition) async {
         return upsertTagDefinition(tagDefinition);
+      },
+      habitDefinition: (HabitDefinition habitDefinition) {
+        return upsertHabitDefinition(habitDefinition);
       },
     );
     return linesAffected;
