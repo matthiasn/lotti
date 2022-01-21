@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:provider/src/provider.dart';
 
 class TagsPage extends StatefulWidget {
   const TagsPage({Key? key}) : super(key: key);
@@ -93,8 +95,8 @@ class TagCard extends StatelessWidget {
               CupertinoSwitch(
                 value: tagDefinition.private,
                 activeColor: AppColors.private,
-                onChanged: (bool private) {
-                  _db.upsertTagDefinition(
+                onChanged: (bool private) async {
+                  await context.read<PersistenceCubit>().upsertEntityDefinition(
                       tagDefinition.copyWith(private: private));
                 },
               ),
