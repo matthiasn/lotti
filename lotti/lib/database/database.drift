@@ -113,6 +113,7 @@ CREATE TABLE tag_definitions (
   private BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
+  deleted BOOLEAN DEFAULT FALSE,
   serialized TEXT NOT NULL,
   PRIMARY KEY (tag)
 ) as TagDefinitionDbEntity;

@@ -27,7 +27,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -57,6 +57,11 @@ class JournalDb extends _$JournalDb {
         () async {
           debugPrint('Deleting redundant tags table');
           await m.deleteTable('tags');
+        }();
+
+        () async {
+          debugPrint('Add missing column in tag_definitions table');
+          await m.addColumn(tagDefinitions, tagDefinitions.deleted);
         }();
       },
     );
