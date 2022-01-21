@@ -7,7 +7,6 @@ class TagsService {
   late final Stream<List<TagDefinition>> stream;
 
   Map<String, TagDefinition> tagsById = {};
-  Map<String, TagDefinition> tagsByName = {};
 
   TagsService() {
     db = getIt<JournalDb>();
@@ -17,16 +16,11 @@ class TagsService {
       tagsById.clear();
       for (TagDefinition tagDefinition in tagDefinitions) {
         tagsById[tagDefinition.id] = tagDefinition;
-        tagsByName[tagDefinition.tag] = tagDefinition;
       }
     });
   }
 
   TagDefinition? getTagById(String id) {
     return tagsById[id];
-  }
-
-  TagDefinition? getTagByName(String name) {
-    return tagsByName[name];
   }
 }
