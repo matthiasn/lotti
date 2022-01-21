@@ -270,8 +270,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
-    return into(tagDefinitions)
-        .insertOnConflictUpdate(tagDefinitionDbEntity(tagDefinition));
+    final TagDefinitionDbEntity dbEntity = tagDefinitionDbEntity(tagDefinition);
+    // would not update with insertOnConflictUpdate
+    return into(tagDefinitions).insert(dbEntity, mode: InsertMode.replace);
   }
 
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {

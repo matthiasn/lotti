@@ -167,11 +167,13 @@ class _DetailRouteState extends State<DetailRoute> {
                   TagDefinition tagDefinition = widget.tagDefinition.copyWith(
                     tag: '${formData!['tag']}'.trim(),
                     private: formData['private'],
+                    updatedAt: DateTime.now(),
                   );
 
                   context
                       .read<PersistenceCubit>()
                       .upsertEntityDefinition(tagDefinition);
+
                   Navigator.pop(context);
                 }
               },
@@ -209,7 +211,7 @@ class _DetailRouteState extends State<DetailRoute> {
                             FormTextField(
                               initialValue: widget.tagDefinition.tag,
                               labelText: 'Tag',
-                              name: 'name',
+                              name: 'tag',
                             ),
                             FormBuilderSwitch(
                               name: 'private',
