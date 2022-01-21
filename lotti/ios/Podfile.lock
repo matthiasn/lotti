@@ -33,14 +33,16 @@ PODS:
     - Flutter
   - flutter_secure_storage (3.3.1):
     - Flutter
-  - flutter_sound (8.4.2):
+  - flutter_sound (8.5.0):
     - Flutter
-    - flutter_sound_core (= 8.4.2)
+    - flutter_sound_core (= 8.5.0)
     - mobile-ffmpeg-audio (= 4.4.LTS)
-  - flutter_sound_core (8.4.2)
+  - flutter_sound_core (8.5.0)
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
+  - gallery_saver (0.0.1):
+    - Flutter
   - health (1.0.4):
     - Flutter
   - image_picker (0.0.1):
@@ -124,6 +126,7 @@ DEPENDENCIES:
   - flutter_native_timezone (from `.symlinks/plugins/flutter_native_timezone/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
+  - gallery_saver (from `.symlinks/plugins/gallery_saver/ios`)
   - health (from `.symlinks/plugins/health/ios`)
   - image_picker (from `.symlinks/plugins/image_picker/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/ios`)
@@ -181,6 +184,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   flutter_sound:
     :path: ".symlinks/plugins/flutter_sound/ios"
+  gallery_saver:
+    :path: ".symlinks/plugins/gallery_saver/ios"
   health:
     :path: ".symlinks/plugins/health/ios"
   image_picker:
@@ -222,9 +227,10 @@ SPEC CHECKSUMS:
   flutter_local_notifications: 0c0b1ae97e741e1521e4c1629a459d04b9aec743
   flutter_native_timezone: 5f05b2de06c9776b4cc70e1839f03de178394d22
   flutter_secure_storage: 7953c38a04c3fdbb00571bcd87d8e3b5ceb9daec
-  flutter_sound: db1364f901b96c17e00101c831994487186afdf4
-  flutter_sound_core: 55a1665e7ef8cdb95ab9dd06581c746dd9c96e48
+  flutter_sound: ba7daf658dea78e9f18b79657338bfc222489f4f
+  flutter_sound_core: d9396f10752a0df9aa3197f4c431d62d934918cc
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  gallery_saver: 9fc173c9f4fcc48af53b2a9ebea1b643255be542
   health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
   image_picker: 9aa50e1d8cdacdbed739e925b7eea16d014367e6
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa

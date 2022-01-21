@@ -4,6 +4,8 @@ import 'package:tinycolor2/tinycolor2.dart';
 class AppColors {
   static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
+  static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
+  static Color privateTagColor = Colors.red;
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
   static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
@@ -60,4 +62,11 @@ TextStyle labelStyleLarger = textStyleLarger.copyWith(
 TextStyle labelStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontSize: 16.0,
+);
+
+TextStyle formLabelStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  height: 1.6,
+  fontFamily: 'Oswald',
+  fontSize: 20,
 );

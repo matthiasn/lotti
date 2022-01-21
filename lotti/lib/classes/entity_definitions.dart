@@ -49,6 +49,7 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    DateTime? deletedAt,
   }) = TagDefinition;
 
   factory EntityDefinition.habitDefinition({

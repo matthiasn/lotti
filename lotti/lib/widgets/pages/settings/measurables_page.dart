@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 const double iconSize = 24.0;
@@ -322,13 +322,19 @@ class _DetailRouteState extends State<DetailRoute> {
                             FormBuilderSwitch(
                               name: 'private',
                               initialValue: item.private,
-                              title: Text('Private: ', style: labelStyle),
+                              title: Text(
+                                'Private: ',
+                                style: formLabelStyle,
+                              ),
                               activeColor: AppColors.private,
                             ),
                             FormBuilderSwitch(
                               name: 'favorite',
                               initialValue: item.favorite,
-                              title: Text('Favorite: ', style: labelStyle),
+                              title: Text(
+                                'Favorite: ',
+                                style: formLabelStyle,
+                              ),
                               activeColor: AppColors.starredGold,
                             ),
                           ],
@@ -369,39 +375,3 @@ class _DetailRouteState extends State<DetailRoute> {
     });
   }
 }
-
-class FormTextField extends StatelessWidget {
-  const FormTextField({
-    Key? key,
-    required this.initialValue,
-    required this.name,
-    required this.labelText,
-  }) : super(key: key);
-
-  final String initialValue;
-  final String name;
-  final String labelText;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormBuilderTextField(
-      name: name,
-      minLines: 1,
-      maxLines: 3,
-      initialValue: initialValue,
-      validator: FormBuilderValidators.required(context),
-      style: labelStyle,
-      decoration: InputDecoration(
-        labelText: labelText,
-        labelStyle: TextStyle(color: AppColors.entryTextColor, fontSize: 16),
-      ),
-    );
-  }
-}
-
-TextStyle labelStyle = TextStyle(
-  color: AppColors.entryTextColor,
-  height: 1.6,
-  fontFamily: 'Lato',
-  fontSize: 20,
-);

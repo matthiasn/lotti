@@ -5,14 +5,15 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
-import 'package:lotti/widgets/pages/settings/flags.dart';
+import 'package:lotti/widgets/pages/settings/flags_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
-import 'package:lotti/widgets/pages/settings/measurables.dart';
+import 'package:lotti/widgets/pages/settings/measurables_page.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
 import 'package:lotti/widgets/pages/settings/settings_card.dart';
 import 'package:lotti/widgets/pages/settings/settings_icon.dart';
 import 'package:lotti/widgets/pages/settings/sync_settings.dart';
+import 'package:lotti/widgets/pages/settings/tags_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -53,6 +54,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: ListView(
                       children: [
+                        SettingsCard(
+                          icon: const SettingsIcon(MdiIcons.tag),
+                          title: 'Tags',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const TagsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
                         SettingsCard(
                           icon: const SettingsIcon(Icons.sync),
                           title: 'Synchronization',
