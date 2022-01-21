@@ -125,7 +125,9 @@ class TagsWidget extends StatelessWidget {
                                   right: 8,
                                   bottom: 2,
                                 ),
-                                color: AppColors.entryBgColor,
+                                color: tagDefinition.private
+                                    ? AppColors.private
+                                    : AppColors.tagColor,
                                 child: Text(
                                   tagDefinition.tag,
                                   style: const TextStyle(

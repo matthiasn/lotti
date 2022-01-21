@@ -36,7 +36,7 @@ class _FlagsPageState extends State<TagsPage> {
         List<TagDefinition> items = snapshot.data ?? [];
 
         return Scaffold(
-          appBar: const VersionAppBar(title: 'Tags'),
+          appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
           backgroundColor: AppColors.bodyBgColor,
           body: ListView(
             shrinkWrap: true,

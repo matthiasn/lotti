@@ -55,6 +55,19 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: ListView(
                       children: [
                         SettingsCard(
+                          icon: const SettingsIcon(MdiIcons.tag),
+                          title: 'Tags',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const TagsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
                           icon: const SettingsIcon(Icons.sync),
                           title: 'Synchronization',
                           onTap: () {
@@ -127,19 +140,6 @@ class _SettingsPageState extends State<SettingsPage> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) {
                                   return const FlagsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.tag),
-                          title: 'Tags',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const TagsPage();
                                 },
                               ),
                             );
