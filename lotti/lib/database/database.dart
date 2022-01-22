@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -27,11 +28,14 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
+      beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
       onCreate: (Migrator m) {
         return m.createAll();
       },
@@ -55,8 +59,10 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Deleting redundant tags table');
-          await m.deleteTable('tags');
+          debugPrint('Creating journal_tags table and indices');
+          await m.createTable(journalTags);
+          await m.createIndex(idxJournalTagsJournalId);
+          await m.createIndex(idxJournalTagsTagDefinitionId);
         }();
 
         () async {
@@ -112,6 +118,22 @@ class JournalDb extends _$JournalDb {
       return status;
     }
     return VclockStatus.b_gt_a;
+  }
+
+  Future<void> addTagLinks(JournalEntity journalEntity) async {
+    String id = journalEntity.meta.id;
+    List<String> tagIds = journalEntity.meta.tagIds ?? [];
+    debugPrint('addTagLinks: $id $tagIds');
+
+    await deleteJournalTagLinksForId(id);
+
+    for (String tagId in tagIds) {
+      into(journalTags).insert(JournalTagLink(
+        id: uuid.v1(),
+        journalId: id,
+        tagDefinitionId: tagId,
+      ));
+    }
   }
 
   Future<int> updateJournalEntity(JournalEntity updated) async {
@@ -192,6 +214,10 @@ class JournalDb extends _$JournalDb {
 
   Stream<int> watchJournalCount() {
     return countJournalEntries().watch().map((List<int> res) => res.first);
+  }
+
+  Future<int> getJournalCount() async {
+    return (await countJournalEntries().get()).first;
   }
 
   Stream<List<ConfigFlag>> watchConfigFlags() {
@@ -293,6 +319,23 @@ class JournalDb extends _$JournalDb {
       },
     );
     return linesAffected;
+  }
+
+  Future<void> recreateJournalTagLinks() async {
+    deleteJournalTagLinks();
+    int count = await getJournalCount();
+    int pageSize = 100;
+    int pages = (count / pageSize).ceil();
+
+    for (int page = 0; page <= pages; page++) {
+      List<JournalDbEntity> dbEntities =
+          await orderedJournal(pageSize, page * pageSize).get();
+
+      List<JournalEntity> entries = entityStreamMapper(dbEntities);
+      for (JournalEntity entry in entries) {
+        await addTagLinks(entry);
+      }
+    }
   }
 }
 
