@@ -3,16 +3,17 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 
 class TagsService {
-  late final JournalDb db;
-  late final Stream<List<TagDefinition>> stream;
+  late final JournalDb _db;
+  late final Stream<List<TagDefinition>> _stream;
+  List<String> _clipboard = [];
 
   Map<String, TagDefinition> tagsById = {};
 
   TagsService() {
-    db = getIt<JournalDb>();
-    stream = db.watchTags();
+    _db = getIt<JournalDb>();
+    _stream = _db.watchTags();
 
-    stream.listen((List<TagDefinition> tagDefinitions) {
+    _stream.listen((List<TagDefinition> tagDefinitions) {
       tagsById.clear();
       for (TagDefinition tagDefinition in tagDefinitions) {
         tagsById[tagDefinition.id] = tagDefinition;
@@ -22,5 +23,13 @@ class TagsService {
 
   TagDefinition? getTagById(String id) {
     return tagsById[id];
+  }
+
+  List<String> getClipboard() {
+    return _clipboard;
+  }
+
+  void setClipboard(List<String> tagIds) {
+    _clipboard = tagIds;
   }
 }
