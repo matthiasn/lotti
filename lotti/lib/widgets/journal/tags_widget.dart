@@ -53,11 +53,18 @@ class TagsWidget extends StatelessWidget {
                 }
               }
 
-              void addTagId(String tagId) {
+              void addTagIds(List<String> addedTagIds) {
                 List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-                if (!existingTagIds.contains(tagId)) {
+                List<String> tagIds = [...existingTagIds];
+                for (String tagId in addedTagIds) {
+                  if (!tagIds.contains(tagId)) {
+                    tagIds.add(tagId);
+                  }
+                }
+
+                if (existingTagIds != tagIds) {
                   Metadata newMeta = liveEntity.meta.copyWith(
-                    tagIds: [...existingTagIds, tagId],
+                    tagIds: tagIds,
                   );
                   context
                       .read<PersistenceCubit>()
@@ -82,56 +89,118 @@ class TagsWidget extends StatelessWidget {
               return Column(
                 children: [
                   Padding(
-                    padding:
-                        const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-                    child: TypeAheadField(
-                      textFieldConfiguration: TextFieldConfiguration(
-                        textCapitalization: TextCapitalization.none,
-                        autocorrect: false,
-                        controller: controller,
-                        onSubmitted: (String tag) async {
-                          tag = tag.trim();
-                          String tagId = await context
-                              .read<PersistenceCubit>()
-                              .addTagDefinition(tag);
-                          addTagId(tagId);
-                          controller.clear();
-                        },
-                        autofocus: true,
-                        style: DefaultTextStyle.of(context).style.copyWith(
-                              color: AppColors.entryTextColor,
-                              fontFamily: 'Oswald',
-                              fontSize: 20.0,
-                            ),
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      suggestionsCallback: (String pattern) async {
-                        return db.getMatchingTags(pattern.trim());
-                      },
-                      suggestionsBoxDecoration: SuggestionsBoxDecoration(
-                        color: AppColors.headerBgColor,
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      itemBuilder: (context, TagDefinition tagDefinition) {
-                        return ListTile(
-                          title: Text(
-                            tagDefinition.tag,
-                            style: TextStyle(
-                              fontFamily: 'Oswald',
-                              height: 1.2,
-                              color: AppColors.entryTextColor,
-                              fontWeight: FontWeight.normal,
-                              fontSize: 20.0,
-                            ),
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 8,
+                      top: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            'Tags:',
+                            style: formLabelStyle,
                           ),
-                        );
-                      },
-                      onSuggestionSelected: (TagDefinition tagSuggestion) {
-                        addTagId(tagSuggestion.id);
-                        controller.clear();
-                      },
+                        ),
+                        Expanded(
+                          child: TypeAheadField(
+                            textFieldConfiguration: TextFieldConfiguration(
+                              textCapitalization: TextCapitalization.none,
+                              autocorrect: false,
+                              controller: controller,
+                              onSubmitted: (String tag) async {
+                                tag = tag.trim();
+                                String tagId = await context
+                                    .read<PersistenceCubit>()
+                                    .addTagDefinition(tag);
+                                addTagIds([tagId]);
+                                controller.clear();
+                              },
+                              autofocus: true,
+                              style:
+                                  DefaultTextStyle.of(context).style.copyWith(
+                                        color: AppColors.entryTextColor,
+                                        fontFamily: 'Oswald',
+                                        fontSize: 20.0,
+                                      ),
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.0)),
+                              ),
+                            ),
+                            suggestionsCallback: (String pattern) async {
+                              return db.getMatchingTags(pattern.trim());
+                            },
+                            suggestionsBoxDecoration: SuggestionsBoxDecoration(
+                              color: AppColors.headerBgColor,
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            itemBuilder:
+                                (context, TagDefinition tagDefinition) {
+                              return ListTile(
+                                title: Text(
+                                  tagDefinition.tag,
+                                  style: TextStyle(
+                                    fontFamily: 'Oswald',
+                                    height: 1.2,
+                                    color: AppColors.entryTextColor,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 20.0,
+                                  ),
+                                ),
+                              );
+                            },
+                            onSuggestionSelected:
+                                (TagDefinition tagSuggestion) {
+                              addTagIds([tagSuggestion.id]);
+                              controller.clear();
+                            },
+                          ),
+                        ),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 24.0,
+                                top: 16.0,
+                                bottom: 16.0,
+                              ),
+                              child: Icon(
+                                MdiIcons.contentCopy,
+                                color: AppColors.entryTextColor,
+                              ),
+                            ),
+                            onTap: () {
+                              if (liveEntity.meta.tagIds != null) {
+                                tagsService
+                                    .setClipboard(liveEntity.meta.tagIds!);
+                              }
+                            },
+                          ),
+                        ),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                top: 16.0,
+                                bottom: 16.0,
+                              ),
+                              child: Icon(
+                                MdiIcons.contentPaste,
+                                color: AppColors.entryTextColor,
+                              ),
+                            ),
+                            onTap: () {
+                              addTagIds(tagsService.getClipboard());
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   Padding(
