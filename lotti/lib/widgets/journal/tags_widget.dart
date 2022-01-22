@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/src/provider.dart';
 
 class TagsWidget extends StatelessWidget {
@@ -62,6 +63,18 @@ class TagsWidget extends StatelessWidget {
                       .read<PersistenceCubit>()
                       .updateJournalEntity(liveEntity, newMeta);
                 }
+              }
+
+              void removeTagId(String tagId) {
+                List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+                context.read<PersistenceCubit>().updateJournalEntity(
+                      liveEntity,
+                      liveEntity.meta.copyWith(
+                        tagIds: existingTagIds
+                            .where((String id) => (id != tagId))
+                            .toList(),
+                      ),
+                    );
               }
 
               TextEditingController controller = TextEditingController();
@@ -132,18 +145,35 @@ class TagsWidget extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.only(
                                       left: 8,
-                                      right: 8,
+                                      right: 2,
                                       bottom: 2,
                                     ),
                                     color: tagDefinition.private
                                         ? AppColors.private
                                         : AppColors.tagColor,
-                                    child: Text(
-                                      tagDefinition.tag,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontFamily: 'Oswald',
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          tagDefinition.tag,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontFamily: 'Oswald',
+                                          ),
+                                        ),
+                                        MouseRegion(
+                                          cursor: SystemMouseCursors.click,
+                                          child: GestureDetector(
+                                            child: const Icon(
+                                              MdiIcons.close,
+                                              size: 20,
+                                            ),
+                                            onTap: () {
+                                              removeTagId(tagDefinition.id);
+                                            },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ))
