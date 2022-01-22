@@ -212,3 +212,7 @@ SELECT * FROM tag_definitions
   WHERE tag LIKE :match
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   LIMIT :limit;
+
+deleteJournalTagLinksForId:
+DELETE FROM journal_tags
+  WHERE journal_id = :id;

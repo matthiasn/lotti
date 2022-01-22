@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/sync/vector_clock.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -117,6 +118,22 @@ class JournalDb extends _$JournalDb {
       return status;
     }
     return VclockStatus.b_gt_a;
+  }
+
+  Future<void> addTagLinks(JournalEntity journalEntity) async {
+    String id = journalEntity.meta.id;
+    List<String> tagIds = journalEntity.meta.tagIds ?? [];
+    debugPrint('addTagLinks: $id $tagIds');
+
+    await deleteJournalTagLinksForId(id);
+
+    for (String tagId in tagIds) {
+      into(journalTags).insert(JournalTagLink(
+        id: uuid.v1(),
+        journalId: id,
+        tagDefinitionId: tagId,
+      ));
+    }
   }
 
   Future<int> updateJournalEntity(JournalEntity updated) async {

@@ -291,6 +291,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       int? res = await _journalDb.addJournalEntity(journalEntity);
       bool saved = (res != 0);
       await saveJournalEntityJson(journalEntity);
+      await _journalDb.addTagLinks(journalEntity);
 
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
@@ -437,6 +438,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
+      await _journalDb.addTagLinks(newJournalEntity);
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
