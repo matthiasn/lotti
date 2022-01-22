@@ -27,11 +27,14 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
+      beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
       onCreate: (Migrator m) {
         return m.createAll();
       },
@@ -55,8 +58,10 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Deleting redundant tags table');
-          await m.deleteTable('tags');
+          debugPrint('Creating journal_tags table and indices');
+          await m.createTable(journalTags);
+          await m.createIndex(idxJournalTagsJournalId);
+          await m.createIndex(idxJournalTagsTagDefinitionId);
         }();
 
         () async {
