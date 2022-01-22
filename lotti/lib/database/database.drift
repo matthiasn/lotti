@@ -161,7 +161,8 @@ orderedJournal:
 SELECT * FROM journal
   WHERE deleted = false
   ORDER BY date_from DESC
-  LIMIT :limit;
+  LIMIT :limit
+  OFFSET :offset;
 
 entriesFlaggedImport:
 SELECT * FROM journal
@@ -216,3 +217,6 @@ SELECT * FROM tag_definitions
 deleteJournalTagLinksForId:
 DELETE FROM journal_tags
   WHERE journal_id = :id;
+
+deleteJournalTagLinks:
+DELETE FROM journal_tags;

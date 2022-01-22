@@ -7,6 +7,7 @@ import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
 import 'package:lotti/widgets/pages/settings/flags_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
+import 'package:lotti/widgets/pages/settings/maintenance_page.dart';
 import 'package:lotti/widgets/pages/settings/measurables_page.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
@@ -140,6 +141,19 @@ class _SettingsPageState extends State<SettingsPage> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) {
                                   return const FlagsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
+                          icon: const SettingsIcon(MdiIcons.broom),
+                          title: 'Maintenance',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const MaintenancePage();
                                 },
                               ),
                             );

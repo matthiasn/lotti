@@ -216,6 +216,10 @@ class JournalDb extends _$JournalDb {
     return countJournalEntries().watch().map((List<int> res) => res.first);
   }
 
+  Future<int> getJournalCount() async {
+    return (await countJournalEntries().get()).first;
+  }
+
   Stream<List<ConfigFlag>> watchConfigFlags() {
     return listConfigFlags().watch();
   }
@@ -315,6 +319,23 @@ class JournalDb extends _$JournalDb {
       },
     );
     return linesAffected;
+  }
+
+  Future<void> recreateJournalTagLinks() async {
+    deleteJournalTagLinks();
+    int count = await getJournalCount();
+    int pageSize = 100;
+    int pages = (count / pageSize).ceil();
+
+    for (int page = 0; page <= pages; page++) {
+      List<JournalDbEntity> dbEntities =
+          await orderedJournal(pageSize, page * pageSize).get();
+
+      List<JournalEntity> entries = entityStreamMapper(dbEntities);
+      for (JournalEntity entry in entries) {
+        await addTagLinks(entry);
+      }
+    }
   }
 }
 
