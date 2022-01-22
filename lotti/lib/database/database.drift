@@ -115,7 +115,7 @@ CREATE TABLE tag_definitions (
   updated_at DATETIME NOT NULL,
   deleted BOOLEAN DEFAULT FALSE,
   serialized TEXT NOT NULL,
-  PRIMARY KEY (tag)
+  PRIMARY KEY (id)
 ) as TagDefinitionDbEntity;
 
 CREATE INDEX idx_tag_definitions_id
