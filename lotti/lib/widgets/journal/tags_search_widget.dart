@@ -37,7 +37,7 @@ class TagsSearchWidget extends StatelessWidget {
               autocorrect: false,
               controller: controller,
               onSubmitted: (String tag) async {},
-              autofocus: true,
+              autofocus: false,
               style: DefaultTextStyle.of(context).style.copyWith(
                     color: AppColors.entryTextColor,
                     fontFamily: 'Oswald',

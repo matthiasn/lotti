@@ -118,7 +118,7 @@ class TagsWidget extends StatelessWidget {
                                 addTagIds([tagId]);
                                 controller.clear();
                               },
-                              autofocus: true,
+                              autofocus: false,
                               style:
                                   DefaultTextStyle.of(context).style.copyWith(
                                         color: AppColors.entryTextColor,

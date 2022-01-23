@@ -84,10 +84,15 @@ class _JournalPageState extends State<JournalPage> {
     resetStream();
   }
 
-  void resetStream() {
+  void resetStream() async {
+    List<String> entryIds = [];
+    if (tags.isNotEmpty) {
+      entryIds = await _db.entryIdsByTagId(tags.first.id);
+    }
     setState(() {
       stream = _db.watchJournalEntities(
         types: types,
+        ids: entryIds,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
       );
@@ -97,12 +102,14 @@ class _JournalPageState extends State<JournalPage> {
   void addTag(TagDefinition tag) {
     setState(() {
       tags.add(tag);
+      resetStream();
     });
   }
 
   void removeTag(TagDefinition remove) {
     setState(() {
-      tags = tags.where((tag) => tag.id == remove.id).toList();
+      tags = tags.where((tag) => tag.id != remove.id).toList();
+      resetStream();
     });
   }
 

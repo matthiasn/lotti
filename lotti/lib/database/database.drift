@@ -157,6 +157,17 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+filteredByTagJournal:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
 orderedJournal:
 SELECT * FROM journal
   WHERE deleted = false
@@ -220,3 +231,7 @@ DELETE FROM journal_tags
 
 deleteJournalTagLinks:
 DELETE FROM journal_tags;
+
+entryIdsForTagId:
+SELECT journal_id FROM journal_tags
+  WHERE tag_definition_id = :tag_id;
