@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
+import 'package:lotti/widgets/journal/tags_search_widget.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
@@ -56,6 +58,7 @@ class _JournalPageState extends State<JournalPage> {
     'SurveyEntry'
   ];
   late List<String> types;
+  List<TagDefinition> tags = [];
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
@@ -81,13 +84,38 @@ class _JournalPageState extends State<JournalPage> {
     resetStream();
   }
 
-  void resetStream() {
+  void resetStream() async {
+    Set<String>? entryIds;
+    for (TagDefinition tag in tags) {
+      Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tag.id)).toSet();
+      debugPrint('entryIdsForTag: $entryIdsForTag');
+      if (entryIds == null) {
+        entryIds = entryIdsForTag;
+      } else {
+        entryIds = entryIds.intersection(entryIdsForTag);
+      }
+    }
     setState(() {
       stream = _db.watchJournalEntities(
         types: types,
+        ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
       );
+    });
+  }
+
+  void addTag(TagDefinition tag) {
+    setState(() {
+      tags.add(tag);
+      resetStream();
+    });
+  }
+
+  void removeTag(TagDefinition remove) {
+    setState(() {
+      tags = tags.where((tag) => tag.id != remove.id).toList();
+      resetStream();
     });
   }
 
@@ -112,71 +140,86 @@ class _JournalPageState extends State<JournalPage> {
 
                   return Scaffold(
                     appBar: AppBar(
+                      toolbarHeight: 100,
                       backgroundColor: AppColors.headerBgColor,
-                      title: Row(
+                      title: Column(
                         children: [
-                          Expanded(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: MultiSelectDialogField(
-                                items: _items,
-                                title: const Text('Entry Types'),
-                                selectedColor: Colors.blue,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: const BorderRadius.all(
-                                      Radius.circular(40)),
-                                  border: Border.all(
-                                    color: AppColors.entryBgColor,
-                                    width: 2,
+                          Row(
+                            children: [
+                              TagsSearchWidget(
+                                addTag: addTag,
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0),
+                                  child: MultiSelectDialogField(
+                                    items: _items,
+                                    title: const Text('Entry Types'),
+                                    selectedColor: Colors.blue,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(40)),
+                                      border: Border.all(
+                                        color: AppColors.entryBgColor,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    buttonIcon: Icon(
+                                      Icons.search,
+                                      color: AppColors.entryBgColor,
+                                    ),
+                                    buttonText: Text(
+                                      'Filter by Type',
+                                      style: TextStyle(
+                                        color: AppColors.entryBgColor,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    onConfirm: (List<FilterBy?> results) {
+                                      types = results.isNotEmpty
+                                          ? results
+                                              .map((e) => e?.typeName ?? '')
+                                              .toList()
+                                          : defaultTypes;
+                                      resetStream();
+                                    },
                                   ),
                                 ),
-                                buttonIcon: Icon(
-                                  Icons.search,
-                                  color: AppColors.entryBgColor,
+                              ),
+                              Visibility(
+                                visible: showPrivateEntriesSwitch,
+                                child: CupertinoSwitch(
+                                  value: privateEntriesOnly,
+                                  activeColor: AppColors.private,
+                                  onChanged: (bool value) {
+                                    setState(() {
+                                      privateEntriesOnly = value;
+                                      resetStream();
+                                    });
+                                  },
                                 ),
-                                buttonText: Text(
-                                  'Filter by Type',
-                                  style: TextStyle(
-                                    color: AppColors.entryBgColor,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                onConfirm: (List<FilterBy?> results) {
-                                  types = results.isNotEmpty
-                                      ? results
-                                          .map((e) => e?.typeName ?? '')
-                                          .toList()
-                                      : defaultTypes;
-                                  resetStream();
+                              ),
+                              CupertinoSwitch(
+                                value: starredEntriesOnly,
+                                activeColor: AppColors.starredGold,
+                                onChanged: (bool value) {
+                                  setState(() {
+                                    starredEntriesOnly = value;
+                                    resetStream();
+                                  });
                                 },
                               ),
+                            ],
+                          ),
+                          SizedBox(
+                            height: 22,
+                            child: SelectedTagsWidget(
+                              removeTag: removeTag,
+                              tags: tags,
                             ),
-                          ),
-                          Visibility(
-                            visible: showPrivateEntriesSwitch,
-                            child: CupertinoSwitch(
-                              value: privateEntriesOnly,
-                              activeColor: AppColors.private,
-                              onChanged: (bool value) {
-                                setState(() {
-                                  privateEntriesOnly = value;
-                                  resetStream();
-                                });
-                              },
-                            ),
-                          ),
-                          CupertinoSwitch(
-                            value: starredEntriesOnly,
-                            activeColor: AppColors.starredGold,
-                            onChanged: (bool value) {
-                              setState(() {
-                                starredEntriesOnly = value;
-                                resetStream();
-                              });
-                            },
-                          ),
+                          )
                         ],
                       ),
                       centerTitle: true,

@@ -195,15 +195,27 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<List<String>> entryIdsByTagId(String tagId) async {
+    return entryIdsForTagId(tagId).get();
+  }
+
   Stream<List<JournalEntity>> watchJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,
     required List<bool> privateStatuses,
+    required List<String>? ids,
     int limit = 1000,
   }) {
-    return filteredJournal(types, starredStatuses, privateStatuses, limit)
-        .watch()
-        .map(entityStreamMapper);
+    if (ids != null) {
+      return filteredByTagJournal(
+              types, ids, starredStatuses, privateStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    } else {
+      return filteredJournal(types, starredStatuses, privateStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    }
   }
 
   Stream<List<JournalEntity>> watchFlaggedImport({
