@@ -203,10 +203,10 @@ class JournalDb extends _$JournalDb {
     required List<String> types,
     required List<bool> starredStatuses,
     required List<bool> privateStatuses,
-    required List<String> ids,
+    required List<String>? ids,
     int limit = 1000,
   }) {
-    if (ids.isNotEmpty) {
+    if (ids != null) {
       return filteredByTagJournal(
               types, ids, starredStatuses, privateStatuses, limit)
           .watch()

@@ -85,14 +85,20 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   void resetStream() async {
-    List<String> entryIds = [];
-    if (tags.isNotEmpty) {
-      entryIds = await _db.entryIdsByTagId(tags.first.id);
+    Set<String>? entryIds;
+    for (TagDefinition tag in tags) {
+      Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tag.id)).toSet();
+      debugPrint('entryIdsForTag: $entryIdsForTag');
+      if (entryIds == null) {
+        entryIds = entryIdsForTag;
+      } else {
+        entryIds = entryIds.intersection(entryIdsForTag);
+      }
     }
     setState(() {
       stream = _db.watchJournalEntities(
         types: types,
-        ids: entryIds,
+        ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
       );
