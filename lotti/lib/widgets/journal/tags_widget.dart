@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -175,6 +176,7 @@ class TagsWidget extends StatelessWidget {
                             ),
                             onTap: () {
                               if (liveEntity.meta.tagIds != null) {
+                                HapticFeedback.heavyImpact();
                                 tagsService
                                     .setClipboard(liveEntity.meta.tagIds!);
                               }
@@ -197,6 +199,7 @@ class TagsWidget extends StatelessWidget {
                             ),
                             onTap: () {
                               addTagIds(tagsService.getClipboard());
+                              HapticFeedback.heavyImpact();
                             },
                           ),
                         ),
