@@ -5,8 +5,8 @@ part 'tag_type_definitions.freezed.dart';
 part 'tag_type_definitions.g.dart';
 
 @freezed
-class TagTypeDefinition with _$TagTypeDefinition {
-  factory TagTypeDefinition.tagDefinition({
+class TagEntity with _$TagEntity {
+  factory TagEntity.genericTag({
     required String id,
     required String tag,
     required bool private,
@@ -15,9 +15,9 @@ class TagTypeDefinition with _$TagTypeDefinition {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     bool? inactive,
-  }) = TagDefinition;
+  }) = GenericTag;
 
-  factory TagTypeDefinition.personTagDefinition({
+  factory TagEntity.personTag({
     required String id,
     required String tag,
     String? firstName,
@@ -28,9 +28,9 @@ class TagTypeDefinition with _$TagTypeDefinition {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     bool? inactive,
-  }) = PersonTagDefinition;
+  }) = PersonTag;
 
-  factory TagTypeDefinition.storyTagDefinition({
+  factory TagEntity.storyTag({
     required String id,
     required String tag,
     String? description,
@@ -41,8 +41,8 @@ class TagTypeDefinition with _$TagTypeDefinition {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     bool? inactive,
-  }) = StoryTagDefinition;
+  }) = StoryTag;
 
-  factory TagTypeDefinition.fromJson(Map<String, dynamic> json) =>
-      _$TagTypeDefinitionFromJson(json);
+  factory TagEntity.fromJson(Map<String, dynamic> json) =>
+      _$TagEntityFromJson(json);
 }

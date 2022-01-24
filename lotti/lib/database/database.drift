@@ -131,6 +131,35 @@ ON tag_definitions (private);
 CREATE INDEX idx_tag_definitions_inactive
 ON tag_definitions (inactive);
 
+CREATE TABLE tag_entities (
+  id TEXT NOT NULL UNIQUE,
+  tag TEXT NOT NULL,
+  type TEXT NOT NULL,
+  inactive BOOLEAN DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE(tag, type)
+) as TagDbEntity;
+
+CREATE INDEX idx_tag_entities_id
+ON tag_entities (id);
+
+CREATE INDEX idx_tag_entities_tag
+ON tag_entities (tag);
+
+CREATE INDEX idx_tag_entities_type
+ON tag_entities (type);
+
+CREATE INDEX idx_tag_entities_private
+ON tag_entities (private);
+
+CREATE INDEX idx_tag_entities_inactive
+ON tag_entities (inactive);
+
 CREATE TABLE journal_tags (
   id TEXT NOT NULL UNIQUE,
   journal_id TEXT NOT NULL,

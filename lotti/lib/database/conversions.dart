@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 
 import 'database.dart';
 
@@ -94,6 +95,23 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
     updatedAt: tag.updatedAt,
     serialized: jsonEncode(tag),
     deleted: tag.deletedAt != null,
+  );
+}
+
+TagDbEntity tagDbEntity(TagEntity tag) {
+  return TagDbEntity(
+    id: tag.id,
+    tag: tag.tag,
+    private: tag.private,
+    inactive: tag.inactive ?? false,
+    createdAt: tag.createdAt,
+    updatedAt: tag.updatedAt,
+    serialized: jsonEncode(tag),
+    deleted: tag.deletedAt != null,
+    type: tag.map(
+        genericTag: (_) => 'GenericTag',
+        personTag: (_) => 'PersonTag',
+        storyTag: (_) => 'StoryTag'),
   );
 }
 

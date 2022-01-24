@@ -71,6 +71,36 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     ),
                   ),
                 ),
+                GestureDetector(
+                  onTap: () async {
+                    _db.migrateTagEntities();
+                  },
+                  child: Card(
+                    color: AppColors.headerBgColor,
+                    elevation: 8.0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.only(
+                          left: 16, top: 4, bottom: 8, right: 16),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Migrate Tags',
+                            style: TextStyle(
+                              color: AppColors.entryTextColor,
+                              fontFamily: 'Oswald',
+                              fontSize: 20.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                      enabled: true,
+                    ),
+                  ),
+                ),
               ]),
         );
       },

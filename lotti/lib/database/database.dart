@@ -7,6 +7,7 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -28,7 +29,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -61,6 +62,16 @@ class JournalDb extends _$JournalDb {
           await m.createTable(journalTags);
           await m.createIndex(idxJournalTagsJournalId);
           await m.createIndex(idxJournalTagsTagDefinitionId);
+        }();
+
+        () async {
+          debugPrint('Creating tag_entities table and indices');
+          await m.createTable(tagEntities);
+          await m.createIndex(idxTagEntitiesId);
+          await m.createIndex(idxTagEntitiesTag);
+          await m.createIndex(idxTagEntitiesType);
+          await m.createIndex(idxTagEntitiesInactive);
+          await m.createIndex(idxTagEntitiesPrivate);
         }();
 
         () async {
@@ -312,6 +323,11 @@ class JournalDb extends _$JournalDb {
     return into(tagDefinitions).insert(dbEntity, mode: InsertMode.replace);
   }
 
+  Future<int> upsertTagEntity(TagEntity tag) async {
+    final TagDbEntity dbEntity = tagDbEntity(tag);
+    return into(tagEntities).insert(dbEntity, mode: InsertMode.replace);
+  }
+
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
     return into(habitDefinitions)
         .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
@@ -346,6 +362,22 @@ class JournalDb extends _$JournalDb {
       for (JournalEntity entry in entries) {
         await addTagLinks(entry);
       }
+    }
+  }
+
+  Future<void> migrateTagEntities() async {
+    Iterable<TagDefinition> tags =
+        (await allTagDefinitions().get()).map(fromTagDefinitionDbEntity);
+    for (TagDefinition tag in tags) {
+      TagEntity tagEntity = TagEntity.genericTag(
+        id: tag.id,
+        tag: tag.tag,
+        private: tag.private,
+        createdAt: tag.createdAt,
+        updatedAt: DateTime.now(),
+        vectorClock: tag.vectorClock,
+      );
+      upsertTagEntity(tagEntity);
     }
   }
 }
