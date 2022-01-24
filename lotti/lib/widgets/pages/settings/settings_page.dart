@@ -95,7 +95,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           },
                         ),
                         SettingsCard(
-                          icon: OutboxBadgeIcon(),
+                          icon: OutboxBadgeIcon(
+                            icon: const SettingsIcon(MdiIcons.mailbox),
+                          ),
                           title: 'Sync Outbox',
                           onTap: () {
                             Navigator.of(context).push(
