@@ -5,6 +5,7 @@ import 'package:lotti/widgets/pages/add/add_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
+import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
 
 import 'bottom_nav/flagged_badge_icon.dart';
@@ -73,8 +74,10 @@ class _HomePageState extends State<HomePage> {
               label: 'Audio',
               tooltip: '',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
+            BottomNavigationBarItem(
+              icon: OutboxBadgeIcon(
+                icon: const Icon(Icons.settings),
+              ),
               label: 'Settings',
               tooltip: '',
             ),
