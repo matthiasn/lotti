@@ -110,6 +110,7 @@ CREATE TABLE config_flags (
 CREATE TABLE tag_definitions (
   id TEXT NOT NULL UNIQUE,
   tag TEXT NOT NULL UNIQUE,
+  inactive BOOLEAN DEFAULT FALSE,
   private BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
@@ -126,6 +127,9 @@ ON tag_definitions (tag);
 
 CREATE INDEX idx_tag_definitions_private
 ON tag_definitions (private);
+
+CREATE INDEX idx_tag_definitions_inactive
+ON tag_definitions (inactive);
 
 CREATE TABLE journal_tags (
   id TEXT NOT NULL UNIQUE,
@@ -223,6 +227,7 @@ matchingTagDefinitions:
 SELECT * FROM tag_definitions
   WHERE tag LIKE :match
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND inactive IN (0, :inactive)
   LIMIT :limit;
 
 deleteJournalTagLinksForId:

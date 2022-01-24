@@ -28,7 +28,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -51,11 +51,9 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Creating tag_definitions table and indices');
-          await m.createTable(tagDefinitions);
-          await m.createIndex(idxTagDefinitionsId);
-          await m.createIndex(idxTagDefinitionsTag);
-          await m.createIndex(idxTagDefinitionsPrivate);
+          debugPrint('Add tag_definitions inactive column');
+          await m.addColumn(tagDefinitions, tagDefinitions.inactive);
+          await m.createIndex(idxTagDefinitionsInactive);
         }();
 
         () async {
@@ -290,8 +288,9 @@ class JournalDb extends _$JournalDb {
   Future<List<TagDefinition>> getMatchingTags(
     String match, {
     int limit = 10,
+    bool inactive = false,
   }) async {
-    return (await matchingTagDefinitions('%$match%', limit).get())
+    return (await matchingTagDefinitions('%$match%', inactive, limit).get())
         .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
         .toList();
   }
