@@ -26,6 +26,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
   Future<void> pickImageAssets(BuildContext context) async {
     final List<AssetEntity>? assets = await AssetPicker.pickAssets(
       context,
+      maxAssets: 40,
       textDelegate: EnglishTextDelegate(),
       routeDuration: const Duration(seconds: 0),
     );
@@ -45,11 +46,11 @@ class JournalImageCubit extends Cubit<JournalImageState> {
         }
 
         DateTime createdAt = asset.createDateTime;
-        File? originFile = await asset.originFile;
+        File? file = await asset.file;
 
-        if (originFile != null) {
+        if (file != null) {
           String idNamePart = asset.id.split('/').first;
-          String originalName = originFile.path.split('/').last;
+          String originalName = file.path.split('/').last;
           String imageFileName = '$idNamePart.$originalName'
               .replaceAll(
                 'HEIC',
@@ -64,7 +65,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
           String directory =
               await AudioUtils.createAssetDirectory(relativePath);
           String targetFilePath = '$directory$imageFileName';
-          await compressAndSave(originFile, targetFilePath);
+          await compressAndSave(file, targetFilePath);
           DateTime created = asset.createDateTime;
 
           ImageData imageData = ImageData(
