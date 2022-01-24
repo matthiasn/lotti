@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -138,10 +139,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 }
 
 class OutboxItemCard extends StatelessWidget {
+  final SyncDatabase _db = getIt<SyncDatabase>();
   final OutboxItem item;
   final int index;
 
-  const OutboxItemCard({
+  OutboxItemCard({
     Key? key,
     required this.item,
     required this.index,
@@ -192,7 +194,18 @@ class OutboxItemCard extends StatelessWidget {
               ),
             ),
             enabled: true,
-            onTap: () {},
+            onTap: () {
+              if (statusEnum == OutboxStatus.error) {
+                _db.updateOutboxItem(
+                  OutboxCompanion(
+                    id: Value(item.id),
+                    status: Value(OutboxStatus.pending.index),
+                    retries: Value(item.retries + 1),
+                    updatedAt: Value(DateTime.now()),
+                  ),
+                );
+              }
+            },
           ),
         ),
       ),
