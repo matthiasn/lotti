@@ -88,7 +88,6 @@ class _JournalPageState extends State<JournalPage> {
     Set<String>? entryIds;
     for (TagDefinition tag in tags) {
       Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tag.id)).toSet();
-      debugPrint('entryIdsForTag: $entryIdsForTag');
       if (entryIds == null) {
         entryIds = entryIdsForTag;
       } else {

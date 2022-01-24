@@ -135,11 +135,15 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       VectorClock vc = await _vectorClockService.getNextVectorClock();
       String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
 
-      Geolocation? geolocation =
-          await location?.getCurrentGeoLocation().timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => null, // TODO: report timeout in Insights
-              );
+      Geolocation? geolocation;
+
+      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
+        geolocation = await location?.getCurrentGeoLocation().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => null, // TODO: report timeout in Insights
+            );
+      }
 
       JournalEntity journalEntity = JournalEntity.measurement(
         data: data,
