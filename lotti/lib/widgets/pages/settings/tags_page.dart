@@ -167,6 +167,7 @@ class _DetailRouteState extends State<DetailRoute> {
                   TagDefinition tagDefinition = widget.tagDefinition.copyWith(
                     tag: '${formData!['tag']}'.trim(),
                     private: formData['private'],
+                    inactive: formData['inactive'],
                     updatedAt: DateTime.now(),
                   );
 
@@ -218,6 +219,15 @@ class _DetailRouteState extends State<DetailRoute> {
                               initialValue: widget.tagDefinition.private,
                               title: Text(
                                 'Private: ',
+                                style: formLabelStyle,
+                              ),
+                              activeColor: AppColors.private,
+                            ),
+                            FormBuilderSwitch(
+                              name: 'inactive',
+                              initialValue: widget.tagDefinition.inactive,
+                              title: Text(
+                                'Hide from suggestions: ',
                                 style: formLabelStyle,
                               ),
                               activeColor: AppColors.private,

@@ -50,6 +50,7 @@ class EntityDefinition with _$EntityDefinition {
     required DateTime updatedAt,
     required VectorClock? vectorClock,
     DateTime? deletedAt,
+    bool? inactive,
   }) = TagDefinition;
 
   factory EntityDefinition.habitDefinition({

@@ -49,7 +49,7 @@ class TagsSearchWidget extends StatelessWidget {
               ),
             ),
             suggestionsCallback: (String pattern) async {
-              return db.getMatchingTags(pattern.trim());
+              return db.getMatchingTags(pattern.trim(), inactive: true);
             },
             suggestionsBoxDecoration: SuggestionsBoxDecoration(
               color: AppColors.headerBgColor,

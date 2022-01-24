@@ -89,6 +89,7 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
     id: tag.id,
     tag: tag.tag,
     private: tag.private,
+    inactive: tag.inactive ?? false,
     createdAt: tag.createdAt,
     updatedAt: tag.updatedAt,
     serialized: jsonEncode(tag),
