@@ -52,10 +52,10 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Creating journal_tags table and indices');
-          await m.createTable(journalTags);
-          await m.createIndex(idxJournalTagsJournalId);
-          await m.createIndex(idxJournalTagsTagDefinitionId);
+          debugPrint('Creating tagged table and indices');
+          await m.createTable(tagged);
+          await m.createIndex(idxTaggedJournalId);
+          await m.createIndex(idxTaggedTagEntityId);
         }();
 
         () async {
