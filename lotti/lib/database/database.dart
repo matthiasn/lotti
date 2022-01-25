@@ -52,12 +52,6 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Add tag_definitions inactive column');
-          await m.addColumn(tagDefinitions, tagDefinitions.inactive);
-          await m.createIndex(idxTagDefinitionsInactive);
-        }();
-
-        () async {
           debugPrint('Creating journal_tags table and indices');
           await m.createTable(journalTags);
           await m.createIndex(idxJournalTagsJournalId);
@@ -72,11 +66,6 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxTagEntitiesType);
           await m.createIndex(idxTagEntitiesInactive);
           await m.createIndex(idxTagEntitiesPrivate);
-        }();
-
-        () async {
-          debugPrint('Add missing column in tag_definitions table');
-          await m.addColumn(tagDefinitions, tagDefinitions.deleted);
         }();
       },
     );
