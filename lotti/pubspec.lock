@@ -721,7 +721,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.3"
+    version: "3.8.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -955,7 +955,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.4+4"
+    version: "0.8.4+5"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1578,7 +1578,7 @@ packages:
       name: sqlparser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.19.1"
+    version: "0.19.2"
   stack_trace:
     dependency: transitive
     description:
@@ -1620,14 +1620,14 @@ packages:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "19.4.43+1"
+    version: "19.4.47"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "19.4.43"
+    version: "19.4.47"
   synchronized:
     dependency: transitive
     description:
@@ -1795,7 +1795,7 @@ packages:
       name: video_player
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.13"
+    version: "2.2.15"
   video_player_platform_interface:
     dependency: transitive
     description:
@@ -1851,7 +1851,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.6"
+    version: "2.3.8"
   wkt_parser:
     dependency: transitive
     description:
