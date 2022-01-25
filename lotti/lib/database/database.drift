@@ -288,13 +288,13 @@ SELECT * FROM tag_entities
   AND inactive IN (0, :inactive)
   LIMIT :limit;
 
-deleteJournalTagLinksForId:
-DELETE FROM journal_tags
+deleteTaggedForId:
+DELETE FROM tagged
   WHERE journal_id = :id;
 
-deleteJournalTagLinks:
-DELETE FROM journal_tags;
+deleteTagged:
+DELETE FROM tagged;
 
 entryIdsForTagId:
-SELECT journal_id FROM journal_tags
-  WHERE tag_definition_id = :tag_id;
+SELECT journal_id FROM tagged
+  WHERE tag_entity_id = :tag_id;

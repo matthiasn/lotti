@@ -29,7 +29,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -118,18 +118,18 @@ class JournalDb extends _$JournalDb {
     return VclockStatus.b_gt_a;
   }
 
-  Future<void> addTagLinks(JournalEntity journalEntity) async {
+  Future<void> addTagged(JournalEntity journalEntity) async {
     String id = journalEntity.meta.id;
     List<String> tagIds = journalEntity.meta.tagIds ?? [];
-    debugPrint('addTagLinks: $id $tagIds');
+    debugPrint('addTagged: $id $tagIds');
 
-    await deleteJournalTagLinksForId(id);
+    await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
-      into(journalTags).insert(JournalTagLink(
+      into(tagged).insert(TaggedWith(
         id: uuid.v1(),
         journalId: id,
-        tagDefinitionId: tagId,
+        tagEntityId: tagId,
       ));
     }
   }
@@ -337,8 +337,8 @@ class JournalDb extends _$JournalDb {
     return linesAffected;
   }
 
-  Future<void> recreateJournalTagLinks() async {
-    deleteJournalTagLinks();
+  Future<void> recreateTagged() async {
+    deleteTagged();
     int count = await getJournalCount();
     int pageSize = 100;
     int pages = (count / pageSize).ceil();
@@ -349,7 +349,7 @@ class JournalDb extends _$JournalDb {
 
       List<JournalEntity> entries = entityStreamMapper(dbEntities);
       for (JournalEntity entry in entries) {
-        await addTagLinks(entry);
+        await addTagged(entry);
       }
     }
   }

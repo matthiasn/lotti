@@ -43,7 +43,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    _db.recreateJournalTagLinks();
+                    _db.recreateTagged();
                   },
                   child: Card(
                     color: AppColors.headerBgColor,
@@ -58,7 +58,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Recreate tag links',
+                            'Recreate tagged',
                             style: TextStyle(
                               color: AppColors.entryTextColor,
                               fontFamily: 'Oswald',
