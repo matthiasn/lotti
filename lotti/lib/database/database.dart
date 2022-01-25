@@ -126,8 +126,6 @@ class JournalDb extends _$JournalDb {
   Future<void> addTagged(JournalEntity journalEntity) async {
     String id = journalEntity.meta.id;
     List<String> tagIds = journalEntity.meta.tagIds ?? [];
-    debugPrint('addTagged: $id $tagIds');
-
     await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
