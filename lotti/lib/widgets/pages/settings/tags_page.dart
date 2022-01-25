@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
-import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
@@ -23,7 +23,7 @@ class TagsPage extends StatefulWidget {
 class _TagsPageState extends State<TagsPage> {
   final JournalDb _db = getIt<JournalDb>();
 
-  late final Stream<List<TagDefinition>> stream = _db.watchTags();
+  late final Stream<List<TagEntity>> stream = _db.watchTags();
 
   @override
   void initState() {
@@ -32,13 +32,13 @@ class _TagsPageState extends State<TagsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<TagDefinition>>(
+    return StreamBuilder<List<TagEntity>>(
       stream: stream,
       builder: (
         BuildContext context,
-        AsyncSnapshot<List<TagDefinition>> snapshot,
+        AsyncSnapshot<List<TagEntity>> snapshot,
       ) {
-        List<TagDefinition> items = snapshot.data ?? [];
+        List<TagEntity> items = snapshot.data ?? [];
 
         return Scaffold(
           appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
@@ -50,7 +50,7 @@ class _TagsPageState extends State<TagsPage> {
               items.length,
               (int index) {
                 return TagCard(
-                  tagDefinition: items.elementAt(index),
+                  tagEntity: items.elementAt(index),
                   index: index,
                 );
               },
@@ -63,12 +63,12 @@ class _TagsPageState extends State<TagsPage> {
 }
 
 class TagCard extends StatelessWidget {
-  final TagDefinition tagDefinition;
+  final TagEntity tagEntity;
   final int index;
 
   TagCard({
     Key? key,
-    required this.tagDefinition,
+    required this.tagEntity,
     required this.index,
   }) : super(key: key);
 
@@ -88,7 +88,7 @@ class TagCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                tagDefinition.tag,
+                tagEntity.tag,
                 style: TextStyle(
                   color: AppColors.entryTextColor,
                   fontFamily: 'Oswald',
@@ -96,11 +96,12 @@ class TagCard extends StatelessWidget {
                 ),
               ),
               CupertinoSwitch(
-                value: tagDefinition.private,
+                value: tagEntity.private,
                 activeColor: AppColors.private,
                 onChanged: (bool private) async {
-                  await context.read<PersistenceCubit>().upsertEntityDefinition(
-                      tagDefinition.copyWith(private: private));
+                  await context
+                      .read<PersistenceCubit>()
+                      .upsertTagEntity(tagEntity.copyWith(private: private));
                 },
               ),
             ],
@@ -112,7 +113,7 @@ class TagCard extends StatelessWidget {
                 builder: (BuildContext context) {
                   return DetailRoute(
                     index: index,
-                    tagDefinition: tagDefinition,
+                    tagEntity: tagEntity,
                   );
                 },
               ),
@@ -127,12 +128,12 @@ class TagCard extends StatelessWidget {
 class DetailRoute extends StatefulWidget {
   const DetailRoute({
     Key? key,
-    required this.tagDefinition,
+    required this.tagEntity,
     required this.index,
   }) : super(key: key);
 
   final int index;
-  final TagDefinition tagDefinition;
+  final TagEntity tagEntity;
 
   @override
   _DetailRouteState createState() {
@@ -152,7 +153,7 @@ class _DetailRouteState extends State<DetailRoute> {
         appBar: AppBar(
           foregroundColor: AppColors.appBarFgColor,
           title: Text(
-            widget.tagDefinition.tag,
+            widget.tagEntity.tag,
             style: TextStyle(
               color: AppColors.entryTextColor,
               fontFamily: 'Oswald',
@@ -164,16 +165,14 @@ class _DetailRouteState extends State<DetailRoute> {
                 _formKey.currentState!.save();
                 if (_formKey.currentState!.validate()) {
                   final formData = _formKey.currentState?.value;
-                  TagDefinition tagDefinition = widget.tagDefinition.copyWith(
+                  TagEntity tagEntity = widget.tagEntity.copyWith(
                     tag: '${formData!['tag']}'.trim(),
                     private: formData['private'],
                     inactive: formData['inactive'],
                     updatedAt: DateTime.now(),
                   );
 
-                  context
-                      .read<PersistenceCubit>()
-                      .upsertEntityDefinition(tagDefinition);
+                  context.read<PersistenceCubit>().upsertTagEntity(tagEntity);
 
                   Navigator.pop(context);
                 }
@@ -210,13 +209,13 @@ class _DetailRouteState extends State<DetailRoute> {
                         child: Column(
                           children: <Widget>[
                             FormTextField(
-                              initialValue: widget.tagDefinition.tag,
+                              initialValue: widget.tagEntity.tag,
                               labelText: 'Tag',
                               name: 'tag',
                             ),
                             FormBuilderSwitch(
                               name: 'private',
-                              initialValue: widget.tagDefinition.private,
+                              initialValue: widget.tagEntity.private,
                               title: Text(
                                 'Private: ',
                                 style: formLabelStyle,
@@ -225,7 +224,7 @@ class _DetailRouteState extends State<DetailRoute> {
                             ),
                             FormBuilderSwitch(
                               name: 'inactive',
-                              initialValue: widget.tagDefinition.inactive,
+                              initialValue: widget.tagEntity.inactive,
                               title: Text(
                                 'Hide from suggestions: ',
                                 style: formLabelStyle,
@@ -248,8 +247,8 @@ class _DetailRouteState extends State<DetailRoute> {
                               onPressed: () {
                                 context
                                     .read<PersistenceCubit>()
-                                    .upsertEntityDefinition(
-                                      widget.tagDefinition.copyWith(
+                                    .upsertTagEntity(
+                                      widget.tagEntity.copyWith(
                                         deletedAt: DateTime.now(),
                                       ),
                                     );

@@ -1,27 +1,27 @@
-import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 
 class TagsService {
   late final JournalDb _db;
-  late final Stream<List<TagDefinition>> _stream;
+  late final Stream<List<TagEntity>> _stream;
   List<String> _clipboard = [];
 
-  Map<String, TagDefinition> tagsById = {};
+  Map<String, TagEntity> tagsById = {};
 
   TagsService() {
     _db = getIt<JournalDb>();
     _stream = _db.watchTags();
 
-    _stream.listen((List<TagDefinition> tagDefinitions) {
+    _stream.listen((List<TagEntity> tagEntities) {
       tagsById.clear();
-      for (TagDefinition tagDefinition in tagDefinitions) {
-        tagsById[tagDefinition.id] = tagDefinition;
+      for (TagEntity tagEntity in tagEntities) {
+        tagsById[tagEntity.id] = tagEntity;
       }
     });
   }
 
-  TagDefinition? getTagById(String id) {
+  TagEntity? getTagById(String id) {
     return tagsById[id];
   }
 

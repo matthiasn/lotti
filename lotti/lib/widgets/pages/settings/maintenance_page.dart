@@ -41,34 +41,60 @@ class _MaintenancePageState extends State<MaintenancePage> {
               shrinkWrap: true,
               padding: const EdgeInsets.all(8.0),
               children: [
-                GestureDetector(
-                  onTap: () async {
-                    _db.recreateJournalTagLinks();
-                  },
-                  child: Card(
-                    color: AppColors.headerBgColor,
-                    elevation: 8.0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.only(
-                          left: 16, top: 4, bottom: 8, right: 16),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Recreate tag links',
-                            style: TextStyle(
-                              color: AppColors.entryTextColor,
-                              fontFamily: 'Oswald',
-                              fontSize: 20.0,
-                            ),
+                Card(
+                  color: AppColors.headerBgColor,
+                  elevation: 8.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.only(
+                        left: 16, top: 4, bottom: 8, right: 16),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recreate tagged',
+                          style: TextStyle(
+                            color: AppColors.entryTextColor,
+                            fontFamily: 'Oswald',
+                            fontSize: 20.0,
                           ),
-                        ],
-                      ),
-                      enabled: true,
+                        ),
+                      ],
                     ),
+                    enabled: true,
+                    onTap: () async {
+                      _db.recreateTagged();
+                    },
+                  ),
+                ),
+                Card(
+                  color: AppColors.headerBgColor,
+                  elevation: 8.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.only(
+                        left: 16, top: 4, bottom: 8, right: 16),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Migrate Tags',
+                          style: TextStyle(
+                            color: AppColors.entryTextColor,
+                            fontFamily: 'Oswald',
+                            fontSize: 20.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () async {
+                      _db.migrateTagEntities();
+                    },
+                    enabled: true,
                   ),
                 ),
               ]),

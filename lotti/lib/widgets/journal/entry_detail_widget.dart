@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -71,6 +72,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
             void saveText() {
               EntryText entryText = entryTextFromController(_controller);
+              HapticFeedback.heavyImpact();
 
               context
                   .read<PersistenceCubit>()

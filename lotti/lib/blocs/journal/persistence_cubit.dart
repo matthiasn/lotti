@@ -14,6 +14,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
@@ -295,7 +296,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       int? res = await _journalDb.addJournalEntity(journalEntity);
       bool saved = (res != 0);
       await saveJournalEntityJson(journalEntity);
-      await _journalDb.addTagLinks(journalEntity);
+      await _journalDb.addTagged(journalEntity);
 
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
@@ -442,7 +443,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       );
 
       await updateDbEntity(newJournalEntity, enqueueSync: true);
-      await _journalDb.addTagLinks(newJournalEntity);
+      await _journalDb.addTagged(newJournalEntity);
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -517,11 +518,20 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return linesAffected;
   }
 
+  Future<int> upsertTagEntity(TagEntity tagEntity) async {
+    int linesAffected = await _journalDb.upsertTagEntity(tagEntity);
+    await _outboundQueueCubit.enqueueMessage(SyncMessage.tagEntity(
+      tagEntity: tagEntity,
+      status: SyncEntryStatus.update,
+    ));
+    return linesAffected;
+  }
+
   Future<String> addTagDefinition(String tagString) async {
     DateTime now = DateTime.now();
     String id = uuid.v1();
-    await upsertEntityDefinition(
-      TagDefinition(
+    await upsertTagEntity(
+      TagEntity.genericTag(
         id: id,
         tag: tagString.trim(),
         private: false,

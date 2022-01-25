@@ -16,6 +16,7 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
@@ -121,6 +122,12 @@ class InboxImapCubit extends Cubit<ImapState> {
             SyncEntryStatus status,
           ) {
             _journalDb.upsertEntityDefinition(entityDefinition);
+          },
+          tagEntity: (
+            TagEntity tagEntity,
+            SyncEntryStatus status,
+          ) {
+            _journalDb.upsertTagEntity(tagEntity);
           },
         );
       } else {

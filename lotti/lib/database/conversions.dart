@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 
 import 'database.dart';
 
@@ -97,6 +98,23 @@ TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
   );
 }
 
+TagDbEntity tagDbEntity(TagEntity tag) {
+  return TagDbEntity(
+    id: tag.id,
+    tag: tag.tag,
+    private: tag.private,
+    inactive: tag.inactive ?? false,
+    createdAt: tag.createdAt,
+    updatedAt: tag.updatedAt,
+    serialized: jsonEncode(tag),
+    deleted: tag.deletedAt != null,
+    type: tag.map(
+        genericTag: (_) => 'GenericTag',
+        personTag: (_) => 'PersonTag',
+        storyTag: (_) => 'StoryTag'),
+  );
+}
+
 HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
   return HabitDefinitionDbEntity(
     id: habit.id,
@@ -117,6 +135,14 @@ TagDefinition fromTagDefinitionDbEntity(TagDefinitionDbEntity dbEntity) {
 List<TagDefinition> tagDefinitionsStreamMapper(
     List<TagDefinitionDbEntity> dbEntities) {
   return dbEntities.map((e) => fromTagDefinitionDbEntity(e)).toList();
+}
+
+TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
+  return TagEntity.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromTagDbEntity(e)).toList();
 }
 
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {

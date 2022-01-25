@@ -7,6 +7,7 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -28,7 +29,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -51,21 +52,25 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
-          debugPrint('Add tag_definitions inactive column');
-          await m.addColumn(tagDefinitions, tagDefinitions.inactive);
-          await m.createIndex(idxTagDefinitionsInactive);
+          debugPrint('Creating tagged table and indices');
+          await m.createTable(tagged);
+          await m.createIndex(idxTaggedJournalId);
+          await m.createIndex(idxTaggedTagEntityId);
         }();
 
         () async {
-          debugPrint('Creating journal_tags table and indices');
-          await m.createTable(journalTags);
-          await m.createIndex(idxJournalTagsJournalId);
-          await m.createIndex(idxJournalTagsTagDefinitionId);
+          debugPrint('Creating tag_entities table and indices');
+          await m.createTable(tagEntities);
+          await m.createIndex(idxTagEntitiesId);
+          await m.createIndex(idxTagEntitiesTag);
+          await m.createIndex(idxTagEntitiesType);
+          await m.createIndex(idxTagEntitiesInactive);
+          await m.createIndex(idxTagEntitiesPrivate);
         }();
 
         () async {
-          debugPrint('Add missing column in tag_definitions table');
-          await m.addColumn(tagDefinitions, tagDefinitions.deleted);
+          debugPrint('Remove journal_tags table');
+          await m.deleteTable('journal_tags');
         }();
       },
     );
@@ -118,18 +123,16 @@ class JournalDb extends _$JournalDb {
     return VclockStatus.b_gt_a;
   }
 
-  Future<void> addTagLinks(JournalEntity journalEntity) async {
+  Future<void> addTagged(JournalEntity journalEntity) async {
     String id = journalEntity.meta.id;
     List<String> tagIds = journalEntity.meta.tagIds ?? [];
-    debugPrint('addTagLinks: $id $tagIds');
-
-    await deleteJournalTagLinksForId(id);
+    await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
-      into(journalTags).insert(JournalTagLink(
+      into(tagged).insert(TaggedWith(
         id: uuid.v1(),
         journalId: id,
-        tagDefinitionId: tagId,
+        tagEntityId: tagId,
       ));
     }
   }
@@ -277,21 +280,21 @@ class JournalDb extends _$JournalDb {
     return conflictsByStatus(status.index, limit).watch();
   }
 
-  Stream<List<TagDefinition>> watchTags() {
-    return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
+  Stream<List<TagEntity>> watchTags() {
+    return allTagEntities().watch().map(tagStreamMapper);
   }
 
   Stream<List<HabitDefinition>> watchHabitDefinitions() {
     return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
   }
 
-  Future<List<TagDefinition>> getMatchingTags(
+  Future<List<TagEntity>> getMatchingTags(
     String match, {
     int limit = 10,
     bool inactive = false,
   }) async {
-    return (await matchingTagDefinitions('%$match%', inactive, limit).get())
-        .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
+    return (await matchingTagEntities('%$match%', inactive, limit).get())
+        .map((dbEntity) => fromTagDbEntity(dbEntity))
         .toList();
   }
 
@@ -310,6 +313,11 @@ class JournalDb extends _$JournalDb {
     final TagDefinitionDbEntity dbEntity = tagDefinitionDbEntity(tagDefinition);
     // would not update with insertOnConflictUpdate
     return into(tagDefinitions).insert(dbEntity, mode: InsertMode.replace);
+  }
+
+  Future<int> upsertTagEntity(TagEntity tag) async {
+    final TagDbEntity dbEntity = tagDbEntity(tag);
+    return into(tagEntities).insertOnConflictUpdate(dbEntity);
   }
 
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
@@ -332,8 +340,8 @@ class JournalDb extends _$JournalDb {
     return linesAffected;
   }
 
-  Future<void> recreateJournalTagLinks() async {
-    deleteJournalTagLinks();
+  Future<void> recreateTagged() async {
+    deleteTagged();
     int count = await getJournalCount();
     int pageSize = 100;
     int pages = (count / pageSize).ceil();
@@ -344,8 +352,24 @@ class JournalDb extends _$JournalDb {
 
       List<JournalEntity> entries = entityStreamMapper(dbEntities);
       for (JournalEntity entry in entries) {
-        await addTagLinks(entry);
+        await addTagged(entry);
       }
+    }
+  }
+
+  Future<void> migrateTagEntities() async {
+    Iterable<TagDefinition> tags =
+        (await allTagDefinitions().get()).map(fromTagDefinitionDbEntity);
+    for (TagDefinition tag in tags) {
+      TagEntity tagEntity = TagEntity.genericTag(
+        id: tag.id,
+        tag: tag.tag,
+        private: tag.private,
+        createdAt: tag.createdAt,
+        updatedAt: DateTime.now(),
+        vectorClock: tag.vectorClock,
+      );
+      upsertTagEntity(tagEntity);
     }
   }
 }
