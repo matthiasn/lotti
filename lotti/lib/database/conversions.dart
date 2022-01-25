@@ -85,19 +85,6 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   );
 }
 
-TagDefinitionDbEntity tagDefinitionDbEntity(TagDefinition tag) {
-  return TagDefinitionDbEntity(
-    id: tag.id,
-    tag: tag.tag,
-    private: tag.private,
-    inactive: tag.inactive ?? false,
-    createdAt: tag.createdAt,
-    updatedAt: tag.updatedAt,
-    serialized: jsonEncode(tag),
-    deleted: tag.deletedAt != null,
-  );
-}
-
 TagDbEntity tagDbEntity(TagEntity tag) {
   return TagDbEntity(
     id: tag.id,
@@ -126,15 +113,6 @@ HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
     active: habit.active,
     name: habit.name,
   );
-}
-
-TagDefinition fromTagDefinitionDbEntity(TagDefinitionDbEntity dbEntity) {
-  return TagDefinition.fromJson(json.decode(dbEntity.serialized));
-}
-
-List<TagDefinition> tagDefinitionsStreamMapper(
-    List<TagDefinitionDbEntity> dbEntities) {
-  return dbEntities.map((e) => fromTagDefinitionDbEntity(e)).toList();
 }
 
 TagEntity fromTagDbEntity(TagDbEntity dbEntity) {

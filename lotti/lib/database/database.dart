@@ -29,7 +29,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -71,6 +71,11 @@ class JournalDb extends _$JournalDb {
         () async {
           debugPrint('Remove journal_tags table');
           await m.deleteTable('journal_tags');
+        }();
+
+        () async {
+          debugPrint('Remove tag_definitions table');
+          await m.deleteTable('tag_definitions');
         }();
       },
     );
@@ -309,12 +314,6 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
   }
 
-  Future<int> upsertTagDefinition(TagDefinition tagDefinition) async {
-    final TagDefinitionDbEntity dbEntity = tagDefinitionDbEntity(tagDefinition);
-    // would not update with insertOnConflictUpdate
-    return into(tagDefinitions).insert(dbEntity, mode: InsertMode.replace);
-  }
-
   Future<int> upsertTagEntity(TagEntity tag) async {
     final TagDbEntity dbEntity = tagDbEntity(tag);
     return into(tagEntities).insertOnConflictUpdate(dbEntity);
@@ -329,9 +328,6 @@ class JournalDb extends _$JournalDb {
     int linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {
         return upsertMeasurableDataType(measurableDataType);
-      },
-      tagDefinition: (TagDefinition tagDefinition) async {
-        return upsertTagDefinition(tagDefinition);
       },
       habitDefinition: (HabitDefinition habitDefinition) {
         return upsertHabitDefinition(habitDefinition);
@@ -354,22 +350,6 @@ class JournalDb extends _$JournalDb {
       for (JournalEntity entry in entries) {
         await addTagged(entry);
       }
-    }
-  }
-
-  Future<void> migrateTagEntities() async {
-    Iterable<TagDefinition> tags =
-        (await allTagDefinitions().get()).map(fromTagDefinitionDbEntity);
-    for (TagDefinition tag in tags) {
-      TagEntity tagEntity = TagEntity.genericTag(
-        id: tag.id,
-        tag: tag.tag,
-        private: tag.private,
-        createdAt: tag.createdAt,
-        updatedAt: DateTime.now(),
-        vectorClock: tag.vectorClock,
-      );
-      upsertTagEntity(tagEntity);
     }
   }
 }
