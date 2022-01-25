@@ -288,8 +288,8 @@ class JournalDb extends _$JournalDb {
     return conflictsByStatus(status.index, limit).watch();
   }
 
-  Stream<List<TagDefinition>> watchTags() {
-    return allTagDefinitions().watch().map(tagDefinitionsStreamMapper);
+  Stream<List<TagEntity>> watchTags() {
+    return allTagEntities().watch().map(tagStreamMapper);
   }
 
   Stream<List<HabitDefinition>> watchHabitDefinitions() {

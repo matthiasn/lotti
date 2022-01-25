@@ -14,6 +14,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
@@ -512,6 +513,15 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         await _journalDb.upsertEntityDefinition(entityDefinition);
     await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
       entityDefinition: entityDefinition,
+      status: SyncEntryStatus.update,
+    ));
+    return linesAffected;
+  }
+
+  Future<int> upsertTagEntity(TagEntity tagEntity) async {
+    int linesAffected = await _journalDb.upsertTagEntity(tagEntity);
+    await _outboundQueueCubit.enqueueMessage(SyncMessage.tagEntity(
+      tagEntity: tagEntity,
       status: SyncEntryStatus.update,
     ));
     return linesAffected;

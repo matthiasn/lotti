@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -20,14 +19,14 @@ class TagsSearchWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<TagDefinition>>(
+    return StreamBuilder<List<TagEntity>>(
       stream: db.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here
         // to trigger updates when any tag changes. In that case,
         // data in the tags service will already have been updated.
-        AsyncSnapshot<List<TagDefinition>> _,
+        AsyncSnapshot<List<TagEntity>> _,
       ) {
         TextEditingController controller = TextEditingController();
 

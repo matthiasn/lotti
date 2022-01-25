@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -25,14 +24,14 @@ class TagsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<TagDefinition>>(
+    return StreamBuilder<List<TagEntity>>(
       stream: db.watchTags(),
       builder: (
         BuildContext context,
         // This stream is not used, the StreamBuilder is only here
         // to trigger updates when any tag changes. In that case,
         // data in the tags service will already have been updated.
-        AsyncSnapshot<List<TagDefinition>> _,
+        AsyncSnapshot<List<TagEntity>> _,
       ) {
         return StreamBuilder<JournalEntity?>(
             stream: stream,
@@ -46,12 +45,12 @@ class TagsWidget extends StatelessWidget {
               }
 
               List<String> tagIds = liveEntity.meta.tagIds ?? [];
-              List<TagDefinition> tagsFromTagIds = [];
+              List<TagEntity> tagsFromTagIds = [];
 
               for (String tagId in tagIds) {
-                TagDefinition? tagDefinition = tagsService.getTagById(tagId);
-                if (tagDefinition != null) {
-                  tagsFromTagIds.add(tagDefinition);
+                TagEntity? tagEntity = tagsService.getTagById(tagId);
+                if (tagEntity != null) {
+                  tagsFromTagIds.add(tagEntity);
                 }
               }
 
@@ -211,7 +210,7 @@ class TagsWidget extends StatelessWidget {
                         spacing: 4,
                         runSpacing: 4,
                         children: tagsFromTagIds
-                            .map((TagDefinition tagDefinition) => ClipRRect(
+                            .map((TagEntity tagEntity) => ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
                                   child: Container(
                                     padding: const EdgeInsets.only(
@@ -219,14 +218,14 @@ class TagsWidget extends StatelessWidget {
                                       right: 2,
                                       bottom: 2,
                                     ),
-                                    color: tagDefinition.private
+                                    color: tagEntity.private
                                         ? AppColors.private
                                         : AppColors.tagColor,
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          tagDefinition.tag,
+                                          tagEntity.tag,
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontFamily: 'Oswald',
@@ -240,7 +239,7 @@ class TagsWidget extends StatelessWidget {
                                               size: 20,
                                             ),
                                             onTap: () {
-                                              removeTagId(tagDefinition.id);
+                                              removeTagId(tagEntity.id);
                                             },
                                           ),
                                         ),
