@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
@@ -31,6 +32,7 @@ class _EditorPageState extends State<EditorPage> {
         context
             .read<PersistenceCubit>()
             .createTextEntry(entryTextFromController(_controller));
+        HapticFeedback.heavyImpact();
 
         _controller = makeController();
         FocusScope.of(context).unfocus();
