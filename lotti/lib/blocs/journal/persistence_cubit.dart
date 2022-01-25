@@ -530,8 +530,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<String> addTagDefinition(String tagString) async {
     DateTime now = DateTime.now();
     String id = uuid.v1();
-    await upsertEntityDefinition(
-      TagDefinition(
+    await upsertTagEntity(
+      TagEntity.genericTag(
         id: id,
         tag: tagString.trim(),
         private: false,
