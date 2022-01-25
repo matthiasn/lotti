@@ -4,6 +4,7 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -138,11 +139,10 @@ class TagsWidget extends StatelessWidget {
                               color: AppColors.headerBgColor,
                               borderRadius: BorderRadius.circular(8.0),
                             ),
-                            itemBuilder:
-                                (context, TagDefinition tagDefinition) {
+                            itemBuilder: (context, TagEntity tagEntity) {
                               return ListTile(
                                 title: Text(
-                                  tagDefinition.tag,
+                                  tagEntity.tag,
                                   style: TextStyle(
                                     fontFamily: 'Oswald',
                                     height: 1.2,
@@ -153,8 +153,7 @@ class TagsWidget extends StatelessWidget {
                                 ),
                               );
                             },
-                            onSuggestionSelected:
-                                (TagDefinition tagSuggestion) {
+                            onSuggestionSelected: (TagEntity tagSuggestion) {
                               addTagIds([tagSuggestion.id]);
                               controller.clear();
                             },

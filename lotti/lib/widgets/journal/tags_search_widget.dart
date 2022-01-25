@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -10,7 +11,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class TagsSearchWidget extends StatelessWidget {
   final JournalDb db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
-  final void Function(TagDefinition addedTag) addTag;
+  final void Function(TagEntity addedTag) addTag;
 
   TagsSearchWidget({
     Key? key,
@@ -55,10 +56,10 @@ class TagsSearchWidget extends StatelessWidget {
               color: AppColors.headerBgColor,
               borderRadius: BorderRadius.circular(8.0),
             ),
-            itemBuilder: (context, TagDefinition tagDefinition) {
+            itemBuilder: (context, TagEntity tagEntity) {
               return ListTile(
                 title: Text(
-                  tagDefinition.tag,
+                  tagEntity.tag,
                   style: TextStyle(
                     fontFamily: 'Oswald',
                     height: 1.2,
@@ -69,7 +70,7 @@ class TagsSearchWidget extends StatelessWidget {
                 ),
               );
             },
-            onSuggestionSelected: (TagDefinition tagSuggestion) {
+            onSuggestionSelected: (TagEntity tagSuggestion) {
               addTag(tagSuggestion);
               controller.clear();
             },
@@ -81,8 +82,8 @@ class TagsSearchWidget extends StatelessWidget {
 }
 
 class SelectedTagsWidget extends StatelessWidget {
-  final List<TagDefinition> tags;
-  final void Function(TagDefinition) removeTag;
+  final List<TagEntity> tags;
+  final void Function(TagEntity) removeTag;
   SelectedTagsWidget({
     required this.tags,
     required this.removeTag,
@@ -97,7 +98,7 @@ class SelectedTagsWidget extends StatelessWidget {
           spacing: 4,
           runSpacing: 4,
           children: tags
-              .map((TagDefinition tagDefinition) => ClipRRect(
+              .map((TagEntity tagEntity) => ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
                       padding: const EdgeInsets.only(
@@ -105,14 +106,14 @@ class SelectedTagsWidget extends StatelessWidget {
                         right: 2,
                         bottom: 2,
                       ),
-                      color: tagDefinition.private
+                      color: tagEntity.private
                           ? AppColors.private
                           : AppColors.tagColor,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            tagDefinition.tag,
+                            tagEntity.tag,
                             style: const TextStyle(
                               fontSize: 16,
                               fontFamily: 'Oswald',
@@ -126,7 +127,7 @@ class SelectedTagsWidget extends StatelessWidget {
                                 size: 20,
                               ),
                               onTap: () {
-                                removeTag(tagDefinition);
+                                removeTag(tagEntity);
                               },
                             ),
                           ),

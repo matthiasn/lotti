@@ -296,13 +296,13 @@ class JournalDb extends _$JournalDb {
     return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
   }
 
-  Future<List<TagDefinition>> getMatchingTags(
+  Future<List<TagEntity>> getMatchingTags(
     String match, {
     int limit = 10,
     bool inactive = false,
   }) async {
-    return (await matchingTagDefinitions('%$match%', inactive, limit).get())
-        .map((dbEntity) => fromTagDefinitionDbEntity(dbEntity))
+    return (await matchingTagEntities('%$match%', inactive, limit).get())
+        .map((dbEntity) => fromTagDbEntity(dbEntity))
         .toList();
   }
 

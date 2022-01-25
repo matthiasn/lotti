@@ -137,6 +137,14 @@ List<TagDefinition> tagDefinitionsStreamMapper(
   return dbEntities.map((e) => fromTagDefinitionDbEntity(e)).toList();
 }
 
+TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
+  return TagEntity.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromTagDbEntity(e)).toList();
+}
+
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {
   return HabitDefinition.fromJson(json.decode(dbEntity.serialized));
 }

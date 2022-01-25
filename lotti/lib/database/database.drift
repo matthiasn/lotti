@@ -248,12 +248,25 @@ SELECT * FROM tag_definitions
   AND deleted = false
   ORDER BY tag COLLATE NOCASE;
 
+allTagEntities:
+SELECT * FROM tag_entities
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND deleted = false
+  ORDER BY tag COLLATE NOCASE;
+
 allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 matchingTagDefinitions:
 SELECT * FROM tag_definitions
+  WHERE tag LIKE :match
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND inactive IN (0, :inactive)
+  LIMIT :limit;
+
+matchingTagEntities:
+SELECT * FROM tag_entities
   WHERE tag LIKE :match
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND inactive IN (0, :inactive)

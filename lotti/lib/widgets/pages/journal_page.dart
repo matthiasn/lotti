@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
@@ -58,7 +58,7 @@ class _JournalPageState extends State<JournalPage> {
     'SurveyEntry'
   ];
   late List<String> types;
-  List<TagDefinition> tags = [];
+  List<TagEntity> tags = [];
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
@@ -86,7 +86,7 @@ class _JournalPageState extends State<JournalPage> {
 
   void resetStream() async {
     Set<String>? entryIds;
-    for (TagDefinition tag in tags) {
+    for (TagEntity tag in tags) {
       Set<String> entryIdsForTag = (await _db.entryIdsByTagId(tag.id)).toSet();
       if (entryIds == null) {
         entryIds = entryIdsForTag;
@@ -104,14 +104,14 @@ class _JournalPageState extends State<JournalPage> {
     });
   }
 
-  void addTag(TagDefinition tag) {
+  void addTag(TagEntity tag) {
     setState(() {
       tags.add(tag);
       resetStream();
     });
   }
 
-  void removeTag(TagDefinition remove) {
+  void removeTag(TagEntity remove) {
     setState(() {
       tags = tags.where((tag) => tag.id != remove.id).toList();
       resetStream();
