@@ -42,17 +42,6 @@ class EntityDefinition with _$EntityDefinition {
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
-  factory EntityDefinition.tagDefinition({
-    required String id,
-    required String tag,
-    required bool private,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-    required VectorClock? vectorClock,
-    DateTime? deletedAt,
-    bool? inactive,
-  }) = TagDefinition;
-
   factory EntityDefinition.habitDefinition({
     required String id,
     required DateTime createdAt,
