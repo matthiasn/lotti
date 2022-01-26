@@ -36,9 +36,9 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   Directory? docDir;
   bool mapVisible = true;
-  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
+  double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
   double imageTextEditorHeight =
-      (Platform.isIOS || Platform.isAndroid) ? 160 : 400;
+      (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
 
   @override
   void initState() {
@@ -102,7 +102,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   child: EntryImageWidget(
                     focusNode: _focusNode,
                     journalImage: image,
-                    height: 200,
                   ),
                 ),
                 EditorWidget(
