@@ -28,7 +28,7 @@
     (when-not cfg (error "Flutter config does not exist"))
     (when cfg
       (info "import-images:" path)
-      (ii/import-image-files path put-fn)
+          ;(ii/import-image-files path put-fn)
       (it/import-text-entries path put-fn)
       (is/import-filled-surveys path put-fn)
       (ih/import-quantitative-data path put-fn)
