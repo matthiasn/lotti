@@ -48,7 +48,8 @@ class _AddActionButtonsState extends State<AddActionButtons> {
           children: [
             Visibility(
               visible: widget.linked == null &&
-                  (Platform.isIOS || Platform.isAndroid),
+                  (Platform.isIOS || Platform.isAndroid) &&
+                  expanded,
               child: FloatingActionButton(
                 heroTag: 'health',
                 child: const Icon(
