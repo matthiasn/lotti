@@ -86,6 +86,7 @@ dependencies:
   wechat_assets_picker: ^6.3.0
   yaml: ^3.1.0
   flutter_typeahead: ^3.2.4
+  material_floating_search_bar: ^0.3.6
 
 dev_dependencies:
   flutter_test:
