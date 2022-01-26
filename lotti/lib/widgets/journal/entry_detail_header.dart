@@ -97,7 +97,6 @@ class _EntryDetailHeaderState extends State<EntryDetailHeader> {
             geolocation: widget.item.geolocation,
           ),
         ),
-        EntryInfoRow(entityId: widget.item.meta.id),
       ],
     );
   }

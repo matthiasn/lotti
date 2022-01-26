@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
+import 'package:lotti/widgets/journal/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/tags_widget.dart';
 
 class EntryAppBarTitle extends StatefulWidget {
   final JournalEntity item;
@@ -49,10 +51,14 @@ class EntryDetailRoute extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: AppBar(
-        title: EntryAppBarTitle(
-          item: item,
+        toolbarHeight: 160,
+        title: Column(
+          children: [
+            TagsWidget(item: item),
+            EntryInfoRow(entityId: item.meta.id),
+          ],
         ),
-        backgroundColor: AppColors.headerBgColor,
+        backgroundColor: AppColors.bodyBgColor,
       ),
       body: Container(
         color: AppColors.bodyBgColor,

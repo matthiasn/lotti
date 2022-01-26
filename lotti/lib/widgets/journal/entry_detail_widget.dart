@@ -12,7 +12,6 @@ import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_header.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:path_provider/path_provider.dart';
@@ -64,7 +63,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             geolocation: widget.item.geolocation,
           ),
         ),
-        TagsWidget(item: widget.item),
         widget.item.maybeMap(
           journalAudio: (JournalAudio audio) {
             QuillController _controller =
