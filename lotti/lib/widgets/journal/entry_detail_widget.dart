@@ -9,7 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
-import 'package:lotti/widgets/journal/entry_detail_header.dart';
+import 'package:lotti/widgets/journal/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
@@ -35,7 +35,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   bool showDetails = false;
 
   Directory? docDir;
-  bool mapVisible = false;
+  bool mapVisible = true;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 280 : 400;
   double imageTextEditorHeight =
       (Platform.isIOS || Platform.isAndroid) ? 160 : 400;
@@ -56,13 +56,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        EntryDetailHeader(item: widget.item),
-        Visibility(
-          visible: mapVisible,
-          child: MapWidget(
-            geolocation: widget.item.geolocation,
-          ),
-        ),
         widget.item.maybeMap(
           journalAudio: (JournalAudio audio) {
             QuillController _controller =
@@ -174,6 +167,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
             ),
           ),
           orElse: () => Container(),
+        ),
+        EntryDetailFooter(item: widget.item),
+        Visibility(
+          visible: mapVisible,
+          child: MapWidget(
+            geolocation: widget.item.geolocation,
+          ),
         ),
       ],
     );

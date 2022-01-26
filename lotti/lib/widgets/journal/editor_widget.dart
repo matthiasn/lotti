@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/theme.dart';
@@ -64,15 +62,9 @@ class EditorWidget extends StatelessWidget {
         color: AppColors.editorBgColor,
         child: Column(
           children: [
-            Visibility(
-              visible: (Platform.isMacOS ||
-                      Platform.isLinux ||
-                      Platform.isWindows) &&
-                  !_readOnly,
-              child: ToolbarWidget(
-                controller: _controller,
-                saveFn: _saveFn,
-              ),
+            ToolbarWidget(
+              controller: _controller,
+              saveFn: _saveFn,
             ),
             Expanded(
               child: Padding(
@@ -92,13 +84,6 @@ class EditorWidget extends StatelessWidget {
                     codeBlockBackground: AppColors.codeBlockBackground,
                   ),
                 ),
-              ),
-            ),
-            Visibility(
-              visible: (Platform.isIOS || Platform.isAndroid) && !_readOnly,
-              child: ToolbarWidget(
-                controller: _controller,
-                saveFn: _saveFn,
               ),
             ),
           ],

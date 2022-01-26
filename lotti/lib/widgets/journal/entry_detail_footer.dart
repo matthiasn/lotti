@@ -12,18 +12,18 @@ import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/src/provider.dart';
 
-class EntryDetailHeader extends StatefulWidget {
+class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;
-  const EntryDetailHeader({
+  const EntryDetailFooter({
     Key? key,
     required this.item,
   }) : super(key: key);
 
   @override
-  State<EntryDetailHeader> createState() => _EntryDetailHeaderState();
+  State<EntryDetailFooter> createState() => _EntryDetailFooterState();
 }
 
-class _EntryDetailHeaderState extends State<EntryDetailHeader> {
+class _EntryDetailFooterState extends State<EntryDetailFooter> {
   bool mapVisible = false;
 
   @override

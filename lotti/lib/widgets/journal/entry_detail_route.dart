@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
-import 'package:lotti/widgets/journal/entry_detail_header.dart';
+import 'package:lotti/widgets/journal/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
