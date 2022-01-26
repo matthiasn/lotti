@@ -35,50 +35,52 @@ class _MapWidgetState extends State<MapWidget> {
     );
 
     return Center(
-      child: SizedBox(
-        height: 200,
-        child: Listener(
-          onPointerSignal: (pointerSignal) {
-            if (pointerSignal is PointerScrollEvent) {
-              if (pointerSignal.scrollDelta.dy < 0) {
-                mapController.move(
-                    mapController.center, mapController.zoom + 1);
-              } else {
-                mapController.move(
-                    mapController.center, mapController.zoom - 1);
+      child: IgnorePointer(
+        child: SizedBox(
+          height: 200,
+          child: Listener(
+            onPointerSignal: (pointerSignal) {
+              if (pointerSignal is PointerScrollEvent) {
+                if (pointerSignal.scrollDelta.dy < 0) {
+                  mapController.move(
+                      mapController.center, mapController.zoom + 1);
+                } else {
+                  mapController.move(
+                      mapController.center, mapController.zoom - 1);
+                }
               }
-            }
-          },
-          child: FlutterMap(
-            mapController: mapController,
-            options: MapOptions(
-              center: loc,
-              zoom: 13.0,
-            ),
-            layers: [
-              TileLayerOptions(
-                urlTemplate:
-                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                subdomains: ['a', 'b', 'c'],
-                tileProvider: const CachedTileProvider(),
+            },
+            child: FlutterMap(
+              mapController: mapController,
+              options: MapOptions(
+                center: loc,
+                zoom: 13.0,
               ),
-              MarkerLayerOptions(
-                markers: [
-                  Marker(
-                    width: 64.0,
-                    height: 64.0,
-                    point: loc,
-                    builder: (ctx) => const Opacity(
-                      opacity: 0.8,
-                      child: Image(
-                        image: AssetImage(
-                            'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
+              layers: [
+                TileLayerOptions(
+                  urlTemplate:
+                      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  subdomains: ['a', 'b', 'c'],
+                  tileProvider: const CachedTileProvider(),
+                ),
+                MarkerLayerOptions(
+                  markers: [
+                    Marker(
+                      width: 64.0,
+                      height: 64.0,
+                      point: loc,
+                      builder: (ctx) => const Opacity(
+                        opacity: 0.8,
+                        child: Image(
+                          image: AssetImage(
+                              'assets/images/map/728975_location_map_marker_pin_place_icon.png'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

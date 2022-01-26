@@ -9,13 +9,11 @@ import 'package:photo_view/photo_view.dart';
 
 class EntryImageWidget extends StatefulWidget {
   final JournalImage journalImage;
-  final int height;
   final FocusNode focusNode;
 
   const EntryImageWidget({
     Key? key,
     required this.journalImage,
-    required this.height,
     required this.focusNode,
   }) : super(key: key);
 
@@ -61,7 +59,9 @@ class _EntryImageWidgetState extends State<EntryImageWidget> {
             tag: 'entry_img',
             child: Image.file(
               file,
-              height: widget.height.toDouble(),
+              height: 400,
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.scaleDown,
             ),
           ),
         ),
