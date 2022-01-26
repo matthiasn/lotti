@@ -34,6 +34,9 @@ class _AddActionButtonsState extends State<AddActionButtons> {
     super.initState();
   }
 
+  bool isDesktop = Platform.isMacOS || Platform.isLinux || Platform.isWindows;
+  late bool expanded = isDesktop;
+
   @override
   Widget build(BuildContext _context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
@@ -45,7 +48,8 @@ class _AddActionButtonsState extends State<AddActionButtons> {
           children: [
             Visibility(
               visible: widget.linked == null &&
-                  (Platform.isIOS || Platform.isAndroid),
+                  (Platform.isIOS || Platform.isAndroid) &&
+                  expanded,
               child: FloatingActionButton(
                 heroTag: 'health',
                 child: const Icon(
@@ -64,27 +68,30 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 },
               ),
             ),
-            FloatingActionButton(
-              heroTag: 'measurement',
-              child: const Icon(
-                MdiIcons.tapeMeasure,
-                size: 32,
+            Visibility(
+              visible: expanded,
+              child: FloatingActionButton(
+                heroTag: 'measurement',
+                child: const Icon(
+                  MdiIcons.tapeMeasure,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return NewMeasurementPage(
+                          linked: widget.linked,
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return NewMeasurementPage(
-                        linked: widget.linked,
-                      );
-                    },
-                  ),
-                );
-              },
             ),
             Visibility(
-              visible: widget.linked == null,
+              visible: widget.linked == null && expanded,
               child: FloatingActionButton(
                 heroTag: 'survey',
                 child: const Icon(
@@ -103,41 +110,47 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 },
               ),
             ),
-            FloatingActionButton(
-              heroTag: 'photo',
-              child: const Icon(
-                Icons.camera_roll,
-                size: 32,
-              ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                context.read<JournalImageCubit>().pickImageAssets(
-                      context,
-                      linked: widget.linked,
-                    );
-              },
-            ),
-            FloatingActionButton(
-              heroTag: 'text',
-              child: const Icon(
-                MdiIcons.textLong,
-                size: 32,
-              ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return EditorPage(
+            Visibility(
+              visible: expanded,
+              child: FloatingActionButton(
+                heroTag: 'photo',
+                child: const Icon(
+                  Icons.camera_roll,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  context.read<JournalImageCubit>().pickImageAssets(
+                        context,
                         linked: widget.linked,
                       );
-                    },
-                  ),
-                );
-              },
+                },
+              ),
             ),
             Visibility(
-              visible: Platform.isIOS || Platform.isAndroid,
+              visible: expanded,
+              child: FloatingActionButton(
+                heroTag: 'text',
+                child: const Icon(
+                  MdiIcons.textLong,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return EditorPage(
+                          linked: widget.linked,
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            Visibility(
+              visible: (Platform.isIOS || Platform.isAndroid) && expanded,
               child: FloatingActionButton(
                 heroTag: 'audio',
                 child: const Icon(
@@ -155,6 +168,22 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                       },
                     ),
                   );
+                },
+              ),
+            ),
+            Visibility(
+              visible: !isDesktop,
+              child: FloatingActionButton(
+                heroTag: 'expand',
+                child: Icon(
+                  expanded ? MdiIcons.arrowRight : MdiIcons.plus,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  setState(() {
+                    expanded = !expanded;
+                  });
                 },
               ),
             ),
