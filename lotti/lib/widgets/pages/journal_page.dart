@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
-import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
 class JournalPage extends StatefulWidget {
@@ -58,7 +58,7 @@ class _JournalPageState extends State<JournalPage> {
     'JournalImage',
     'SurveyEntry'
   ];
-  late List<String> types;
+  late Set<String> types;
   Set<String> tagIds = {};
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
@@ -67,7 +67,7 @@ class _JournalPageState extends State<JournalPage> {
   @override
   void initState() {
     super.initState();
-    types = defaultTypes;
+    types = defaultTypes.toSet();
     configFlagsStream = _db.watchConfigFlags();
     configFlagsStream.listen((List<ConfigFlag> configFlags) {
       setState(() {
@@ -97,7 +97,7 @@ class _JournalPageState extends State<JournalPage> {
     }
     setState(() {
       stream = _db.watchJournalEntities(
-        types: types,
+        types: types.toList(),
         ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
@@ -210,51 +210,61 @@ class _JournalPageState extends State<JournalPage> {
                   removeTag: removeTag,
                   tagIds: tagIds.toList(),
                 ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ..._items
+                        .map(
+                          (MultiSelectItem<FilterBy?> item) => GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                String? typeName = item.value?.typeName;
+                                if (typeName != null) {
+                                  if (types.contains(typeName)) {
+                                    types.remove(typeName);
+                                  } else {
+                                    types.add(typeName);
+                                  }
+                                  resetStream();
+                                  HapticFeedback.heavyImpact();
+                                }
+                              });
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  color: types.contains(item.value?.typeName)
+                                      ? Colors.lightBlue
+                                      : Colors.grey[50],
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      item.label,
+                                      style: const TextStyle(
+                                        fontFamily: 'Oswald',
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ],
+                ),
                 Column(
                   children: [
                     Row(
                       children: [
                         TagsSearchWidget(
                           addTag: addTag,
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: MultiSelectDialogField(
-                              items: _items,
-                              title: const Text('Entry Types'),
-                              selectedColor: Colors.blue,
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius:
-                                    const BorderRadius.all(Radius.circular(40)),
-                                border: Border.all(
-                                  color: AppColors.entryBgColor,
-                                  width: 2,
-                                ),
-                              ),
-                              buttonIcon: Icon(
-                                Icons.search,
-                                color: AppColors.entryBgColor,
-                              ),
-                              buttonText: Text(
-                                'Filter by Type',
-                                style: TextStyle(
-                                  color: AppColors.entryBgColor,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              onConfirm: (List<FilterBy?> results) {
-                                types = results.isNotEmpty
-                                    ? results
-                                        .map((e) => e?.typeName ?? '')
-                                        .toList()
-                                    : defaultTypes;
-                                resetStream();
-                              },
-                            ),
-                          ),
                         ),
                       ],
                     ),
