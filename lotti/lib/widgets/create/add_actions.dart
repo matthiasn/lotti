@@ -64,9 +64,6 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 },
               ),
             ),
-            const SizedBox(
-              width: 16,
-            ),
             FloatingActionButton(
               heroTag: 'measurement',
               child: const Icon(
@@ -88,12 +85,6 @@ class _AddActionButtonsState extends State<AddActionButtons> {
             ),
             Visibility(
               visible: widget.linked == null,
-              child: const SizedBox(
-                width: 16,
-              ),
-            ),
-            Visibility(
-              visible: widget.linked == null,
               child: FloatingActionButton(
                 heroTag: 'survey',
                 child: const Icon(
@@ -112,9 +103,6 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 },
               ),
             ),
-            const SizedBox(
-              width: 16,
-            ),
             FloatingActionButton(
               heroTag: 'photo',
               child: const Icon(
@@ -128,9 +116,6 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                       linked: widget.linked,
                     );
               },
-            ),
-            const SizedBox(
-              width: 16,
             ),
             FloatingActionButton(
               heroTag: 'text',
@@ -150,9 +135,6 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                   ),
                 );
               },
-            ),
-            const SizedBox(
-              width: 16,
             ),
             Visibility(
               visible: Platform.isIOS || Platform.isAndroid,
