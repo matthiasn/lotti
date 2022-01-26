@@ -1110,6 +1110,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "5.0.6595"
+  material_floating_search_bar:
+    dependency: "direct main"
+    description:
+      name: material_floating_search_bar
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.6"
   meta:
     dependency: transitive
     description:

@@ -108,7 +108,7 @@ class SelectedTagsWidget extends StatelessWidget {
         AsyncSnapshot<List<TagEntity>> _,
       ) {
         return Padding(
-          padding: const EdgeInsets.all(4.0),
+          padding: const EdgeInsets.only(bottom: 8.0),
           child: Wrap(
               spacing: 4,
               runSpacing: 4,
