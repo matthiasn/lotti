@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
@@ -151,24 +153,27 @@ class _AddActionButtonsState extends State<AddActionButtons> {
             const SizedBox(
               width: 16,
             ),
-            FloatingActionButton(
-              heroTag: 'audio',
-              child: const Icon(
-                MdiIcons.microphone,
-                size: 32,
+            Visibility(
+              visible: Platform.isIOS || Platform.isAndroid,
+              child: FloatingActionButton(
+                heroTag: 'audio',
+                child: const Icon(
+                  MdiIcons.microphone,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return AudioPage(
+                          linked: widget.linked,
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return AudioPage(
-                        linked: widget.linked,
-                      );
-                    },
-                  ),
-                );
-              },
             ),
           ],
         ),
