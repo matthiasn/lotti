@@ -9,6 +9,7 @@ import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
+import 'package:lotti/widgets/pages/audio.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class AddActionButtons extends StatefulWidget {
@@ -40,6 +41,29 @@ class _AddActionButtonsState extends State<AddActionButtons> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            Visibility(
+              visible: widget.linked == null,
+              child: FloatingActionButton(
+                heroTag: 'health',
+                child: const Icon(
+                  MdiIcons.heart,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const HealthPage();
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(
+              width: 16,
+            ),
             FloatingActionButton(
               heroTag: 'measurement',
               child: const Icon(
@@ -51,7 +75,9 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (BuildContext context) {
-                      return const NewMeasurementPage();
+                      return NewMeasurementPage(
+                        linked: widget.linked,
+                      );
                     },
                   ),
                 );
@@ -94,7 +120,10 @@ class _AddActionButtonsState extends State<AddActionButtons> {
               ),
               backgroundColor: AppColors.entryBgColor,
               onPressed: () {
-                context.read<JournalImageCubit>().pickImageAssets(context);
+                context.read<JournalImageCubit>().pickImageAssets(
+                      context,
+                      linked: widget.linked,
+                    );
               },
             ),
             const SizedBox(
@@ -111,7 +140,9 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (BuildContext context) {
-                      return const EditorPage();
+                      return EditorPage(
+                        linked: widget.linked,
+                      );
                     },
                   ),
                 );
@@ -120,25 +151,24 @@ class _AddActionButtonsState extends State<AddActionButtons> {
             const SizedBox(
               width: 16,
             ),
-            Visibility(
-              visible: widget.linked == null,
-              child: FloatingActionButton(
-                heroTag: 'health',
-                child: const Icon(
-                  MdiIcons.heart,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return const HealthPage();
-                      },
-                    ),
-                  );
-                },
+            FloatingActionButton(
+              heroTag: 'audio',
+              child: const Icon(
+                MdiIcons.microphone,
+                size: 32,
               ),
+              backgroundColor: AppColors.entryBgColor,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (BuildContext context) {
+                      return AudioPage(
+                        linked: widget.linked,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),

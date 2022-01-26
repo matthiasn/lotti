@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/pages/audio.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
@@ -42,7 +41,6 @@ class _HomePageState extends State<HomePage> {
               children: const <Widget>[
                 JournalPage(),
                 FlaggedEntriesPage(),
-                AudioPage(),
                 SettingsPage(),
               ],
             ),
@@ -60,11 +58,6 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: FlaggedBadgeIcon(),
               label: 'Flagged',
-              tooltip: '',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.mic),
-              label: 'Audio',
               tooltip: '',
             ),
             BottomNavigationBarItem(
