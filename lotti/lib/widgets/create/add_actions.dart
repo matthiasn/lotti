@@ -44,7 +44,8 @@ class _AddActionButtonsState extends State<AddActionButtons> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Visibility(
-              visible: widget.linked == null,
+              visible: widget.linked == null &&
+                  (Platform.isIOS || Platform.isAndroid),
               child: FloatingActionButton(
                 heroTag: 'health',
                 child: const Icon(
