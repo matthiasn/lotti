@@ -23,7 +23,10 @@ class JournalImageCubit extends Cubit<JournalImageState> {
     _persistenceCubit = persistenceCubit;
   }
 
-  Future<void> pickImageAssets(BuildContext context) async {
+  Future<void> pickImageAssets(
+    BuildContext context, {
+    JournalEntity? linked,
+  }) async {
     final List<AssetEntity>? assets = await AssetPicker.pickAssets(
       context,
       maxAssets: 40,
