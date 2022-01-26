@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
@@ -14,9 +15,11 @@ class AddActionButtons extends StatefulWidget {
   const AddActionButtons({
     Key? key,
     this.navigatorKey,
+    this.linked,
   }) : super(key: key);
 
   final GlobalKey? navigatorKey;
+  final JournalEntity? linked;
 
   @override
   State<AddActionButtons> createState() => _AddActionButtonsState();
@@ -54,25 +57,31 @@ class _AddActionButtonsState extends State<AddActionButtons> {
                 );
               },
             ),
-            const SizedBox(
-              width: 16,
-            ),
-            FloatingActionButton(
-              heroTag: 'survey',
-              child: const Icon(
-                MdiIcons.clipboardOutline,
-                size: 32,
+            Visibility(
+              visible: widget.linked == null,
+              child: const SizedBox(
+                width: 16,
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return const SurveyPage();
-                    },
-                  ),
-                );
-              },
+            ),
+            Visibility(
+              visible: widget.linked == null,
+              child: FloatingActionButton(
+                heroTag: 'survey',
+                child: const Icon(
+                  MdiIcons.clipboardOutline,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const SurveyPage();
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
             const SizedBox(
               width: 16,
@@ -111,22 +120,25 @@ class _AddActionButtonsState extends State<AddActionButtons> {
             const SizedBox(
               width: 16,
             ),
-            FloatingActionButton(
-              heroTag: 'health',
-              child: const Icon(
-                MdiIcons.heart,
-                size: 32,
+            Visibility(
+              visible: widget.linked == null,
+              child: FloatingActionButton(
+                heroTag: 'health',
+                child: const Icon(
+                  MdiIcons.heart,
+                  size: 32,
+                ),
+                backgroundColor: AppColors.entryBgColor,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return const HealthPage();
+                      },
+                    ),
+                  );
+                },
               ),
-              backgroundColor: AppColors.entryBgColor,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return const HealthPage();
-                    },
-                  ),
-                );
-              },
             ),
           ],
         ),

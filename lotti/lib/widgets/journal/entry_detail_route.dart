@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/pages/add/add_page.dart';
 
 class EntryAppBarTitle extends StatefulWidget {
   final JournalEntity item;
@@ -64,6 +65,9 @@ class EntryDetailRoute extends StatelessWidget {
             item: item,
           ),
         ),
+      ),
+      floatingActionButton: AddActionButtons(
+        linked: item,
       ),
     );
   }
