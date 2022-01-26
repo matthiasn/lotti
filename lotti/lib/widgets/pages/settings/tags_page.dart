@@ -43,6 +43,35 @@ class _TagsPageState extends State<TagsPage> {
         return Scaffold(
           appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
           backgroundColor: AppColors.bodyBgColor,
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FloatingActionButton(
+                  heroTag: 'person',
+                  child: const Icon(
+                    MdiIcons.tagFaces,
+                    size: 32,
+                  ),
+                  backgroundColor: AppColors.entryBgColor,
+                  onPressed: () {},
+                ),
+                const SizedBox(
+                  width: 16,
+                ),
+                FloatingActionButton(
+                  heroTag: 'tag',
+                  child: const Icon(
+                    MdiIcons.tagPlusOutline,
+                    size: 32,
+                  ),
+                  backgroundColor: AppColors.entryBgColor,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
           body: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(8.0),
