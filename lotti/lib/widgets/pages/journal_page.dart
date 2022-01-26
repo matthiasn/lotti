@@ -7,6 +7,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
+import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 
@@ -118,6 +119,155 @@ class _JournalPageState extends State<JournalPage> {
     });
   }
 
+  Widget buildFloatingSearchBar() {
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
+
+    double portraitWidth = MediaQuery.of(context).size.width * 0.88;
+
+    return FloatingSearchBar(
+      hint: 'Search...',
+      scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
+      transitionDuration: const Duration(milliseconds: 800),
+      transitionCurve: Curves.easeInOut,
+      physics: const BouncingScrollPhysics(),
+      borderRadius: BorderRadius.circular(8.0),
+      axisAlignment: isPortrait ? 0.0 : -1.0,
+      openAxisAlignment: 0.0,
+      width: isPortrait ? portraitWidth : 500,
+      debounceDelay: const Duration(milliseconds: 500),
+      onQueryChanged: (query) {
+        // Call your model, bloc, controller here.
+      },
+      // Specify a custom transition to be used for
+      // animating between opened and closed stated.
+      transition: CircularFloatingSearchBarTransition(),
+      actions: [
+        FloatingSearchBarAction(
+          showIfOpened: false,
+          child: CircularButton(
+            icon: const Icon(Icons.place),
+            onPressed: () {},
+          ),
+        ),
+        FloatingSearchBarAction.searchToClear(
+          showIfClosed: false,
+        ),
+      ],
+      builder: (context, transition) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Material(
+            color: AppColors.searchBgColor,
+            elevation: 4.0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Visibility(
+                      visible: showPrivateEntriesSwitch,
+                      child: Row(
+                        children: [
+                          Text(
+                            'Private: ',
+                            style: TextStyle(color: AppColors.entryTextColor),
+                          ),
+                          CupertinoSwitch(
+                            value: privateEntriesOnly,
+                            activeColor: AppColors.private,
+                            onChanged: (bool value) {
+                              setState(() {
+                                privateEntriesOnly = value;
+                                resetStream();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 16,
+                    ),
+                    Text(
+                      'Starred: ',
+                      style: TextStyle(color: AppColors.entryTextColor),
+                    ),
+                    CupertinoSwitch(
+                      value: starredEntriesOnly,
+                      activeColor: AppColors.starredGold,
+                      onChanged: (bool value) {
+                        setState(() {
+                          starredEntriesOnly = value;
+                          resetStream();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                SelectedTagsWidget(
+                  removeTag: removeTag,
+                  tagIds: tagIds.toList(),
+                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        TagsSearchWidget(
+                          addTag: addTag,
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: MultiSelectDialogField(
+                              items: _items,
+                              title: const Text('Entry Types'),
+                              selectedColor: Colors.blue,
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius:
+                                    const BorderRadius.all(Radius.circular(40)),
+                                border: Border.all(
+                                  color: AppColors.entryBgColor,
+                                  width: 2,
+                                ),
+                              ),
+                              buttonIcon: Icon(
+                                Icons.search,
+                                color: AppColors.entryBgColor,
+                              ),
+                              buttonText: Text(
+                                'Filter by Type',
+                                style: TextStyle(
+                                  color: AppColors.entryBgColor,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              onConfirm: (List<FilterBy?> results) {
+                                types = results.isNotEmpty
+                                    ? results
+                                        .map((e) => e?.typeName ?? '')
+                                        .toList()
+                                    : defaultTypes;
+                                resetStream();
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Navigator(
@@ -137,121 +287,43 @@ class _JournalPageState extends State<JournalPage> {
                 } else {
                   List<JournalEntity> items = snapshot.data!;
 
-                  return Scaffold(
-                    appBar: AppBar(
-                      toolbarHeight: 100,
-                      backgroundColor: AppColors.headerBgColor,
-                      title: Column(
-                        children: [
-                          Row(
+                  return Stack(
+                    children: [
+                      Scaffold(
+                        backgroundColor: AppColors.bodyBgColor,
+                        body: Container(
+                          margin: const EdgeInsets.all(8.0),
+                          child: ListView(
                             children: [
-                              TagsSearchWidget(
-                                addTag: addTag,
+                              const SizedBox(
+                                height: 56,
                               ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: MultiSelectDialogField(
-                                    items: _items,
-                                    title: const Text('Entry Types'),
-                                    selectedColor: Colors.blue,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(40)),
-                                      border: Border.all(
-                                        color: AppColors.entryBgColor,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    buttonIcon: Icon(
-                                      Icons.search,
-                                      color: AppColors.entryBgColor,
-                                    ),
-                                    buttonText: Text(
-                                      'Filter by Type',
-                                      style: TextStyle(
-                                        color: AppColors.entryBgColor,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    onConfirm: (List<FilterBy?> results) {
-                                      types = results.isNotEmpty
-                                          ? results
-                                              .map((e) => e?.typeName ?? '')
-                                              .toList()
-                                          : defaultTypes;
-                                      resetStream();
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Visibility(
-                                visible: showPrivateEntriesSwitch,
-                                child: CupertinoSwitch(
-                                  value: privateEntriesOnly,
-                                  activeColor: AppColors.private,
-                                  onChanged: (bool value) {
-                                    setState(() {
-                                      privateEntriesOnly = value;
-                                      resetStream();
-                                    });
-                                  },
-                                ),
-                              ),
-                              CupertinoSwitch(
-                                value: starredEntriesOnly,
-                                activeColor: AppColors.starredGold,
-                                onChanged: (bool value) {
-                                  setState(() {
-                                    starredEntriesOnly = value;
-                                    resetStream();
+                              ...List.generate(
+                                items.length,
+                                (int index) {
+                                  JournalEntity item = items.elementAt(index);
+                                  return item.maybeMap(
+                                      journalImage: (JournalImage image) {
+                                    return JournalImageCard(
+                                      item: image,
+                                      index: index,
+                                    );
+                                  }, orElse: () {
+                                    return JournalCard(
+                                      item: item,
+                                      index: index,
+                                    );
                                   });
                                 },
-                              ),
+                                growable: true,
+                              )
                             ],
                           ),
-                          SizedBox(
-                            height: 22,
-                            child: SelectedTagsWidget(
-                              removeTag: removeTag,
-                              tagIds: tagIds.toList(),
-                            ),
-                          )
-                        ],
-                      ),
-                      centerTitle: true,
-                    ),
-                    backgroundColor: AppColors.bodyBgColor,
-                    body: Container(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                        horizontal: 8.0,
-                      ),
-                      child: ListView(
-                        children: List.generate(
-                          items.length,
-                          (int index) {
-                            JournalEntity item = items.elementAt(index);
-                            return item.maybeMap(
-                                journalImage: (JournalImage image) {
-                              return JournalImageCard(
-                                item: image,
-                                index: index,
-                              );
-                            }, orElse: () {
-                              return JournalCard(
-                                item: item,
-                                index: index,
-                              );
-                            });
-                          },
-                          growable: true,
                         ),
+                        floatingActionButton: const AddActionButtons(),
                       ),
-                    ),
-                    floatingActionButton: const AddActionButtons(),
+                      buildFloatingSearchBar(),
+                    ],
                   );
                 }
               },
