@@ -13,182 +13,171 @@ import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:radial_button/widget/circle_floating_button.dart';
 
-class AddActionButtons extends StatefulWidget {
-  const AddActionButtons({
+class RadialAddActionButtons extends StatefulWidget {
+  const RadialAddActionButtons({
     Key? key,
     this.navigatorKey,
     this.linked,
+    required this.radius,
   }) : super(key: key);
 
   final GlobalKey? navigatorKey;
   final JournalEntity? linked;
+  final double radius;
 
   @override
-  State<AddActionButtons> createState() => _AddActionButtonsState();
+  State<RadialAddActionButtons> createState() => _RadialAddActionButtonsState();
 }
 
-class _AddActionButtonsState extends State<AddActionButtons> {
+class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
   @override
   void initState() {
     super.initState();
   }
 
-  bool isDesktop = Platform.isMacOS || Platform.isLinux || Platform.isWindows;
-  late bool expanded = isDesktop;
-
   @override
   Widget build(BuildContext _context) {
+    List<Widget> items = [];
+
+    if (widget.linked == null && (Platform.isIOS || Platform.isAndroid)) {
+      items.add(FloatingActionButton(
+        heroTag: 'health',
+        child: const Icon(
+          MdiIcons.heart,
+          size: 32,
+        ),
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return const HealthPage();
+              },
+            ),
+          );
+        },
+      ));
+    }
+
+    items.add(
+      FloatingActionButton(
+        heroTag: 'measurement',
+        child: const Icon(
+          MdiIcons.tapeMeasure,
+          size: 32,
+        ),
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return NewMeasurementPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    if (widget.linked == null) {
+      items.add(
+        FloatingActionButton(
+          heroTag: 'survey',
+          child: const Icon(
+            MdiIcons.clipboardOutline,
+            size: 32,
+          ),
+          backgroundColor: AppColors.entryBgColor,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  return const SurveyPage();
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    items.add(
+      FloatingActionButton(
+        heroTag: 'photo',
+        child: const Icon(
+          Icons.camera_roll,
+          size: 32,
+        ),
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          context.read<JournalImageCubit>().pickImageAssets(
+                context,
+                linked: widget.linked,
+              );
+        },
+      ),
+    );
+
+    items.add(
+      FloatingActionButton(
+        heroTag: 'text',
+        child: const Icon(
+          MdiIcons.textLong,
+          size: 32,
+        ),
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return EditorPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    if (Platform.isIOS || Platform.isAndroid) {
+      items.add(
+        FloatingActionButton(
+          heroTag: 'audio',
+          child: const Icon(
+            MdiIcons.microphone,
+            size: 32,
+          ),
+          backgroundColor: AppColors.entryBgColor,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  return AudioPage(
+                    linked: widget.linked,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }
+
     return BlocBuilder<PersistenceCubit, PersistenceState>(
         builder: (context, PersistenceState state) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Visibility(
-              visible: widget.linked == null &&
-                  (Platform.isIOS || Platform.isAndroid) &&
-                  expanded,
-              child: FloatingActionButton(
-                heroTag: 'health',
-                child: const Icon(
-                  MdiIcons.heart,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return const HealthPage();
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Visibility(
-              visible: expanded,
-              child: FloatingActionButton(
-                heroTag: 'measurement',
-                child: const Icon(
-                  MdiIcons.tapeMeasure,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return NewMeasurementPage(
-                          linked: widget.linked,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Visibility(
-              visible: widget.linked == null && expanded,
-              child: FloatingActionButton(
-                heroTag: 'survey',
-                child: const Icon(
-                  MdiIcons.clipboardOutline,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return const SurveyPage();
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Visibility(
-              visible: expanded,
-              child: FloatingActionButton(
-                heroTag: 'photo',
-                child: const Icon(
-                  Icons.camera_roll,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  context.read<JournalImageCubit>().pickImageAssets(
-                        context,
-                        linked: widget.linked,
-                      );
-                },
-              ),
-            ),
-            Visibility(
-              visible: expanded,
-              child: FloatingActionButton(
-                heroTag: 'text',
-                child: const Icon(
-                  MdiIcons.textLong,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return EditorPage(
-                          linked: widget.linked,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Visibility(
-              visible: (Platform.isIOS || Platform.isAndroid) && expanded,
-              child: FloatingActionButton(
-                heroTag: 'audio',
-                child: const Icon(
-                  MdiIcons.microphone,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return AudioPage(
-                          linked: widget.linked,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-            Visibility(
-              visible: !isDesktop,
-              child: FloatingActionButton(
-                heroTag: 'expand',
-                child: Icon(
-                  expanded ? MdiIcons.arrowRight : MdiIcons.plus,
-                  size: 32,
-                ),
-                backgroundColor: AppColors.entryBgColor,
-                onPressed: () {
-                  setState(() {
-                    expanded = !expanded;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
+      return CircleFloatingButton.floatingActionButton(
+        radius: widget.radius,
+        useOpacity: true,
+        items: items,
+        color: AppColors.entryBgColor,
+        icon: Icons.add,
+        duration: Duration(milliseconds: 500),
+        curveAnim: Curves.ease,
       );
     });
   }

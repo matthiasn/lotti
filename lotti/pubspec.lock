@@ -1439,6 +1439,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1+1"
+  radial_button:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: f91a5e3
+      resolved-ref: f91a5e3fc350a9408aa625bdbd8593c1fc893cd9
+      url: "https://github.com/matthiasn/radial_button"
+    source: git
+    version: "0.1.5"
   recase:
     dependency: transitive
     description:
