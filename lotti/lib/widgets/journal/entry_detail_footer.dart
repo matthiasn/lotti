@@ -37,6 +37,12 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
     return Column(
       children: [
+        Visibility(
+          visible: mapVisible,
+          child: MapWidget(
+            geolocation: widget.item.geolocation,
+          ),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -78,8 +84,8 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
             ),
             IconButton(
               icon: Icon(mapVisible
-                  ? MdiIcons.chevronDoubleUp
-                  : MdiIcons.chevronDoubleDown),
+                  ? MdiIcons.chevronDoubleDown
+                  : MdiIcons.chevronDoubleUp),
               iconSize: 24,
               tooltip: 'Details',
               color: AppColors.appBarFgColor,
@@ -90,12 +96,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
               },
             ),
           ],
-        ),
-        Visibility(
-          visible: mapVisible,
-          child: MapWidget(
-            geolocation: widget.item.geolocation,
-          ),
         ),
       ],
     );

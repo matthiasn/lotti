@@ -12,7 +12,6 @@ import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
@@ -35,7 +34,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   bool showDetails = false;
 
   Directory? docDir;
-  bool mapVisible = true;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
   double imageTextEditorHeight =
       (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
@@ -168,12 +166,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           orElse: () => Container(),
         ),
         EntryDetailFooter(item: widget.item),
-        Visibility(
-          visible: mapVisible,
-          child: MapWidget(
-            geolocation: widget.item.geolocation,
-          ),
-        ),
       ],
     );
   }
