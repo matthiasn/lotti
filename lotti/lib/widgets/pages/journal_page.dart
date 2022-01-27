@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
@@ -330,8 +331,8 @@ class _JournalPageState extends State<JournalPage> {
                             ],
                           ),
                         ),
-                        floatingActionButton: const RadialAddActionButtons(
-                          radius: 180,
+                        floatingActionButton: RadialAddActionButtons(
+                          radius: isMobile ? 180 : 120,
                         ),
                       ),
                       buildFloatingSearchBar(),

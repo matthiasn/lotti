@@ -74,7 +74,7 @@ class EntryDetailRoute extends StatelessWidget {
       ),
       floatingActionButton: RadialAddActionButtons(
         linked: item,
-        radius: 140,
+        radius: 120,
       ),
     );
   }

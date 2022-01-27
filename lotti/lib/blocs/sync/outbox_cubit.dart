@@ -22,6 +22,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/encryption.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:mutex/mutex.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -57,7 +58,7 @@ class OutboxCubit extends Cubit<OutboxState> {
       }
     });
 
-    if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
+    if (isMobile) {
       fgBgSubscription = FGBGEvents.stream.listen((event) {
         _insightsDb.captureEvent(event);
         if (event == FGBGType.foreground) {
