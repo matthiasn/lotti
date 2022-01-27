@@ -250,7 +250,6 @@ allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
-
 matchingTagEntities:
 SELECT * FROM tag_entities
   WHERE tag LIKE :match
@@ -272,3 +271,10 @@ SELECT journal_id FROM tagged
 linkedEntriesFor:
 SELECT to_id FROM linked_entries
   WHERE from_id = :from_id;
+
+linkedJournalEntities:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;

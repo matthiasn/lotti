@@ -10,6 +10,7 @@ import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_footer.dart';
+import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -166,6 +167,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
           orElse: () => Container(),
         ),
         EntryDetailFooter(item: widget.item),
+        LinkedEntriesWidget(item: widget.item),
       ],
     );
   }
