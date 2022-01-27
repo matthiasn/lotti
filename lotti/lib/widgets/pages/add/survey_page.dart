@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/surveys/calculate.dart';
 import 'package:lotti/surveys/cfq11_survey.dart';
 import 'package:lotti/surveys/panas_survey.dart';
@@ -83,7 +84,12 @@ class SurveyWidget extends StatelessWidget {
 }
 
 class SurveyPage extends StatelessWidget {
-  const SurveyPage({Key? key}) : super(key: key);
+  const SurveyPage({
+    Key? key,
+    this.linked,
+  }) : super(key: key);
+
+  final JournalEntity? linked;
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +137,7 @@ class SurveyPage extends StatelessWidget {
                   createResultCallback(
                     scoreDefinitions: cfq11ScoreDefinitions,
                     context: context,
+                    linked: linked,
                   ),
                 ),
                 primaryColor: CupertinoColors.systemOrange,
@@ -142,6 +149,7 @@ class SurveyPage extends StatelessWidget {
                   createResultCallback(
                     scoreDefinitions: panasScoreDefinitions,
                     context: context,
+                    linked: linked,
                   ),
                 ),
                 primaryColor: CupertinoColors.systemOrange,

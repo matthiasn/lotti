@@ -62,27 +62,27 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ),
     );
 
-    if (widget.linked == null) {
-      items.add(
-        FloatingActionButton(
-          heroTag: 'survey',
-          child: const Icon(
-            MdiIcons.clipboardOutline,
-            size: 32,
-          ),
-          backgroundColor: AppColors.entryBgColor,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return const SurveyPage();
-                },
-              ),
-            );
-          },
+    items.add(
+      FloatingActionButton(
+        heroTag: 'survey',
+        child: const Icon(
+          MdiIcons.clipboardOutline,
+          size: 32,
         ),
-      );
-    }
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return SurveyPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
 
     items.add(
       FloatingActionButton(

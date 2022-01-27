@@ -31,6 +31,7 @@ Map<String, int> calculateScores({
 Function(RPTaskResult) createResultCallback({
   required Map<String, Set<String>> scoreDefinitions,
   required BuildContext context,
+  JournalEntity? linked,
 }) {
   return (RPTaskResult taskResult) {
     context.read<PersistenceCubit>().createSurveyEntry(
@@ -42,6 +43,7 @@ Function(RPTaskResult) createResultCallback({
               taskResult: taskResult,
             ),
           ),
+          linked: linked,
         );
   };
 }
