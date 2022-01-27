@@ -123,7 +123,7 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     fromId: link.fromId,
     toId: link.toId,
     type: link.map(
-      basic: (_) => 'basic',
+      basic: (_) => 'BasicLink',
     ),
   );
 }

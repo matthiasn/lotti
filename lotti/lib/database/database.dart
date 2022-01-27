@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
@@ -330,6 +331,26 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
     return into(habitDefinitions)
         .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  }
+
+  Future<List<String>> linksForEntryId(String entryId) {
+    return linkedEntriesFor(entryId).get();
+  }
+
+  Future<int> upsertEntryLink({
+    required JournalEntity linkedFrom,
+    required JournalEntity linkedTo,
+  }) async {
+    DateTime now = DateTime.now();
+    return into(linkedEntries)
+        .insertOnConflictUpdate(linkedDbEntity(EntryLink.basic(
+      id: uuid.v1(),
+      fromId: linkedFrom.meta.id,
+      toId: linkedTo.meta.id,
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+    )));
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

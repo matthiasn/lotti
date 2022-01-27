@@ -268,3 +268,7 @@ DELETE FROM tagged;
 entryIdsForTagId:
 SELECT journal_id FROM tagged
   WHERE tag_entity_id = :tag_id;
+
+linkedEntriesFor:
+SELECT to_id FROM linked_entries
+  WHERE from_id = :from_id;

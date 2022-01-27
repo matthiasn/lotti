@@ -35,9 +35,10 @@ class _EditorPageState extends State<EditorPage> {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
         builder: (context, PersistenceState state) {
       void _save() async {
-        context
-            .read<PersistenceCubit>()
-            .createTextEntry(entryTextFromController(_controller));
+        context.read<PersistenceCubit>().createTextEntry(
+              entryTextFromController(_controller),
+              linked: widget.linked,
+            );
         HapticFeedback.heavyImpact();
 
         _controller = makeController();
