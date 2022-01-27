@@ -331,7 +331,7 @@ class _JournalPageState extends State<JournalPage> {
                           ),
                         ),
                         floatingActionButton: const RadialAddActionButtons(
-                          radius: 240,
+                          radius: 180,
                         ),
                       ),
                       buildFloatingSearchBar(),

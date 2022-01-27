@@ -8,7 +8,6 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
-import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
@@ -40,26 +39,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
   @override
   Widget build(BuildContext _context) {
     List<Widget> items = [];
-
-    if (widget.linked == null && (Platform.isIOS || Platform.isAndroid)) {
-      items.add(FloatingActionButton(
-        heroTag: 'health',
-        child: const Icon(
-          MdiIcons.heart,
-          size: 32,
-        ),
-        backgroundColor: AppColors.entryBgColor,
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (BuildContext context) {
-                return const HealthPage();
-              },
-            ),
-          );
-        },
-      ));
-    }
 
     items.add(
       FloatingActionButton(

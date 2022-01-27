@@ -4,6 +4,7 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
+import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
 import 'package:lotti/widgets/pages/settings/flags_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
@@ -63,6 +64,19 @@ class _SettingsPageState extends State<SettingsPage> {
                               MaterialPageRoute(
                                 builder: (BuildContext context) {
                                   return const TagsPage();
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SettingsCard(
+                          icon: const SettingsIcon(MdiIcons.heart),
+                          title: 'Health Import',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (BuildContext context) {
+                                  return const HealthPage();
                                 },
                               ),
                             );
