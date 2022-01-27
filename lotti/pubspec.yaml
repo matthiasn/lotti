@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.76+341
+version: 0.3.77+343
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -23,6 +23,11 @@ dependencies:
     git:
       url: https://github.com/matthiasn/enough_mail
       ref: 0c261a7
+
+  radial_button:
+    git:
+      url: https://github.com/matthiasn/radial_button
+      ref: f91a5e3
 
   audio_video_progress_bar: ^0.10.0
   badges: ^2.0.2
