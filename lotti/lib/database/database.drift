@@ -152,6 +152,27 @@ ON tagged (journal_id);
 CREATE INDEX idx_tagged_tag_entity_id
 ON tagged (tag_entity_id);
 
+CREATE TABLE linked_entries (
+  id TEXT NOT NULL UNIQUE,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(from_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(to_id) REFERENCES journal(id) ON DELETE CASCADE,
+  UNIQUE(from_id, to_id, type)
+) as LinkedDbEntry;
+
+CREATE INDEX idx_linked_entries_from_id
+ON linked_entries (from_id);
+
+CREATE INDEX idx_linked_entries_to_id
+ON linked_entries (to_id);
+
+CREATE INDEX idx_linked_entries_type
+ON linked_entries (type);
+
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
 SELECT *

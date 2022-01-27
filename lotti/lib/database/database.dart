@@ -29,7 +29,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -56,6 +56,14 @@ class JournalDb extends _$JournalDb {
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
           await m.createIndex(idxTaggedTagEntityId);
+        }();
+
+        () async {
+          debugPrint('Creating linked entries table and indices');
+          await m.createTable(linkedEntries);
+          await m.createIndex(idxLinkedEntriesFromId);
+          await m.createIndex(idxLinkedEntriesToId);
+          await m.createIndex(idxLinkedEntriesType);
         }();
 
         () async {

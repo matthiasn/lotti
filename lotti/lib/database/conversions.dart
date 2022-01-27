@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -113,6 +114,22 @@ HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
     active: habit.active,
     name: habit.name,
   );
+}
+
+LinkedDbEntry linkedDbEntity(EntryLink link) {
+  return LinkedDbEntry(
+    id: link.id,
+    serialized: jsonEncode(link),
+    fromId: link.fromId,
+    toId: link.toId,
+    type: link.map(
+      basic: (_) => 'basic',
+    ),
+  );
+}
+
+EntryLink entryLinkFromDbEntity(LinkedDbEntry dbEntity) {
+  return EntryLink.fromJson(json.decode(dbEntity.serialized));
 }
 
 TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
