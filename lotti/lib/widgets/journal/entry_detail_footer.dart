@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
@@ -24,7 +25,7 @@ class EntryDetailFooter extends StatefulWidget {
 }
 
 class _EntryDetailFooterState extends State<EntryDetailFooter> {
-  bool mapVisible = false;
+  bool mapVisible = isDesktop;
 
   @override
   void initState() {
