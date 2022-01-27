@@ -79,7 +79,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             geolocation: geolocation,
           );
 
-          _persistenceCubit.createImageEntry(imageData);
+          _persistenceCubit.createImageEntry(imageData, linked: linked);
         }
       }
     }
