@@ -343,20 +343,8 @@ class JournalDb extends _$JournalDb {
     return linkedEntriesFor(entryId).get();
   }
 
-  Future<int> upsertEntryLink({
-    required JournalEntity linkedFrom,
-    required JournalEntity linkedTo,
-  }) async {
-    DateTime now = DateTime.now();
-    return into(linkedEntries)
-        .insertOnConflictUpdate(linkedDbEntity(EntryLink.basic(
-      id: uuid.v1(),
-      fromId: linkedFrom.meta.id,
-      toId: linkedTo.meta.id,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: null,
-    )));
+  Future<int> upsertEntryLink(EntryLink link) async {
+    return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 
@@ -24,6 +25,11 @@ class SyncMessage with _$SyncMessage {
     required TagEntity tagEntity,
     required SyncEntryStatus status,
   }) = SyncTagEntity;
+
+  factory SyncMessage.entryLink({
+    required EntryLink entryLink,
+    required SyncEntryStatus status,
+  }) = SyncEntryLink;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);

@@ -9,6 +9,7 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
@@ -332,23 +333,34 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await saveJournalEntityJson(journalEntity);
       await _journalDb.addTagged(journalEntity);
 
-      if (linked != null) {
-        await _journalDb.upsertEntryLink(
-          linkedFrom: journalEntity,
-          linkedTo: linked,
-        );
-        await _journalDb.upsertEntryLink(
-          linkedFrom: linked,
-          linkedTo: journalEntity,
-        );
-      }
-
       if (saved && enqueueSync) {
         await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.initial,
         ));
       }
+
+      if (linked != null) {
+        DateTime now = DateTime.now();
+        EntryLink link = EntryLink.basic(
+          id: uuid.v1(),
+          toId: journalEntity.meta.id,
+          fromId: linked.meta.id,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        );
+
+        await _journalDb.upsertEntryLink(link);
+
+        if (saved && enqueueSync) {
+          await _outboundQueueCubit.enqueueMessage(SyncMessage.entryLink(
+            entryLink: link,
+            status: SyncEntryStatus.initial,
+          ));
+        }
+      }
+
       await transaction.finish();
 
       NotificationService.updateBadge();

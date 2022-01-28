@@ -14,6 +14,7 @@ import 'package:lotti/blocs/sync/imap/inbox_read.dart';
 import 'package:lotti/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -116,6 +117,9 @@ class InboxImapCubit extends Cubit<ImapState> {
               await _persistenceCubit.createDbEntity(journalEntity,
                   enqueueSync: false);
             }
+          },
+          entryLink: (EntryLink entryLink, SyncEntryStatus _) {
+            _journalDb.upsertEntryLink(entryLink);
           },
           entityDefinition: (
             EntityDefinition entityDefinition,
