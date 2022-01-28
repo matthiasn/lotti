@@ -79,9 +79,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                         value: nf
                             .parse('${formData['value']}'.replaceAll(',', '.')),
                       );
-                      context
-                          .read<PersistenceCubit>()
-                          .createMeasurementEntry(data: measurement);
+                      context.read<PersistenceCubit>().createMeasurementEntry(
+                            data: measurement,
+                            linked: widget.linked,
+                          );
                       Navigator.pop(context);
                     }
                   },

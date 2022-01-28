@@ -7,6 +7,7 @@ import 'package:lotti/blocs/audio/recorder_state.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
@@ -124,7 +125,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void stop() async {
+  void stop({
+    JournalEntity? linked,
+  }) async {
     try {
       await _myRecorder?.stopRecorder();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
@@ -133,7 +136,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
       if (_audioNote != null) {
         AudioNote audioNote = _audioNote!;
-        _persistenceCubit.createAudioEntry(audioNote);
+        _persistenceCubit.createAudioEntry(
+          audioNote,
+          linked: linked,
+        );
       }
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

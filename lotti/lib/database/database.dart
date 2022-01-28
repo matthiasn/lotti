@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
@@ -29,7 +30,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -56,6 +57,14 @@ class JournalDb extends _$JournalDb {
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
           await m.createIndex(idxTaggedTagEntityId);
+        }();
+
+        () async {
+          debugPrint('Creating linked entries table and indices');
+          await m.createTable(linkedEntries);
+          await m.createIndex(idxLinkedEntriesFromId);
+          await m.createIndex(idxLinkedEntriesToId);
+          await m.createIndex(idxLinkedEntriesType);
         }();
 
         () async {
@@ -224,6 +233,12 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<List<JournalEntity>> watchLinkedEntities({
+    required String linkedFrom,
+  }) {
+    return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchFlaggedImport({
     int limit = 1000,
   }) {
@@ -322,6 +337,14 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
     return into(habitDefinitions)
         .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  }
+
+  Future<List<String>> linksForEntryId(String entryId) {
+    return linkedEntriesFor(entryId).get();
+  }
+
+  Future<int> upsertEntryLink(EntryLink link) async {
+    return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

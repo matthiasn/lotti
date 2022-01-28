@@ -152,6 +152,27 @@ ON tagged (journal_id);
 CREATE INDEX idx_tagged_tag_entity_id
 ON tagged (tag_entity_id);
 
+CREATE TABLE linked_entries (
+  id TEXT NOT NULL UNIQUE,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(from_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(to_id) REFERENCES journal(id) ON DELETE CASCADE,
+  UNIQUE(from_id, to_id, type)
+) as LinkedDbEntry;
+
+CREATE INDEX idx_linked_entries_from_id
+ON linked_entries (from_id);
+
+CREATE INDEX idx_linked_entries_to_id
+ON linked_entries (to_id);
+
+CREATE INDEX idx_linked_entries_type
+ON linked_entries (type);
+
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
 SELECT *
@@ -229,7 +250,6 @@ allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
-
 matchingTagEntities:
 SELECT * FROM tag_entities
   WHERE tag LIKE :match
@@ -247,3 +267,14 @@ DELETE FROM tagged;
 entryIdsForTagId:
 SELECT journal_id FROM tagged
   WHERE tag_entity_id = :tag_id;
+
+linkedEntriesFor:
+SELECT to_id FROM linked_entries
+  WHERE from_id = :from_id;
+
+linkedJournalEntities:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;

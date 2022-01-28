@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
@@ -24,7 +25,7 @@ class EntryDetailFooter extends StatefulWidget {
 }
 
 class _EntryDetailFooterState extends State<EntryDetailFooter> {
-  bool mapVisible = false;
+  bool mapVisible = isDesktop;
 
   @override
   void initState() {
@@ -37,6 +38,12 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 
     return Column(
       children: [
+        Visibility(
+          visible: mapVisible,
+          child: MapWidget(
+            geolocation: widget.item.geolocation,
+          ),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -78,8 +85,8 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
             ),
             IconButton(
               icon: Icon(mapVisible
-                  ? MdiIcons.chevronDoubleUp
-                  : MdiIcons.chevronDoubleDown),
+                  ? MdiIcons.chevronDoubleDown
+                  : MdiIcons.chevronDoubleUp),
               iconSize: 24,
               tooltip: 'Details',
               color: AppColors.appBarFgColor,
@@ -90,12 +97,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
               },
             ),
           ],
-        ),
-        Visibility(
-          visible: mapVisible,
-          child: MapWidget(
-            geolocation: widget.item.geolocation,
-          ),
         ),
       ],
     );
