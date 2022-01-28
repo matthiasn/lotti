@@ -353,12 +353,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
         await _journalDb.upsertEntryLink(link);
 
-        if (saved && enqueueSync) {
-          await _outboundQueueCubit.enqueueMessage(SyncMessage.entryLink(
-            entryLink: link,
-            status: SyncEntryStatus.initial,
-          ));
-        }
+        await _outboundQueueCubit.enqueueMessage(SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        ));
       }
 
       await transaction.finish();

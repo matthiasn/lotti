@@ -8,6 +8,7 @@ import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -43,35 +44,7 @@ class _TagsPageState extends State<TagsPage> {
         return Scaffold(
           appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
           backgroundColor: AppColors.bodyBgColor,
-          floatingActionButton: Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FloatingActionButton(
-                  heroTag: 'person',
-                  child: const Icon(
-                    MdiIcons.tagFaces,
-                    size: 32,
-                  ),
-                  backgroundColor: AppColors.entryBgColor,
-                  onPressed: () {},
-                ),
-                const SizedBox(
-                  width: 16,
-                ),
-                FloatingActionButton(
-                  heroTag: 'tag',
-                  child: const Icon(
-                    MdiIcons.tagPlusOutline,
-                    size: 32,
-                  ),
-                  backgroundColor: AppColors.entryBgColor,
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ),
+          floatingActionButton: const RadialAddTagButtons(),
           body: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.all(8.0),

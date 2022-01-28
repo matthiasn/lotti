@@ -308,6 +308,58 @@ class OutboxCubit extends Cubit<OutboxState> {
         await _insightsDb.captureException(exception, stackTrace: stackTrace);
       }
     }
+
+    if (syncMessage is SyncEntryLink) {
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'link');
+      try {
+        String jsonString = json.encode(syncMessage);
+        final VectorClockService vectorClockService =
+            getIt<VectorClockService>();
+
+        String hostHash = await vectorClockService.getHostHash();
+        String subject = '$hostHash:link';
+
+        await _syncDatabase.addOutboxItem(OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: Value(subject),
+          message: Value(jsonString),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
+        ));
+
+        await transaction.finish();
+        startPolling();
+      } catch (exception, stackTrace) {
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      }
+    }
+
+    if (syncMessage is SyncTagEntity) {
+      final transaction =
+          _insightsDb.startTransaction('enqueueMessage()', 'tag');
+      try {
+        String jsonString = json.encode(syncMessage);
+        final VectorClockService vectorClockService =
+            getIt<VectorClockService>();
+
+        String hostHash = await vectorClockService.getHostHash();
+        String subject = '$hostHash:tag';
+
+        await _syncDatabase.addOutboxItem(OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: Value(subject),
+          message: Value(jsonString),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
+        ));
+
+        await transaction.finish();
+        startPolling();
+      } catch (exception, stackTrace) {
+        await _insightsDb.captureException(exception, stackTrace: stackTrace);
+      }
+    }
   }
 
   @override

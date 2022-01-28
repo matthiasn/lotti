@@ -278,3 +278,10 @@ SELECT * FROM journal
   AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id)
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
+
+linkedFromJournalEntities:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT to_id FROM linked_entries WHERE to_id = :to_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
