@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
+import 'classes/tag_type_definitions.dart';
+
+Color getTagColor(TagEntity tagEntity) {
+  if (tagEntity.private) {
+    return AppColors.privateTagColor;
+  }
+
+  return tagEntity.maybeMap(
+    personTag: (_) => AppColors.personTagColor,
+    storyTag: (_) => AppColors.storyTagColor,
+    orElse: () => AppColors.tagColor,
+  );
+}
+
 class AppColors {
   static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
+  static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
+  static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
   static Color privateTagColor = Colors.red;
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);

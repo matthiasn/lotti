@@ -145,7 +145,7 @@ class TagsWidget extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: 'Oswald',
                                     height: 1.2,
-                                    color: AppColors.entryTextColor,
+                                    color: getTagColor(tagEntity),
                                     fontWeight: FontWeight.normal,
                                     fontSize: 20.0,
                                   ),
@@ -210,42 +210,11 @@ class TagsWidget extends StatelessWidget {
                         spacing: 4,
                         runSpacing: 4,
                         children: tagsFromTagIds
-                            .map((TagEntity tagEntity) => ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Container(
-                                    padding: const EdgeInsets.only(
-                                      left: 8,
-                                      right: 2,
-                                      bottom: 2,
-                                    ),
-                                    color: tagEntity.private
-                                        ? AppColors.private
-                                        : AppColors.tagColor,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          tagEntity.tag,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'Oswald',
-                                          ),
-                                        ),
-                                        MouseRegion(
-                                          cursor: SystemMouseCursors.click,
-                                          child: GestureDetector(
-                                            child: const Icon(
-                                              MdiIcons.close,
-                                              size: 20,
-                                            ),
-                                            onTap: () {
-                                              removeTagId(tagEntity.id);
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                            .map((TagEntity tagEntity) => TagWidget(
+                                  tagEntity: tagEntity,
+                                  onTap: () {
+                                    removeTagId(tagEntity.id);
+                                  },
                                 ))
                             .toList()),
                   ),
@@ -253,6 +222,65 @@ class TagsWidget extends StatelessWidget {
               );
             });
       },
+    );
+  }
+}
+
+class TagWidget extends StatelessWidget {
+  const TagWidget({
+    Key? key,
+    required this.tagEntity,
+    required this.onTap,
+  }) : super(key: key);
+
+  final TagEntity tagEntity;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 2,
+          bottom: 2,
+        ),
+        color: getTagColor(tagEntity),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            tagEntity.maybeMap(
+              storyTag: (_) => const Padding(
+                padding: EdgeInsets.only(right: 4.0),
+                child: Icon(MdiIcons.bookOutline),
+              ),
+              personTag: (_) => const Padding(
+                padding: EdgeInsets.only(right: 4.0),
+                child: Icon(MdiIcons.babyFaceOutline),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            Text(
+              tagEntity.tag,
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Oswald',
+              ),
+            ),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                child: const Icon(
+                  MdiIcons.close,
+                  size: 20,
+                ),
+                onTap: onTap,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

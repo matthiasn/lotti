@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/pages/settings/tags/tag_details.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
@@ -33,7 +36,25 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
           size: 32,
         ),
         backgroundColor: AppColors.entryBgColor,
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                DateTime now = DateTime.now();
+                return TagDetailRoute(
+                  tagEntity: TagEntity.genericTag(
+                    id: uuid.v1(),
+                    vectorClock: null,
+                    createdAt: now,
+                    updatedAt: now,
+                    private: false,
+                    tag: '',
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
       FloatingActionButton(
         heroTag: 'person',
@@ -42,16 +63,52 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
           size: 32,
         ),
         backgroundColor: AppColors.entryBgColor,
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                DateTime now = DateTime.now();
+                return TagDetailRoute(
+                  tagEntity: TagEntity.personTag(
+                    id: uuid.v1(),
+                    vectorClock: null,
+                    createdAt: now,
+                    updatedAt: now,
+                    private: false,
+                    tag: '',
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
       FloatingActionButton(
-        heroTag: 'tag',
+        heroTag: 'story',
         child: const Icon(
-          MdiIcons.tagSearch,
+          MdiIcons.book,
           size: 32,
         ),
         backgroundColor: AppColors.entryBgColor,
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                DateTime now = DateTime.now();
+                return TagDetailRoute(
+                  tagEntity: TagEntity.storyTag(
+                    id: uuid.v1(),
+                    vectorClock: null,
+                    createdAt: now,
+                    updatedAt: now,
+                    private: false,
+                    tag: '',
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     ];
 
