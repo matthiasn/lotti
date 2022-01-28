@@ -56,9 +56,7 @@ class TagsViewWidget extends StatelessWidget {
                               vertical: 1,
                               horizontal: 4,
                             ),
-                            color: tagEntity.private
-                                ? AppColors.private
-                                : AppColors.tagColor,
+                            color: getTagColor(tagEntity),
                             child: Text(
                               tagEntity.tag,
                               style: const TextStyle(
