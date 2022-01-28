@@ -239,6 +239,12 @@ class JournalDb extends _$JournalDb {
     return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchLinkedFromEntities({
+    required String linkedTo,
+  }) {
+    return linkedFromJournalEntities(linkedTo).watch().map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchFlaggedImport({
     int limit = 1000,
   }) {
