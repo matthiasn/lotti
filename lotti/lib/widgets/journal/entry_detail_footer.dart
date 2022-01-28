@@ -128,7 +128,7 @@ class EntryInfoRow extends StatelessWidget {
           }
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SwitchRow(
                 label: 'Starred:',
@@ -157,7 +157,7 @@ class EntryInfoRow extends StatelessWidget {
                 value: liveEntity.meta.private ?? false,
               ),
               SwitchRow(
-                label: 'Flagged:',
+                label: 'Flag:',
                 activeColor: AppColors.error,
                 onChanged: (bool value) {
                   Metadata newMeta = liveEntity.meta.copyWith(
@@ -170,7 +170,7 @@ class EntryInfoRow extends StatelessWidget {
                 value: liveEntity.meta.flag == EntryFlag.import,
               ),
               SwitchRow(
-                label: 'Deleted:',
+                label: 'Trash:',
                 activeColor: AppColors.error,
                 onChanged: (bool value) {
                   if (value) {
@@ -208,7 +208,7 @@ class SwitchRow extends StatelessWidget {
       padding: const EdgeInsets.only(right: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(label, style: textStyle),
           CupertinoSwitch(
