@@ -113,8 +113,7 @@ class TagCard extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
-                  return DetailRoute(
-                    index: index,
+                  return TagDetailRoute(
                     tagEntity: tagEntity,
                   );
                 },
@@ -127,23 +126,21 @@ class TagCard extends StatelessWidget {
   }
 }
 
-class DetailRoute extends StatefulWidget {
-  const DetailRoute({
+class TagDetailRoute extends StatefulWidget {
+  const TagDetailRoute({
     Key? key,
     required this.tagEntity,
-    required this.index,
   }) : super(key: key);
 
-  final int index;
   final TagEntity tagEntity;
 
   @override
-  _DetailRouteState createState() {
-    return _DetailRouteState();
+  _TagDetailRouteState createState() {
+    return _TagDetailRouteState();
   }
 }
 
-class _DetailRouteState extends State<DetailRoute> {
+class _TagDetailRouteState extends State<TagDetailRoute> {
   final _formKey = GlobalKey<FormBuilderState>();
 
   @override
