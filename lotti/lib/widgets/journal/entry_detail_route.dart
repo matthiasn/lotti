@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/entry_detail_footer.dart';
 import 'package:lotti/widgets/journal/entry_detail_widget.dart';
@@ -58,7 +59,8 @@ class EntryDetailRoute extends StatelessWidget {
             EntryInfoRow(entityId: item.meta.id),
           ],
         ),
-        backgroundColor: AppColors.bodyBgColor,
+        backgroundColor: AppColors.headerBgColor,
+        foregroundColor: AppColors.appBarFgColor,
       ),
       body: Container(
         color: AppColors.bodyBgColor,
@@ -74,7 +76,7 @@ class EntryDetailRoute extends StatelessWidget {
       ),
       floatingActionButton: RadialAddActionButtons(
         linked: item,
-        radius: 120,
+        radius: isMobile ? 180 : 120,
       ),
     );
   }

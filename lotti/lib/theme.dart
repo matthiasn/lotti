@@ -19,6 +19,7 @@ class AppColors {
   static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
+  static Color tagTextColor = editorTextColor;
   static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);
   static Color storyTagColor = const Color.fromRGBO(200, 120, 0, 1);
   static Color privateTagColor = Colors.red;

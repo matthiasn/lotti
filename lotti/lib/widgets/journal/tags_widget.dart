@@ -88,6 +88,7 @@ class TagsWidget extends StatelessWidget {
               TextEditingController controller = TextEditingController();
 
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(
@@ -263,17 +264,19 @@ class TagWidget extends StatelessWidget {
             ),
             Text(
               tagEntity.tag,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 14,
                 fontFamily: 'Oswald',
+                color: AppColors.tagTextColor,
               ),
             ),
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
-                child: const Icon(
+                child: Icon(
                   MdiIcons.close,
-                  size: 20,
+                  size: 16,
+                  color: AppColors.tagTextColor,
                 ),
                 onTap: onTap,
               ),
