@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -62,7 +65,8 @@ class _JournalPageState extends State<JournalPage> {
   ];
   late Set<String> types;
   Set<String> tagIds = {};
-  List<TagEntity> matchingTags = [];
+  StreamController<List<TagEntity>> matchingTagsController =
+      StreamController<List<TagEntity>>();
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
@@ -149,13 +153,12 @@ class _JournalPageState extends State<JournalPage> {
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
       width: isPortrait ? portraitWidth : 500,
-      onQueryChanged: (query) {
-        setState(() async {
-          matchingTags = await _db.getMatchingTags(
-            query.trim(),
-            inactive: true,
-          );
-        });
+      onQueryChanged: (query) async {
+        List<TagEntity> res = await _db.getMatchingTags(
+          query.trim(),
+          inactive: true,
+        );
+        matchingTagsController.add(res);
       },
       transition: SlideFadeFloatingSearchBarTransition(),
       actions: [
@@ -169,140 +172,149 @@ class _JournalPageState extends State<JournalPage> {
           child: Material(
             color: AppColors.searchBgColor,
             elevation: 4.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Visibility(
-                      visible: showPrivateEntriesSwitch,
-                      child: Row(
-                        children: [
-                          Text(
-                            'Private: ',
-                            style: TextStyle(color: AppColors.entryTextColor),
-                          ),
-                          CupertinoSwitch(
-                            value: privateEntriesOnly,
-                            activeColor: AppColors.private,
-                            onChanged: (bool value) {
-                              setState(() {
-                                privateEntriesOnly = value;
-                                resetStream();
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 16,
-                    ),
-                    Text(
-                      'Starred: ',
-                      style: TextStyle(color: AppColors.entryTextColor),
-                    ),
-                    CupertinoSwitch(
-                      value: starredEntriesOnly,
-                      activeColor: AppColors.starredGold,
-                      onChanged: (bool value) {
-                        setState(() {
-                          starredEntriesOnly = value;
-                          resetStream();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                SelectedTagsWidget(
-                  removeTag: removeTag,
-                  tagIds: tagIds.toList(),
-                ),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ..._items
-                        .map(
-                          (MultiSelectItem<FilterBy?> item) => GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                String? typeName = item.value?.typeName;
-                                if (typeName != null) {
-                                  if (types.contains(typeName)) {
-                                    types.remove(typeName);
-                                  } else {
-                                    types.add(typeName);
-                                  }
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 2.0,
+                bottom: 8.0,
+                left: 4.0,
+                right: 4.0,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Visibility(
+                        visible: showPrivateEntriesSwitch,
+                        child: Row(
+                          children: [
+                            Text(
+                              'Private: ',
+                              style: TextStyle(color: AppColors.entryTextColor),
+                            ),
+                            CupertinoSwitch(
+                              value: privateEntriesOnly,
+                              activeColor: AppColors.private,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  privateEntriesOnly = value;
                                   resetStream();
-                                  HapticFeedback.heavyImpact();
-                                }
-                              });
-                            },
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Container(
-                                  color: types.contains(item.value?.typeName)
-                                      ? Colors.lightBlue
-                                      : Colors.grey[50],
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(
-                                      item.label,
-                                      style: const TextStyle(
-                                        fontFamily: 'Oswald',
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 16,
+                      ),
+                      Text(
+                        'Starred: ',
+                        style: TextStyle(color: AppColors.entryTextColor),
+                      ),
+                      CupertinoSwitch(
+                        value: starredEntriesOnly,
+                        activeColor: AppColors.starredGold,
+                        onChanged: (bool value) {
+                          setState(() {
+                            starredEntriesOnly = value;
+                            resetStream();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  SelectedTagsWidget(
+                    removeTag: removeTag,
+                    tagIds: tagIds.toList(),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ..._items
+                          .map(
+                            (MultiSelectItem<FilterBy?> item) =>
+                                GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  String? typeName = item.value?.typeName;
+                                  if (typeName != null) {
+                                    if (types.contains(typeName)) {
+                                      types.remove(typeName);
+                                    } else {
+                                      types.add(typeName);
+                                    }
+                                    resetStream();
+                                    HapticFeedback.heavyImpact();
+                                  }
+                                });
+                              },
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    color: types.contains(item.value?.typeName)
+                                        ? Colors.lightBlue
+                                        : Colors.grey[50],
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        item.label,
+                                        style: const TextStyle(
+                                          fontFamily: 'Oswald',
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                  ],
-                ),
-                ...matchingTags
-                    .map(
-                      (tagEntity) => ListTile(
-                        title: Text(
-                          tagEntity.tag,
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            height: 1.2,
-                            color: getTagColor(tagEntity),
-                            fontWeight: FontWeight.normal,
-                            fontSize: 20.0,
-                          ),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            addTag(tagEntity.id);
-                          });
-                        },
-                      ),
-                    )
-                    .toList(),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        TagsSearchWidget(
-                          addTag: addTag,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                          )
+                          .toList(),
+                    ],
+                  ),
+                  StreamBuilder<List<TagEntity>>(
+                    stream: matchingTagsController.stream,
+                    builder: (
+                      BuildContext context,
+                      AsyncSnapshot<List<TagEntity>> snapshot,
+                    ) {
+                      return Column(
+                        children: [
+                          ...?snapshot.data
+                              ?.map(
+                                (tagEntity) => ListTile(
+                                  title: Text(
+                                    tagEntity.tag,
+                                    style: TextStyle(
+                                      fontFamily: 'Lato',
+                                      color: getTagColor(tagEntity),
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 24.0,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      addTag(tagEntity.id);
+                                    });
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
+          ).asGlass(),
         );
       },
     );

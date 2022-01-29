@@ -92,6 +92,7 @@ dependencies:
   yaml: ^3.1.0
   flutter_typeahead: ^3.2.4
   material_floating_search_bar: ^0.3.6
+  glass: ^1.0.1+1
 
 dev_dependencies:
   flutter_test:

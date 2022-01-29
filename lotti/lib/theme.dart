@@ -29,7 +29,7 @@ class AppColors {
   static Color editorBgColor = Colors.white;
 
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
-  static Color searchBgColor = headerBgColor;
+  static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
   static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
   static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
 
