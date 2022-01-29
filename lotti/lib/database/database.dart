@@ -105,7 +105,7 @@ class JournalDb extends _$JournalDb {
     if (!exists) {
       return upsertJournalDbEntity(dbEntity);
     } else {
-      debugPrint('PersistenceDb already exists: ${dbEntity.id}');
+      return 0;
     }
   }
 
