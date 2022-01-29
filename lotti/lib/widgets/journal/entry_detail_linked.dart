@@ -49,8 +49,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
               List<JournalEntity> items = snapshot.data!;
               return Container(
                 margin: const EdgeInsets.all(8.0),
-                child: ListView(
-                  shrinkWrap: true,
+                child: Column(
                   children: [
                     Text(
                       'Linked:',
@@ -96,8 +95,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
               List<JournalEntity> items = snapshot.data!;
               return Container(
                 margin: const EdgeInsets.all(8.0),
-                child: ListView(
-                  shrinkWrap: true,
+                child: Column(
                   children: [
                     Text(
                       'Linked from:',
