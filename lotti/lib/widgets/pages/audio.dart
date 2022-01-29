@@ -35,8 +35,10 @@ class _AudioPageState extends State<AudioPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
-          children: const [
-            AudioRecorderWidget(),
+          children: [
+            AudioRecorderWidget(
+              linked: widget.linked,
+            ),
           ],
         ),
       ),
