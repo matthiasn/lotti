@@ -251,17 +251,6 @@ class TagWidget extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            tagEntity.maybeMap(
-              storyTag: (_) => const Padding(
-                padding: EdgeInsets.only(right: 4.0),
-                child: Icon(MdiIcons.bookOutline),
-              ),
-              personTag: (_) => const Padding(
-                padding: EdgeInsets.only(right: 4.0),
-                child: Icon(MdiIcons.babyFaceOutline),
-              ),
-              orElse: () => const SizedBox.shrink(),
-            ),
             Text(
               tagEntity.tag,
               style: TextStyle(
