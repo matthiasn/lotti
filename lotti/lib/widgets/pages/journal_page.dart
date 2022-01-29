@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
@@ -61,6 +62,7 @@ class _JournalPageState extends State<JournalPage> {
   ];
   late Set<String> types;
   Set<String> tagIds = {};
+  List<TagEntity> matchingTags = [];
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
@@ -137,26 +139,26 @@ class _JournalPageState extends State<JournalPage> {
         fontSize: 24,
         fontWeight: FontWeight.w300,
       ),
+      hintStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
       width: isPortrait ? portraitWidth : 500,
-      debounceDelay: const Duration(milliseconds: 500),
       onQueryChanged: (query) {
-        // Call your model, bloc, controller here.
+        setState(() async {
+          matchingTags = await _db.getMatchingTags(
+            query.trim(),
+            inactive: true,
+          );
+        });
       },
-      // Specify a custom transition to be used for
-      // animating between opened and closed stated.
-      transition: CircularFloatingSearchBarTransition(),
+      transition: SlideFadeFloatingSearchBarTransition(),
       actions: [
-        FloatingSearchBarAction(
-          showIfOpened: false,
-          child: CircularButton(
-            icon: const Icon(Icons.place),
-            onPressed: () {},
-          ),
-        ),
         FloatingSearchBarAction.searchToClear(
           showIfClosed: false,
         ),
@@ -266,6 +268,27 @@ class _JournalPageState extends State<JournalPage> {
                         .toList(),
                   ],
                 ),
+                ...matchingTags
+                    .map(
+                      (tagEntity) => ListTile(
+                        title: Text(
+                          tagEntity.tag,
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            height: 1.2,
+                            color: getTagColor(tagEntity),
+                            fontWeight: FontWeight.normal,
+                            fontSize: 20.0,
+                          ),
+                        ),
+                        onTap: () {
+                          setState(() {
+                            addTag(tagEntity.id);
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
                 Column(
                   children: [
                     Row(
