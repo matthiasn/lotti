@@ -109,6 +109,7 @@ class LottiApp extends StatelessWidget {
         title: 'Lotti',
         theme: ThemeData(
           primarySwatch: Colors.grey,
+          primaryColorBrightness: Brightness.dark,
         ),
         home: const HomePage(),
         supportedLocales: const [
