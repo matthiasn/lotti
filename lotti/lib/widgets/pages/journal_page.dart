@@ -172,11 +172,12 @@ class _JournalPageState extends State<JournalPage> {
           padding: const EdgeInsets.only(
             top: 2.0,
             bottom: 8.0,
-            left: 4.0,
+            left: 0.0,
             right: 4.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -225,54 +226,62 @@ class _JournalPageState extends State<JournalPage> {
                 removeTag: removeTag,
                 tagIds: tagIds.toList(),
               ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ..._items
-                      .map(
-                        (MultiSelectItem<FilterBy?> item) => GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              String? typeName = item.value?.typeName;
-                              if (typeName != null) {
-                                if (types.contains(typeName)) {
-                                  types.remove(typeName);
-                                } else {
-                                  types.add(typeName);
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ..._items
+                        .map(
+                          (MultiSelectItem<FilterBy?> item) => GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                String? typeName = item.value?.typeName;
+                                if (typeName != null) {
+                                  if (types.contains(typeName)) {
+                                    types.remove(typeName);
+                                  } else {
+                                    types.add(typeName);
+                                  }
+                                  resetStream();
+                                  HapticFeedback.heavyImpact();
                                 }
-                                resetStream();
-                                HapticFeedback.heavyImpact();
-                              }
-                            });
-                          },
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Container(
-                                color: types.contains(item.value?.typeName)
-                                    ? Colors.lightBlue
-                                    : Colors.grey[50],
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    item.label,
-                                    style: const TextStyle(
-                                      fontFamily: 'Oswald',
+                              });
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  color: types.contains(item.value?.typeName)
+                                      ? Colors.lightBlue
+                                      : Colors.grey[600],
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 1,
+                                      horizontal: 4,
+                                    ),
+                                    child: Text(
+                                      item.label,
+                                      style: TextStyle(
+                                        fontFamily: 'Oswald',
+                                        fontSize: 14,
+                                        color:
+                                            types.contains(item.value?.typeName)
+                                                ? Colors.grey[900]
+                                                : Colors.grey[400],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                ],
+                        )
+                        .toList(),
+                  ],
+                ),
               ),
               StreamBuilder<List<TagEntity>>(
                 stream: matchingTagsController.stream,
