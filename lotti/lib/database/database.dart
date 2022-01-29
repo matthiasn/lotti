@@ -350,7 +350,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertEntryLink(EntryLink link) async {
-    return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+    if (link.fromId != link.toId) {
+      return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+    } else {
+      return 0;
+    }
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
