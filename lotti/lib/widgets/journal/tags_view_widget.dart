@@ -60,7 +60,7 @@ class TagsViewWidget extends StatelessWidget {
                             child: Text(
                               tagEntity.tag,
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 14,
                                 fontFamily: 'Oswald',
                               ),
                             ),

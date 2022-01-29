@@ -152,6 +152,7 @@ class _JournalPageState extends State<JournalPage> {
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
+      margins: EdgeInsets.only(top: 8.0, left: isDesktop ? 12.0 : 0.0),
       width: isPortrait ? portraitWidth : 500,
       onQueryChanged: (query) async {
         List<TagEntity> res = await _db.getMatchingTags(
