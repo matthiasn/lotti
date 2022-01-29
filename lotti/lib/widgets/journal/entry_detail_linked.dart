@@ -29,8 +29,7 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
   void initState() {
     super.initState();
     stream = _db.watchLinkedEntities(linkedFrom: widget.item.meta.id);
-    linkedFromStream =
-        _db.watchLinkedFromEntities(linkedTo: widget.item.meta.id);
+    linkedFromStream = _db.watchLinkedToEntities(linkedTo: widget.item.meta.id);
     stream.listen((event) {});
   }
 
