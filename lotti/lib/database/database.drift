@@ -279,9 +279,9 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
-linkedFromJournalEntities:
+linkedToJournalEntities:
 SELECT * FROM journal
   WHERE deleted = false
-  AND id IN (SELECT to_id FROM linked_entries WHERE to_id = :to_id)
+  AND id IN (SELECT from_id FROM linked_entries WHERE to_id = :to_id)
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;

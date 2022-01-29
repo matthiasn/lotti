@@ -239,10 +239,10 @@ class JournalDb extends _$JournalDb {
     return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchLinkedFromEntities({
+  Stream<List<JournalEntity>> watchLinkedToEntities({
     required String linkedTo,
   }) {
-    return linkedFromJournalEntities(linkedTo).watch().map(entityStreamMapper);
+    return linkedToJournalEntities(linkedTo).watch().map(entityStreamMapper);
   }
 
   Stream<List<JournalEntity>> watchFlaggedImport({
@@ -350,7 +350,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertEntryLink(EntryLink link) async {
-    return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+    if (link.fromId != link.toId) {
+      return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+    } else {
+      return 0;
+    }
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
