@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.86+368
+version: 0.3.87+369
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
