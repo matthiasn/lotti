@@ -111,12 +111,9 @@ class JournalEntity with _$JournalEntity {
 
   const factory JournalEntity.task({
     required Metadata meta,
+    required TaskData taskData,
     EntryText? entryText,
     Geolocation? geolocation,
-    required TaskStatus status,
-    required List<TaskStatus> statusHistory,
-    required String title,
-    List<CheckListItem>? checklist,
   }) = Task;
 
   const factory JournalEntity.quantitative({

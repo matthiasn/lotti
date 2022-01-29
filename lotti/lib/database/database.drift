@@ -7,6 +7,8 @@ CREATE TABLE journal (
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
   starred BOOLEAN NOT NULL DEFAULT FALSE,
   private BOOLEAN NOT NULL DEFAULT FALSE,
+  task BOOLEAN NOT NULL DEFAULT FALSE,
+  task_status TEXT,
   flag INTEGER NOT NULL DEFAULT 0,
   type TEXT NOT NULL,
   subtype TEXT,
@@ -40,6 +42,12 @@ ON journal (starred);
 
 CREATE INDEX idx_journal_private
 ON journal (private);
+
+CREATE INDEX idx_journal_task
+ON journal (task);
+
+CREATE INDEX idx_journal_task_status
+ON journal (task_status);
 
 CREATE INDEX idx_journal_flag
 ON journal (flag);

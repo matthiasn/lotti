@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/check_list_item.dart';
 import 'package:lotti/classes/geolocation.dart';
-
-import 'check_list_item.dart';
 
 part 'task.freezed.dart';
 part 'task.g.dart';
@@ -28,6 +27,7 @@ class TaskStatus with _$TaskStatus {
     required String id,
     required DateTime createdAt,
     required int utcOffset,
+    required String reason,
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskBlocked;
@@ -53,19 +53,15 @@ class TaskStatus with _$TaskStatus {
 }
 
 @freezed
-class Task with _$Task {
-  factory Task({
-    required String id,
-    required DateTime createdAt,
-    required int utcOffset,
+class TaskData with _$TaskData {
+  factory TaskData({
     required TaskStatus status,
     required List<TaskStatus> statusHistory,
-    String? timezone,
     required String title,
-    Geolocation? geolocation,
-    DateTime? updatedAt,
+    double? estimatedMinutes,
     List<CheckListItem>? checklist,
-  }) = _Task;
+  }) = _TaskData;
 
-  factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
+  factory TaskData.fromJson(Map<String, dynamic> json) =>
+      _$TaskDataFromJson(json);
 }

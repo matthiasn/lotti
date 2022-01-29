@@ -10,7 +10,7 @@ import 'database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
   final DateTime createdAt = entity.meta.createdAt;
-  final subtype = entity
+  final String subtype = entity
       .maybeMap(
         quantitative: (qd) => qd.data.dataType,
         measurement: (qd) => qd.data.dataType.name,
@@ -20,12 +20,29 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       )
       .toLowerCase();
 
+  final bool task = entity.maybeMap(
+    task: (qd) => true,
+    orElse: () => false,
+  );
+
   Geolocation? geolocation;
   entity.mapOrNull(
     journalAudio: (item) => geolocation = item.geolocation,
     journalImage: (item) => geolocation = item.geolocation,
     journalEntry: (item) => geolocation = item.geolocation,
     measurement: (item) => geolocation = item.geolocation,
+    task: (item) => geolocation = item.geolocation,
+  );
+
+  final String taskStatus = entity.maybeMap(
+    task: (task) => task.taskData.status.map(
+      open: (_) => 'open',
+      started: (_) => 'started',
+      blocked: (_) => 'blocked',
+      done: (_) => 'done',
+      rejected: (_) => 'rejected',
+    ),
+    orElse: () => '',
   );
 
   String id = entity.meta.id;
@@ -38,6 +55,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     starred: entity.meta.starred ?? false,
     private: entity.meta.private ?? false,
     flag: entity.meta.flag?.index ?? 0,
+    task: task,
+    taskStatus: taskStatus,
     dateTo: entity.meta.dateTo,
     type: entity.runtimeType.toString().replaceFirst(r'_$', ''),
     subtype: subtype,
