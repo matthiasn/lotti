@@ -131,6 +131,12 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
+      backgroundColor: AppColors.appBarFgColor,
+      queryStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,

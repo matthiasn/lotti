@@ -35,8 +35,8 @@ class JournalCardTitle extends StatelessWidget {
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
                   color: AppColors.entryTextColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
                 ),
               ),
@@ -148,7 +148,7 @@ class EntryText extends StatelessWidget {
             fontFamily: 'ShareTechMono',
             color: AppColors.entryTextColor,
             fontWeight: FontWeight.w300,
-            fontSize: 16.0,
+            fontSize: 14.0,
           )),
     );
   }
