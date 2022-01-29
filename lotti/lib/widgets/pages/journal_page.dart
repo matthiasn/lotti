@@ -229,8 +229,8 @@ class _JournalPageState extends State<JournalPage> {
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
                 child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 4,
+                  runSpacing: 4,
                   children: [
                     ..._items
                         .map(
@@ -260,13 +260,13 @@ class _JournalPageState extends State<JournalPage> {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 1,
-                                      horizontal: 4,
+                                      horizontal: 8,
                                     ),
                                     child: Text(
                                       item.label,
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
-                                        fontSize: 12,
+                                        fontSize: 14,
                                         color:
                                             types.contains(item.value?.typeName)
                                                 ? Colors.grey[900]
@@ -299,7 +299,7 @@ class _JournalPageState extends State<JournalPage> {
                                     fontFamily: 'Lato',
                                     color: getTagColor(tagEntity),
                                     fontWeight: FontWeight.normal,
-                                    fontSize: 24.0,
+                                    fontSize: 20.0,
                                   ),
                                 ),
                                 onTap: () {
