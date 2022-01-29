@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
@@ -142,6 +143,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 },
               ),
             );
+            context.read<AudioRecorderCubit>().record();
           },
         ),
       );
@@ -155,7 +157,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         items: items,
         color: AppColors.entryBgColor,
         icon: Icons.add,
-        duration: Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 500),
         curveAnim: Curves.ease,
       );
     });

@@ -48,8 +48,10 @@ class AudioRecorderWidget extends StatelessWidget {
                 iconSize: iconSize,
                 tooltip: 'Stop',
                 color: AppColors.inactiveAudioControl,
-                onPressed: () =>
-                    context.read<AudioRecorderCubit>().stop(linked: linked),
+                onPressed: () {
+                  context.read<AudioRecorderCubit>().stop(linked: linked);
+                  Navigator.pop(context);
+                },
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
