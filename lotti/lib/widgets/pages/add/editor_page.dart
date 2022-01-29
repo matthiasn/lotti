@@ -43,6 +43,7 @@ class _EditorPageState extends State<EditorPage> {
 
         _controller = makeController();
         FocusScope.of(context).unfocus();
+        Navigator.pop(context);
       }
 
       return Scaffold(
