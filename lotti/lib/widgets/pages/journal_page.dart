@@ -45,9 +45,9 @@ class _JournalPageState extends State<JournalPage> {
     FilterBy(typeName: 'JournalEntry', name: 'Text'),
     FilterBy(typeName: 'JournalAudio', name: 'Audio'),
     FilterBy(typeName: 'JournalImage', name: 'Photo'),
-    FilterBy(typeName: 'QuantitativeEntry', name: 'Quantitative'),
-    FilterBy(typeName: 'MeasurementEntry', name: 'Measurement'),
-    FilterBy(typeName: 'SurveyEntry', name: 'Questionnaire'),
+    FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
+    FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
+    FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
   ];
 
   late Stream<List<JournalEntity>> stream;
@@ -266,7 +266,7 @@ class _JournalPageState extends State<JournalPage> {
                                       item.label,
                                       style: TextStyle(
                                         fontFamily: 'Oswald',
-                                        fontSize: 14,
+                                        fontSize: 12,
                                         color:
                                             types.contains(item.value?.typeName)
                                                 ? Colors.grey[900]
