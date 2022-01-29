@@ -104,7 +104,7 @@ DefaultStyles customTextViewerStyles({
     ),
     paragraph: DefaultTextBlockStyle(
       GoogleFonts.lato(
-        fontSize: 12,
+        fontSize: 14,
         color: textColor,
       ),
       const Tuple2(0, 0),

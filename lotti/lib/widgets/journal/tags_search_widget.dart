@@ -39,7 +39,7 @@ class TagsSearchWidget extends StatelessWidget {
               onSubmitted: (String tag) async {},
               autofocus: false,
               style: DefaultTextStyle.of(context).style.copyWith(
-                    color: AppColors.entryTextColor,
+                    color: Colors.white,
                     fontFamily: 'Oswald',
                     fontSize: 14.0,
                   ),
@@ -108,7 +108,7 @@ class SelectedTagsWidget extends StatelessWidget {
         AsyncSnapshot<List<TagEntity>> _,
       ) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
+          padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
           child: Wrap(
               spacing: 4,
               runSpacing: 4,
