@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:lotti/widgets/pages/add/new_task_page.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/src/provider.dart';
 
@@ -55,7 +58,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        widget.item.maybeMap(
+        widget.item.map(
           journalAudio: (JournalAudio audio) {
             QuillController _controller =
                 makeController(serializedQuill: audio.entryText?.quill);
@@ -164,7 +167,56 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
               ),
             ),
           ),
-          orElse: () => Container(),
+          task: (Task task) {
+            final formKey = GlobalKey<FormBuilderState>();
+            QuillController controller =
+                makeController(serializedQuill: task.entryText?.quill);
+
+            void saveText() {
+              formKey.currentState?.save();
+              final formData = formKey.currentState?.value;
+              if (formData == null) {
+                return;
+              }
+              final DateTime due = formData['due'];
+              final String title = formData['title'];
+              final DateTime dt = formData['estimate'];
+
+              final Duration estimate = Duration(
+                hours: dt.hour,
+                minutes: dt.minute,
+              );
+
+              TaskData updatedData = task.data.copyWith(
+                title: title,
+                estimate: estimate,
+                due: due,
+              );
+
+              Task updated = task.copyWith(
+                data: updatedData,
+                entryText: entryTextFromController(controller),
+              );
+
+              context
+                  .read<PersistenceCubit>()
+                  .updateJournalEntity(updated, updated.meta);
+            }
+
+            return TaskForm(
+              controller: controller,
+              focusNode: _focusNode,
+              saveFn: saveText,
+              formKey: formKey,
+              data: task.data,
+            );
+          },
+          habitCompletion: (HabitCompletionEntry value) {
+            return const SizedBox.shrink();
+          },
+          loggedTime: (LoggedTime value) {
+            return const SizedBox.shrink();
+          },
         ),
         EntryDetailFooter(item: widget.item),
         LinkedEntriesWidget(item: widget.item),
