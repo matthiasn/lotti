@@ -207,6 +207,29 @@ SELECT * FROM journal
   ORDER BY date_from DESC
   LIMIT :limit;
 
+filteredTasks:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
+filteredTasksByTag:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
 orderedJournal:
 SELECT * FROM journal
   WHERE deleted = false

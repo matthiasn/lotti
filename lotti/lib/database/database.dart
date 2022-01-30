@@ -241,6 +241,25 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<List<JournalEntity>> watchTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 1000,
+  }) {
+    List<String> types = ['Task'];
+    if (ids != null) {
+      return filteredTasksByTag(
+              types, ids, starredStatuses, taskStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    } else {
+      return filteredTasks(types, starredStatuses, taskStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    }
+  }
+
   Stream<List<JournalEntity>> watchLinkedEntities({
     required String linkedFrom,
   }) {
