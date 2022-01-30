@@ -35,12 +35,12 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
   );
 
   final String taskStatus = entity.maybeMap(
-    task: (task) => task.taskData.status.map(
-      open: (_) => 'open',
-      started: (_) => 'started',
-      blocked: (_) => 'blocked',
-      done: (_) => 'done',
-      rejected: (_) => 'rejected',
+    task: (task) => task.data.status.map(
+      open: (_) => 'OPEN',
+      started: (_) => 'STARTED',
+      blocked: (_) => 'BLOCKED',
+      done: (_) => 'DONE',
+      rejected: (_) => 'REJECTED',
     ),
     orElse: () => '',
   );

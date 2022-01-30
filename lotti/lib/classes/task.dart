@@ -56,9 +56,12 @@ class TaskStatus with _$TaskStatus {
 class TaskData with _$TaskData {
   factory TaskData({
     required TaskStatus status,
+    required DateTime dateFrom,
+    required DateTime dateTo,
     required List<TaskStatus> statusHistory,
     required String title,
-    double? estimatedMinutes,
+    DateTime? due,
+    Duration? estimate,
     List<CheckListItem>? checklist,
   }) = _TaskData;
 

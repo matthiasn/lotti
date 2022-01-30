@@ -22,7 +22,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> {
-  QuillController _controller = makeController();
+  final QuillController _controller = makeController();
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -41,7 +41,6 @@ class _EditorPageState extends State<EditorPage> {
             );
         HapticFeedback.heavyImpact();
 
-        _controller = makeController();
         FocusScope.of(context).unfocus();
         Navigator.pop(context);
       }

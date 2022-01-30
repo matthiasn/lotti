@@ -42,6 +42,7 @@ class _JournalPageState extends State<JournalPage> {
   final JournalDb _db = getIt<JournalDb>();
 
   static final List<FilterBy> _entryTypes = [
+    FilterBy(typeName: 'Task', name: 'Task'),
     FilterBy(typeName: 'JournalEntry', name: 'Text'),
     FilterBy(typeName: 'JournalAudio', name: 'Audio'),
     FilterBy(typeName: 'JournalImage', name: 'Photo'),
@@ -61,7 +62,8 @@ class _JournalPageState extends State<JournalPage> {
     'JournalEntry',
     'JournalAudio',
     'JournalImage',
-    'SurveyEntry'
+    'SurveyEntry',
+    'Task',
   ];
   late Set<String> types;
   Set<String> tagIds = {};
