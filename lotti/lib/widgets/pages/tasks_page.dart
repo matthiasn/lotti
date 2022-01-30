@@ -72,7 +72,7 @@ class _TasksPageState extends State<TasksPage> {
       stream = _db.watchTasks(
         ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
-        taskStatuses: ['OPEN'],
+        taskStatuses: ['OPEN', 'STARTED'],
       );
     });
   }

@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/check_list_item.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 part 'task.freezed.dart';
 part 'task.g.dart';
@@ -67,4 +68,43 @@ class TaskData with _$TaskData {
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>
       _$TaskDataFromJson(json);
+}
+
+TaskStatus taskStatusFromString(String status) {
+  TaskStatus newStatus;
+  DateTime now = DateTime.now();
+
+  if (status == 'DONE') {
+    newStatus = TaskStatus.done(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'STARTED') {
+    newStatus = TaskStatus.started(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'BLOCKED') {
+    newStatus = TaskStatus.blocked(
+      id: uuid.v1(),
+      createdAt: now,
+      reason: 'needs a reason',
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'REJECTED') {
+    newStatus = TaskStatus.rejected(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else {
+    newStatus = TaskStatus.open(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  }
+  return newStatus;
 }

@@ -9,7 +9,6 @@ import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
@@ -49,14 +48,11 @@ class _NewTaskPageState extends State<NewTaskPage> {
         hours: dt.hour,
         minutes: dt.minute,
       );
+      final String status = formData['status'];
 
       TaskData taskData = TaskData(
         due: due,
-        status: TaskStatus.open(
-          id: uuid.v1(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
+        status: taskStatusFromString(status),
         title: title,
         statusHistory: [],
         dateTo: due,
@@ -220,6 +216,68 @@ class TaskForm extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
+                ),
+                FormBuilderChoiceChip(
+                  name: 'status',
+                  initialValue: data?.status.map(
+                        open: (_) => 'OPEN',
+                        started: (_) => 'STARTED',
+                        blocked: (_) => 'BLOCKED',
+                        done: (_) => 'DONE',
+                        rejected: (_) => 'REJECTED',
+                      ) ??
+                      'OPEN',
+                  decoration: InputDecoration(
+                    labelText: 'Task Status:',
+                    labelStyle: labelStyle,
+                  ),
+                  selectedColor: data?.status.map(
+                        open: (_) => AppColors.entryBgColor,
+                        started: (_) => AppColors.entryBgColor,
+                        blocked: (_) => Colors.red,
+                        done: (_) => Colors.green,
+                        rejected: (_) => Colors.red,
+                      ) ??
+                      AppColors.entryBgColor,
+                  runSpacing: 4,
+                  spacing: 4,
+                  options: const [
+                    FormBuilderFieldOption(
+                      value: 'OPEN',
+                      child: Text(
+                        'OPEN',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                    FormBuilderFieldOption(
+                      value: 'STARTED',
+                      child: Text(
+                        'STARTED',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                    FormBuilderFieldOption(
+                      value: 'BLOCKED',
+                      child: Text(
+                        'BLOCKED',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                    FormBuilderFieldOption(
+                      value: 'DONE',
+                      child: Text(
+                        'DONE',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                    FormBuilderFieldOption(
+                      value: 'REJECTED',
+                      child: Text(
+                        'REJECTED',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

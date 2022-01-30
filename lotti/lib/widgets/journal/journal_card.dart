@@ -148,7 +148,7 @@ class JournalCardTitle extends StatelessWidget {
                             started: (_) => Colors.blue,
                             blocked: (_) => Colors.red,
                             done: (_) => Colors.green,
-                            rejected: (_) => Colors.black54,
+                            rejected: (_) => Colors.red,
                           ),
                           child: Text(
                             data.status.map(
