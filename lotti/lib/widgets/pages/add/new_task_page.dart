@@ -109,106 +109,107 @@ class _NewTaskPageState extends State<NewTaskPage> {
             ],
           ),
           backgroundColor: AppColors.bodyBgColor,
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    color: AppColors.headerBgColor,
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      children: [
-                        FormBuilder(
-                          key: _formKey,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          child: Column(
-                            children: <Widget>[
-                              FormBuilderTextField(
-                                initialValue: '',
-                                decoration: InputDecoration(
-                                  labelText: 'Task:',
-                                  labelStyle: labelStyle,
-                                ),
-                                style: inputStyle,
-                                name: 'title',
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                              ),
-                              FormBuilderCupertinoDateTimePicker(
-                                name: 'due',
-                                alwaysUse24HourFormat: true,
-                                format: DateFormat(
-                                    'EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                                inputType:
-                                    CupertinoDateTimePickerInputType.both,
-                                style: inputStyle,
-                                decoration: InputDecoration(
-                                  labelText: 'Task due:',
-                                  labelStyle: labelStyle,
-                                ),
-                                initialValue: DateTime.now(),
-                                theme: DatePickerTheme(
-                                  headerColor: AppColors.headerBgColor,
-                                  backgroundColor: AppColors.bodyBgColor,
-                                  itemStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      color: AppColors.headerBgColor,
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          FormBuilder(
+                            key: _formKey,
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            child: Column(
+                              children: <Widget>[
+                                FormBuilderTextField(
+                                  initialValue: '',
+                                  decoration: InputDecoration(
+                                    labelText: 'Task:',
+                                    labelStyle: labelStyle,
                                   ),
-                                  doneStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
+                                  style: inputStyle,
+                                  name: 'title',
                                 ),
-                              ),
-                              FormBuilderCupertinoDateTimePicker(
-                                name: 'estimate',
-                                alwaysUse24HourFormat: true,
-                                format: DateFormat('HH:mm'),
-                                inputType:
-                                    CupertinoDateTimePickerInputType.time,
-                                style: inputStyle,
-                                decoration: InputDecoration(
-                                  labelText: 'Estimate:',
-                                  labelStyle: labelStyle,
-                                ),
-                                initialValue:
-                                    DateTime.fromMillisecondsSinceEpoch(0,
-                                        isUtc: true),
-                                theme: DatePickerTheme(
-                                  headerColor: AppColors.headerBgColor,
-                                  backgroundColor: AppColors.bodyBgColor,
-                                  itemStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                FormBuilderCupertinoDateTimePicker(
+                                  name: 'due',
+                                  alwaysUse24HourFormat: true,
+                                  format: DateFormat(
+                                      'EEEE, MMMM d, yyyy \'at\' HH:mm'),
+                                  inputType:
+                                      CupertinoDateTimePickerInputType.both,
+                                  style: inputStyle,
+                                  decoration: InputDecoration(
+                                    labelText: 'Task due:',
+                                    labelStyle: labelStyle,
                                   ),
-                                  doneStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
+                                  initialValue: DateTime.now(),
+                                  theme: DatePickerTheme(
+                                    headerColor: AppColors.headerBgColor,
+                                    backgroundColor: AppColors.bodyBgColor,
+                                    itemStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                    doneStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                FormBuilderCupertinoDateTimePicker(
+                                  name: 'estimate',
+                                  alwaysUse24HourFormat: true,
+                                  format: DateFormat('HH:mm'),
+                                  inputType:
+                                      CupertinoDateTimePickerInputType.time,
+                                  style: inputStyle,
+                                  decoration: InputDecoration(
+                                    labelText: 'Estimate:',
+                                    labelStyle: labelStyle,
+                                  ),
+                                  initialValue:
+                                      DateTime.fromMillisecondsSinceEpoch(0,
+                                          isUtc: true),
+                                  theme: DatePickerTheme(
+                                    headerColor: AppColors.headerBgColor,
+                                    backgroundColor: AppColors.bodyBgColor,
+                                    itemStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                    doneStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        ClipRRect(
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(8.0)),
-                          child: EditorWidget(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            saveFn: _save,
+                          ClipRRect(
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(8.0)),
+                            child: EditorWidget(
+                              controller: _controller,
+                              focusNode: _focusNode,
+                              saveFn: _save,
+                              height: 200,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
