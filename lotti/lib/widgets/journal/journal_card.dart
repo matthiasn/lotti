@@ -124,17 +124,52 @@ class JournalCardTitle extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    data.title,
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      color: AppColors.entryTextColor,
-                      fontWeight: FontWeight.normal,
-                      fontSize: 24.0,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        data.title,
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 24.0,
+                        ),
+                      ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 12,
+                          ),
+                          color: data.status.map(
+                            open: (_) => Colors.orange,
+                            started: (_) => Colors.blue,
+                            blocked: (_) => Colors.red,
+                            done: (_) => Colors.green,
+                            rejected: (_) => Colors.black54,
+                          ),
+                          child: Text(
+                            data.status.map(
+                              open: (_) => 'OPEN',
+                              started: (_) => 'STARTED',
+                              blocked: (_) => 'BLOCKED',
+                              done: (_) => 'DONE',
+                              rejected: (_) => 'REJECTED',
+                            ),
+                            style: TextStyle(
+                              fontFamily: 'Oswald',
+                              color: AppColors.bodyBgColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (task.entryText?.plainText != null)
-                    TextViewerWidget(entryText: task.entryText),
+                  TextViewerWidget(entryText: task.entryText),
                 ],
               );
             },
