@@ -5,6 +5,7 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
@@ -117,6 +118,61 @@ class JournalCardTitle extends StatelessWidget {
                 ],
               );
             },
+            task: (Task task) {
+              TaskData data = task.data;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        data.title,
+                        style: TextStyle(
+                          fontFamily: 'Oswald',
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 24.0,
+                        ),
+                      ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 12,
+                          ),
+                          color: data.status.map(
+                            open: (_) => Colors.orange,
+                            started: (_) => Colors.blue,
+                            blocked: (_) => Colors.red,
+                            done: (_) => Colors.green,
+                            rejected: (_) => Colors.red,
+                          ),
+                          child: Text(
+                            data.status.map(
+                              open: (_) => 'OPEN',
+                              started: (_) => 'STARTED',
+                              blocked: (_) => 'BLOCKED',
+                              done: (_) => 'DONE',
+                              rejected: (_) => 'REJECTED',
+                            ),
+                            style: TextStyle(
+                              fontFamily: 'Oswald',
+                              color: AppColors.bodyBgColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextViewerWidget(entryText: task.entryText),
+                ],
+              );
+            },
             orElse: () => Row(
               children: const [],
             ),
@@ -182,6 +238,10 @@ class JournalCard extends StatelessWidget {
               height: 50,
               color: AppColors.entryBgColor,
               child: item.maybeMap(
+                task: (_) => const Icon(
+                  Icons.check_box_outline_blank,
+                  size: 32,
+                ),
                 journalAudio: (_) => const Icon(
                   Icons.mic,
                   size: 32,

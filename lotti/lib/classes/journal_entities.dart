@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/classes/check_list_item.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -111,12 +110,9 @@ class JournalEntity with _$JournalEntity {
 
   const factory JournalEntity.task({
     required Metadata meta,
+    required TaskData data,
     EntryText? entryText,
     Geolocation? geolocation,
-    required TaskStatus status,
-    required List<TaskStatus> statusHistory,
-    required String title,
-    List<CheckListItem>? checklist,
   }) = Task;
 
   const factory JournalEntity.quantitative({

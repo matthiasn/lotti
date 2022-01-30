@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -14,10 +13,9 @@ import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
-import 'package:multi_select_flutter/util/multi_select_item.dart';
 
-class JournalPage extends StatefulWidget {
-  const JournalPage({
+class TasksPage extends StatefulWidget {
+  const TasksPage({
     Key? key,
     this.navigatorKey,
   }) : super(key: key);
@@ -25,7 +23,7 @@ class JournalPage extends StatefulWidget {
   final GlobalKey? navigatorKey;
 
   @override
-  _JournalPageState createState() => _JournalPageState();
+  _TasksPageState createState() => _TasksPageState();
 }
 
 class FilterBy {
@@ -38,57 +36,23 @@ class FilterBy {
   });
 }
 
-class _JournalPageState extends State<JournalPage> {
+class _TasksPageState extends State<TasksPage> {
   final JournalDb _db = getIt<JournalDb>();
-
-  static final List<FilterBy> _entryTypes = [
-    FilterBy(typeName: 'Task', name: 'Task'),
-    FilterBy(typeName: 'JournalEntry', name: 'Text'),
-    FilterBy(typeName: 'JournalAudio', name: 'Audio'),
-    FilterBy(typeName: 'JournalImage', name: 'Photo'),
-    FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
-    FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
-    FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
-  ];
-
   late Stream<List<JournalEntity>> stream;
   late Stream<List<ConfigFlag>> configFlagsStream;
 
-  final List<MultiSelectItem<FilterBy?>> _items = _entryTypes
-      .map((entryType) => MultiSelectItem<FilterBy?>(entryType, entryType.name))
-      .toList();
-
-  final List<String> defaultTypes = [
-    'JournalEntry',
-    'JournalAudio',
-    'JournalImage',
-    'SurveyEntry',
-    'Task',
-  ];
-  late Set<String> types;
+  Set<String> types = {'Task'};
   Set<String> tagIds = {};
   StreamController<List<TagEntity>> matchingTagsController =
       StreamController<List<TagEntity>>();
   bool starredEntriesOnly = false;
-  bool privateEntriesOnly = false;
-  bool showPrivateEntriesSwitch = false;
 
   @override
   void initState() {
     super.initState();
-    types = defaultTypes.toSet();
+
     configFlagsStream = _db.watchConfigFlags();
     configFlagsStream.listen((List<ConfigFlag> configFlags) {
-      setState(() {
-        for (ConfigFlag flag in configFlags) {
-          if (flag.name == 'private') {
-            showPrivateEntriesSwitch = flag.status;
-          }
-        }
-        if (showPrivateEntriesSwitch == false) {
-          privateEntriesOnly = false;
-        }
-      });
       resetStream();
     });
     resetStream();
@@ -105,11 +69,10 @@ class _JournalPageState extends State<JournalPage> {
       }
     }
     setState(() {
-      stream = _db.watchJournalEntities(
-        types: types.toList(),
+      stream = _db.watchTasks(
         ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
-        privateStatuses: privateEntriesOnly ? [true] : [true, false],
+        taskStatuses: ['OPEN', 'STARTED'],
       );
     });
   }
@@ -184,30 +147,6 @@ class _JournalPageState extends State<JournalPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Visibility(
-                    visible: showPrivateEntriesSwitch,
-                    child: Row(
-                      children: [
-                        Text(
-                          'Private: ',
-                          style: TextStyle(color: AppColors.entryTextColor),
-                        ),
-                        CupertinoSwitch(
-                          value: privateEntriesOnly,
-                          activeColor: AppColors.private,
-                          onChanged: (bool value) {
-                            setState(() {
-                              privateEntriesOnly = value;
-                              resetStream();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 16,
-                  ),
                   Text(
                     'Starred: ',
                     style: TextStyle(color: AppColors.entryTextColor),
@@ -227,63 +166,6 @@ class _JournalPageState extends State<JournalPage> {
               SelectedTagsWidget(
                 removeTag: removeTag,
                 tagIds: tagIds.toList(),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: [
-                    ..._items
-                        .map(
-                          (MultiSelectItem<FilterBy?> item) => GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                String? typeName = item.value?.typeName;
-                                if (typeName != null) {
-                                  if (types.contains(typeName)) {
-                                    types.remove(typeName);
-                                  } else {
-                                    types.add(typeName);
-                                  }
-                                  resetStream();
-                                  HapticFeedback.heavyImpact();
-                                }
-                              });
-                            },
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Container(
-                                  color: types.contains(item.value?.typeName)
-                                      ? Colors.lightBlue
-                                      : Colors.grey[600],
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 1,
-                                      horizontal: 8,
-                                    ),
-                                    child: Text(
-                                      item.label,
-                                      style: TextStyle(
-                                        fontFamily: 'Oswald',
-                                        fontSize: 14,
-                                        color:
-                                            types.contains(item.value?.typeName)
-                                                ? Colors.grey[900]
-                                                : Colors.grey[400],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ],
-                ),
               ),
               StreamBuilder<List<TagEntity>>(
                 stream: matchingTagsController.stream,

@@ -30,7 +30,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -57,6 +57,14 @@ class JournalDb extends _$JournalDb {
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
           await m.createIndex(idxTaggedTagEntityId);
+        }();
+
+        () async {
+          debugPrint('Creating task columns and indices');
+          await m.addColumn(journal, journal.taskStatus);
+          await m.createIndex(idxJournalTaskStatus);
+          await m.addColumn(journal, journal.task);
+          await m.createIndex(idxJournalTask);
         }();
 
         () async {
@@ -228,6 +236,25 @@ class JournalDb extends _$JournalDb {
           .map(entityStreamMapper);
     } else {
       return filteredJournal(types, starredStatuses, privateStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    }
+  }
+
+  Stream<List<JournalEntity>> watchTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 1000,
+  }) {
+    List<String> types = ['Task'];
+    if (ids != null) {
+      return filteredTasksByTag(
+              types, ids, starredStatuses, taskStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    } else {
+      return filteredTasks(types, starredStatuses, taskStatuses, limit)
           .watch()
           .map(entityStreamMapper);
     }

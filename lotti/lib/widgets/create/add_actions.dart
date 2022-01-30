@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
+import 'package:lotti/widgets/pages/add/new_task_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -89,7 +90,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       FloatingActionButton(
         heroTag: 'photo',
         child: const Icon(
-          Icons.camera_roll,
+          Icons.camera_roll_outlined,
           size: 32,
         ),
         backgroundColor: AppColors.entryBgColor,
@@ -149,10 +150,32 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       );
     }
 
+    items.add(
+      FloatingActionButton(
+        heroTag: 'task',
+        child: const Icon(
+          Icons.task_outlined,
+          size: 32,
+        ),
+        backgroundColor: AppColors.entryBgColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return NewTaskPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+
     return BlocBuilder<PersistenceCubit, PersistenceState>(
         builder: (context, PersistenceState state) {
       return CircleFloatingButton.floatingActionButton(
-        radius: widget.radius,
+        radius: items.length * 32,
         useOpacity: true,
         items: items,
         color: AppColors.entryBgColor,

@@ -16,6 +16,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
@@ -156,6 +157,57 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       JournalEntity journalEntity = JournalEntity.measurement(
         data: data,
         geolocation: geolocation,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> createTaskEntry({
+    required TaskData data,
+    required EntryText entryText,
+    JournalEntity? linked,
+  }) async {
+    final transaction =
+        _insightsDb.startTransaction('createMeasurementEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      Geolocation? geolocation;
+
+      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
+        geolocation = await location?.getCurrentGeoLocation().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => null, // TODO: report timeout in Insights
+            );
+      }
+
+      JournalEntity journalEntity = JournalEntity.task(
+        data: data,
+        geolocation: geolocation,
+        entryText: entryText,
         meta: Metadata(
           createdAt: now,
           updatedAt: now,

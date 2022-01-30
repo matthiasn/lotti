@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
+import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
-
-import 'bottom_nav/flagged_badge_icon.dart';
+import 'package:lotti/widgets/pages/tasks_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -41,6 +42,7 @@ class _HomePageState extends State<HomePage> {
               children: const <Widget>[
                 JournalPage(),
                 FlaggedEntriesPage(),
+                TasksPage(),
                 SettingsPage(),
               ],
             ),
@@ -51,7 +53,7 @@ class _HomePageState extends State<HomePage> {
           type: BottomNavigationBarType.fixed,
           items: <BottomNavigationBarItem>[
             const BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
               label: 'Journal',
               tooltip: '',
             ),
@@ -61,8 +63,13 @@ class _HomePageState extends State<HomePage> {
               tooltip: '',
             ),
             BottomNavigationBarItem(
+              icon: TasksBadgeIcon(),
+              label: 'Tasks',
+              tooltip: '',
+            ),
+            BottomNavigationBarItem(
               icon: OutboxBadgeIcon(
-                icon: const Icon(Icons.settings),
+                icon: const Icon(Icons.settings_outlined),
               ),
               label: 'Settings',
               tooltip: '',
