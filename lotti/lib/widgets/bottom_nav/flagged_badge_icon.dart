@@ -25,7 +25,7 @@ class FlaggedBadgeIcon extends StatelessWidget {
           showBadge: count != null && count != 0,
           toAnimate: false,
           elevation: 3,
-          child: const Icon(MdiIcons.flag),
+          child: const Icon(MdiIcons.flagOutline),
         );
       },
     );

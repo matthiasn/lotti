@@ -29,7 +29,7 @@ class TasksBadgeIcon extends StatelessWidget {
           showBadge: count != 0,
           toAnimate: false,
           elevation: 3,
-          child: const Icon(MdiIcons.flag),
+          child: const Icon(MdiIcons.checkboxOutline),
         );
       },
     );

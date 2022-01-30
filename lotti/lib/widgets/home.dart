@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> {
           type: BottomNavigationBarType.fixed,
           items: <BottomNavigationBarItem>[
             const BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
               label: 'Journal',
               tooltip: '',
             ),
@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
             ),
             BottomNavigationBarItem(
               icon: OutboxBadgeIcon(
-                icon: const Icon(Icons.settings),
+                icon: const Icon(Icons.settings_outlined),
               ),
               label: 'Settings',
               tooltip: '',
