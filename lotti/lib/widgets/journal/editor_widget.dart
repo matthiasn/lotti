@@ -5,16 +5,18 @@ import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
-  const EditorWidget({
+  EditorWidget({
     Key? key,
     required QuillController controller,
-    double height = 300,
+    double minHeight = 80,
+    double? maxHeight,
     double padding = 16.0,
     bool readOnly = false,
     required Function saveFn,
     required FocusNode focusNode,
   })  : _controller = controller,
-        _height = height,
+        _maxHeight = maxHeight,
+        _minHeight = minHeight,
         _readOnly = readOnly,
         _padding = padding,
         _saveFn = saveFn,
@@ -22,7 +24,8 @@ class EditorWidget extends StatelessWidget {
         super(key: key);
 
   final QuillController _controller;
-  final double _height;
+  final double? _maxHeight;
+  final double _minHeight;
   final bool _readOnly;
   final double _padding;
   final Function _saveFn;
@@ -58,35 +61,41 @@ class EditorWidget extends StatelessWidget {
         saveViaKeyboard(event);
       },
       child: Container(
-        height: _height,
         color: AppColors.editorBgColor,
-        child: Column(
-          children: [
-            ToolbarWidget(
-              controller: _controller,
-              saveFn: _saveFn,
-            ),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: _padding),
-                child: QuillEditor(
-                  controller: _controller,
-                  readOnly: _readOnly,
-                  scrollController: ScrollController(),
-                  scrollable: true,
-                  focusNode: _focusNode,
-                  autoFocus: true,
-                  expands: false,
-                  padding: const EdgeInsets.only(top: 8, bottom: 16),
-                  keyboardAppearance: Brightness.dark,
-                  customStyles: customEditorStyles(
-                    textColor: AppColors.editorTextColor,
-                    codeBlockBackground: AppColors.codeBlockBackground,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: _maxHeight ?? MediaQuery.of(context).size.height - 160,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ToolbarWidget(
+                controller: _controller,
+                saveFn: _saveFn,
+              ),
+              Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: _padding),
+                  child: QuillEditor(
+                    controller: _controller,
+                    readOnly: _readOnly,
+                    scrollController: ScrollController(),
+                    scrollable: true,
+                    focusNode: _focusNode,
+                    autoFocus: true,
+                    expands: false,
+                    minHeight: _minHeight,
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    keyboardAppearance: Brightness.dark,
+                    customStyles: customEditorStyles(
+                      textColor: AppColors.editorTextColor,
+                      codeBlockBackground: AppColors.codeBlockBackground,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

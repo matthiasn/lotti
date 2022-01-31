@@ -103,7 +103,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           EditorWidget(
                             controller: _controller,
                             focusNode: _focusNode,
-                            height: editorHeight,
                             saveFn: saveText,
                           ),
                         ],
@@ -137,7 +136,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             controller: _controller,
                             focusNode: _focusNode,
                             readOnly: widget.readOnly,
-                            height: imageTextEditorHeight,
                             saveFn: saveText,
                           ),
                         ],

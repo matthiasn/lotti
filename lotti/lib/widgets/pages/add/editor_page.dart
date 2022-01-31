@@ -61,6 +61,7 @@ class _EditorPageState extends State<EditorPage> {
                   controller: _controller,
                   focusNode: _focusNode,
                   saveFn: _save,
+                  minHeight: 200,
                 ),
               ),
             ),
