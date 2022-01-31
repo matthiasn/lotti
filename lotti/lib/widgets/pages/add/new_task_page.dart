@@ -308,7 +308,7 @@ class TaskForm extends StatelessWidget {
             controller: controller,
             focusNode: focusNode,
             saveFn: saveFn,
-            height: 200,
+            minHeight: 100,
           ),
         ],
       ),
