@@ -352,9 +352,7 @@ class _JournalPageState extends State<JournalPage> {
                           margin: const EdgeInsets.all(8.0),
                           child: ListView(
                             children: [
-                              const SizedBox(
-                                height: 56,
-                              ),
+                              const SizedBox(height: 56),
                               ...List.generate(
                                 items.length,
                                 (int index) {
@@ -373,7 +371,8 @@ class _JournalPageState extends State<JournalPage> {
                                   });
                                 },
                                 growable: true,
-                              )
+                              ),
+                              const SizedBox(height: 64),
                             ],
                           ),
                         ),
