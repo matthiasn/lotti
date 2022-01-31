@@ -125,7 +125,7 @@ class TagsWidget extends StatelessWidget {
                                   DefaultTextStyle.of(context).style.copyWith(
                                         color: AppColors.entryTextColor,
                                         fontFamily: 'Oswald',
-                                        fontSize: 20.0,
+                                        fontSize: 16.0,
                                       ),
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -145,10 +145,10 @@ class TagsWidget extends StatelessWidget {
                                   tagEntity.tag,
                                   style: TextStyle(
                                     fontFamily: 'Oswald',
-                                    height: 1.2,
+                                    height: 1,
                                     color: getTagColor(tagEntity),
                                     fontWeight: FontWeight.normal,
-                                    fontSize: 20.0,
+                                    fontSize: 16.0,
                                   ),
                                 ),
                               );

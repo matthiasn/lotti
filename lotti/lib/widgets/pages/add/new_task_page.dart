@@ -147,149 +147,148 @@ class TaskForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.headerBgColor,
-      padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          FormBuilder(
-            key: formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              children: <Widget>[
-                FormBuilderTextField(
-                  initialValue: data?.title ?? '',
-                  decoration: InputDecoration(
-                    labelText: 'Task:',
-                    labelStyle: labelStyle,
-                  ),
-                  style: inputStyle,
-                  name: 'title',
-                ),
-                FormBuilderCupertinoDateTimePicker(
-                  name: 'due',
-                  alwaysUse24HourFormat: true,
-                  format: DateFormat('EEEE, MMMM d, yyyy \'at\' HH:mm'),
-                  inputType: CupertinoDateTimePickerInputType.both,
-                  style: inputStyle,
-                  decoration: InputDecoration(
-                    labelText: 'Task due:',
-                    labelStyle: labelStyle,
-                  ),
-                  initialValue: data?.due ?? DateTime.now(),
-                  theme: DatePickerTheme(
-                    headerColor: AppColors.headerBgColor,
-                    backgroundColor: AppColors.bodyBgColor,
-                    itemStyle: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16),
+            child: FormBuilder(
+              key: formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                children: <Widget>[
+                  FormBuilderTextField(
+                    initialValue: data?.title ?? '',
+                    decoration: InputDecoration(
+                      labelText: 'Task:',
+                      labelStyle: labelStyle,
                     ),
-                    doneStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                    style: inputStyle,
+                    name: 'title',
+                  ),
+                  FormBuilderCupertinoDateTimePicker(
+                    name: 'due',
+                    alwaysUse24HourFormat: true,
+                    format: DateFormat('EEEE, MMMM d, yyyy \'at\' HH:mm'),
+                    inputType: CupertinoDateTimePickerInputType.both,
+                    style: inputStyle,
+                    decoration: InputDecoration(
+                      labelText: 'Task due:',
+                      labelStyle: labelStyle,
                     ),
-                  ),
-                ),
-                FormBuilderCupertinoDateTimePicker(
-                  name: 'estimate',
-                  alwaysUse24HourFormat: true,
-                  format: DateFormat('HH:mm'),
-                  inputType: CupertinoDateTimePickerInputType.time,
-                  style: inputStyle,
-                  decoration: InputDecoration(
-                    labelText: 'Estimate:',
-                    labelStyle: labelStyle,
-                  ),
-                  initialValue: DateTime.fromMillisecondsSinceEpoch(
-                    data?.estimate?.inMilliseconds ?? 0,
-                    isUtc: true,
-                  ),
-                  theme: DatePickerTheme(
-                    headerColor: AppColors.headerBgColor,
-                    backgroundColor: AppColors.bodyBgColor,
-                    itemStyle: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                    doneStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                    initialValue: data?.due ?? DateTime.now(),
+                    theme: DatePickerTheme(
+                      headerColor: AppColors.headerBgColor,
+                      backgroundColor: AppColors.bodyBgColor,
+                      itemStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                      doneStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                ),
-                FormBuilderChoiceChip(
-                  name: 'status',
-                  initialValue: data?.status.map(
-                        open: (_) => 'OPEN',
-                        started: (_) => 'STARTED',
-                        blocked: (_) => 'BLOCKED',
-                        done: (_) => 'DONE',
-                        rejected: (_) => 'REJECTED',
-                      ) ??
-                      'OPEN',
-                  decoration: InputDecoration(
-                    labelText: 'Task Status:',
-                    labelStyle: labelStyle,
+                  FormBuilderCupertinoDateTimePicker(
+                    name: 'estimate',
+                    alwaysUse24HourFormat: true,
+                    format: DateFormat('HH:mm'),
+                    inputType: CupertinoDateTimePickerInputType.time,
+                    style: inputStyle,
+                    decoration: InputDecoration(
+                      labelText: 'Estimate:',
+                      labelStyle: labelStyle,
+                    ),
+                    initialValue: DateTime.fromMillisecondsSinceEpoch(
+                      data?.estimate?.inMilliseconds ?? 0,
+                      isUtc: true,
+                    ),
+                    theme: DatePickerTheme(
+                      headerColor: AppColors.headerBgColor,
+                      backgroundColor: AppColors.bodyBgColor,
+                      itemStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                      doneStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                  selectedColor: data?.status.map(
-                        open: (_) => AppColors.entryBgColor,
-                        started: (_) => AppColors.entryBgColor,
-                        blocked: (_) => Colors.red,
-                        done: (_) => Colors.green,
-                        rejected: (_) => Colors.red,
-                      ) ??
-                      AppColors.entryBgColor,
-                  runSpacing: 4,
-                  spacing: 4,
-                  options: const [
-                    FormBuilderFieldOption(
-                      value: 'OPEN',
-                      child: Text(
+                  FormBuilderChoiceChip(
+                    name: 'status',
+                    initialValue: data?.status.map(
+                          open: (_) => 'OPEN',
+                          started: (_) => 'STARTED',
+                          blocked: (_) => 'BLOCKED',
+                          done: (_) => 'DONE',
+                          rejected: (_) => 'REJECTED',
+                        ) ??
                         'OPEN',
-                        style: TextStyle(color: Colors.black87),
-                      ),
+                    decoration: InputDecoration(
+                      labelText: 'Task Status:',
+                      labelStyle: labelStyle,
                     ),
-                    FormBuilderFieldOption(
-                      value: 'STARTED',
-                      child: Text(
-                        'STARTED',
-                        style: TextStyle(color: Colors.black87),
+                    selectedColor: data?.status.map(
+                          open: (_) => AppColors.entryBgColor,
+                          started: (_) => AppColors.entryBgColor,
+                          blocked: (_) => Colors.red,
+                          done: (_) => Colors.green,
+                          rejected: (_) => Colors.red,
+                        ) ??
+                        AppColors.entryBgColor,
+                    runSpacing: 4,
+                    spacing: 4,
+                    options: const [
+                      FormBuilderFieldOption(
+                        value: 'OPEN',
+                        child: Text(
+                          'OPEN',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ),
-                    ),
-                    FormBuilderFieldOption(
-                      value: 'BLOCKED',
-                      child: Text(
-                        'BLOCKED',
-                        style: TextStyle(color: Colors.black87),
+                      FormBuilderFieldOption(
+                        value: 'STARTED',
+                        child: Text(
+                          'STARTED',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ),
-                    ),
-                    FormBuilderFieldOption(
-                      value: 'DONE',
-                      child: Text(
-                        'DONE',
-                        style: TextStyle(color: Colors.black87),
+                      FormBuilderFieldOption(
+                        value: 'BLOCKED',
+                        child: Text(
+                          'BLOCKED',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ),
-                    ),
-                    FormBuilderFieldOption(
-                      value: 'REJECTED',
-                      child: Text(
-                        'REJECTED',
-                        style: TextStyle(color: Colors.black87),
+                      FormBuilderFieldOption(
+                        value: 'DONE',
+                        child: Text(
+                          'DONE',
+                          style: TextStyle(color: Colors.black87),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      FormBuilderFieldOption(
+                        value: 'REJECTED',
+                        child: Text(
+                          'REJECTED',
+                          style: TextStyle(color: Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            child: EditorWidget(
-              controller: controller,
-              focusNode: focusNode,
-              saveFn: saveFn,
-              height: 200,
-            ),
+          EditorWidget(
+            controller: controller,
+            focusNode: focusNode,
+            saveFn: saveFn,
+            height: 200,
           ),
         ],
       ),

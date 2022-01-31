@@ -49,7 +49,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           MdiIcons.tapeMeasure,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -71,7 +71,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           MdiIcons.clipboardOutline,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -93,7 +93,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           Icons.camera_roll_outlined,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           context.read<JournalImageCubit>().pickImageAssets(
                 context,
@@ -110,7 +110,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           MdiIcons.textLong,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -133,7 +133,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             MdiIcons.microphone,
             size: 32,
           ),
-          backgroundColor: AppColors.entryBgColor,
+          backgroundColor: AppColors.actionColor,
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -157,7 +157,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           Icons.task_outlined,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -178,7 +178,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         radius: items.length * 32,
         useOpacity: true,
         items: items,
-        color: AppColors.entryBgColor,
+        color: AppColors.actionColor,
         icon: Icons.add,
         duration: const Duration(milliseconds: 500),
         curveAnim: Curves.ease,
