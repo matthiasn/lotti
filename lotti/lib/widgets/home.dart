@@ -5,6 +5,7 @@ import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
+import 'package:lotti/widgets/pages/my_day.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
 import 'package:lotti/widgets/pages/tasks_page.dart';
@@ -39,11 +40,12 @@ class _HomePageState extends State<HomePage> {
             },
             child: IndexedStack(
               index: _pageIndex,
-              children: const <Widget>[
-                JournalPage(),
-                FlaggedEntriesPage(),
-                TasksPage(),
-                SettingsPage(),
+              children: <Widget>[
+                const JournalPage(),
+                const FlaggedEntriesPage(),
+                const TasksPage(),
+                MyDayPage(),
+                const SettingsPage(),
               ],
             ),
           ),
@@ -65,6 +67,11 @@ class _HomePageState extends State<HomePage> {
             BottomNavigationBarItem(
               icon: TasksBadgeIcon(),
               label: 'Tasks',
+              tooltip: '',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'My Day',
               tooltip: '',
             ),
             BottomNavigationBarItem(
