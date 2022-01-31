@@ -10,6 +10,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -169,6 +170,7 @@ class JournalCardTitle extends StatelessWidget {
                       ),
                     ],
                   ),
+                  LinkedDuration(id: task.meta.id),
                   TextViewerWidget(entryText: task.entryText),
                 ],
               );

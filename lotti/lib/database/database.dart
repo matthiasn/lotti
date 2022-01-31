@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -264,6 +265,23 @@ class JournalDb extends _$JournalDb {
     required String linkedFrom,
   }) {
     return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
+  }
+
+  Stream<Duration> watchLinkedTotalDuration({
+    required String linkedFrom,
+  }) {
+    return watchLinkedEntities(
+      linkedFrom: linkedFrom,
+    ).map((
+      List<JournalEntity> items,
+    ) {
+      Duration totalDuration = Duration();
+      for (JournalEntity journalEntity in items) {
+        Duration dur = entryDuration(journalEntity);
+        totalDuration = totalDuration + dur;
+      }
+      return totalDuration;
+    });
   }
 
   Stream<List<JournalEntity>> watchLinkedToEntities({

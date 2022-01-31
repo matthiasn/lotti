@@ -7,6 +7,10 @@ NumberFormat nf = NumberFormat('###.##');
 
 NumberFormat latLonFormat = NumberFormat('###.##');
 
+Duration entryDuration(JournalEntity journalEntity) {
+  return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
+}
+
 String formatLatLon(double? number) {
   if (number != null) {
     return latLonFormat.format(number);

@@ -51,9 +51,6 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
             return const SizedBox.shrink();
           }
 
-          Duration duration =
-              liveEntity.meta.dateTo.difference(liveEntity.meta.dateFrom);
-
           return Container(
             color: AppColors.headerBgColor,
             child: Column(
@@ -97,7 +94,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                       ),
                     ),
                     Text(
-                      duration.toString().split('.').first,
+                      entryDuration(liveEntity).toString().split('.').first,
                       style: textStyle,
                     ),
                     Visibility(
