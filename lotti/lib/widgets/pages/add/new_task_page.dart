@@ -29,6 +29,7 @@ class _NewTaskPageState extends State<NewTaskPage> {
   final formKey = GlobalKey<FormBuilderState>();
   final quill.QuillController _controller = makeController();
   final FocusNode _focusNode = FocusNode();
+  DateTime started = DateTime.now();
 
   @override
   void initState() {
@@ -55,8 +56,8 @@ class _NewTaskPageState extends State<NewTaskPage> {
         status: taskStatusFromString(status),
         title: title,
         statusHistory: [],
-        dateTo: due,
-        dateFrom: DateTime.now(),
+        dateTo: now,
+        dateFrom: started,
         estimate: estimate,
       );
 
