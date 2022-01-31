@@ -17,6 +17,7 @@ import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/pages/add/new_task_page.dart';
@@ -236,12 +237,21 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             .updateJournalEntity(updated, updated.meta);
                       }
 
-                      return TaskForm(
-                        controller: controller,
-                        focusNode: _focusNode,
-                        saveFn: saveText,
-                        formKey: formKey,
-                        data: task.data,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          LinkedDuration(
+                            task: task,
+                            width: MediaQuery.of(context).size.width - 80,
+                          ),
+                          TaskForm(
+                            controller: controller,
+                            focusNode: _focusNode,
+                            saveFn: saveText,
+                            formKey: formKey,
+                            data: task.data,
+                          ),
+                        ],
                       );
                     },
                     habitCompletion: (HabitCompletionEntry value) {

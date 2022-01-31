@@ -162,7 +162,11 @@ class TaskForm extends StatelessWidget {
                       labelText: 'Task:',
                       labelStyle: labelStyle,
                     ),
-                    style: inputStyle,
+                    style: inputStyle.copyWith(
+                      fontFamily: 'Oswald',
+                      fontSize: 24,
+                      fontWeight: FontWeight.normal,
+                    ),
                     name: 'title',
                   ),
                   FormBuilderCupertinoDateTimePicker(
@@ -170,7 +174,11 @@ class TaskForm extends StatelessWidget {
                     alwaysUse24HourFormat: true,
                     format: DateFormat('EEEE, MMMM d, yyyy \'at\' HH:mm'),
                     inputType: CupertinoDateTimePickerInputType.both,
-                    style: inputStyle,
+                    style: inputStyle.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: 'Oswald',
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Task due:',
                       labelStyle: labelStyle,
@@ -195,7 +203,11 @@ class TaskForm extends StatelessWidget {
                     alwaysUse24HourFormat: true,
                     format: DateFormat('HH:mm'),
                     inputType: CupertinoDateTimePickerInputType.time,
-                    style: inputStyle,
+                    style: inputStyle.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: 'Oswald',
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Estimate:',
                       labelStyle: labelStyle,
@@ -230,7 +242,10 @@ class TaskForm extends StatelessWidget {
                         'OPEN',
                     decoration: InputDecoration(
                       labelText: 'Task Status:',
-                      labelStyle: labelStyle,
+                      labelStyle: labelStyle.copyWith(
+                        height: 0.6,
+                        fontFamily: 'Oswald',
+                      ),
                     ),
                     selectedColor: data?.status.map(
                           open: (_) => AppColors.entryBgColor,
@@ -242,6 +257,11 @@ class TaskForm extends StatelessWidget {
                         AppColors.entryBgColor,
                     runSpacing: 4,
                     spacing: 4,
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: 'Oswald',
+                    ),
                     options: const [
                       FormBuilderFieldOption(
                         value: 'OPEN',

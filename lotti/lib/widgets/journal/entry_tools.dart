@@ -11,6 +11,10 @@ Duration entryDuration(JournalEntity journalEntity) {
   return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
 }
 
+String formatDuration(Duration? duration) {
+  return duration?.toString().split('.').first ?? '';
+}
+
 String formatLatLon(double? number) {
   if (number != null) {
     return latLonFormat.format(number);
