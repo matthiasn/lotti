@@ -5,7 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
-NumberFormat latLonFormat = NumberFormat('###.####');
+NumberFormat latLonFormat = NumberFormat('###.##');
 
 String formatLatLon(double? number) {
   if (number != null) {
