@@ -18,7 +18,7 @@ Color getTagColor(TagEntity tagEntity) {
 class AppColors {
   static Color bodyBgColor = const Color.fromRGBO(47, 47, 59, 1);
   static Color entryBgColor = const Color.fromRGBO(155, 200, 245, 1);
-  static Color actionColor = const Color.fromRGBO(155, 200, 245, 0.6);
+  static Color actionColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color tagColor = const Color.fromRGBO(155, 200, 245, 1);
   static Color tagTextColor = editorTextColor;
   static Color personTagColor = const Color.fromRGBO(55, 201, 154, 1);

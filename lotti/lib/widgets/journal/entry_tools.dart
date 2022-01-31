@@ -5,7 +5,15 @@ import 'package:lotti/classes/journal_entities.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
-NumberFormat latLonFormat = NumberFormat('###.####');
+NumberFormat latLonFormat = NumberFormat('###.##');
+
+Duration entryDuration(JournalEntity journalEntity) {
+  return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
+}
+
+String formatDuration(Duration? duration) {
+  return duration?.toString().split('.').first ?? '';
+}
 
 String formatLatLon(double? number) {
   if (number != null) {

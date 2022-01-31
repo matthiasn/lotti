@@ -10,6 +10,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
@@ -34,6 +35,15 @@ class JournalCardTitle extends StatelessWidget {
             children: [
               Text(
                 df.format(item.meta.dateFrom),
+                style: TextStyle(
+                  color: AppColors.entryTextColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
+                  fontFamily: 'Oswald',
+                ),
+              ),
+              Text(
+                '  -  ${entryDuration(item).toString().split('.').first}',
                 style: TextStyle(
                   color: AppColors.entryTextColor,
                   fontSize: 14,
@@ -168,6 +178,10 @@ class JournalCardTitle extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  LinkedDuration(
+                    task: task,
+                    width: MediaQuery.of(context).size.width - 120,
                   ),
                   TextViewerWidget(entryText: task.entryText),
                 ],
