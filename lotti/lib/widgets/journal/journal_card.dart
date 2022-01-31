@@ -42,6 +42,15 @@ class JournalCardTitle extends StatelessWidget {
                   fontFamily: 'Oswald',
                 ),
               ),
+              Text(
+                '  -  ${entryDuration(item).toString().split('.').first}',
+                style: TextStyle(
+                  color: AppColors.entryTextColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
+                  fontFamily: 'Oswald',
+                ),
+              ),
               Expanded(child: Container()),
               Visibility(
                 visible: fromNullableBool(item.meta.private),
