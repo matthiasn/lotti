@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Flutter Build on Windows
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v1
