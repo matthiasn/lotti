@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
@@ -57,32 +58,35 @@ class MyDayPage extends StatelessWidget {
             Color background = journalEntity.map(
               journalEntry: (journalEntry) => Colors.lightGreen,
               journalImage: (journalImage) => Colors.lightBlue,
-              journalAudio: (journalAudio) => Colors.lightBlue,
+              journalAudio: (journalAudio) => AppColors.error,
               loggedTime: (loggedTime) => Colors.lightBlue,
               task: (task) => Colors.lightBlue,
               quantitative: (quantitative) => Colors.lightBlue,
               measurement: (measurement) => Colors.lightBlue,
               habitCompletion: (habitCompletion) => Colors.lightBlue,
-              survey: (survey) => Colors.lightBlue,
+              survey: (survey) => Colors.pink,
             );
 
-            meetings.add(
-              Meeting(
-                isAllDay: false,
-                to: journalEntity.meta.dateTo,
-                background: background,
-                eventName: eventName,
-                from: journalEntity.meta.dateFrom,
-                journalEntity: journalEntity,
-              ),
-            );
+            if (!eventName.contains('SLEEP_IN_BED') &&
+                !eventName.contains('cumulative_')) {
+              meetings.add(
+                Meeting(
+                  isAllDay: false,
+                  to: journalEntity.meta.dateTo,
+                  background: background,
+                  eventName: eventName.replaceAll('HealthDataType.', ''),
+                  from: journalEntity.meta.dateFrom,
+                  journalEntity: journalEntity,
+                ),
+              );
+            }
           }
         }
 
         return Scaffold(
           appBar: const VersionAppBar(title: 'My Day'),
           body: SfCalendar(
-            view: CalendarView.day,
+            view: CalendarView.timelineWeek,
             dataSource: MeetingDataSource(meetings),
             onTap: (CalendarTapDetails cal) {
               cal.appointments?.forEach((element) {
