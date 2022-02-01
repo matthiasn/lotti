@@ -35,6 +35,8 @@ class AppColors {
   static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
   static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
 
+  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 0.55);
+
   static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
   static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
   static Color outboxErrorColor = const Color.fromRGBO(120, 50, 50, 1);

@@ -10,6 +10,8 @@ import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
 import 'package:lotti/widgets/pages/tasks_page.dart';
 
+import 'misc/time_recording_indicator.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
@@ -38,14 +40,19 @@ class _HomePageState extends State<HomePage> {
               return !await Navigator.maybePop(
                   navigatorKeys[_pageIndex]!.currentState!.context);
             },
-            child: IndexedStack(
-              index: _pageIndex,
-              children: <Widget>[
-                const JournalPage(),
-                const FlaggedEntriesPage(),
-                const TasksPage(),
-                MyDayPage(),
-                const SettingsPage(),
+            child: Stack(
+              children: [
+                IndexedStack(
+                  index: _pageIndex,
+                  children: <Widget>[
+                    const JournalPage(),
+                    const FlaggedEntriesPage(),
+                    const TasksPage(),
+                    MyDayPage(),
+                    const SettingsPage(),
+                  ],
+                ),
+                const TimeRecordingIndicator(),
               ],
             ),
           ),
