@@ -68,7 +68,7 @@ class MyDayPage extends StatelessWidget {
             );
 
             if (!eventName.contains('SLEEP_IN_BED') &&
-                !eventName.contains('step_count')) {
+                !eventName.contains('cumulative_')) {
               meetings.add(
                 Meeting(
                   isAllDay: false,
@@ -86,7 +86,7 @@ class MyDayPage extends StatelessWidget {
         return Scaffold(
           appBar: const VersionAppBar(title: 'My Day'),
           body: SfCalendar(
-            view: CalendarView.day,
+            view: CalendarView.timelineWeek,
             dataSource: MeetingDataSource(meetings),
             onTap: (CalendarTapDetails cal) {
               cal.appointments?.forEach((element) {
