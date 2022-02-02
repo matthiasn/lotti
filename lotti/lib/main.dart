@@ -17,6 +17,7 @@ import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/widgets/home.dart';
 
@@ -36,6 +37,7 @@ Future<void> main() async {
     getIt.registerSingleton<InsightsDb>(InsightsDb());
     getIt.registerSingleton<VectorClockService>(VectorClockService());
     getIt.registerSingleton<SyncConfigService>(SyncConfigService());
+    getIt.registerSingleton<TimeService>(TimeService());
 
     initializeDateFormatting();
 

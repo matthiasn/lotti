@@ -52,7 +52,7 @@ class _HomePageState extends State<HomePage> {
                     const SettingsPage(),
                   ],
                 ),
-                const TimeRecordingIndicator(),
+                TimeRecordingIndicator(),
               ],
             ),
           ),
