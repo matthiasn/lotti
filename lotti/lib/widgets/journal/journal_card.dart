@@ -16,6 +16,8 @@ import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import 'duration_widget.dart';
+
 const double iconSize = 18.0;
 
 class JournalCardTitle extends StatelessWidget {
@@ -42,10 +44,10 @@ class JournalCardTitle extends StatelessWidget {
                   fontFamily: 'Oswald',
                 ),
               ),
-              Visibility(
-                visible: entryDuration(item).inMilliseconds > 0,
-                child: Text(
-                  '  -  ${entryDuration(item).toString().split('.').first}',
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: DurationWidget(
+                  item: item,
                   style: TextStyle(
                     color: AppColors.entryTextColor,
                     fontSize: 14,
