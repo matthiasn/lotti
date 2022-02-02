@@ -92,9 +92,12 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                         style: textStyle,
                       ),
                     ),
-                    Text(
-                      entryDuration(liveEntity).toString().split('.').first,
-                      style: textStyle,
+                    Visibility(
+                      visible: entryDuration(liveEntity).inMilliseconds > 0,
+                      child: Text(
+                        entryDuration(liveEntity).toString().split('.').first,
+                        style: textStyle,
+                      ),
                     ),
                     Visibility(
                       visible: loc != null && loc.longitude != 0,
