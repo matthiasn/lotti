@@ -267,7 +267,7 @@ class JournalDb extends _$JournalDb {
     return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
   }
 
-  Stream<Duration> watchLinkedTotalDuration({
+  Stream<Map<String, Duration>> watchLinkedTotalDuration({
     required String linkedFrom,
   }) {
     return watchLinkedEntities(
@@ -275,12 +275,12 @@ class JournalDb extends _$JournalDb {
     ).map((
       List<JournalEntity> items,
     ) {
-      Duration totalDuration = Duration();
+      Map<String, Duration> durations = {};
       for (JournalEntity journalEntity in items) {
-        Duration dur = entryDuration(journalEntity);
-        totalDuration = totalDuration + dur;
+        Duration duration = entryDuration(journalEntity);
+        durations[journalEntity.meta.id] = duration;
       }
-      return totalDuration;
+      return durations;
     });
   }
 
