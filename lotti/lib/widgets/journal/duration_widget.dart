@@ -17,11 +17,13 @@ class DurationWidget extends StatelessWidget {
     required this.item,
     this.style,
     this.showControls = false,
+    this.saveFn,
   }) : super(key: key);
 
   final JournalEntity item;
   final TextStyle? style;
   final bool showControls;
+  final Function? saveFn;
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +105,10 @@ class DurationWidget extends StatelessWidget {
                                 dateFrom: item.meta.dateFrom,
                                 dateTo: DateTime.now(),
                               );
+
+                          if (saveFn != null) {
+                            await saveFn!();
+                          }
                         },
                       ),
                     ),

@@ -47,7 +47,6 @@ class MyDayPage extends StatelessWidget {
               journalEntry: (journalEntry) => journalEntry.entryText.plainText,
               journalImage: (journalImage) => '',
               journalAudio: (journalAudio) => '',
-              loggedTime: (loggedTime) => '',
               task: (task) => task.data.title,
               quantitative: (quantitative) => quantitative.data.dataType,
               measurement: (measurement) =>
@@ -59,7 +58,6 @@ class MyDayPage extends StatelessWidget {
               journalEntry: (journalEntry) => Colors.lightGreen,
               journalImage: (journalImage) => Colors.lightBlue,
               journalAudio: (journalAudio) => AppColors.error,
-              loggedTime: (loggedTime) => Colors.lightBlue,
               task: (task) => Colors.lightBlue,
               quantitative: (quantitative) => Colors.lightBlue,
               measurement: (measurement) => Colors.lightBlue,
