@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/time_service.dart';
@@ -62,8 +63,7 @@ class TimeRecordingIndicator extends StatelessWidget {
                     children: [
                       Text(
                         durationString,
-                        style: TextStyle(
-                          fontFamily: 'ShareTechMono',
+                        style: GoogleFonts.ptMono(
                           fontSize: 20.0,
                           color: Colors.grey[300],
                           fontWeight: FontWeight.w100,
