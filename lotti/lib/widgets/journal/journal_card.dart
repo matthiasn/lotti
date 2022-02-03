@@ -142,13 +142,15 @@ class JournalCardTitle extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        data.title,
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          color: AppColors.entryTextColor,
-                          fontWeight: FontWeight.normal,
-                          fontSize: 24.0,
+                      Flexible(
+                        child: Text(
+                          data.title,
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            color: AppColors.entryTextColor,
+                            fontWeight: FontWeight.normal,
+                            fontSize: 24.0,
+                          ),
                         ),
                       ),
                       ClipRRect(

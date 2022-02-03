@@ -163,6 +163,7 @@ class TaskForm extends StatelessWidget {
                       labelText: 'Task:',
                       labelStyle: labelStyle,
                     ),
+                    maxLines: null,
                     style: inputStyle.copyWith(
                       fontFamily: 'Oswald',
                       fontSize: 24,
