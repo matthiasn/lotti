@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class TimeRecordingIndicator extends StatelessWidget {
@@ -32,6 +33,18 @@ class TimeRecordingIndicator extends StatelessWidget {
           right: MediaQuery.of(context).size.width / 2 - 60,
           bottom: 0,
           child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (BuildContext context) {
+                    return EntryDetailRoute(
+                      item: current,
+                      index: 0,
+                    );
+                  },
+                ),
+              );
+            },
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: ClipRRect(
