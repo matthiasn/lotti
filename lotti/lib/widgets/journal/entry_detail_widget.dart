@@ -59,6 +59,29 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
   @override
   Widget build(BuildContext context) {
+    EntryText? entryText = widget.item.map(
+      journalEntry: (item) => item.entryText,
+      journalImage: (item) => item.entryText,
+      journalAudio: (item) => item.entryText,
+      task: (item) => item.entryText,
+      quantitative: (_) => null,
+      measurement: (item) => item.entryText,
+      habitCompletion: (item) => item.entryText,
+      survey: (_) => null,
+    );
+
+    QuillController _controller =
+        makeController(serializedQuill: entryText?.quill);
+
+    void saveText() {
+      EntryText entryText = entryTextFromController(_controller);
+      HapticFeedback.heavyImpact();
+
+      context
+          .read<PersistenceCubit>()
+          .updateJournalEntityText(widget.item.meta.id, entryText);
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
@@ -84,19 +107,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   ),
                   widget.item.map(
                     journalAudio: (JournalAudio audio) {
-                      QuillController _controller = makeController(
-                          serializedQuill: audio.entryText?.quill);
-                      void saveText() {
-                        EntryText entryText =
-                            entryTextFromController(_controller);
-                        HapticFeedback.heavyImpact();
-
-                        context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntityText(
-                                widget.item.meta.id, entryText);
-                      }
-
                       return Column(
                         children: [
                           const AudioPlayerWidget(),
@@ -109,19 +119,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       );
                     },
                     journalImage: (JournalImage image) {
-                      QuillController _controller = makeController(
-                          serializedQuill: image.entryText?.quill);
-
-                      void saveText() {
-                        EntryText entryText =
-                            entryTextFromController(_controller);
-
-                        context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntityText(
-                                widget.item.meta.id, entryText);
-                      }
-
                       return Column(
                         children: [
                           Container(
@@ -142,16 +139,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       );
                     },
                     journalEntry: (JournalEntry journalEntry) {
-                      QuillController _controller = makeController(
-                          serializedQuill: journalEntry.entryText.quill);
-
-                      void saveText() {
-                        context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntityText(widget.item.meta.id,
-                                entryTextFromController(_controller));
-                      }
-
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
@@ -160,16 +147,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       );
                     },
                     measurement: (MeasurementEntry entry) {
-                      QuillController _controller = makeController(
-                          serializedQuill: entry.entryText?.quill);
-
-                      void saveText() {
-                        context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntityText(widget.item.meta.id,
-                                entryTextFromController(_controller));
-                      }
-
                       return EditorWidget(
                         controller: _controller,
                         focusNode: _focusNode,
@@ -199,8 +176,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     ),
                     task: (Task task) {
                       final formKey = GlobalKey<FormBuilderState>();
-                      QuillController controller = makeController(
-                          serializedQuill: task.entryText?.quill);
 
                       void saveText() {
                         formKey.currentState?.save();
@@ -227,7 +202,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
 
                         Task updated = task.copyWith(
                           data: updatedData,
-                          entryText: entryTextFromController(controller),
+                          entryText: entryTextFromController(_controller),
                         );
 
                         context
@@ -243,7 +218,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             width: MediaQuery.of(context).size.width - 80,
                           ),
                           TaskForm(
-                            controller: controller,
+                            controller: _controller,
                             focusNode: _focusNode,
                             saveFn: saveText,
                             formKey: formKey,
@@ -255,11 +230,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     habitCompletion: (HabitCompletionEntry value) {
                       return const SizedBox.shrink();
                     },
-                    loggedTime: (LoggedTime value) {
-                      return const SizedBox.shrink();
-                    },
                   ),
-                  EntryDetailFooter(item: widget.item),
+                  EntryDetailFooter(
+                    item: widget.item,
+                    saveFn: saveText,
+                  ),
                 ],
               ),
             ),

@@ -16,9 +16,12 @@ import 'duration_widget.dart';
 
 class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;
+  final Function saveFn;
+
   const EntryDetailFooter({
     Key? key,
     required this.item,
+    required this.saveFn,
   }) : super(key: key);
 
   @override
@@ -98,6 +101,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                       item: liveEntity,
                       style: textStyle,
                       showControls: true,
+                      saveFn: widget.saveFn,
                     ),
                     Visibility(
                       visible: loc != null && loc.longitude != 0,

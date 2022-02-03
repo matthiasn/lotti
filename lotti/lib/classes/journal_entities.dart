@@ -102,12 +102,6 @@ class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = JournalAudio;
 
-  const factory JournalEntity.loggedTime({
-    required Metadata meta,
-    EntryText? entryText,
-    Geolocation? geolocation,
-  }) = LoggedTime;
-
   const factory JournalEntity.task({
     required Metadata meta,
     required TaskData data,
