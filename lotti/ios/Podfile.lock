@@ -79,9 +79,9 @@ PODS:
     - Flutter
     - MTBBarcodeScanner
   - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.12.2):
-    - SDWebImage/Core (= 5.12.2)
-  - SDWebImage/Core (5.12.2)
+  - SDWebImage (5.12.3):
+    - SDWebImage/Core (= 5.12.3)
+  - SDWebImage/Core (5.12.3)
   - SDWebImageWebPCoder (0.8.4):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.10)
@@ -108,7 +108,7 @@ PODS:
     - sqlite3/rtree
   - url_launcher_ios (0.0.1):
     - Flutter
-  - video_player (0.0.1):
+  - video_player_avfoundation (0.0.1):
     - Flutter
 
 DEPENDENCIES:
@@ -139,7 +139,7 @@ DEPENDENCIES:
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - video_player (from `.symlinks/plugins/video_player/ios`)
+  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/ios`)
 
 SPEC REPOS:
   trunk:
@@ -210,8 +210,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
-  video_player:
-    :path: ".symlinks/plugins/video_player/ios"
+  video_player_avfoundation:
+    :path: ".symlinks/plugins/video_player_avfoundation/ios"
 
 SPEC CHECKSUMS:
   audio_session: 4f3e461722055d21515cf3261b64c973c062f345
@@ -232,7 +232,7 @@ SPEC CHECKSUMS:
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   gallery_saver: 9fc173c9f4fcc48af53b2a9ebea1b643255be542
   health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
-  image_picker: 9aa50e1d8cdacdbed739e925b7eea16d014367e6
+  image_picker: 0d37d1cb66231c2473a0e3ccb8d062d0c2b3d297
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 98a37e597e40bfdb4c911fc98f2c53d0b12d05fc
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
@@ -246,13 +246,13 @@ SPEC CHECKSUMS:
   photo_manager: 84fa94fbeb82e607333ea9a13c43b58e0903a463
   qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 240e5c12b592fb1268c1d03b8c90d90e8c2ffe82
+  SDWebImage: 53179a2dba77246efa8a9b85f5c5b21f8f43e38f
   SDWebImageWebPCoder: f93010f3f6c031e2f8fb3081ca4ee6966c539815
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
   sqlite3_flutter_libs: b26eb56ee9f5d821e55739a0e3917301e5ed4628
   url_launcher_ios: 02f1989d4e14e998335b02b67a7590fa34f971af
-  video_player: ecd305f42e9044793efd34846e1ce64c31ea6fcb
+  video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
 
 PODFILE CHECKSUM: ad5bf9f735c40eede66cde505a0d4d051ddea7b2
 
