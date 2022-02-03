@@ -9,7 +9,7 @@ class TimeService {
   Stream<int>? _periodicStream;
 
   TimeService() {
-    _controller = StreamController<JournalEntity>.broadcast();
+    _controller = StreamController<JournalEntity?>.broadcast();
   }
 
   void start(JournalEntity journalEntity) async {

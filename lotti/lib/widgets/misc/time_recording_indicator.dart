@@ -60,16 +60,13 @@ class TimeRecordingIndicator extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      RotatedBox(
-                        quarterTurns: 0,
-                        child: Text(
-                          durationString,
-                          style: TextStyle(
-                            fontFamily: 'ShareTechMono',
-                            fontSize: 20.0,
-                            color: Colors.grey[300],
-                            fontWeight: FontWeight.w100,
-                          ),
+                      Text(
+                        durationString,
+                        style: TextStyle(
+                          fontFamily: 'ShareTechMono',
+                          fontSize: 20.0,
+                          color: Colors.grey[300],
+                          fontWeight: FontWeight.w100,
                         ),
                       ),
                     ],
