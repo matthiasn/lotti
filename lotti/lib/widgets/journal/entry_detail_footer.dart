@@ -12,6 +12,8 @@ import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/src/provider.dart';
 
+import 'duration_widget.dart';
+
 class EntryDetailFooter extends StatefulWidget {
   final JournalEntity item;
   const EntryDetailFooter({
@@ -92,9 +94,10 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
                         style: textStyle,
                       ),
                     ),
-                    Text(
-                      entryDuration(liveEntity).toString().split('.').first,
+                    DurationWidget(
+                      item: liveEntity,
                       style: textStyle,
+                      showControls: true,
                     ),
                     Visibility(
                       visible: loc != null && loc.longitude != 0,

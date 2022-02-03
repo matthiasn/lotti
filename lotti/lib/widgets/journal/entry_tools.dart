@@ -12,7 +12,13 @@ Duration entryDuration(JournalEntity journalEntity) {
 }
 
 String formatDuration(Duration? duration) {
-  return duration?.toString().split('.').first ?? '';
+  String durationString = duration?.toString().split('.').first ?? '';
+
+  if (durationString.substring(0, 2) == '0:') {
+    durationString = '0' + durationString;
+  }
+
+  return durationString;
 }
 
 String formatLatLon(double? number) {
