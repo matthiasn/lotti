@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/main.dart';
@@ -48,19 +49,22 @@ class DurationWidget extends StatelessWidget {
         return Visibility(
           visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 8.0, right: 4, top: 2),
+                padding: const EdgeInsets.only(left: 8.0, right: 4),
                 child: Icon(
                   MdiIcons.timerOutline,
                   color: labelColor,
-                  size: (style?.fontSize ?? 14) + 2,
+                  size: 14,
                 ),
               ),
               Text(
                 formatDuration(entryDuration(displayed)),
-                style: style?.copyWith(
+                style: GoogleFonts.ptMono(
                   color: labelColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
               Visibility(
@@ -68,33 +72,39 @@ class DurationWidget extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      icon: const Icon(Icons.play_arrow_outlined),
-                      iconSize: 24,
-                      tooltip: 'Record',
-                      color: style?.color,
-                      onPressed: () {
-                        _timeService.start(item);
-                      },
+                    Visibility(
+                      visible: !isRecording,
+                      child: IconButton(
+                        padding: const EdgeInsets.only(right: 16),
+                        icon: const Icon(Icons.play_arrow),
+                        iconSize: 20,
+                        tooltip: 'Record',
+                        color: style?.color,
+                        onPressed: () {
+                          _timeService.start(item);
+                        },
+                      ),
                     ),
-                    IconButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      icon: const Icon(Icons.stop_outlined),
-                      iconSize: 24,
-                      tooltip: 'Stop',
-                      color: style?.color,
-                      onPressed: () async {
-                        _timeService.stop(item);
+                    Visibility(
+                      visible: isRecording,
+                      child: IconButton(
+                        padding: const EdgeInsets.only(right: 16),
+                        icon: const Icon(Icons.stop),
+                        iconSize: 20,
+                        tooltip: 'Stop',
+                        color: labelColor,
+                        onPressed: () async {
+                          _timeService.stop(item);
 
-                        await context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntityDate(
-                              item,
-                              dateFrom: item.meta.dateFrom,
-                              dateTo: DateTime.now(),
-                            );
-                      },
+                          await context
+                              .read<PersistenceCubit>()
+                              .updateJournalEntityDate(
+                                item,
+                                dateFrom: item.meta.dateFrom,
+                                dateTo: DateTime.now(),
+                              );
+                        },
+                      ),
                     ),
                   ],
                 ),
