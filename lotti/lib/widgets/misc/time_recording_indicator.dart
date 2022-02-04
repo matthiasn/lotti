@@ -38,10 +38,7 @@ class TimeRecordingIndicator extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return EntryDetailRoute(
-                      item: current,
-                      index: 0,
-                    );
+                    return EntryDetailRoute(item: current);
                   },
                 ),
               );
