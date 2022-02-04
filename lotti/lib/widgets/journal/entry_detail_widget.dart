@@ -102,7 +102,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                     child: TagsWidget(item: widget.item),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: EntryInfoRow(entityId: widget.item.meta.id),
                   ),
                   widget.item.map(
@@ -211,11 +211,14 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                       }
 
                       return Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          LinkedDuration(
-                            task: task,
-                            width: MediaQuery.of(context).size.width - 80,
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0),
+                            child: LinkedDuration(
+                              task: task,
+                              width: MediaQuery.of(context).size.width - 200,
+                            ),
                           ),
                           TaskForm(
                             controller: _controller,

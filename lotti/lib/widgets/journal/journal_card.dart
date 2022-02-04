@@ -188,7 +188,7 @@ class JournalCardTitle extends StatelessWidget {
                   ),
                   LinkedDuration(
                     task: task,
-                    width: MediaQuery.of(context).size.width - 120,
+                    width: MediaQuery.of(context).size.width - 200,
                   ),
                   TextViewerWidget(entryText: task.entryText),
                 ],
