@@ -44,6 +44,11 @@ DefaultStyles customEditorStyles({
       const Tuple2(0, 0),
       null,
     ),
+    bold: GoogleFonts.lato(
+      fontSize: 16,
+      color: textColor,
+      fontWeight: FontWeight.w900,
+    ),
     lists: DefaultListBlockStyle(
       GoogleFonts.lato(
         fontSize: 16,
@@ -109,6 +114,11 @@ DefaultStyles customTextViewerStyles({
       const Tuple2(0, 0),
       const Tuple2(0, 0),
       null,
+    ),
+    bold: GoogleFonts.lato(
+      fontSize: 14,
+      color: textColor,
+      fontWeight: FontWeight.w900,
     ),
     lists: DefaultListBlockStyle(
       GoogleFonts.lato(
