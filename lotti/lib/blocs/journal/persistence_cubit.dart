@@ -497,6 +497,51 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
+  Future<bool> updateTask({
+    required String journalEntityId,
+    required EntryText entryText,
+    required TaskData taskData,
+  }) async {
+    final transaction =
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      journalEntity.maybeMap(
+        task: (Task task) async {
+          VectorClock vc = await _vectorClockService.getNextVectorClock(
+              previous: journalEntity.meta.vectorClock);
+
+          Metadata oldMeta = journalEntity.meta;
+          Metadata newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          Task newJournalEntry = task.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+            data: taskData,
+          );
+
+          await updateDbEntity(newJournalEntry, enqueueSync: true);
+        },
+        orElse: () => _insightsDb.captureException('not a task'),
+      );
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool> updateJournalEntityDate(
     JournalEntity journalEntity, {
     required DateTime dateFrom,
