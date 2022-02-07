@@ -55,6 +55,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
             debugPrint(imageData.toString());
+            await context.read<PersistenceCubit>().createImageEntry(
+                  imageData,
+                  linked: widget.linked,
+                );
           },
         ),
       );
