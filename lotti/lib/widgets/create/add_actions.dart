@@ -54,7 +54,6 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
-            debugPrint(imageData.toString());
             await context.read<PersistenceCubit>().createImageEntry(
                   imageData,
                   linked: widget.linked,

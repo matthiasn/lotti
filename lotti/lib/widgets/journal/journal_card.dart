@@ -112,9 +112,7 @@ class JournalCardTitle extends StatelessWidget {
               entryText: journalEntry.entryText,
             ),
             journalImage: (JournalImage journalImage) =>
-                journalImage.entryText?.plainText != null
-                    ? TextViewerWidget(entryText: journalImage.entryText)
-                    : EntryText(journalImage.data.imageFile.substring(37)),
+                TextViewerWidget(entryText: journalImage.entryText),
             survey: (SurveyEntry surveyEntry) =>
                 SurveySummaryWidget(surveyEntry),
             measurement: (MeasurementEntry measurementEntry) {
