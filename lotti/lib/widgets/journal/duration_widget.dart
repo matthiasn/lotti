@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 class DurationWidget extends StatelessWidget {
   final TimeService _timeService = getIt<TimeService>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   DurationWidget({
     Key? key,
@@ -98,13 +98,11 @@ class DurationWidget extends StatelessWidget {
                         onPressed: () async {
                           _timeService.stop(item);
 
-                          await context
-                              .read<PersistenceCubit>()
-                              .updateJournalEntityDate(
-                                item,
-                                dateFrom: item.meta.dateFrom,
-                                dateTo: DateTime.now(),
-                              );
+                          await persistenceLogic.updateJournalEntityDate(
+                            item,
+                            dateFrom: item.meta.dateFrom,
+                            dateTo: DateTime.now(),
+                          );
 
                           if (saveFn != null) {
                             await saveFn!();

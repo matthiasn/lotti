@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -22,7 +23,6 @@ import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/pages/add/new_task_page.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/src/provider.dart';
 
 class EntryDetailWidget extends StatefulWidget {
   final JournalEntity item;
@@ -40,6 +40,8 @@ class EntryDetailWidget extends StatefulWidget {
 class _EntryDetailWidgetState extends State<EntryDetailWidget> {
   final FocusNode _focusNode = FocusNode();
   bool showDetails = false;
+
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   Directory? docDir;
   double editorHeight = (Platform.isIOS || Platform.isAndroid) ? 160 : 240;
@@ -77,9 +79,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
       EntryText entryText = entryTextFromController(_controller);
       HapticFeedback.heavyImpact();
 
-      context
-          .read<PersistenceCubit>()
-          .updateJournalEntityText(widget.item.meta.id, entryText);
+      persistenceLogic.updateJournalEntityText(widget.item.meta.id, entryText);
     }
 
     return Column(
@@ -200,11 +200,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           status: taskStatusFromString(status),
                         );
 
-                        context.read<PersistenceCubit>().updateTask(
-                              entryText: entryTextFromController(_controller),
-                              journalEntityId: task.meta.id,
-                              taskData: updatedData,
-                            );
+                        persistenceLogic.updateTask(
+                          entryText: entryTextFromController(_controller),
+                          journalEntityId: task.meta.id,
+                          taskData: updatedData,
+                        );
                       }
 
                       return Column(

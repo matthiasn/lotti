@@ -7,7 +7,6 @@ import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/blocs/sync/imap/imap_state.dart';
 import 'package:lotti/blocs/sync/imap/inbox_read.dart';
@@ -20,15 +19,20 @@ import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 
+const String sharedSecretKey = 'sharedSecret';
+const String imapConfigKey = 'imapConfig';
+const String lastReadUidKey = 'lastReadUid';
+
 class InboxImapCubit extends Cubit<ImapState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  late final PersistenceCubit _persistenceCubit;
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final VectorClockService _vectorClockService;
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
@@ -38,14 +42,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   final JournalDb _journalDb = getIt<JournalDb>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
 
-  final String sharedSecretKey = 'sharedSecret';
-  final String imapConfigKey = 'imapConfig';
-  final String lastReadUidKey = 'lastReadUid';
-
-  InboxImapCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(ImapState.initial()) {
-    _persistenceCubit = persistenceCubit;
+  InboxImapCubit() : super(ImapState.initial()) {
     _vectorClockService = getIt<VectorClockService>();
 
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
@@ -111,10 +108,10 @@ class InboxImapCubit extends Cubit<ImapState> {
             );
 
             if (status == SyncEntryStatus.update) {
-              await _persistenceCubit.updateDbEntity(journalEntity,
+              await persistenceLogic.updateDbEntity(journalEntity,
                   enqueueSync: false);
             } else {
-              await _persistenceCubit.createDbEntity(journalEntity,
+              await persistenceLogic.createDbEntity(journalEntity,
                   enqueueSync: false);
             }
           },

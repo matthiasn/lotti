@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 class TagsWidget extends StatelessWidget {
   final JournalEntity item;
   final JournalDb db = getIt<JournalDb>();
+
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
 
@@ -67,22 +69,20 @@ class TagsWidget extends StatelessWidget {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     tagIds: tagIds,
                   );
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntity(liveEntity, newMeta);
+                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
                 }
               }
 
               void removeTagId(String tagId) {
                 List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-                context.read<PersistenceCubit>().updateJournalEntity(
-                      liveEntity,
-                      liveEntity.meta.copyWith(
-                        tagIds: existingTagIds
-                            .where((String id) => (id != tagId))
-                            .toList(),
-                      ),
-                    );
+                persistenceLogic.updateJournalEntity(
+                  liveEntity,
+                  liveEntity.meta.copyWith(
+                    tagIds: existingTagIds
+                        .where((String id) => (id != tagId))
+                        .toList(),
+                  ),
+                );
               }
 
               TextEditingController controller = TextEditingController();
@@ -114,8 +114,7 @@ class TagsWidget extends StatelessWidget {
                               controller: controller,
                               onSubmitted: (String tag) async {
                                 tag = tag.trim();
-                                String tagId = await context
-                                    .read<PersistenceCubit>()
+                                String tagId = await persistenceLogic
                                     .addTagDefinition(tag);
                                 addTagIds([tagId]);
                                 controller.clear();

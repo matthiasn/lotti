@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:provider/src/provider.dart';
+import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/main.dart';
 import 'package:research_package/model.dart';
 
 Map<String, int> calculateScores({
@@ -33,17 +33,19 @@ Function(RPTaskResult) createResultCallback({
   required BuildContext context,
   JournalEntity? linked,
 }) {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   return (RPTaskResult taskResult) {
-    context.read<PersistenceCubit>().createSurveyEntry(
-          data: SurveyData(
-            taskResult: taskResult,
-            scoreDefinitions: scoreDefinitions,
-            calculatedScores: calculateScores(
-              scoreDefinitions: scoreDefinitions,
-              taskResult: taskResult,
-            ),
-          ),
-          linked: linked,
-        );
+    persistenceLogic.createSurveyEntry(
+      data: SurveyData(
+        taskResult: taskResult,
+        scoreDefinitions: scoreDefinitions,
+        calculatedScores: calculateScores(
+          scoreDefinitions: scoreDefinitions,
+          taskResult: taskResult,
+        ),
+      ),
+      linked: linked,
+    );
   };
 }

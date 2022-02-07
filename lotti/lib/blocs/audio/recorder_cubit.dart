@@ -4,11 +4,11 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -22,17 +22,14 @@ AudioRecorderState initialState = AudioRecorderState(
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  late final PersistenceCubit _persistenceCubit;
   final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
   DeviceLocation? _deviceLocation;
 
-  AudioRecorderCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(initialState) {
-    _persistenceCubit = persistenceCubit;
+  AudioRecorderCubit() : super(initialState) {
     if (!Platform.isLinux && !Platform.isWindows) {
       _deviceLocation = DeviceLocation();
     }
@@ -135,7 +132,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
       if (_audioNote != null) {
         AudioNote audioNote = _audioNote!;
-        _persistenceCubit.createAudioEntry(
+        persistenceLogic.createAudioEntry(
           audioNote,
           linked: linked,
         );

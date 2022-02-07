@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
@@ -33,6 +34,8 @@ class RadialAddActionButtons extends StatefulWidget {
 }
 
 class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   @override
   void initState() {
     super.initState();
@@ -53,10 +56,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           backgroundColor: AppColors.actionColor,
           onPressed: () async {
             ImageData imageData = await takeScreenshotMac();
-            await context.read<PersistenceCubit>().createImageEntry(
-                  imageData,
-                  linked: widget.linked,
-                );
+            await persistenceLogic.createImageEntry(
+              imageData,
+              linked: widget.linked,
+            );
           },
         ),
       );

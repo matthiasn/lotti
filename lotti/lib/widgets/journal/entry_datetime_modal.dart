@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:provider/src/provider.dart';
 
 class EntryDateTimeModal extends StatefulWidget {
   final JournalEntity item;
@@ -22,12 +21,13 @@ class EntryDateTimeModal extends StatefulWidget {
 }
 
 class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
-  late DateTime dateFrom;
-  late DateTime dateTo;
-
   final JournalDb db = getIt<JournalDb>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final Stream<JournalEntity?> stream =
       db.watchEntityById(widget.item.meta.id);
+
+  late DateTime dateFrom;
+  late DateTime dateTo;
 
   @override
   void initState() {
@@ -166,13 +166,12 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
                           child: TextButton(
                             onPressed: () async {
                               setState(() {});
-                              await context
-                                  .read<PersistenceCubit>()
-                                  .updateJournalEntityDate(
-                                    widget.item,
-                                    dateFrom: dateFrom,
-                                    dateTo: dateTo,
-                                  );
+
+                              await persistenceLogic.updateJournalEntityDate(
+                                widget.item,
+                                dateFrom: dateFrom,
+                                dateTo: dateTo,
+                              );
                               Navigator.pop(context);
                             },
                             child: Text(
