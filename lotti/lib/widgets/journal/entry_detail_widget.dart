@@ -200,14 +200,11 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           status: taskStatusFromString(status),
                         );
 
-                        Task updated = task.copyWith(
-                          data: updatedData,
-                          entryText: entryTextFromController(_controller),
-                        );
-
-                        context
-                            .read<PersistenceCubit>()
-                            .updateJournalEntity(updated, updated.meta);
+                        context.read<PersistenceCubit>().updateTask(
+                              entryText: entryTextFromController(_controller),
+                              journalEntityId: task.meta.id,
+                              taskData: updatedData,
+                            );
                       }
 
                       return Column(

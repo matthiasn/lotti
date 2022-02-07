@@ -297,10 +297,7 @@ class JournalCard extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
-                  return EntryDetailRoute(
-                    item: item,
-                    index: index,
-                  );
+                  return EntryDetailRoute(item: item);
                 },
               ),
             );
@@ -356,10 +353,7 @@ class JournalImageCard extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return EntryDetailRoute(
-                      item: item,
-                      index: index,
-                    );
+                    return EntryDetailRoute(item: item);
                   },
                 ),
               );

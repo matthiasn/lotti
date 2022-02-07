@@ -39,10 +39,8 @@ class EntryDetailRoute extends StatelessWidget {
   const EntryDetailRoute({
     Key? key,
     required this.item,
-    required this.index,
   }) : super(key: key);
 
-  final int index;
   final JournalEntity item;
 
   @override

@@ -94,10 +94,7 @@ class MyDayPage extends StatelessWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (BuildContext context) {
-                      return EntryDetailRoute(
-                        item: meeting.journalEntity,
-                        index: 0,
-                      );
+                      return EntryDetailRoute(item: meeting.journalEntity);
                     },
                   ),
                 );

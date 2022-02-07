@@ -723,7 +723,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.9.4"
+    version: "3.9.9"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -881,6 +881,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.2"
+  go_router:
+    dependency: "direct main"
+    description:
+      name: go_router
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.1"
   google_fonts:
     dependency: "direct main"
     description:
@@ -964,7 +971,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.4+5"
+    version: "0.8.4+6"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1020,21 +1027,21 @@ packages:
       name: just_audio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.18"
+    version: "0.9.19"
   just_audio_platform_interface:
     dependency: transitive
     description:
       name: just_audio_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.0"
+    version: "4.1.0"
   just_audio_web:
     dependency: transitive
     description:
       name: just_audio_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.3"
+    version: "0.4.4"
   keyboard_dismisser:
     dependency: "direct main"
     description:
@@ -1301,6 +1308,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.5"
+  path_to_regexp:
+    dependency: transitive
+    description:
+      name: path_to_regexp
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0"
   pedantic:
     dependency: transitive
     description:
@@ -1841,7 +1855,7 @@ packages:
       name: video_player_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.17"
+    version: "2.2.18"
   video_player_platform_interface:
     dependency: transitive
     description:
