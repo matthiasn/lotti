@@ -146,7 +146,7 @@ class OutboxCubit extends Cubit<OutboxState> {
                 encryptedFilePath = encryptedFile.path;
               }
 
-              ImapClient? successfulClient = await saveImap(
+              ImapClient? successfulClient = await persistImap(
                 encryptedFilePath: encryptedFilePath,
                 subject: nextPending.subject,
                 encryptedMessage: encryptedMessage,
