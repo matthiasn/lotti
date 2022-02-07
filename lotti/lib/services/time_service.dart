@@ -29,7 +29,7 @@ class TimeService {
 
     _periodicStream = Stream<int>.periodic(interval, callback);
     if (_periodicStream != null) {
-      await for (int i in _periodicStream!) {
+      await for (int _ in _periodicStream!) {
         if (_current != null) {
           _controller.add(
             _current!.copyWith(

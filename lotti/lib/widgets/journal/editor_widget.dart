@@ -5,7 +5,7 @@ import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
-  EditorWidget({
+  const EditorWidget({
     Key? key,
     required QuillController controller,
     double minHeight = 80,

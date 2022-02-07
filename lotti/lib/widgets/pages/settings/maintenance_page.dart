@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
@@ -14,7 +13,6 @@ class MaintenancePage extends StatefulWidget {
 
 class _MaintenancePageState extends State<MaintenancePage> {
   final JournalDb _db = getIt<JournalDb>();
-
   late final Stream<List<ConfigFlag>> stream = _db.watchConfigFlags();
 
   @override

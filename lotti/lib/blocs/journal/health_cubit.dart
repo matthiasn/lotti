@@ -7,20 +7,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:lotti/blocs/journal/health_state.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 
 class HealthCubit extends Cubit<HealthState> {
-  late final PersistenceCubit _persistenceCubit;
-  String? deviceType;
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final String platform;
+  String? deviceType;
 
-  HealthCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(HealthState()) {
-    _persistenceCubit = persistenceCubit;
+  HealthCubit() : super(HealthState()) {
     getPlatform();
   }
 
@@ -72,7 +69,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        await _persistenceCubit.createQuantitativeEntry(activityForDay);
+        await persistenceLogic.createQuantitativeEntry(activityForDay);
       }
     }
 
@@ -120,7 +117,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          await _persistenceCubit.createQuantitativeEntry(discreteQuantity);
+          await persistenceLogic.createQuantitativeEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');

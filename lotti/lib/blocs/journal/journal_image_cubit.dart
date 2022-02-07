@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
@@ -15,13 +16,9 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'journal_image_state.dart';
 
 class JournalImageCubit extends Cubit<JournalImageState> {
-  late final PersistenceCubit _persistenceCubit;
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
-  JournalImageCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(JournalImageState()) {
-    _persistenceCubit = persistenceCubit;
-  }
+  JournalImageCubit() : super(JournalImageState());
 
   Future<void> pickImageAssets(
     BuildContext context, {
@@ -78,7 +75,10 @@ class JournalImageCubit extends Cubit<JournalImageState> {
             geolocation: geolocation,
           );
 
-          _persistenceCubit.createImageEntry(imageData, linked: linked);
+          persistenceLogic.createImageEntry(
+            imageData,
+            linked: linked,
+          );
         }
       }
     }

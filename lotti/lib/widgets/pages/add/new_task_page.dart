@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:intl/intl.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor_tools.dart';
@@ -26,6 +25,7 @@ class NewTaskPage extends StatefulWidget {
 }
 
 class _NewTaskPageState extends State<NewTaskPage> {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final formKey = GlobalKey<FormBuilderState>();
   final quill.QuillController _controller = makeController();
   final FocusNode _focusNode = FocusNode();
@@ -61,69 +61,65 @@ class _NewTaskPageState extends State<NewTaskPage> {
         estimate: estimate,
       );
 
-      context.read<PersistenceCubit>().createTaskEntry(
-            data: taskData,
-            entryText: entryTextFromController(_controller),
-            linked: widget.linked,
-          );
+      persistenceLogic.createTaskEntry(
+        data: taskData,
+        entryText: entryTextFromController(_controller),
+        linked: widget.linked,
+      );
       Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PersistenceCubit, PersistenceState>(
-      builder: (context, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'New Task',
-              style: TextStyle(
-                color: AppColors.entryTextColor,
-                fontFamily: 'Oswald',
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'New Task',
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+          ),
+        ),
+        backgroundColor: AppColors.headerBgColor,
+        foregroundColor: AppColors.appBarFgColor,
+        actions: <Widget>[
+          TextButton(
+            onPressed: _save,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                'Save',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontFamily: 'Oswald',
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.appBarFgColor,
+                ),
               ),
             ),
-            backgroundColor: AppColors.headerBgColor,
-            foregroundColor: AppColors.appBarFgColor,
-            actions: <Widget>[
-              TextButton(
-                onPressed: _save,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Text(
-                    'Save',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: 'Oswald',
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.appBarFgColor,
-                    ),
-                  ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.bodyBgColor,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: TaskForm(
+                  formKey: formKey,
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  saveFn: _save,
                 ),
               ),
             ],
           ),
-          backgroundColor: AppColors.bodyBgColor,
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: TaskForm(
-                      formKey: formKey,
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      saveFn: _save,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

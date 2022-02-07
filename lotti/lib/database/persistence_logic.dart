@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_links.dart';
@@ -28,7 +26,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 
-class PersistenceCubit extends Cubit<PersistenceState> {
+class PersistenceLogic {
   final JournalDb _journalDb = getIt<JournalDb>();
   final VectorClockService _vectorClockService = getIt<VectorClockService>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
@@ -36,9 +34,8 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   final uuid = const Uuid();
   DeviceLocation? location;
-  Timer? timer;
 
-  PersistenceCubit() : super(PersistenceState.initial()) {
+  PersistenceLogic() {
     init();
   }
 
@@ -46,7 +43,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     if (!Platform.isLinux && !Platform.isWindows) {
       location = DeviceLocation();
     }
-    emit(PersistenceState.online(entries: []));
   }
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {

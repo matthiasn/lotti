@@ -10,7 +10,6 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/health_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
@@ -24,6 +23,7 @@ import 'package:lotti/widgets/home.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'database/database.dart';
+import 'database/persistence_logic.dart';
 import 'database/sync_db.dart';
 
 final getIt = GetIt.instance;
@@ -45,6 +45,7 @@ Future<void> main() async {
     getIt.registerSingleton<SyncConfigService>(SyncConfigService());
     getIt.registerSingleton<TimeService>(TimeService());
     getIt.registerSingleton<OutboxService>(OutboxService());
+    getIt.registerSingleton<PersistenceLogic>(PersistenceLogic());
 
     initializeDateFormatting();
 
@@ -75,32 +76,20 @@ class LottiApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => OutboxCubit(),
         ),
-        BlocProvider<PersistenceCubit>(
-          lazy: false,
-          create: (BuildContext context) => PersistenceCubit(),
-        ),
         BlocProvider<InboxImapCubit>(
           lazy: false,
-          create: (BuildContext context) => InboxImapCubit(
-            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-          ),
+          create: (BuildContext context) => InboxImapCubit(),
         ),
         BlocProvider<HealthCubit>(
           lazy: true,
-          create: (BuildContext context) => HealthCubit(
-            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-          ),
+          create: (BuildContext context) => HealthCubit(),
         ),
         BlocProvider<JournalImageCubit>(
           lazy: false,
-          create: (BuildContext context) => JournalImageCubit(
-            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-          ),
+          create: (BuildContext context) => JournalImageCubit(),
         ),
         BlocProvider<AudioRecorderCubit>(
-          create: (BuildContext context) => AudioRecorderCubit(
-            persistenceCubit: BlocProvider.of<PersistenceCubit>(context),
-          ),
+          create: (BuildContext context) => AudioRecorderCubit(),
         ),
         BlocProvider<AudioPlayerCubit>(
           create: (BuildContext context) => AudioPlayerCubit(),

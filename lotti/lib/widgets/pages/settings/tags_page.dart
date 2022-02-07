@@ -1,15 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/tags/tag_details.dart';
-import 'package:provider/src/provider.dart';
 
 class TagsPage extends StatefulWidget {
   const TagsPage({Key? key}) : super(key: key);
@@ -62,6 +60,7 @@ class _TagsPageState extends State<TagsPage> {
 }
 
 class TagCard extends StatelessWidget {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final TagEntity tagEntity;
   final int index;
 
@@ -98,8 +97,7 @@ class TagCard extends StatelessWidget {
                 value: tagEntity.private,
                 activeColor: AppColors.private,
                 onChanged: (bool private) async {
-                  await context
-                      .read<PersistenceCubit>()
+                  await persistenceLogic
                       .upsertTagEntity(tagEntity.copyWith(private: private));
                 },
               ),

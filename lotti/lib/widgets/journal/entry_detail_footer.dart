@@ -1,16 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_datetime_modal.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 import 'duration_widget.dart';
 
@@ -141,7 +140,7 @@ class _EntryDetailFooterState extends State<EntryDetailFooter> {
 class EntryInfoRow extends StatelessWidget {
   final String entityId;
   final JournalDb db = getIt<JournalDb>();
-
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(entityId);
 
   EntryInfoRow({
@@ -172,9 +171,7 @@ class EntryInfoRow extends StatelessWidget {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     starred: value,
                   );
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntity(liveEntity, newMeta);
+                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
                 },
                 value: liveEntity.meta.starred ?? false,
               ),
@@ -185,9 +182,7 @@ class EntryInfoRow extends StatelessWidget {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     private: value,
                   );
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntity(liveEntity, newMeta);
+                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
                 },
                 value: liveEntity.meta.private ?? false,
               ),
@@ -198,9 +193,7 @@ class EntryInfoRow extends StatelessWidget {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     flag: value ? EntryFlag.import : EntryFlag.none,
                   );
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntity(liveEntity, newMeta);
+                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
                 },
                 value: liveEntity.meta.flag == EntryFlag.import,
               ),
@@ -209,9 +202,7 @@ class EntryInfoRow extends StatelessWidget {
                 activeColor: AppColors.error,
                 onChanged: (bool value) {
                   if (value) {
-                    context
-                        .read<PersistenceCubit>()
-                        .deleteJournalEntity(liveEntity);
+                    persistenceLogic.deleteJournalEntity(liveEntity);
                     Navigator.pop(context);
                   }
                 },

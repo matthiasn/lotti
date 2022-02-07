@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/measurement_barchart.dart';
@@ -28,8 +27,8 @@ class NewMeasurementPage extends StatefulWidget {
 
 class _NewMeasurementPageState extends State<NewMeasurementPage> {
   final JournalDb _db = getIt<JournalDb>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
-
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
 
@@ -76,10 +75,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       value:
                           nf.parse('${formData['value']}'.replaceAll(',', '.')),
                     );
-                    context.read<PersistenceCubit>().createMeasurementEntry(
-                          data: measurement,
-                          linked: widget.linked,
-                        );
+                    persistenceLogic.createMeasurementEntry(
+                      data: measurement,
+                      linked: widget.linked,
+                    );
                     Navigator.pop(context);
                   }
                 },
