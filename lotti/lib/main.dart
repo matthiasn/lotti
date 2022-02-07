@@ -19,6 +19,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/widgets/home.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -43,6 +44,7 @@ Future<void> main() async {
     getIt.registerSingleton<VectorClockService>(VectorClockService());
     getIt.registerSingleton<SyncConfigService>(SyncConfigService());
     getIt.registerSingleton<TimeService>(TimeService());
+    getIt.registerSingleton<OutboxService>(OutboxService());
 
     initializeDateFormatting();
 
@@ -75,9 +77,7 @@ class LottiApp extends StatelessWidget {
         ),
         BlocProvider<PersistenceCubit>(
           lazy: false,
-          create: (BuildContext context) => PersistenceCubit(
-            outboundQueueCubit: BlocProvider.of<OutboxCubit>(context),
-          ),
+          create: (BuildContext context) => PersistenceCubit(),
         ),
         BlocProvider<InboxImapCubit>(
           lazy: false,
