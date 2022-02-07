@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/blocs/journal/health_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
-import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/insights_db.dart';
@@ -29,7 +29,10 @@ final getIt = GetIt.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
+
+  if (Platform.isMacOS) {
+    await windowManager.ensureInitialized();
+  }
 
   runZonedGuarded(() {
     getIt.registerSingleton<JournalDb>(JournalDb());
@@ -66,15 +69,9 @@ class LottiApp extends StatelessWidget {
           lazy: false,
           create: (BuildContext context) => SyncConfigCubit(),
         ),
-        BlocProvider<OutboxImapCubit>(
-          lazy: false,
-          create: (BuildContext context) => OutboxImapCubit(),
-        ),
         BlocProvider<OutboxCubit>(
           lazy: false,
-          create: (BuildContext context) => OutboxCubit(
-            outboxImapCubit: BlocProvider.of<OutboxImapCubit>(context),
-          ),
+          create: (BuildContext context) => OutboxCubit(),
         ),
         BlocProvider<PersistenceCubit>(
           lazy: false,

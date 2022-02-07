@@ -9,7 +9,6 @@ import 'package:drift/drift.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
-import 'package:lotti/blocs/sync/imap/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/encryption.dart';
+import 'package:lotti/sync/outbox_imap.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
@@ -28,7 +28,6 @@ import 'package:path_provider/path_provider.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  late final OutboxImapCubit _outboxImapCubit;
   ConnectivityResult? _connectivityResult;
   final InsightsDb _insightsDb = getIt<InsightsDb>();
 
@@ -39,10 +38,7 @@ class OutboxCubit extends Cubit<OutboxState> {
   late final StreamSubscription<FGBGType> fgBgSubscription;
   Timer? timer;
 
-  OutboxCubit({
-    required OutboxImapCubit outboxImapCubit,
-  }) : super(OutboxState.initial()) {
-    _outboxImapCubit = outboxImapCubit;
+  OutboxCubit() : super(OutboxState.initial()) {
     init();
 
     Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -150,7 +146,7 @@ class OutboxCubit extends Cubit<OutboxState> {
                 encryptedFilePath = encryptedFile.path;
               }
 
-              ImapClient? successfulClient = await _outboxImapCubit.saveImap(
+              ImapClient? successfulClient = await saveImap(
                 encryptedFilePath: encryptedFilePath,
                 subject: nextPending.subject,
                 encryptedMessage: encryptedMessage,
