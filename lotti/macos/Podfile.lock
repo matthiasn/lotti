@@ -51,6 +51,8 @@ PODS:
     - sqlite3/rtree
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
+  - window_manager (0.1.4):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
@@ -68,6 +70,7 @@ DEPENDENCIES:
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 SPEC REPOS:
   trunk:
@@ -106,6 +109,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  window_manager:
+    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
@@ -126,6 +131,7 @@ SPEC CHECKSUMS:
   sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
   sqlite3_flutter_libs: 2c1089e698380f5a3643f8730047e808b7a40ba3
   url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
+  window_manager: 02776e5a599084cd4576e27a42dd5ec6f49132cf
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52
 

@@ -1912,6 +1912,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.3.10"
+  window_manager:
+    dependency: "direct main"
+    description:
+      name: window_manager
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.5"
   wkt_parser:
     dependency: transitive
     description:
