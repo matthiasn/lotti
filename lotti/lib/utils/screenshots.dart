@@ -3,11 +3,16 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<ImageData> takeScreenshotMac() async {
+  final JournalDb db = getIt<JournalDb>();
+  bool hide = await db.getConfigFlag('hide_for_screenshot');
+
   String id = uuid.v1();
   String filename = '$id.screenshot.png';
   DateTime created = DateTime.now();
@@ -15,7 +20,9 @@ Future<ImageData> takeScreenshotMac() async {
   String relativePath = '/images/$day/';
   String directory = await createAssetDirectory(relativePath);
 
-  await windowManager.minimize();
+  if (hide) {
+    await windowManager.minimize();
+  }
 
   Process process = await Process.start(
     'screencapture',
@@ -43,6 +50,9 @@ Future<ImageData> takeScreenshotMac() async {
     geolocation: geolocation,
   );
 
-  await windowManager.show();
+  if (hide) {
+    await windowManager.show();
+  }
+
   return imageData;
 }

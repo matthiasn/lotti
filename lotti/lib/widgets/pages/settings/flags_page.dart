@@ -20,7 +20,6 @@ class _FlagsPageState extends State<FlagsPage> {
   @override
   void initState() {
     super.initState();
-    _db.getConfigFlags().then((value) => debugPrint('$value'));
   }
 
   @override
