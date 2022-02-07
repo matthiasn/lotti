@@ -8,7 +8,7 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/location.dart';
-import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -65,8 +65,7 @@ class JournalImageCubit extends Cubit<JournalImageState> {
               );
           String day = DateFormat('yyyy-MM-dd').format(createdAt);
           String relativePath = '/images/$day/';
-          String directory =
-              await AudioUtils.createAssetDirectory(relativePath);
+          String directory = await createAssetDirectory(relativePath);
           String targetFilePath = '$directory$imageFileName';
           await compressAndSave(file, targetFilePath);
           DateTime created = asset.createDateTime;

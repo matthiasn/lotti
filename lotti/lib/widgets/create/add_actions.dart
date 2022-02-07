@@ -8,6 +8,7 @@ import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 import 'package:lotti/widgets/pages/add/new_task_page.dart';
@@ -41,6 +42,23 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
   @override
   Widget build(BuildContext _context) {
     List<Widget> items = [];
+
+    if (Platform.isMacOS) {
+      items.add(
+        FloatingActionButton(
+          heroTag: 'screenshot',
+          child: const Icon(
+            MdiIcons.monitorScreenshot,
+            size: 32,
+          ),
+          backgroundColor: AppColors.actionColor,
+          onPressed: () async {
+            ImageData imageData = await takeScreenshotMac();
+            debugPrint(imageData.toString());
+          },
+        ),
+      );
+    }
 
     items.add(
       FloatingActionButton(

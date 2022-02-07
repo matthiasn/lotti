@@ -11,7 +11,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -94,7 +93,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
       String day = DateFormat('yyyy-MM-dd').format(created);
       String relativePath = '/audio/$day/';
-      String directory = await AudioUtils.createAssetDirectory(relativePath);
+      String directory = await createAssetDirectory(relativePath);
       String filePath = '$directory$fileName';
 
       _audioNote = AudioNote(
