@@ -31,7 +31,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OutboxCubit, OutboxState>(
-      builder: (context, OutboxState state) {
+      builder: (_, OutboxState state) {
         return StreamBuilder<List<OutboxItem>>(
           stream: stream,
           builder: (

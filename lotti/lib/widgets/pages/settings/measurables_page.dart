@@ -229,7 +229,7 @@ class _DetailRouteState extends State<DetailRoute> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (BuildContext context, PersistenceState state) {
+        builder: (BuildContext context, _) {
       final MeasurableDataType item = widget.item;
 
       return Scaffold(

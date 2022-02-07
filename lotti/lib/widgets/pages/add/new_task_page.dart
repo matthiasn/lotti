@@ -73,7 +73,7 @@ class _NewTaskPageState extends State<NewTaskPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
-      builder: (context, PersistenceState state) {
+      builder: (context, _) {
         return Scaffold(
           appBar: AppBar(
             title: Text(

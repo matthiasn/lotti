@@ -33,7 +33,7 @@ class _EditorPageState extends State<EditorPage> {
   @override
   Widget build(BuildContext _context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (context, PersistenceState state) {
+        builder: (context, _) {
       void _save() async {
         context.read<PersistenceCubit>().createTextEntry(
               entryTextFromController(_controller),

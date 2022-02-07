@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -193,17 +192,14 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ),
     );
 
-    return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (context, PersistenceState state) {
-      return CircleFloatingButton.floatingActionButton(
-        radius: items.length * 32,
-        useOpacity: true,
-        items: items,
-        color: AppColors.actionColor,
-        icon: Icons.add,
-        duration: const Duration(milliseconds: 500),
-        curveAnim: Curves.ease,
-      );
-    });
+    return CircleFloatingButton.floatingActionButton(
+      radius: items.length * 32,
+      useOpacity: true,
+      items: items,
+      color: AppColors.actionColor,
+      icon: Icons.add,
+      duration: const Duration(milliseconds: 500),
+      curveAnim: Curves.ease,
+    );
   }
 }

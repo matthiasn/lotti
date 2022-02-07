@@ -45,7 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
           settings: settings,
           builder: (BuildContext context) {
             return BlocBuilder<PersistenceCubit, PersistenceState>(
-              builder: (BuildContext context, PersistenceState state) {
+              builder: (BuildContext context, _) {
                 return Scaffold(
                   appBar: const VersionAppBar(title: 'Settings'),
                   backgroundColor: AppColors.bodyBgColor,
