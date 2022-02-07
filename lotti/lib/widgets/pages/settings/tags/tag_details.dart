@@ -29,7 +29,7 @@ class _TagDetailRouteState extends State<TagDetailRoute> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (BuildContext context, PersistenceState state) {
+        builder: (BuildContext context, _) {
       return Scaffold(
         backgroundColor: AppColors.bodyBgColor,
         appBar: AppBar(

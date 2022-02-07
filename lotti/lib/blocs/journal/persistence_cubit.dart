@@ -30,7 +30,7 @@ import 'package:uuid/uuid.dart';
 
 class PersistenceCubit extends Cubit<PersistenceState> {
   final JournalDb _journalDb = getIt<JournalDb>();
-  late final VectorClockService _vectorClockService;
+  final VectorClockService _vectorClockService = getIt<VectorClockService>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
   final OutboxService _outboxService = getIt<OutboxService>();
 
@@ -39,7 +39,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Timer? timer;
 
   PersistenceCubit() : super(PersistenceState.initial()) {
-    _vectorClockService = getIt<VectorClockService>();
     init();
   }
 
