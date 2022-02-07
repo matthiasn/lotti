@@ -20,7 +20,6 @@ class _MaintenancePageState extends State<MaintenancePage> {
   @override
   void initState() {
     super.initState();
-    _db.getConfigFlags().then((value) => debugPrint('$value'));
   }
 
   @override

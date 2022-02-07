@@ -309,15 +309,36 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> initConfigFlags() async {
-    into(configFlags).insert(ConfigFlag(
-      name: 'private',
-      description: 'Show private entries?',
-      status: true,
-    ));
+    into(configFlags).insert(
+      ConfigFlag(
+        name: 'private',
+        description: 'Show private entries?',
+        status: true,
+      ),
+    );
+    into(configFlags).insert(
+      ConfigFlag(
+        name: 'hide_for_screenshot',
+        description: 'Hide Lotti when taking Screenshots?',
+        status: true,
+      ),
+    );
   }
 
   Future<List<ConfigFlag>> getConfigFlags() {
     return listConfigFlags().get();
+  }
+
+  Future<bool> getConfigFlag(String flagName) async {
+    bool flag = false;
+    List<ConfigFlag> flags = await listConfigFlags().get();
+    for (ConfigFlag configFlag in flags) {
+      if (configFlag.name == flagName) {
+        flag = configFlag.status;
+      }
+    }
+
+    return flag;
   }
 
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
