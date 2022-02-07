@@ -5,6 +5,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<ImageData> takeScreenshotMac() async {
   String id = uuid.v1();
@@ -13,6 +14,8 @@ Future<ImageData> takeScreenshotMac() async {
   String day = DateFormat('yyyy-MM-dd').format(created);
   String relativePath = '/images/$day/';
   String directory = await createAssetDirectory(relativePath);
+
+  await windowManager.minimize();
 
   Process process = await Process.start(
     'screencapture',
@@ -27,7 +30,6 @@ Future<ImageData> takeScreenshotMac() async {
   await process.exitCode;
 
   DeviceLocation location = DeviceLocation();
-
   Geolocation? geolocation = await location.getCurrentGeoLocation().timeout(
         const Duration(seconds: 3),
         onTimeout: () => null,
@@ -41,5 +43,6 @@ Future<ImageData> takeScreenshotMac() async {
     geolocation: geolocation,
   );
 
+  await windowManager.show();
   return imageData;
 }

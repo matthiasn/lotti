@@ -20,6 +20,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/widgets/home.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'database/database.dart';
 import 'database/sync_db.dart';
@@ -27,9 +28,10 @@ import 'database/sync_db.dart';
 final getIt = GetIt.instance;
 
 Future<void> main() async {
-  runZonedGuarded(() {
-    WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
 
+  runZonedGuarded(() {
     getIt.registerSingleton<JournalDb>(JournalDb());
     getIt.registerSingleton<TagsService>(TagsService());
     getIt<JournalDb>().initConfigFlags();
