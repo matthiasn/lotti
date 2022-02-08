@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
-import 'package:lotti/blocs/sync/imap/imap_client.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
+import 'package:lotti/sync/imap_client.dart';
 
 Future<GenericImapResult> saveImapMessage(
   ImapClient imapClient,
