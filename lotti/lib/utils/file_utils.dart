@@ -17,7 +17,6 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text_entries',
     journalImage: (_) => 'images',
-    loggedTime: (_) => 'logged_time',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'surveys',
@@ -31,7 +30,6 @@ String typeSuffix(JournalEntity journalEntity) {
     journalAudio: (_) => 'audio',
     journalEntry: (_) => 'text',
     journalImage: (_) => 'image',
-    loggedTime: (_) => 'logged_time',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
     survey: (_) => 'survey',
@@ -62,4 +60,11 @@ Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
   String path = entityPath(journalEntity, docDir);
   File file = await File(path).create(recursive: true);
   await file.writeAsString(json);
+}
+
+Future<String> createAssetDirectory(String relativePath) async {
+  var docDir = await getApplicationDocumentsDirectory();
+  Directory directory =
+      await Directory('${docDir.path}$relativePath').create(recursive: true);
+  return directory.path;
 }

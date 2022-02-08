@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
@@ -24,38 +21,34 @@ class _InsightsPageState extends State<InsightsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OutboxCubit, OutboxState>(
-      builder: (context, OutboxState state) {
-        return StreamBuilder<List<Insight>>(
-          stream: stream,
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<Insight>> snapshot,
-          ) {
-            List<Insight> insights = snapshot.data ?? [];
+    return StreamBuilder<List<Insight>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<Insight>> snapshot,
+      ) {
+        List<Insight> insights = snapshot.data ?? [];
 
-            return Scaffold(
-              appBar: AppBar(
-                backgroundColor: AppColors.headerBgColor,
-                foregroundColor: AppColors.appBarFgColor,
-                title: const Text('Logging'),
-              ),
-              backgroundColor: AppColors.bodyBgColor,
-              body: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: List.generate(
-                  insights.length,
-                  (int index) {
-                    return InsightCard(
-                      insight: insights.elementAt(index),
-                      index: index,
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.headerBgColor,
+            foregroundColor: AppColors.appBarFgColor,
+            title: const Text('Logging'),
+          ),
+          backgroundColor: AppColors.bodyBgColor,
+          body: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8.0),
+            children: List.generate(
+              insights.length,
+              (int index) {
+                return InsightCard(
+                  insight: insights.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
+          ),
         );
       },
     );

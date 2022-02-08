@@ -1,9 +1,6 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
-import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -35,87 +32,81 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OutboxCubit, OutboxState>(
-      builder: (context, OutboxState state) {
-        return StreamBuilder<List<Conflict>>(
-          stream: stream,
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<List<Conflict>> snapshot,
-          ) {
-            List<Conflict> items = snapshot.data ?? [];
+    return StreamBuilder<List<Conflict>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<Conflict>> snapshot,
+      ) {
+        List<Conflict> items = snapshot.data ?? [];
 
-            return Scaffold(
-              appBar: AppBar(
-                backgroundColor: AppColors.headerBgColor,
-                foregroundColor: AppColors.appBarFgColor,
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CupertinoSegmentedControl(
-                      selectedColor: AppColors.entryBgColor,
-                      unselectedColor: AppColors.headerBgColor,
-                      borderColor: AppColors.entryBgColor,
-                      groupValue: _selectedValue,
-                      onValueChanged: (String value) {
-                        setState(() {
-                          _selectedValue = value;
-                          if (_selectedValue == 'unresolved') {
-                            stream =
-                                _db.watchConflicts(ConflictStatus.unresolved);
-                          }
-                          if (_selectedValue == 'resolved') {
-                            stream =
-                                _db.watchConflicts(ConflictStatus.resolved);
-                          }
-                        });
-                      },
-                      children: const {
-                        'unresolved': SizedBox(
-                          width: 64,
-                          height: 32,
-                          child: Center(
-                            child: Text(
-                              'unresolved',
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
-                              ),
-                            ),
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.headerBgColor,
+            foregroundColor: AppColors.appBarFgColor,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CupertinoSegmentedControl(
+                  selectedColor: AppColors.entryBgColor,
+                  unselectedColor: AppColors.headerBgColor,
+                  borderColor: AppColors.entryBgColor,
+                  groupValue: _selectedValue,
+                  onValueChanged: (String value) {
+                    setState(() {
+                      _selectedValue = value;
+                      if (_selectedValue == 'unresolved') {
+                        stream = _db.watchConflicts(ConflictStatus.unresolved);
+                      }
+                      if (_selectedValue == 'resolved') {
+                        stream = _db.watchConflicts(ConflictStatus.resolved);
+                      }
+                    });
+                  },
+                  children: const {
+                    'unresolved': SizedBox(
+                      width: 64,
+                      height: 32,
+                      child: Center(
+                        child: Text(
+                          'unresolved',
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            fontSize: 14,
                           ),
                         ),
-                        'resolved': SizedBox(
-                          child: Center(
-                            child: Text(
-                              'resolved',
-                              style: TextStyle(
-                                fontFamily: 'Oswald',
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      },
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              backgroundColor: AppColors.bodyBgColor,
-              body: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(8.0),
-                children: List.generate(
-                  items.length,
-                  (int index) {
-                    return ConflictCard(
-                      conflict: items.elementAt(index),
-                      index: index,
-                    );
+                    'resolved': SizedBox(
+                      child: Center(
+                        child: Text(
+                          'resolved',
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
                   },
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
+          backgroundColor: AppColors.bodyBgColor,
+          body: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.all(8.0),
+            children: List.generate(
+              items.length,
+              (int index) {
+                return ConflictCard(
+                  conflict: items.elementAt(index),
+                  index: index,
+                );
+              },
+            ),
+          ),
         );
       },
     );

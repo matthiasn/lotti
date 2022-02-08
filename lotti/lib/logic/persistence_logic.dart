@@ -2,45 +2,40 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
-import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:uuid/uuid.dart';
 
-class PersistenceCubit extends Cubit<PersistenceState> {
-  late final OutboxCubit _outboundQueueCubit;
+class PersistenceLogic {
   final JournalDb _journalDb = getIt<JournalDb>();
-  late final VectorClockService _vectorClockService;
+  final VectorClockService _vectorClockService = getIt<VectorClockService>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final OutboxService _outboxService = getIt<OutboxService>();
 
   final uuid = const Uuid();
   DeviceLocation? location;
-  Timer? timer;
 
-  PersistenceCubit({
-    required OutboxCubit outboundQueueCubit,
-  }) : super(PersistenceState.initial()) {
-    _outboundQueueCubit = outboundQueueCubit;
-    _vectorClockService = getIt<VectorClockService>();
+  PersistenceLogic() {
     init();
   }
 
@@ -48,7 +43,6 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     if (!Platform.isLinux && !Platform.isWindows) {
       location = DeviceLocation();
     }
-    emit(PersistenceState.online(entries: []));
   }
 
   Future<bool> createQuantitativeEntry(QuantitativeData data) async {
@@ -88,6 +82,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> createSurveyEntry({
     required SurveyData data,
+    JournalEntity? linked,
   }) async {
     final transaction =
         _insightsDb.startTransaction('createSurveyEntry()', 'task');
@@ -117,7 +112,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ),
       );
 
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -128,6 +127,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<bool> createMeasurementEntry({
     required MeasurementData data,
+    JournalEntity? linked,
   }) async {
     final transaction =
         _insightsDb.startTransaction('createMeasurementEntry()', 'task');
@@ -161,7 +161,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ),
       );
 
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -170,7 +174,61 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool> createImageEntry(ImageData imageData) async {
+  Future<bool> createTaskEntry({
+    required TaskData data,
+    required EntryText entryText,
+    JournalEntity? linked,
+  }) async {
+    final transaction =
+        _insightsDb.startTransaction('createMeasurementEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
+      String id = uuid.v5(Uuid.NAMESPACE_NIL, json.encode(data));
+
+      Geolocation? geolocation;
+
+      if (data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1) {
+        geolocation = await location?.getCurrentGeoLocation().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () => null, // TODO: report timeout in Insights
+            );
+      }
+
+      JournalEntity journalEntity = JournalEntity.task(
+        data: data,
+        geolocation: geolocation,
+        entryText: entryText,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          id: id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> createImageEntry(
+    ImageData imageData, {
+    JournalEntity? linked,
+  }) async {
     final transaction =
         _insightsDb.startTransaction('createImageEntry()', 'task');
     try {
@@ -198,7 +256,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         // TODO: should this be geolocation at capture or insertion?
         geolocation: imageData.geolocation,
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -207,7 +269,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool> createAudioEntry(AudioNote audioNote) async {
+  Future<bool> createAudioEntry(
+    AudioNote audioNote, {
+    JournalEntity? linked,
+  }) async {
     final transaction =
         _insightsDb.startTransaction('createImageEntry()', 'task');
     try {
@@ -243,7 +308,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         // TODO: should this be geolocation at capture or insertion?
         geolocation: audioNote.geolocation,
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -252,7 +321,10 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool> createTextEntry(EntryText entryText) async {
+  Future<bool> createTextEntry(
+    EntryText entryText, {
+    JournalEntity? linked,
+  }) async {
     final transaction =
         _insightsDb.startTransaction('createTextEntry()', 'task');
     try {
@@ -279,7 +351,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
         ),
         geolocation: geolocation,
       );
-      await createDbEntity(journalEntity, enqueueSync: true);
+      await createDbEntity(
+        journalEntity,
+        enqueueSync: true,
+        linked: linked,
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -288,8 +364,11 @@ class PersistenceCubit extends Cubit<PersistenceState> {
     return true;
   }
 
-  Future<bool?> createDbEntity(JournalEntity journalEntity,
-      {bool enqueueSync = false}) async {
+  Future<bool?> createDbEntity(
+    JournalEntity journalEntity, {
+    bool enqueueSync = false,
+    JournalEntity? linked,
+  }) async {
     final transaction =
         _insightsDb.startTransaction('createDbEntity()', 'task');
     try {
@@ -299,11 +378,31 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await _journalDb.addTagged(journalEntity);
 
       if (saved && enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
+        await _outboxService.enqueueMessage(SyncMessage.journalEntity(
           journalEntity: journalEntity,
           status: SyncEntryStatus.initial,
         ));
       }
+
+      if (linked != null) {
+        DateTime now = DateTime.now();
+        EntryLink link = EntryLink.basic(
+          id: uuid.v1(),
+          toId: journalEntity.meta.id,
+          fromId: linked.meta.id,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        );
+
+        await _journalDb.upsertEntryLink(link);
+
+        await _outboxService.enqueueMessage(SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        ));
+      }
+
       await transaction.finish();
 
       NotificationService.updateBadge();
@@ -382,6 +481,51 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
         await updateDbEntity(newEntry, enqueueSync: true);
       }
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool> updateTask({
+    required String journalEntityId,
+    required EntryText entryText,
+    required TaskData taskData,
+  }) async {
+    final transaction =
+        _insightsDb.startTransaction('updateJournalEntity()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      journalEntity.maybeMap(
+        task: (Task task) async {
+          VectorClock vc = await _vectorClockService.getNextVectorClock(
+              previous: journalEntity.meta.vectorClock);
+
+          Metadata oldMeta = journalEntity.meta;
+          Metadata newMeta = oldMeta.copyWith(
+            updatedAt: now,
+            vectorClock: vc,
+          );
+
+          Task newJournalEntry = task.copyWith(
+            meta: newMeta,
+            entryText: entryText,
+            data: taskData,
+          );
+
+          await updateDbEntity(newJournalEntry, enqueueSync: true);
+        },
+        orElse: () => _insightsDb.captureException('not a task'),
+      );
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -492,10 +636,12 @@ class PersistenceCubit extends Cubit<PersistenceState> {
       await saveJournalEntityJson(journalEntity);
 
       if (enqueueSync) {
-        await _outboundQueueCubit.enqueueMessage(SyncMessage.journalEntity(
-          journalEntity: journalEntity,
-          status: SyncEntryStatus.update,
-        ));
+        await _outboxService.enqueueMessage(
+          SyncMessage.journalEntity(
+            journalEntity: journalEntity,
+            status: SyncEntryStatus.update,
+          ),
+        );
       }
       await transaction.finish();
 
@@ -511,7 +657,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     int linesAffected =
         await _journalDb.upsertEntityDefinition(entityDefinition);
-    await _outboundQueueCubit.enqueueMessage(SyncMessage.entityDefinition(
+    await _outboxService.enqueueMessage(SyncMessage.entityDefinition(
       entityDefinition: entityDefinition,
       status: SyncEntryStatus.update,
     ));
@@ -520,7 +666,7 @@ class PersistenceCubit extends Cubit<PersistenceState> {
 
   Future<int> upsertTagEntity(TagEntity tagEntity) async {
     int linesAffected = await _journalDb.upsertTagEntity(tagEntity);
-    await _outboundQueueCubit.enqueueMessage(SyncMessage.tagEntity(
+    await _outboxService.enqueueMessage(SyncMessage.tagEntity(
       tagEntity: tagEntity,
       status: SyncEntryStatus.update,
     ));

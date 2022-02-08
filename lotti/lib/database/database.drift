@@ -7,6 +7,8 @@ CREATE TABLE journal (
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
   starred BOOLEAN NOT NULL DEFAULT FALSE,
   private BOOLEAN NOT NULL DEFAULT FALSE,
+  task BOOLEAN NOT NULL DEFAULT FALSE,
+  task_status TEXT,
   flag INTEGER NOT NULL DEFAULT 0,
   type TEXT NOT NULL,
   subtype TEXT,
@@ -40,6 +42,12 @@ ON journal (starred);
 
 CREATE INDEX idx_journal_private
 ON journal (private);
+
+CREATE INDEX idx_journal_task
+ON journal (task);
+
+CREATE INDEX idx_journal_task_status
+ON journal (task_status);
 
 CREATE INDEX idx_journal_flag
 ON journal (flag);
@@ -152,6 +160,27 @@ ON tagged (journal_id);
 CREATE INDEX idx_tagged_tag_entity_id
 ON tagged (tag_entity_id);
 
+CREATE TABLE linked_entries (
+  id TEXT NOT NULL UNIQUE,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY(from_id) REFERENCES journal(id) ON DELETE CASCADE,
+  FOREIGN KEY(to_id) REFERENCES journal(id) ON DELETE CASCADE,
+  UNIQUE(from_id, to_id, type)
+) as LinkedDbEntry;
+
+CREATE INDEX idx_linked_entries_from_id
+ON linked_entries (from_id);
+
+CREATE INDEX idx_linked_entries_to_id
+ON linked_entries (to_id);
+
+CREATE INDEX idx_linked_entries_type
+ON linked_entries (type);
+
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
 SELECT *
@@ -175,6 +204,29 @@ SELECT * FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
+filteredTasks:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit;
+
+filteredTasksByTag:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND id IN :ids
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
   ORDER BY date_from DESC
   LIMIT :limit;
 
@@ -229,7 +281,6 @@ allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
-
 matchingTagEntities:
 SELECT * FROM tag_entities
   WHERE tag LIKE :match
@@ -247,3 +298,21 @@ DELETE FROM tagged;
 entryIdsForTagId:
 SELECT journal_id FROM tagged
   WHERE tag_entity_id = :tag_id;
+
+linkedEntriesFor:
+SELECT to_id FROM linked_entries
+  WHERE from_id = :from_id;
+
+linkedJournalEntities:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;
+
+linkedToJournalEntities:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN (SELECT from_id FROM linked_entries WHERE to_id = :to_id)
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY date_from DESC;

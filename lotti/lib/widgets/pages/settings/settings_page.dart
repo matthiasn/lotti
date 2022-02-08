@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
@@ -44,142 +41,138 @@ class _SettingsPageState extends State<SettingsPage> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            return BlocBuilder<PersistenceCubit, PersistenceState>(
-              builder: (BuildContext context, PersistenceState state) {
-                return Scaffold(
-                  appBar: const VersionAppBar(title: 'Settings'),
-                  backgroundColor: AppColors.bodyBgColor,
-                  body: Container(
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                      horizontal: 8.0,
-                    ),
-                    child: ListView(
-                      children: [
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.tag),
-                          title: 'Tags',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const TagsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.heart),
-                          title: 'Health Import',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const HealthPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(Icons.sync),
-                          title: 'Synchronization',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const SyncSettingsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.tapeMeasure),
-                          title: 'Measurables',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const MeasurablesPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: OutboxBadgeIcon(
-                            icon: const SettingsIcon(MdiIcons.mailbox),
+            return Scaffold(
+              appBar: const VersionAppBar(title: 'Settings'),
+              backgroundColor: AppColors.bodyBgColor,
+              body: Container(
+                margin: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 8.0,
+                ),
+                child: ListView(
+                  children: [
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.tag),
+                      title: 'Tags',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const TagsPage();
+                            },
                           ),
-                          title: 'Sync Outbox',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const OutboxMonitorPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.information),
-                          title: 'Logs',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const InsightsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.emoticonConfused),
-                          title: 'Conflicts',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const ConflictsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.flag),
-                          title: 'Flags',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const FlagsPage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                        SettingsCard(
-                          icon: const SettingsIcon(MdiIcons.broom),
-                          title: 'Maintenance',
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (BuildContext context) {
-                                  return const MaintenancePage();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.heart),
+                      title: 'Health Import',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const HealthPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(Icons.sync),
+                      title: 'Synchronization',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const SyncSettingsPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.tapeMeasure),
+                      title: 'Measurables',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const MeasurablesPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: OutboxBadgeIcon(
+                        icon: const SettingsIcon(MdiIcons.mailbox),
+                      ),
+                      title: 'Sync Outbox',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const OutboxMonitorPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.information),
+                      title: 'Logs',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const InsightsPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.emoticonConfused),
+                      title: 'Conflicts',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const ConflictsPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.flag),
+                      title: 'Flags',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const FlagsPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.broom),
+                      title: 'Maintenance',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const MaintenancePage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         );

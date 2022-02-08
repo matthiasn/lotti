@@ -13,13 +13,6 @@ class AudioUtils {
     return '${docDir.path}${j.data.audioDirectory}${j.data.audioFile}';
   }
 
-  static Future<String> createAssetDirectory(String relativePath) async {
-    var docDir = await getApplicationDocumentsDirectory();
-    Directory directory =
-        await Directory('${docDir.path}$relativePath').create(recursive: true);
-    return directory.path;
-  }
-
   static Future<void> moveToTrash(JournalAudio journalDbAudio) async {
     var docDir = await getApplicationDocumentsDirectory();
     Directory trashDirectory =

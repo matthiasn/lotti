@@ -5,7 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:lotti/widgets/journal/tags_widget.dart';
 
 class TagsSearchWidget extends StatelessWidget {
   final JournalDb _db = getIt<JournalDb>();
@@ -39,7 +39,7 @@ class TagsSearchWidget extends StatelessWidget {
               onSubmitted: (String tag) async {},
               autofocus: false,
               style: DefaultTextStyle.of(context).style.copyWith(
-                    color: AppColors.entryTextColor,
+                    color: Colors.white,
                     fontFamily: 'Oswald',
                     fontSize: 14.0,
                   ),
@@ -65,7 +65,7 @@ class TagsSearchWidget extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Oswald',
                     height: 1.2,
-                    color: AppColors.entryTextColor,
+                    color: getTagColor(tagEntity),
                     fontWeight: FontWeight.normal,
                     fontSize: 20.0,
                   ),
@@ -108,7 +108,7 @@ class SelectedTagsWidget extends StatelessWidget {
         AsyncSnapshot<List<TagEntity>> _,
       ) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
+          padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
           child: Wrap(
               spacing: 4,
               runSpacing: 4,
@@ -117,42 +117,11 @@ class SelectedTagsWidget extends StatelessWidget {
                 if (tagEntity == null) {
                   return const SizedBox.shrink();
                 }
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.only(
-                      left: 8,
-                      right: 2,
-                      bottom: 2,
-                    ),
-                    color: tagEntity.private
-                        ? AppColors.private
-                        : AppColors.tagColor,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          tagEntity.tag,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Oswald',
-                          ),
-                        ),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            child: const Icon(
-                              MdiIcons.close,
-                              size: 20,
-                            ),
-                            onTap: () {
-                              removeTag(tagEntity.id);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                return TagWidget(
+                  tagEntity: tagEntity,
+                  onTap: () {
+                    removeTag(tagEntity.id);
+                  },
                 );
               }).toList()),
         );

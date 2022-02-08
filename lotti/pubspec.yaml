@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.3.77+343
+version: 0.4.9+421
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -9,6 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  delta_markdown:
+    git:
+      url: https://github.com/matthiasn/delta_markdown
+      ref: 85c8a38
 
   flutter_health_fit:
     git:
@@ -29,6 +34,8 @@ dependencies:
       url: https://github.com/matthiasn/radial_button
       ref: f91a5e3
 
+  # enough_mail: ^1.3.6
+  # delta_markdown: ^0.4.0
   audio_video_progress_bar: ^0.10.0
   badges: ^2.0.2
   bloc: ^8.0.1
@@ -40,10 +47,8 @@ dependencies:
   cryptography: ^2.0.2
   cupertino_icons: ^1.0.2
   dart_geohash: ^2.0.1
-  delta_markdown: ^0.4.0
   device_info_plus: ^3.1.0
   drift: ^1.1.0
-  # enough_mail: ^1.3.6
   enum_to_string: ^2.0.1
   equatable: ^2.0.3
   exif: ^3.0.1
@@ -57,15 +62,19 @@ dependencies:
   flutter_local_notifications: ^9.2.0
   flutter_map: ^0.14.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^3.2.0
+  flutter_quill: ^3.9.4
   flutter_secure_storage: ^5.0.0
   flutter_sound: ^8.3.12
+  flutter_typeahead: ^3.2.4
   form_builder_validators: ^7.2.0
   freezed_annotation: ^1.1.0
   get_it: ^7.2.0
   getwidget: ^2.0.4
-  google_fonts: ^2.1.1
+  glass: ^1.0.1+1
+  go_router: ^3.0.1
+  google_fonts: 2.2.0
   health: ^3.4.3
+  hotkey_manager: ^0.1.6
   intl: ^0.17.0
   json_annotation: ^4.4.0
   just_audio: ^0.9.12
@@ -73,6 +82,7 @@ dependencies:
   latlong2: ^0.8.1
   location: ^4.3.0
   material_design_icons_flutter: ^5.0.6595
+  material_floating_search_bar: ^0.3.6
   mocktail: ^0.2.0
   multi_select_flutter: ^4.0.0
   mutex: ^3.0.0
@@ -85,13 +95,13 @@ dependencies:
   qr_flutter: ^4.0.0
   sqflite: ^2.0.1
   sqlite3_flutter_libs: ^0.5.2
+  syncfusion_flutter_calendar: ^19.4.48
   syncfusion_flutter_datepicker: ^19.3.57
   tinycolor2: ^2.0.0
   uuid: ^3.0.4
   wechat_assets_picker: ^6.3.0
+  window_manager: ^0.1.5
   yaml: ^3.1.0
-  flutter_typeahead: ^3.2.4
-  material_floating_search_bar: ^0.3.6
 
 dev_dependencies:
   flutter_test:

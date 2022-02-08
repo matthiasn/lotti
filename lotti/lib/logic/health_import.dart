@@ -1,26 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
-import 'package:lotti/blocs/journal/health_state.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 
-class HealthCubit extends Cubit<HealthState> {
-  late final PersistenceCubit _persistenceCubit;
-  String? deviceType;
+class HealthImport {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final String platform;
+  String? deviceType;
 
-  HealthCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(HealthState()) {
-    _persistenceCubit = persistenceCubit;
+  HealthImport() : super() {
     getPlatform();
   }
 
@@ -72,7 +67,7 @@ class HealthCubit extends Cubit<HealthState> {
           deviceType: deviceType,
           platformType: platform,
         );
-        await _persistenceCubit.createQuantitativeEntry(activityForDay);
+        await persistenceLogic.createQuantitativeEntry(activityForDay);
       }
     }
 
@@ -120,7 +115,7 @@ class HealthCubit extends Cubit<HealthState> {
             sourceName: dataPoint.sourceName,
             deviceId: dataPoint.deviceId,
           );
-          await _persistenceCubit.createQuantitativeEntry(discreteQuantity);
+          await persistenceLogic.createQuantitativeEntry(discreteQuantity);
         }
       } catch (e) {
         debugPrint('Caught exception in fetchHealthData: $e');
@@ -131,3 +126,29 @@ class HealthCubit extends Cubit<HealthState> {
     await transaction.finish();
   }
 }
+
+List<HealthDataType> workoutTypes = [
+  HealthDataType.EXERCISE_TIME,
+  HealthDataType.WORKOUT,
+];
+
+List<HealthDataType> sleepTypes = [
+  HealthDataType.SLEEP_IN_BED,
+  HealthDataType.SLEEP_ASLEEP,
+  HealthDataType.SLEEP_AWAKE,
+];
+
+List<HealthDataType> bpTypes = [
+  HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+  HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+];
+
+List<HealthDataType> heartRateTypes = [
+  HealthDataType.RESTING_HEART_RATE,
+  HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+];
+
+List<HealthDataType> bodyMeasurementTypes = [
+  HealthDataType.WEIGHT,
+  HealthDataType.BODY_FAT_PERCENTAGE,
+];

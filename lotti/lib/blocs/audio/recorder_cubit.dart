@@ -4,13 +4,13 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,17 +22,14 @@ AudioRecorderState initialState = AudioRecorderState(
 );
 
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
-  late final PersistenceCubit _persistenceCubit;
   final InsightsDb _insightsDb = getIt<InsightsDb>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
 
   FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
   DeviceLocation? _deviceLocation;
 
-  AudioRecorderCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(initialState) {
-    _persistenceCubit = persistenceCubit;
+  AudioRecorderCubit() : super(initialState) {
     if (!Platform.isLinux && !Platform.isWindows) {
       _deviceLocation = DeviceLocation();
     }
@@ -93,7 +90,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
           '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.aac';
       String day = DateFormat('yyyy-MM-dd').format(created);
       String relativePath = '/audio/$day/';
-      String directory = await AudioUtils.createAssetDirectory(relativePath);
+      String directory = await createAssetDirectory(relativePath);
       String filePath = '$directory$fileName';
 
       _audioNote = AudioNote(
@@ -124,7 +121,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void stop() async {
+  void stop({
+    JournalEntity? linked,
+  }) async {
     try {
       await _myRecorder?.stopRecorder();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
@@ -133,7 +132,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
 
       if (_audioNote != null) {
         AudioNote audioNote = _audioNote!;
-        _persistenceCubit.createAudioEntry(audioNote);
+        persistenceLogic.createAudioEntry(
+          audioNote,
+          linked: linked,
+        );
       }
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

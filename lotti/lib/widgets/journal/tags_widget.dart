@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/src/provider.dart';
 
 class TagsWidget extends StatelessWidget {
   final JournalEntity item;
   final JournalDb db = getIt<JournalDb>();
+
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   final TagsService tagsService = getIt<TagsService>();
   late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
 
@@ -67,27 +69,26 @@ class TagsWidget extends StatelessWidget {
                   Metadata newMeta = liveEntity.meta.copyWith(
                     tagIds: tagIds,
                   );
-                  context
-                      .read<PersistenceCubit>()
-                      .updateJournalEntity(liveEntity, newMeta);
+                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
                 }
               }
 
               void removeTagId(String tagId) {
                 List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-                context.read<PersistenceCubit>().updateJournalEntity(
-                      liveEntity,
-                      liveEntity.meta.copyWith(
-                        tagIds: existingTagIds
-                            .where((String id) => (id != tagId))
-                            .toList(),
-                      ),
-                    );
+                persistenceLogic.updateJournalEntity(
+                  liveEntity,
+                  liveEntity.meta.copyWith(
+                    tagIds: existingTagIds
+                        .where((String id) => (id != tagId))
+                        .toList(),
+                  ),
+                );
               }
 
               TextEditingController controller = TextEditingController();
 
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(
@@ -113,8 +114,7 @@ class TagsWidget extends StatelessWidget {
                               controller: controller,
                               onSubmitted: (String tag) async {
                                 tag = tag.trim();
-                                String tagId = await context
-                                    .read<PersistenceCubit>()
+                                String tagId = await persistenceLogic
                                     .addTagDefinition(tag);
                                 addTagIds([tagId]);
                                 controller.clear();
@@ -124,7 +124,7 @@ class TagsWidget extends StatelessWidget {
                                   DefaultTextStyle.of(context).style.copyWith(
                                         color: AppColors.entryTextColor,
                                         fontFamily: 'Oswald',
-                                        fontSize: 20.0,
+                                        fontSize: 16.0,
                                       ),
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -144,10 +144,10 @@ class TagsWidget extends StatelessWidget {
                                   tagEntity.tag,
                                   style: TextStyle(
                                     fontFamily: 'Oswald',
-                                    height: 1.2,
-                                    color: AppColors.entryTextColor,
+                                    height: 1,
+                                    color: getTagColor(tagEntity),
                                     fontWeight: FontWeight.normal,
-                                    fontSize: 20.0,
+                                    fontSize: 16.0,
                                   ),
                                 ),
                               );
@@ -210,42 +210,11 @@ class TagsWidget extends StatelessWidget {
                         spacing: 4,
                         runSpacing: 4,
                         children: tagsFromTagIds
-                            .map((TagEntity tagEntity) => ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Container(
-                                    padding: const EdgeInsets.only(
-                                      left: 8,
-                                      right: 2,
-                                      bottom: 2,
-                                    ),
-                                    color: tagEntity.private
-                                        ? AppColors.private
-                                        : AppColors.tagColor,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          tagEntity.tag,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontFamily: 'Oswald',
-                                          ),
-                                        ),
-                                        MouseRegion(
-                                          cursor: SystemMouseCursors.click,
-                                          child: GestureDetector(
-                                            child: const Icon(
-                                              MdiIcons.close,
-                                              size: 20,
-                                            ),
-                                            onTap: () {
-                                              removeTagId(tagEntity.id);
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                            .map((TagEntity tagEntity) => TagWidget(
+                                  tagEntity: tagEntity,
+                                  onTap: () {
+                                    removeTagId(tagEntity.id);
+                                  },
                                 ))
                             .toList()),
                   ),
@@ -253,6 +222,56 @@ class TagsWidget extends StatelessWidget {
               );
             });
       },
+    );
+  }
+}
+
+class TagWidget extends StatelessWidget {
+  const TagWidget({
+    Key? key,
+    required this.tagEntity,
+    required this.onTap,
+  }) : super(key: key);
+
+  final TagEntity tagEntity;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 2,
+          bottom: 2,
+        ),
+        color: getTagColor(tagEntity),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              tagEntity.tag,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Oswald',
+                color: AppColors.tagTextColor,
+              ),
+            ),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                child: Icon(
+                  MdiIcons.close,
+                  size: 16,
+                  color: AppColors.tagTextColor,
+                ),
+                onTap: onTap,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

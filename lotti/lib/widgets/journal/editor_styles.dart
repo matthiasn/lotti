@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,6 +43,11 @@ DefaultStyles customEditorStyles({
       const Tuple2(2, 0),
       const Tuple2(0, 0),
       null,
+    ),
+    bold: GoogleFonts.lato(
+      fontSize: 16,
+      color: textColor,
+      fontWeight: FontWeight.w900,
     ),
     lists: DefaultListBlockStyle(
       GoogleFonts.lato(
@@ -104,12 +108,17 @@ DefaultStyles customTextViewerStyles({
     ),
     paragraph: DefaultTextBlockStyle(
       GoogleFonts.lato(
-        fontSize: 12,
+        fontSize: 14,
         color: textColor,
       ),
       const Tuple2(0, 0),
       const Tuple2(0, 0),
       null,
+    ),
+    bold: GoogleFonts.lato(
+      fontSize: 14,
+      color: textColor,
+      fontWeight: FontWeight.w900,
     ),
     lists: DefaultListBlockStyle(
       GoogleFonts.lato(

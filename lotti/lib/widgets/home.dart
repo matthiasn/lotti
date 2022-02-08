@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
+import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
+import 'package:lotti/widgets/pages/my_day.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
+import 'package:lotti/widgets/pages/tasks_page.dart';
 
-import 'bottom_nav/flagged_badge_icon.dart';
+import 'misc/time_recording_indicator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -36,12 +40,19 @@ class _HomePageState extends State<HomePage> {
               return !await Navigator.maybePop(
                   navigatorKeys[_pageIndex]!.currentState!.context);
             },
-            child: IndexedStack(
-              index: _pageIndex,
-              children: const <Widget>[
-                JournalPage(),
-                FlaggedEntriesPage(),
-                SettingsPage(),
+            child: Stack(
+              children: [
+                IndexedStack(
+                  index: _pageIndex,
+                  children: <Widget>[
+                    const JournalPage(),
+                    const FlaggedEntriesPage(),
+                    const TasksPage(),
+                    MyDayPage(),
+                    const SettingsPage(),
+                  ],
+                ),
+                TimeRecordingIndicator(),
               ],
             ),
           ),
@@ -51,7 +62,7 @@ class _HomePageState extends State<HomePage> {
           type: BottomNavigationBarType.fixed,
           items: <BottomNavigationBarItem>[
             const BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: Icon(Icons.home_outlined),
               label: 'Journal',
               tooltip: '',
             ),
@@ -61,8 +72,18 @@ class _HomePageState extends State<HomePage> {
               tooltip: '',
             ),
             BottomNavigationBarItem(
+              icon: TasksBadgeIcon(),
+              label: 'Tasks',
+              tooltip: '',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'My Day',
+              tooltip: '',
+            ),
+            BottomNavigationBarItem(
               icon: OutboxBadgeIcon(
-                icon: const Icon(Icons.settings),
+                icon: const Icon(Icons.settings_outlined),
               ),
               label: 'Settings',
               tooltip: '',

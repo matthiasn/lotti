@@ -16,6 +16,10 @@ PODS:
   - FMDB (2.7.5):
     - FMDB/standard (= 2.7.5)
   - FMDB/standard (2.7.5)
+  - HotKey (0.1.2)
+  - hotkey_manager (0.0.1):
+    - FlutterMacOS
+    - HotKey
   - just_audio (0.0.1):
     - FlutterMacOS
   - location (0.0.1):
@@ -51,6 +55,8 @@ PODS:
     - sqlite3/rtree
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
+  - window_manager (0.1.4):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
@@ -60,6 +66,7 @@ DEPENDENCIES:
   - flutter_native_timezone (from `Flutter/ephemeral/.symlinks/plugins/flutter_native_timezone/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
+  - hotkey_manager (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
   - location (from `Flutter/ephemeral/.symlinks/plugins/location/macos`)
   - package_info_plus_macos (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus_macos/macos`)
@@ -68,10 +75,12 @@ DEPENDENCIES:
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/macos`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
+  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 SPEC REPOS:
   trunk:
     - FMDB
+    - HotKey
     - ReachabilitySwift
     - sqlite3
 
@@ -90,6 +99,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
+  hotkey_manager:
+    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos
   just_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/just_audio/macos
   location:
@@ -106,6 +117,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/macos
   url_launcher_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
+  window_manager:
+    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
@@ -116,6 +129,8 @@ SPEC CHECKSUMS:
   flutter_secure_storage_macos: 6ceee8fbc7f484553ad17f79361b556259df89aa
   FlutterMacOS: 57701585bf7de1b3fc2bb61f6378d73bbdea8424
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  HotKey: ad59450195936c10992438c4210f673de5aee43e
+  hotkey_manager: ad673457691f4d39e481be04a61da2ae07d81c62
   just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489
   location: 7cdb0665bd6577d382b0a343acdadbcb7f964775
   package_info_plus_macos: f010621b07802a241d96d01876d6705f15e77c1c
@@ -126,7 +141,8 @@ SPEC CHECKSUMS:
   sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
   sqlite3_flutter_libs: 2c1089e698380f5a3643f8730047e808b7a40ba3
   url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
+  window_manager: 02776e5a599084cd4576e27a42dd5ec6f49132cf
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52
 
-COCOAPODS: 1.10.0
+COCOAPODS: 1.11.2

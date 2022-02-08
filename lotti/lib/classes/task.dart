@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/check_list_item.dart';
 import 'package:lotti/classes/geolocation.dart';
-
-import 'check_list_item.dart';
+import 'package:lotti/utils/file_utils.dart';
 
 part 'task.freezed.dart';
 part 'task.g.dart';
@@ -28,6 +28,7 @@ class TaskStatus with _$TaskStatus {
     required String id,
     required DateTime createdAt,
     required int utcOffset,
+    required String reason,
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskBlocked;
@@ -53,19 +54,57 @@ class TaskStatus with _$TaskStatus {
 }
 
 @freezed
-class Task with _$Task {
-  factory Task({
-    required String id,
-    required DateTime createdAt,
-    required int utcOffset,
+class TaskData with _$TaskData {
+  factory TaskData({
     required TaskStatus status,
+    required DateTime dateFrom,
+    required DateTime dateTo,
     required List<TaskStatus> statusHistory,
-    String? timezone,
     required String title,
-    Geolocation? geolocation,
-    DateTime? updatedAt,
+    DateTime? due,
+    Duration? estimate,
     List<CheckListItem>? checklist,
-  }) = _Task;
+  }) = _TaskData;
 
-  factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
+  factory TaskData.fromJson(Map<String, dynamic> json) =>
+      _$TaskDataFromJson(json);
+}
+
+TaskStatus taskStatusFromString(String status) {
+  TaskStatus newStatus;
+  DateTime now = DateTime.now();
+
+  if (status == 'DONE') {
+    newStatus = TaskStatus.done(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'STARTED') {
+    newStatus = TaskStatus.started(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'BLOCKED') {
+    newStatus = TaskStatus.blocked(
+      id: uuid.v1(),
+      createdAt: now,
+      reason: 'needs a reason',
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'REJECTED') {
+    newStatus = TaskStatus.rejected(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else {
+    newStatus = TaskStatus.open(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  }
+  return newStatus;
 }

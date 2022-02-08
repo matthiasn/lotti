@@ -5,14 +5,18 @@ import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/player_state.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+import 'duration_widget.dart';
 
 const double iconSize = 18.0;
 
@@ -35,9 +39,21 @@ class JournalCardTitle extends StatelessWidget {
                 df.format(item.meta.dateFrom),
                 style: TextStyle(
                   color: AppColors.entryTextColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w300,
                   fontFamily: 'Oswald',
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: DurationWidget(
+                  item: item,
+                  style: TextStyle(
+                    color: AppColors.entryTextColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w300,
+                    fontFamily: 'Oswald',
+                  ),
                 ),
               ),
               Expanded(child: Container()),
@@ -96,9 +112,7 @@ class JournalCardTitle extends StatelessWidget {
               entryText: journalEntry.entryText,
             ),
             journalImage: (JournalImage journalImage) =>
-                journalImage.entryText?.plainText != null
-                    ? TextViewerWidget(entryText: journalImage.entryText)
-                    : EntryText(journalImage.data.imageFile.substring(37)),
+                TextViewerWidget(entryText: journalImage.entryText),
             survey: (SurveyEntry surveyEntry) =>
                 SurveySummaryWidget(surveyEntry),
             measurement: (MeasurementEntry measurementEntry) {
@@ -114,6 +128,67 @@ class JournalCardTitle extends StatelessWidget {
                     '${nf.format(data.value)}',
                     padding: EdgeInsets.zero,
                   ),
+                ],
+              );
+            },
+            task: (Task task) {
+              TaskData data = task.data;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          data.title,
+                          style: TextStyle(
+                            fontFamily: 'Oswald',
+                            color: AppColors.entryTextColor,
+                            fontWeight: FontWeight.normal,
+                            fontSize: 24.0,
+                          ),
+                        ),
+                      ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 12,
+                          ),
+                          color: data.status.map(
+                            open: (_) => Colors.orange,
+                            started: (_) => Colors.blue,
+                            blocked: (_) => Colors.red,
+                            done: (_) => Colors.green,
+                            rejected: (_) => Colors.red,
+                          ),
+                          child: Text(
+                            data.status.map(
+                              open: (_) => 'OPEN',
+                              started: (_) => 'STARTED',
+                              blocked: (_) => 'BLOCKED',
+                              done: (_) => 'DONE',
+                              rejected: (_) => 'REJECTED',
+                            ),
+                            style: TextStyle(
+                              fontFamily: 'Oswald',
+                              color: AppColors.bodyBgColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  LinkedDuration(
+                    task: task,
+                    width: MediaQuery.of(context).size.width - 200,
+                  ),
+                  TextViewerWidget(entryText: task.entryText),
                 ],
               );
             },
@@ -148,7 +223,7 @@ class EntryText extends StatelessWidget {
             fontFamily: 'ShareTechMono',
             color: AppColors.entryTextColor,
             fontWeight: FontWeight.w300,
-            fontSize: 16.0,
+            fontSize: 14.0,
           )),
     );
   }
@@ -182,6 +257,10 @@ class JournalCard extends StatelessWidget {
               height: 50,
               color: AppColors.entryBgColor,
               child: item.maybeMap(
+                task: (_) => const Icon(
+                  Icons.check_box_outline_blank,
+                  size: 32,
+                ),
                 journalAudio: (_) => const Icon(
                   Icons.mic,
                   size: 32,
@@ -216,10 +295,7 @@ class JournalCard extends StatelessWidget {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
-                  return EntryDetailRoute(
-                    item: item,
-                    index: index,
-                  );
+                  return EntryDetailRoute(item: item);
                 },
               ),
             );
@@ -275,10 +351,7 @@ class JournalImageCard extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return EntryDetailRoute(
-                      item: item,
-                      index: index,
-                    );
+                    return EntryDetailRoute(item: item);
                   },
                 ),
               );

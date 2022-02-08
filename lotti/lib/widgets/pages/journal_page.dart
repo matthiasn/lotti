@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/create/add_actions.dart';
 import 'package:lotti/widgets/journal/journal_card.dart';
 import 'package:lotti/widgets/journal/tags_search_widget.dart';
@@ -37,12 +42,13 @@ class _JournalPageState extends State<JournalPage> {
   final JournalDb _db = getIt<JournalDb>();
 
   static final List<FilterBy> _entryTypes = [
+    FilterBy(typeName: 'Task', name: 'Task'),
     FilterBy(typeName: 'JournalEntry', name: 'Text'),
     FilterBy(typeName: 'JournalAudio', name: 'Audio'),
     FilterBy(typeName: 'JournalImage', name: 'Photo'),
-    FilterBy(typeName: 'QuantitativeEntry', name: 'Quantitative'),
-    FilterBy(typeName: 'MeasurementEntry', name: 'Measurement'),
-    FilterBy(typeName: 'SurveyEntry', name: 'Questionnaire'),
+    FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
+    FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
+    FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
   ];
 
   late Stream<List<JournalEntity>> stream;
@@ -56,10 +62,13 @@ class _JournalPageState extends State<JournalPage> {
     'JournalEntry',
     'JournalAudio',
     'JournalImage',
-    'SurveyEntry'
+    'SurveyEntry',
+    'Task',
   ];
   late Set<String> types;
   Set<String> tagIds = {};
+  StreamController<List<TagEntity>> matchingTagsController =
+      StreamController<List<TagEntity>>();
   bool starredEntriesOnly = false;
   bool privateEntriesOnly = false;
   bool showPrivateEntriesSwitch = false;
@@ -130,89 +139,100 @@ class _JournalPageState extends State<JournalPage> {
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
       transitionCurve: Curves.easeInOut,
+      backgroundColor: AppColors.appBarFgColor,
+      queryStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
+      hintStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
       physics: const BouncingScrollPhysics(),
       borderRadius: BorderRadius.circular(8.0),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
+      margins: EdgeInsets.only(top: 8.0, left: isDesktop ? 12.0 : 0.0),
       width: isPortrait ? portraitWidth : 500,
-      debounceDelay: const Duration(milliseconds: 500),
-      onQueryChanged: (query) {
-        // Call your model, bloc, controller here.
+      onQueryChanged: (query) async {
+        List<TagEntity> res = await _db.getMatchingTags(
+          query.trim(),
+          inactive: true,
+        );
+        matchingTagsController.add(res);
       },
-      // Specify a custom transition to be used for
-      // animating between opened and closed stated.
-      transition: CircularFloatingSearchBarTransition(),
+      transition: SlideFadeFloatingSearchBarTransition(),
       actions: [
-        FloatingSearchBarAction(
-          showIfOpened: false,
-          child: CircularButton(
-            icon: const Icon(Icons.place),
-            onPressed: () {},
-          ),
-        ),
         FloatingSearchBarAction.searchToClear(
           showIfClosed: false,
         ),
       ],
       builder: (context, transition) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Material(
-            color: AppColors.searchBgColor,
-            elevation: 4.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Visibility(
-                      visible: showPrivateEntriesSwitch,
-                      child: Row(
-                        children: [
-                          Text(
-                            'Private: ',
-                            style: TextStyle(color: AppColors.entryTextColor),
-                          ),
-                          CupertinoSwitch(
-                            value: privateEntriesOnly,
-                            activeColor: AppColors.private,
-                            onChanged: (bool value) {
-                              setState(() {
-                                privateEntriesOnly = value;
-                                resetStream();
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+        return Padding(
+          padding: const EdgeInsets.only(
+            top: 2.0,
+            bottom: 8.0,
+            left: 0.0,
+            right: 4.0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Visibility(
+                    visible: showPrivateEntriesSwitch,
+                    child: Row(
+                      children: [
+                        Text(
+                          'Private: ',
+                          style: TextStyle(color: AppColors.entryTextColor),
+                        ),
+                        CupertinoSwitch(
+                          value: privateEntriesOnly,
+                          activeColor: AppColors.private,
+                          onChanged: (bool value) {
+                            setState(() {
+                              privateEntriesOnly = value;
+                              resetStream();
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(
-                      width: 16,
-                    ),
-                    Text(
-                      'Starred: ',
-                      style: TextStyle(color: AppColors.entryTextColor),
-                    ),
-                    CupertinoSwitch(
-                      value: starredEntriesOnly,
-                      activeColor: AppColors.starredGold,
-                      onChanged: (bool value) {
-                        setState(() {
-                          starredEntriesOnly = value;
-                          resetStream();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                SelectedTagsWidget(
-                  removeTag: removeTag,
-                  tagIds: tagIds.toList(),
-                ),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  ),
+                  const SizedBox(
+                    width: 16,
+                  ),
+                  Text(
+                    'Starred: ',
+                    style: TextStyle(color: AppColors.entryTextColor),
+                  ),
+                  CupertinoSwitch(
+                    value: starredEntriesOnly,
+                    activeColor: AppColors.starredGold,
+                    onChanged: (bool value) {
+                      setState(() {
+                        starredEntriesOnly = value;
+                        resetStream();
+                      });
+                    },
+                  ),
+                ],
+              ),
+              SelectedTagsWidget(
+                removeTag: removeTag,
+                tagIds: tagIds.toList(),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
                   children: [
                     ..._items
                         .map(
@@ -238,16 +258,21 @@ class _JournalPageState extends State<JournalPage> {
                                 child: Container(
                                   color: types.contains(item.value?.typeName)
                                       ? Colors.lightBlue
-                                      : Colors.grey[50],
+                                      : Colors.grey[600],
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
+                                      vertical: 1,
                                       horizontal: 8,
                                     ),
                                     child: Text(
                                       item.label,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Oswald',
+                                        fontSize: 14,
+                                        color:
+                                            types.contains(item.value?.typeName)
+                                                ? Colors.grey[900]
+                                                : Colors.grey[400],
                                       ),
                                     ),
                                   ),
@@ -259,20 +284,42 @@ class _JournalPageState extends State<JournalPage> {
                         .toList(),
                   ],
                 ),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        TagsSearchWidget(
-                          addTag: addTag,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              StreamBuilder<List<TagEntity>>(
+                stream: matchingTagsController.stream,
+                builder: (
+                  BuildContext context,
+                  AsyncSnapshot<List<TagEntity>> snapshot,
+                ) {
+                  return Column(
+                    children: [
+                      ...?snapshot.data
+                          ?.map((tagEntity) => ListTile(
+                                title: Text(
+                                  tagEntity.tag,
+                                  style: TextStyle(
+                                    fontFamily: 'Lato',
+                                    color: getTagColor(tagEntity),
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 20.0,
+                                  ),
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    addTag(tagEntity.id);
+                                  });
+                                },
+                              ))
+                          .toList(),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
+        ).asGlass(
+          clipBorderRadius: BorderRadius.circular(8),
+          tintColor: AppColors.searchBgColor,
         );
       },
     );
@@ -305,9 +352,7 @@ class _JournalPageState extends State<JournalPage> {
                           margin: const EdgeInsets.all(8.0),
                           child: ListView(
                             children: [
-                              const SizedBox(
-                                height: 56,
-                              ),
+                              const SizedBox(height: 56),
                               ...List.generate(
                                 items.length,
                                 (int index) {
@@ -326,12 +371,13 @@ class _JournalPageState extends State<JournalPage> {
                                   });
                                 },
                                 growable: true,
-                              )
+                              ),
+                              const SizedBox(height: 64),
                             ],
                           ),
                         ),
-                        floatingActionButton: const RadialAddActionButtons(
-                          radius: 180,
+                        floatingActionButton: RadialAddActionButtons(
+                          radius: isMobile ? 180 : 120,
                         ),
                       ),
                       buildFloatingSearchBar(),

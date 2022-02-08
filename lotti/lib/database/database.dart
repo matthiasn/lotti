@@ -6,10 +6,12 @@ import 'package:drift/native.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/sync/vector_clock.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/widgets/journal/entry_tools.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -29,7 +31,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -56,6 +58,22 @@ class JournalDb extends _$JournalDb {
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
           await m.createIndex(idxTaggedTagEntityId);
+        }();
+
+        () async {
+          debugPrint('Creating task columns and indices');
+          await m.addColumn(journal, journal.taskStatus);
+          await m.createIndex(idxJournalTaskStatus);
+          await m.addColumn(journal, journal.task);
+          await m.createIndex(idxJournalTask);
+        }();
+
+        () async {
+          debugPrint('Creating linked entries table and indices');
+          await m.createTable(linkedEntries);
+          await m.createIndex(idxLinkedEntriesFromId);
+          await m.createIndex(idxLinkedEntriesToId);
+          await m.createIndex(idxLinkedEntriesType);
         }();
 
         () async {
@@ -96,7 +114,7 @@ class JournalDb extends _$JournalDb {
     if (!exists) {
       return upsertJournalDbEntity(dbEntity);
     } else {
-      debugPrint('PersistenceDb already exists: ${dbEntity.id}');
+      return 0;
     }
   }
 
@@ -224,6 +242,54 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Stream<List<JournalEntity>> watchTasks({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    List<String>? ids,
+    int limit = 1000,
+  }) {
+    List<String> types = ['Task'];
+    if (ids != null) {
+      return filteredTasksByTag(
+              types, ids, starredStatuses, taskStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    } else {
+      return filteredTasks(types, starredStatuses, taskStatuses, limit)
+          .watch()
+          .map(entityStreamMapper);
+    }
+  }
+
+  Stream<List<JournalEntity>> watchLinkedEntities({
+    required String linkedFrom,
+  }) {
+    return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
+  }
+
+  Stream<Map<String, Duration>> watchLinkedTotalDuration({
+    required String linkedFrom,
+  }) {
+    return watchLinkedEntities(
+      linkedFrom: linkedFrom,
+    ).map((
+      List<JournalEntity> items,
+    ) {
+      Map<String, Duration> durations = {};
+      for (JournalEntity journalEntity in items) {
+        Duration duration = entryDuration(journalEntity);
+        durations[journalEntity.meta.id] = duration;
+      }
+      return durations;
+    });
+  }
+
+  Stream<List<JournalEntity>> watchLinkedToEntities({
+    required String linkedTo,
+  }) {
+    return linkedToJournalEntities(linkedTo).watch().map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchFlaggedImport({
     int limit = 1000,
   }) {
@@ -243,15 +309,45 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> initConfigFlags() async {
-    into(configFlags).insert(ConfigFlag(
-      name: 'private',
-      description: 'Show private entries?',
-      status: true,
-    ));
+    into(configFlags).insert(
+      ConfigFlag(
+        name: 'private',
+        description: 'Show private entries?',
+        status: true,
+      ),
+    );
+    into(configFlags).insert(
+      ConfigFlag(
+        name: 'hide_for_screenshot',
+        description: 'Hide Lotti when taking screenshots?',
+        status: true,
+      ),
+    );
+    if (Platform.isMacOS) {
+      into(configFlags).insert(
+        ConfigFlag(
+          name: 'listen_to_global_screenshot_hotkey',
+          description: 'Listen to global screenshot hotkey?',
+          status: true,
+        ),
+      );
+    }
   }
 
   Future<List<ConfigFlag>> getConfigFlags() {
     return listConfigFlags().get();
+  }
+
+  Future<bool> getConfigFlag(String flagName) async {
+    bool flag = false;
+    List<ConfigFlag> flags = await listConfigFlags().get();
+    for (ConfigFlag configFlag in flags) {
+      if (configFlag.name == flagName) {
+        flag = configFlag.status;
+      }
+    }
+
+    return flag;
   }
 
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
@@ -322,6 +418,18 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
     return into(habitDefinitions)
         .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  }
+
+  Future<List<String>> linksForEntryId(String entryId) {
+    return linkedEntriesFor(entryId).get();
+  }
+
+  Future<int> upsertEntryLink(EntryLink link) async {
+    if (link.fromId != link.toId) {
+      return into(linkedEntries).insertOnConflictUpdate(linkedDbEntity(link));
+    } else {
+      return 0;
+    }
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

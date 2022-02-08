@@ -1,33 +1,36 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:bloc/bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_fgbg/flutter_fgbg.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/sync/imap/imap_client.dart';
-import 'package:lotti/blocs/sync/imap/imap_state.dart';
-import 'package:lotti/blocs/sync/imap/inbox_read.dart';
-import 'package:lotti/blocs/sync/imap/inbox_save_attachments.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_links.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync_message.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/sync/imap_client.dart';
+import 'package:lotti/sync/inbox_read.dart';
+import 'package:lotti/sync/inbox_save_attachments.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mutex/mutex.dart';
 
-class InboxImapCubit extends Cubit<ImapState> {
+const String sharedSecretKey = 'sharedSecret';
+const String imapConfigKey = 'imapConfig';
+const String lastReadUidKey = 'lastReadUid';
+
+class SyncInboxService {
   final SyncConfigService _syncConfigService = getIt<SyncConfigService>();
-  late final PersistenceCubit _persistenceCubit;
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   late final VectorClockService _vectorClockService;
   MailClient? _observingClient;
   late final StreamSubscription<FGBGType> fgBgSubscription;
@@ -37,14 +40,7 @@ class InboxImapCubit extends Cubit<ImapState> {
   final JournalDb _journalDb = getIt<JournalDb>();
   final InsightsDb _insightsDb = getIt<InsightsDb>();
 
-  final String sharedSecretKey = 'sharedSecret';
-  final String imapConfigKey = 'imapConfig';
-  final String lastReadUidKey = 'lastReadUid';
-
-  InboxImapCubit({
-    required PersistenceCubit persistenceCubit,
-  }) : super(ImapState.initial()) {
-    _persistenceCubit = persistenceCubit;
+  SyncInboxService() {
     _vectorClockService = getIt<VectorClockService>();
 
     if (!Platform.isMacOS && !Platform.isLinux && !Platform.isWindows) {
@@ -110,12 +106,15 @@ class InboxImapCubit extends Cubit<ImapState> {
             );
 
             if (status == SyncEntryStatus.update) {
-              await _persistenceCubit.updateDbEntity(journalEntity,
+              await persistenceLogic.updateDbEntity(journalEntity,
                   enqueueSync: false);
             } else {
-              await _persistenceCubit.createDbEntity(journalEntity,
+              await persistenceLogic.createDbEntity(journalEntity,
                   enqueueSync: false);
             }
+          },
+          entryLink: (EntryLink entryLink, SyncEntryStatus _) {
+            _journalDb.upsertEntryLink(entryLink);
           },
           entityDefinition: (
             EntityDefinition entityDefinition,
@@ -204,8 +203,6 @@ class InboxImapCubit extends Cubit<ImapState> {
             }
           }
           fetchMutex.release();
-
-          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
       } on MailException catch (e, stackTrace) {
         debugPrint('High level API failed with $e');
@@ -244,15 +241,12 @@ class InboxImapCubit extends Cubit<ImapState> {
             await processMessage(message);
           }
           await _setLastReadUid(uid);
-          emit(ImapState.online(lastUpdate: DateTime.now()));
         }
       } on MailException catch (e) {
         debugPrint('High level API failed with $e');
         await _insightsDb.captureException(e);
-        emit(ImapState.failed(error: 'failed: $e ${e.details}'));
       } catch (e, stackTrace) {
         await _insightsDb.captureException(e, stackTrace: stackTrace);
-        emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
       } finally {}
     }
     await transaction.finish();
@@ -312,10 +306,8 @@ class InboxImapCubit extends Cubit<ImapState> {
     } on MailException catch (e) {
       debugPrint('High level API failed with $e');
       await _insightsDb.captureException(e);
-      emit(ImapState.failed(error: 'failed: $e ${e.details}'));
     } catch (e, stackTrace) {
       await _insightsDb.captureException(e, stackTrace: stackTrace);
-      emit(ImapState.failed(error: 'failed: $e ${e.toString()}'));
     }
   }
 

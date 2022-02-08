@@ -2,13 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lotti/blocs/journal/journal_image_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_cubit.dart';
-import 'package:lotti/blocs/journal/persistence_state.dart';
+import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/pages/add/editor_page.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
+import 'package:lotti/widgets/pages/add/new_task_page.dart';
 import 'package:lotti/widgets/pages/add/survey_page.dart';
 import 'package:lotti/widgets/pages/audio.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -31,6 +34,8 @@ class RadialAddActionButtons extends StatefulWidget {
 }
 
 class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +45,26 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
   Widget build(BuildContext _context) {
     List<Widget> items = [];
 
+    if (Platform.isMacOS) {
+      items.add(
+        FloatingActionButton(
+          heroTag: 'screenshot',
+          child: const Icon(
+            MdiIcons.monitorScreenshot,
+            size: 32,
+          ),
+          backgroundColor: AppColors.actionColor,
+          onPressed: () async {
+            ImageData imageData = await takeScreenshotMac();
+            await persistenceLogic.createImageEntry(
+              imageData,
+              linked: widget.linked,
+            );
+          },
+        ),
+      );
+    }
+
     items.add(
       FloatingActionButton(
         heroTag: 'measurement',
@@ -47,7 +72,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           MdiIcons.tapeMeasure,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -62,41 +87,41 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
       ),
     );
 
-    if (widget.linked == null) {
-      items.add(
-        FloatingActionButton(
-          heroTag: 'survey',
-          child: const Icon(
-            MdiIcons.clipboardOutline,
-            size: 32,
-          ),
-          backgroundColor: AppColors.entryBgColor,
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return const SurveyPage();
-                },
-              ),
-            );
-          },
+    items.add(
+      FloatingActionButton(
+        heroTag: 'survey',
+        child: const Icon(
+          MdiIcons.clipboardOutline,
+          size: 32,
         ),
-      );
-    }
+        backgroundColor: AppColors.actionColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return SurveyPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
 
     items.add(
       FloatingActionButton(
         heroTag: 'photo',
         child: const Icon(
-          Icons.camera_roll,
+          Icons.camera_roll_outlined,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
-          context.read<JournalImageCubit>().pickImageAssets(
-                context,
-                linked: widget.linked,
-              );
+          importImageAssets(
+            context,
+            linked: widget.linked,
+          );
         },
       ),
     );
@@ -108,7 +133,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
           MdiIcons.textLong,
           size: 32,
         ),
-        backgroundColor: AppColors.entryBgColor,
+        backgroundColor: AppColors.actionColor,
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -131,7 +156,7 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
             MdiIcons.microphone,
             size: 32,
           ),
-          backgroundColor: AppColors.entryBgColor,
+          backgroundColor: AppColors.actionColor,
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -142,22 +167,42 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 },
               ),
             );
+            context.read<AudioRecorderCubit>().record();
           },
         ),
       );
     }
 
-    return BlocBuilder<PersistenceCubit, PersistenceState>(
-        builder: (context, PersistenceState state) {
-      return CircleFloatingButton.floatingActionButton(
-        radius: widget.radius,
-        useOpacity: true,
-        items: items,
-        color: AppColors.entryBgColor,
-        icon: Icons.add,
-        duration: Duration(milliseconds: 500),
-        curveAnim: Curves.ease,
-      );
-    });
+    items.add(
+      FloatingActionButton(
+        heroTag: 'task',
+        child: const Icon(
+          Icons.task_outlined,
+          size: 32,
+        ),
+        backgroundColor: AppColors.actionColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return NewTaskPage(
+                  linked: widget.linked,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    return CircleFloatingButton.floatingActionButton(
+      radius: items.length * 32,
+      useOpacity: true,
+      items: items,
+      color: AppColors.actionColor,
+      icon: Icons.add,
+      duration: const Duration(milliseconds: 500),
+      curveAnim: Curves.ease,
+    );
   }
 }
