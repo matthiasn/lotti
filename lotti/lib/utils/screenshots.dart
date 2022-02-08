@@ -1,16 +1,19 @@
 import 'dart:io';
 
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/location.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
+final JournalDb db = getIt<JournalDb>();
+
 Future<ImageData> takeScreenshotMac() async {
-  final JournalDb db = getIt<JournalDb>();
   bool hide = await db.getConfigFlag('hide_for_screenshot');
 
   String id = uuid.v1();
@@ -55,4 +58,32 @@ Future<ImageData> takeScreenshotMac() async {
   }
 
   return imageData;
+}
+
+Future<void> registerScreenshotHotkey() async {
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
+  if (Platform.isMacOS) {
+    HotKey screenshotKey = HotKey(
+      KeyCode.digit3,
+      modifiers: [
+        KeyModifier.shift,
+        KeyModifier.meta,
+      ],
+    );
+    hotKeyManager.register(
+      screenshotKey,
+      keyDownHandler: (hotKey) async {
+        bool enabled =
+            await db.getConfigFlag('listen_to_global_screenshot_hotkey');
+
+        if (enabled) {
+          ImageData imageData = await takeScreenshotMac();
+          await persistenceLogic.createImageEntry(
+            imageData,
+          );
+        }
+      },
+    );
+  }
 }
