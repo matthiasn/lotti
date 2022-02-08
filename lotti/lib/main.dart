@@ -8,8 +8,6 @@ import 'package:get_it/get_it.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/journal/health_cubit.dart';
-import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/blocs/sync/imap/inbox_cubit.dart';
 import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
@@ -23,8 +21,9 @@ import 'package:lotti/widgets/home.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'database/database.dart';
-import 'database/persistence_logic.dart';
 import 'database/sync_db.dart';
+import 'logic/health_import.dart';
+import 'logic/persistence_logic.dart';
 
 final getIt = GetIt.instance;
 
@@ -46,6 +45,7 @@ Future<void> main() async {
     getIt.registerSingleton<TimeService>(TimeService());
     getIt.registerSingleton<OutboxService>(OutboxService());
     getIt.registerSingleton<PersistenceLogic>(PersistenceLogic());
+    getIt.registerSingleton<HealthImport>(HealthImport());
 
     initializeDateFormatting();
 
@@ -79,14 +79,6 @@ class LottiApp extends StatelessWidget {
         BlocProvider<InboxImapCubit>(
           lazy: false,
           create: (BuildContext context) => InboxImapCubit(),
-        ),
-        BlocProvider<HealthCubit>(
-          lazy: true,
-          create: (BuildContext context) => HealthCubit(),
-        ),
-        BlocProvider<JournalImageCubit>(
-          lazy: false,
-          create: (BuildContext context) => JournalImageCubit(),
         ),
         BlocProvider<AudioRecorderCubit>(
           create: (BuildContext context) => AudioRecorderCubit(),

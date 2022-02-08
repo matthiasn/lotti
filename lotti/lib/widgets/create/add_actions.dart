@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
-import 'package:lotti/blocs/journal/journal_image_cubit.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -118,10 +118,10 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
         ),
         backgroundColor: AppColors.actionColor,
         onPressed: () {
-          context.read<JournalImageCubit>().pickImageAssets(
-                context,
-                linked: widget.linked,
-              );
+          importImageAssets(
+            context,
+            linked: widget.linked,
+          );
         },
       ),
     );
