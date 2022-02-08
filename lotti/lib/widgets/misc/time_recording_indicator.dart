@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TimeRecordingIndicator extends StatelessWidget {
   final TimeService _timeService = getIt<TimeService>();
@@ -31,7 +31,7 @@ class TimeRecordingIndicator extends StatelessWidget {
         String durationString = formatDuration(entryDuration(current));
 
         return Positioned(
-          right: MediaQuery.of(context).size.width / 2 - 60,
+          left: 0,
           bottom: 0,
           child: GestureDetector(
             onTap: () {
@@ -47,23 +47,29 @@ class TimeRecordingIndicator extends StatelessWidget {
               cursor: SystemMouseCursors.click,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  topRight: Radius.circular(8),
                 ),
                 child: Container(
-                  color: AppColors.timeRecording,
-                  width: 120,
+                  color: AppColors.timeRecordingBg,
+                  width: 110,
                   height: 32,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        durationString,
-                        style: GoogleFonts.ptMono(
-                          fontSize: 20.0,
-                          color: Colors.grey[300],
-                          fontWeight: FontWeight.w100,
+                      Icon(
+                        MdiIcons.timerOutline,
+                        color: AppColors.editorTextColor,
+                        size: 16,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Text(
+                          durationString,
+                          style: TextStyle(
+                            fontFamily: 'ShareTechMono',
+                            fontSize: 18.0,
+                            color: AppColors.editorTextColor,
+                          ),
                         ),
                       ),
                     ],

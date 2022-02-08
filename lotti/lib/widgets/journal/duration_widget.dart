@@ -63,10 +63,10 @@ class DurationWidget extends StatelessWidget {
               ),
               Text(
                 formatDuration(entryDuration(displayed)),
-                style: GoogleFonts.ptMono(
+                style: GoogleFonts.shareTechMono(
                   color: labelColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
               Visibility(
