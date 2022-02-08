@@ -7,7 +7,7 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/audio/audio_player.dart';

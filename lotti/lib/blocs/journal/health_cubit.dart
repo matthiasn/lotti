@@ -9,7 +9,7 @@ import 'package:health/health.dart';
 import 'package:lotti/blocs/journal/health_state.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/insights_db.dart';
-import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 
 class HealthCubit extends Cubit<HealthState> {

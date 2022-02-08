@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/persistence_logic.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
