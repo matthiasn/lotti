@@ -10,6 +10,7 @@ import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
 import 'package:lotti/widgets/pages/settings/settings_page.dart';
 import 'package:lotti/widgets/pages/tasks_page.dart';
 
+import 'misc/audio_recording_indicator.dart';
 import 'misc/time_recording_indicator.dart';
 
 class HomePage extends StatefulWidget {
@@ -53,6 +54,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
                 TimeRecordingIndicator(),
+                AudioRecordingIndicator(),
               ],
             ),
           ),

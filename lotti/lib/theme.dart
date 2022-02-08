@@ -27,15 +27,18 @@ class AppColors {
   static Color entryTextColor = const Color.fromRGBO(158, 158, 158, 1);
   static Color editorTextColor = const Color.fromRGBO(51, 51, 51, 1);
   static Color starredGold = const Color.fromRGBO(255, 215, 0, 1);
+  static Color recordingTextColor = const Color.fromRGBO(224, 224, 224, 0.8);
   static Color editorBgColor = Colors.white;
 
   static Color headerBgColor = const Color.fromRGBO(68, 68, 85, 1);
+  static Color vuBgColor = headerBgColor;
   static Color searchBgColor = const Color.fromRGBO(68, 68, 85, 0.3);
   static Color searchBgHoverColor = const Color.fromRGBO(68, 68, 85, 0.6);
   static Color appBarFgColor = const Color.fromRGBO(180, 190, 200, 1);
   static Color codeBlockBackground = const Color.fromRGBO(228, 232, 240, 1);
 
-  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 0.65);
+  static Color timeRecording = const Color.fromRGBO(255, 22, 22, 1);
+  static Color timeRecordingBg = const Color.fromRGBO(255, 44, 44, 0.95);
 
   static Color outboxSuccessColor = const Color.fromRGBO(50, 120, 50, 1);
   static Color outboxPendingColor = const Color.fromRGBO(200, 120, 0, 1);
