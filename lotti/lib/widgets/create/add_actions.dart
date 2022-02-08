@@ -167,7 +167,9 @@ class _RadialAddActionButtonsState extends State<RadialAddActionButtons> {
                 },
               ),
             );
-            context.read<AudioRecorderCubit>().record();
+            context.read<AudioRecorderCubit>().record(
+                  linked: widget.linked,
+                );
           },
         ),
       );

@@ -24,6 +24,7 @@ AudioRecorderState initialState = AudioRecorderState(
 class AudioRecorderCubit extends Cubit<AudioRecorderState> {
   final InsightsDb _insightsDb = getIt<InsightsDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  JournalEntity? _linked;
 
   FlutterSoundRecorder? _myRecorder;
   AudioNote? _audioNote;
@@ -82,7 +83,10 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void record() async {
+  void record({
+    JournalEntity? linked,
+  }) async {
+    _linked = linked;
     try {
       await _openAudioSession();
       DateTime created = DateTime.now();
@@ -121,9 +125,7 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
     }
   }
 
-  void stop({
-    JournalEntity? linked,
-  }) async {
+  void stop() async {
     try {
       await _myRecorder?.stopRecorder();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
@@ -134,8 +136,9 @@ class AudioRecorderCubit extends Cubit<AudioRecorderState> {
         AudioNote audioNote = _audioNote!;
         persistenceLogic.createAudioEntry(
           audioNote,
-          linked: linked,
+          linked: _linked,
         );
+        _linked = null;
       }
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);

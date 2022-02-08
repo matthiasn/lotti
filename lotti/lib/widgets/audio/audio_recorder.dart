@@ -41,7 +41,8 @@ class AudioRecorderWidget extends StatelessWidget {
                 color: state.status == AudioRecorderStatus.recording
                     ? AppColors.activeAudioControl
                     : AppColors.inactiveAudioControl,
-                onPressed: () => context.read<AudioRecorderCubit>().record(),
+                onPressed: () =>
+                    context.read<AudioRecorderCubit>().record(linked: linked),
               ),
               IconButton(
                 icon: const Icon(Icons.stop),
@@ -49,7 +50,7 @@ class AudioRecorderWidget extends StatelessWidget {
                 tooltip: 'Stop',
                 color: AppColors.inactiveAudioControl,
                 onPressed: () {
-                  context.read<AudioRecorderCubit>().stop(linked: linked);
+                  context.read<AudioRecorderCubit>().stop();
                   Navigator.pop(context);
                 },
               ),
