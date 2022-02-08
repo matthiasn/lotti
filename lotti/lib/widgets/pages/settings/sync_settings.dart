@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/sync/imap_config.dart';
-import 'package:lotti/widgets/sync/imap_status_widget.dart';
 import 'package:lotti/widgets/sync/qr_widget.dart';
 
 class SyncSettingsPage extends StatefulWidget {
@@ -30,7 +29,6 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: const <Widget>[
               EmailConfigForm(),
-              ImapStatusWidget(),
               EncryptionQrWidget(),
             ],
           ),
