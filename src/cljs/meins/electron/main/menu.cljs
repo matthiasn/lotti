@@ -332,7 +332,7 @@
   {})
 
 (defn state-fn [put-fn]
-  (let [state (atom {:global-screenshots true})
+  (let [state (atom {:global-screenshots false})
         put-fn (fn [msg]
                  (let [msg-meta (merge {:window-id :active} (meta msg))]
                    (put-fn (with-meta msg msg-meta))))
