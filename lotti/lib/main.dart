@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/blocs/audio/player_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
+import 'package:lotti/utils/screenshots.dart';
 import 'package:lotti/widgets/home.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -32,6 +34,7 @@ Future<void> main() async {
 
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
+    hotKeyManager.unregisterAll();
   }
 
   runZonedGuarded(() {
@@ -54,6 +57,8 @@ Future<void> main() async {
       final InsightsDb _insightsDb = getIt<InsightsDb>();
       _insightsDb.captureException(details);
     };
+
+    registerScreenshotHotkey();
 
     runApp(const LottiApp());
   }, (Object error, StackTrace stackTrace) {

@@ -319,10 +319,19 @@ class JournalDb extends _$JournalDb {
     into(configFlags).insert(
       ConfigFlag(
         name: 'hide_for_screenshot',
-        description: 'Hide Lotti when taking Screenshots?',
+        description: 'Hide Lotti when taking screenshots?',
         status: true,
       ),
     );
+    if (Platform.isMacOS) {
+      into(configFlags).insert(
+        ConfigFlag(
+          name: 'listen_to_global_screenshot_hotkey',
+          description: 'Listen to global screenshot hotkey?',
+          status: true,
+        ),
+      );
+    }
   }
 
   Future<List<ConfigFlag>> getConfigFlags() {
