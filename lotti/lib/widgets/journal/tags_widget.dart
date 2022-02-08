@@ -36,191 +36,190 @@ class TagsWidget extends StatelessWidget {
         AsyncSnapshot<List<TagEntity>> _,
       ) {
         return StreamBuilder<JournalEntity?>(
-            stream: stream,
-            builder: (
-              BuildContext context,
-              AsyncSnapshot<JournalEntity?> snapshot,
-            ) {
-              JournalEntity? liveEntity = snapshot.data;
-              if (liveEntity == null) {
-                return const SizedBox.shrink();
+          stream: stream,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            JournalEntity? liveEntity = snapshot.data;
+            if (liveEntity == null) {
+              return const SizedBox.shrink();
+            }
+
+            List<String> tagIds = liveEntity.meta.tagIds ?? [];
+            List<TagEntity> tagsFromTagIds = [];
+
+            for (String tagId in tagIds) {
+              TagEntity? tagEntity = tagsService.getTagById(tagId);
+              if (tagEntity != null) {
+                tagsFromTagIds.add(tagEntity);
               }
+            }
 
-              List<String> tagIds = liveEntity.meta.tagIds ?? [];
-              List<TagEntity> tagsFromTagIds = [];
-
-              for (String tagId in tagIds) {
-                TagEntity? tagEntity = tagsService.getTagById(tagId);
-                if (tagEntity != null) {
-                  tagsFromTagIds.add(tagEntity);
+            void addTagIds(List<String> addedTagIds) {
+              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+              List<String> tagIds = [...existingTagIds];
+              for (String tagId in addedTagIds) {
+                if (!tagIds.contains(tagId)) {
+                  tagIds.add(tagId);
                 }
               }
 
-              void addTagIds(List<String> addedTagIds) {
-                List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-                List<String> tagIds = [...existingTagIds];
-                for (String tagId in addedTagIds) {
-                  if (!tagIds.contains(tagId)) {
-                    tagIds.add(tagId);
-                  }
-                }
-
-                if (existingTagIds != tagIds) {
-                  Metadata newMeta = liveEntity.meta.copyWith(
-                    tagIds: tagIds,
-                  );
-                  persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-                }
-              }
-
-              void removeTagId(String tagId) {
-                List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-                persistenceLogic.updateJournalEntity(
-                  liveEntity,
-                  liveEntity.meta.copyWith(
-                    tagIds: existingTagIds
-                        .where((String id) => (id != tagId))
-                        .toList(),
-                  ),
+              if (existingTagIds != tagIds) {
+                Metadata newMeta = liveEntity.meta.copyWith(
+                  tagIds: tagIds,
                 );
+                persistenceLogic.updateJournalEntity(liveEntity, newMeta);
               }
+            }
 
-              TextEditingController controller = TextEditingController();
+            void removeTagId(String tagId) {
+              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+              persistenceLogic.updateJournalEntity(
+                liveEntity,
+                liveEntity.meta.copyWith(
+                  tagIds: existingTagIds
+                      .where((String id) => (id != tagId))
+                      .toList(),
+                ),
+              );
+            }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 8,
-                      top: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Text(
-                            'Tags:',
-                            style: formLabelStyle,
-                          ),
+            TextEditingController controller = TextEditingController();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 8,
+                    top: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Text(
+                          'Tags:',
+                          style: formLabelStyle,
                         ),
-                        Expanded(
-                          child: TypeAheadField(
-                            textFieldConfiguration: TextFieldConfiguration(
-                              textCapitalization: TextCapitalization.none,
-                              autocorrect: false,
-                              controller: controller,
-                              onSubmitted: (String tag) async {
-                                tag = tag.trim();
-                                String tagId = await persistenceLogic
-                                    .addTagDefinition(tag);
-                                addTagIds([tagId]);
-                                controller.clear();
-                              },
-                              autofocus: false,
-                              style:
-                                  DefaultTextStyle.of(context).style.copyWith(
-                                        color: AppColors.entryTextColor,
-                                        fontFamily: 'Oswald',
-                                        fontSize: 16.0,
-                                      ),
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0)),
-                              ),
-                            ),
-                            suggestionsCallback: (String pattern) async {
-                              return db.getMatchingTags(pattern.trim());
-                            },
-                            suggestionsBoxDecoration: SuggestionsBoxDecoration(
-                              color: AppColors.headerBgColor,
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            itemBuilder: (context, TagEntity tagEntity) {
-                              return ListTile(
-                                title: Text(
-                                  tagEntity.tag,
-                                  style: TextStyle(
-                                    fontFamily: 'Oswald',
-                                    height: 1,
-                                    color: getTagColor(tagEntity),
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 16.0,
-                                  ),
-                                ),
-                              );
-                            },
-                            onSuggestionSelected: (TagEntity tagSuggestion) {
-                              addTagIds([tagSuggestion.id]);
+                      ),
+                      Expanded(
+                        child: TypeAheadField(
+                          textFieldConfiguration: TextFieldConfiguration(
+                            textCapitalization: TextCapitalization.none,
+                            autocorrect: false,
+                            controller: controller,
+                            onSubmitted: (String tag) async {
+                              tag = tag.trim();
+                              String tagId =
+                                  await persistenceLogic.addTagDefinition(tag);
+                              addTagIds([tagId]);
                               controller.clear();
                             },
-                          ),
-                        ),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 24.0,
-                                top: 16.0,
-                                bottom: 16.0,
-                              ),
-                              child: Icon(
-                                MdiIcons.contentCopy,
-                                color: AppColors.entryTextColor,
-                              ),
+                            autofocus: false,
+                            style: DefaultTextStyle.of(context).style.copyWith(
+                                  color: AppColors.entryTextColor,
+                                  fontFamily: 'Oswald',
+                                  fontSize: 16.0,
+                                ),
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8.0)),
                             ),
-                            onTap: () {
-                              if (liveEntity.meta.tagIds != null) {
-                                HapticFeedback.heavyImpact();
-                                tagsService
-                                    .setClipboard(liveEntity.meta.tagIds!);
-                              }
-                            },
                           ),
+                          suggestionsCallback: (String pattern) async {
+                            return db.getMatchingTags(pattern.trim());
+                          },
+                          suggestionsBoxDecoration: SuggestionsBoxDecoration(
+                            color: AppColors.headerBgColor,
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          itemBuilder: (context, TagEntity tagEntity) {
+                            return ListTile(
+                              title: Text(
+                                tagEntity.tag,
+                                style: TextStyle(
+                                  fontFamily: 'Oswald',
+                                  height: 1,
+                                  color: getTagColor(tagEntity),
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 16.0,
+                                ),
+                              ),
+                            );
+                          },
+                          onSuggestionSelected: (TagEntity tagSuggestion) {
+                            addTagIds([tagSuggestion.id]);
+                            controller.clear();
+                          },
                         ),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16.0,
-                                top: 16.0,
-                                bottom: 16.0,
-                              ),
-                              child: Icon(
-                                MdiIcons.contentPaste,
-                                color: AppColors.entryTextColor,
-                              ),
+                      ),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 24.0,
+                              top: 16.0,
+                              bottom: 16.0,
                             ),
-                            onTap: () {
-                              addTagIds(tagsService.getClipboard());
+                            child: Icon(
+                              MdiIcons.contentCopy,
+                              color: AppColors.entryTextColor,
+                            ),
+                          ),
+                          onTap: () {
+                            if (liveEntity.meta.tagIds != null) {
                               HapticFeedback.heavyImpact();
-                            },
-                          ),
+                              tagsService.setClipboard(liveEntity.meta.tagIds!);
+                            }
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 16.0,
+                              top: 16.0,
+                              bottom: 16.0,
+                            ),
+                            child: Icon(
+                              MdiIcons.contentPaste,
+                              color: AppColors.entryTextColor,
+                            ),
+                          ),
+                          onTap: () {
+                            addTagIds(tagsService.getClipboard());
+                            HapticFeedback.heavyImpact();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: tagsFromTagIds
-                            .map((TagEntity tagEntity) => TagWidget(
-                                  tagEntity: tagEntity,
-                                  onTap: () {
-                                    removeTagId(tagEntity.id);
-                                  },
-                                ))
-                            .toList()),
-                  ),
-                ],
-              );
-            });
+                ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 24),
+                  child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: tagsFromTagIds
+                          .map((TagEntity tagEntity) => TagWidget(
+                                tagEntity: tagEntity,
+                                onTap: () {
+                                  removeTagId(tagEntity.id);
+                                },
+                              ))
+                          .toList()),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
