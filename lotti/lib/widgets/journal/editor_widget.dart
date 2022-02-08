@@ -9,7 +9,7 @@ class EditorWidget extends StatelessWidget {
     Key? key,
     required QuillController controller,
     double minHeight = 80,
-    double? maxHeight,
+    double maxHeight = double.maxFinite,
     double padding = 16.0,
     bool readOnly = false,
     required Function saveFn,
@@ -24,7 +24,7 @@ class EditorWidget extends StatelessWidget {
         super(key: key);
 
   final QuillController _controller;
-  final double? _maxHeight;
+  final double _maxHeight;
   final double _minHeight;
   final bool _readOnly;
   final double _padding;
@@ -64,7 +64,7 @@ class EditorWidget extends StatelessWidget {
         color: AppColors.editorBgColor,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: _maxHeight ?? MediaQuery.of(context).size.height - 160,
+            maxHeight: _maxHeight,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
