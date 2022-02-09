@@ -323,6 +323,7 @@ class PersistenceLogic {
 
   Future<bool> createTextEntry(
     EntryText entryText, {
+    required DateTime started,
     JournalEntity? linked,
   }) async {
     final transaction =
@@ -342,7 +343,7 @@ class PersistenceLogic {
         meta: Metadata(
           createdAt: now,
           updatedAt: now,
-          dateFrom: now,
+          dateFrom: started,
           dateTo: now,
           id: id,
           vectorClock: vc,
