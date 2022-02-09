@@ -316,3 +316,8 @@ SELECT * FROM journal
   AND id IN (SELECT from_id FROM linked_entries WHERE to_id = :to_id)
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
+
+deleteLink:
+DELETE FROM linked_entries
+  WHERE from_id = :from_id
+  AND to_id = :to_id;
