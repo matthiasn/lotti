@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
 
@@ -8,13 +7,24 @@ class LinkService {
   String? _linkToId;
   String? _linkFromId;
 
+  void createLink() async {
+    if (_linkFromId != null && _linkToId != null) {
+      await _persistenceLogic.createLink(
+        fromId: _linkFromId!,
+        toId: _linkToId!,
+      );
+      _linkFromId = null;
+      _linkToId = null;
+    }
+  }
+
   void linkTo(String linkToId) {
     _linkToId = linkToId;
-    debugPrint('linkTo $_linkToId}');
+    createLink();
   }
 
   void linkFrom(String linkFromId) {
     _linkFromId = linkFromId;
-    debugPrint('linkFromId $_linkFromId}');
+    createLink();
   }
 }

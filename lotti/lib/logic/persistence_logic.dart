@@ -365,6 +365,30 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool> createLink({
+    required String fromId,
+    required String toId,
+  }) async {
+    DateTime now = DateTime.now();
+    EntryLink link = EntryLink.basic(
+      id: uuid.v1(),
+      fromId: fromId,
+      toId: toId,
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+    );
+
+    int res = await _journalDb.upsertEntryLink(link);
+    await _outboxService.enqueueMessage(
+      SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+      ),
+    );
+    return (res != 0);
+  }
+
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
     bool enqueueSync = false,
@@ -386,22 +410,10 @@ class PersistenceLogic {
       }
 
       if (linked != null) {
-        DateTime now = DateTime.now();
-        EntryLink link = EntryLink.basic(
-          id: uuid.v1(),
-          toId: journalEntity.meta.id,
+        createLink(
           fromId: linked.meta.id,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
+          toId: journalEntity.meta.id,
         );
-
-        await _journalDb.upsertEntryLink(link);
-
-        await _outboxService.enqueueMessage(SyncMessage.entryLink(
-          entryLink: link,
-          status: SyncEntryStatus.initial,
-        ));
       }
 
       await transaction.finish();
