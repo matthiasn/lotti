@@ -143,7 +143,7 @@ class SyncInboxService {
     timer?.cancel();
     _fetchInbox();
     timer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(seconds: 15),
       (timer) async {
         _fetchInbox();
       },
@@ -282,17 +282,16 @@ class SyncInboxService {
           }
         });
 
-        _observingClient!.eventBus
+        _observingClient?.eventBus
             .on<MailConnectionLostEvent>()
             .listen((MailConnectionLostEvent event) async {
           _insightsDb.captureEvent(event);
 
           try {
-            await _observingClient!.resume();
-          } catch (e, stackTrace) {
-            await _insightsDb.captureException(e, stackTrace: stackTrace);
             _observingClient?.disconnect();
             _observingClient = null;
+          } catch (e, stackTrace) {
+            _insightsDb.captureException(e, stackTrace: stackTrace);
           }
 
           _insightsDb.captureEvent(
