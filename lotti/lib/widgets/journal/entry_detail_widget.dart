@@ -227,6 +227,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             saveFn: saveText,
                             formKey: formKey,
                             data: task.data,
+                            journalEntity: widget.item,
                           ),
                         ],
                       );

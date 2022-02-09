@@ -16,9 +16,11 @@ class NewTaskPage extends StatefulWidget {
   const NewTaskPage({
     Key? key,
     this.linked,
+    this.journalEntity,
   }) : super(key: key);
 
   final JournalEntity? linked;
+  final JournalEntity? journalEntity;
 
   @override
   State<NewTaskPage> createState() => _NewTaskPageState();
@@ -114,6 +116,7 @@ class _NewTaskPageState extends State<NewTaskPage> {
                   controller: _controller,
                   focusNode: _focusNode,
                   saveFn: _save,
+                  journalEntity: widget.journalEntity,
                 ),
               ),
             ],
@@ -131,6 +134,7 @@ class TaskForm extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.saveFn,
+    required this.journalEntity,
     this.data,
   }) : super(key: key);
 
@@ -139,6 +143,7 @@ class TaskForm extends StatelessWidget {
   final FocusNode focusNode;
   final Function saveFn;
   final TaskData? data;
+  final JournalEntity? journalEntity;
 
   @override
   Widget build(BuildContext context) {
@@ -307,6 +312,7 @@ class TaskForm extends StatelessWidget {
             focusNode: focusNode,
             saveFn: saveFn,
             minHeight: 100,
+            journalEntity: journalEntity,
           ),
         ],
       ),
