@@ -87,6 +87,32 @@ CREATE TABLE measurable_types (
   PRIMARY KEY (id)
 ) as MeasurableDbEntity;
 
+CREATE TABLE entity_definitions (
+  id TEXT NOT NULL,
+  unique_name TEXT NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  type TEXT NOT NULL,
+  serialized TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 0,
+  status INTEGER NOT NULL,
+  PRIMARY KEY (id)
+) as EntityDefinitionDbEntity;
+
+CREATE INDEX idx_entity_definitions_id
+ON entity_definitions (id);
+
+CREATE INDEX idx_entity_definitions_name
+ON entity_definitions (name);
+
+CREATE INDEX idx_entity_definitions_private
+ON entity_definitions (private);
+
+CREATE INDEX idx_entity_definitions_type
+ON entity_definitions (type);
+
 CREATE TABLE habit_definitions (
   id TEXT NOT NULL,
   name TEXT NOT NULL UNIQUE,
@@ -251,6 +277,12 @@ SELECT * FROM conflicts
 
 activeMeasurableTypes:
 SELECT * FROM measurable_types
+  WHERE deleted = false
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY unique_name ASC;
+
+activeEntityDefinitions:
+SELECT * FROM entity_definitions
   WHERE deleted = false
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY unique_name ASC;

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/sync/vector_clock.dart';
 
 part 'entity_definitions.freezed.dart';
@@ -34,13 +35,28 @@ class EntityDefinition with _$EntityDefinition {
     required String displayName,
     required String description,
     required String unitName,
-    required int version,
+    int? version,
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     bool? private,
     bool? favorite,
     AggregationType? aggregationType,
   }) = MeasurableDataType;
+
+  factory EntityDefinition.measurableGoal({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String name,
+    required String description,
+    required VectorClock? vectorClock,
+    required List<GoalCriterion> successCriteria,
+    DateTime? deletedAt,
+    int? version,
+    bool? private,
+    bool? favorite,
+    AggregationType? aggregationType,
+  }) = MeasurableGoal;
 
   factory EntityDefinition.habitDefinition({
     required String id,
@@ -49,12 +65,13 @@ class EntityDefinition with _$EntityDefinition {
     required String name,
     required String description,
     required HabitSchedule habitSchedule,
-    required String version,
     required DateTime activeFrom,
     required DateTime activeUntil,
     required VectorClock? vectorClock,
     required bool active,
-    required bool private,
+    int? version,
+    bool? private,
+    bool? favorite,
     DateTime? deletedAt,
   }) = HabitDefinition;
 

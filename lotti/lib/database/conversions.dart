@@ -98,10 +98,39 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
     createdAt: dataType.createdAt,
     updatedAt: dataType.updatedAt,
     serialized: jsonEncode(dataType),
-    version: dataType.version,
+    version: dataType.version ?? 0,
     status: 0,
     private: dataType.private ?? false,
     deleted: dataType.deletedAt != null,
+  );
+}
+
+EntityDefinition entityDefinition(EntityDefinitionDbEntity dbEntity) {
+  return EntityDefinition.fromJson(json.decode(dbEntity.serialized));
+}
+
+List<EntityDefinition> entityDefinitionStreamMapper(
+    List<EntityDefinitionDbEntity> dbEntities) {
+  return dbEntities.map((e) => entityDefinition(e)).toList();
+}
+
+EntityDefinitionDbEntity entityDefinitionDbEntity(
+    EntityDefinition entityDefinition) {
+  return EntityDefinitionDbEntity(
+    id: entityDefinition.id,
+    uniqueName: entityDefinition.name,
+    createdAt: entityDefinition.createdAt,
+    updatedAt: entityDefinition.updatedAt,
+    serialized: jsonEncode(entityDefinition),
+    version: entityDefinition.version ?? 0,
+    type: entityDefinition.map(
+      measurableDataType: (_) => 'measurableDataType',
+      measurableGoal: (_) => 'measurableGoal',
+      habitDefinition: (_) => 'habitDefinition',
+    ),
+    status: 0,
+    private: entityDefinition.private ?? false,
+    deleted: entityDefinition.deletedAt != null,
   );
 }
 
@@ -128,7 +157,7 @@ HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
     createdAt: habit.createdAt,
     updatedAt: habit.updatedAt,
     serialized: jsonEncode(habit),
-    private: habit.private,
+    private: habit.private ?? false,
     deleted: habit.deletedAt != null,
     active: habit.active,
     name: habit.name,

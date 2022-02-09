@@ -31,7 +31,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +51,15 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxHabitDefinitionsId);
           await m.createIndex(idxHabitDefinitionsName);
           await m.createIndex(idxHabitDefinitionsPrivate);
+        }();
+
+        () async {
+          debugPrint('Creating entity_definitions table and indices');
+          await m.createTable(entityDefinitions);
+          await m.createIndex(idxEntityDefinitionsId);
+          await m.createIndex(idxEntityDefinitionsType);
+          await m.createIndex(idxEntityDefinitionsPrivate);
+          await m.createIndex(idxEntityDefinitionsName);
         }();
 
         () async {
@@ -367,6 +376,10 @@ class JournalDb extends _$JournalDb {
     return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
   }
 
+  Stream<List<EntityDefinition>> watchEntityDefinitions() {
+    return activeEntityDefinitions().watch().map(entityDefinitionStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchMeasurementsByType(
     String type,
     DateTime from,
@@ -410,14 +423,14 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
   }
 
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
+    return into(entityDefinitions)
+        .insertOnConflictUpdate(entityDefinitionDbEntity(entityDefinition));
+  }
+
   Future<int> upsertTagEntity(TagEntity tag) async {
     final TagDbEntity dbEntity = tagDbEntity(tag);
     return into(tagEntities).insertOnConflictUpdate(dbEntity);
-  }
-
-  Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
-    return into(habitDefinitions)
-        .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
   }
 
   Future<List<String>> linksForEntryId(String entryId) {
@@ -437,18 +450,6 @@ class JournalDb extends _$JournalDb {
     required String toId,
   }) async {
     return deleteLink(fromId, toId);
-  }
-
-  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
-    int linesAffected = await entityDefinition.map(
-      measurableDataType: (MeasurableDataType measurableDataType) async {
-        return upsertMeasurableDataType(measurableDataType);
-      },
-      habitDefinition: (HabitDefinition habitDefinition) {
-        return upsertHabitDefinition(habitDefinition);
-      },
-    );
-    return linesAffected;
   }
 
   Future<void> recreateTagged() async {
