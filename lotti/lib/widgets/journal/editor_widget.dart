@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/editor_styles.dart';
 import 'package:lotti/widgets/journal/editor_toolbar.dart';
 
 class EditorWidget extends StatelessWidget {
+  final JournalEntity? _journalEntity;
+
   const EditorWidget({
     Key? key,
     required QuillController controller,
+    JournalEntity? journalEntity,
     double minHeight = 80,
     double maxHeight = double.maxFinite,
     double padding = 16.0,
@@ -18,6 +22,7 @@ class EditorWidget extends StatelessWidget {
         _maxHeight = maxHeight,
         _minHeight = minHeight,
         _readOnly = readOnly,
+        _journalEntity = journalEntity,
         _padding = padding,
         _saveFn = saveFn,
         _focusNode = focusNode,
@@ -72,6 +77,7 @@ class EditorWidget extends StatelessWidget {
               ToolbarWidget(
                 controller: _controller,
                 saveFn: _saveFn,
+                journalEntity: _journalEntity,
               ),
               Flexible(
                 child: Padding(
