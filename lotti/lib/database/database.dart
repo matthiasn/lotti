@@ -432,6 +432,13 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<int> removeLink({
+    required String fromId,
+    required String toId,
+  }) async {
+    return deleteLink(fromId, toId);
+  }
+
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     int linesAffected = await entityDefinition.map(
       measurableDataType: (MeasurableDataType measurableDataType) async {

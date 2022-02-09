@@ -58,18 +58,35 @@ class _LinkedEntriesWidgetState extends State<LinkedEntriesWidget> {
                       items.length,
                       (int index) {
                         JournalEntity item = items.elementAt(index);
+
+                        void unlink(DismissDirection direction) {
+                          String fromId = widget.item.meta.id;
+                          String toId = item.meta.id;
+                          _db.removeLink(fromId: fromId, toId: toId);
+                        }
+
                         return item.maybeMap(
-                            journalImage: (JournalImage image) {
-                          return JournalImageCard(
-                            item: image,
-                            index: index,
-                          );
-                        }, orElse: () {
-                          return JournalCard(
-                            item: item,
-                            index: index,
-                          );
-                        });
+                          journalImage: (JournalImage image) {
+                            return Dismissible(
+                              key: Key('$index'),
+                              onDismissed: unlink,
+                              child: JournalImageCard(
+                                item: image,
+                                index: index,
+                              ),
+                            );
+                          },
+                          orElse: () {
+                            return Dismissible(
+                              key: Key('$index'),
+                              onDismissed: unlink,
+                              child: JournalCard(
+                                item: item,
+                                index: index,
+                              ),
+                            );
+                          },
+                        );
                       },
                       growable: true,
                     )
