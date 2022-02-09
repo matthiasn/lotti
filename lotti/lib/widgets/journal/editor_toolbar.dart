@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/main.dart';
+import 'package:lotti/services/link_service.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class ToolbarWidget extends StatelessWidget {
-  const ToolbarWidget({
+  final LinkService _linkService = getIt<LinkService>();
+  final JournalEntity? _journalEntity;
+
+  ToolbarWidget({
     Key? key,
     required QuillController controller,
+    JournalEntity? journalEntity,
     double toolbarIconSize = 24.0,
     required Function saveFn,
     this.iconTheme,
   })  : _controller = controller,
         _saveFn = saveFn,
+        _journalEntity = journalEntity,
         _toolbarIconSize = toolbarIconSize,
         super(key: key);
 
@@ -94,6 +103,20 @@ class ToolbarWidget extends StatelessWidget {
           iconSize: _toolbarIconSize,
           iconTheme: iconTheme,
         ),
+        if (_journalEntity != null)
+          IconButton(
+            icon: const Icon(Icons.add_link),
+            iconSize: _toolbarIconSize,
+            tooltip: 'Link from',
+            onPressed: () => _linkService.linkFrom(_journalEntity!.meta.id),
+          ),
+        if (_journalEntity != null)
+          IconButton(
+            icon: const Icon(MdiIcons.target),
+            iconSize: _toolbarIconSize,
+            tooltip: 'Link to',
+            onPressed: () => _linkService.linkTo(_journalEntity!.meta.id),
+          ),
       ],
     );
   }

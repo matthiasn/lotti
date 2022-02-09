@@ -112,6 +112,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           const AudioPlayerWidget(),
                           EditorWidget(
                             controller: _controller,
+                            journalEntity: widget.item,
                             focusNode: _focusNode,
                             saveFn: saveText,
                           ),
@@ -133,6 +134,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             controller: _controller,
                             focusNode: _focusNode,
                             readOnly: widget.readOnly,
+                            journalEntity: widget.item,
                             saveFn: saveText,
                           ),
                         ],
@@ -144,6 +146,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         focusNode: _focusNode,
                         readOnly: widget.readOnly,
                         saveFn: saveText,
+                        journalEntity: widget.item,
                       );
                     },
                     measurement: (MeasurementEntry entry) {
@@ -152,6 +155,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         focusNode: _focusNode,
                         readOnly: widget.readOnly,
                         saveFn: saveText,
+                        journalEntity: widget.item,
                       );
                     },
                     survey: (SurveyEntry surveyEntry) =>
