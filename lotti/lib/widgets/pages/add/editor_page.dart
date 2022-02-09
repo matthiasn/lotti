@@ -24,6 +24,7 @@ class _EditorPageState extends State<EditorPage> {
   final QuillController _controller = makeController();
   final FocusNode _focusNode = FocusNode();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  DateTime started = DateTime.now();
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _EditorPageState extends State<EditorPage> {
       persistenceLogic.createTextEntry(
         entryTextFromController(_controller),
         linked: widget.linked,
+        started: started,
       );
       HapticFeedback.heavyImpact();
 
