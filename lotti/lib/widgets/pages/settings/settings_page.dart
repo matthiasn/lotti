@@ -4,6 +4,7 @@ import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
 import 'package:lotti/widgets/pages/settings/flags_page.dart';
+import 'package:lotti/widgets/pages/settings/goals_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
 import 'package:lotti/widgets/pages/settings/maintenance_page.dart';
 import 'package:lotti/widgets/pages/settings/measurables_page.dart';
@@ -98,6 +99,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           MaterialPageRoute(
                             builder: (BuildContext context) {
                               return const MeasurablesPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(
+                          MdiIcons.checkboxMultipleMarkedCircleOutline),
+                      title: 'Goals',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const GoalsPage();
                             },
                           ),
                         );

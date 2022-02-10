@@ -8,8 +8,8 @@ class GoalCriterion with _$GoalCriterion {
   factory GoalCriterion({
     required String measurableTypeId,
     String? comment,
-    double? min,
-    double? max,
+    num? min,
+    num? max,
     DateTime? validFrom,
     DateTime? validTo,
   }) = _GoalCriterion;
