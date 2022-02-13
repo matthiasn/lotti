@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/main.dart';
@@ -52,21 +51,23 @@ class DurationWidget extends StatelessWidget {
           visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 8.0, right: 4),
+                padding: const EdgeInsets.only(right: 4),
                 child: Icon(
                   MdiIcons.timerOutline,
                   color: labelColor,
                   size: 14,
                 ),
               ),
-              Text(
-                formatDuration(entryDuration(displayed)),
-                style: GoogleFonts.shareTechMono(
-                  color: labelColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              SizedBox(
+                width: 50,
+                child: Text(
+                  formatDuration(entryDuration(displayed)),
+                  style: style?.copyWith(
+                    color: labelColor,
+                  ),
                 ),
               ),
               Visibility(
