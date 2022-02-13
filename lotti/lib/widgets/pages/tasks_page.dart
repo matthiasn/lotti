@@ -282,22 +282,25 @@ class AddTask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: 'task',
-      child: const Icon(
-        Icons.add,
-        size: 32,
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: FloatingActionButton(
+        heroTag: 'task',
+        child: const Icon(
+          Icons.add,
+          size: 24,
+        ),
+        backgroundColor: AppColors.actionColor,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return const NewTaskPage();
+              },
+            ),
+          );
+        },
       ),
-      backgroundColor: AppColors.actionColor,
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return const NewTaskPage();
-            },
-          ),
-        );
-      },
     );
   }
 }
