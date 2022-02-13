@@ -331,6 +331,13 @@ class JournalDb extends _$JournalDb {
           status: true,
         ),
       );
+      into(configFlags).insert(
+        ConfigFlag(
+          name: 'enable_notifications',
+          description: 'Enable desktop notifications?',
+          status: false,
+        ),
+      );
     }
   }
 

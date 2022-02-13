@@ -4,11 +4,15 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/main.dart';
 
+final JournalDb _db = getIt<JournalDb>();
+
 class NotificationService {
   static FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   static Future<void> updateBadge() async {
+    bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
+
     if (Platform.isWindows || Platform.isLinux) {
       return;
     }
@@ -31,8 +35,7 @@ class NotificationService {
           sound: true,
         );
 
-    final JournalDb _journalDb = getIt<JournalDb>();
-    int counter = await _journalDb.getCountImportFlagEntries();
+    int counter = await _db.getCountImportFlagEntries();
     if (counter == 0) {
       flutterLocalNotificationsPlugin.show(
         1,
@@ -69,7 +72,7 @@ class NotificationService {
           badgeNumber: counter,
         ),
         macOS: MacOSNotificationDetails(
-          presentAlert: true,
+          presentAlert: notifyEnabled,
           presentBadge: true,
           badgeNumber: counter,
         ),
