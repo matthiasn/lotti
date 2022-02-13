@@ -29,7 +29,7 @@ class JournalCardTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -44,48 +44,39 @@ class JournalCardTitle extends StatelessWidget {
                   fontFamily: 'Oswald',
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0),
-                child: DurationWidget(
-                  item: item,
-                  style: TextStyle(
-                    color: AppColors.entryTextColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: 'Oswald',
+              Row(
+                children: [
+                  Visibility(
+                    visible: fromNullableBool(item.meta.private),
+                    child: Icon(
+                      MdiIcons.security,
+                      color: AppColors.error,
+                      size: iconSize,
+                    ),
                   ),
-                ),
-              ),
-              Expanded(child: Container()),
-              Visibility(
-                visible: fromNullableBool(item.meta.private),
-                child: Icon(
-                  MdiIcons.security,
-                  color: AppColors.error,
-                  size: iconSize,
-                ),
-              ),
-              Visibility(
-                visible: fromNullableBool(item.meta.starred),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
-                  child: Icon(
-                    MdiIcons.star,
-                    color: AppColors.starredGold,
-                    size: iconSize,
+                  Visibility(
+                    visible: fromNullableBool(item.meta.starred),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Icon(
+                        MdiIcons.star,
+                        color: AppColors.starredGold,
+                        size: iconSize,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Visibility(
-                visible: item.meta.flag == EntryFlag.import,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
-                  child: Icon(
-                    MdiIcons.flag,
-                    color: AppColors.error,
-                    size: iconSize,
+                  Visibility(
+                    visible: item.meta.flag == EntryFlag.import,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4.0),
+                      child: Icon(
+                        MdiIcons.flag,
+                        color: AppColors.error,
+                        size: iconSize,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -194,6 +185,15 @@ class JournalCardTitle extends StatelessWidget {
             },
             orElse: () => Row(
               children: const [],
+            ),
+          ),
+          DurationWidget(
+            item: item,
+            style: TextStyle(
+              color: AppColors.entryTextColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w300,
+              fontFamily: 'Oswald',
             ),
           ),
         ],
