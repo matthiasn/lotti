@@ -33,7 +33,7 @@ class DurationWidget extends StatelessWidget {
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
         bool isRecent =
-            DateTime.now().difference(item.meta.dateFrom).inHours < 12;
+            DateTime.now().difference(item.meta.dateFrom).inMinutes < 60;
 
         JournalEntity? recording = snapshot.data;
         JournalEntity displayed = item;
@@ -48,7 +48,8 @@ class DurationWidget extends StatelessWidget {
             isRecording ? AppColors.timeRecording : style?.color;
 
         return Visibility(
-          visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
+          visible: entryDuration(displayed).inMilliseconds > 0 ||
+              (isRecent && showControls),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.start,
