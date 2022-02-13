@@ -16,6 +16,7 @@ class EditorWidget extends StatelessWidget {
     double maxHeight = double.maxFinite,
     double padding = 16.0,
     bool readOnly = false,
+    bool autoFocus = true,
     required Function saveFn,
     required FocusNode focusNode,
   })  : _controller = controller,
@@ -26,12 +27,14 @@ class EditorWidget extends StatelessWidget {
         _padding = padding,
         _saveFn = saveFn,
         _focusNode = focusNode,
+        _autoFocus = autoFocus,
         super(key: key);
 
   final QuillController _controller;
   final double _maxHeight;
   final double _minHeight;
   final bool _readOnly;
+  final bool _autoFocus;
   final double _padding;
   final Function _saveFn;
   final FocusNode _focusNode;
@@ -88,7 +91,7 @@ class EditorWidget extends StatelessWidget {
                     scrollController: ScrollController(),
                     scrollable: true,
                     focusNode: _focusNode,
-                    autoFocus: true,
+                    autoFocus: _autoFocus,
                     expands: false,
                     minHeight: _minHeight,
                     padding: const EdgeInsets.only(top: 8, bottom: 16),

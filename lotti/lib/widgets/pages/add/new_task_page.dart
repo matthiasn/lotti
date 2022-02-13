@@ -159,6 +159,7 @@ class TaskForm extends StatelessWidget {
               child: Column(
                 children: <Widget>[
                   FormBuilderTextField(
+                    autofocus: true,
                     initialValue: data?.title ?? '',
                     decoration: InputDecoration(
                       labelText: 'Task:',
@@ -313,6 +314,7 @@ class TaskForm extends StatelessWidget {
             saveFn: saveFn,
             minHeight: 100,
             journalEntity: journalEntity,
+            autoFocus: false,
           ),
         ],
       ),
