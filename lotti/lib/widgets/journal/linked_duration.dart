@@ -34,7 +34,8 @@ class LinkedDuration extends StatelessWidget {
               stream: _timeService.getStream(),
               builder: (_, AsyncSnapshot<JournalEntity?> timeSnapshot) {
                 Map<String, Duration> durations = snapshot.data ?? {};
-                JournalEntity liveTask = taskSnapshot.data ?? task;
+                JournalEntity liveEntity = taskSnapshot.data ?? task;
+                Task liveTask = liveEntity as Task;
                 durations[liveTask.meta.id] = entryDuration(liveTask);
                 JournalEntity? running = timeSnapshot.data;
 
@@ -47,7 +48,7 @@ class LinkedDuration extends StatelessWidget {
                   progress = progress + duration;
                 }
 
-                Duration total = task.data.estimate ?? const Duration();
+                Duration total = liveTask.data.estimate ?? const Duration();
 
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),
