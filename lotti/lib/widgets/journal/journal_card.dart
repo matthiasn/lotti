@@ -102,8 +102,9 @@ class JournalCardTitle extends StatelessWidget {
             journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
               entryText: journalEntry.entryText,
             ),
-            journalImage: (JournalImage journalImage) =>
-                TextViewerWidget(entryText: journalImage.entryText),
+            journalImage: (JournalImage journalImage) => Expanded(
+              child: TextViewerWidget(entryText: journalImage.entryText),
+            ),
             survey: (SurveyEntry surveyEntry) =>
                 SurveySummaryWidget(surveyEntry),
             measurement: (MeasurementEntry measurementEntry) {
