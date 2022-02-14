@@ -81,110 +81,112 @@ class JournalCardTitle extends StatelessWidget {
             ],
           ),
           TagsViewWidget(item: item),
-          item.maybeMap(
-            quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
-              cumulativeQuantityData: (qd) => EntryText(
-                'End: ${df.format(qd.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+          Expanded(
+            child: item.maybeMap(
+              quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
+                cumulativeQuantityData: (qd) => EntryText(
+                  'End: ${df.format(qd.dateTo)}'
+                  '\n${formatType(qd.dataType)}: '
+                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                ),
+                discreteQuantityData: (qd) => EntryText(
+                  'End: ${df.format(item.meta.dateTo)}'
+                  '\n${formatType(qd.dataType)}: '
+                  '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+                ),
+                orElse: () => Container(),
               ),
-              discreteQuantityData: (qd) => EntryText(
-                'End: ${df.format(item.meta.dateTo)}'
-                '\n${formatType(qd.dataType)}: '
-                '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
+              journalAudio: (JournalAudio journalAudio) =>
+                  journalAudio.entryText?.plainText != null
+                      ? TextViewerWidget(entryText: journalAudio.entryText)
+                      : EntryText(formatAudio(journalAudio)),
+              journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
+                entryText: journalEntry.entryText,
               ),
-              orElse: () => Container(),
-            ),
-            journalAudio: (JournalAudio journalAudio) =>
-                journalAudio.entryText?.plainText != null
-                    ? TextViewerWidget(entryText: journalAudio.entryText)
-                    : EntryText(formatAudio(journalAudio)),
-            journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
-              entryText: journalEntry.entryText,
-            ),
-            journalImage: (JournalImage journalImage) =>
-                TextViewerWidget(entryText: journalImage.entryText),
-            survey: (SurveyEntry surveyEntry) =>
-                SurveySummaryWidget(surveyEntry),
-            measurement: (MeasurementEntry measurementEntry) {
-              MeasurementData data = measurementEntry.data;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (measurementEntry.entryText?.plainText != null)
-                    TextViewerWidget(entryText: measurementEntry.entryText),
-                  EntryText(
-                    '${data.dataType.displayName}: '
-                    '${nf.format(data.value)}',
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
-              );
-            },
-            task: (Task task) {
-              TaskData data = task.data;
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          data.title,
-                          style: TextStyle(
-                            fontFamily: 'Oswald',
-                            color: AppColors.entryTextColor,
-                            fontWeight: FontWeight.normal,
-                            fontSize: 24.0,
-                          ),
-                        ),
-                      ),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: 12,
-                          ),
-                          color: data.status.map(
-                            open: (_) => Colors.orange,
-                            started: (_) => Colors.blue,
-                            blocked: (_) => Colors.red,
-                            done: (_) => Colors.green,
-                            rejected: (_) => Colors.red,
-                          ),
+              journalImage: (JournalImage journalImage) =>
+                  TextViewerWidget(entryText: journalImage.entryText),
+              survey: (SurveyEntry surveyEntry) =>
+                  SurveySummaryWidget(surveyEntry),
+              measurement: (MeasurementEntry measurementEntry) {
+                MeasurementData data = measurementEntry.data;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (measurementEntry.entryText?.plainText != null)
+                      TextViewerWidget(entryText: measurementEntry.entryText),
+                    EntryText(
+                      '${data.dataType.displayName}: '
+                      '${nf.format(data.value)}',
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                );
+              },
+              task: (Task task) {
+                TaskData data = task.data;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
                           child: Text(
-                            data.status.map(
-                              open: (_) => 'OPEN',
-                              started: (_) => 'STARTED',
-                              blocked: (_) => 'BLOCKED',
-                              done: (_) => 'DONE',
-                              rejected: (_) => 'REJECTED',
-                            ),
+                            data.title,
                             style: TextStyle(
                               fontFamily: 'Oswald',
-                              color: AppColors.bodyBgColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.0,
+                              color: AppColors.entryTextColor,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 24.0,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  LinkedDuration(
-                    task: task,
-                    width: MediaQuery.of(context).size.width - 200,
-                  ),
-                  TextViewerWidget(entryText: task.entryText),
-                ],
-              );
-            },
-            orElse: () => Row(
-              children: const [],
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 12,
+                            ),
+                            color: data.status.map(
+                              open: (_) => Colors.orange,
+                              started: (_) => Colors.blue,
+                              blocked: (_) => Colors.red,
+                              done: (_) => Colors.green,
+                              rejected: (_) => Colors.red,
+                            ),
+                            child: Text(
+                              data.status.map(
+                                open: (_) => 'OPEN',
+                                started: (_) => 'STARTED',
+                                blocked: (_) => 'BLOCKED',
+                                done: (_) => 'DONE',
+                                rejected: (_) => 'REJECTED',
+                              ),
+                              style: TextStyle(
+                                fontFamily: 'Oswald',
+                                color: AppColors.bodyBgColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    LinkedDuration(
+                      task: task,
+                      width: MediaQuery.of(context).size.width - 200,
+                    ),
+                    TextViewerWidget(entryText: task.entryText),
+                  ],
+                );
+              },
+              orElse: () => Row(
+                children: const [],
+              ),
             ),
           ),
           DurationWidget(
