@@ -15,6 +15,8 @@ jobs:
         with:
           flutter-version: '2.8.1'
           channel: 'stable'
+      - name: Update apt-get
+        run: sudo apt-get update
       - name: Install libraries
         run: sudo apt-get install libgtk-3-dev cmake cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libjsoncpp1 libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0
       - name: Enable Linux Desktop
