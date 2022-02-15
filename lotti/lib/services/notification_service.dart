@@ -35,7 +35,9 @@ class NotificationService {
           sound: true,
         );
 
-    int counter = await _db.getCountImportFlagEntries();
+    int counter = await _db.getWipCount();
+    flutterLocalNotificationsPlugin.cancel(1);
+
     if (counter == 0) {
       flutterLocalNotificationsPlugin.show(
         1,
@@ -56,27 +58,27 @@ class NotificationService {
       );
 
       return;
+    } else {
+      String title = '$counter task${counter == 1 ? '' : 's'} in progress';
+      String body = counter < 5 ? 'Nice' : 'Let\'s get that number down';
+
+      flutterLocalNotificationsPlugin.show(
+        1,
+        title,
+        body,
+        NotificationDetails(
+          iOS: IOSNotificationDetails(
+            presentAlert: false,
+            presentBadge: true,
+            badgeNumber: counter,
+          ),
+          macOS: MacOSNotificationDetails(
+            presentAlert: notifyEnabled,
+            presentBadge: true,
+            badgeNumber: counter,
+          ),
+        ),
+      );
     }
-
-    String title = '$counter entr${counter == 1 ? 'y' : 'ies'} flagged import';
-    String body = 'Please annotate/review';
-
-    flutterLocalNotificationsPlugin.show(
-      1,
-      title,
-      body,
-      NotificationDetails(
-        iOS: IOSNotificationDetails(
-          presentAlert: false,
-          presentBadge: true,
-          badgeNumber: counter,
-        ),
-        macOS: MacOSNotificationDetails(
-          presentAlert: notifyEnabled,
-          presentBadge: true,
-          badgeNumber: counter,
-        ),
-      ),
-    );
   }
 }
