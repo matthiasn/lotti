@@ -38,7 +38,9 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: (task) => task.data.status.map(
       open: (_) => 'OPEN',
       started: (_) => 'STARTED',
+      inProgress: (_) => 'IN PROGRESS',
       blocked: (_) => 'BLOCKED',
+      onHold: (_) => 'ON HOLD',
       done: (_) => 'DONE',
       rejected: (_) => 'REJECTED',
     ),

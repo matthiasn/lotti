@@ -262,8 +262,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> getWipCount() async {
-    List<JournalDbEntity> res =
-        await filteredTasks(['Task'], [true, false], ['STARTED'], 1000).get();
+    List<JournalDbEntity> res = await filteredTasks(
+            ['Task'], [true, false], ['STARTED', 'IN PROGRESS'], 1000)
+        .get();
     return res.length;
   }
 

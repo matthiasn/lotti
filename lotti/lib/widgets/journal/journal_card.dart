@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -150,18 +151,14 @@ class JournalCardTitle extends StatelessWidget {
                             vertical: 4,
                             horizontal: 12,
                           ),
-                          color: data.status.map(
-                            open: (_) => Colors.orange,
-                            started: (_) => Colors.blue,
-                            blocked: (_) => Colors.red,
-                            done: (_) => Colors.green,
-                            rejected: (_) => Colors.red,
-                          ),
+                          color: taskColor(data.status),
                           child: Text(
                             data.status.map(
                               open: (_) => 'OPEN',
                               started: (_) => 'STARTED',
+                              inProgress: (_) => 'IN PROGRESS',
                               blocked: (_) => 'BLOCKED',
+                              onHold: (_) => 'ON HOLD',
                               done: (_) => 'DONE',
                               rejected: (_) => 'REJECTED',
                             ),

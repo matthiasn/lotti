@@ -24,6 +24,14 @@ class TaskStatus with _$TaskStatus {
     Geolocation? geolocation,
   }) = _TaskStarted;
 
+  factory TaskStatus.inProgress({
+    required String id,
+    required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
+  }) = _TaskInProgress;
+
   factory TaskStatus.blocked({
     required String id,
     required DateTime createdAt,
@@ -32,6 +40,15 @@ class TaskStatus with _$TaskStatus {
     String? timezone,
     Geolocation? geolocation,
   }) = _TaskBlocked;
+
+  factory TaskStatus.onHold({
+    required String id,
+    required DateTime createdAt,
+    required int utcOffset,
+    required String reason,
+    String? timezone,
+    Geolocation? geolocation,
+  }) = _TaskOnHold;
 
   factory TaskStatus.done({
     required String id,
@@ -86,8 +103,21 @@ TaskStatus taskStatusFromString(String status) {
       createdAt: now,
       utcOffset: now.timeZoneOffset.inMinutes,
     );
+  } else if (status == 'IN PROGRESS') {
+    newStatus = TaskStatus.inProgress(
+      id: uuid.v1(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
   } else if (status == 'BLOCKED') {
     newStatus = TaskStatus.blocked(
+      id: uuid.v1(),
+      createdAt: now,
+      reason: 'needs a reason',
+      utcOffset: now.timeZoneOffset.inMinutes,
+    );
+  } else if (status == 'ON HOLD') {
+    newStatus = TaskStatus.onHold(
       id: uuid.v1(),
       createdAt: now,
       reason: 'needs a reason',
