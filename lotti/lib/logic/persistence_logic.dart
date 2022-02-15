@@ -418,7 +418,7 @@ class PersistenceLogic {
 
       await transaction.finish();
 
-      NotificationService.updateBadge();
+      getIt<NotificationService>().updateBadge();
 
       return saved;
     } catch (exception, stackTrace) {
@@ -628,7 +628,7 @@ class PersistenceLogic {
       JournalEntity newEntity = journalEntity.copyWith(meta: newMeta);
       await updateDbEntity(newEntity, enqueueSync: true);
 
-      NotificationService.updateBadge();
+      getIt<NotificationService>().updateBadge();
     } catch (exception, stackTrace) {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
     }
@@ -658,7 +658,7 @@ class PersistenceLogic {
       }
       await transaction.finish();
 
-      NotificationService.updateBadge();
+      getIt<NotificationService>().updateBadge();
 
       return true;
     } catch (exception, stackTrace) {

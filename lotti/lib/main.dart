@@ -13,6 +13,7 @@ import 'package:lotti/blocs/sync/outbox_cubit.dart';
 import 'package:lotti/blocs/sync/sync_config_cubit.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -52,6 +53,7 @@ Future<void> main() async {
     getIt.registerSingleton<HealthImport>(HealthImport());
     getIt.registerSingleton<SyncInboxService>(SyncInboxService());
     getIt.registerSingleton<LinkService>(LinkService());
+    getIt.registerSingleton<NotificationService>(NotificationService());
 
     initializeDateFormatting();
 

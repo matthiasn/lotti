@@ -7,10 +7,11 @@ import 'package:lotti/main.dart';
 final JournalDb _db = getIt<JournalDb>();
 
 class NotificationService {
-  static FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  int badgeCount = 0;
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> updateBadge() async {
+  Future<void> updateBadge() async {
     bool notifyEnabled = await _db.getConfigFlag('enable_notifications');
 
     if (Platform.isWindows || Platform.isLinux) {
@@ -35,10 +36,17 @@ class NotificationService {
           sound: true,
         );
 
-    int counter = await _db.getWipCount();
+    int count = await _db.getWipCount();
+
+    if (count == badgeCount) {
+      return;
+    } else {
+      badgeCount = count;
+    }
+
     flutterLocalNotificationsPlugin.cancel(1);
 
-    if (counter == 0) {
+    if (badgeCount == 0) {
       flutterLocalNotificationsPlugin.show(
         1,
         '',
@@ -47,20 +55,21 @@ class NotificationService {
           iOS: IOSNotificationDetails(
             presentAlert: false,
             presentBadge: true,
-            badgeNumber: counter,
+            badgeNumber: badgeCount,
           ),
           macOS: MacOSNotificationDetails(
             presentAlert: false,
             presentBadge: true,
-            badgeNumber: counter,
+            badgeNumber: badgeCount,
           ),
         ),
       );
 
       return;
     } else {
-      String title = '$counter task${counter == 1 ? '' : 's'} in progress';
-      String body = counter < 5 ? 'Nice' : 'Let\'s get that number down';
+      String title =
+          '$badgeCount task${badgeCount == 1 ? '' : 's'} in progress';
+      String body = badgeCount < 5 ? 'Nice' : 'Let\'s get that number down';
 
       flutterLocalNotificationsPlugin.show(
         1,
@@ -70,12 +79,12 @@ class NotificationService {
           iOS: IOSNotificationDetails(
             presentAlert: false,
             presentBadge: true,
-            badgeNumber: counter,
+            badgeNumber: badgeCount,
           ),
           macOS: MacOSNotificationDetails(
             presentAlert: notifyEnabled,
             presentBadge: true,
-            badgeNumber: counter,
+            badgeNumber: badgeCount,
           ),
         ),
       );
