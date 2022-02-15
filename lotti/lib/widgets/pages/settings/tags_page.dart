@@ -34,6 +34,7 @@ class _TagsPageState extends State<TagsPage> {
     double portraitWidth = MediaQuery.of(context).size.width * 0.5;
 
     return FloatingSearchBar(
+      clearQueryOnClose: false,
       automaticallyImplyBackButton: false,
       hint: 'Search tag...',
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
@@ -57,7 +58,6 @@ class _TagsPageState extends State<TagsPage> {
       openAxisAlignment: 0.0,
       width: isPortrait ? portraitWidth : 400,
       onQueryChanged: (query) async {
-        debugPrint(query);
         setState(() {
           match = query.toLowerCase();
         });

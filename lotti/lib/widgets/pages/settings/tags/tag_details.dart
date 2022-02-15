@@ -50,6 +50,45 @@ class _TagDetailRouteState extends State<TagDetailRoute> {
                   inactive: formData['inactive'],
                   updatedAt: DateTime.now(),
                 );
+
+                String type = formData['type'];
+
+                if (type == 'PERSON') {
+                  tagEntity = TagEntity.personTag(
+                    tag: tagEntity.tag,
+                    vectorClock: tagEntity.vectorClock,
+                    updatedAt: tagEntity.updatedAt,
+                    createdAt: tagEntity.createdAt,
+                    private: tagEntity.private,
+                    inactive: tagEntity.inactive,
+                    id: tagEntity.id,
+                  );
+                }
+
+                if (type == 'STORY') {
+                  tagEntity = TagEntity.storyTag(
+                    tag: tagEntity.tag,
+                    vectorClock: tagEntity.vectorClock,
+                    updatedAt: tagEntity.updatedAt,
+                    createdAt: tagEntity.createdAt,
+                    private: tagEntity.private,
+                    inactive: tagEntity.inactive,
+                    id: tagEntity.id,
+                  );
+                }
+
+                if (type == 'TAG') {
+                  tagEntity = TagEntity.genericTag(
+                    tag: tagEntity.tag,
+                    vectorClock: tagEntity.vectorClock,
+                    updatedAt: tagEntity.updatedAt,
+                    createdAt: tagEntity.createdAt,
+                    private: tagEntity.private,
+                    inactive: tagEntity.inactive,
+                    id: tagEntity.id,
+                  );
+                }
+
                 persistenceLogic.upsertTagEntity(tagEntity);
                 Navigator.pop(context);
               }
@@ -107,6 +146,56 @@ class _TagDetailRouteState extends State<TagDetailRoute> {
                               style: formLabelStyle,
                             ),
                             activeColor: AppColors.private,
+                          ),
+                          FormBuilderChoiceChip(
+                            name: 'type',
+                            initialValue: widget.tagEntity.map(
+                              genericTag: (_) => 'TAG',
+                              personTag: (_) => 'PERSON',
+                              storyTag: (_) => 'STORY',
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Tag type:',
+                              labelStyle: labelStyle.copyWith(
+                                height: 0.6,
+                                fontFamily: 'Oswald',
+                              ),
+                            ),
+                            selectedColor: widget.tagEntity.map(
+                              genericTag: (tag) => getTagColor(tag),
+                              personTag: (tag) => getTagColor(tag),
+                              storyTag: (tag) => getTagColor(tag),
+                            ),
+                            runSpacing: 4,
+                            spacing: 4,
+                            labelStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w300,
+                              fontFamily: 'Oswald',
+                            ),
+                            options: const [
+                              FormBuilderFieldOption(
+                                value: 'TAG',
+                                child: Text(
+                                  'TAG',
+                                  style: TextStyle(color: Colors.black87),
+                                ),
+                              ),
+                              FormBuilderFieldOption(
+                                value: 'PERSON',
+                                child: Text(
+                                  'PERSON',
+                                  style: TextStyle(color: Colors.black87),
+                                ),
+                              ),
+                              FormBuilderFieldOption(
+                                value: 'STORY',
+                                child: Text(
+                                  'STORY',
+                                  style: TextStyle(color: Colors.black87),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
