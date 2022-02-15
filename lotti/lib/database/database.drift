@@ -286,6 +286,7 @@ SELECT * FROM tag_entities
   WHERE tag LIKE :match
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND inactive IN (0, :inactive)
+  AND deleted = false
   LIMIT :limit;
 
 deleteTaggedForId:
