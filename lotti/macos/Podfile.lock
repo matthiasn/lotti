@@ -140,7 +140,7 @@ SPEC CHECKSUMS:
   sqflite: a5789cceda41d54d23f31d6de539d65bb14100ea
   sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
   sqlite3_flutter_libs: 2c1089e698380f5a3643f8730047e808b7a40ba3
-  url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
+  url_launcher_macos: 597e05b8e514239626bcf4a850fcf9ef5c856ec3
   window_manager: 02776e5a599084cd4576e27a42dd5ec6f49132cf
 
 PODFILE CHECKSUM: 8d40c19d3cbdb380d870685c3a564c989f1efa52

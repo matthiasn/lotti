@@ -232,7 +232,7 @@ SPEC CHECKSUMS:
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   gallery_saver: 9fc173c9f4fcc48af53b2a9ebea1b643255be542
   health: e7a5807e45ec58fe6b89a730c97abc6caafe94a0
-  image_picker: 0d37d1cb66231c2473a0e3ccb8d062d0c2b3d297
+  image_picker: 541dcbb3b9cf32d87eacbd957845d8651d6c62c3
   just_audio: baa7252489dbcf47a4c7cc9ca663e9661c99aafa
   libwebp: 98a37e597e40bfdb4c911fc98f2c53d0b12d05fc
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
@@ -251,7 +251,7 @@ SPEC CHECKSUMS:
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   sqlite3: c0ed2889f1853952214f34195c4a081a7a7a8015
   sqlite3_flutter_libs: b26eb56ee9f5d821e55739a0e3917301e5ed4628
-  url_launcher_ios: 02f1989d4e14e998335b02b67a7590fa34f971af
+  url_launcher_ios: 839c58cdb4279282219f5e248c3321761ff3c4de
   video_player_avfoundation: e489aac24ef5cf7af82702979ed16f2a5ef84cff
 
 PODFILE CHECKSUM: ad5bf9f735c40eede66cde505a0d4d051ddea7b2

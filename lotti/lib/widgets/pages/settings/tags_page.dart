@@ -8,6 +8,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/settings/tags/tag_details.dart';
+import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 class TagsPage extends StatefulWidget {
   const TagsPage({Key? key}) : super(key: key);
@@ -18,12 +19,58 @@ class TagsPage extends StatefulWidget {
 
 class _TagsPageState extends State<TagsPage> {
   final JournalDb _db = getIt<JournalDb>();
-
   late final Stream<List<TagEntity>> stream = _db.watchTags();
+  String match = '';
 
   @override
   void initState() {
     super.initState();
+  }
+
+  Widget buildFloatingSearchBar() {
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
+
+    double portraitWidth = MediaQuery.of(context).size.width * 0.5;
+
+    return FloatingSearchBar(
+      clearQueryOnClose: false,
+      automaticallyImplyBackButton: false,
+      hint: 'Search tag...',
+      scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
+      transitionDuration: const Duration(milliseconds: 800),
+      transitionCurve: Curves.easeInOut,
+      backgroundColor: AppColors.appBarFgColor,
+      margins: const EdgeInsets.only(top: 8),
+      queryStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
+      hintStyle: const TextStyle(
+        fontFamily: 'Lato',
+        fontSize: 24,
+        fontWeight: FontWeight.w300,
+      ),
+      physics: const BouncingScrollPhysics(),
+      borderRadius: BorderRadius.circular(8.0),
+      axisAlignment: isPortrait ? 0.0 : -1.0,
+      openAxisAlignment: 0.0,
+      width: isPortrait ? portraitWidth : 400,
+      onQueryChanged: (query) async {
+        setState(() {
+          match = query.toLowerCase();
+        });
+      },
+      actions: [
+        FloatingSearchBarAction.searchToClear(
+          showIfClosed: false,
+        ),
+      ],
+      builder: (context, transition) {
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   @override
@@ -35,23 +82,37 @@ class _TagsPageState extends State<TagsPage> {
         AsyncSnapshot<List<TagEntity>> snapshot,
       ) {
         List<TagEntity> items = snapshot.data ?? [];
+        List<TagEntity> filtered = items
+            .where(
+                (TagEntity entity) => entity.tag.toLowerCase().contains(match))
+            .toList();
 
         return Scaffold(
           appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
           backgroundColor: AppColors.bodyBgColor,
           floatingActionButton: const RadialAddTagButtons(),
-          body: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.all(8.0),
-            children: List.generate(
-              items.length,
-              (int index) {
-                return TagCard(
-                  tagEntity: items.elementAt(index),
-                  index: index,
-                );
-              },
-            ),
+          body: Stack(
+            children: [
+              ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: 8,
+                  top: 64,
+                ),
+                children: List.generate(
+                  filtered.length,
+                  (int index) {
+                    return TagCard(
+                      tagEntity: filtered.elementAt(index),
+                      index: index,
+                    );
+                  },
+                ),
+              ),
+              buildFloatingSearchBar(),
+            ],
           ),
         );
       },
