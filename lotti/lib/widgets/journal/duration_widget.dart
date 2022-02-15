@@ -33,7 +33,7 @@ class DurationWidget extends StatelessWidget {
         AsyncSnapshot<JournalEntity?> snapshot,
       ) {
         bool isRecent =
-            DateTime.now().difference(item.meta.dateFrom).inMinutes < 60;
+            DateTime.now().difference(item.meta.dateFrom).inHours < 12;
 
         JournalEntity? recording = snapshot.data;
         JournalEntity displayed = item;
