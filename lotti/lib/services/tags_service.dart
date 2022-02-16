@@ -1,6 +1,6 @@
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 
 class TagsService {
   late final JournalDb _db;

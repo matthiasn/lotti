@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 

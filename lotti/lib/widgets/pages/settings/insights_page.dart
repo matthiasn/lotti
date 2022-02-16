@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/insights_db.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 
 class InsightsPage extends StatefulWidget {

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/sync/outbox.dart';
 
 class OutboxCubit extends Cubit<OutboxState> {

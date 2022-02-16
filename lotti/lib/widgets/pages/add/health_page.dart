@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/main.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
