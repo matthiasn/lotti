@@ -2,7 +2,7 @@ import 'package:badges/badges.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/blocs/sync/outbox_state.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 
 class OutboxBadgeIcon extends StatelessWidget {
   final SyncDatabase db = getIt<SyncDatabase>();

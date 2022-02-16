@@ -2,7 +2,7 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';

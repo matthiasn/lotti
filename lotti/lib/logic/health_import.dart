@@ -7,8 +7,8 @@ import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/insights_db.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/main.dart';
 
 class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();

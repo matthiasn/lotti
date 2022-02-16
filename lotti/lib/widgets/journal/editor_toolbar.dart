@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 

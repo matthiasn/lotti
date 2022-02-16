@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 
 final JournalDb _db = getIt<JournalDb>();
 

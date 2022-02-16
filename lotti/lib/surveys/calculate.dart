@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/main.dart';
 import 'package:research_package/model.dart';
 
 Map<String, int> calculateScores({

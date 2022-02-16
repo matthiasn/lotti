@@ -1,5 +1,5 @@
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/main.dart';
 
 class LinkService {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();

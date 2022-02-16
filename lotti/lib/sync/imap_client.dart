@@ -1,7 +1,7 @@
 import 'package:enough_mail/enough_mail.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/insights_db.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/sync_config_service.dart';
 
 Future<ImapClient?> createImapClient() async {

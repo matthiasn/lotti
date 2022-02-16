@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/main.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
