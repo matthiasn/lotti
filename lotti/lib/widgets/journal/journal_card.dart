@@ -7,7 +7,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
+import 'package:lotti/widgets/tasks/task_status.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import 'duration_widget.dart';
@@ -45,6 +45,7 @@ class JournalCardTitle extends StatelessWidget {
                   fontFamily: 'Oswald',
                 ),
               ),
+              if (item is Task) TaskStatusWidget(item as Task),
               Row(
                 children: [
                   Visibility(
@@ -141,33 +142,6 @@ class JournalCardTitle extends StatelessWidget {
                             color: AppColors.entryTextColor,
                             fontWeight: FontWeight.normal,
                             fontSize: 24.0,
-                          ),
-                        ),
-                      ),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: 12,
-                          ),
-                          color: taskColor(data.status),
-                          child: Text(
-                            data.status.map(
-                              open: (_) => 'OPEN',
-                              started: (_) => 'STARTED',
-                              inProgress: (_) => 'IN PROGRESS',
-                              blocked: (_) => 'BLOCKED',
-                              onHold: (_) => 'ON HOLD',
-                              done: (_) => 'DONE',
-                              rejected: (_) => 'REJECTED',
-                            ),
-                            style: TextStyle(
-                              fontFamily: 'Oswald',
-                              color: AppColors.bodyBgColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.0,
-                            ),
                           ),
                         ),
                       ),
