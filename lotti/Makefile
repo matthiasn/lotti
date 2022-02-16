@@ -2,6 +2,10 @@
 test:
 	flutter test --coverage
 
+.PHONY: integration_test
+integration_test:
+	 flutter test integration_test
+
 .PHONY: clean
 clean:
 	flutter clean
@@ -85,3 +89,6 @@ viz:
 
 .PHONY: clean_test
 clean_test: clean deps build_runner test
+
+.PHONY: clean_integration_test
+clean_integration_test: clean deps build_runner integration_test
