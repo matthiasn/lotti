@@ -169,7 +169,7 @@ class _TasksPageState extends State<TasksPage> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0),
+                padding: const EdgeInsets.only(left: 16, bottom: 16),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
