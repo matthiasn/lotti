@@ -5,7 +5,9 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus_windows
   flutter_secure_storage_windows
+  hotkey_manager
   url_launcher_windows
+  window_manager
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

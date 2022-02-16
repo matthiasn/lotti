@@ -376,8 +376,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "85c8a38"
-      resolved-ref: "85c8a3853067c49238b003b6bb3f4b2b5c06c87f"
+      ref: "0497ebb"
+      resolved-ref: "0497ebb173f29eb40c53696782326b495b0b9304"
       url: "https://github.com/matthiasn/delta_markdown"
     source: git
     version: "0.4.0"
@@ -723,7 +723,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.9.11"
+    version: "4.0.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -866,7 +866,7 @@ packages:
       name: glados
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   glass:
     dependency: "direct main"
     description:
@@ -1126,6 +1126,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.12.11"
+  material_color_utilities:
+    dependency: transitive
+    description:
+      name: material_color_utilities
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.3"
   material_design_icons_flutter:
     dependency: "direct main"
     description:
@@ -1701,21 +1708,21 @@ packages:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.17.12"
+    version: "1.19.5"
   test_api:
     dependency: transitive
     description:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.3"
+    version: "0.4.8"
   test_core:
     dependency: transitive
     description:
       name: test_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.2"
+    version: "0.4.9"
   timezone:
     dependency: transitive
     description:
@@ -1820,7 +1827,7 @@ packages:
       name: url_launcher_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.6"
+    version: "2.0.8"
   url_launcher_windows:
     dependency: transitive
     description:
@@ -1855,21 +1862,21 @@ packages:
       name: video_player_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.17"
+    version: "2.3.0"
   video_player_avfoundation:
     dependency: transitive
     description:
       name: video_player_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.18"
+    version: "2.3.0"
   video_player_platform_interface:
     dependency: transitive
     description:
       name: video_player_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.2"
+    version: "5.1.0"
   video_player_web:
     dependency: transitive
     description:
@@ -1963,4 +1970,4 @@ packages:
     version: "8.0.0"
 sdks:
   dart: ">=2.15.1 <3.0.0"
-  flutter: ">=2.8.0"
+  flutter: ">=2.10.0"
