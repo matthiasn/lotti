@@ -16,7 +16,7 @@ deps:
 
 .PHONY: doctor
 doctor:
-	flutter doctor
+	flutter doctor -v
 
 .PHONY: coverage
 coverage: test

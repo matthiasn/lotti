@@ -4,7 +4,7 @@ on: [push]
 jobs:
   build:
     name: Build & Release on TestFlight
-    runs-on: macOS-latest
+    runs-on: macos-latest
     if: github.ref == 'refs/heads/ios-release'
     steps:
       - uses: actions/checkout@v1

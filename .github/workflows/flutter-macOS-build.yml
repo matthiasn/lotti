@@ -1,0 +1,26 @@
+name: Flutter macOS
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: Flutter Integration Tests on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '2.10'
+          channel: 'stable'
+      - name: Enable Mac Desktop
+        working-directory: ./lotti
+        run: flutter config --enable-macos-desktop
+      - name: Flutter Doctor
+        working-directory: ./lotti
+        run: make doctor
+      - name: Run integration test
+        working-directory: ./lotti
+        run: make clean_integration_test
