@@ -2,15 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lotti/blocs/audio/recorder_cubit.dart';
 import 'package:lotti/blocs/audio/recorder_state.dart';
-import 'package:lotti/main.dart';
-import 'package:lotti/services/time_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
 class AudioRecordingIndicator extends StatelessWidget {
-  final TimeService _timeService = getIt<TimeService>();
-
-  AudioRecordingIndicator({
+  const AudioRecordingIndicator({
     Key? key,
   }) : super(key: key);
 

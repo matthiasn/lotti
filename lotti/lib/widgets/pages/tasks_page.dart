@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:glass/glass.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -27,22 +28,25 @@ class TasksPage extends StatefulWidget {
   _TasksPageState createState() => _TasksPageState();
 }
 
-class FilterBy {
-  final String typeName;
-  final String name;
-
-  FilterBy({
-    required this.typeName,
-    required this.name,
-  });
-}
-
 class _TasksPageState extends State<TasksPage> {
   final JournalDb _db = getIt<JournalDb>();
   late Stream<List<JournalEntity>> stream;
   late Stream<List<ConfigFlag>> configFlagsStream;
 
-  Set<String> types = {'Task'};
+  static final List<String> taskStatuses = [
+    'OPEN',
+    'IN PROGRESS',
+    'BLOCKED',
+    'ON HOLD',
+    'DONE',
+    'REJECTED',
+  ];
+
+  Set<String> selectedStatuses = {
+    'OPEN',
+    'IN PROGRESS',
+  };
+
   Set<String> tagIds = {};
   StreamController<List<TagEntity>> matchingTagsController =
       StreamController<List<TagEntity>>();
@@ -73,7 +77,7 @@ class _TasksPageState extends State<TasksPage> {
       stream = _db.watchTasks(
         ids: entryIds?.toList(),
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
-        taskStatuses: ['OPEN', 'STARTED'],
+        taskStatuses: selectedStatuses.toList(),
       );
     });
   }
@@ -163,6 +167,59 @@ class _TasksPageState extends State<TasksPage> {
                     },
                   ),
                 ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16, bottom: 16),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    ...taskStatuses
+                        .map(
+                          (String status) => GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (selectedStatuses.contains(status)) {
+                                  selectedStatuses.remove(status);
+                                } else {
+                                  selectedStatuses.add(status);
+                                }
+                                resetStream();
+                                HapticFeedback.heavyImpact();
+                              });
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  color: selectedStatuses.contains(status)
+                                      ? Colors.lightBlue
+                                      : Colors.grey[600],
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 1,
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: TextStyle(
+                                        fontFamily: 'Oswald',
+                                        fontSize: 14,
+                                        color: selectedStatuses.contains(status)
+                                            ? Colors.grey[900]
+                                            : Colors.grey[400],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ],
+                ),
               ),
               SelectedTagsWidget(
                 removeTag: removeTag,

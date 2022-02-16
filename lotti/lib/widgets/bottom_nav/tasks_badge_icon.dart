@@ -17,7 +17,7 @@ class TasksBadgeIcon extends StatelessWidget {
     return StreamBuilder<List<JournalEntity>>(
       stream: _db.watchTasks(
         starredStatuses: [true, false],
-        taskStatuses: ['STARTED'],
+        taskStatuses: ['IN PROGRESS'],
       ),
       builder: (
         BuildContext context,

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/task_utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/editor_widget.dart';
 
@@ -96,6 +97,7 @@ class TaskForm extends StatelessWidget {
                       fontWeight: FontWeight.w300,
                       fontFamily: 'Oswald',
                     ),
+                    onChanged: (_) => saveFn(),
                     decoration: InputDecoration(
                       labelText: 'Estimate:',
                       labelStyle: labelStyle,
@@ -123,7 +125,9 @@ class TaskForm extends StatelessWidget {
                     initialValue: data?.status.map(
                           open: (_) => 'OPEN',
                           started: (_) => 'STARTED',
+                          inProgress: (_) => 'IN PROGRESS',
                           blocked: (_) => 'BLOCKED',
+                          onHold: (_) => 'ON HOLD',
                           done: (_) => 'DONE',
                           rejected: (_) => 'REJECTED',
                         ) ??
@@ -135,14 +139,10 @@ class TaskForm extends StatelessWidget {
                         fontFamily: 'Oswald',
                       ),
                     ),
-                    selectedColor: data?.status.map(
-                          open: (_) => AppColors.entryBgColor,
-                          started: (_) => AppColors.entryBgColor,
-                          blocked: (_) => Colors.red,
-                          done: (_) => Colors.green,
-                          rejected: (_) => Colors.red,
-                        ) ??
-                        AppColors.entryBgColor,
+                    onChanged: (_) => saveFn(),
+                    selectedColor: data?.status != null
+                        ? taskColor(data!.status)
+                        : AppColors.entryBgColor,
                     runSpacing: 4,
                     spacing: 4,
                     labelStyle: const TextStyle(
@@ -159,9 +159,9 @@ class TaskForm extends StatelessWidget {
                         ),
                       ),
                       FormBuilderFieldOption(
-                        value: 'STARTED',
+                        value: 'IN PROGRESS',
                         child: Text(
-                          'STARTED',
+                          'IN PROGRESS',
                           style: TextStyle(color: Colors.black87),
                         ),
                       ),
@@ -169,6 +169,13 @@ class TaskForm extends StatelessWidget {
                         value: 'BLOCKED',
                         child: Text(
                           'BLOCKED',
+                          style: TextStyle(color: Colors.black87),
+                        ),
+                      ),
+                      FormBuilderFieldOption(
+                        value: 'ON HOLD',
+                        child: Text(
+                          'ON HOLD',
                           style: TextStyle(color: Colors.black87),
                         ),
                       ),

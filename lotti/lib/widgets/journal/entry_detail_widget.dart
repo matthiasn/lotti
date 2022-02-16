@@ -216,10 +216,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(left: 16.0),
-                            child: LinkedDuration(
-                              task: task,
-                              width: MediaQuery.of(context).size.width - 200,
-                            ),
+                            child: LinkedDuration(task: task),
                           ),
                           TaskForm(
                             controller: _controller,

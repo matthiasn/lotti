@@ -14,11 +14,9 @@ class LinkedDuration extends StatelessWidget {
   late final Stream<JournalEntity?> stream = db.watchEntityById(task.meta.id);
 
   final Task task;
-  final double width;
 
   LinkedDuration({
     required this.task,
-    required this.width,
     Key? key,
   }) : super(key: key);
 
@@ -53,21 +51,23 @@ class LinkedDuration extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: SizedBox(
-                    width: width,
-                    child: ProgressBar(
-                      progress: progress,
-                      total: total,
-                      progressBarColor:
-                          (progress >= total) ? Colors.red : Colors.green,
-                      thumbColor: Colors.white,
-                      barHeight: 8.0,
-                      thumbRadius: 8.0,
-                      onSeek: (newPosition) {},
-                      timeLabelTextStyle: TextStyle(
-                        fontFamily: 'Oswald',
-                        color: AppColors.entryTextColor,
-                        fontWeight: FontWeight.normal,
-                        fontSize: 14.0,
+                    width: MediaQuery.of(context).size.width - 80,
+                    child: ClipRRect(
+                      child: ProgressBar(
+                        progress: progress,
+                        total: total,
+                        progressBarColor:
+                            (progress >= total) ? Colors.red : Colors.green,
+                        thumbColor: Colors.white,
+                        barHeight: 8.0,
+                        thumbRadius: 8.0,
+                        onSeek: (newPosition) {},
+                        timeLabelTextStyle: TextStyle(
+                          fontFamily: 'Oswald',
+                          color: AppColors.entryTextColor,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 14.0,
+                        ),
                       ),
                     ),
                   ),
