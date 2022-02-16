@@ -9,10 +9,9 @@ class WindowService implements WindowListener {
 
   WindowService() {
     windowManager.addListener(this);
-    restore();
   }
 
-  void restore() async {
+  Future<void> restore() async {
     await restoreOffset();
     await restoreSize();
   }

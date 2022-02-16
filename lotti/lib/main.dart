@@ -40,8 +40,10 @@ Future<void> main() async {
     hotKeyManager.unregisterAll();
   }
 
+  getIt.registerSingleton<WindowService>(WindowService());
+  await getIt<WindowService>().restore();
+
   runZonedGuarded(() {
-    getIt.registerSingleton<WindowService>(WindowService());
     getIt.registerSingleton<JournalDb>(JournalDb());
     getIt.registerSingleton<TagsService>(TagsService());
     getIt<JournalDb>().initConfigFlags();
