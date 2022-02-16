@@ -12,8 +12,8 @@ class WindowService implements WindowListener {
   }
 
   Future<void> restore() async {
-    await restoreOffset();
     await restoreSize();
+    await restoreOffset();
   }
 
   Future<void> restoreSize() async {
