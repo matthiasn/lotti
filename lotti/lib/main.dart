@@ -41,6 +41,7 @@ Future<void> main() async {
   }
 
   runZonedGuarded(() {
+    getIt.registerSingleton<WindowService>(WindowService());
     getIt.registerSingleton<JournalDb>(JournalDb());
     getIt.registerSingleton<TagsService>(TagsService());
     getIt<JournalDb>().initConfigFlags();
@@ -55,7 +56,6 @@ Future<void> main() async {
     getIt.registerSingleton<SyncInboxService>(SyncInboxService());
     getIt.registerSingleton<LinkService>(LinkService());
     getIt.registerSingleton<NotificationService>(NotificationService());
-    getIt.registerSingleton<WindowService>(WindowService());
 
     initializeDateFormatting();
 
