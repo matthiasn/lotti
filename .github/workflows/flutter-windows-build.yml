@@ -15,9 +15,6 @@ jobs:
         with:
           flutter-version: '2.10'
           channel: 'stable'
-      - name: Enable Windows Desktop
-        working-directory: ./lotti
-        run: flutter config --enable-windows-desktop
       - name: Flutter Doctor
         working-directory: ./lotti
         run: make doctor
