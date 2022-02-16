@@ -18,6 +18,7 @@ import 'package:lotti/services/sync_config_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:lotti/sync/inbox_service.dart';
 import 'package:lotti/sync/outbox.dart';
 import 'package:lotti/utils/screenshots.dart';
@@ -38,6 +39,9 @@ Future<void> main() async {
     await windowManager.ensureInitialized();
     hotKeyManager.unregisterAll();
   }
+
+  getIt.registerSingleton<WindowService>(WindowService());
+  await getIt<WindowService>().restore();
 
   runZonedGuarded(() {
     getIt.registerSingleton<JournalDb>(JournalDb());
