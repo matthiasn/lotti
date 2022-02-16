@@ -1,7 +1,7 @@
 name: lotti
 description: A Smart Journal.
 publish_to: 'none'
-version: 0.4.30+453
+version: 0.5.1+454
 
 environment:
   sdk: ">=2.14.0 <3.0.0"
@@ -13,7 +13,7 @@ dependencies:
   delta_markdown:
     git:
       url: https://github.com/matthiasn/delta_markdown
-      ref: 85c8a38
+      ref: 0497ebb
 
   flutter_health_fit:
     git:
@@ -62,7 +62,7 @@ dependencies:
   flutter_local_notifications: ^9.2.0
   flutter_map: ^0.14.0
   flutter_native_timezone: ^2.0.0
-  flutter_quill: ^3.9.4
+  flutter_quill: ^4.0.1
   flutter_secure_storage: ^5.0.0
   flutter_sound: ^8.3.12
   flutter_typeahead: ^3.2.4
