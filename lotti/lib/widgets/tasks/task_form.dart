@@ -159,13 +159,6 @@ class TaskForm extends StatelessWidget {
                         ),
                       ),
                       FormBuilderFieldOption(
-                        value: 'STARTED',
-                        child: Text(
-                          'STARTED',
-                          style: TextStyle(color: Colors.black87),
-                        ),
-                      ),
-                      FormBuilderFieldOption(
                         value: 'IN PROGRESS',
                         child: Text(
                           'IN PROGRESS',

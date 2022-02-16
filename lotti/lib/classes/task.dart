@@ -97,12 +97,6 @@ TaskStatus taskStatusFromString(String status) {
       createdAt: now,
       utcOffset: now.timeZoneOffset.inMinutes,
     );
-  } else if (status == 'STARTED') {
-    newStatus = TaskStatus.started(
-      id: uuid.v1(),
-      createdAt: now,
-      utcOffset: now.timeZoneOffset.inMinutes,
-    );
   } else if (status == 'IN PROGRESS') {
     newStatus = TaskStatus.inProgress(
       id: uuid.v1(),

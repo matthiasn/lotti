@@ -35,7 +35,6 @@ class _TasksPageState extends State<TasksPage> {
 
   static final List<String> taskStatuses = [
     'OPEN',
-    'STARTED',
     'IN PROGRESS',
     'BLOCKED',
     'ON HOLD',
@@ -45,7 +44,6 @@ class _TasksPageState extends State<TasksPage> {
 
   Set<String> selectedStatuses = {
     'OPEN',
-    'STARTED',
     'IN PROGRESS',
   };
 
