@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TagsWidget extends StatelessWidget {
@@ -131,7 +132,10 @@ class TagsWidget extends StatelessWidget {
                             ),
                           ),
                           suggestionsCallback: (String pattern) async {
-                            return db.getMatchingTags(pattern.trim(), limit: 5);
+                            return db.getMatchingTags(
+                              pattern.trim(),
+                              limit: isMobile ? 5 : 12,
+                            );
                           },
                           suggestionsBoxDecoration: SuggestionsBoxDecoration(
                             color: AppColors.headerBgColor,
