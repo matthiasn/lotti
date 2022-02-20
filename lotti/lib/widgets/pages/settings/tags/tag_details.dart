@@ -40,6 +40,7 @@ class _TagDetailRouteState extends State<TagDetailRoute> {
         ),
         actions: <Widget>[
           TextButton(
+            key: const Key('tag_save'),
             onPressed: () async {
               _formKey.currentState!.save();
               if (_formKey.currentState!.validate()) {
@@ -128,6 +129,7 @@ class _TagDetailRouteState extends State<TagDetailRoute> {
                             initialValue: widget.tagEntity.tag,
                             labelText: 'Tag',
                             name: 'tag',
+                            key: const Key('tag_name_field'),
                           ),
                           FormBuilderSwitch(
                             name: 'private',

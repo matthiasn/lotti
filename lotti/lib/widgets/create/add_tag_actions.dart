@@ -31,6 +31,7 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
     List<Widget> items = [
       FloatingActionButton(
         heroTag: 'tag',
+        key: const Key('add_tag_action'),
         child: const Icon(
           MdiIcons.tagPlusOutline,
           size: 32,

@@ -197,6 +197,8 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                           minutes: dt.minute,
                         );
 
+                        HapticFeedback.heavyImpact();
+
                         TaskData updatedData = task.data.copyWith(
                           title: title,
                           estimate: estimate,

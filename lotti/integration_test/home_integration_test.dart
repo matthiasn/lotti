@@ -1,22 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/main.dart' as app;
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
+const debug = false;
+
+Future<void> waitSeconds(int s) async {
+  if (debug) {
+    await Future.delayed(Duration(seconds: s), () {});
+  }
+}
 
 void main() {
   app.main();
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group(
-    'end-to-end test',
+    'new entry end-to-end test',
     () {
       testWidgets(
-        'tap settings bottom nav icon, verify settings elements',
+        'tap add, create entry',
         (WidgetTester tester) async {
           await tester.pumpAndSettle();
-          await Future.delayed(const Duration(seconds: 1), () {});
+
+          await waitSeconds(1);
 
           expect(find.text('Search...'), findsWidgets);
+
+          final Finder add = find.byIcon(Icons.add).first;
+          await tester.tap(add);
+          await tester.pumpAndSettle();
+
+          final Finder addText = find.byIcon(MdiIcons.textLong).first;
+          await tester.tap(addText);
+          await tester.pumpAndSettle();
+
+          Finder editor = find.byType(QuillEditor);
+          debugPrint(editor.toString());
+
+          // TODO: figure out how to enter text in flutter_quill
+          // String testText = 'test text: ${DateTime.now()}';
+          // await tester.enterText(editor, testText);
+
+          await waitSeconds(1);
+
+          final Finder saveIcon = find.byIcon(Icons.save);
+          await tester.tap(saveIcon);
+          await tester.pumpAndSettle();
+
+          //expect(find.text(testText), findsOneWidget);
+
+          await waitSeconds(1);
 
           final Finder settings = find.byIcon(Icons.settings_outlined);
           await tester.tap(settings);
@@ -32,7 +68,42 @@ void main() {
           expect(find.text('Flags'), findsOneWidget);
           expect(find.text('Maintenance'), findsOneWidget);
 
+          await tester.tap(find.byIcon(MdiIcons.tag));
+          await tester.pumpAndSettle();
+
+          await waitSeconds(1);
+
+          await tester.tap(find.byKey(const Key('add_tag_action')));
+          await tester.pumpAndSettle();
+
+          await waitSeconds(1);
+
+          await tester.tap(find.byIcon(MdiIcons.tagPlusOutline));
+          await tester.pumpAndSettle();
+
+          await waitSeconds(1);
+
+          String testTag = DateTime.now().toString();
+
+          await tester.enterText(
+              find.byKey(const Key('tag_name_field')), testTag);
           await Future.delayed(const Duration(seconds: 1), () {});
+
+          await tester.tap(find.byKey(const Key('tag_save')));
+          await tester.pumpAndSettle();
+
+          expect(find.text(testTag), findsOneWidget);
+          await waitSeconds(1);
+
+          await tester.tap(find.text(testTag));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
+          await tester.pumpAndSettle();
+
+          expect(find.text(testTag), findsNothing);
+
+          await waitSeconds(2);
         },
       );
     },
