@@ -31,7 +31,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +51,14 @@ class JournalDb extends _$JournalDb {
           await m.createIndex(idxHabitDefinitionsId);
           await m.createIndex(idxHabitDefinitionsName);
           await m.createIndex(idxHabitDefinitionsPrivate);
+        }();
+
+        () async {
+          debugPrint('Creating dashboard_definitions table and indices');
+          await m.createTable(dashboardDefinitions);
+          await m.createIndex(idxDashboardDefinitionsId);
+          await m.createIndex(idxDashboardDefinitionsName);
+          await m.createIndex(idxDashboardDefinitionsPrivate);
         }();
 
         () async {
@@ -434,6 +442,12 @@ class JournalDb extends _$JournalDb {
         .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
   }
 
+  Future<int> upsertDashboardDefinition(
+      DashboardDefinition dashboardDefinition) async {
+    return into(dashboardDefinitions).insertOnConflictUpdate(
+        dashboardDefinitionDbEntity(dashboardDefinition));
+  }
+
   Future<List<String>> linksForEntryId(String entryId) {
     return linkedEntriesFor(entryId).get();
   }
@@ -458,8 +472,11 @@ class JournalDb extends _$JournalDb {
       measurableDataType: (MeasurableDataType measurableDataType) async {
         return upsertMeasurableDataType(measurableDataType);
       },
-      habitDefinition: (HabitDefinition habitDefinition) {
+      habit: (HabitDefinition habitDefinition) {
         return upsertHabitDefinition(habitDefinition);
+      },
+      dashboard: (DashboardDefinition dashboardDefinition) {
+        return upsertDashboardDefinition(dashboardDefinition);
       },
     );
     return linesAffected;

@@ -137,6 +137,21 @@ HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
   );
 }
 
+DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
+  DashboardDefinition dashboard,
+) {
+  return DashboardDefinitionDbEntity(
+    id: dashboard.id,
+    createdAt: dashboard.createdAt,
+    updatedAt: dashboard.updatedAt,
+    serialized: jsonEncode(dashboard),
+    private: dashboard.private,
+    deleted: dashboard.deletedAt != null,
+    active: dashboard.active,
+    name: dashboard.name,
+  );
+}
+
 LinkedDbEntry linkedDbEntity(EntryLink link) {
   return LinkedDbEntry(
     id: link.id,

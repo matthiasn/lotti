@@ -108,6 +108,27 @@ ON habit_definitions (name);
 CREATE INDEX idx_habit_definitions_private
 ON habit_definitions (private);
 
+CREATE TABLE dashboard_definitions (
+  id TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  serialized TEXT NOT NULL,
+  active BOOLEAN NOT NULL,
+  PRIMARY KEY (id)
+) as DashboardDefinitionDbEntity;
+
+CREATE INDEX idx_dashboard_definitions_id
+ON dashboard_definitions (id);
+
+CREATE INDEX idx_dashboard_definitions_name
+ON dashboard_definitions (name);
+
+CREATE INDEX idx_dashboard_definitions_private
+ON dashboard_definitions (private);
+
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL UNIQUE,
