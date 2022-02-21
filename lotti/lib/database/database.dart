@@ -62,6 +62,14 @@ class JournalDb extends _$JournalDb {
         }();
 
         () async {
+          debugPrint('Add last_reviewed column in dashboard_definitions');
+          await m.addColumn(
+            dashboardDefinitions,
+            dashboardDefinitions.lastReviewed,
+          );
+        }();
+
+        () async {
           debugPrint('Creating tagged table and indices');
           await m.createTable(tagged);
           await m.createIndex(idxTaggedJournalId);
