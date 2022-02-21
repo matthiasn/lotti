@@ -42,7 +42,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
 
-  MeasurableDataType? selected;
+  List<DashboardItem>? dashboardItems;
 
   @override
   Widget build(BuildContext context) {
@@ -52,13 +52,20 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
-        List<MeasurableDataType> items = snapshot.data ?? [];
+        List<MeasurableDataType> measurableDataTypes = snapshot.data ?? [];
 
-        final multiSelectItems = items
+        final multiSelectItems = measurableDataTypes
             .map((item) => MultiSelectItem<MeasurableDataType>(
                   item,
                   item.displayName,
                 ))
+            .toList();
+
+        final Set<String> priorSelection =
+            widget.dashboard.items.map((e) => e.id).toSet();
+
+        List<MeasurableDataType> initialSelection = measurableDataTypes
+            .where((e) => priorSelection.contains(e.id))
             .toList();
 
         return Scaffold(
@@ -85,9 +92,8 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                       private: formData['private'],
                       active: formData['active'],
                       updatedAt: DateTime.now(),
+                      items: dashboardItems ?? widget.dashboard.items,
                     );
-
-//                String type = formData['type'];
 
                     persistenceLogic.upsertDashboardDefinition(dashboard);
                     Navigator.pop(context);
@@ -160,53 +166,61 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                         const SizedBox(
                           height: 24,
                         ),
-                        MultiSelectDialogField(
-                          searchable: true,
-                          backgroundColor: AppColors.bodyBgColor,
-                          items: multiSelectItems,
-                          title: Text(
-                            "Measurement Types",
-                            style: titleStyle,
-                          ),
-                          checkColor: AppColors.entryTextColor,
-                          selectedColor: Colors.blue,
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(40),
+                        if (multiSelectItems.isNotEmpty)
+                          MultiSelectDialogField<MeasurableDataType?>(
+                            searchable: true,
+                            backgroundColor: AppColors.bodyBgColor,
+                            items: multiSelectItems,
+                            initialValue: initialSelection,
+                            title: Text(
+                              "Measurement Types",
+                              style: titleStyle,
                             ),
-                            border: Border.all(
+                            checkColor: AppColors.entryTextColor,
+                            selectedColor: Colors.blue,
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(40),
+                              ),
+                              border: Border.all(
+                                color: AppColors.entryTextColor,
+                                width: 2,
+                              ),
+                            ),
+                            itemsTextStyle: multiSelectStyle,
+                            selectedItemsTextStyle: multiSelectStyle.copyWith(
+                              fontWeight: FontWeight.normal,
+                            ),
+                            unselectedColor: AppColors.entryTextColor,
+                            searchIcon: Icon(
+                              Icons.search,
+                              size: 32,
                               color: AppColors.entryTextColor,
-                              width: 2,
                             ),
-                          ),
-                          itemsTextStyle: multiSelectStyle,
-                          selectedItemsTextStyle: multiSelectStyle.copyWith(
-                            fontWeight: FontWeight.normal,
-                          ),
-                          unselectedColor: AppColors.entryTextColor,
-                          searchIcon: Icon(
-                            Icons.search,
-                            size: 32,
-                            color: AppColors.entryTextColor,
-                          ),
-                          searchTextStyle: formLabelStyle,
-                          searchHintStyle: formLabelStyle,
-                          buttonIcon: Icon(
-                            MdiIcons.tapeMeasure,
-                            color: AppColors.entryTextColor,
-                          ),
-                          buttonText: Text(
-                            "Measurement types",
-                            style: TextStyle(
+                            searchTextStyle: formLabelStyle,
+                            searchHintStyle: formLabelStyle,
+                            buttonIcon: Icon(
+                              MdiIcons.tapeMeasure,
                               color: AppColors.entryTextColor,
-                              fontSize: 16,
                             ),
+                            buttonText: Text(
+                              "Measurement types",
+                              style: TextStyle(
+                                color: AppColors.entryTextColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                            onConfirm: (List<MeasurableDataType?> selection) {
+                              dashboardItems = [];
+                              for (MeasurableDataType? selected in selection) {
+                                if (selected != null) {
+                                  dashboardItems?.add(DashboardItem.measurement(
+                                      id: selected.id));
+                                }
+                              }
+                            },
                           ),
-                          onConfirm: (results) {
-                            debugPrint(results.toString());
-                          },
-                        ),
                         Padding(
                           padding: const EdgeInsets.only(top: 16.0),
                           child: Row(
