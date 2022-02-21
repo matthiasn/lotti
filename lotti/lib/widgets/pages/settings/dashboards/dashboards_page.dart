@@ -89,7 +89,7 @@ class _DashboardsPageState extends State<DashboardsPage> {
             .toList();
 
         return Scaffold(
-          appBar: VersionAppBar(title: 'Tags, n= ${items.length}'),
+          appBar: VersionAppBar(title: 'Dashboards, n= ${items.length}'),
           backgroundColor: AppColors.bodyBgColor,
           floatingActionButton: FloatingActionButton(
             child: const Icon(MdiIcons.plus, size: 32),
@@ -105,6 +105,7 @@ class _DashboardsPageState extends State<DashboardsPage> {
                         name: '',
                         createdAt: now,
                         updatedAt: now,
+                        lastReviewed: now,
                         description: '',
                         vectorClock: null,
                         version: '',
@@ -166,32 +167,39 @@ class DashboardCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: SingleChildScrollView(
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
-          title: Text(
-            dashboard.name,
-            style: TextStyle(
-              color: AppColors.entryTextColor,
-              fontFamily: 'Oswald',
-              fontSize: 24.0,
-              fontWeight: FontWeight.w300,
-            ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.only(left: 16, top: 8, bottom: 20, right: 16),
+        title: Text(
+          dashboard.name,
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+            fontSize: 24.0,
+            fontWeight: FontWeight.w300,
           ),
-          enabled: true,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (BuildContext context) {
-                  return DashboardDetailRoute(
-                    dashboard: dashboard,
-                  );
-                },
-              ),
-            );
-          },
         ),
+        subtitle: Text(
+          dashboard.description,
+          style: TextStyle(
+            color: AppColors.entryTextColor,
+            fontFamily: 'Oswald',
+            fontSize: 16.0,
+            fontWeight: FontWeight.w300,
+          ),
+        ),
+        enabled: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return DashboardDetailRoute(
+                  dashboard: dashboard,
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

@@ -52,7 +52,7 @@ class _MeasurementBarChartState extends State<MeasurementBarChart> {
 
           List<charts.Series<SumPerDay, DateTime>> seriesList = [
             charts.Series<SumPerDay, DateTime>(
-              id: 'Sales',
+              id: widget.measurableDataType?.id ?? '',
               colorFn: (SumPerDay val, _) {
                 return charts.MaterialPalette.blue.shadeDefault;
               },

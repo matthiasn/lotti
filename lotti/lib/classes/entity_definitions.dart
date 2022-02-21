@@ -62,6 +62,7 @@ class EntityDefinition with _$EntityDefinition {
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
+    required DateTime lastReviewed,
     required String name,
     required String description,
     required List<DashboardItem> items,

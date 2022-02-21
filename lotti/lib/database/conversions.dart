@@ -144,6 +144,7 @@ DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
     id: dashboard.id,
     createdAt: dashboard.createdAt,
     updatedAt: dashboard.updatedAt,
+    lastReviewed: dashboard.lastReviewed,
     serialized: jsonEncode(dashboard),
     private: dashboard.private,
     deleted: dashboard.deletedAt != null,

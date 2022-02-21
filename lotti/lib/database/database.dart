@@ -31,7 +31,7 @@ class JournalDb extends _$JournalDb {
   JournalDb() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration {

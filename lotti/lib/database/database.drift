@@ -113,6 +113,7 @@ CREATE TABLE dashboard_definitions (
   name TEXT NOT NULL UNIQUE,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
+  last_reviewed DATETIME NOT NULL,
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
   private BOOLEAN NOT NULL DEFAULT FALSE,
   serialized TEXT NOT NULL,

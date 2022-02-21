@@ -24,16 +24,6 @@ class DashboardDetailRoute extends StatefulWidget {
   }
 }
 
-class Animal {
-  final int id;
-  final String name;
-
-  Animal({
-    required this.id,
-    required this.name,
-  });
-}
-
 class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
