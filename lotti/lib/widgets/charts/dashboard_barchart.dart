@@ -29,6 +29,10 @@ class DashboardBarChart extends StatelessWidget {
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType?>> typeSnapshot,
       ) {
+        if (typeSnapshot.data == null || typeSnapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         MeasurableDataType? measurableDataType = typeSnapshot.data?.first;
 
         if (measurableDataType == null) {
