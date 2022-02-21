@@ -407,6 +407,10 @@ class JournalDb extends _$JournalDb {
     return allTagEntities().watch().map(tagStreamMapper);
   }
 
+  Stream<List<DashboardDefinition>> watchDashboards() {
+    return allDashboards().watch().map(dashboardStreamMapper);
+  }
+
   Stream<List<HabitDefinition>> watchHabitDefinitions() {
     return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
   }

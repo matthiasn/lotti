@@ -686,6 +686,17 @@ class PersistenceLogic {
     return linesAffected;
   }
 
+  Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) async {
+    int linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
+    await _outboxService.enqueueMessage(
+      SyncMessage.entityDefinition(
+        entityDefinition: dashboard,
+        status: SyncEntryStatus.update,
+      ),
+    );
+    return linesAffected;
+  }
+
   Future<String> addTagDefinition(String tagString) async {
     DateTime now = DateTime.now();
     String id = uuid.v1();

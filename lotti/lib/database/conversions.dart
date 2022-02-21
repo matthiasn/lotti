@@ -172,8 +172,18 @@ TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
   return TagEntity.fromJson(json.decode(dbEntity.serialized));
 }
 
+DashboardDefinition fromDashboardDbEntity(
+    DashboardDefinitionDbEntity dbEntity) {
+  return DashboardDefinition.fromJson(json.decode(dbEntity.serialized));
+}
+
 List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
   return dbEntities.map((e) => fromTagDbEntity(e)).toList();
+}
+
+List<DashboardDefinition> dashboardStreamMapper(
+    List<DashboardDefinitionDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromDashboardDbEntity(e)).toList();
 }
 
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {

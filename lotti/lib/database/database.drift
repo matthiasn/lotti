@@ -298,6 +298,12 @@ SELECT * FROM tag_entities
   AND deleted = false
   ORDER BY tag COLLATE NOCASE;
 
+allDashboards:
+SELECT * FROM dashboard_definitions
+  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND deleted = false
+  ORDER BY name COLLATE NOCASE;
+
 allHabitDefinitions:
 SELECT * FROM habit_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));

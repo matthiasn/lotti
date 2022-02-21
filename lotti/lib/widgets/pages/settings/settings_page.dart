@@ -3,6 +3,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/misc/app_bar_version.dart';
 import 'package:lotti/widgets/pages/add/health_page.dart';
 import 'package:lotti/widgets/pages/settings/conflicts.dart';
+import 'package:lotti/widgets/pages/settings/dashboards/dashboards_page.dart';
 import 'package:lotti/widgets/pages/settings/flags_page.dart';
 import 'package:lotti/widgets/pages/settings/insights_page.dart';
 import 'package:lotti/widgets/pages/settings/maintenance_page.dart';
@@ -12,7 +13,7 @@ import 'package:lotti/widgets/pages/settings/outbox_monitor.dart';
 import 'package:lotti/widgets/pages/settings/settings_card.dart';
 import 'package:lotti/widgets/pages/settings/settings_icon.dart';
 import 'package:lotti/widgets/pages/settings/sync_settings.dart';
-import 'package:lotti/widgets/pages/settings/tags_page.dart';
+import 'package:lotti/widgets/pages/settings/tags/tags_page.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: ListView(
                   children: [
                     SettingsCard(
-                      icon: const SettingsIcon(MdiIcons.tag),
+                      icon: const SettingsIcon(MdiIcons.tagOutline),
                       title: 'Tags',
                       onTap: () {
                         Navigator.of(context).push(
@@ -65,7 +66,20 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                     SettingsCard(
-                      icon: const SettingsIcon(MdiIcons.heart),
+                      icon: const SettingsIcon(Icons.insights_outlined),
+                      title: 'Dashboards',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (BuildContext context) {
+                              return const DashboardsPage();
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: const SettingsIcon(MdiIcons.heartOutline),
                       title: 'Health Import',
                       onTap: () {
                         Navigator.of(context).push(
@@ -105,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     SettingsCard(
                       icon: OutboxBadgeIcon(
-                        icon: const SettingsIcon(MdiIcons.mailbox),
+                        icon: const SettingsIcon(MdiIcons.mailboxOutline),
                       ),
                       title: 'Sync Outbox',
                       onTap: () {
@@ -119,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                     SettingsCard(
-                      icon: const SettingsIcon(MdiIcons.information),
+                      icon: const SettingsIcon(MdiIcons.informationOutline),
                       title: 'Logs',
                       onTap: () {
                         Navigator.of(context).push(
@@ -132,7 +146,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                     SettingsCard(
-                      icon: const SettingsIcon(MdiIcons.emoticonConfused),
+                      icon:
+                          const SettingsIcon(MdiIcons.emoticonConfusedOutline),
                       title: 'Conflicts',
                       onTap: () {
                         Navigator.of(context).push(
@@ -145,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       },
                     ),
                     SettingsCard(
-                      icon: const SettingsIcon(MdiIcons.flag),
+                      icon: const SettingsIcon(MdiIcons.flagOutline),
                       title: 'Flags',
                       onTap: () {
                         Navigator.of(context).push(
