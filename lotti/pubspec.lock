@@ -8,6 +8,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "31.0.0"
+  adaptive_dialog:
+    dependency: "direct main"
+    description:
+      name: adaptive_dialog
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.3.0"
   analyzer:
     dependency: transitive
     description:
@@ -22,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.8.0"
+  animations:
+    dependency: transitive
+    description:
+      name: animations
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.2"
   ansicolor:
     dependency: transitive
     description:

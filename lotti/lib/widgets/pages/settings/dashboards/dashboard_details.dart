@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -216,13 +217,30 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 iconSize: 24,
                                 tooltip: 'Delete',
                                 color: AppColors.appBarFgColor,
-                                onPressed: () {
-                                  persistenceLogic.upsertDashboardDefinition(
-                                    widget.dashboard.copyWith(
-                                      deletedAt: DateTime.now(),
-                                    ),
+                                onPressed: () async {
+                                  const deleteKey = 'deleteKey';
+                                  final result =
+                                      await showModalActionSheet<String>(
+                                    context: context,
+                                    title:
+                                        'Do you want to delete this dashboard?',
+                                    actions: [
+                                      const SheetAction(
+                                        icon: Icons.warning,
+                                        label: 'Delete dashboard',
+                                        key: deleteKey,
+                                      ),
+                                    ],
                                   );
-                                  Navigator.pop(context);
+
+                                  if (result == deleteKey) {
+                                    persistenceLogic.upsertDashboardDefinition(
+                                      widget.dashboard.copyWith(
+                                        deletedAt: DateTime.now(),
+                                      ),
+                                    );
+                                    Navigator.pop(context);
+                                  }
                                 },
                               ),
                             ],
