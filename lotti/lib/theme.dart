@@ -95,3 +95,17 @@ TextStyle formLabelStyle = TextStyle(
   fontFamily: 'Oswald',
   fontSize: 20,
 );
+
+TextStyle titleStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 32,
+  fontWeight: FontWeight.w300,
+);
+
+TextStyle multiSelectStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontWeight: FontWeight.w100,
+  fontSize: 24,
+);

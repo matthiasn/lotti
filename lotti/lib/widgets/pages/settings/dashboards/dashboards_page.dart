@@ -170,18 +170,14 @@ class DashboardCard extends StatelessWidget {
         child: ListTile(
           contentPadding:
               const EdgeInsets.only(left: 16, top: 4, bottom: 8, right: 16),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                dashboard.name,
-                style: TextStyle(
-                  color: AppColors.entryBgColor,
-                  fontFamily: 'Oswald',
-                  fontSize: 20.0,
-                ),
-              ),
-            ],
+          title: Text(
+            dashboard.name,
+            style: TextStyle(
+              color: AppColors.entryTextColor,
+              fontFamily: 'Oswald',
+              fontSize: 24.0,
+              fontWeight: FontWeight.w300,
+            ),
           ),
           enabled: true,
           onTap: () {
