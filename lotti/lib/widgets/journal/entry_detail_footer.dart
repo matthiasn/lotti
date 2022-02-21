@@ -1,3 +1,4 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -197,16 +198,30 @@ class EntryInfoRow extends StatelessWidget {
                 },
                 value: liveEntity.meta.flag == EntryFlag.import,
               ),
-              SwitchRow(
-                label: 'Trash:',
-                activeColor: AppColors.error,
-                onChanged: (bool value) {
-                  if (value) {
+              IconButton(
+                icon: const Icon(MdiIcons.trashCanOutline),
+                iconSize: 24,
+                tooltip: 'Delete',
+                color: AppColors.appBarFgColor,
+                onPressed: () async {
+                  const deleteKey = 'deleteKey';
+                  final result = await showModalActionSheet<String>(
+                    context: context,
+                    title: 'Do you want to delete this journal entry?',
+                    actions: [
+                      const SheetAction(
+                        icon: Icons.warning,
+                        label: 'Delete journal entry',
+                        key: deleteKey,
+                      ),
+                    ],
+                  );
+
+                  if (result == deleteKey) {
                     persistenceLogic.deleteJournalEntity(liveEntity);
                     Navigator.pop(context);
                   }
                 },
-                value: liveEntity.meta.deletedAt != null,
               ),
             ],
           );
