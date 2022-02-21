@@ -57,9 +57,12 @@ class AppColors {
   static Color listItemText = bodyBgColor;
 }
 
-class AppNumbers {
-  static const double borderRadius = 3.0;
-}
+const double chipBorderRadius = 8.0;
+
+const chipPadding = EdgeInsets.symmetric(
+  vertical: 2,
+  horizontal: 8,
+);
 
 TextStyle inputStyle = TextStyle(
   color: AppColors.entryTextColor,

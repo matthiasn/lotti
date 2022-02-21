@@ -242,13 +242,9 @@ class TagWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(chipBorderRadius),
       child: Container(
-        padding: const EdgeInsets.only(
-          left: 8,
-          right: 2,
-          bottom: 2,
-        ),
+        padding: chipPadding,
         color: getTagColor(tagEntity),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -43,24 +43,21 @@ class TagsViewWidget extends StatelessWidget {
           child: Column(
             children: [
               Wrap(
-                spacing: 3,
-                runSpacing: 2,
+                spacing: 4,
+                runSpacing: 4,
                 children: tagsFromTagIds
                     .map(
                       (TagEntity tagEntity) => Padding(
                         padding: const EdgeInsets.only(bottom: 1.0),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(chipBorderRadius),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 1,
-                              horizontal: 4,
-                            ),
+                            padding: chipPadding,
                             color: getTagColor(tagEntity),
                             child: Text(
                               tagEntity.tag,
                               style: const TextStyle(
-                                fontSize: 14,
+                                fontSize: 12,
                                 fontFamily: 'Oswald',
                               ),
                             ),

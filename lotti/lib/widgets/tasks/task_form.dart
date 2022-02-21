@@ -146,7 +146,7 @@ class TaskForm extends StatelessWidget {
                     runSpacing: 4,
                     spacing: 4,
                     labelStyle: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.w300,
                       fontFamily: 'Oswald',
                     ),
