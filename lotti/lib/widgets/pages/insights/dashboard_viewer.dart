@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_barchart.dart';
 
 class DashboardViewerRoute extends StatelessWidget {
   const DashboardViewerRoute({
@@ -40,8 +41,14 @@ class DashboardViewerRoute extends StatelessWidget {
                       dashboard.description,
                       style: formLabelStyle,
                     ),
-                    SizedBox(height: 24,),
-                    Text(dashboard.toString()),
+                    SizedBox(
+                      height: 16,
+                    ),
+                    ...dashboard.items.map(
+                      (DashboardItem e) => DashboardBarChart(
+                        measurableDataTypeId: e.id,
+                      ),
+                    ),
                   ],
                 ),
               ),
