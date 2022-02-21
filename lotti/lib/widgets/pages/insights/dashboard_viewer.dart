@@ -26,34 +26,33 @@ class DashboardViewerRoute extends StatelessWidget {
         ),
         backgroundColor: AppColors.headerBgColor,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                color: AppColors.headerBgColor,
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    Text(
-                      dashboard.description,
-                      style: formLabelStyle,
-                    ),
-                    SizedBox(
-                      height: 16,
-                    ),
-                    ...dashboard.items.map(
-                      (DashboardItem e) => DashboardBarChart(
-                        measurableDataTypeId: e.id,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  color: AppColors.headerBgColor,
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      ...dashboard.items.map(
+                        (DashboardItem e) => DashboardBarChart(
+                          measurableDataTypeId: e.id,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        dashboard.description,
+                        style: formLabelStyle,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -28,6 +28,11 @@ class DashboardBarChart extends StatelessWidget {
         AsyncSnapshot<List<MeasurableDataType?>> typeSnapshot,
       ) {
         MeasurableDataType? measurableDataType = typeSnapshot.data?.first;
+
+        if (measurableDataType == null) {
+          return const SizedBox.shrink();
+        }
+
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
             measurableDataType!.name,

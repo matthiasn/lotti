@@ -342,7 +342,7 @@ class AddTask extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(4.0),
       child: FloatingActionButton(
-        heroTag: 'task',
+        heroTag: 'addTask',
         child: const Icon(
           Icons.add,
           size: 24,
