@@ -57,9 +57,12 @@ class AppColors {
   static Color listItemText = bodyBgColor;
 }
 
-class AppNumbers {
-  static const double borderRadius = 3.0;
-}
+const double chipBorderRadius = 8.0;
+
+const chipPadding = EdgeInsets.symmetric(
+  vertical: 2,
+  horizontal: 8,
+);
 
 TextStyle inputStyle = TextStyle(
   color: AppColors.entryTextColor,
@@ -94,4 +97,18 @@ TextStyle formLabelStyle = TextStyle(
   height: 1.6,
   fontFamily: 'Oswald',
   fontSize: 20,
+);
+
+TextStyle titleStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 32,
+  fontWeight: FontWeight.w300,
+);
+
+TextStyle multiSelectStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontWeight: FontWeight.w100,
+  fontSize: 24,
 );

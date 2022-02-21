@@ -137,6 +137,22 @@ HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
   );
 }
 
+DashboardDefinitionDbEntity dashboardDefinitionDbEntity(
+  DashboardDefinition dashboard,
+) {
+  return DashboardDefinitionDbEntity(
+    id: dashboard.id,
+    createdAt: dashboard.createdAt,
+    updatedAt: dashboard.updatedAt,
+    lastReviewed: dashboard.lastReviewed,
+    serialized: jsonEncode(dashboard),
+    private: dashboard.private,
+    deleted: dashboard.deletedAt != null,
+    active: dashboard.active,
+    name: dashboard.name,
+  );
+}
+
 LinkedDbEntry linkedDbEntity(EntryLink link) {
   return LinkedDbEntry(
     id: link.id,
@@ -157,8 +173,18 @@ TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
   return TagEntity.fromJson(json.decode(dbEntity.serialized));
 }
 
+DashboardDefinition fromDashboardDbEntity(
+    DashboardDefinitionDbEntity dbEntity) {
+  return DashboardDefinition.fromJson(json.decode(dbEntity.serialized));
+}
+
 List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
   return dbEntities.map((e) => fromTagDbEntity(e)).toList();
+}
+
+List<DashboardDefinition> dashboardStreamMapper(
+    List<DashboardDefinitionDbEntity> dbEntities) {
+  return dbEntities.map((e) => fromDashboardDbEntity(e)).toList();
 }
 
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {

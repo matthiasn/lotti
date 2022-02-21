@@ -42,7 +42,7 @@ class EntityDefinition with _$EntityDefinition {
     AggregationType? aggregationType,
   }) = MeasurableDataType;
 
-  factory EntityDefinition.habitDefinition({
+  factory EntityDefinition.habit({
     required String id,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -57,6 +57,22 @@ class EntityDefinition with _$EntityDefinition {
     required bool private,
     DateTime? deletedAt,
   }) = HabitDefinition;
+
+  factory EntityDefinition.dashboard({
+    required String id,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required DateTime lastReviewed,
+    required String name,
+    required String description,
+    required List<DashboardItem> items,
+    required String version,
+    required VectorClock? vectorClock,
+    required bool active,
+    required bool private,
+    @Default(30) int days,
+    DateTime? deletedAt,
+  }) = DashboardDefinition;
 
   factory EntityDefinition.fromJson(Map<String, dynamic> json) =>
       _$EntityDefinitionFromJson(json);
@@ -86,4 +102,18 @@ class HabitCompletionData with _$HabitCompletionData {
 
   factory HabitCompletionData.fromJson(Map<String, dynamic> json) =>
       _$HabitCompletionDataFromJson(json);
+}
+
+@freezed
+class DashboardItem with _$DashboardItem {
+  factory DashboardItem.measurement({
+    required String id,
+  }) = _MeasurementDashboardItem;
+
+  factory DashboardItem.quantitative({
+    required String id,
+  }) = _QuantitativeDashboardItem;
+
+  factory DashboardItem.fromJson(Map<String, dynamic> json) =>
+      _$DashboardItemFromJson(json);
 }

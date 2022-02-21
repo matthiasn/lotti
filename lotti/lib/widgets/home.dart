@@ -4,6 +4,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/bottom_nav/flagged_badge_icon.dart';
 import 'package:lotti/widgets/bottom_nav/tasks_badge_icon.dart';
 import 'package:lotti/widgets/pages/flagged_entries_page.dart';
+import 'package:lotti/widgets/pages/insights/dashboards_view_page.dart';
 import 'package:lotti/widgets/pages/journal_page.dart';
 import 'package:lotti/widgets/pages/my_day.dart';
 import 'package:lotti/widgets/pages/settings/outbox_badge.dart';
@@ -49,12 +50,13 @@ class _HomePageState extends State<HomePage> {
                     const JournalPage(),
                     const FlaggedEntriesPage(),
                     const TasksPage(),
+                    const DashboardsViewPage(),
                     MyDayPage(),
                     const SettingsPage(),
                   ],
                 ),
                 TimeRecordingIndicator(),
-                AudioRecordingIndicator(),
+                const AudioRecordingIndicator(),
               ],
             ),
           ),
@@ -79,6 +81,11 @@ class _HomePageState extends State<HomePage> {
               tooltip: '',
             ),
             const BottomNavigationBarItem(
+              icon: Icon(Icons.lightbulb_outline),
+              label: 'Insights',
+              tooltip: '',
+            ),
+            const BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today),
               label: 'My Day',
               tooltip: '',
@@ -92,7 +99,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
           selectedItemColor: Colors.amber[800],
-          unselectedItemColor: AppColors.headerFontColor,
+          unselectedItemColor: AppColors.entryTextColor,
           backgroundColor: AppColors.headerBgColor,
           currentIndex: _pageIndex,
           onTap: (int index) {

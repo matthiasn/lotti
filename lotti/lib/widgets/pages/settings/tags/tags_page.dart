@@ -44,12 +44,12 @@ class _TagsPageState extends State<TagsPage> {
       margins: const EdgeInsets.only(top: 8),
       queryStyle: const TextStyle(
         fontFamily: 'Lato',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: FontWeight.w300,
       ),
       hintStyle: const TextStyle(
         fontFamily: 'Lato',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: FontWeight.w300,
       ),
       physics: const BouncingScrollPhysics(),
