@@ -41,6 +41,7 @@ class DashboardViewerRoute extends StatelessWidget {
                       ...dashboard.items.map(
                         (DashboardItem e) => DashboardBarChart(
                           measurableDataTypeId: e.id,
+                          durationDays: dashboard.days,
                         ),
                       ),
                       Text(

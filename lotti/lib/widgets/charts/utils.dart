@@ -13,7 +13,7 @@ class SumPerDay {
   }
 }
 
-const days = 15;
+const days = 30;
 const duration = Duration(days: days + 1);
 
 List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {

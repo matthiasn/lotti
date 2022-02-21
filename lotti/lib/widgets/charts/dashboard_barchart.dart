@@ -15,9 +15,11 @@ class DashboardBarChart extends StatelessWidget {
   DashboardBarChart({
     Key? key,
     required this.measurableDataTypeId,
+    required this.durationDays,
   }) : super(key: key);
 
   final JournalDb _db = getIt<JournalDb>();
+  final int durationDays;
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +37,8 @@ class DashboardBarChart extends StatelessWidget {
 
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
-            measurableDataType!.name,
-            DateTime.now().subtract(duration),
+            measurableDataType.name,
+            DateTime.now().subtract(Duration(days: durationDays)),
           ),
           builder: (
             BuildContext context,
