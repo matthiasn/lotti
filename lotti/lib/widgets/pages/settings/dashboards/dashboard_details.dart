@@ -58,6 +58,13 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
     }
   }
 
+  void dismissItem(int index) {
+    setState(() {
+      dashboardItems = dashboardItems ?? widget.dashboard.items;
+      dashboardItems!.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MeasurableDataType>>(
@@ -194,12 +201,19 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 (dashboardItems ?? widget.dashboard.items)
                                     .length,
                                 (int index) {
-                                  return DashboardItemCard(
-                                    item: (dashboardItems ??
-                                            widget.dashboard.items)
-                                        .elementAt(index),
-                                    measurableTypes: measurableDataTypes,
-                                    key: Key('dashboard-item-$index'),
+                                  List<DashboardItem> items =
+                                      dashboardItems ?? widget.dashboard.items;
+                                  DashboardItem item = items.elementAt(index);
+
+                                  return Dismissible(
+                                    onDismissed: (_) {
+                                      dismissItem(index);
+                                    },
+                                    key: Key('dashboard-item-${item.hashCode}'),
+                                    child: DashboardItemCard(
+                                      item: item,
+                                      measurableTypes: measurableDataTypes,
+                                    ),
                                   );
                                 },
                               ),
