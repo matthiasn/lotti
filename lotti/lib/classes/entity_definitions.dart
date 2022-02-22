@@ -110,9 +110,11 @@ class DashboardItem with _$DashboardItem {
     required String id,
   }) = _MeasurementDashboardItem;
 
-  factory DashboardItem.quantitative({
-    required String id,
-  }) = _QuantitativeDashboardItem;
+  factory DashboardItem.healthLineChart({
+    required String lineColor,
+    required String healthType,
+    required String name,
+  }) = _HealthLineDashboardItem;
 
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);

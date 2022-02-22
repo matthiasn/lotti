@@ -38,12 +38,19 @@ class DashboardViewerRoute extends StatelessWidget {
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      ...dashboard.items.map(
-                        (DashboardItem e) => DashboardBarChart(
-                          measurableDataTypeId: e.id,
-                          durationDays: dashboard.days,
-                        ),
-                      ),
+                      ...dashboard.items.map((DashboardItem dashboardItem) {
+                        return dashboardItem.map(
+                          measurement: (measurement) {
+                            return DashboardBarChart(
+                              measurableDataTypeId: measurement.id,
+                              durationDays: dashboard.days,
+                            );
+                          },
+                          healthLineChart: (healthLineChart) {
+                            return const SizedBox.shrink();
+                          },
+                        );
+                      }),
                       Text(
                         dashboard.description,
                         style: formLabelStyle,

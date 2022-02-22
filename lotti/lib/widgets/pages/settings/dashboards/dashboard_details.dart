@@ -1,4 +1,5 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -51,13 +52,6 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                 ))
             .toList();
 
-        final Set<String> priorSelection =
-            widget.dashboard.items.map((e) => e.id).toSet();
-
-        List<MeasurableDataType> initialSelection = measurableDataTypes
-            .where((e) => priorSelection.contains(e.id))
-            .toList();
-
         return Scaffold(
           backgroundColor: AppColors.bodyBgColor,
           appBar: AppBar(
@@ -104,161 +98,259 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
             ],
             backgroundColor: AppColors.headerBgColor,
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    color: AppColors.headerBgColor,
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        FormBuilder(
-                          key: _formKey,
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
-                          child: Column(
-                            children: <Widget>[
-                              FormTextField(
-                                initialValue: widget.dashboard.name,
-                                labelText: 'Name',
-                                name: 'name',
-                                key: const Key('dashboard_name_field'),
-                              ),
-                              FormTextField(
-                                initialValue: widget.dashboard.description,
-                                labelText: 'Description',
-                                name: 'description',
-                                key: const Key('dashboard_description_field'),
-                              ),
-                              FormBuilderSwitch(
-                                name: 'private',
-                                initialValue: widget.dashboard.private,
-                                title: Text(
-                                  'Private: ',
-                                  style: formLabelStyle,
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      color: AppColors.headerBgColor,
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          FormBuilder(
+                            key: _formKey,
+                            autovalidateMode:
+                                AutovalidateMode.onUserInteraction,
+                            child: Column(
+                              children: <Widget>[
+                                FormTextField(
+                                  initialValue: widget.dashboard.name,
+                                  labelText: 'Name',
+                                  name: 'name',
+                                  key: const Key('dashboard_name_field'),
                                 ),
-                                activeColor: AppColors.private,
-                              ),
-                              FormBuilderSwitch(
-                                name: 'active',
-                                initialValue: widget.dashboard.active,
-                                title: Text(
-                                  'Active: ',
-                                  style: formLabelStyle,
+                                FormTextField(
+                                  initialValue: widget.dashboard.description,
+                                  labelText: 'Description',
+                                  name: 'description',
+                                  key: const Key('dashboard_description_field'),
                                 ),
-                                activeColor: AppColors.starredGold,
-                              ),
-                            ],
+                                FormBuilderSwitch(
+                                  name: 'private',
+                                  initialValue: widget.dashboard.private,
+                                  title: Text(
+                                    'Private: ',
+                                    style: formLabelStyle,
+                                  ),
+                                  activeColor: AppColors.private,
+                                ),
+                                FormBuilderSwitch(
+                                  name: 'active',
+                                  initialValue: widget.dashboard.active,
+                                  title: Text(
+                                    'Active: ',
+                                    style: formLabelStyle,
+                                  ),
+                                  activeColor: AppColors.starredGold,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        if (multiSelectItems.isNotEmpty)
-                          MultiSelectDialogField<MeasurableDataType?>(
-                            searchable: true,
-                            backgroundColor: AppColors.bodyBgColor,
-                            items: multiSelectItems,
-                            initialValue: initialSelection,
-                            title: Text(
-                              "Measurement Types",
-                              style: titleStyle,
-                            ),
-                            checkColor: AppColors.entryTextColor,
-                            selectedColor: Colors.blue,
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(40),
-                              ),
-                              border: Border.all(
-                                color: AppColors.entryTextColor,
-                                width: 2,
-                              ),
-                            ),
-                            itemsTextStyle: multiSelectStyle,
-                            selectedItemsTextStyle: multiSelectStyle.copyWith(
-                              fontWeight: FontWeight.normal,
-                            ),
-                            unselectedColor: AppColors.entryTextColor,
-                            searchIcon: Icon(
-                              Icons.search,
-                              size: 32,
-                              color: AppColors.entryTextColor,
-                            ),
-                            searchTextStyle: formLabelStyle,
-                            searchHintStyle: formLabelStyle,
-                            buttonIcon: Icon(
-                              MdiIcons.tapeMeasure,
-                              color: AppColors.entryTextColor,
-                            ),
-                            buttonText: Text(
-                              "Measurement types",
-                              style: TextStyle(
-                                color: AppColors.entryTextColor,
-                                fontSize: 16,
-                              ),
-                            ),
-                            onConfirm: (List<MeasurableDataType?> selection) {
-                              dashboardItems = [];
-                              for (MeasurableDataType? selected in selection) {
-                                if (selected != null) {
-                                  dashboardItems?.add(DashboardItem.measurement(
-                                      id: selected.id));
-                                }
-                              }
-                            },
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                icon: const Icon(MdiIcons.trashCanOutline),
-                                iconSize: 24,
-                                tooltip: 'Delete',
-                                color: AppColors.appBarFgColor,
-                                onPressed: () async {
-                                  const deleteKey = 'deleteKey';
-                                  final result =
-                                      await showModalActionSheet<String>(
-                                    context: context,
-                                    title:
-                                        'Do you want to delete this dashboard?',
-                                    actions: [
-                                      const SheetAction(
-                                        icon: Icons.warning,
-                                        label: 'Delete dashboard',
-                                        key: deleteKey,
-                                      ),
-                                    ],
+                          const SizedBox(height: 24),
+                          Theme(
+                            data: ThemeData(canvasColor: Colors.transparent),
+                            child: ReorderableListView(
+                              shrinkWrap: true,
+                              onReorder: (int oldIndex, int newIndex) {
+                                setState(() {
+                                  dashboardItems =
+                                      dashboardItems ?? widget.dashboard.items;
+                                  final movedItem =
+                                      dashboardItems!.removeAt(oldIndex);
+                                  final insertionIndex = newIndex > oldIndex
+                                      ? newIndex - 1
+                                      : newIndex;
+                                  dashboardItems!
+                                      .insert(insertionIndex, movedItem);
+                                });
+                              },
+                              children: List.generate(
+                                (dashboardItems ?? widget.dashboard.items)
+                                    .length,
+                                (int index) {
+                                  return DashboardItemCard(
+                                    item: (dashboardItems ??
+                                            widget.dashboard.items)
+                                        .elementAt(index),
+                                    measurableTypes: measurableDataTypes,
+                                    key: Key('dashboard-item-$index'),
                                   );
-
-                                  if (result == deleteKey) {
-                                    persistenceLogic.upsertDashboardDefinition(
-                                      widget.dashboard.copyWith(
-                                        deletedAt: DateTime.now(),
-                                      ),
-                                    );
-                                    Navigator.pop(context);
+                                },
+                              ),
+                            ),
+                          ),
+                          if (multiSelectItems.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 8,
+                              ),
+                              child:
+                                  MultiSelectDialogField<MeasurableDataType?>(
+                                searchable: true,
+                                backgroundColor: AppColors.bodyBgColor,
+                                items: multiSelectItems,
+                                initialValue: [],
+                                title: Text(
+                                  "Add Measurement Types",
+                                  style: titleStyle,
+                                ),
+                                checkColor: AppColors.entryTextColor,
+                                selectedColor: Colors.blue,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(40),
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.entryTextColor,
+                                    width: 2,
+                                  ),
+                                ),
+                                itemsTextStyle: multiSelectStyle,
+                                selectedItemsTextStyle:
+                                    multiSelectStyle.copyWith(
+                                  fontWeight: FontWeight.normal,
+                                ),
+                                unselectedColor: AppColors.entryTextColor,
+                                searchIcon: Icon(
+                                  Icons.search,
+                                  size: 32,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                searchTextStyle: formLabelStyle,
+                                searchHintStyle: formLabelStyle,
+                                buttonIcon: Icon(
+                                  MdiIcons.tapeMeasure,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                buttonText: Text(
+                                  "Add Measurement types",
+                                  style: TextStyle(
+                                    color: AppColors.entryTextColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                onConfirm:
+                                    (List<MeasurableDataType?> selection) {
+                                  dashboardItems = [];
+                                  for (MeasurableDataType? selected
+                                      in selection) {
+                                    if (selected != null) {
+                                      dashboardItems?.add(
+                                          DashboardItem.measurement(
+                                              id: selected.id));
+                                    }
                                   }
                                 },
                               ),
-                            ],
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(MdiIcons.trashCanOutline),
+                                  iconSize: 24,
+                                  tooltip: 'Delete',
+                                  color: AppColors.appBarFgColor,
+                                  onPressed: () async {
+                                    const deleteKey = 'deleteKey';
+                                    final result =
+                                        await showModalActionSheet<String>(
+                                      context: context,
+                                      title:
+                                          'Do you want to delete this dashboard?',
+                                      actions: [
+                                        const SheetAction(
+                                          icon: Icons.warning,
+                                          label: 'Delete dashboard',
+                                          key: deleteKey,
+                                        ),
+                                      ],
+                                    );
+
+                                    if (result == deleteKey) {
+                                      persistenceLogic
+                                          .upsertDashboardDefinition(
+                                        widget.dashboard.copyWith(
+                                          deletedAt: DateTime.now(),
+                                        ),
+                                      );
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class DashboardItemCard extends StatelessWidget {
+  final DashboardItem item;
+  final List<MeasurableDataType> measurableTypes;
+
+  const DashboardItemCard({
+    Key? key,
+    required this.item,
+    required this.measurableTypes,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    String itemName = item.map(
+      measurement: (measurement) {
+        return measurableTypes
+            .where((m) => measurement.id == m.id)
+            .toList()
+            .first
+            .displayName;
+      },
+      healthLineChart: (healthLineChart) => healthLineChart.name,
+    );
+
+    return Card(
+      color: AppColors.headerBgColor,
+      elevation: 8.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: SingleChildScrollView(
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                itemName,
+                style: TextStyle(
+                  color: AppColors.entryTextColor,
+                  fontFamily: 'Oswald',
+                  fontSize: 20.0,
+                ),
+              ),
+            ],
+          ),
+          enabled: true,
+        ),
+      ),
     );
   }
 }
