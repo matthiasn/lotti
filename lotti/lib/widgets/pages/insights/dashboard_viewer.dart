@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_barchart.dart';
+import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 
 class DashboardViewerRoute extends StatelessWidget {
   const DashboardViewerRoute({
@@ -40,14 +41,17 @@ class DashboardViewerRoute extends StatelessWidget {
                     children: [
                       ...dashboard.items.map((DashboardItem dashboardItem) {
                         return dashboardItem.map(
-                          measurement: (measurement) {
+                          measurement: (DashboardMeasurementItem measurement) {
                             return DashboardBarChart(
                               measurableDataTypeId: measurement.id,
                               durationDays: dashboard.days,
                             );
                           },
-                          healthLineChart: (healthLineChart) {
-                            return const SizedBox.shrink();
+                          healthChart: (DashboardHealthItem healthChart) {
+                            return DashboardHealthChart(
+                              chartConfig: healthChart,
+                              durationDays: dashboard.days,
+                            );
                           },
                         );
                       }),

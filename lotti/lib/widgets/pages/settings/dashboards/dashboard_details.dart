@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -220,19 +221,80 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                             ),
                           ),
                           if (multiSelectItems.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 8,
+                            SizedBox(
+                              width: 280,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 16.0,
+                                  right: 16.0,
+                                  top: 16,
+                                ),
+                                child:
+                                    MultiSelectDialogField<MeasurableDataType?>(
+                                  searchable: true,
+                                  backgroundColor: AppColors.bodyBgColor,
+                                  items: multiSelectItems,
+                                  initialValue: [],
+                                  title: Text(
+                                    "Add Measurement Charts",
+                                    style: titleStyle,
+                                  ),
+                                  checkColor: AppColors.entryTextColor,
+                                  selectedColor: Colors.blue,
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.1),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(40),
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.entryTextColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  itemsTextStyle: multiSelectStyle,
+                                  selectedItemsTextStyle:
+                                      multiSelectStyle.copyWith(
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                  unselectedColor: AppColors.entryTextColor,
+                                  searchIcon: Icon(
+                                    Icons.search,
+                                    size: 32,
+                                    color: AppColors.entryTextColor,
+                                  ),
+                                  searchTextStyle: formLabelStyle,
+                                  searchHintStyle: formLabelStyle,
+                                  buttonIcon: Icon(
+                                    MdiIcons.tapeMeasure,
+                                    color: AppColors.entryTextColor,
+                                  ),
+                                  buttonText: Text(
+                                    "Add Measurement Charts",
+                                    style: TextStyle(
+                                      color: AppColors.entryTextColor,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  onConfirm: onConfirmAddMeasurement,
+                                ),
+                              ),
+                            ),
+                          SizedBox(
+                            width: 280,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                right: 16.0,
+                                top: 16,
                               ),
                               child:
                                   MultiSelectDialogField<MeasurableDataType?>(
                                 searchable: true,
                                 backgroundColor: AppColors.bodyBgColor,
                                 items: multiSelectItems,
-                                initialValue: [],
+                                initialValue: const [],
                                 title: Text(
-                                  "Add Measurement Types",
+                                  "Add Health Charts",
                                   style: titleStyle,
                                 ),
                                 checkColor: AppColors.entryTextColor,
@@ -261,11 +323,11 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 searchTextStyle: formLabelStyle,
                                 searchHintStyle: formLabelStyle,
                                 buttonIcon: Icon(
-                                  MdiIcons.tapeMeasure,
+                                  MdiIcons.stethoscope,
                                   color: AppColors.entryTextColor,
                                 ),
                                 buttonText: Text(
-                                  "Add Measurement types",
+                                  "Add Health Charts",
                                   style: TextStyle(
                                     color: AppColors.entryTextColor,
                                     fontSize: 16,
@@ -274,6 +336,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 onConfirm: onConfirmAddMeasurement,
                               ),
                             ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Row(
@@ -314,6 +377,85 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                               ],
                             ),
                           ),
+                          Button(
+                            'add weight',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType: 'HealthDataType.WEIGHT',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                          Button(
+                            'add resting heart rate',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType:
+                                        'HealthDataType.RESTING_HEART_RATE',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                          Button(
+                            'add HRV',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType:
+                                        'HealthDataType.HEART_RATE_VARIABILITY_SDNN',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                          Button(
+                            'add BP systolic',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType:
+                                        'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                          Button(
+                            'add BP diastolic',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType:
+                                        'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -342,14 +484,14 @@ class DashboardItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     String itemName = item.map(
       measurement: (measurement) {
-        var matches = measurableTypes.where((m) => measurement.id == m.id);
-
+        Iterable<MeasurableDataType> matches =
+            measurableTypes.where((m) => measurement.id == m.id);
         if (matches.isNotEmpty) {
           return matches.first.displayName;
         }
         return '';
       },
-      healthLineChart: (healthLineChart) => healthLineChart.name,
+      healthChart: (healthLineChart) => healthLineChart.healthType,
     );
 
     return Card(
@@ -364,16 +506,17 @@ class DashboardItemCard extends StatelessWidget {
           horizontal: 16,
         ),
         leading: item.map(
-            measurement: (_) => Icon(
-                  MdiIcons.tapeMeasure,
-                  size: 32,
-                  color: AppColors.entryTextColor,
-                ),
-            healthLineChart: (_) => Icon(
-                  MdiIcons.heart,
-                  size: 32,
-                  color: AppColors.entryTextColor,
-                )),
+          measurement: (_) => Icon(
+            MdiIcons.tapeMeasure,
+            size: 32,
+            color: AppColors.entryTextColor,
+          ),
+          healthChart: (_) => Icon(
+            MdiIcons.stethoscope,
+            size: 32,
+            color: AppColors.entryTextColor,
+          ),
+        ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
