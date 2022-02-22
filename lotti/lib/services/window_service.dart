@@ -76,4 +76,9 @@ class WindowService implements WindowListener {
 
   @override
   void onWindowUnmaximize() {}
+
+  @override
+  void onWindowClose() {
+    // TODO: implement onWindowClose
+  }
 }
