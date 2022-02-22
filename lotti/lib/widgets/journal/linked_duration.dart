@@ -53,20 +53,23 @@ class LinkedDuration extends StatelessWidget {
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width - 80,
                     child: ClipRRect(
-                      child: ProgressBar(
-                        progress: progress,
-                        total: total,
-                        progressBarColor:
-                            (progress >= total) ? Colors.red : Colors.green,
-                        thumbColor: Colors.white,
-                        barHeight: 8.0,
-                        thumbRadius: 8.0,
-                        onSeek: (newPosition) {},
-                        timeLabelTextStyle: TextStyle(
-                          fontFamily: 'Oswald',
-                          color: AppColors.entryTextColor,
-                          fontWeight: FontWeight.normal,
-                          fontSize: 14.0,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 4.0),
+                        child: ProgressBar(
+                          progress: progress,
+                          total: total,
+                          progressBarColor:
+                              (progress >= total) ? Colors.red : Colors.green,
+                          thumbColor: Colors.white,
+                          barHeight: 8.0,
+                          thumbRadius: 8.0,
+                          onSeek: (newPosition) {},
+                          timeLabelTextStyle: TextStyle(
+                            fontFamily: 'Oswald',
+                            color: AppColors.entryTextColor,
+                            fontWeight: FontWeight.normal,
+                            fontSize: 14.0,
+                          ),
                         ),
                       ),
                     ),
