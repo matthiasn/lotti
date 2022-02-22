@@ -35,6 +35,29 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
 
   List<DashboardItem>? dashboardItems;
 
+  void onConfirmAddMeasurement(List<MeasurableDataType?> selection) {
+    dashboardItems = dashboardItems ?? widget.dashboard.items;
+
+    for (MeasurableDataType? selected in selection) {
+      if (selected != null) {
+        bool exists = dashboardItems!.where(
+          (DashboardItem item) {
+            return item.maybeMap(
+              measurement: (m) => m.id == selected.id,
+              orElse: () => false,
+            );
+          },
+        ).isNotEmpty;
+
+        if (!exists) {
+          setState(() {
+            dashboardItems?.add(DashboardItem.measurement(id: selected.id));
+          });
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MeasurableDataType>>(
@@ -234,18 +257,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                     fontSize: 16,
                                   ),
                                 ),
-                                onConfirm:
-                                    (List<MeasurableDataType?> selection) {
-                                  dashboardItems = [];
-                                  for (MeasurableDataType? selected
-                                      in selection) {
-                                    if (selected != null) {
-                                      dashboardItems?.add(
-                                          DashboardItem.measurement(
-                                              id: selected.id));
-                                    }
-                                  }
-                                },
+                                onConfirm: onConfirmAddMeasurement,
                               ),
                             ),
                           Padding(
@@ -316,11 +328,12 @@ class DashboardItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     String itemName = item.map(
       measurement: (measurement) {
-        return measurableTypes
-            .where((m) => measurement.id == m.id)
-            .toList()
-            .first
-            .displayName;
+        var matches = measurableTypes.where((m) => measurement.id == m.id);
+
+        if (matches.isNotEmpty) {
+          return matches.first.displayName;
+        }
+        return '';
       },
       healthLineChart: (healthLineChart) => healthLineChart.name,
     );
@@ -331,25 +344,36 @@ class DashboardItemCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: SingleChildScrollView(
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                itemName,
-                style: TextStyle(
-                  color: AppColors.entryTextColor,
-                  fontFamily: 'Oswald',
-                  fontSize: 20.0,
-                ),
-              ),
-            ],
-          ),
-          enabled: true,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 8,
+          horizontal: 16,
         ),
+        leading: item.map(
+            measurement: (_) => Icon(
+                  MdiIcons.tapeMeasure,
+                  size: 32,
+                  color: AppColors.entryTextColor,
+                ),
+            healthLineChart: (_) => Icon(
+                  MdiIcons.heart,
+                  size: 32,
+                  color: AppColors.entryTextColor,
+                )),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              itemName,
+              style: TextStyle(
+                color: AppColors.entryTextColor,
+                fontFamily: 'Oswald',
+                fontSize: 20.0,
+              ),
+            ),
+          ],
+        ),
+        enabled: true,
       ),
     );
   }
