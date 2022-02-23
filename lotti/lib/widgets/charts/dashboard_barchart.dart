@@ -78,11 +78,7 @@ class DashboardBarChart extends StatelessWidget {
                     children: [
                       Text(
                         measurableDataType.displayName,
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          fontSize: 16,
-                          color: AppColors.bodyBgColor,
-                        ),
+                        style: chartTitleStyle,
                       ),
                       Expanded(
                         child: charts.TimeSeriesChart(

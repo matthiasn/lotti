@@ -14,6 +14,8 @@ class DashboardViewerRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
+
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: AppBar(
@@ -37,13 +39,13 @@ class DashboardViewerRoute extends StatelessWidget {
                   measurement: (DashboardMeasurementItem measurement) {
                     return DashboardBarChart(
                       measurableDataTypeId: measurement.id,
-                      durationDays: dashboard.days,
+                      durationDays: durationDays,
                     );
                   },
                   healthChart: (DashboardHealthItem healthChart) {
                     return DashboardHealthChart(
                       chartConfig: healthChart,
-                      durationDays: dashboard.days,
+                      durationDays: durationDays,
                     );
                   },
                 );

@@ -143,11 +143,7 @@ class DashboardHealthChart extends StatelessWidget {
                   Text(
                     healthTypes[chartConfig.healthType]?.displayName ??
                         chartConfig.healthType,
-                    style: TextStyle(
-                      fontFamily: 'Oswald',
-                      fontSize: 16,
-                      color: AppColors.bodyBgColor,
-                    ),
+                    style: chartTitleStyle,
                   ),
                   Expanded(
                     child: charts.TimeSeriesChart(

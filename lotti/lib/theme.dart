@@ -112,3 +112,10 @@ TextStyle multiSelectStyle = TextStyle(
   fontWeight: FontWeight.w100,
   fontSize: 24,
 );
+
+TextStyle chartTitleStyle = TextStyle(
+  fontFamily: 'Oswald',
+  fontSize: 16,
+  color: AppColors.bodyBgColor,
+  fontWeight: FontWeight.w300,
+);
