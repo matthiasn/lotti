@@ -37,6 +37,26 @@ Map<String, HealthTypeConfig> healthTypes = {
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
+  'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
+    displayName: 'Resting Heart Rate',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'HealthDataType.HEART_RATE_VARIABILITY_SDNN': HealthTypeConfig(
+    displayName: 'Heart Rate Variability',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'HealthDataType.BLOOD_PRESSURE_SYSTOLIC': HealthTypeConfig(
+    displayName: 'Systolic Blood Pressure',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'HealthDataType.BLOOD_PRESSURE_DIASTOLIC': HealthTypeConfig(
+    displayName: 'Diastolic Blood Pressure',
+    chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
 };
 
 class Observation {
@@ -110,7 +130,7 @@ class DashboardHealthChart extends StatelessWidget {
           )
         ];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.only(bottom: 8),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -133,7 +153,11 @@ class DashboardHealthChart extends StatelessWidget {
                     child: charts.TimeSeriesChart(
                       seriesList,
                       animate: true,
-                      defaultRenderer: charts.LineRendererConfig<DateTime>(),
+                      defaultRenderer: charts.LineRendererConfig<DateTime>(
+                        includePoints: true,
+                        strokeWidthPx: 2.5,
+                        radiusPx: 4,
+                      ),
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                         tickProviderSpec: charts.BasicNumericTickProviderSpec(
                           zeroBound: false,

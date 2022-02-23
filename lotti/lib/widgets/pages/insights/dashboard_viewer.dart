@@ -29,39 +29,28 @@ class DashboardViewerRoute extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  color: AppColors.headerBgColor,
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      ...dashboard.items.map((DashboardItem dashboardItem) {
-                        return dashboardItem.map(
-                          measurement: (DashboardMeasurementItem measurement) {
-                            return DashboardBarChart(
-                              measurableDataTypeId: measurement.id,
-                              durationDays: dashboard.days,
-                            );
-                          },
-                          healthChart: (DashboardHealthItem healthChart) {
-                            return DashboardHealthChart(
-                              chartConfig: healthChart,
-                              durationDays: dashboard.days,
-                            );
-                          },
-                        );
-                      }),
-                      Text(
-                        dashboard.description,
-                        style: formLabelStyle,
-                      ),
-                    ],
-                  ),
-                ),
+              ...dashboard.items.map((DashboardItem dashboardItem) {
+                return dashboardItem.map(
+                  measurement: (DashboardMeasurementItem measurement) {
+                    return DashboardBarChart(
+                      measurableDataTypeId: measurement.id,
+                      durationDays: dashboard.days,
+                    );
+                  },
+                  healthChart: (DashboardHealthItem healthChart) {
+                    return DashboardHealthChart(
+                      chartConfig: healthChart,
+                      durationDays: dashboard.days,
+                    );
+                  },
+                );
+              }),
+              Text(
+                dashboard.description,
+                style: formLabelStyle,
               ),
             ],
           ),

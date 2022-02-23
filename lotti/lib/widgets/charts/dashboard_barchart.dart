@@ -66,7 +66,7 @@ class DashboardBarChart extends StatelessWidget {
               )
             ];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
