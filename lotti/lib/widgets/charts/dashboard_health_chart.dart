@@ -103,10 +103,13 @@ class DashboardHealthChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Duration duration = Duration(days: durationDays);
+    final DateTime from = DateTime.now().subtract(duration);
+
     return StreamBuilder<List<JournalEntity?>>(
       stream: _db.watchQuantitativeByType(
         chartConfig.healthType,
-        DateTime.now().subtract(Duration(days: durationDays)),
+        from,
       ),
       builder: (
         BuildContext context,
@@ -149,6 +152,18 @@ class DashboardHealthChart extends StatelessWidget {
                     child: charts.TimeSeriesChart(
                       seriesList,
                       animate: true,
+                      behaviors: [
+                        charts.RangeAnnotation([
+                          charts.RangeAnnotationSegment(
+                            from,
+                            DateTime.now(),
+                            charts.RangeAnnotationAxisType.domain,
+                          ),
+                        ]),
+                      ],
+                      domainAxis: charts.DateTimeAxisSpec(
+                        tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
+                      ),
                       defaultRenderer: charts.LineRendererConfig<DateTime>(
                         includePoints: true,
                         strokeWidthPx: 2.5,
