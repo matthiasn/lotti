@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:lotti/classes/journal_entities.dart';
 
 class SumPerDay {
@@ -48,3 +49,20 @@ List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
 
   return aggregated;
 }
+
+charts.RangeAnnotation<DateTime> chartRangeAnnotation(
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  return charts.RangeAnnotation([
+    charts.RangeAnnotationSegment(
+      rangeStart,
+      rangeEnd,
+      charts.RangeAnnotationAxisType.domain,
+    )
+  ]);
+}
+
+const timeSeriesAxis = charts.DateTimeAxisSpec(
+  tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
+);

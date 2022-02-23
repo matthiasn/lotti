@@ -16,6 +16,13 @@ class DashboardViewerRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
 
+    final Duration duration = Duration(days: durationDays);
+    final DateTime now = DateTime.now();
+    final DateTime from = now.subtract(duration);
+    final DateTime rangeStart = DateTime(from.year, from.month, from.day);
+    final DateTime rangeEnd =
+        DateTime(now.year, now.month, now.day, 23, 59, 59);
+
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
       appBar: AppBar(
@@ -39,13 +46,15 @@ class DashboardViewerRoute extends StatelessWidget {
                   measurement: (DashboardMeasurementItem measurement) {
                     return DashboardBarChart(
                       measurableDataTypeId: measurement.id,
-                      durationDays: durationDays,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
                     );
                   },
                   healthChart: (DashboardHealthItem healthChart) {
                     return DashboardHealthChart(
                       chartConfig: healthChart,
-                      durationDays: durationDays,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
                     );
                   },
                 );

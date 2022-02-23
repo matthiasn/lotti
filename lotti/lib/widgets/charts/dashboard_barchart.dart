@@ -11,15 +11,17 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardBarChart extends StatelessWidget {
   final String measurableDataTypeId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   DashboardBarChart({
     Key? key,
     required this.measurableDataTypeId,
-    required this.durationDays,
+    required this.rangeStart,
+    required this.rangeEnd,
   }) : super(key: key);
 
   final JournalDb _db = getIt<JournalDb>();
-  final int durationDays;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,7 @@ class DashboardBarChart extends StatelessWidget {
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
             measurableDataType.name,
-            DateTime.now().subtract(Duration(days: durationDays)),
+            rangeStart,
           ),
           builder: (
             BuildContext context,
@@ -85,6 +87,10 @@ class DashboardBarChart extends StatelessWidget {
                           seriesList,
                           animate: true,
                           defaultRenderer: charts.BarRendererConfig<DateTime>(),
+                          behaviors: [
+                            chartRangeAnnotation(rangeStart, rangeEnd),
+                          ],
+                          domainAxis: timeSeriesAxis,
                         ),
                       ),
                     ],

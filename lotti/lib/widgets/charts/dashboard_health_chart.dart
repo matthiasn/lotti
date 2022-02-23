@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 enum HealthChartType {
   lineChart,
@@ -91,26 +92,22 @@ List<Observation> aggregateNone(List<JournalEntity?> entities) {
 
 class DashboardHealthChart extends StatelessWidget {
   final DashboardHealthItem chartConfig;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   DashboardHealthChart({
     Key? key,
     required this.chartConfig,
-    required this.durationDays,
+    required this.rangeStart,
+    required this.rangeEnd,
   }) : super(key: key);
 
   final JournalDb _db = getIt<JournalDb>();
-  final int durationDays;
 
   @override
   Widget build(BuildContext context) {
-    final Duration duration = Duration(days: durationDays);
-    final DateTime from = DateTime.now().subtract(duration);
-
     return StreamBuilder<List<JournalEntity?>>(
-      stream: _db.watchQuantitativeByType(
-        chartConfig.healthType,
-        from,
-      ),
+      stream: _db.watchQuantitativeByType(chartConfig.healthType, rangeStart),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
@@ -153,17 +150,9 @@ class DashboardHealthChart extends StatelessWidget {
                       seriesList,
                       animate: true,
                       behaviors: [
-                        charts.RangeAnnotation([
-                          charts.RangeAnnotationSegment(
-                            from,
-                            DateTime.now(),
-                            charts.RangeAnnotationAxisType.domain,
-                          ),
-                        ]),
+                        chartRangeAnnotation(rangeStart, rangeEnd),
                       ],
-                      domainAxis: charts.DateTimeAxisSpec(
-                        tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
-                      ),
+                      domainAxis: timeSeriesAxis,
                       defaultRenderer: charts.LineRendererConfig<DateTime>(
                         includePoints: true,
                         strokeWidthPx: 2.5,
