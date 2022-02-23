@@ -2,7 +2,6 @@ import 'dart:core';
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -114,7 +113,6 @@ List<Observation> aggregateDailyMax(List<JournalEntity?> entities) {
       maxByDay[dayString] = max(n, entity.data.value);
     }
   }
-  debugPrint(maxByDay.toString());
 
   List<Observation> aggregated = [];
   for (final dayString in maxByDay.keys) {

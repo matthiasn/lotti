@@ -456,6 +456,21 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                               });
                             },
                           ),
+                          Button(
+                            'add steps',
+                            onPressed: () {
+                              setState(() {
+                                dashboardItems =
+                                    dashboardItems ?? widget.dashboard.items;
+                                dashboardItems?.add(
+                                  DashboardItem.healthChart(
+                                    color: 'color',
+                                    healthType: 'cumulative_step_count',
+                                  ),
+                                );
+                              });
+                            },
+                          ),
                         ],
                       ),
                     ),
