@@ -7,88 +7,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-enum HealthChartType {
-  lineChart,
-  barChart,
-}
-
-enum HealthAggregationType {
-  none,
-  dailySum,
-  dailyMax,
-}
-
-class HealthTypeConfig {
-  final HealthChartType chartType;
-  final HealthAggregationType aggregationType;
-  final String displayName;
-
-  HealthTypeConfig({
-    required this.displayName,
-    required this.chartType,
-    required this.aggregationType,
-  });
-}
-
-Map<String, HealthTypeConfig> healthTypes = {
-  'HealthDataType.WEIGHT': HealthTypeConfig(
-    displayName: 'Weight',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
-    displayName: 'Resting Heart Rate',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.HEART_RATE_VARIABILITY_SDNN': HealthTypeConfig(
-    displayName: 'Heart Rate Variability',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.BLOOD_PRESSURE_SYSTOLIC': HealthTypeConfig(
-    displayName: 'Systolic Blood Pressure',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.BLOOD_PRESSURE_DIASTOLIC': HealthTypeConfig(
-    displayName: 'Diastolic Blood Pressure',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-};
-
-class Observation {
-  final DateTime dateTime;
-  final num value;
-
-  Observation(this.dateTime, this.value);
-
-  @override
-  String toString() {
-    return '$dateTime $value';
-  }
-}
-
-List<Observation> aggregateNone(List<JournalEntity?> entities) {
-  List<Observation> aggregated = [];
-
-  for (JournalEntity? entity in entities) {
-    entity?.maybeMap(
-      quantitative: (QuantitativeEntry quant) {
-        aggregated.add(Observation(
-          quant.data.dateFrom,
-          quant.data.value,
-        ));
-      },
-      orElse: () {},
-    );
-  }
-
-  return aggregated;
-}
 
 class DashboardHealthChart extends StatelessWidget {
   final DashboardHealthItem chartConfig;
@@ -117,16 +37,17 @@ class DashboardHealthChart extends StatelessWidget {
         if (items == null || items.isEmpty) {
           return const SizedBox.shrink();
         }
+        String dataType = chartConfig.healthType;
 
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
-            id: chartConfig.healthType,
+            id: dataType,
             colorFn: (Observation val, _) {
               return charts.MaterialPalette.blue.shadeDefault;
             },
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: aggregateNone(items),
+            data: aggregateByType(items, dataType),
           )
         ];
         return Padding(
