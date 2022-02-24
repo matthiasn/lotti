@@ -415,6 +415,13 @@ class JournalDb extends _$JournalDb {
     return quantitativeByType(type, from).watch().map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchQuantitativeByTypes(
+    List<String> types,
+    DateTime from,
+  ) {
+    return quantitativeByTypes(types, from).watch().map(entityStreamMapper);
+  }
+
   Stream<List<Conflict>> watchConflicts(
     ConflictStatus status, {
     int limit = 1000,
