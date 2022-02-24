@@ -88,7 +88,7 @@ class DashboardBarChart extends StatelessWidget {
                         domainAxis: timeSeriesAxis,
                       ),
                       Positioned(
-                        top: 0,
+                        top: -4,
                         left: MediaQuery.of(context).size.width / 4,
                         child: SizedBox(
                           width: MediaQuery.of(context).size.width / 2,

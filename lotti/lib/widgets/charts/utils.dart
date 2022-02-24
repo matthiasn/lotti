@@ -15,7 +15,7 @@ class SumPerDay {
 }
 
 const days = 30;
-const duration = Duration(days: days + 1);
+const defaultChartDuration = Duration(days: days + 1);
 
 String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
