@@ -48,6 +48,7 @@ class DashboardViewerRoute extends StatelessWidget {
                       measurableDataTypeId: measurement.id,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
+                      enableCreate: true,
                     );
                   },
                   healthChart: (DashboardHealthItem healthChart) {
