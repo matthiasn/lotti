@@ -26,6 +26,20 @@ class DashboardHealthChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String dataType = chartConfig.healthType;
+    HealthTypeConfig? healthType = healthTypes[dataType];
+    charts.SeriesRendererConfig<DateTime>? defaultRenderer;
+
+    if (healthType?.chartType == HealthChartType.barChart) {
+      defaultRenderer = charts.BarRendererConfig<DateTime>();
+    } else {
+      defaultRenderer = charts.LineRendererConfig<DateTime>(
+        includePoints: true,
+        strokeWidthPx: 2.5,
+        radiusPx: 4,
+      );
+    }
+
     return StreamBuilder<List<JournalEntity?>>(
       stream: _db.watchQuantitativeByType(chartConfig.healthType, rangeStart),
       builder: (
@@ -37,7 +51,6 @@ class DashboardHealthChart extends StatelessWidget {
         if (items == null || items.isEmpty) {
           return const SizedBox.shrink();
         }
-        String dataType = chartConfig.healthType;
 
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
@@ -57,15 +70,10 @@ class DashboardHealthChart extends StatelessWidget {
             child: Container(
               key: Key('${chartConfig.hashCode}'),
               color: Colors.white,
-              height: 160,
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
+              height: 120,
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Stack(
                 children: [
-                  Text(
-                    healthTypes[chartConfig.healthType]?.displayName ??
-                        chartConfig.healthType,
-                    style: chartTitleStyle,
-                  ),
                   Expanded(
                     child: charts.TimeSeriesChart(
                       seriesList,
@@ -74,16 +82,31 @@ class DashboardHealthChart extends StatelessWidget {
                         chartRangeAnnotation(rangeStart, rangeEnd),
                       ],
                       domainAxis: timeSeriesAxis,
-                      defaultRenderer: charts.LineRendererConfig<DateTime>(
-                        includePoints: true,
-                        strokeWidthPx: 2.5,
-                        radiusPx: 4,
-                      ),
+                      defaultRenderer: defaultRenderer,
                       primaryMeasureAxis: const charts.NumericAxisSpec(
                         tickProviderSpec: charts.BasicNumericTickProviderSpec(
                           zeroBound: false,
                           desiredTickCount: 5,
                         ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: MediaQuery.of(context).size.width / 4,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width / 2,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            healthTypes[chartConfig.healthType]?.displayName ??
+                                chartConfig.healthType,
+                            style: chartTitleStyle,
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -56,17 +56,17 @@ Map<String, HealthTypeConfig> healthTypes = {
   ),
   'cumulative_step_count': HealthTypeConfig(
     displayName: 'Steps',
-    chartType: HealthChartType.lineChart,
+    chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyMax,
   ),
   'cumulative_flights_climbed': HealthTypeConfig(
     displayName: 'Flights of stairs',
-    chartType: HealthChartType.lineChart,
+    chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyMax,
   ),
   'HealthDataType.WORKOUT': HealthTypeConfig(
     displayName: 'Workout time',
-    chartType: HealthChartType.lineChart,
+    chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailySum,
   ),
 };
@@ -75,7 +75,7 @@ class Observation extends Equatable {
   final DateTime dateTime;
   final num value;
 
-  Observation(this.dateTime, this.value);
+  const Observation(this.dateTime, this.value);
 
   @override
   String toString() {

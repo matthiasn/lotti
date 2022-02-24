@@ -74,14 +74,10 @@ class DashboardBarChart extends StatelessWidget {
                 child: Container(
                   key: Key(measurableDataType.description),
                   color: Colors.white,
-                  height: 160,
+                  height: 120,
                   padding: const EdgeInsets.all(8.0),
-                  child: Column(
+                  child: Stack(
                     children: [
-                      Text(
-                        measurableDataType.displayName,
-                        style: chartTitleStyle,
-                      ),
                       Expanded(
                         child: charts.TimeSeriesChart(
                           seriesList,
@@ -91,6 +87,24 @@ class DashboardBarChart extends StatelessWidget {
                             chartRangeAnnotation(rangeStart, rangeEnd),
                           ],
                           domainAxis: timeSeriesAxis,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: MediaQuery.of(context).size.width / 4,
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width / 2,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                measurableDataType.displayName,
+                                style: chartTitleStyle,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

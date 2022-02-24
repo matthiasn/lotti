@@ -55,5 +55,9 @@ charts.RangeAnnotation<DateTime> chartRangeAnnotation(
 }
 
 const timeSeriesAxis = charts.DateTimeAxisSpec(
-  tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
-);
+    tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
+    renderSpec: charts.SmallTickRendererSpec(
+      labelStyle: charts.TextStyleSpec(
+        fontSize: 10,
+      ),
+    ));
