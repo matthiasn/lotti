@@ -45,9 +45,8 @@ class DashboardHealthChart extends StatelessWidget {
       defaultRenderer = charts.BarRendererConfig<DateTime>();
     } else {
       defaultRenderer = charts.LineRendererConfig<DateTime>(
-        includePoints: true,
-        strokeWidthPx: 2.5,
-        radiusPx: 4,
+        includePoints: false,
+        strokeWidthPx: 2,
       );
     }
 
