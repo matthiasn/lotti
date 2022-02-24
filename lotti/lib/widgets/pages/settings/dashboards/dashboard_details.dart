@@ -223,6 +223,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                             data: ThemeData(canvasColor: Colors.transparent),
                             child: ReorderableListView(
                               shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               onReorder: (int oldIndex, int newIndex) {
                                 setState(() {
                                   dashboardItems =
