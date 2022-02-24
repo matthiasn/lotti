@@ -46,8 +46,9 @@ class DashboardBarChart extends StatelessWidget {
 
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
-            measurableDataType.name,
-            rangeStart,
+            type: measurableDataType.name,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
           ),
           builder: (
             BuildContext context,

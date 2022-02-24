@@ -37,7 +37,11 @@ class DashboardHealthBpChart extends StatelessWidget {
     );
 
     return StreamBuilder<List<JournalEntity?>>(
-      stream: _db.watchQuantitativeByTypes(dataTypes, rangeStart),
+      stream: _db.watchQuantitativeByTypes(
+        types: dataTypes,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,

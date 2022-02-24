@@ -288,7 +288,8 @@ measurementsByType:
 SELECT * FROM journal
   WHERE type = 'MeasurementEntry'
   AND subtype = :subtype
-  AND date_from >= :from
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
   AND deleted = false
   ORDER BY date_from DESC;
 
@@ -296,7 +297,8 @@ quantitativeByType:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
   AND subtype = :subtype
-  AND date_from >= :from
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
   AND deleted = false
   ORDER BY date_from DESC;
 
@@ -304,7 +306,8 @@ quantitativeByTypes:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
   AND subtype IN :subtypes
-  AND date_from >= :from
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
   AND deleted = false
   ORDER BY date_from DESC;
 
