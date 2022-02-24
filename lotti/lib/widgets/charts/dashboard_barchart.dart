@@ -78,16 +78,14 @@ class DashboardBarChart extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   child: Stack(
                     children: [
-                      Expanded(
-                        child: charts.TimeSeriesChart(
-                          seriesList,
-                          animate: true,
-                          defaultRenderer: charts.BarRendererConfig<DateTime>(),
-                          behaviors: [
-                            chartRangeAnnotation(rangeStart, rangeEnd),
-                          ],
-                          domainAxis: timeSeriesAxis,
-                        ),
+                      charts.TimeSeriesChart(
+                        seriesList,
+                        animate: true,
+                        defaultRenderer: charts.BarRendererConfig<DateTime>(),
+                        behaviors: [
+                          chartRangeAnnotation(rangeStart, rangeEnd),
+                        ],
+                        domainAxis: timeSeriesAxis,
                       ),
                       Positioned(
                         top: 0,

@@ -74,20 +74,18 @@ class DashboardHealthChart extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Stack(
                 children: [
-                  Expanded(
-                    child: charts.TimeSeriesChart(
-                      seriesList,
-                      animate: true,
-                      behaviors: [
-                        chartRangeAnnotation(rangeStart, rangeEnd),
-                      ],
-                      domainAxis: timeSeriesAxis,
-                      defaultRenderer: defaultRenderer,
-                      primaryMeasureAxis: const charts.NumericAxisSpec(
-                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                          zeroBound: false,
-                          desiredTickCount: 5,
-                        ),
+                  charts.TimeSeriesChart(
+                    seriesList,
+                    animate: true,
+                    behaviors: [
+                      chartRangeAnnotation(rangeStart, rangeEnd),
+                    ],
+                    domainAxis: timeSeriesAxis,
+                    defaultRenderer: defaultRenderer,
+                    primaryMeasureAxis: const charts.NumericAxisSpec(
+                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                        zeroBound: false,
+                        desiredTickCount: 5,
                       ),
                     ),
                   ),
