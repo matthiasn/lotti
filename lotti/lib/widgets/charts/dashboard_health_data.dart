@@ -20,9 +20,11 @@ class HealthTypeConfig {
   final HealthChartType chartType;
   final HealthAggregationType aggregationType;
   final String displayName;
+  final String healthType;
 
   HealthTypeConfig({
     required this.displayName,
+    required this.healthType,
     required this.chartType,
     required this.aggregationType,
   });
@@ -31,41 +33,49 @@ class HealthTypeConfig {
 Map<String, HealthTypeConfig> healthTypes = {
   'HealthDataType.WEIGHT': HealthTypeConfig(
     displayName: 'Weight',
+    healthType: 'HealthDataType.WEIGHT',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
   'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
     displayName: 'Resting Heart Rate',
+    healthType: 'HealthDataType.RESTING_HEART_RATE',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
   'HealthDataType.HEART_RATE_VARIABILITY_SDNN': HealthTypeConfig(
     displayName: 'Heart Rate Variability',
+    healthType: 'HealthDataType.HEART_RATE_VARIABILITY_SDNN',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
   'HealthDataType.BLOOD_PRESSURE_SYSTOLIC': HealthTypeConfig(
     displayName: 'Systolic Blood Pressure',
+    healthType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
   'HealthDataType.BLOOD_PRESSURE_DIASTOLIC': HealthTypeConfig(
     displayName: 'Diastolic Blood Pressure',
+    healthType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
     chartType: HealthChartType.lineChart,
     aggregationType: HealthAggregationType.none,
   ),
   'cumulative_step_count': HealthTypeConfig(
     displayName: 'Steps',
+    healthType: 'cumulative_step_count',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyMax,
   ),
   'cumulative_flights_climbed': HealthTypeConfig(
     displayName: 'Flights of stairs',
+    healthType: 'cumulative_flights_climbed',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailyMax,
   ),
   'HealthDataType.WORKOUT': HealthTypeConfig(
     displayName: 'Workout time',
+    healthType: 'HealthDataType.WORKOUT',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailySum,
   ),

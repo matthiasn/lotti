@@ -8,7 +8,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -60,6 +59,34 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
     }
   }
 
+  void onConfirmAddHealthType(List<HealthTypeConfig?> selection) {
+    dashboardItems = dashboardItems ?? widget.dashboard.items;
+
+    for (HealthTypeConfig? selected in selection) {
+      if (selected != null) {
+        bool exists = dashboardItems!.where(
+          (DashboardItem item) {
+            return item.maybeMap(
+              healthChart: (m) => m.healthType == selected.healthType,
+              orElse: () => false,
+            );
+          },
+        ).isNotEmpty;
+
+        if (!exists) {
+          setState(() {
+            dashboardItems?.add(
+              DashboardItem.healthChart(
+                color: 'color',
+                healthType: selected.healthType,
+              ),
+            );
+          });
+        }
+      }
+    }
+  }
+
   void dismissItem(int index) {
     setState(() {
       dashboardItems = dashboardItems ?? widget.dashboard.items;
@@ -77,12 +104,22 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
       ) {
         List<MeasurableDataType> measurableDataTypes = snapshot.data ?? [];
 
-        final multiSelectItems = measurableDataTypes
-            .map((item) => MultiSelectItem<MeasurableDataType>(
-                  item,
-                  item.displayName,
-                ))
-            .toList();
+        final List<MultiSelectItem<MeasurableDataType>> measurableSelectItems =
+            measurableDataTypes
+                .map((item) => MultiSelectItem<MeasurableDataType>(
+                      item,
+                      item.displayName,
+                    ))
+                .toList();
+
+        final List<MultiSelectItem<HealthTypeConfig>> healthSelectItems =
+            healthTypes.keys.map((String typeName) {
+          HealthTypeConfig? item = healthTypes[typeName];
+          return MultiSelectItem<HealthTypeConfig>(
+            item!,
+            item.displayName,
+          );
+        }).toList();
 
         return Scaffold(
           backgroundColor: AppColors.bodyBgColor,
@@ -221,7 +258,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                               ),
                             ),
                           ),
-                          if (multiSelectItems.isNotEmpty)
+                          if (measurableSelectItems.isNotEmpty)
                             SizedBox(
                               width: 280,
                               child: Padding(
@@ -234,7 +271,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                     MultiSelectDialogField<MeasurableDataType?>(
                                   searchable: true,
                                   backgroundColor: AppColors.bodyBgColor,
-                                  items: multiSelectItems,
+                                  items: measurableSelectItems,
                                   initialValue: [],
                                   title: Text(
                                     "Add Measurement Charts",
@@ -288,11 +325,10 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 right: 16.0,
                                 top: 16,
                               ),
-                              child:
-                                  MultiSelectDialogField<MeasurableDataType?>(
+                              child: MultiSelectDialogField<HealthTypeConfig?>(
                                 searchable: true,
                                 backgroundColor: AppColors.bodyBgColor,
-                                items: multiSelectItems,
+                                items: healthSelectItems,
                                 initialValue: const [],
                                 title: Text(
                                   "Add Health Charts",
@@ -334,7 +370,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                     fontSize: 16,
                                   ),
                                 ),
-                                onConfirm: onConfirmAddMeasurement,
+                                onConfirm: onConfirmAddHealthType,
                               ),
                             ),
                           ),
@@ -377,100 +413,6 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                 ),
                               ],
                             ),
-                          ),
-                          Button(
-                            'add weight',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType: 'HealthDataType.WEIGHT',
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                          Button(
-                            'add resting heart rate',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType:
-                                        'HealthDataType.RESTING_HEART_RATE',
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                          Button(
-                            'add HRV',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType:
-                                        'HealthDataType.HEART_RATE_VARIABILITY_SDNN',
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                          Button(
-                            'add BP systolic',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType:
-                                        'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                          Button(
-                            'add BP diastolic',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType:
-                                        'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                          Button(
-                            'add steps',
-                            onPressed: () {
-                              setState(() {
-                                dashboardItems =
-                                    dashboardItems ?? widget.dashboard.items;
-                                dashboardItems?.add(
-                                  DashboardItem.healthChart(
-                                    color: 'color',
-                                    healthType: 'cumulative_step_count',
-                                  ),
-                                );
-                              });
-                            },
                           ),
                         ],
                       ),
