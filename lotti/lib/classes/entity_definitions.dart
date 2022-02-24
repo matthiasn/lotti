@@ -108,11 +108,12 @@ class HabitCompletionData with _$HabitCompletionData {
 class DashboardItem with _$DashboardItem {
   factory DashboardItem.measurement({
     required String id,
-  }) = _MeasurementDashboardItem;
+  }) = DashboardMeasurementItem;
 
-  factory DashboardItem.quantitative({
-    required String id,
-  }) = _QuantitativeDashboardItem;
+  factory DashboardItem.healthChart({
+    required String color,
+    required String healthType,
+  }) = DashboardHealthItem;
 
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);

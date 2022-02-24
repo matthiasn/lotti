@@ -292,6 +292,14 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+quantitativeByType:
+SELECT * FROM journal
+  WHERE type = 'QuantitativeEntry'
+  AND subtype = :subtype
+  AND date_from >= :from
+  AND deleted = false
+  ORDER BY date_from DESC;
+
 countJournalEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false;

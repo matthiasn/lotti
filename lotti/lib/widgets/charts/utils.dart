@@ -1,5 +1,6 @@
 import 'dart:core';
 
+import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:lotti/classes/journal_entities.dart';
 
 class SumPerDay {
@@ -16,21 +17,12 @@ class SumPerDay {
 const days = 30;
 const duration = Duration(days: days + 1);
 
+String ymd(DateTime day) {
+  return day.toIso8601String().substring(0, 10);
+}
+
 List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
-  List<String> dayStrings = [];
   Map<String, num> sumsByDay = {};
-  DateTime now = DateTime.now();
-
-  String ymd(DateTime day) {
-    return day.toIso8601String().substring(0, 10);
-  }
-
-  for (int i = days; i >= 0; i--) {
-    DateTime day = now.subtract(Duration(days: i));
-    String dayString = ymd(day);
-    dayStrings.add(dayString);
-    sumsByDay[dayString] = 0;
-  }
 
   for (final entity in entities) {
     String dayString = ymd(entity!.meta.dateFrom);
@@ -41,10 +33,31 @@ List<SumPerDay> aggregateByDay(List<JournalEntity?> entities) {
   }
 
   List<SumPerDay> aggregated = [];
-  for (final dayString in dayStrings) {
+  for (final dayString in sumsByDay.keys) {
     DateTime day = DateTime.parse(dayString);
     aggregated.add(SumPerDay(day, sumsByDay[dayString] ?? 0));
   }
 
   return aggregated;
 }
+
+charts.RangeAnnotation<DateTime> chartRangeAnnotation(
+  DateTime rangeStart,
+  DateTime rangeEnd,
+) {
+  return charts.RangeAnnotation([
+    charts.RangeAnnotationSegment(
+      rangeStart,
+      rangeEnd,
+      charts.RangeAnnotationAxisType.domain,
+    )
+  ]);
+}
+
+const timeSeriesAxis = charts.DateTimeAxisSpec(
+    tickProviderSpec: charts.AutoDateTimeTickProviderSpec(),
+    renderSpec: charts.SmallTickRendererSpec(
+      labelStyle: charts.TextStyleSpec(
+        fontSize: 10,
+      ),
+    ));

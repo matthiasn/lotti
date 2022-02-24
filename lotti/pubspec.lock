@@ -273,14 +273,14 @@ packages:
       name: connectivity_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.2.1"
   connectivity_plus_linux:
     dependency: transitive
     description:
       name: connectivity_plus_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.3.0"
   connectivity_plus_macos:
     dependency: transitive
     description:
@@ -364,7 +364,7 @@ packages:
       name: dart_code_metrics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.10.1"
+    version: "4.11.0"
   dart_geohash:
     dependency: "direct main"
     description:
@@ -385,7 +385,7 @@ packages:
       name: dbus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.8"
+    version: "0.7.1"
   delta_markdown:
     dependency: "direct main"
     description:
@@ -630,7 +630,7 @@ packages:
       name: flutter_form_builder
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.1.0"
+    version: "7.1.1"
   flutter_health_fit:
     dependency: "direct main"
     description:
@@ -695,7 +695,7 @@ packages:
       name: flutter_local_notifications_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.1+1"
+    version: "0.4.2"
   flutter_local_notifications_platform_interface:
     dependency: transitive
     description:
@@ -742,7 +742,7 @@ packages:
       name: flutter_quill
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.1"
+    version: "4.0.5"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -829,7 +829,7 @@ packages:
       name: form_builder_validators
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.4.0"
+    version: "7.6.1"
   freezed:
     dependency: "direct dev"
     description:
@@ -883,7 +883,7 @@ packages:
       name: getwidget
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.4"
+    version: "2.0.5"
   glados:
     dependency: "direct dev"
     description:
@@ -933,6 +933,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.4.3"
+  hexcolor:
+    dependency: "direct main"
+    description:
+      name: hexcolor
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.6"
   hotkey_manager:
     dependency: "direct main"
     description:
@@ -995,28 +1002,28 @@ packages:
       name: image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.1"
+    version: "3.1.3"
   image_picker:
     dependency: transitive
     description:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.4+8"
+    version: "0.8.4+9"
   image_picker_for_web:
     dependency: transitive
     description:
       name: image_picker_for_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.5"
+    version: "2.1.6"
   image_picker_platform_interface:
     dependency: transitive
     description:
       name: image_picker_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   integration_test:
     dependency: "direct dev"
     description: flutter
@@ -1231,7 +1238,7 @@ packages:
       name: nm
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.4"
+    version: "0.5.0"
   node_preamble:
     dependency: transitive
     description:
@@ -1259,7 +1266,7 @@ packages:
       name: package_info_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.1"
+    version: "1.4.0"
   package_info_plus_linux:
     dependency: transitive
     description:
@@ -1660,7 +1667,7 @@ packages:
       name: sqlparser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.20.0"
+    version: "0.20.1"
   stack_trace:
     dependency: transitive
     description:
@@ -1709,21 +1716,21 @@ packages:
       name: syncfusion_flutter_calendar
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "19.4.52"
+    version: "19.4.53"
   syncfusion_flutter_core:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "19.4.52"
+    version: "19.4.53"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "19.4.52"
+    version: "19.4.53"
   synchronized:
     dependency: transitive
     description:
@@ -1877,7 +1884,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.5"
+    version: "3.0.6"
   vector_math:
     dependency: transitive
     description:
@@ -1968,14 +1975,14 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.1"
   window_manager:
     dependency: "direct main"
     description:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.6"
   wkt_parser:
     dependency: transitive
     description:

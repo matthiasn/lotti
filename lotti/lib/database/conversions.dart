@@ -10,15 +10,14 @@ import 'database.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
   final DateTime createdAt = entity.meta.createdAt;
-  final String subtype = entity
-      .maybeMap(
-        quantitative: (qd) => qd.data.dataType,
-        measurement: (qd) => qd.data.dataType.name,
-        survey: (SurveyEntry surveyEntry) =>
-            surveyEntry.data.taskResult.identifier,
-        orElse: () => '',
-      )
-      .toLowerCase();
+  final String subtype = entity.maybeMap(
+    quantitative: (QuantitativeEntry entry) => entry.data.dataType,
+    measurement: (MeasurementEntry entry) =>
+        entry.data.dataType.name.toLowerCase(),
+    survey: (SurveyEntry entry) =>
+        entry.data.taskResult.identifier.toLowerCase(),
+    orElse: () => '',
+  );
 
   final bool task = entity.maybeMap(
     task: (qd) => true,

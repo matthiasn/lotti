@@ -11,15 +11,17 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardBarChart extends StatelessWidget {
   final String measurableDataTypeId;
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
 
   DashboardBarChart({
     Key? key,
     required this.measurableDataTypeId,
-    required this.durationDays,
+    required this.rangeStart,
+    required this.rangeEnd,
   }) : super(key: key);
 
   final JournalDb _db = getIt<JournalDb>();
-  final int durationDays;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,7 @@ class DashboardBarChart extends StatelessWidget {
         return StreamBuilder<List<JournalEntity?>>(
           stream: _db.watchMeasurementsByType(
             measurableDataType.name,
-            DateTime.now().subtract(Duration(days: durationDays)),
+            rangeStart,
           ),
           builder: (
             BuildContext context,
@@ -66,29 +68,43 @@ class DashboardBarChart extends StatelessWidget {
               )
             ];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   key: Key(measurableDataType.description),
                   color: Colors.white,
-                  height: 160,
+                  height: 120,
                   padding: const EdgeInsets.all(8.0),
-                  child: Column(
+                  child: Stack(
                     children: [
-                      Text(
-                        measurableDataType.displayName,
-                        style: TextStyle(
-                          fontFamily: 'Oswald',
-                          fontSize: 16,
-                          color: AppColors.bodyBgColor,
-                        ),
-                      ),
                       Expanded(
                         child: charts.TimeSeriesChart(
                           seriesList,
                           animate: true,
                           defaultRenderer: charts.BarRendererConfig<DateTime>(),
+                          behaviors: [
+                            chartRangeAnnotation(rangeStart, rangeEnd),
+                          ],
+                          domainAxis: timeSeriesAxis,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: MediaQuery.of(context).size.width / 4,
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width / 2,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                measurableDataType.displayName,
+                                style: chartTitleStyle,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
