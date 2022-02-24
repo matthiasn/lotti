@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_barchart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardViewerRoute extends StatelessWidget {
   const DashboardViewerRoute({
@@ -14,14 +15,8 @@ class DashboardViewerRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
-
-    final Duration duration = Duration(days: durationDays);
-    final DateTime now = DateTime.now();
-    final DateTime from = now.subtract(duration);
-    final DateTime rangeStart = DateTime(from.year, from.month, from.day);
-    final DateTime rangeEnd =
-        DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final DateTime rangeStart = getRangeStart(context);
+    final DateTime rangeEnd = getRangeEnd();
 
     return Scaffold(
       backgroundColor: AppColors.bodyBgColor,
@@ -48,6 +43,7 @@ class DashboardViewerRoute extends StatelessWidget {
                       measurableDataTypeId: measurement.id,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
+                      enableCreate: true,
                     );
                   },
                   healthChart: (DashboardHealthItem healthChart) {

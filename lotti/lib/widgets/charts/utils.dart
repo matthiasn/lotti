@@ -1,6 +1,7 @@
 import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
 class SumPerDay {
@@ -15,7 +16,7 @@ class SumPerDay {
 }
 
 const days = 30;
-const duration = Duration(days: days + 1);
+const defaultChartDuration = Duration(days: days + 1);
 
 String ymd(DateTime day) {
   return day.toIso8601String().substring(0, 10);
@@ -61,3 +62,16 @@ const timeSeriesAxis = charts.DateTimeAxisSpec(
         fontSize: 10,
       ),
     ));
+
+DateTime getRangeStart(BuildContext context) {
+  int durationDays = (MediaQuery.of(context).size.width / 10).ceil();
+  final Duration duration = Duration(days: durationDays);
+  final DateTime now = DateTime.now();
+  final DateTime from = now.subtract(duration);
+  return DateTime(from.year, from.month, from.day);
+}
+
+DateTime getRangeEnd() {
+  final DateTime now = DateTime.now();
+  return DateTime(now.year, now.month, now.day, 23, 59, 59);
+}

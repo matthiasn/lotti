@@ -9,7 +9,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/charts/measurement_barchart.dart';
+import 'package:lotti/widgets/charts/dashboard_barchart.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
 
@@ -17,9 +18,11 @@ class NewMeasurementPage extends StatefulWidget {
   const NewMeasurementPage({
     Key? key,
     this.linked,
+    this.selected,
   }) : super(key: key);
 
   final JournalEntity? linked;
+  final MeasurableDataType? selected;
 
   @override
   State<NewMeasurementPage> createState() => _NewMeasurementPageState();
@@ -32,12 +35,13 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
   late final Stream<List<MeasurableDataType>> stream =
       _db.watchMeasurableDataTypes();
 
+  MeasurableDataType? selected;
+
   @override
   void initState() {
     super.initState();
+    selected = widget.selected;
   }
-
-  MeasurableDataType? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +52,11 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
       ) {
         List<MeasurableDataType> items = snapshot.data ?? [];
-        List<MeasurableDataType> favoriteItems =
-            items.where((m) => fromNullableBool(m.favorite)).toList();
 
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              'New Measurement',
+              selected?.displayName ?? 'New Measurement',
               style: TextStyle(
                 color: AppColors.entryTextColor,
                 fontFamily: 'Oswald',
@@ -68,9 +70,12 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                   _formKey.currentState!.save();
                   if (_formKey.currentState!.validate()) {
                     final formData = _formKey.currentState?.value;
+                    if (selected == null) {
+                      return;
+                    }
                     MeasurementData measurement = MeasurementData(
-                      dataType: formData!['type'] as MeasurableDataType,
-                      dateTo: formData['date'],
+                      dataType: selected!,
+                      dateTo: formData!['date'],
                       dateFrom: formData['date'],
                       value:
                           nf.parse('${formData['value']}'.replaceAll(',', '.')),
@@ -112,35 +117,36 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       child: Column(
                         children: <Widget>[
-                          FormBuilderDropdown(
-                            dropdownColor: AppColors.headerBgColor,
-                            name: 'type',
-                            decoration: InputDecoration(
-                              labelText: 'Type',
-                              labelStyle: labelStyle,
+                          if (selected == null)
+                            FormBuilderDropdown(
+                              dropdownColor: AppColors.headerBgColor,
+                              name: 'type',
+                              decoration: InputDecoration(
+                                labelText: 'Type',
+                                labelStyle: labelStyle,
+                              ),
+                              hint: Text(
+                                'Select Measurement Type',
+                                style: inputStyle,
+                              ),
+                              onChanged: (MeasurableDataType? value) {
+                                setState(() {
+                                  selected = value;
+                                });
+                              },
+                              validator: FormBuilderValidators.compose(
+                                  [FormBuilderValidators.required(context)]),
+                              items: items
+                                  .map((MeasurableDataType item) =>
+                                      DropdownMenuItem(
+                                        value: item,
+                                        child: Text(
+                                          item.displayName,
+                                          style: inputStyle,
+                                        ),
+                                      ))
+                                  .toList(),
                             ),
-                            hint: Text(
-                              'Select Measurement Type',
-                              style: inputStyle,
-                            ),
-                            onChanged: (MeasurableDataType? value) {
-                              setState(() {
-                                selected = value;
-                              });
-                            },
-                            validator: FormBuilderValidators.compose(
-                                [FormBuilderValidators.required(context)]),
-                            items: items
-                                .map((MeasurableDataType item) =>
-                                    DropdownMenuItem(
-                                      value: item,
-                                      child: Text(
-                                        item.displayName,
-                                        style: inputStyle,
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
                           if (selected != null)
                             FormBuilderCupertinoDateTimePicker(
                               name: 'date',
@@ -188,19 +194,10 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                 ),
                 const SizedBox(height: 16),
                 if (selected != null)
-                  MeasurementBarChart(measurableDataType: selected),
-                if (selected == null)
-                  Expanded(
-                    child: ListView(
-                      children: List.generate(
-                        favoriteItems.length,
-                        (int index) {
-                          return MeasurementBarChart(
-                              measurableDataType: favoriteItems[index]);
-                        },
-                        growable: true,
-                      ),
-                    ),
+                  DashboardBarChart(
+                    measurableDataTypeId: selected!.id,
+                    rangeStart: getRangeStart(context),
+                    rangeEnd: getRangeEnd(),
                   ),
               ],
             ),

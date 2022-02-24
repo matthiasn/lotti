@@ -8,17 +8,20 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 
 class DashboardBarChart extends StatelessWidget {
   final String measurableDataTypeId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final bool enableCreate;
 
   DashboardBarChart({
     Key? key,
     required this.measurableDataTypeId,
     required this.rangeStart,
     required this.rangeEnd,
+    this.enableCreate = false,
   }) : super(key: key);
 
   final JournalDb _db = getIt<JournalDb>();
@@ -56,6 +59,22 @@ class DashboardBarChart extends StatelessWidget {
               return const SizedBox.shrink();
             }
 
+            void onDoubleTap() {
+              if (enableCreate) {
+                debugPrint(measurableDataType.toString());
+
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (BuildContext context) {
+                      return NewMeasurementPage(
+                        selected: measurableDataType,
+                      );
+                    },
+                  ),
+                );
+              }
+            }
+
             List<charts.Series<SumPerDay, DateTime>> seriesList = [
               charts.Series<SumPerDay, DateTime>(
                 id: measurableDataType.id,
@@ -67,45 +86,49 @@ class DashboardBarChart extends StatelessWidget {
                 data: aggregateByDay(measurements),
               )
             ];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  key: Key(measurableDataType.description),
-                  color: Colors.white,
-                  height: 120,
-                  padding: const EdgeInsets.all(8.0),
-                  child: Stack(
-                    children: [
-                      charts.TimeSeriesChart(
-                        seriesList,
-                        animate: true,
-                        defaultRenderer: charts.BarRendererConfig<DateTime>(),
-                        behaviors: [
-                          chartRangeAnnotation(rangeStart, rangeEnd),
-                        ],
-                        domainAxis: timeSeriesAxis,
-                      ),
-                      Positioned(
-                        top: 0,
-                        left: MediaQuery.of(context).size.width / 4,
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width / 2,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                measurableDataType.displayName,
-                                style: chartTitleStyle,
-                              ),
-                            ],
+            return GestureDetector(
+              onDoubleTap: onDoubleTap,
+              onLongPress: onDoubleTap,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    key: Key(measurableDataType.description),
+                    color: Colors.white,
+                    height: 120,
+                    padding: const EdgeInsets.all(8.0),
+                    child: Stack(
+                      children: [
+                        charts.TimeSeriesChart(
+                          seriesList,
+                          animate: true,
+                          defaultRenderer: charts.BarRendererConfig<DateTime>(),
+                          behaviors: [
+                            chartRangeAnnotation(rangeStart, rangeEnd),
+                          ],
+                          domainAxis: timeSeriesAxis,
+                        ),
+                        Positioned(
+                          top: -4,
+                          left: MediaQuery.of(context).size.width / 4,
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width / 2,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  measurableDataType.displayName,
+                                  style: chartTitleStyle,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
