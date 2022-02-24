@@ -415,6 +415,16 @@ class JournalDb extends _$JournalDb {
     return quantitativeByType(type, from).watch().map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchSurveysByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return surveysByType(type, rangeStart, rangeEnd)
+        .watch()
+        .map(entityStreamMapper);
+  }
+
   Stream<List<JournalEntity>> watchQuantitativeByTypes(
     List<String> types,
     DateTime from,

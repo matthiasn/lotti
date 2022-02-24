@@ -308,6 +308,15 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+surveysByType:
+SELECT * FROM journal
+  WHERE type = 'SurveyEntry'
+  AND subtype = :subtype
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND deleted = false
+  ORDER BY date_from DESC;
+
 countJournalEntries:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false;
