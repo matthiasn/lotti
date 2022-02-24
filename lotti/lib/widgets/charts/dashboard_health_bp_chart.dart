@@ -10,14 +10,12 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-import 'dashboard_health_bp_chart.dart';
-
-class DashboardHealthChart extends StatelessWidget {
+class DashboardHealthBpChart extends StatelessWidget {
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardHealthChart({
+  DashboardHealthBpChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,
@@ -28,30 +26,18 @@ class DashboardHealthChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String dataType = chartConfig.healthType;
+    String systolicType = 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC';
+    String diastolicType = 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC';
+    List<String> dataTypes = [systolicType, diastolicType];
 
-    if (dataType == 'BLOOD_PRESSURE') {
-      return DashboardHealthBpChart(
-        chartConfig: chartConfig,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-    }
-
-    HealthTypeConfig? healthType = healthTypes[dataType];
-    charts.SeriesRendererConfig<DateTime>? defaultRenderer;
-
-    if (healthType?.chartType == HealthChartType.barChart) {
-      defaultRenderer = charts.BarRendererConfig<DateTime>();
-    } else {
-      defaultRenderer = charts.LineRendererConfig<DateTime>(
-        includePoints: false,
-        strokeWidthPx: 2,
-      );
-    }
+    charts.SeriesRendererConfig<DateTime>? defaultRenderer =
+        charts.LineRendererConfig<DateTime>(
+      includePoints: false,
+      strokeWidthPx: 2,
+    );
 
     return StreamBuilder<List<JournalEntity?>>(
-      stream: _db.watchQuantitativeByType(chartConfig.healthType, rangeStart),
+      stream: _db.watchQuantitativeByTypes(dataTypes, rangeStart),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<JournalEntity?>> snapshot,
@@ -62,17 +48,32 @@ class DashboardHealthChart extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        List<Observation> systolicData =
+            aggregateNoneFilteredBy(items, systolicType);
+        List<Observation> diastolicData =
+            aggregateNoneFilteredBy(items, diastolicType);
+
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
-            id: dataType,
+            id: systolicType,
+            colorFn: (Observation val, _) {
+              return charts.MaterialPalette.red.shadeDefault;
+            },
+            domainFn: (Observation val, _) => val.dateTime,
+            measureFn: (Observation val, _) => val.value,
+            data: systolicData,
+          ),
+          charts.Series<Observation, DateTime>(
+            id: diastolicType,
             colorFn: (Observation val, _) {
               return charts.MaterialPalette.blue.shadeDefault;
             },
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: aggregateByType(items, dataType),
-          )
+            data: diastolicData,
+          ),
         ];
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: ClipRRect(

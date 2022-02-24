@@ -8,6 +8,7 @@ import 'package:lotti/widgets/charts/utils.dart';
 enum HealthChartType {
   lineChart,
   barChart,
+  bpChart,
 }
 
 enum HealthAggregationType {
@@ -59,6 +60,12 @@ Map<String, HealthTypeConfig> healthTypes = {
     displayName: 'Diastolic Blood Pressure',
     healthType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
     chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'BLOOD_PRESSURE': HealthTypeConfig(
+    displayName: 'Blood Pressure',
+    healthType: 'BLOOD_PRESSURE',
+    chartType: HealthChartType.bpChart,
     aggregationType: HealthAggregationType.none,
   ),
   'cumulative_step_count': HealthTypeConfig(
@@ -169,4 +176,17 @@ List<Observation> aggregateByType(
     default:
       return [];
   }
+}
+
+List<Observation> aggregateNoneFilteredBy(
+  List<JournalEntity?> entities,
+  String healthType,
+) {
+  return aggregateNone(entities.where((entity) {
+    if (entity is QuantitativeEntry) {
+      return entity.data.dataType == healthType;
+    } else {
+      return false;
+    }
+  }).toList());
 }
