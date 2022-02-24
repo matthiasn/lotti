@@ -196,8 +196,8 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                 if (selected != null)
                   DashboardBarChart(
                     measurableDataTypeId: selected!.id,
-                    rangeStart: DateTime.now().subtract(defaultChartDuration),
-                    rangeEnd: DateTime.now(),
+                    rangeStart: getRangeStart(context),
+                    rangeEnd: getRangeEnd(),
                   ),
               ],
             ),
