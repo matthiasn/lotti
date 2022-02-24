@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 
 class DashboardBarChart extends StatelessWidget {
   final String measurableDataTypeId;
@@ -61,6 +62,16 @@ class DashboardBarChart extends StatelessWidget {
             void onDoubleTap() {
               if (enableCreate) {
                 debugPrint(measurableDataType.toString());
+
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (BuildContext context) {
+                      return NewMeasurementPage(
+                        selected: measurableDataType,
+                      );
+                    },
+                  ),
+                );
               }
             }
 
