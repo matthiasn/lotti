@@ -1,7 +1,10 @@
 import 'dart:core';
 import 'dart:math';
 
+import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:charts_flutter/flutter.dart';
 import 'package:equatable/equatable.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -22,12 +25,14 @@ class HealthTypeConfig {
   final HealthAggregationType aggregationType;
   final String displayName;
   final String healthType;
+  final Map<num, String>? colorByValue;
 
   HealthTypeConfig({
     required this.displayName,
     required this.healthType,
     required this.chartType,
     required this.aggregationType,
+    this.colorByValue,
   });
 }
 
@@ -69,11 +74,15 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.none,
   ),
   'cumulative_step_count': HealthTypeConfig(
-    displayName: 'Steps',
-    healthType: 'cumulative_step_count',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailyMax,
-  ),
+      displayName: 'Steps',
+      healthType: 'cumulative_step_count',
+      chartType: HealthChartType.barChart,
+      aggregationType: HealthAggregationType.dailyMax,
+      colorByValue: {
+        10000: '#4BB543',
+        6000: '#FF5F1F',
+        0: '#FC100D',
+      }),
   'cumulative_flights_climbed': HealthTypeConfig(
     displayName: 'Flights of stairs',
     healthType: 'cumulative_flights_climbed',
@@ -87,6 +96,32 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.dailySum,
   ),
 };
+
+Color colorByValue(
+  Observation observation,
+  HealthTypeConfig? healthTypeConfig,
+) {
+  Color color = charts.MaterialPalette.blue.shadeDefault;
+
+  if (healthTypeConfig == null) {
+    return color;
+  }
+
+  if (healthTypeConfig.colorByValue != null) {
+    Map<num, String>? colorByValue = healthTypeConfig.colorByValue;
+    List<num> sortedThresholds = colorByValue!.keys.toList();
+    sortedThresholds.sort();
+
+    num aboveThreshold = sortedThresholds.reversed.firstWhere(
+        (threshold) => observation.value >= threshold,
+        orElse: () => 0);
+
+    HexColor color = HexColor(colorByValue[aboveThreshold] ?? '#000000');
+    return charts.Color(r: color.red, g: color.green, b: color.blue);
+  }
+
+  return color;
+}
 
 class Observation extends Equatable {
   final DateTime dateTime;
