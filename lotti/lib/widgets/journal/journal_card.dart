@@ -220,7 +220,6 @@ class JournalCard extends StatelessWidget {
         ),
         child: ListTile(
           leading: item.maybeMap(
-            task: (_) => const LeadingIcon(Icons.check_box_outline_blank),
             journalAudio: (_) => const LeadingIcon(Icons.mic),
             journalEntry: (_) => const LeadingIcon(Icons.article),
             quantitative: (_) => const LeadingIcon(MdiIcons.heart),
