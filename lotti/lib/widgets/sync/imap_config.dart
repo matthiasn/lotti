@@ -30,8 +30,9 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
         return Center(
           child: state.maybeWhen(
               (sharedKey, imapConfig) =>
-                  StatusTextWidget(imapConfig.toString()),
-              orElse: () {}),
+                  StatusTextWidget(imapConfig.toString()), orElse: () {
+            return null;
+          }),
         );
       });
     }
@@ -99,7 +100,9 @@ class _EmailConfigFormState extends State<EmailConfigForm> {
                     child: state.maybeWhen(
                         (sharedKey, imapConfig) =>
                             StatusTextWidget(imapConfig.toString()),
-                        orElse: () {}),
+                        orElse: () {
+                      return null;
+                    }),
                   ),
                 ],
               ),

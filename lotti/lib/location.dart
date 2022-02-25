@@ -72,5 +72,6 @@ class DeviceLocation {
         ),
       );
     }
+    return null;
   }
 }

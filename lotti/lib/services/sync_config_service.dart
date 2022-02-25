@@ -24,6 +24,7 @@ class SyncConfigService {
         sharedSecret: sharedKey,
       );
     }
+    return null;
   }
 
   Future<void> generateSharedKey() async {

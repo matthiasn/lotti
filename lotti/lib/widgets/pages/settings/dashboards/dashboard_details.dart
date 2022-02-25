@@ -1,5 +1,4 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -273,7 +272,7 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                                   searchable: true,
                                   backgroundColor: AppColors.bodyBgColor,
                                   items: measurableSelectItems,
-                                  initialValue: [],
+                                  initialValue: const [],
                                   title: Text(
                                     "Add Measurement Charts",
                                     style: titleStyle,

@@ -36,4 +36,5 @@ Future<ImapClient?> createImapClient() async {
     await _insightsDb.captureException(e, stackTrace: stackTrace);
   }
   await transaction.finish();
+  return null;
 }
