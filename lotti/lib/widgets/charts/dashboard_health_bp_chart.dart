@@ -131,7 +131,7 @@ class DashboardHealthBpChart extends StatelessWidget {
                       tickProviderSpec: charts.BasicNumericTickProviderSpec(
                         zeroBound: false,
                         dataIsInWholeNumbers: true,
-                        desiredMinTickCount: 10,
+                        desiredMinTickCount: 11,
                         desiredMaxTickCount: 15,
                       ),
                     ),
