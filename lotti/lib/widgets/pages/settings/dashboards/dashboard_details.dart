@@ -455,6 +455,9 @@ class DashboardItemCard extends StatelessWidget {
         String itemName = healthTypes[type]?.displayName ?? type;
         return itemName;
       },
+      surveyChart: (surveyChart) {
+        return surveyChart.surveyType;
+      },
     );
 
     return Card(
@@ -476,6 +479,11 @@ class DashboardItemCard extends StatelessWidget {
           ),
           healthChart: (_) => Icon(
             MdiIcons.stethoscope,
+            size: 32,
+            color: AppColors.entryTextColor,
+          ),
+          surveyChart: (_) => Icon(
+            MdiIcons.clipboardOutline,
             size: 32,
             color: AppColors.entryTextColor,
           ),

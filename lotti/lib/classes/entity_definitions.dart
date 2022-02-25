@@ -115,6 +115,12 @@ class DashboardItem with _$DashboardItem {
     required String healthType,
   }) = DashboardHealthItem;
 
+  factory DashboardItem.surveyChart({
+    required Map<String, String> colorsByScoreKey,
+    required String surveyType,
+    required String surveyName,
+  }) = DashboardSurveyItem;
+
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);
 }
