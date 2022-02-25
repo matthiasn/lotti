@@ -57,21 +57,20 @@ class DashboardHealthBpChart extends StatelessWidget {
         List<Observation> diastolicData =
             aggregateNoneFilteredBy(items, diastolicType);
 
+        charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
+        charts.Color red = charts.MaterialPalette.red.shadeDefault;
+
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
             id: systolicType,
-            colorFn: (Observation val, _) {
-              return charts.MaterialPalette.red.shadeDefault;
-            },
+            colorFn: (Observation val, _) => red,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
             data: systolicData,
           ),
           charts.Series<Observation, DateTime>(
             id: diastolicType,
-            colorFn: (Observation val, _) {
-              return charts.MaterialPalette.blue.shadeDefault;
-            },
+            colorFn: (Observation val, _) => blue,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
             data: diastolicData,
@@ -85,7 +84,7 @@ class DashboardHealthBpChart extends StatelessWidget {
             child: Container(
               key: Key('${chartConfig.hashCode}'),
               color: Colors.white,
-              height: 120,
+              height: 200,
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Stack(
                 children: [
@@ -93,14 +92,47 @@ class DashboardHealthBpChart extends StatelessWidget {
                     seriesList,
                     animate: true,
                     behaviors: [
-                      chartRangeAnnotation(rangeStart, rangeEnd),
+                      charts.RangeAnnotation(
+                        [
+                          charts.RangeAnnotationSegment(
+                            rangeStart,
+                            rangeEnd,
+                            charts.RangeAnnotationAxisType.domain,
+                            color: charts.MaterialPalette.white,
+                          ),
+                          charts.RangeAnnotationSegment(
+                            60,
+                            80,
+                            charts.RangeAnnotationAxisType.measure,
+                            color: charts.Color(
+                              r: blue.r,
+                              g: blue.g,
+                              b: blue.b,
+                              a: 24,
+                            ),
+                          ),
+                          charts.RangeAnnotationSegment(
+                            90,
+                            130,
+                            charts.RangeAnnotationAxisType.measure,
+                            color: charts.Color(
+                              r: red.r,
+                              g: red.g,
+                              b: red.b,
+                              a: 24,
+                            ),
+                          ),
+                        ],
+                      )
                     ],
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
                     primaryMeasureAxis: const charts.NumericAxisSpec(
                       tickProviderSpec: charts.BasicNumericTickProviderSpec(
                         zeroBound: false,
-                        desiredTickCount: 5,
+                        dataIsInWholeNumbers: true,
+                        desiredMinTickCount: 10,
+                        desiredMaxTickCount: 15,
                       ),
                     ),
                   ),
