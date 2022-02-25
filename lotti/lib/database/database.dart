@@ -401,25 +401,44 @@ class JournalDb extends _$JournalDb {
     return measurableTypeById(id).watch().map(measurableDataTypeStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchMeasurementsByType(
-    String type,
-    DateTime from,
-  ) {
-    return measurementsByType(type, from).watch().map(entityStreamMapper);
+  Stream<List<JournalEntity>> watchMeasurementsByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return measurementsByType(type, rangeStart, rangeEnd)
+        .watch()
+        .map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchQuantitativeByType(
-    String type,
-    DateTime from,
-  ) {
-    return quantitativeByType(type, from).watch().map(entityStreamMapper);
+  Stream<List<JournalEntity>> watchQuantitativeByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return quantitativeByType(type, rangeStart, rangeEnd)
+        .watch()
+        .map(entityStreamMapper);
   }
 
-  Stream<List<JournalEntity>> watchQuantitativeByTypes(
-    List<String> types,
-    DateTime from,
-  ) {
-    return quantitativeByTypes(types, from).watch().map(entityStreamMapper);
+  Stream<List<JournalEntity>> watchSurveysByType({
+    required String type,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return surveysByType(type, rangeStart, rangeEnd)
+        .watch()
+        .map(entityStreamMapper);
+  }
+
+  Stream<List<JournalEntity>> watchQuantitativeByTypes({
+    required List<String> types,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return quantitativeByTypes(types, rangeStart, rangeEnd)
+        .watch()
+        .map(entityStreamMapper);
   }
 
   Stream<List<Conflict>> watchConflicts(

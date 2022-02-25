@@ -219,40 +219,12 @@ class JournalCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: ListTile(
-          leading: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            child: Container(
-              width: 50,
-              height: 50,
-              color: AppColors.entryBgColor,
-              child: item.maybeMap(
-                task: (_) => const Icon(
-                  Icons.check_box_outline_blank,
-                  size: 32,
-                ),
-                journalAudio: (_) => const Icon(
-                  Icons.mic,
-                  size: 32,
-                ),
-                journalEntry: (_) => const Icon(
-                  Icons.article,
-                  size: 32,
-                ),
-                survey: (_) => const Icon(
-                  MdiIcons.clipboardOutline,
-                  size: 32,
-                ),
-                quantitative: (_) => const Icon(
-                  MdiIcons.heart,
-                  size: 32,
-                ),
-                measurement: (_) => const Icon(
-                  MdiIcons.tapeMeasure,
-                  size: 32,
-                ),
-                orElse: () => Container(),
-              ),
-            ),
+          leading: item.maybeMap(
+            journalAudio: (_) => const LeadingIcon(Icons.mic),
+            journalEntry: (_) => const LeadingIcon(Icons.article),
+            quantitative: (_) => const LeadingIcon(MdiIcons.heart),
+            measurement: (_) => const LeadingIcon(MdiIcons.tapeMeasure),
+            orElse: () => null,
           ),
           title: JournalCardTitle(item: item),
           enabled: true,
@@ -272,6 +244,30 @@ class JournalCard extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class LeadingIcon extends StatelessWidget {
+  final IconData iconData;
+  const LeadingIcon(
+    this.iconData, {
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+      child: Container(
+        width: 50,
+        height: 50,
+        color: AppColors.entryBgColor,
+        child: Icon(
+          iconData,
+          size: 32,
+        ),
+      ),
+    );
   }
 }
 

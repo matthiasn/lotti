@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_barchart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardViewerRoute extends StatelessWidget {
@@ -53,12 +54,16 @@ class DashboardViewerRoute extends StatelessWidget {
                       rangeEnd: rangeEnd,
                     );
                   },
+                  surveyChart: (DashboardSurveyItem surveyChart) {
+                    return DashboardSurveyChart(
+                      chartConfig: surveyChart,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
+                    );
+                  },
                 );
               }),
-              Text(
-                dashboard.description,
-                style: formLabelStyle,
-              ),
+              Text(dashboard.description, style: formLabelStyle),
             ],
           ),
         ),

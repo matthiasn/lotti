@@ -911,7 +911,7 @@ packages:
       name: go_router
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   google_fonts:
     dependency: "direct main"
     description:
@@ -1358,13 +1358,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.5"
-  path_to_regexp:
-    dependency: transitive
-    description:
-      name: path_to_regexp
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.4.0"
   pedantic:
     dependency: transitive
     description:
@@ -1660,7 +1653,7 @@ packages:
       name: sqlite3_flutter_libs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.3"
+    version: "0.5.4"
   sqlparser:
     dependency: transitive
     description:
@@ -1982,7 +1975,7 @@ packages:
       name: window_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.7"
   wkt_parser:
     dependency: transitive
     description:
