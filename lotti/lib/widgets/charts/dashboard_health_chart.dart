@@ -70,7 +70,7 @@ class DashboardHealthChart extends StatelessWidget {
           charts.Series<Observation, DateTime>(
             id: dataType,
             colorFn: (Observation val, _) {
-              return charts.MaterialPalette.blue.shadeDefault;
+              return colorByValue(val, healthType);
             },
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,

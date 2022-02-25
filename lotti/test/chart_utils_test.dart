@@ -1,3 +1,4 @@
+import 'package:charts_flutter/flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -77,6 +78,40 @@ void main() {
         Observation(DateTime(2022, 02, 23), 6),
         Observation(DateTime(2022, 02, 24), 27),
       ]);
+    },
+  );
+
+  test(
+    'Chart color is generated for observation',
+    () async {
+      HealthTypeConfig config = HealthTypeConfig(
+        displayName: 'Steps',
+        healthType: 'cumulative_step_count',
+        chartType: HealthChartType.barChart,
+        aggregationType: HealthAggregationType.dailyMax,
+        colorByValue: {
+          10000: '#4BB543',
+          6000: '#FF5F1F',
+          0: '#FC100D',
+        },
+      );
+
+      DateTime now = DateTime.now();
+
+      expect(
+        const Color(r: 252, g: 16, b: 13),
+        colorByValue(Observation(now, 1000), config),
+      );
+
+      expect(
+        const Color(r: 255, g: 95, b: 31),
+        colorByValue(Observation(now, 7000), config),
+      );
+
+      expect(
+        const Color(r: 75, g: 181, b: 67),
+        colorByValue(Observation(now, 17000), config),
+      );
     },
   );
 }
