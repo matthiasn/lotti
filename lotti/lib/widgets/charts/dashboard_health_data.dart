@@ -26,6 +26,7 @@ class HealthTypeConfig {
   final String displayName;
   final String healthType;
   final Map<num, String>? colorByValue;
+  final bool hoursMinutes;
 
   HealthTypeConfig({
     required this.displayName,
@@ -33,6 +34,7 @@ class HealthTypeConfig {
     required this.chartType,
     required this.aggregationType,
     this.colorByValue,
+    this.hoursMinutes = false,
   });
 }
 
@@ -94,6 +96,27 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.WORKOUT',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailySum,
+  ),
+  'HealthDataType.SLEEP_ASLEEP': HealthTypeConfig(
+    displayName: 'Asleep',
+    healthType: 'HealthDataType.SLEEP_ASLEEP',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailySum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
+    displayName: 'In bed',
+    healthType: 'HealthDataType.SLEEP_IN_BED',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailySum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_AWAKE': HealthTypeConfig(
+    displayName: 'Awake in bed',
+    healthType: 'HealthDataType.SLEEP_AWAKE',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailySum,
+    hoursMinutes: true,
   ),
 };
 

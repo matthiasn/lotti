@@ -96,11 +96,21 @@ class DashboardHealthChart extends StatelessWidget {
                     ],
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
-                    primaryMeasureAxis: const charts.NumericAxisSpec(
-                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                    primaryMeasureAxis: charts.NumericAxisSpec(
+                      tickProviderSpec:
+                          const charts.BasicNumericTickProviderSpec(
                         zeroBound: false,
                         desiredTickCount: 5,
                       ),
+                      tickFormatterSpec: healthType != null &&
+                              healthType.hoursMinutes
+                          ? charts.BasicNumericTickFormatterSpec((num? value) {
+                              Duration dur =
+                                  Duration(minutes: value?.ceil() ?? 0);
+                              return '${dur.inHours}:'
+                                  '${dur.inMinutes.remainder(60)}';
+                            })
+                          : null,
                     ),
                   ),
                   Positioned(
