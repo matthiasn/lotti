@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 
@@ -9,12 +10,19 @@ class LinkService {
 
   void createLink() async {
     if (_linkFromId != null && _linkToId != null) {
+      HapticFeedback.heavyImpact();
+
       await _persistenceLogic.createLink(
         fromId: _linkFromId!,
         toId: _linkToId!,
       );
-      _linkFromId = null;
-      _linkToId = null;
+
+      Future.delayed(const Duration(minutes: 2)).then((_) {
+        _linkFromId = null;
+        _linkToId = null;
+      });
+    } else {
+      HapticFeedback.lightImpact();
     }
   }
 
