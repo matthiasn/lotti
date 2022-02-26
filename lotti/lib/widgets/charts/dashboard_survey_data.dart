@@ -5,15 +5,28 @@ import 'package:charts_flutter/flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/surveys/cfq11_survey.dart';
+import 'package:lotti/surveys/panas_survey.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:research_package/model.dart';
 
-var cfq11SurveyChart = DashboardSurveyItem(
+Map<String, RPOrderedTask> surveyTasks = {
+  'cfq11SurveyTask': cfq11SurveyTask,
+  'panasSurveyTask': panasSurveyTask,
+};
+
+Map<String, Map<String, Set<String>>> surveyScoreDefinitions = {
+  'cfq11SurveyTask': cfq11ScoreDefinitions,
+  'panasSurveyTask': panasScoreDefinitions,
+};
+
+DashboardSurveyItem cfq11SurveyChart = DashboardSurveyItem(
   surveyType: 'cfq11SurveyTask',
   surveyName: 'CFQ11',
   colorsByScoreKey: {'CFQ11': '#0000FF'},
 );
 
-var panasSurveyChart = DashboardSurveyItem(
+DashboardSurveyItem panasSurveyChart = DashboardSurveyItem(
   surveyType: 'panasSurveyTask',
   surveyName: 'PANAS',
   colorsByScoreKey: {
