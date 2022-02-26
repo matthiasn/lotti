@@ -1509,8 +1509,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: f91a5e3
-      resolved-ref: f91a5e3fc350a9408aa625bdbd8593c1fc893cd9
+      ref: "3137f03"
+      resolved-ref: "3137f03fef0637913976c13c931a6aa14d7ca489"
       url: "https://github.com/matthiasn/radial_button"
     source: git
     version: "0.1.5"
