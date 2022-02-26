@@ -13,11 +13,11 @@ class NewTaskPage extends StatefulWidget {
   const NewTaskPage({
     Key? key,
     this.linked,
-    this.journalEntity,
+    this.task,
   }) : super(key: key);
 
   final JournalEntity? linked;
-  final JournalEntity? journalEntity;
+  final Task? task;
 
   @override
   State<NewTaskPage> createState() => _NewTaskPageState();
@@ -114,7 +114,8 @@ class _NewTaskPageState extends State<NewTaskPage> {
                   focusNode: _focusNode,
                   focusOnTitle: true,
                   saveFn: _save,
-                  journalEntity: widget.journalEntity,
+                  task: widget.task,
+                  withOpenDetails: true,
                 ),
               ),
             ],
