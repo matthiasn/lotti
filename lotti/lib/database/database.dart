@@ -209,6 +209,7 @@ class JournalDb extends _$JournalDb {
     if (res.isNotEmpty) {
       return res.first;
     }
+    return null;
   }
 
   Stream<JournalEntity?> watchEntityById(String id) {
@@ -226,6 +227,7 @@ class JournalDb extends _$JournalDb {
     if (res.isNotEmpty) {
       return res.first;
     }
+    return null;
   }
 
   Future<JournalEntity?> journalEntityById(String id) async {
@@ -233,6 +235,7 @@ class JournalDb extends _$JournalDb {
     if (dbEntity != null) {
       return fromDbEntity(dbEntity);
     }
+    return null;
   }
 
   Future<List<String>> entryIdsByTagId(String tagId) async {

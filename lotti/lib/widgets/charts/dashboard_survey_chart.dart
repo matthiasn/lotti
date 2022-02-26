@@ -7,7 +7,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -32,7 +31,7 @@ class DashboardSurveyChart extends StatelessWidget {
     charts.SeriesRendererConfig<DateTime>? defaultRenderer =
         charts.LineRendererConfig<DateTime>(
       includePoints: false,
-      strokeWidthPx: 2,
+      strokeWidthPx: 2.5,
     );
 
     return StreamBuilder<List<JournalEntity?>>(
@@ -51,21 +50,6 @@ class DashboardSurveyChart extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        List<charts.Series<Observation, DateTime>> seriesList = [
-          charts.Series<Observation, DateTime>(
-            id: dataType,
-            colorFn: (Observation val, _) {
-              return charts.MaterialPalette.blue.shadeDefault;
-            },
-            domainFn: (Observation val, _) => val.dateTime,
-            measureFn: (Observation val, _) => val.value,
-            data: aggregateSurvey(
-              entities: items,
-              scoreKey: chartConfig.colorsByScoreKey.keys.first,
-              dashboardSurveyItem: chartConfig,
-            ),
-          )
-        ];
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: ClipRRect(
@@ -78,7 +62,10 @@ class DashboardSurveyChart extends StatelessWidget {
               child: Stack(
                 children: [
                   charts.TimeSeriesChart(
-                    seriesList,
+                    surveySeries(
+                      entities: items,
+                      dashboardSurveyItem: chartConfig,
+                    ),
                     animate: true,
                     behaviors: [
                       chartRangeAnnotation(rangeStart, rangeEnd),

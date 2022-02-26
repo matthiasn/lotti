@@ -12,6 +12,7 @@ Future<SyncMessage?> decryptMessage(
       return SyncMessage.fromJson(json.decode(decryptedJson));
     }
   }
+  return null;
 }
 
 String? readMessage(MimeMessage message) {
@@ -28,4 +29,5 @@ String? readMessage(MimeMessage message) {
     }
     return concatenated.trim();
   }
+  return null;
 }

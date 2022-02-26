@@ -425,6 +425,7 @@ class PersistenceLogic {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
+    return null;
   }
 
   Future<bool> updateJournalEntityText(
@@ -665,6 +666,7 @@ class PersistenceLogic {
       await _insightsDb.captureException(exception, stackTrace: stackTrace);
       debugPrint('Exception $exception');
     }
+    return null;
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
