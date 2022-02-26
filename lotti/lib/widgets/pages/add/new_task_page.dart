@@ -115,6 +115,7 @@ class _NewTaskPageState extends State<NewTaskPage> {
                   focusOnTitle: true,
                   saveFn: _save,
                   task: widget.task,
+                  withOpenDetails: true,
                 ),
               ),
             ],

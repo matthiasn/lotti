@@ -21,6 +21,7 @@ class TaskForm extends StatefulWidget {
     required this.task,
     this.data,
     this.focusOnTitle = false,
+    this.withOpenDetails = false,
   }) : super(key: key);
 
   final GlobalKey<FormBuilderState> formKey;
@@ -30,6 +31,7 @@ class TaskForm extends StatefulWidget {
   final TaskData? data;
   final Task? task;
   final bool focusOnTitle;
+  final bool withOpenDetails;
 
   @override
   State<TaskForm> createState() => _TaskFormState();
@@ -40,13 +42,15 @@ class _TaskFormState extends State<TaskForm> {
 
   @override
   Widget build(BuildContext context) {
+    bool showDetails = widget.withOpenDetails || details;
+
     return Container(
       color: AppColors.headerBgColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Visibility(
-            visible: details,
+            visible: showDetails,
             child: Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16),
               child: FormBuilder(
@@ -212,7 +216,7 @@ class _TaskFormState extends State<TaskForm> {
             ),
           ),
           Visibility(
-            visible: !details,
+            visible: !showDetails,
             child: DetailTaskStatusWidget(
               widget.task,
               onPressed: () {
