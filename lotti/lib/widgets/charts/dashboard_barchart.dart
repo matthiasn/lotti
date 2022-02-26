@@ -62,8 +62,6 @@ class DashboardBarChart extends StatelessWidget {
 
             void onDoubleTap() {
               if (enableCreate) {
-                debugPrint(measurableDataType.toString());
-
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (BuildContext context) {
