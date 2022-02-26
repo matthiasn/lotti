@@ -69,132 +69,133 @@ class _EntryDateTimeModalState extends State<EntryDateTimeModal> {
         dateTo != widget.item.meta.dateTo;
 
     return StreamBuilder<JournalEntity?>(
-        stream: stream,
-        builder: (
-          BuildContext context,
-          AsyncSnapshot<JournalEntity?> snapshot,
-        ) {
-          JournalEntity? liveEntity = snapshot.data;
-          if (liveEntity == null) {
-            return const SizedBox.shrink();
-          }
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<JournalEntity?> snapshot,
+      ) {
+        JournalEntity? liveEntity = snapshot.data;
+        if (liveEntity == null) {
+          return const SizedBox.shrink();
+        }
 
-          return Container(
-            height: 200,
-            color: AppColors.bodyBgColor,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: <Widget>[
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          'Date from: ',
-                          textAlign: TextAlign.end,
-                          style: labelStyleLarger,
-                        ),
+        return Container(
+          height: 200,
+          color: AppColors.bodyBgColor,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: <Widget>[
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        'Date from: ',
+                        textAlign: TextAlign.end,
+                        style: labelStyleLarger,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          showDatePicker(
-                            onConfirm: (DateTime date) {
-                              setState(() {
-                                dateFrom = date;
-                              });
-                            },
-                            currentTime: dateFrom,
-                          );
-                        },
-                        child: Text(
-                          df.format(dateFrom),
-                          style: textStyleLarger,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          'Date to:',
-                          textAlign: TextAlign.end,
-                          style: labelStyleLarger,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          showDatePicker(
-                            onConfirm: (DateTime date) {
-                              setState(() {
-                                dateTo = date;
-                              });
-                            },
-                            currentTime: dateTo,
-                          );
-                        },
-                        child: Text(
-                          df.format(dateTo),
-                          style: textStyleLarger,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            dateTo = DateTime.now();
-                          });
-                        },
-                        child: Text(
-                          'now',
-                          style: textStyleLarger,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Visibility(
-                          visible: valid && changed,
-                          child: TextButton(
-                            onPressed: () async {
-                              setState(() {});
-
-                              await persistenceLogic.updateJournalEntityDate(
-                                widget.item,
-                                dateFrom: dateFrom,
-                                dateTo: dateTo,
-                              );
-                              Navigator.pop(context);
-                            },
-                            child: Text(
-                              'SAVE',
-                              style: textStyleLarger,
-                            ),
-                          ),
-                        ),
-                        Visibility(
-                          visible: !valid,
-                          child: Text(
-                            'Invalid Date Range',
-                            style: textStyleLarger.copyWith(
-                                color: AppColors.error),
-                          ),
-                        ),
-                      ],
                     ),
+                    TextButton(
+                      onPressed: () {
+                        showDatePicker(
+                          onConfirm: (DateTime date) {
+                            setState(() {
+                              dateFrom = date;
+                            });
+                          },
+                          currentTime: dateFrom,
+                        );
+                      },
+                      child: Text(
+                        df.format(dateFrom),
+                        style: textStyleLarger,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(
+                  height: 8,
+                ),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        'Date to:',
+                        textAlign: TextAlign.end,
+                        style: labelStyleLarger,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        showDatePicker(
+                          onConfirm: (DateTime date) {
+                            setState(() {
+                              dateTo = date;
+                            });
+                          },
+                          currentTime: dateTo,
+                        );
+                      },
+                      child: Text(
+                        df.format(dateTo),
+                        style: textStyleLarger,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          dateTo = DateTime.now();
+                        });
+                      },
+                      child: Text(
+                        'now',
+                        style: textStyleLarger,
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Visibility(
+                        visible: valid && changed,
+                        child: TextButton(
+                          onPressed: () async {
+                            setState(() {});
+
+                            await persistenceLogic.updateJournalEntityDate(
+                              widget.item,
+                              dateFrom: dateFrom,
+                              dateTo: dateTo,
+                            );
+                            Navigator.pop(context);
+                          },
+                          child: Text(
+                            'SAVE',
+                            style: textStyleLarger,
+                          ),
+                        ),
+                      ),
+                      Visibility(
+                        visible: !valid,
+                        child: Text(
+                          'Invalid Date Range',
+                          style:
+                              textStyleLarger.copyWith(color: AppColors.error),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 }

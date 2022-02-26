@@ -106,6 +106,12 @@ TextStyle titleStyle = TextStyle(
   fontWeight: FontWeight.w300,
 );
 
+TextStyle taskTitleStyle = TextStyle(
+  color: AppColors.entryTextColor,
+  fontFamily: 'Oswald',
+  fontSize: 24,
+);
+
 TextStyle multiSelectStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontFamily: 'Oswald',
