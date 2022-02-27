@@ -84,7 +84,12 @@ String formatDuration(Duration dur) {
   return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
 }
 
-String minutesToHhMM(num? minutes) {
+String minutesToHhMm(num? minutes) {
   Duration dur = Duration(minutes: minutes?.ceil() ?? 0);
   return formatDuration(dur);
+}
+
+String hoursToHhMm(num? hours) {
+  int minutes = hours != null ? (hours * 60).ceil() : 0;
+  return minutesToHhMm(minutes);
 }

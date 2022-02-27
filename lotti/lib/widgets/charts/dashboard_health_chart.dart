@@ -101,11 +101,12 @@ class DashboardHealthChart extends StatelessWidget {
                           const charts.BasicNumericTickProviderSpec(
                         zeroBound: false,
                         desiredTickCount: 5,
+                        dataIsInWholeNumbers: true,
                       ),
                       tickFormatterSpec:
                           healthType != null && healthType.hoursMinutes
                               ? const charts.BasicNumericTickFormatterSpec(
-                                  minutesToHhMM)
+                                  hoursToHhMm)
                               : null,
                     ),
                   ),
