@@ -88,143 +88,212 @@ class TagsWidget extends StatelessWidget {
 
             TextEditingController controller = TextEditingController();
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    bottom: 8,
-                    top: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Text(
-                          'Tags:',
-                          style: formLabelStyle,
-                        ),
-                      ),
-                      Expanded(
-                        child: TypeAheadField(
-                          textFieldConfiguration: TextFieldConfiguration(
-                            textCapitalization: TextCapitalization.none,
-                            autocorrect: false,
-                            controller: controller,
-                            onSubmitted: (String tag) async {
-                              tag = tag.trim();
-                              String tagId =
-                                  await persistenceLogic.addTagDefinition(tag);
-                              addTagIds([tagId]);
-                              controller.clear();
-                            },
-                            autofocus: false,
-                            style: DefaultTextStyle.of(context).style.copyWith(
-                                  color: AppColors.entryTextColor,
-                                  fontFamily: 'Oswald',
-                                  fontSize: 16.0,
-                                ),
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0)),
-                            ),
-                          ),
-                          suggestionsCallback: (String pattern) async {
-                            return db.getMatchingTags(
-                              pattern.trim(),
-                              limit: isMobile ? 5 : 12,
-                            );
-                          },
-                          suggestionsBoxDecoration: SuggestionsBoxDecoration(
-                            color: AppColors.headerBgColor,
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          itemBuilder: (context, TagEntity tagEntity) {
-                            return ListTile(
-                              title: Text(
-                                tagEntity.tag,
-                                style: TextStyle(
-                                  fontFamily: 'Oswald',
-                                  height: 1,
-                                  color: getTagColor(tagEntity),
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 16.0,
-                                ),
-                              ),
-                            );
-                          },
-                          onSuggestionSelected: (TagEntity tagSuggestion) {
-                            addTagIds([tagSuggestion.id]);
-                            controller.clear();
-                          },
-                        ),
-                      ),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              left: 24.0,
-                              top: 16.0,
-                              bottom: 16.0,
-                            ),
-                            child: Icon(
-                              MdiIcons.contentCopy,
-                              color: AppColors.entryTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            if (liveEntity.meta.tagIds != null) {
-                              HapticFeedback.heavyImpact();
-                              tagsService.setClipboard(liveEntity.meta.tagIds!);
-                            }
-                          },
-                        ),
-                      ),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              left: 16.0,
-                              top: 16.0,
-                              bottom: 16.0,
-                            ),
-                            child: Icon(
-                              MdiIcons.contentPaste,
-                              color: AppColors.entryTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            addTagIds(tagsService.getClipboard());
-                            HapticFeedback.heavyImpact();
-                          },
-                        ),
-                      ),
-                    ],
+            void onTapAdd() {
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(16),
                   ),
                 ),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 24),
-                  child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: tagsFromTagIds
-                          .map((TagEntity tagEntity) => TagWidget(
-                                tagEntity: tagEntity,
-                                onTap: () {
-                                  removeTagId(tagEntity.id);
-                                },
-                              ))
-                          .toList()),
+                clipBehavior: Clip.antiAliasWithSaveLayer,
+                builder: (BuildContext context) {
+                  return Container(
+                    color: AppColors.headerBgColor,
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 160,
+                        top: 8,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TagsListWidget(
+                            tagsFromTagIds: tagsFromTagIds,
+                            removeTagId: removeTagId,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: Text(
+                                  'Tags:',
+                                  style: formLabelStyle,
+                                ),
+                              ),
+                              Expanded(
+                                child: TypeAheadField(
+                                  textFieldConfiguration:
+                                      TextFieldConfiguration(
+                                    textCapitalization: TextCapitalization.none,
+                                    autocorrect: false,
+                                    controller: controller,
+                                    onSubmitted: (String tag) async {
+                                      tag = tag.trim();
+                                      String tagId = await persistenceLogic
+                                          .addTagDefinition(tag);
+                                      addTagIds([tagId]);
+                                      controller.clear();
+                                    },
+                                    autofocus: false,
+                                    style: DefaultTextStyle.of(context)
+                                        .style
+                                        .copyWith(
+                                          color: AppColors.entryTextColor,
+                                          fontFamily: 'Oswald',
+                                          fontSize: 16.0,
+                                        ),
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8.0)),
+                                    ),
+                                  ),
+                                  suggestionsCallback: (String pattern) async {
+                                    return db.getMatchingTags(
+                                      pattern.trim(),
+                                      limit: isMobile ? 5 : 12,
+                                    );
+                                  },
+                                  suggestionsBoxDecoration:
+                                      SuggestionsBoxDecoration(
+                                    color: AppColors.headerBgColor,
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  itemBuilder: (context, TagEntity tagEntity) {
+                                    return ListTile(
+                                      title: Text(
+                                        tagEntity.tag,
+                                        style: TextStyle(
+                                          fontFamily: 'Oswald',
+                                          height: 1,
+                                          color: getTagColor(tagEntity),
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 16.0,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  onSuggestionSelected:
+                                      (TagEntity tagSuggestion) {
+                                    addTagIds([tagSuggestion.id]);
+                                    controller.clear();
+                                  },
+                                ),
+                              ),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 24.0,
+                                      top: 16.0,
+                                      bottom: 16.0,
+                                    ),
+                                    child: Icon(
+                                      MdiIcons.contentCopy,
+                                      color: AppColors.entryTextColor,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    if (liveEntity.meta.tagIds != null) {
+                                      HapticFeedback.heavyImpact();
+                                      tagsService.setClipboard(
+                                          liveEntity.meta.tagIds!);
+                                    }
+                                  },
+                                ),
+                              ),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 16.0,
+                                      top: 16.0,
+                                      bottom: 16.0,
+                                    ),
+                                    child: Icon(
+                                      MdiIcons.contentPaste,
+                                      color: AppColors.entryTextColor,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    addTagIds(tagsService.getClipboard());
+                                    HapticFeedback.heavyImpact();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TagsListWidget(
+                  tagsFromTagIds: tagsFromTagIds,
+                  removeTagId: removeTagId,
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 24.0, right: 4),
+                      child: Icon(
+                        MdiIcons.tagPlusOutline,
+                        size: 32,
+                        color: AppColors.entryTextColor,
+                      ),
+                    ),
+                    onTap: onTapAdd,
+                  ),
                 ),
               ],
             );
           },
         );
       },
+    );
+  }
+}
+
+class TagsListWidget extends StatelessWidget {
+  const TagsListWidget({
+    Key? key,
+    required this.tagsFromTagIds,
+    required this.removeTagId,
+  }) : super(key: key);
+
+  final List<TagEntity> tagsFromTagIds;
+  final Function(String) removeTagId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 24),
+      child: Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: tagsFromTagIds
+              .map((TagEntity tagEntity) => TagWidget(
+                    tagEntity: tagEntity,
+                    onTap: () {
+                      removeTagId(tagEntity.id);
+                    },
+                  ))
+              .toList()),
     );
   }
 }
@@ -244,7 +313,7 @@ class TagWidget extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(chipBorderRadius),
       child: Container(
-        padding: chipPadding,
+        padding: chipPaddingClosable,
         color: getTagColor(tagEntity),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -260,10 +329,13 @@ class TagWidget extends StatelessWidget {
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
-                child: Icon(
-                  MdiIcons.close,
-                  size: 16,
-                  color: AppColors.tagTextColor,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4.0),
+                  child: Icon(
+                    MdiIcons.close,
+                    size: 16,
+                    color: AppColors.tagTextColor,
+                  ),
                 ),
                 onTap: onTap,
               ),
