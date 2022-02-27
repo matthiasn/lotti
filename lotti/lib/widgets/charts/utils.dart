@@ -75,3 +75,21 @@ DateTime getRangeEnd() {
   final DateTime now = DateTime.now();
   return DateTime(now.year, now.month, now.day, 23, 59, 59);
 }
+
+String padLeft(num value) {
+  return value.toString().padLeft(2, '0');
+}
+
+String formatDuration(Duration dur) {
+  return '${padLeft(dur.inHours)}:${padLeft(dur.inMinutes.remainder(60))}';
+}
+
+String minutesToHhMm(num? minutes) {
+  Duration dur = Duration(minutes: minutes?.ceil() ?? 0);
+  return formatDuration(dur);
+}
+
+String hoursToHhMm(num? hours) {
+  int minutes = hours != null ? (hours * 60).ceil() : 0;
+  return minutesToHhMm(minutes);
+}

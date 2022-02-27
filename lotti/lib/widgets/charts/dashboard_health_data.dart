@@ -18,6 +18,7 @@ enum HealthAggregationType {
   none,
   dailySum,
   dailyMax,
+  dailyTimeSum,
 }
 
 class HealthTypeConfig {
@@ -26,6 +27,7 @@ class HealthTypeConfig {
   final String displayName;
   final String healthType;
   final Map<num, String>? colorByValue;
+  final bool hoursMinutes;
 
   HealthTypeConfig({
     required this.displayName,
@@ -33,6 +35,7 @@ class HealthTypeConfig {
     required this.chartType,
     required this.aggregationType,
     this.colorByValue,
+    this.hoursMinutes = false,
   });
 }
 
@@ -94,6 +97,27 @@ Map<String, HealthTypeConfig> healthTypes = {
     healthType: 'HealthDataType.WORKOUT',
     chartType: HealthChartType.barChart,
     aggregationType: HealthAggregationType.dailySum,
+  ),
+  'HealthDataType.SLEEP_ASLEEP': HealthTypeConfig(
+    displayName: 'Asleep',
+    healthType: 'HealthDataType.SLEEP_ASLEEP',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
+    displayName: 'In bed',
+    healthType: 'HealthDataType.SLEEP_IN_BED',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
+  ),
+  'HealthDataType.SLEEP_AWAKE': HealthTypeConfig(
+    displayName: 'Awake in bed',
+    healthType: 'HealthDataType.SLEEP_AWAKE',
+    chartType: HealthChartType.barChart,
+    aggregationType: HealthAggregationType.dailyTimeSum,
+    hoursMinutes: true,
   ),
 };
 
@@ -195,6 +219,15 @@ List<Observation> aggregateDailySum(List<JournalEntity?> entities) {
   return aggregated;
 }
 
+List<Observation> transformToHours(List<Observation> observations) {
+  List<Observation> observationsInHours = [];
+  for (final obs in observations) {
+    observationsInHours.add(Observation(obs.dateTime, obs.value / 60));
+  }
+
+  return observationsInHours;
+}
+
 List<Observation> aggregateByType(
   List<JournalEntity?> entities,
   String dataType,
@@ -208,6 +241,8 @@ List<Observation> aggregateByType(
       return aggregateDailyMax(entities);
     case HealthAggregationType.dailySum:
       return aggregateDailySum(entities);
+    case HealthAggregationType.dailyTimeSum:
+      return transformToHours(aggregateDailySum(entities));
     default:
       return [];
   }
