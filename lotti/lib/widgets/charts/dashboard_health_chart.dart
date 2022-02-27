@@ -102,15 +102,11 @@ class DashboardHealthChart extends StatelessWidget {
                         zeroBound: false,
                         desiredTickCount: 5,
                       ),
-                      tickFormatterSpec: healthType != null &&
-                              healthType.hoursMinutes
-                          ? charts.BasicNumericTickFormatterSpec((num? value) {
-                              Duration dur =
-                                  Duration(minutes: value?.ceil() ?? 0);
-                              return '${dur.inHours}:'
-                                  '${dur.inMinutes.remainder(60)}';
-                            })
-                          : null,
+                      tickFormatterSpec:
+                          healthType != null && healthType.hoursMinutes
+                              ? const charts.BasicNumericTickFormatterSpec(
+                                  minutesToHhMM)
+                              : null,
                     ),
                   ),
                   Positioned(
