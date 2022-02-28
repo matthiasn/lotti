@@ -151,4 +151,5 @@ List<HealthDataType> heartRateTypes = [
 List<HealthDataType> bodyMeasurementTypes = [
   HealthDataType.WEIGHT,
   HealthDataType.BODY_FAT_PERCENTAGE,
+  HealthDataType.HEIGHT,
 ];
