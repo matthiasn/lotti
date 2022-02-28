@@ -48,20 +48,10 @@ class TagsWidget extends StatelessWidget {
             }
 
             void addTagIds(List<String> addedTagIds) {
-              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-              List<String> tagIds = [...existingTagIds];
-              for (String tagId in addedTagIds) {
-                if (!tagIds.contains(tagId)) {
-                  tagIds.add(tagId);
-                }
-              }
-
-              if (existingTagIds != tagIds) {
-                Metadata newMeta = liveEntity.meta.copyWith(
-                  tagIds: tagIds,
-                );
-                persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-              }
+              persistenceLogic.addTags(
+                journalEntityId: item.meta.id,
+                addedTagIds: addedTagIds,
+              );
             }
 
             TextEditingController controller = TextEditingController();
