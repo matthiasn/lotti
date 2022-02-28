@@ -48,20 +48,10 @@ class TagsWidget extends StatelessWidget {
             }
 
             void addTagIds(List<String> addedTagIds) {
-              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-              List<String> tagIds = [...existingTagIds];
-              for (String tagId in addedTagIds) {
-                if (!tagIds.contains(tagId)) {
-                  tagIds.add(tagId);
-                }
-              }
-
-              if (existingTagIds != tagIds) {
-                Metadata newMeta = liveEntity.meta.copyWith(
-                  tagIds: tagIds,
-                );
-                persistenceLogic.updateJournalEntity(liveEntity, newMeta);
-              }
+              persistenceLogic.addTags(
+                journalEntityId: item.meta.id,
+                addedTagIds: addedTagIds,
+              );
             }
 
             TextEditingController controller = TextEditingController();
@@ -288,14 +278,9 @@ class TagsListWidget extends StatelessWidget {
             }
 
             void removeTagId(String tagId) {
-              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-              persistenceLogic.updateJournalEntity(
-                liveEntity,
-                liveEntity.meta.copyWith(
-                  tagIds: existingTagIds
-                      .where((String id) => (id != tagId))
-                      .toList(),
-                ),
+              persistenceLogic.removeTag(
+                journalEntityId: item.meta.id,
+                tagId: tagId,
               );
             }
 

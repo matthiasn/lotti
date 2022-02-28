@@ -610,6 +610,75 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool?> addTags({
+    required String journalEntityId,
+    required List<String> addedTagIds,
+  }) async {
+    final transaction = _insightsDb.startTransaction('addTag()', 'task');
+    try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      Metadata meta = addTagsToMeta(journalEntity.meta, addedTagIds);
+
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+        previous: meta.vectorClock,
+      );
+
+      JournalEntity newJournalEntity = journalEntity.copyWith(
+        meta: meta.copyWith(
+          updatedAt: DateTime.now(),
+          vectorClock: vc,
+        ),
+      );
+
+      return await updateDbEntity(newJournalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
+  Future<bool?> removeTag({
+    required String journalEntityId,
+    required String tagId,
+  }) async {
+    final transaction = _insightsDb.startTransaction('addTag()', 'task');
+    try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      Metadata meta = removeTagFromMeta(journalEntity.meta, tagId);
+
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+          previous: meta.vectorClock);
+
+      JournalEntity newJournalEntity = journalEntity.copyWith(
+        meta: meta.copyWith(
+          updatedAt: DateTime.now(),
+          vectorClock: vc,
+        ),
+      );
+
+      return await updateDbEntity(newJournalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool> deleteJournalEntity(
     JournalEntity journalEntity,
   ) async {
@@ -714,4 +783,25 @@ class PersistenceLogic {
     );
     return id;
   }
+}
+
+Metadata addTagsToMeta(Metadata meta, List<String> addedTagIds) {
+  List<String> existingTagIds = meta.tagIds ?? [];
+  List<String> tagIds = [...existingTagIds];
+
+  for (String tagId in addedTagIds) {
+    if (!tagIds.contains(tagId)) {
+      tagIds.add(tagId);
+    }
+  }
+
+  return meta.copyWith(
+    tagIds: tagIds,
+  );
+}
+
+Metadata removeTagFromMeta(Metadata meta, String tagId) {
+  return meta.copyWith(
+    tagIds: meta.tagIds?.where((String id) => (id != tagId)).toList(),
+  );
 }
