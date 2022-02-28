@@ -47,16 +47,6 @@ class TagsWidget extends StatelessWidget {
               return const SizedBox.shrink();
             }
 
-            List<String> tagIds = liveEntity.meta.tagIds ?? [];
-            List<TagEntity> tagsFromTagIds = [];
-
-            for (String tagId in tagIds) {
-              TagEntity? tagEntity = tagsService.getTagById(tagId);
-              if (tagEntity != null) {
-                tagsFromTagIds.add(tagEntity);
-              }
-            }
-
             void addTagIds(List<String> addedTagIds) {
               List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
               List<String> tagIds = [...existingTagIds];
@@ -72,18 +62,6 @@ class TagsWidget extends StatelessWidget {
                 );
                 persistenceLogic.updateJournalEntity(liveEntity, newMeta);
               }
-            }
-
-            void removeTagId(String tagId) {
-              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-              persistenceLogic.updateJournalEntity(
-                liveEntity,
-                liveEntity.meta.copyWith(
-                  tagIds: existingTagIds
-                      .where((String id) => (id != tagId))
-                      .toList(),
-                ),
-              );
             }
 
             TextEditingController controller = TextEditingController();
@@ -111,10 +89,7 @@ class TagsWidget extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TagsListWidget(
-                            tagsFromTagIds: tagsFromTagIds,
-                            removeTagId: removeTagId,
-                          ),
+                          TagsListWidget(item: item),
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -242,10 +217,7 @@ class TagsWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TagsListWidget(
-                  tagsFromTagIds: tagsFromTagIds,
-                  removeTagId: removeTagId,
-                ),
+                TagsListWidget(item: item),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -270,30 +242,80 @@ class TagsWidget extends StatelessWidget {
 }
 
 class TagsListWidget extends StatelessWidget {
-  const TagsListWidget({
-    Key? key,
-    required this.tagsFromTagIds,
-    required this.removeTagId,
-  }) : super(key: key);
+  final JournalEntity item;
+  final JournalDb db = getIt<JournalDb>();
 
-  final List<TagEntity> tagsFromTagIds;
-  final Function(String) removeTagId;
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+
+  final TagsService tagsService = getIt<TagsService>();
+  late final Stream<JournalEntity?> stream = db.watchEntityById(item.meta.id);
+
+  TagsListWidget({
+    required this.item,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 24),
-      child: Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: tagsFromTagIds
-              .map((TagEntity tagEntity) => TagWidget(
-                    tagEntity: tagEntity,
-                    onTap: () {
-                      removeTagId(tagEntity.id);
-                    },
-                  ))
-              .toList()),
+    return StreamBuilder<List<TagEntity>>(
+      stream: db.watchTags(),
+      builder: (
+        BuildContext context,
+        // This stream is not used, the StreamBuilder is only here
+        // to trigger updates when any tag changes. In that case,
+        // data in the tags service will already have been updated.
+        AsyncSnapshot<List<TagEntity>> _,
+      ) {
+        return StreamBuilder<JournalEntity?>(
+          stream: stream,
+          builder: (
+            BuildContext context,
+            AsyncSnapshot<JournalEntity?> snapshot,
+          ) {
+            JournalEntity? liveEntity = snapshot.data;
+            if (liveEntity == null) {
+              return const SizedBox.shrink();
+            }
+
+            List<String> tagIds = liveEntity.meta.tagIds ?? [];
+            List<TagEntity> tagsFromTagIds = [];
+
+            for (String tagId in tagIds) {
+              TagEntity? tagEntity = tagsService.getTagById(tagId);
+              if (tagEntity != null) {
+                tagsFromTagIds.add(tagEntity);
+              }
+            }
+
+            void removeTagId(String tagId) {
+              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
+              persistenceLogic.updateJournalEntity(
+                liveEntity,
+                liveEntity.meta.copyWith(
+                  tagIds: existingTagIds
+                      .where((String id) => (id != tagId))
+                      .toList(),
+                ),
+              );
+            }
+
+            return ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 24),
+              child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: tagsFromTagIds
+                      .map((TagEntity tagEntity) => TagWidget(
+                            tagEntity: tagEntity,
+                            onTap: () {
+                              removeTagId(tagEntity.id);
+                            },
+                          ))
+                      .toList()),
+            );
+          },
+        );
+      },
     );
   }
 }
