@@ -655,6 +655,45 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool?> removeTag({
+    required String journalEntityId,
+    required String tagId,
+  }) async {
+    final transaction = _insightsDb.startTransaction('addTag()', 'task');
+    try {
+      JournalEntity? journalEntity =
+          await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity == null) {
+        return false;
+      }
+
+      Metadata meta = journalEntity.meta;
+
+      List<String> tagIds =
+          meta.tagIds?.where((String id) => (id != tagId)).toList() ?? [];
+
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock(
+          previous: meta.vectorClock);
+
+      JournalEntity newJournalEntity = journalEntity.copyWith(
+        meta: meta.copyWith(
+          updatedAt: now,
+          vectorClock: vc,
+          tagIds: tagIds,
+        ),
+      );
+
+      return await updateDbEntity(newJournalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool> deleteJournalEntity(
     JournalEntity journalEntity,
   ) async {

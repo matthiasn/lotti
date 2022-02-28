@@ -278,14 +278,9 @@ class TagsListWidget extends StatelessWidget {
             }
 
             void removeTagId(String tagId) {
-              List<String> existingTagIds = liveEntity.meta.tagIds ?? [];
-              persistenceLogic.updateJournalEntity(
-                liveEntity,
-                liveEntity.meta.copyWith(
-                  tagIds: existingTagIds
-                      .where((String id) => (id != tagId))
-                      .toList(),
-                ),
+              persistenceLogic.removeTag(
+                journalEntityId: item.meta.id,
+                tagId: tagId,
               );
             }
 
