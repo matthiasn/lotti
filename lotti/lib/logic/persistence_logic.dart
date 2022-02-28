@@ -623,26 +623,16 @@ class PersistenceLogic {
         return false;
       }
 
-      Metadata meta = journalEntity.meta;
+      Metadata meta = addTagsToMeta(journalEntity.meta, addedTagIds);
 
-      List<String> existingTagIds = meta.tagIds ?? [];
-      List<String> tagIds = [...existingTagIds];
-
-      for (String tagId in addedTagIds) {
-        if (!tagIds.contains(tagId)) {
-          tagIds.add(tagId);
-        }
-      }
-
-      DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
-          previous: meta.vectorClock);
+        previous: meta.vectorClock,
+      );
 
       JournalEntity newJournalEntity = journalEntity.copyWith(
         meta: meta.copyWith(
-          updatedAt: now,
+          updatedAt: DateTime.now(),
           vectorClock: vc,
-          tagIds: tagIds,
         ),
       );
 
@@ -668,20 +658,15 @@ class PersistenceLogic {
         return false;
       }
 
-      Metadata meta = journalEntity.meta;
+      Metadata meta = removeTagFromMeta(journalEntity.meta, tagId);
 
-      List<String> tagIds =
-          meta.tagIds?.where((String id) => (id != tagId)).toList() ?? [];
-
-      DateTime now = DateTime.now();
       VectorClock vc = await _vectorClockService.getNextVectorClock(
           previous: meta.vectorClock);
 
       JournalEntity newJournalEntity = journalEntity.copyWith(
         meta: meta.copyWith(
-          updatedAt: now,
+          updatedAt: DateTime.now(),
           vectorClock: vc,
-          tagIds: tagIds,
         ),
       );
 
@@ -798,4 +783,25 @@ class PersistenceLogic {
     );
     return id;
   }
+}
+
+Metadata addTagsToMeta(Metadata meta, List<String> addedTagIds) {
+  List<String> existingTagIds = meta.tagIds ?? [];
+  List<String> tagIds = [...existingTagIds];
+
+  for (String tagId in addedTagIds) {
+    if (!tagIds.contains(tagId)) {
+      tagIds.add(tagId);
+    }
+  }
+
+  return meta.copyWith(
+    tagIds: tagIds,
+  );
+}
+
+Metadata removeTagFromMeta(Metadata meta, String tagId) {
+  return meta.copyWith(
+    tagIds: meta.tagIds?.where((String id) => (id != tagId)).toList(),
+  );
 }
