@@ -64,6 +64,13 @@ const chipPadding = EdgeInsets.symmetric(
   horizontal: 8,
 );
 
+const chipPaddingClosable = EdgeInsets.only(
+  top: 2,
+  bottom: 2,
+  left: 8,
+  right: 4,
+);
+
 TextStyle inputStyle = TextStyle(
   color: AppColors.entryTextColor,
   fontWeight: FontWeight.bold,
