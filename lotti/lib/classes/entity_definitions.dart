@@ -123,7 +123,7 @@ class HabitCompletionData with _$HabitCompletionData {
 enum WorkoutValueType {
   duration,
   distance,
-  calories,
+  energy,
 }
 
 @freezed

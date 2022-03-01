@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardWorkoutChart extends StatelessWidget {
@@ -49,7 +50,7 @@ class DashboardWorkoutChart extends StatelessWidget {
             id: chartConfig.workoutType,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: [],
+            data: aggregateWorkoutDailySum(items, chartConfig),
           )
         ];
         return Padding(
