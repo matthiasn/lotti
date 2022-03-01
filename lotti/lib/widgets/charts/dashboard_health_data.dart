@@ -6,127 +6,8 @@ import 'package:charts_flutter/flutter.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-enum HealthChartType {
-  lineChart,
-  barChart,
-  bpChart,
-  bmiChart,
-}
-
-enum HealthAggregationType {
-  none,
-  dailySum,
-  dailyMax,
-  dailyTimeSum,
-}
-
-class HealthTypeConfig {
-  final HealthChartType chartType;
-  final HealthAggregationType aggregationType;
-  final String displayName;
-  final String healthType;
-  final Map<num, String>? colorByValue;
-  final bool hoursMinutes;
-
-  HealthTypeConfig({
-    required this.displayName,
-    required this.healthType,
-    required this.chartType,
-    required this.aggregationType,
-    this.colorByValue,
-    this.hoursMinutes = false,
-  });
-}
-
-Map<String, HealthTypeConfig> healthTypes = {
-  'HealthDataType.WEIGHT': HealthTypeConfig(
-    displayName: 'Weight',
-    healthType: 'HealthDataType.WEIGHT',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'BODY_MASS_INDEX': HealthTypeConfig(
-    displayName: 'Body Mass Index',
-    healthType: 'BODY_MASS_INDEX',
-    chartType: HealthChartType.bmiChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
-    displayName: 'Resting Heart Rate',
-    healthType: 'HealthDataType.RESTING_HEART_RATE',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.HEART_RATE_VARIABILITY_SDNN': HealthTypeConfig(
-    displayName: 'Heart Rate Variability',
-    healthType: 'HealthDataType.HEART_RATE_VARIABILITY_SDNN',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.BLOOD_PRESSURE_SYSTOLIC': HealthTypeConfig(
-    displayName: 'Systolic Blood Pressure',
-    healthType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'HealthDataType.BLOOD_PRESSURE_DIASTOLIC': HealthTypeConfig(
-    displayName: 'Diastolic Blood Pressure',
-    healthType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-    chartType: HealthChartType.lineChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'BLOOD_PRESSURE': HealthTypeConfig(
-    displayName: 'Blood Pressure',
-    healthType: 'BLOOD_PRESSURE',
-    chartType: HealthChartType.bpChart,
-    aggregationType: HealthAggregationType.none,
-  ),
-  'cumulative_step_count': HealthTypeConfig(
-      displayName: 'Steps',
-      healthType: 'cumulative_step_count',
-      chartType: HealthChartType.barChart,
-      aggregationType: HealthAggregationType.dailyMax,
-      colorByValue: {
-        10000: '#4BB543',
-        6000: '#FF5F1F',
-        0: '#FC100D',
-      }),
-  'cumulative_flights_climbed': HealthTypeConfig(
-    displayName: 'Flights of stairs',
-    healthType: 'cumulative_flights_climbed',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailyMax,
-  ),
-  'HealthDataType.WORKOUT': HealthTypeConfig(
-    displayName: 'Workout time',
-    healthType: 'HealthDataType.WORKOUT',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailySum,
-  ),
-  'HealthDataType.SLEEP_ASLEEP': HealthTypeConfig(
-    displayName: 'Asleep',
-    healthType: 'HealthDataType.SLEEP_ASLEEP',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
-  ),
-  'HealthDataType.SLEEP_IN_BED': HealthTypeConfig(
-    displayName: 'In bed',
-    healthType: 'HealthDataType.SLEEP_IN_BED',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
-  ),
-  'HealthDataType.SLEEP_AWAKE': HealthTypeConfig(
-    displayName: 'Awake in bed',
-    healthType: 'HealthDataType.SLEEP_AWAKE',
-    chartType: HealthChartType.barChart,
-    aggregationType: HealthAggregationType.dailyTimeSum,
-    hoursMinutes: true,
-  ),
-};
 
 Color colorByValue(
   Observation observation,
@@ -266,4 +147,25 @@ List<Observation> aggregateNoneFilteredBy(
       return false;
     }
   }).toList());
+}
+
+num findExtreme(
+  List<Observation> observations,
+  num Function(num, num) extremeFn,
+) {
+  num val = observations.first.value;
+
+  for (Observation observation in observations) {
+    val = extremeFn(val, observation.value);
+  }
+
+  return val;
+}
+
+num findMin(List<Observation> observations) {
+  return findExtreme(observations, min);
+}
+
+num findMax(List<Observation> observations) {
+  return findExtreme(observations, max);
 }
