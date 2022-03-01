@@ -12,6 +12,7 @@ enum HealthChartType {
   lineChart,
   barChart,
   bpChart,
+  bmiChart,
 }
 
 enum HealthAggregationType {
@@ -44,6 +45,12 @@ Map<String, HealthTypeConfig> healthTypes = {
     displayName: 'Weight',
     healthType: 'HealthDataType.WEIGHT',
     chartType: HealthChartType.lineChart,
+    aggregationType: HealthAggregationType.none,
+  ),
+  'BODY_MASS_INDEX': HealthTypeConfig(
+    displayName: 'Body Mass Index',
+    healthType: 'BODY_MASS_INDEX',
+    chartType: HealthChartType.bmiChart,
     aggregationType: HealthAggregationType.none,
   ),
   'HealthDataType.RESTING_HEART_RATE': HealthTypeConfig(
