@@ -130,4 +130,26 @@ void main() {
       expect(findMax(observations), 99);
     },
   );
+
+  test(
+    'Determine if min or max are near a range',
+    () async {
+      expect(
+          nearRange(
+            min: 28,
+            max: 29.5,
+            lowerBound: 30,
+            upperBound: 34.99,
+          ),
+          true);
+      expect(
+          nearRange(
+            min: 28,
+            max: 29.5,
+            lowerBound: 35,
+            upperBound: 39.99,
+          ),
+          false);
+    },
+  );
 }

@@ -18,8 +18,8 @@ num calculateBMI(num height, num weight) {
 
 charts.RangeAnnotationSegment<num> makeRange(
   Color color,
-  double from,
-  double to,
+  num from,
+  num to,
 ) {
   return charts.RangeAnnotationSegment(
     from,
@@ -32,6 +32,42 @@ charts.RangeAnnotationSegment<num> makeRange(
       a: 100,
     ),
   );
+}
+
+List<charts.RangeAnnotationSegment<num>> makeRangeAnnotations(
+  List<Observation> observations,
+) {
+  num min = findMin(observations);
+  num max = findMax(observations);
+
+  List<charts.RangeAnnotationSegment<num>> ranges = [
+    makeRange(Colors.green, 20, 24.99),
+    makeRange(Colors.yellow, 25, 29.99),
+  ];
+
+  num lowerGreenLower = 18.5;
+  num lowerGreenUpper = 19.99;
+  num orangeLower = 30;
+  num orangeUpper = 34.99;
+  num redLower = 35;
+  num redUpper = 39.99;
+
+  void addNearRange(Color color, num lowerBound, num upperBound) {
+    if (nearRange(
+      min: min,
+      max: max,
+      lowerBound: lowerBound,
+      upperBound: upperBound,
+    )) {
+      ranges.add(makeRange(color, lowerBound, upperBound));
+    }
+  }
+
+  addNearRange(Colors.green, lowerGreenLower, lowerGreenUpper);
+  addNearRange(Colors.orange, orangeLower, orangeUpper);
+  addNearRange(Colors.red, redLower, redUpper);
+
+  return ranges;
 }
 
 class DashboardHealthBmiChart extends StatelessWidget {
@@ -94,6 +130,11 @@ class DashboardHealthBmiChart extends StatelessWidget {
                     Observation(o.dateTime, calculateBMI(height, o.value)))
                 .toList();
 
+            List<charts.RangeAnnotationSegment<num>> rangeAnnotations =
+                makeRangeAnnotations(bmiData);
+
+            int tickCount = rangeAnnotations.length + 1;
+
             charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
 
             List<charts.Series<Observation, DateTime>> seriesList = [
@@ -121,23 +162,15 @@ class DashboardHealthBmiChart extends StatelessWidget {
                         seriesList,
                         animate: true,
                         behaviors: [
-                          charts.RangeAnnotation(
-                            [
-                              makeRange(Colors.green, 18.5, 24.99),
-                              makeRange(Colors.yellow, 25, 29.99),
-                              makeRange(Colors.orange, 30, 34.99),
-                              makeRange(Colors.red, 35, 39.99),
-                            ],
-                          )
+                          charts.RangeAnnotation(rangeAnnotations),
                         ],
                         domainAxis: timeSeriesAxis,
                         defaultRenderer: defaultRenderer,
-                        primaryMeasureAxis: const charts.NumericAxisSpec(
+                        primaryMeasureAxis: charts.NumericAxisSpec(
                           tickProviderSpec: charts.BasicNumericTickProviderSpec(
                             zeroBound: false,
                             dataIsInWholeNumbers: true,
-                            desiredMinTickCount: 6,
-                            desiredMaxTickCount: 8,
+                            desiredTickCount: tickCount,
                           ),
                         ),
                       ),

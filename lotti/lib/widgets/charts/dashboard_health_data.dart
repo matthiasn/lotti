@@ -169,3 +169,17 @@ num findMin(List<Observation> observations) {
 num findMax(List<Observation> observations) {
   return findExtreme(observations, max);
 }
+
+bool nearRange({
+  required num min,
+  required num max,
+  required num lowerBound,
+  required num upperBound,
+}) {
+  num threshold = 3;
+  bool minNearLower = (lowerBound - min).abs() < threshold;
+  bool minNearUpper = (upperBound - min).abs() < threshold;
+  bool maxNearLower = (lowerBound - max).abs() < threshold;
+  bool maxNearUpper = (upperBound - max).abs() < threshold;
+  return minNearLower || minNearUpper || maxNearLower || maxNearUpper;
+}
