@@ -46,7 +46,7 @@ class HealthImport {
         _insightsDb.startTransaction('getActivityHealthData()', 'task');
 
     final flutterHealthFit = FlutterHealthFit();
-    final bool isAuthorized = await FlutterHealthFit().authorize(true);
+    final bool isAuthorized = await FlutterHealthFit().authorize();
     final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
     debugPrint(
         'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
