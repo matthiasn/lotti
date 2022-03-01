@@ -51,6 +51,8 @@ List<charts.RangeAnnotationSegment<num>> makeRangeAnnotations(
   num orangeUpper = 34.99;
   num redLower = 35;
   num redUpper = 39.99;
+  num purpleLower = 40;
+  num purpleUpper = 49.99;
 
   void addNearRange(Color color, num lowerBound, num upperBound) {
     if (nearRange(
@@ -66,6 +68,7 @@ List<charts.RangeAnnotationSegment<num>> makeRangeAnnotations(
   addNearRange(Colors.green, lowerGreenLower, lowerGreenUpper);
   addNearRange(Colors.orange, orangeLower, orangeUpper);
   addNearRange(Colors.red, redLower, redUpper);
+  addNearRange(Colors.purple, purpleLower, purpleUpper);
 
   return ranges;
 }
