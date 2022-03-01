@@ -6,7 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_health_data.dart';
+import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';

@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 

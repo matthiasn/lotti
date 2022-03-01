@@ -2,6 +2,7 @@ import 'package:charts_flutter/flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 void main() {
@@ -112,6 +113,43 @@ void main() {
         const Color(r: 75, g: 181, b: 67),
         colorByValue(Observation(now, 17000), config),
       );
+    },
+  );
+
+  test(
+    'Min and max functions find the respective values',
+    () async {
+      List<Observation> observations = [
+        Observation(DateTime(2022, 3, 1), 6),
+        Observation(DateTime(2022, 3, 1), 27),
+        Observation(DateTime(2022, 3, 1), 1),
+        Observation(DateTime(2022, 3, 1), 99),
+        Observation(DateTime(2022, 3, 1), 42),
+      ];
+      expect(findMin(observations), 1);
+      expect(findMax(observations), 99);
+    },
+  );
+
+  test(
+    'Determine if min or max are near a range',
+    () async {
+      expect(
+          nearRange(
+            min: 28,
+            max: 29.5,
+            lowerBound: 30,
+            upperBound: 34.99,
+          ),
+          true);
+      expect(
+          nearRange(
+            min: 28,
+            max: 29.5,
+            lowerBound: 35,
+            upperBound: 39.99,
+          ),
+          false);
     },
   );
 }
