@@ -163,7 +163,7 @@ class EntryInfoRow extends StatelessWidget {
           }
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               SwitchRow(
                 label: 'Starred:',
@@ -202,6 +202,12 @@ class EntryInfoRow extends StatelessWidget {
                 icon: const Icon(MdiIcons.trashCanOutline),
                 iconSize: 24,
                 tooltip: 'Delete',
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  top: 8,
+                  bottom: 8,
+                  right: 0,
+                ),
                 color: AppColors.appBarFgColor,
                 onPressed: () async {
                   const deleteKey = 'deleteKey';

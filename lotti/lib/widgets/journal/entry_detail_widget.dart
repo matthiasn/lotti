@@ -19,7 +19,6 @@ import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
-import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -102,10 +101,6 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
                     child: TagsWidget(item: widget.item),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: EntryInfoRow(entityId: widget.item.meta.id),
                   ),
                   widget.item.map(
                     journalAudio: (JournalAudio audio) {
@@ -233,27 +228,22 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         );
                       }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: LinkedDuration(task: task),
-                          ),
-                          TaskForm(
-                            controller: _controller,
-                            focusNode: _focusNode,
-                            saveFn: saveText,
-                            formKey: formKey,
-                            data: task.data,
-                            task: task,
-                          ),
-                        ],
+                      return TaskForm(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        saveFn: saveText,
+                        formKey: formKey,
+                        data: task.data,
+                        task: task,
                       );
                     },
                     habitCompletion: (HabitCompletionEntry value) {
                       return const SizedBox.shrink();
                     },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: EntryInfoRow(entityId: widget.item.meta.id),
                   ),
                   EntryDetailFooter(
                     item: widget.item,
