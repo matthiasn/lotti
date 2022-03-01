@@ -92,6 +92,22 @@ class MeasurementData with _$MeasurementData {
 }
 
 @freezed
+class WorkoutData with _$WorkoutData {
+  factory WorkoutData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+    required String id,
+    required String workoutType,
+    required num? energy,
+    required num? distance,
+    required String? source,
+  }) = _WorkoutData;
+
+  factory WorkoutData.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutDataFromJson(json);
+}
+
+@freezed
 class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,

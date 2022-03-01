@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
+import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
@@ -83,6 +85,43 @@ class HealthImport {
     await transaction.finish();
   }
 
+  Future getWorkoutsHealthData(
+      {required DateTime dateFrom, required DateTime dateTo}) async {
+    DateTime now = DateTime.now();
+    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
+    final InsightsDb _insightsDb = getIt<InsightsDb>();
+    final transaction =
+        _insightsDb.startTransaction('getActivityHealthData()', 'task');
+
+    final flutterHealthFit = FlutterHealthFit();
+    final bool isAuthorized = await FlutterHealthFit().authorize();
+    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    debugPrint(
+        'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
+
+    List<WorkoutSample>? workouts =
+        await FlutterHealthFit().getWorkoutsBySegment(
+      dateFrom.millisecondsSinceEpoch,
+      dateToOrNow.millisecondsSinceEpoch,
+    );
+
+    workouts?.forEach((WorkoutSample workoutSample) async {
+      WorkoutData workoutData = WorkoutData(
+        dateFrom: workoutSample.start,
+        dateTo: workoutSample.end,
+        distance: workoutSample.distance,
+        energy: workoutSample.energy,
+        source: workoutSample.source,
+        workoutType: workoutSample.type.name,
+        id: workoutSample.id,
+      );
+      await persistenceLogic.createWorkoutEntry(workoutData);
+    });
+
+    await transaction.finish();
+  }
+
   Future fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
@@ -126,11 +165,6 @@ class HealthImport {
     await transaction.finish();
   }
 }
-
-List<HealthDataType> workoutTypes = [
-  HealthDataType.EXERCISE_TIME,
-  HealthDataType.WORKOUT,
-];
 
 List<HealthDataType> sleepTypes = [
   HealthDataType.SLEEP_IN_BED,

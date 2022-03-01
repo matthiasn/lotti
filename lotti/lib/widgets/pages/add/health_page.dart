@@ -112,10 +112,9 @@ class _HealthPageState extends State<HealthPage> {
               Button(
                 'Import Workout Data',
                 onPressed: () {
-                  _healthImport.fetchHealthData(
+                  _healthImport.getWorkoutsHealthData(
                     dateFrom: _dateFrom,
                     dateTo: _dateTo,
-                    types: workoutTypes,
                   );
                 },
               ),

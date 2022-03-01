@@ -49,6 +49,7 @@ class MyDayPage extends StatelessWidget {
               journalAudio: (journalAudio) => '',
               task: (task) => task.data.title,
               quantitative: (quantitative) => quantitative.data.dataType,
+              workout: (workout) => workout.data.workoutType,
               measurement: (measurement) =>
                   measurement.data.dataType.displayName,
               habitCompletion: (habitCompletion) => '',
@@ -61,6 +62,7 @@ class MyDayPage extends StatelessWidget {
               task: (task) => Colors.lightBlue,
               quantitative: (quantitative) => Colors.lightBlue,
               measurement: (measurement) => Colors.lightBlue,
+              workout: (workout) => Colors.lightGreen,
               habitCompletion: (habitCompletion) => Colors.lightBlue,
               survey: (survey) => Colors.pink,
             );

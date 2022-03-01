@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -68,6 +69,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
       task: (item) => item.entryText,
       quantitative: (_) => null,
       measurement: (item) => item.entryText,
+      workout: (item) => item.entryText,
       habitCompletion: (item) => item.entryText,
       survey: (_) => null,
     );
@@ -156,6 +158,24 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         readOnly: widget.readOnly,
                         saveFn: saveText,
                         journalEntity: widget.item,
+                      );
+                    },
+                    workout: (WorkoutEntry entry) {
+                      WorkoutData data = entry.data;
+                      return Column(
+                        children: [
+                          InfoText(
+                            '${data.workoutType}\nDistance: ${data.distance}'
+                            '\nCalories: ${data.energy}',
+                          ),
+                          EditorWidget(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            readOnly: widget.readOnly,
+                            saveFn: saveText,
+                            journalEntity: widget.item,
+                          ),
+                        ],
                       );
                     },
                     survey: (SurveyEntry surveyEntry) =>

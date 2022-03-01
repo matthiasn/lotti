@@ -19,6 +19,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     journalImage: (_) => 'images',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
+    workout: (_) => 'workout',
     survey: (_) => 'surveys',
     task: (_) => 'tasks',
   );
@@ -32,6 +33,7 @@ String typeSuffix(JournalEntity journalEntity) {
     journalImage: (_) => 'image',
     measurement: (_) => 'measurement',
     quantitative: (_) => 'quantitative',
+    workout: (_) => 'workout',
     survey: (_) => 'survey',
     task: (_) => 'task',
   );
