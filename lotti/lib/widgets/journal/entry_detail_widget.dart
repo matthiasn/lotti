@@ -19,6 +19,7 @@ import 'package:lotti/widgets/journal/entry_detail_linked.dart';
 import 'package:lotti/widgets/journal/entry_detail_linked_from.dart';
 import 'package:lotti/widgets/journal/entry_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/tags_widget.dart';
 import 'package:lotti/widgets/misc/survey_summary.dart';
 import 'package:lotti/widgets/tasks/task_form.dart';
@@ -155,13 +156,13 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         journalEntity: widget.item,
                       );
                     },
-                    workout: (WorkoutEntry entry) {
-                      WorkoutData data = entry.data;
+                    workout: (WorkoutEntry workout) {
+                      WorkoutData data = workout.data;
                       return Column(
                         children: [
-                          InfoText(
-                            '${data.workoutType}\nDistance: ${data.distance}'
-                            '\nCalories: ${data.energy}',
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: EntryTextWidget(data.toString()),
                           ),
                           EditorWidget(
                             controller: _controller,

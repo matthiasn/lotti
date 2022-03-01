@@ -49,6 +49,7 @@ class _JournalPageState extends State<JournalPage> {
     FilterBy(typeName: 'QuantitativeEntry', name: 'Quant'),
     FilterBy(typeName: 'MeasurementEntry', name: 'Measured'),
     FilterBy(typeName: 'SurveyEntry', name: 'Survey'),
+    FilterBy(typeName: 'WorkoutEntry', name: 'Workout'),
   ];
 
   late Stream<List<JournalEntity>> stream;
