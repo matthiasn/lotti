@@ -120,6 +120,12 @@ class HabitCompletionData with _$HabitCompletionData {
       _$HabitCompletionDataFromJson(json);
 }
 
+enum WorkoutValueType {
+  duration,
+  distance,
+  calories,
+}
+
 @freezed
 class DashboardItem with _$DashboardItem {
   factory DashboardItem.measurement({
@@ -130,6 +136,13 @@ class DashboardItem with _$DashboardItem {
     required String color,
     required String healthType,
   }) = DashboardHealthItem;
+
+  factory DashboardItem.workoutChart({
+    required String workoutType,
+    required String displayName,
+    required String color,
+    required WorkoutValueType valueType,
+  }) = DashboardWorkoutItem;
 
   factory DashboardItem.surveyChart({
     required Map<String, String> colorsByScoreKey,

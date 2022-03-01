@@ -4,6 +4,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_barchart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class DashboardViewerRoute extends StatelessWidget {
@@ -50,6 +51,13 @@ class DashboardViewerRoute extends StatelessWidget {
                   healthChart: (DashboardHealthItem healthChart) {
                     return DashboardHealthChart(
                       chartConfig: healthChart,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
+                    );
+                  },
+                  workoutChart: (DashboardWorkoutItem workoutChart) {
+                    return DashboardWorkoutChart(
+                      chartConfig: workoutChart,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                     );

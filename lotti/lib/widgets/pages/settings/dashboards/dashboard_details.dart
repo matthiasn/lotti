@@ -8,6 +8,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
+import 'package:lotti/widgets/charts/dashboard_workout_config.dart';
 import 'package:lotti/widgets/pages/settings/form_text_field.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -112,6 +113,33 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
     }
   }
 
+  void onConfirmAddWorkoutType(List<DashboardWorkoutItem?> selection) {
+    dashboardItems = dashboardItems ?? widget.dashboard.items;
+
+    for (DashboardWorkoutItem? selected in selection) {
+      if (selected != null) {
+        bool exists = dashboardItems!.where(
+          (DashboardItem item) {
+            return item.maybeMap(
+              workoutChart: (workout) =>
+                  workout.workoutType == selected.workoutType &&
+                  workout.valueType == selected.valueType,
+              orElse: () => false,
+            );
+          },
+        ).isNotEmpty;
+
+        if (!exists) {
+          setState(() {
+            dashboardItems?.add(
+              selected,
+            );
+          });
+        }
+      }
+    }
+  }
+
   void dismissItem(int index) {
     setState(() {
       dashboardItems = dashboardItems ?? widget.dashboard.items;
@@ -152,6 +180,15 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
           return MultiSelectItem<DashboardSurveyItem>(
             item!,
             item.surveyName,
+          );
+        }).toList();
+
+        final List<MultiSelectItem<DashboardWorkoutItem>> workoutSelectItems =
+            workoutTypes.keys.map((String typeName) {
+          DashboardWorkoutItem? item = workoutTypes[typeName];
+          return MultiSelectItem<DashboardWorkoutItem>(
+            item!,
+            item.displayName,
           );
         }).toList();
 
@@ -467,6 +504,64 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                               ),
                             ),
                           ),
+                          SizedBox(
+                            width: 280,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                right: 16.0,
+                                top: 16,
+                              ),
+                              child:
+                                  MultiSelectDialogField<DashboardWorkoutItem?>(
+                                searchable: true,
+                                backgroundColor: AppColors.bodyBgColor,
+                                items: workoutSelectItems,
+                                initialValue: const [],
+                                title: Text(
+                                  "Add Workout Charts",
+                                  style: titleStyle,
+                                ),
+                                checkColor: AppColors.entryTextColor,
+                                selectedColor: Colors.blue,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(40),
+                                  ),
+                                  border: Border.all(
+                                    color: AppColors.entryTextColor,
+                                    width: 2,
+                                  ),
+                                ),
+                                itemsTextStyle: multiSelectStyle,
+                                selectedItemsTextStyle:
+                                    multiSelectStyle.copyWith(
+                                  fontWeight: FontWeight.normal,
+                                ),
+                                unselectedColor: AppColors.entryTextColor,
+                                searchIcon: Icon(
+                                  Icons.search,
+                                  size: 32,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                searchTextStyle: formLabelStyle,
+                                searchHintStyle: formLabelStyle,
+                                buttonIcon: Icon(
+                                  Icons.sports_gymnastics,
+                                  color: AppColors.entryTextColor,
+                                ),
+                                buttonText: Text(
+                                  "Add Workout Charts",
+                                  style: TextStyle(
+                                    color: AppColors.entryTextColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                onConfirm: onConfirmAddWorkoutType,
+                              ),
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
                             child: Row(
@@ -550,6 +645,9 @@ class DashboardItemCard extends StatelessWidget {
       surveyChart: (surveyChart) {
         return surveyChart.surveyName;
       },
+      workoutChart: (workoutChart) {
+        return workoutChart.displayName;
+      },
     );
 
     return Card(
@@ -571,6 +669,11 @@ class DashboardItemCard extends StatelessWidget {
           ),
           healthChart: (_) => Icon(
             MdiIcons.stethoscope,
+            size: 32,
+            color: AppColors.entryTextColor,
+          ),
+          workoutChart: (_) => Icon(
+            Icons.sports_gymnastics,
             size: 32,
             color: AppColors.entryTextColor,
           ),
