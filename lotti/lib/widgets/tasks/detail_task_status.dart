@@ -67,7 +67,7 @@ class DetailTaskStatusWidget extends StatelessWidget {
               icon: const Icon(Icons.edit),
               iconSize: 32,
               color: AppColors.entryTextColor,
-              tooltip: 'Link from',
+              tooltip: 'Edit Task',
               onPressed: onPressed,
             ),
           ],
