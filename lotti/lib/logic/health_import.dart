@@ -38,8 +38,10 @@ class HealthImport {
     }
   }
 
-  Future getActivityHealthData(
-      {required DateTime dateFrom, required DateTime dateTo}) async {
+  Future getActivityHealthData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
     DateTime now = DateTime.now();
     DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
@@ -163,6 +165,10 @@ class HealthImport {
       debugPrint('Authorization not granted');
     }
     await transaction.finish();
+  }
+
+  Future fetchHealthDataDelta(String type) async {
+    debugPrint('fetchHealthDataDelta $type');
   }
 }
 
