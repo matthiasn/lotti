@@ -92,6 +92,22 @@ class MeasurementData with _$MeasurementData {
 }
 
 @freezed
+class WorkoutData with _$WorkoutData {
+  factory WorkoutData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+    required String id,
+    required String workoutType,
+    required num? energy,
+    required num? distance,
+    required String? source,
+  }) = _WorkoutData;
+
+  factory WorkoutData.fromJson(Map<String, dynamic> json) =>
+      _$WorkoutDataFromJson(json);
+}
+
+@freezed
 class HabitCompletionData with _$HabitCompletionData {
   factory HabitCompletionData({
     required DateTime dateFrom,
@@ -104,6 +120,12 @@ class HabitCompletionData with _$HabitCompletionData {
       _$HabitCompletionDataFromJson(json);
 }
 
+enum WorkoutValueType {
+  duration,
+  distance,
+  energy,
+}
+
 @freezed
 class DashboardItem with _$DashboardItem {
   factory DashboardItem.measurement({
@@ -114,6 +136,13 @@ class DashboardItem with _$DashboardItem {
     required String color,
     required String healthType,
   }) = DashboardHealthItem;
+
+  factory DashboardItem.workoutChart({
+    required String workoutType,
+    required String displayName,
+    required String color,
+    required WorkoutValueType valueType,
+  }) = DashboardWorkoutItem;
 
   factory DashboardItem.surveyChart({
     required Map<String, String> colorsByScoreKey,

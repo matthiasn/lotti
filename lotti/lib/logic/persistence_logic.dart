@@ -80,6 +80,38 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool> createWorkoutEntry(WorkoutData data) async {
+    final transaction =
+        _insightsDb.startTransaction('createQuantitativeEntry()', 'task');
+    try {
+      DateTime now = DateTime.now();
+      VectorClock vc = await _vectorClockService.getNextVectorClock();
+
+      DateTime dateFrom = data.dateFrom;
+      DateTime dateTo = data.dateTo;
+
+      JournalEntity journalEntity = JournalEntity.workout(
+        data: data,
+        meta: Metadata(
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          id: data.id,
+          vectorClock: vc,
+          timezone: await getLocalTimezone(),
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+      );
+      await createDbEntity(journalEntity, enqueueSync: true);
+    } catch (exception, stackTrace) {
+      await _insightsDb.captureException(exception, stackTrace: stackTrace);
+    }
+
+    await transaction.finish();
+    return true;
+  }
+
   Future<bool> createSurveyEntry({
     required SurveyData data,
     JournalEntity? linked,

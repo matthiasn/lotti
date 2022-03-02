@@ -57,6 +57,7 @@ class EntryDetailRoute extends StatelessWidget {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.only(top: 16.0, bottom: 64),
           reverse: true,
           child: EntryDetailWidget(

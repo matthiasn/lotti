@@ -444,6 +444,13 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
+  Stream<List<JournalEntity>> watchWorkouts({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    return workouts(rangeStart, rangeEnd).watch().map(entityStreamMapper);
+  }
+
   Stream<List<Conflict>> watchConflicts(
     ConflictStatus status, {
     int limit = 1000,

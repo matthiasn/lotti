@@ -635,8 +635,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "459aaa3"
-      resolved-ref: "459aaa32e8bd29288b093a22905a185d04b0c1e6"
+      ref: "30102b6"
+      resolved-ref: "30102b653cdd2af64509edb4643e809e40139e7c"
       url: "https://github.com/metaflowltd/flutter_health_fit.git"
     source: git
     version: "0.1.0"

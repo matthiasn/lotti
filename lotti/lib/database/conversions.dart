@@ -16,6 +16,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
         entry.data.dataType.name.toLowerCase(),
     survey: (SurveyEntry entry) =>
         entry.data.taskResult.identifier.toLowerCase(),
+    workout: (WorkoutEntry entry) => entry.data.workoutType,
     orElse: () => '',
   );
 

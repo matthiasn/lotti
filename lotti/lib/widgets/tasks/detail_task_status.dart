@@ -22,7 +22,7 @@ class DetailTaskStatusWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           alignment: WrapAlignment.start,
@@ -67,7 +67,7 @@ class DetailTaskStatusWidget extends StatelessWidget {
               icon: const Icon(Icons.edit),
               iconSize: 32,
               color: AppColors.entryTextColor,
-              tooltip: 'Link from',
+              tooltip: 'Edit Task',
               onPressed: onPressed,
             ),
           ],

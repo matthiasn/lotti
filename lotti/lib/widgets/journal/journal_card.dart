@@ -10,6 +10,7 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/journal/card_image_widget.dart';
 import 'package:lotti/widgets/journal/entry_detail_route.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
+import 'package:lotti/widgets/journal/helpers.dart';
 import 'package:lotti/widgets/journal/linked_duration.dart';
 import 'package:lotti/widgets/journal/tags_view_widget.dart';
 import 'package:lotti/widgets/journal/text_viewer_widget.dart';
@@ -83,14 +84,14 @@ class JournalCardTitle extends StatelessWidget {
             ],
           ),
           TagsViewWidget(item: item),
-          item.maybeMap(
+          item.map(
             quantitative: (QuantitativeEntry qe) => qe.data.maybeMap(
-              cumulativeQuantityData: (qd) => EntryText(
+              cumulativeQuantityData: (qd) => EntryTextWidget(
                 'End: ${df.format(qd.dateTo)}'
                 '\n${formatType(qd.dataType)}: '
                 '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
               ),
-              discreteQuantityData: (qd) => EntryText(
+              discreteQuantityData: (qd) => EntryTextWidget(
                 'End: ${df.format(item.meta.dateTo)}'
                 '\n${formatType(qd.dataType)}: '
                 '${nf.format(qd.value)} ${formatUnit(qd.unit)}',
@@ -100,7 +101,7 @@ class JournalCardTitle extends StatelessWidget {
             journalAudio: (JournalAudio journalAudio) =>
                 journalAudio.entryText?.plainText != null
                     ? TextViewerWidget(entryText: journalAudio.entryText)
-                    : EntryText(formatAudio(journalAudio)),
+                    : EntryTextWidget(formatAudio(journalAudio)),
             journalEntry: (JournalEntry journalEntry) => TextViewerWidget(
               entryText: journalEntry.entryText,
             ),
@@ -117,7 +118,7 @@ class JournalCardTitle extends StatelessWidget {
                 children: [
                   if (measurementEntry.entryText?.plainText != null)
                     TextViewerWidget(entryText: measurementEntry.entryText),
-                  EntryText(
+                  EntryTextWidget(
                     '${data.dataType.displayName}: '
                     '${nf.format(data.value)}',
                     padding: EdgeInsets.zero,
@@ -152,9 +153,9 @@ class JournalCardTitle extends StatelessWidget {
                 ],
               );
             },
-            orElse: () => Row(
-              children: const [],
-            ),
+            workout: (WorkoutEntry workout) =>
+                EntryTextWidget(workout.data.toString()),
+            habitCompletion: (_) => const SizedBox.shrink(),
           ),
           DurationWidget(
             item: item,
@@ -167,33 +168,6 @@ class JournalCardTitle extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class EntryText extends StatelessWidget {
-  final String text;
-  final int maxLines;
-  final EdgeInsets padding;
-  const EntryText(
-    this.text, {
-    Key? key,
-    this.maxLines = 5,
-    this.padding = const EdgeInsets.only(top: 4.0),
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding,
-      child: Text(text,
-          maxLines: maxLines,
-          style: TextStyle(
-            fontFamily: 'ShareTechMono',
-            color: AppColors.entryTextColor,
-            fontWeight: FontWeight.w300,
-            fontSize: 14.0,
-          )),
     );
   }
 }
