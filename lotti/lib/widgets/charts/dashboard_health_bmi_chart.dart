@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -136,6 +137,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const BmiRangeLegend(),
                     ],
                   ),
                 ),
@@ -144,6 +146,70 @@ class DashboardHealthBmiChart extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class BmiRangeLegend extends StatelessWidget {
+  const BmiRangeLegend({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 40,
+      left: 40,
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5), //New
+              blurRadius: 32.0,
+              offset: const Offset(0, 16),
+            )
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            color: Colors.white.withOpacity(0.9),
+            width: 120,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  ...bmiRanges.reversed.map(
+                    (range) {
+                      return Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 20,
+                              height: 12,
+                              color: HexColor(range.hexColor).withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 8,
+                          ),
+                          Text(
+                            range.name,
+                            style: chartTitleStyle.copyWith(
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
