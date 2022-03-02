@@ -302,6 +302,14 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+latestQuantByType:
+SELECT * FROM journal
+  WHERE type = 'QuantitativeEntry'
+  AND subtype = :subtype
+  AND deleted = false
+  ORDER BY date_from DESC
+  LIMIT 1;
+
 quantitativeByTypes:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
@@ -318,6 +326,13 @@ SELECT * FROM journal
   AND date_to <= :rangeEnd
   AND deleted = false
   ORDER BY date_from DESC;
+
+findLatestWorkout:
+SELECT * FROM journal
+  WHERE type = 'WorkoutEntry'
+  AND deleted = false
+  ORDER BY date_to DESC
+  LIMIT 1;
 
 surveysByType:
 SELECT * FROM journal

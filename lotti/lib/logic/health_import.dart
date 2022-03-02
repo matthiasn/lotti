@@ -2,18 +2,23 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_health_fit/flutter_health_fit.dart';
 import 'package:flutter_health_fit/workout_sample.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/insights_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 
 class HealthImport {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final JournalDb _db = getIt<JournalDb>();
+
   late final String platform;
   String? deviceType;
 
@@ -38,10 +43,13 @@ class HealthImport {
     }
   }
 
-  Future getActivityHealthData(
-      {required DateTime dateFrom, required DateTime dateTo}) async {
+  Future getActivityHealthData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
     DateTime now = DateTime.now();
     DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+    debugPrint('getActivityHealthData $dateFrom $dateToOrNow');
 
     final InsightsDb _insightsDb = getIt<InsightsDb>();
     final transaction =
@@ -85,49 +93,13 @@ class HealthImport {
     await transaction.finish();
   }
 
-  Future getWorkoutsHealthData(
-      {required DateTime dateFrom, required DateTime dateTo}) async {
-    DateTime now = DateTime.now();
-    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
-
-    final InsightsDb _insightsDb = getIt<InsightsDb>();
-    final transaction =
-        _insightsDb.startTransaction('getActivityHealthData()', 'task');
-
-    final flutterHealthFit = FlutterHealthFit();
-    final bool isAuthorized = await FlutterHealthFit().authorize();
-    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
-    debugPrint(
-        'flutterHealthFit isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
-
-    List<WorkoutSample>? workouts =
-        await FlutterHealthFit().getWorkoutsBySegment(
-      dateFrom.millisecondsSinceEpoch,
-      dateToOrNow.millisecondsSinceEpoch,
-    );
-
-    workouts?.forEach((WorkoutSample workoutSample) async {
-      WorkoutData workoutData = WorkoutData(
-        dateFrom: workoutSample.start,
-        dateTo: workoutSample.end,
-        distance: workoutSample.distance,
-        energy: workoutSample.energy,
-        source: workoutSample.source,
-        workoutType: workoutSample.type.name,
-        id: workoutSample.id,
-      );
-      await persistenceLogic.createWorkoutEntry(workoutData);
-    });
-
-    await transaction.finish();
-  }
-
   Future fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
     required DateTime dateTo,
   }) async {
     final InsightsDb _insightsDb = getIt<InsightsDb>();
+    debugPrint('fetchHealthData $types $dateFrom $dateTo');
 
     final transaction =
         _insightsDb.startTransaction('fetchHealthData()', 'task');
@@ -163,6 +135,103 @@ class HealthImport {
       debugPrint('Authorization not granted');
     }
     await transaction.finish();
+  }
+
+  Future fetchHealthDataDelta(String type) async {
+    List<String> actualTypes = [type];
+
+    if (type == 'BLOOD_PRESSURE') {
+      actualTypes = [
+        'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+        'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+      ];
+    } else if (type == 'BODY_MASS_INDEX') {
+      actualTypes = ['HealthDataType.WEIGHT'];
+    }
+
+    QuantitativeEntry? latest =
+        await _db.latestQuantitativeByType(actualTypes.first);
+    DateTime now = DateTime.now();
+    latest?.data.map(
+      cumulativeQuantityData: (cumulativeQuantityData) {
+        getActivityHealthData(
+          dateFrom: latest.meta.dateFrom,
+          dateTo: now,
+        );
+      },
+      discreteQuantityData: (discreteQuantityData) {
+        List<HealthDataType> healthDataTypes = [];
+
+        for (String type in actualTypes) {
+          String subType = type.replaceAll('HealthDataType.', '');
+          HealthDataType? healthDataType =
+              EnumToString.fromString(HealthDataType.values, subType);
+
+          if (healthDataType != null) {
+            healthDataTypes.add(healthDataType);
+          }
+        }
+
+        if (healthDataTypes.isNotEmpty) {
+          fetchHealthData(
+            types: healthDataTypes,
+            dateFrom: latest.meta.dateFrom,
+            dateTo: now,
+          );
+        }
+      },
+    );
+  }
+
+  Future getWorkoutsHealthData({
+    required DateTime dateFrom,
+    required DateTime dateTo,
+  }) async {
+    DateTime now = DateTime.now();
+    DateTime dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
+
+    final InsightsDb _insightsDb = getIt<InsightsDb>();
+    final transaction =
+        _insightsDb.startTransaction('getActivityHealthData()', 'task');
+    debugPrint('getWorkoutsHealthData $dateFrom - $dateTo');
+    final flutterHealthFit = FlutterHealthFit();
+    final bool isAuthorized = await FlutterHealthFit().authorize();
+    final bool isAnyAuth = await flutterHealthFit.isAnyPermissionAuthorized();
+    debugPrint(
+        'getWorkoutsHealthData isAuthorized: $isAuthorized, isAnyAuth: $isAnyAuth');
+
+    List<WorkoutSample>? workouts =
+        await FlutterHealthFit().getWorkoutsBySegment(
+      dateFrom.millisecondsSinceEpoch,
+      dateToOrNow.millisecondsSinceEpoch,
+    );
+
+    workouts?.forEach((WorkoutSample workoutSample) async {
+      WorkoutData workoutData = WorkoutData(
+        dateFrom: workoutSample.start,
+        dateTo: workoutSample.end,
+        distance: workoutSample.distance,
+        energy: workoutSample.energy,
+        source: workoutSample.source,
+        workoutType: workoutSample.type.name,
+        id: workoutSample.id,
+      );
+      await persistenceLogic.createWorkoutEntry(workoutData);
+    });
+
+    await transaction.finish();
+  }
+
+  Future getWorkoutsHealthDataDelta() async {
+    WorkoutEntry? latest = await _db.latestWorkout();
+    DateTime now = DateTime.now();
+
+    if (latest != null) {
+      getWorkoutsHealthData(
+        dateFrom: latest.data.dateFrom,
+        dateTo: now,
+      );
+    }
   }
 }
 

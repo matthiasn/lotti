@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
@@ -14,37 +15,49 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 import 'dashboard_health_bp_chart.dart';
 
-class DashboardHealthChart extends StatelessWidget {
+class DashboardHealthChart extends StatefulWidget {
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardHealthChart({
+  const DashboardHealthChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
   }) : super(key: key);
 
+  @override
+  State<DashboardHealthChart> createState() => _DashboardHealthChartState();
+}
+
+class _DashboardHealthChartState extends State<DashboardHealthChart> {
   final JournalDb _db = getIt<JournalDb>();
+  final HealthImport _healthImport = getIt<HealthImport>();
+
+  @override
+  void initState() {
+    super.initState();
+    _healthImport.fetchHealthDataDelta(widget.chartConfig.healthType);
+  }
 
   @override
   Widget build(BuildContext context) {
-    String dataType = chartConfig.healthType;
+    String dataType = widget.chartConfig.healthType;
 
     if (dataType == 'BLOOD_PRESSURE') {
       return DashboardHealthBpChart(
-        chartConfig: chartConfig,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        chartConfig: widget.chartConfig,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       );
     }
 
     if (dataType == 'BODY_MASS_INDEX') {
       return DashboardHealthBmiChart(
-        chartConfig: chartConfig,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        chartConfig: widget.chartConfig,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       );
     }
 
@@ -62,9 +75,9 @@ class DashboardHealthChart extends StatelessWidget {
 
     return StreamBuilder<List<JournalEntity?>>(
       stream: _db.watchQuantitativeByType(
-        type: chartConfig.healthType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        type: widget.chartConfig.healthType,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       ),
       builder: (
         BuildContext context,
@@ -92,7 +105,7 @@ class DashboardHealthChart extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              key: Key('${chartConfig.hashCode}'),
+              key: Key('${widget.chartConfig.hashCode}'),
               color: Colors.white,
               height: 120,
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -102,7 +115,7 @@ class DashboardHealthChart extends StatelessWidget {
                     seriesList,
                     animate: true,
                     behaviors: [
-                      chartRangeAnnotation(rangeStart, rangeEnd),
+                      chartRangeAnnotation(widget.rangeStart, widget.rangeEnd),
                     ],
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
@@ -131,8 +144,9 @@ class DashboardHealthChart extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            healthTypes[chartConfig.healthType]?.displayName ??
-                                chartConfig.healthType,
+                            healthTypes[widget.chartConfig.healthType]
+                                    ?.displayName ??
+                                widget.chartConfig.healthType,
                             style: chartTitleStyle,
                           ),
                         ],
