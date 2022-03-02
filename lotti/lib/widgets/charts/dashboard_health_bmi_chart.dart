@@ -164,35 +164,36 @@ class BmiRangeLegend extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5), //New
-              blurRadius: 32.0,
-              offset: const Offset(0, 16),
+              color: Colors.black.withOpacity(0.3), //New
+              blurRadius: 8.0,
+              offset: const Offset(0, 8),
             )
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            color: Colors.white.withOpacity(0.9),
-            width: 120,
+            color: Colors.white.withOpacity(0.75),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ...bmiRanges.reversed.map(
                     (range) {
                       return Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(4),
                             child: Container(
-                              width: 20,
+                              width: 12,
                               height: 12,
                               color: HexColor(range.hexColor).withOpacity(0.7),
                             ),
                           ),
                           const SizedBox(
-                            width: 8,
+                            width: 6,
                           ),
                           Text(
                             range.name,
