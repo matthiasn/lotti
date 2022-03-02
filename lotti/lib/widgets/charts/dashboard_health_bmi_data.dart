@@ -55,10 +55,10 @@ List<BmiRange> bmiRanges = [
       ),
       BmiRangeSegment(
         lowerBoundInclusive: 20,
-        upperBoundExclusive: 22.5,
+        upperBoundExclusive: 23,
       ),
       BmiRangeSegment(
-        lowerBoundInclusive: 22.5,
+        lowerBoundInclusive: 23,
         upperBoundExclusive: 25,
         alwaysShow: true,
       ),
@@ -89,10 +89,14 @@ List<BmiRange> bmiRanges = [
     segments: [
       BmiRangeSegment(
         lowerBoundInclusive: 30,
-        upperBoundExclusive: 32.5,
+        upperBoundExclusive: 32,
       ),
       BmiRangeSegment(
-        lowerBoundInclusive: 32.5,
+        lowerBoundInclusive: 32,
+        upperBoundExclusive: 34,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 34,
         upperBoundExclusive: 35,
       ),
     ],

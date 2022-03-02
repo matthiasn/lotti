@@ -176,7 +176,7 @@ bool nearRange({
   required num lowerBound,
   required num upperBound,
 }) {
-  num threshold = 3;
+  num threshold = 2;
   bool minNearLower = (lowerBound - min).abs() < threshold;
   bool minNearUpper = (upperBound - min).abs() < threshold;
   bool maxNearLower = (lowerBound - max).abs() < threshold;

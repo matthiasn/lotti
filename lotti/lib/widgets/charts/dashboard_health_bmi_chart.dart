@@ -71,7 +71,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
             List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
                 makeRangeAnnotationSegments(weightData, height);
 
-            int tickCount = rangeAnnotationSegments.length * 2 + 1;
+            int tickCount = rangeAnnotationSegments.length * 2;
             charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
 
             List<charts.Series<Observation, DateTime>> seriesList = [
@@ -99,7 +99,12 @@ class DashboardHealthBmiChart extends StatelessWidget {
                         seriesList,
                         animate: true,
                         behaviors: [
-                          charts.RangeAnnotation(rangeAnnotationSegments),
+                          charts.RangeAnnotation([
+                            charts.RangeAnnotationSegment(rangeStart, rangeEnd,
+                                charts.RangeAnnotationAxisType.domain,
+                                color: charts.Color.white),
+                            ...rangeAnnotationSegments,
+                          ]),
                         ],
                         domainAxis: timeSeriesAxis,
                         defaultRenderer: defaultRenderer,
