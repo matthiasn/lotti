@@ -206,6 +206,7 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                             journalEntityId: task.meta.id,
                             taskData: task.data,
                           );
+                          HapticFeedback.heavyImpact();
 
                           return;
                         }
