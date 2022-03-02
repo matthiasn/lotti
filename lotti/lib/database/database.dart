@@ -433,6 +433,15 @@ class JournalDb extends _$JournalDb {
     return fromDbEntity(dbEntities.first) as QuantitativeEntry;
   }
 
+  Future<WorkoutEntry?> latestWorkout() async {
+    var dbEntities = await findLatestWorkout().get();
+    if (dbEntities.isEmpty) {
+      debugPrint('no workout found');
+      return null;
+    }
+    return fromDbEntity(dbEntities.first) as WorkoutEntry;
+  }
+
   Stream<List<JournalEntity>> watchSurveysByType({
     required String type,
     required DateTime rangeStart,

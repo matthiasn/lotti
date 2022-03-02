@@ -327,6 +327,13 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+findLatestWorkout:
+SELECT * FROM journal
+  WHERE type = 'WorkoutEntry'
+  AND deleted = false
+  ORDER BY date_to DESC
+  LIMIT 1;
+
 surveysByType:
 SELECT * FROM journal
   WHERE type = 'SurveyEntry'
