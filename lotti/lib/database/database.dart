@@ -424,6 +424,15 @@ class JournalDb extends _$JournalDb {
         .map(entityStreamMapper);
   }
 
+  Future<QuantitativeEntry?> latestQuantitativeByType(String type) async {
+    var dbEntities = await latestQuantByType(type).get();
+    if (dbEntities.isEmpty) {
+      debugPrint('latestQuantitativeByType no result for $type');
+      return null;
+    }
+    return fromDbEntity(dbEntities.first) as QuantitativeEntry;
+  }
+
   Stream<List<JournalEntity>> watchSurveysByType({
     required String type,
     required DateTime rangeStart,

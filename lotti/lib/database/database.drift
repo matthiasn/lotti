@@ -302,6 +302,14 @@ SELECT * FROM journal
   AND deleted = false
   ORDER BY date_from DESC;
 
+latestQuantByType:
+SELECT * FROM journal
+  WHERE type = 'QuantitativeEntry'
+  AND subtype = :subtype
+  AND deleted = false
+  ORDER BY date_from DESC
+  LIMIT 1;
+
 quantitativeByTypes:
 SELECT * FROM journal
   WHERE type = 'QuantitativeEntry'
