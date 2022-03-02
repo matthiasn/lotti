@@ -164,9 +164,9 @@ class BmiRangeLegend extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5), //New
-              blurRadius: 32.0,
-              offset: const Offset(0, 16),
+              color: Colors.black.withOpacity(0.3), //New
+              blurRadius: 8.0,
+              offset: const Offset(0, 8),
             )
           ],
         ),
