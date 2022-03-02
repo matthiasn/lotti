@@ -67,16 +67,11 @@ class DashboardHealthBmiChart extends StatelessWidget {
             }
 
             List<Observation> weightData = aggregateNone(items);
-            List<Observation> bmiData = weightData
-                .map((Observation o) =>
-                    Observation(o.dateTime, calculateBMI(height, o.value)))
-                .toList();
 
-            List<charts.RangeAnnotationSegment<num>> rangeAnnotations =
-                makeRangeAnnotations(bmiData);
+            List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
+                makeRangeAnnotationSegments(weightData, height);
 
-            int tickCount = rangeAnnotations.length + 1;
-
+            int tickCount = rangeAnnotationSegments.length * 2 + 1;
             charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
 
             List<charts.Series<Observation, DateTime>> seriesList = [
@@ -85,7 +80,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
                 colorFn: (Observation val, _) => blue,
                 domainFn: (Observation val, _) => val.dateTime,
                 measureFn: (Observation val, _) => val.value,
-                data: bmiData,
+                data: weightData,
               ),
             ];
 
@@ -104,7 +99,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
                         seriesList,
                         animate: true,
                         behaviors: [
-                          charts.RangeAnnotation(rangeAnnotations),
+                          charts.RangeAnnotation(rangeAnnotationSegments),
                         ],
                         domainAxis: timeSeriesAxis,
                         defaultRenderer: defaultRenderer,

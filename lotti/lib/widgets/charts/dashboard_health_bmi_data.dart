@@ -1,7 +1,7 @@
 import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
-import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 
 num calculateBMI(num height, num weight) {
@@ -9,11 +9,142 @@ num calculateBMI(num height, num weight) {
   return weight / heightSquare;
 }
 
-charts.RangeAnnotationSegment<num> makeRange(
-  Color color,
+num weightFromBmi(num height, num bmi) {
+  num heightSquare = height * height;
+  return bmi * heightSquare;
+}
+
+class BmiRangeSegment {
+  final num lowerBoundInclusive;
+  final num upperBoundExclusive;
+  final bool alwaysShow;
+
+  BmiRangeSegment({
+    required this.lowerBoundInclusive,
+    required this.upperBoundExclusive,
+    this.alwaysShow = false,
+  });
+}
+
+class BmiRange {
+  final String name;
+  final String hexColor;
+  final num lowerBoundInclusive;
+  final num upperBoundExclusive;
+  final List<BmiRangeSegment> segments;
+
+  BmiRange({
+    required this.name,
+    required this.hexColor,
+    required this.lowerBoundInclusive,
+    required this.upperBoundExclusive,
+    required this.segments,
+  });
+}
+
+List<BmiRange> bmiRanges = [
+  BmiRange(
+    name: 'NORMAL',
+    hexColor: '#27B707',
+    lowerBoundInclusive: 18.5,
+    upperBoundExclusive: 25,
+    segments: [
+      BmiRangeSegment(
+        lowerBoundInclusive: 18.5,
+        upperBoundExclusive: 20,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 20,
+        upperBoundExclusive: 22.5,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 22.5,
+        upperBoundExclusive: 25,
+        alwaysShow: true,
+      ),
+    ],
+  ),
+  BmiRange(
+    name: 'OVERWEIGHT',
+    hexColor: '#FCB004',
+    lowerBoundInclusive: 25,
+    upperBoundExclusive: 30,
+    segments: [
+      BmiRangeSegment(
+        lowerBoundInclusive: 25,
+        upperBoundExclusive: 27.5,
+        alwaysShow: true,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 27.5,
+        upperBoundExclusive: 30,
+      ),
+    ],
+  ),
+  BmiRange(
+    name: 'OBESE',
+    hexColor: '#FA6707',
+    lowerBoundInclusive: 30,
+    upperBoundExclusive: 35,
+    segments: [
+      BmiRangeSegment(
+        lowerBoundInclusive: 30,
+        upperBoundExclusive: 32.5,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 32.5,
+        upperBoundExclusive: 35,
+      ),
+    ],
+  ),
+  BmiRange(
+    name: 'SEVERELY OBESE',
+    hexColor: '#FF1700',
+    lowerBoundInclusive: 35,
+    upperBoundExclusive: 50,
+    segments: [
+      BmiRangeSegment(
+        lowerBoundInclusive: 35,
+        upperBoundExclusive: 37.5,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 37.5,
+        upperBoundExclusive: 40,
+      ),
+    ],
+  ),
+  BmiRange(
+    name: 'MORBIDLY OBESE',
+    hexColor: '#7030A0',
+    lowerBoundInclusive: 40,
+    upperBoundExclusive: 50,
+    segments: [
+      BmiRangeSegment(
+        lowerBoundInclusive: 40,
+        upperBoundExclusive: 42.5,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 42.5,
+        upperBoundExclusive: 45,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 45,
+        upperBoundExclusive: 47.5,
+      ),
+      BmiRangeSegment(
+        lowerBoundInclusive: 47.5,
+        upperBoundExclusive: 50,
+      ),
+    ],
+  ),
+];
+
+charts.RangeAnnotationSegment<num> makeRangeSegment(
+  String hexColor,
   num from,
   num to,
 ) {
+  HexColor color = HexColor(hexColor);
   return charts.RangeAnnotationSegment(
     from,
     to,
@@ -27,41 +158,37 @@ charts.RangeAnnotationSegment<num> makeRange(
   );
 }
 
-List<charts.RangeAnnotationSegment<num>> makeRangeAnnotations(
+List<charts.RangeAnnotationSegment<num>> makeRangeAnnotationSegments(
   List<Observation> observations,
+  num height,
 ) {
   num min = findMin(observations);
   num max = findMax(observations);
 
-  List<charts.RangeAnnotationSegment<num>> ranges = [
-    makeRange(Colors.green, 20, 24.99),
-    makeRange(Colors.yellow, 25, 29.99),
-  ];
+  List<charts.RangeAnnotationSegment<num>> rangeSegments = [];
 
-  num lowerGreenLower = 18.5;
-  num lowerGreenUpper = 19.99;
-  num orangeLower = 30;
-  num orangeUpper = 34.99;
-  num redLower = 35;
-  num redUpper = 39.99;
-  num purpleLower = 40;
-  num purpleUpper = 49.99;
+  for (BmiRange range in bmiRanges) {
+    for (BmiRangeSegment segment in range.segments) {
+      num lowerWeightBoundInclusive =
+          weightFromBmi(height, segment.lowerBoundInclusive);
+      num upperWeightBoundExclusive =
+          weightFromBmi(height, segment.upperBoundExclusive);
 
-  void addNearRange(Color color, num lowerBound, num upperBound) {
-    if (nearRange(
-      min: min,
-      max: max,
-      lowerBound: lowerBound,
-      upperBound: upperBound,
-    )) {
-      ranges.add(makeRange(color, lowerBound, upperBound));
+      if (segment.alwaysShow ||
+          nearRange(
+            min: min,
+            max: max,
+            lowerBound: lowerWeightBoundInclusive,
+            upperBound: upperWeightBoundExclusive,
+          )) {
+        rangeSegments.add(makeRangeSegment(
+          range.hexColor,
+          lowerWeightBoundInclusive,
+          upperWeightBoundExclusive,
+        ));
+      }
     }
   }
 
-  addNearRange(Colors.green, lowerGreenLower, lowerGreenUpper);
-  addNearRange(Colors.orange, orangeLower, orangeUpper);
-  addNearRange(Colors.red, redLower, redUpper);
-  addNearRange(Colors.purple, purpleLower, purpleUpper);
-
-  return ranges;
+  return rangeSegments;
 }
