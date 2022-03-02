@@ -40,7 +40,7 @@ Map<String, HealthTypeConfig> healthTypes = {
     aggregationType: HealthAggregationType.none,
   ),
   'BODY_MASS_INDEX': HealthTypeConfig(
-    displayName: 'Body Mass Index',
+    displayName: 'Weight vs. Body Mass Index',
     healthType: 'BODY_MASS_INDEX',
     chartType: HealthChartType.bmiChart,
     aggregationType: HealthAggregationType.none,

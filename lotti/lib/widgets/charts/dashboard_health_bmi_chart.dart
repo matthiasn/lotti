@@ -2,76 +2,16 @@ import 'dart:core';
 
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/theme.dart';
+import 'package:lotti/widgets/charts/dashboard_health_bmi_data.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-num calculateBMI(num height, num weight) {
-  num heightSquare = height * height;
-  return weight / heightSquare;
-}
-
-charts.RangeAnnotationSegment<num> makeRange(
-  Color color,
-  num from,
-  num to,
-) {
-  return charts.RangeAnnotationSegment(
-    from,
-    to,
-    charts.RangeAnnotationAxisType.measure,
-    color: charts.Color(
-      r: color.red,
-      g: color.green,
-      b: color.blue,
-      a: 100,
-    ),
-  );
-}
-
-List<charts.RangeAnnotationSegment<num>> makeRangeAnnotations(
-  List<Observation> observations,
-) {
-  num min = findMin(observations);
-  num max = findMax(observations);
-
-  List<charts.RangeAnnotationSegment<num>> ranges = [
-    makeRange(Colors.green, 20, 24.99),
-    makeRange(Colors.yellow, 25, 29.99),
-  ];
-
-  num lowerGreenLower = 18.5;
-  num lowerGreenUpper = 19.99;
-  num orangeLower = 30;
-  num orangeUpper = 34.99;
-  num redLower = 35;
-  num redUpper = 39.99;
-  num purpleLower = 40;
-  num purpleUpper = 49.99;
-
-  void addNearRange(Color color, num lowerBound, num upperBound) {
-    if (nearRange(
-      min: min,
-      max: max,
-      lowerBound: lowerBound,
-      upperBound: upperBound,
-    )) {
-      ranges.add(makeRange(color, lowerBound, upperBound));
-    }
-  }
-
-  addNearRange(Colors.green, lowerGreenLower, lowerGreenUpper);
-  addNearRange(Colors.orange, orangeLower, orangeUpper);
-  addNearRange(Colors.red, redLower, redUpper);
-  addNearRange(Colors.purple, purpleLower, purpleUpper);
-
-  return ranges;
-}
 
 class DashboardHealthBmiChart extends StatelessWidget {
   final DashboardHealthItem chartConfig;
@@ -128,16 +68,11 @@ class DashboardHealthBmiChart extends StatelessWidget {
             }
 
             List<Observation> weightData = aggregateNone(items);
-            List<Observation> bmiData = weightData
-                .map((Observation o) =>
-                    Observation(o.dateTime, calculateBMI(height, o.value)))
-                .toList();
 
-            List<charts.RangeAnnotationSegment<num>> rangeAnnotations =
-                makeRangeAnnotations(bmiData);
+            List<charts.RangeAnnotationSegment<num>> rangeAnnotationSegments =
+                makeRangeAnnotationSegments(weightData, height);
 
-            int tickCount = rangeAnnotations.length + 1;
-
+            int tickCount = rangeAnnotationSegments.length * 2;
             charts.Color blue = charts.MaterialPalette.blue.shadeDefault;
 
             List<charts.Series<Observation, DateTime>> seriesList = [
@@ -146,7 +81,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
                 colorFn: (Observation val, _) => blue,
                 domainFn: (Observation val, _) => val.dateTime,
                 measureFn: (Observation val, _) => val.value,
-                data: bmiData,
+                data: weightData,
               ),
             ];
 
@@ -165,7 +100,12 @@ class DashboardHealthBmiChart extends StatelessWidget {
                         seriesList,
                         animate: true,
                         behaviors: [
-                          charts.RangeAnnotation(rangeAnnotations),
+                          charts.RangeAnnotation([
+                            charts.RangeAnnotationSegment(rangeStart, rangeEnd,
+                                charts.RangeAnnotationAxisType.domain,
+                                color: charts.Color.white),
+                            ...rangeAnnotationSegments,
+                          ]),
                         ],
                         domainAxis: timeSeriesAxis,
                         defaultRenderer: defaultRenderer,
@@ -197,6 +137,7 @@ class DashboardHealthBmiChart extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const BmiRangeLegend(),
                     ],
                   ),
                 ),
@@ -205,6 +146,70 @@ class DashboardHealthBmiChart extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class BmiRangeLegend extends StatelessWidget {
+  const BmiRangeLegend({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 40,
+      left: 40,
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.5), //New
+              blurRadius: 32.0,
+              offset: const Offset(0, 16),
+            )
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            color: Colors.white.withOpacity(0.9),
+            width: 120,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  ...bmiRanges.reversed.map(
+                    (range) {
+                      return Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 20,
+                              height: 12,
+                              color: HexColor(range.hexColor).withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 8,
+                          ),
+                          Text(
+                            range.name,
+                            style: chartTitleStyle.copyWith(
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
