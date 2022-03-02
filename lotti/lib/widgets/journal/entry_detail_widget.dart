@@ -201,6 +201,12 @@ class _EntryDetailWidgetState extends State<EntryDetailWidget> {
                         formKey.currentState?.save();
                         final formData = formKey.currentState?.value;
                         if (formData == null) {
+                          persistenceLogic.updateTask(
+                            entryText: entryTextFromController(_controller),
+                            journalEntityId: task.meta.id,
+                            taskData: task.data,
+                          );
+
                           return;
                         }
                         final DateTime due = formData['due'];
