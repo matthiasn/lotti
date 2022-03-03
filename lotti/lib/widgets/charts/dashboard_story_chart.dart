@@ -9,15 +9,15 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
-import 'package:lotti/widgets/charts/dashboard_workout_data.dart';
+import 'package:lotti/widgets/charts/dashboard_story_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class DashboardWorkoutChart extends StatefulWidget {
-  final DashboardWorkoutItem chartConfig;
+class DashboardStoryChart extends StatefulWidget {
+  final DashboardStoryTimeItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardWorkoutChart({
+  DashboardStoryChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,
@@ -25,10 +25,10 @@ class DashboardWorkoutChart extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<DashboardWorkoutChart> createState() => _DashboardWorkoutChartState();
+  State<DashboardStoryChart> createState() => _DashboardStoryChartState();
 }
 
-class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
+class _DashboardStoryChartState extends State<DashboardStoryChart> {
   final JournalDb _db = getIt<JournalDb>();
   final HealthImport _healthImport = getIt<HealthImport>();
 
@@ -60,10 +60,10 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
 
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
-            id: widget.chartConfig.workoutType,
+            id: widget.chartConfig.storyTagId,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: aggregateWorkoutDailySum(items, widget.chartConfig),
+            data: aggregateStoryDailyTimeSum(items, widget.chartConfig),
           )
         ];
         return Padding(
@@ -104,7 +104,7 @@ class _DashboardWorkoutChartState extends State<DashboardWorkoutChart> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            widget.chartConfig.displayName,
+                            widget.chartConfig.storyTagId,
                             style: chartTitleStyle,
                           ),
                         ],

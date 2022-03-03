@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_story_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -58,6 +59,13 @@ class DashboardViewerRoute extends StatelessWidget {
                   workoutChart: (DashboardWorkoutItem workoutChart) {
                     return DashboardWorkoutChart(
                       chartConfig: workoutChart,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
+                    );
+                  },
+                  storyTimeChart: (DashboardStoryTimeItem storyChart) {
+                    return DashboardStoryChart(
+                      chartConfig: storyChart,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                     );

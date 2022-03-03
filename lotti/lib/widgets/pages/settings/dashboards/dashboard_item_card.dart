@@ -36,6 +36,9 @@ class DashboardItemCard extends StatelessWidget {
       workoutChart: (workoutChart) {
         return workoutChart.displayName;
       },
+      storyTimeChart: (DashboardStoryTimeItem item) {
+        return item.storyTagId;
+      },
     );
 
     return Card(
@@ -67,6 +70,11 @@ class DashboardItemCard extends StatelessWidget {
           ),
           surveyChart: (_) => Icon(
             MdiIcons.clipboardOutline,
+            size: 32,
+            color: AppColors.entryTextColor,
+          ),
+          storyTimeChart: (_) => Icon(
+            MdiIcons.bookOutline,
             size: 32,
             color: AppColors.entryTextColor,
           ),
