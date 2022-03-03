@@ -29,8 +29,6 @@ class DashboardSurveyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String dataType = chartConfig.surveyType;
-
     charts.SeriesRendererConfig<DateTime>? defaultRenderer =
         charts.LineRendererConfig<DateTime>(
       includePoints: false,

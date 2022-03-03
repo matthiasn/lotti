@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_barchart.dart';
 import 'package:lotti/widgets/charts/dashboard_health_chart.dart';
+import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -41,7 +41,7 @@ class DashboardViewerRoute extends StatelessWidget {
               ...dashboard.items.map((DashboardItem dashboardItem) {
                 return dashboardItem.map(
                   measurement: (DashboardMeasurementItem measurement) {
-                    return DashboardBarChart(
+                    return DashboardMeasurablesChart(
                       measurableDataTypeId: measurement.id,
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,

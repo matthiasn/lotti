@@ -9,7 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/theme.dart';
-import 'package:lotti/widgets/charts/dashboard_barchart.dart';
+import 'package:lotti/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/form_builder/cupertino_datepicker.dart';
 import 'package:lotti/widgets/journal/entry_tools.dart';
@@ -194,7 +194,7 @@ class _NewMeasurementPageState extends State<NewMeasurementPage> {
                 ),
                 const SizedBox(height: 16),
                 if (selected != null)
-                  DashboardBarChart(
+                  DashboardMeasurablesChart(
                     measurableDataTypeId: selected!.id,
                     rangeStart: getRangeStart(context),
                     rangeEnd: getRangeEnd(),

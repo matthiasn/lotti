@@ -10,13 +10,13 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 
-class DashboardBarChart extends StatelessWidget {
+class DashboardMeasurablesChart extends StatelessWidget {
   final String measurableDataTypeId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
 
-  DashboardBarChart({
+  DashboardMeasurablesChart({
     Key? key,
     required this.measurableDataTypeId,
     required this.rangeStart,
@@ -56,6 +56,17 @@ class DashboardBarChart extends StatelessWidget {
           ) {
             List<JournalEntity?>? measurements = measurementsSnapshot.data;
 
+            charts.SeriesRendererConfig<DateTime>? defaultRenderer;
+
+            if (measurableDataType.aggregationType == AggregationType.none) {
+              defaultRenderer = charts.LineRendererConfig<DateTime>(
+                includePoints: false,
+                strokeWidthPx: 2,
+              );
+            } else {
+              defaultRenderer = charts.BarRendererConfig<DateTime>();
+            }
+
             if (measurements == null || measurements.isEmpty) {
               return const SizedBox.shrink();
             }
@@ -74,15 +85,22 @@ class DashboardBarChart extends StatelessWidget {
               }
             }
 
-            List<charts.Series<SumPerDay, DateTime>> seriesList = [
-              charts.Series<SumPerDay, DateTime>(
+            List<MeasureObservation> data;
+            if (measurableDataType.aggregationType == AggregationType.none) {
+              data = aggregateMeasurementNone(measurements);
+            } else {
+              data = aggregateSumByDay(measurements);
+            }
+
+            List<charts.Series<MeasureObservation, DateTime>> seriesList = [
+              charts.Series<MeasureObservation, DateTime>(
                 id: measurableDataType.id,
-                colorFn: (SumPerDay val, _) {
+                colorFn: (MeasureObservation val, _) {
                   return charts.MaterialPalette.blue.shadeDefault;
                 },
-                domainFn: (SumPerDay val, _) => val.day,
-                measureFn: (SumPerDay val, _) => val.sum,
-                data: aggregateByDay(measurements),
+                domainFn: (MeasureObservation val, _) => val.dateTime,
+                measureFn: (MeasureObservation val, _) => val.value,
+                data: data,
               )
             ];
             return GestureDetector(
@@ -102,7 +120,7 @@ class DashboardBarChart extends StatelessWidget {
                         charts.TimeSeriesChart(
                           seriesList,
                           animate: true,
-                          defaultRenderer: charts.BarRendererConfig<DateTime>(),
+                          defaultRenderer: defaultRenderer,
                           behaviors: [
                             chartRangeAnnotation(rangeStart, rangeEnd),
                           ],

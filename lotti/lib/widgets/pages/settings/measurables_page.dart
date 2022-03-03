@@ -257,6 +257,7 @@ class _DetailRouteState extends State<DetailRoute> {
                   displayName: '${formData['displayName']}'.trim(),
                   private: formData['private'],
                   favorite: formData['favorite'],
+                  aggregationType: formData['aggregationType'],
                 );
 
                 persistenceLogic.upsertEntityDefinition(dataType);
@@ -331,6 +332,39 @@ class _DetailRouteState extends State<DetailRoute> {
                               style: formLabelStyle,
                             ),
                             activeColor: AppColors.starredGold,
+                          ),
+                          FormBuilderDropdown(
+                            name: 'aggregationType',
+                            initialValue: item.aggregationType,
+                            decoration: InputDecoration(
+                              labelText: 'Aggregation Type:',
+                              labelStyle: labelStyle,
+                            ),
+                            style: const TextStyle(fontSize: 48),
+                            allowClear: true,
+                            dropdownColor: AppColors.headerBgColor,
+                            hint: Text(
+                              'Select aggregation type',
+                              style: formLabelStyle.copyWith(
+                                fontSize: 12,
+                              ),
+                            ),
+                            items:
+                                AggregationType.values.map((aggregationType) {
+                              return DropdownMenuItem(
+                                value: aggregationType,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    '$aggregationType',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: AppColors.entryTextColor,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ),
