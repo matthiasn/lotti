@@ -4,7 +4,7 @@ import 'package:lotti/sync/vector_clock.dart';
 part 'entity_definitions.freezed.dart';
 part 'entity_definitions.g.dart';
 
-enum AggregationType { none, dailySum, dailyMax }
+enum AggregationType { none, dailySum, dailyMax, dailyAvg }
 
 @freezed
 class HabitSchedule with _$HabitSchedule {
