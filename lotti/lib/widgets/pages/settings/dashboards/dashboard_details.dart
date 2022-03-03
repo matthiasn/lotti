@@ -2,9 +2,11 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:lotti/widgets/charts/dashboard_survey_data.dart';
@@ -30,6 +32,7 @@ class DashboardDetailRoute extends StatefulWidget {
 }
 
 class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
+  final TagsService tagsService = getIt<TagsService>();
   final JournalDb _db = getIt<JournalDb>();
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
@@ -142,6 +145,32 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
     }
   }
 
+  void onConfirmAddStoryTimeType(List<DashboardStoryTimeItem?> selection) {
+    dashboardItems = dashboardItems ?? widget.dashboard.items;
+
+    for (DashboardStoryTimeItem? selected in selection) {
+      if (selected != null) {
+        bool exists = dashboardItems!.where(
+          (DashboardItem item) {
+            return item.maybeMap(
+              storyTimeChart: (storyTime) =>
+                  storyTime.storyTagId == selected.storyTagId,
+              orElse: () => false,
+            );
+          },
+        ).isNotEmpty;
+
+        if (!exists) {
+          setState(() {
+            dashboardItems?.add(
+              selected,
+            );
+          });
+        }
+      }
+    }
+  }
+
   void dismissItem(int index) {
     setState(() {
       dashboardItems = dashboardItems ?? widget.dashboard.items;
@@ -191,6 +220,17 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
           return MultiSelectItem<DashboardWorkoutItem>(
             item!,
             item.displayName,
+          );
+        }).toList();
+
+        final List<MultiSelectItem<DashboardStoryTimeItem>> storySelectItems =
+            tagsService.getAllStoryTags().map((StoryTag storyTag) {
+          return MultiSelectItem<DashboardStoryTimeItem>(
+            DashboardStoryTimeItem(
+              storyTagId: storyTag.id,
+              color: '#0000FF',
+            ),
+            storyTag.tag,
           );
         }).toList();
 
@@ -360,6 +400,13 @@ class _DashboardDetailRouteState extends State<DashboardDetailRoute> {
                             title: 'Add Workout Charts',
                             buttonText: 'Add Workout Charts',
                             iconData: Icons.sports_gymnastics,
+                          ),
+                          ChartMultiSelect<DashboardStoryTimeItem>(
+                            multiSelectItems: storySelectItems,
+                            onConfirm: onConfirmAddStoryTimeType,
+                            title: 'Add Story/Time Charts',
+                            buttonText: 'Add Story/Time Charts',
+                            iconData: MdiIcons.watch,
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),

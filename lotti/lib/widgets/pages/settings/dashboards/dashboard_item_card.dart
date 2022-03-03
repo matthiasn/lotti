@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_config.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {
+  final TagsService tagsService = getIt<TagsService>();
   final DashboardItem item;
   final List<MeasurableDataType> measurableTypes;
 
-  const DashboardItemCard({
+  DashboardItemCard({
     Key? key,
     required this.item,
     required this.measurableTypes,
@@ -37,7 +41,8 @@ class DashboardItemCard extends StatelessWidget {
         return workoutChart.displayName;
       },
       storyTimeChart: (DashboardStoryTimeItem item) {
-        return item.storyTagId;
+        TagEntity? tagEntity = tagsService.getTagById(item.storyTagId);
+        return tagEntity?.tag ?? item.storyTagId;
       },
     );
 

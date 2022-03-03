@@ -17,7 +17,7 @@ class DashboardWorkoutChart extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardWorkoutChart({
+  const DashboardWorkoutChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,

@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
 import 'package:lotti/widgets/charts/dashboard_story_data.dart';
@@ -17,7 +18,7 @@ class DashboardStoryChart extends StatefulWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
-  DashboardStoryChart({
+  const DashboardStoryChart({
     Key? key,
     required this.chartConfig,
     required this.rangeStart,
@@ -30,6 +31,7 @@ class DashboardStoryChart extends StatefulWidget {
 
 class _DashboardStoryChartState extends State<DashboardStoryChart> {
   final JournalDb _db = getIt<JournalDb>();
+  final TagsService tagsService = getIt<TagsService>();
   final HealthImport _healthImport = getIt<HealthImport>();
 
   @override
@@ -42,6 +44,9 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
   Widget build(BuildContext context) {
     charts.SeriesRendererConfig<DateTime>? defaultRenderer =
         charts.BarRendererConfig<DateTime>();
+
+    String storyTagId = widget.chartConfig.storyTagId;
+    String title = tagsService.getTagById(storyTagId)?.tag ?? storyTagId;
 
     return StreamBuilder<List<JournalEntity?>>(
       stream: _db.watchWorkouts(
@@ -104,7 +109,7 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            widget.chartConfig.storyTagId,
+                            title,
                             style: chartTitleStyle,
                           ),
                         ],
