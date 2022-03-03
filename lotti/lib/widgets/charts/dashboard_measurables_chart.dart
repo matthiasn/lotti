@@ -10,13 +10,13 @@ import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/pages/add/new_measurement_page.dart';
 
-class DashboardBarChart extends StatelessWidget {
+class DashboardMeasurablesChart extends StatelessWidget {
   final String measurableDataTypeId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;
 
-  DashboardBarChart({
+  DashboardMeasurablesChart({
     Key? key,
     required this.measurableDataTypeId,
     required this.rangeStart,
