@@ -6,7 +6,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_health_data.dart';
@@ -32,12 +31,10 @@ class DashboardStoryChart extends StatefulWidget {
 class _DashboardStoryChartState extends State<DashboardStoryChart> {
   final JournalDb _db = getIt<JournalDb>();
   final TagsService tagsService = getIt<TagsService>();
-  final HealthImport _healthImport = getIt<HealthImport>();
 
   @override
   void initState() {
     super.initState();
-    _healthImport.getWorkoutsHealthDataDelta();
   }
 
   @override
@@ -64,12 +61,18 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
           return const SizedBox.shrink();
         }
 
+        List<Observation> data = aggregateStoryDailyTimeSum(
+          items,
+          rangeStart: widget.rangeStart,
+          rangeEnd: widget.rangeEnd,
+        );
+
         List<charts.Series<Observation, DateTime>> seriesList = [
           charts.Series<Observation, DateTime>(
             id: widget.chartConfig.storyTagId,
             domainFn: (Observation val, _) => val.dateTime,
             measureFn: (Observation val, _) => val.value,
-            data: aggregateStoryDailyTimeSum(items, widget.chartConfig),
+            data: data,
           )
         ];
         return Padding(
@@ -92,12 +95,11 @@ class _DashboardStoryChartState extends State<DashboardStoryChart> {
                     domainAxis: timeSeriesAxis,
                     defaultRenderer: defaultRenderer,
                     primaryMeasureAxis: const charts.NumericAxisSpec(
-                      tickProviderSpec: charts.BasicNumericTickProviderSpec(
-                        zeroBound: false,
-                        desiredTickCount: 5,
-                        dataIsInWholeNumbers: true,
-                      ),
-                    ),
+                        tickProviderSpec: charts.BasicNumericTickProviderSpec(
+                          zeroBound: true,
+                        ),
+                        tickFormatterSpec:
+                            charts.BasicNumericTickFormatterSpec(hoursToHhMm)),
                   ),
                   Positioned(
                     top: 0,

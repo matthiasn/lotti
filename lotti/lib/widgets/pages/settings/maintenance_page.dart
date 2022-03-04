@@ -51,6 +51,34 @@ class _MaintenancePageState extends State<MaintenancePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
+                        'Delete tagged',
+                        style: TextStyle(
+                          color: AppColors.entryTextColor,
+                          fontFamily: 'Oswald',
+                          fontSize: 20.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  enabled: true,
+                  onTap: () async {
+                    _db.deleteTaggedLinks();
+                  },
+                ),
+              ),
+              Card(
+                color: AppColors.headerBgColor,
+                elevation: 8.0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.only(
+                      left: 16, top: 4, bottom: 8, right: 16),
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
                         'Recreate tagged',
                         style: TextStyle(
                           color: AppColors.entryTextColor,
@@ -62,7 +90,7 @@ class _MaintenancePageState extends State<MaintenancePage> {
                   ),
                   enabled: true,
                   onTap: () async {
-                    _db.recreateTagged();
+                    _db.recreateTaggedLinks();
                   },
                 ),
               ),

@@ -573,8 +573,7 @@ class JournalDb extends _$JournalDb {
     return linesAffected;
   }
 
-  Future<void> recreateTagged() async {
-    deleteTagged();
+  Future<void> recreateTaggedLinks() async {
     int count = await getJournalCount();
     int pageSize = 100;
     int pages = (count / pageSize).ceil();
@@ -588,6 +587,10 @@ class JournalDb extends _$JournalDb {
         await addTagged(entry);
       }
     }
+  }
+
+  Future<void> deleteTaggedLinks() async {
+    await deleteTagged();
   }
 }
 
