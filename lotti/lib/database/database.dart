@@ -168,7 +168,7 @@ class JournalDb extends _$JournalDb {
     await deleteTaggedForId(id);
 
     for (String tagId in tagIds) {
-      into(tagged).insert(TaggedWith(
+      await into(tagged).insert(TaggedWith(
         id: uuid.v1(),
         journalId: id,
         tagEntityId: tagId,
