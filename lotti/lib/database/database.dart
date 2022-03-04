@@ -315,6 +315,11 @@ class JournalDb extends _$JournalDb {
     return linkedJournalEntities(linkedFrom).watch().map(entityStreamMapper);
   }
 
+  Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
+    var dbEntities = await linkedJournalEntities(linkedFrom).get();
+    return dbEntities.map(fromDbEntity).toList();
+  }
+
   Stream<Map<String, Duration>> watchLinkedTotalDuration({
     required String linkedFrom,
   }) {
@@ -583,26 +588,6 @@ class JournalDb extends _$JournalDb {
       },
     );
     return linesAffected;
-  }
-
-  Future<void> recreateTaggedLinks() async {
-    int count = await getJournalCount();
-    int pageSize = 100;
-    int pages = (count / pageSize).ceil();
-
-    for (int page = 0; page <= pages; page++) {
-      List<JournalDbEntity> dbEntities =
-          await orderedJournal(pageSize, page * pageSize).get();
-
-      List<JournalEntity> entries = entityStreamMapper(dbEntities);
-      for (JournalEntity entry in entries) {
-        await addTagged(entry);
-      }
-    }
-  }
-
-  Future<void> deleteTaggedLinks() async {
-    await deleteTagged();
   }
 }
 
